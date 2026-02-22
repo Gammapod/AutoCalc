@@ -135,3 +135,14 @@ events.ts (wire buttons → actions)
 index.ts (boot: load save, start loops)
 
 This keeps AI-generated code corralled and reviewable.
+
+MVP Clarifications (added 2026-02-22)
+- Numeric limit for MVP: 12 digits maximum (overflow threshold remains abs(value) > 999_999_999_999n).
+- MVP uses one currency only: the calculator display value. Ignore separate idle-earned currency for MVP.
+- MVP win condition: trigger display overflow (attempt to represent a value beyond 12 digits).
+- Calculator semantics (operator behavior, repeated equals, divide behavior, negatives) are intentionally unresolved and will be finalized during MVP prototyping.
+- Unlock balancing (order, prices, progression curve) is intentionally unresolved for MVP.
+- First-slice implementation requirement: include debug commands/events to directly fire unlock events for implemented unlockables.
+- Challenge system implementation details are deferred to a post-MVP phase.
+- Offline progress behavior is deferred to a post-MVP phase.
+- Document encoding note: mojibake characters in earlier lines were unintentional; this addendum preserves original text and records corrections without rewriting prior content.

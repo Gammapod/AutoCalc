@@ -91,3 +91,14 @@ Constraint-based challenges introduced as the deeper layer
 No prestige loops defined yet. No meta-layer defined yet. No expansion layers beyond MVP committed.
 Design Spine (Condensed)
 A constrained calculator where arithmetic power expands over time, and the player transitions from brute accumulation to elegant mathematical construction under constraints.
+
+MVP Clarifications (added 2026-02-22)
+- For MVP, the effective display maximum is 12 digits.
+- MVP economy uses one currency only: the calculator display value.
+- MVP winning condition: display overflow (attempting to exceed 12-digit representable values).
+- Standard-calculator semantic details are intentionally unresolved for MVP and will be decided during prototyping.
+- Unlock order, pricing, and balancing are intentionally unresolved for MVP.
+- MVP first slice should support debug-triggered unlock events for any implemented unlockables.
+- Challenge implementation specifics are deferred beyond MVP.
+- Offline progress is deferred beyond MVP.
+- Document encoding note: earlier mojibake artifacts were unintentional; existing lines are preserved and corrections are recorded additively here.
