@@ -3,7 +3,7 @@
   var SAVE_KEY = "autocalc.v0_1.save";
   var AUTOSAVE_INTERVAL_MS = 5000;
   var DISPLAY_SLOTS = 12;
-  var LOCKABLE_DIGITS = ["0", "2", "3", "4", "5", "6", "7", "8", "9"];
+  var LOCKABLE_DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
   var LOCKABLE_OPERATORS = ["-", "*", "/", "="];
   var LOCKABLE_UTILITIES = ["C", "CE"];
   var STORE_ITEMS = [
@@ -15,11 +15,10 @@
     { id: "digit_6", price: 16n, label: "Unlock digit 6", type: "digit", target: "6" },
     { id: "digit_7", price: 17n, label: "Unlock digit 7", type: "digit", target: "7" },
     { id: "digit_8", price: 18n, label: "Unlock digit 8", type: "digit", target: "8" },
-    { id: "digit_9", price: 19n, label: "Unlock digit 9", type: "digit", target: "9" },
+    { id: "digit_9", price: 1n, label: "Unlock digit 9", type: "digit", target: "9" },
     { id: "op_mul", price: 25n, label: "Unlock multiplication", type: "operator", target: "*" },
-    { id: "op_div", price: 26n, label: "Unlock division", type: "operator", target: "/" },
-    { id: "operand1_cap", price: 30n, label: "Operand 1 digit +1", type: "display_cap", target: "operand1Digits" },
-    { id: "operand2_cap", price: 31n, label: "Operand 2 digit +1", type: "display_cap", target: "operand2Digits" }
+    { id: "op_div", price: 91n, label: "Unlock division", type: "operator", target: "/" },
+    { id: "display_cap", price: 9n, label: "All displays: +1 digit", type: "display_cap", target: "displayDigits" }
   ];
   var CONDITIONAL_UNLOCK_RULES = [
     {
@@ -37,21 +36,28 @@
       }
     },
     {
-      id: "unlock_minus_on_first_c_press",
+      id: "unlock_minus_on_total_99",
       operator: "-",
-      when: function (prevState, nextState, action) {
-        return action.type === "PRESS_KEY" && action.key === "C";
-      }
-    },
-    {
-      id: "unlock_equals_on_total_4",
-      operator: "=",
       when: function (prevState, nextState) {
         return (
           !nextState.calculator.operand1Error &&
-          String(prevState.calculator.display) !== "4" &&
-          String(nextState.calculator.display) === "4"
+          String(prevState.calculator.display) !== "99" &&
+          String(nextState.calculator.display) === "99"
         );
+      }
+    },
+    {
+      id: "unlock_equals_on_first_ce_press",
+      operator: "=",
+      when: function (prevState, nextState, action) {
+        return action.type === "PRESS_KEY" && action.key === "CE";
+      }
+    },
+    {
+      id: "unlock_one_on_first_plus_press",
+      digit: "1",
+      when: function (prevState, nextState, action) {
+        return action.type === "PRESS_KEY" && action.key === "+";
       }
     }
   ];
@@ -89,16 +95,17 @@
         pendingOp: null,
         justEvaluated: false,
         operand1Error: false,
-        operand2Error: false
+        operand2Error: false,
+        remainderValue: "0"
       },
       unlocked: createDefaultUnlocks(),
       unlockedOperators: createDefaultOperatorUnlocks(),
       unlockedUtilities: createDefaultUtilityUnlocks(),
       displayUnlocks: {
-        operand1Digits: 1,
-        operand2Digits: 1
+        displayDigits: 2
       },
-      storeRevealed: false
+      storeRevealed: false,
+      remainderReserveRevealed: false
     };
   }
 
@@ -135,24 +142,17 @@
       pendingOp: null,
       justEvaluated: false,
       operand1Error: false,
-      operand2Error: false
+      operand2Error: false,
+      remainderValue: calc.remainderValue
     };
   }
 
   function pressDigit(calc, digit, limits) {
-    if (calc.pendingOp == null && calc.operand1Error) {
-      return {
-        display: digit,
-        entry: digit,
-        accumulator: null,
-        pendingOp: null,
-        justEvaluated: false,
-        operand1Error: false,
-        operand2Error: false
-      };
+    if (calc.pendingOp == null) {
+      return calc;
     }
 
-    if (calc.pendingOp != null && calc.operand2Error) {
+    if (calc.operand2Error) {
       return {
         display: calc.display,
         entry: digit,
@@ -160,7 +160,8 @@
         pendingOp: calc.pendingOp,
         justEvaluated: false,
         operand1Error: calc.operand1Error,
-        operand2Error: false
+        operand2Error: false,
+        remainderValue: calc.remainderValue
       };
     }
 
@@ -174,7 +175,7 @@
       nextEntry = nextEntry + digit;
     }
 
-    if (calc.pendingOp == null && exceedsDigitLimit(nextEntry, limits.operand1Digits)) {
+    if (calc.pendingOp == null && exceedsDigitLimit(nextEntry, limits.displayDigits)) {
       return {
         display: "Err",
         entry: "",
@@ -182,11 +183,12 @@
         pendingOp: null,
         justEvaluated: false,
         operand1Error: true,
-        operand2Error: false
+        operand2Error: false,
+        remainderValue: calc.remainderValue
       };
     }
 
-    if (calc.pendingOp != null && exceedsDigitLimit(nextEntry, limits.operand2Digits)) {
+    if (calc.pendingOp != null && exceedsDigitLimit(nextEntry, limits.displayDigits)) {
       return {
         display: calc.display,
         entry: "",
@@ -194,7 +196,8 @@
         pendingOp: calc.pendingOp,
         justEvaluated: false,
         operand1Error: calc.operand1Error,
-        operand2Error: true
+        operand2Error: true,
+        remainderValue: calc.remainderValue
       };
     }
 
@@ -212,7 +215,8 @@
       pendingOp: calc.pendingOp,
       justEvaluated: false,
       operand1Error: calc.operand1Error,
-      operand2Error: calc.operand2Error
+      operand2Error: calc.operand2Error,
+      remainderValue: calc.remainderValue
     };
   }
 
@@ -239,55 +243,44 @@
     return right;
   }
 
+  function applyOperationDetailed(left, right, operator) {
+    if (operator === "/") {
+      if (right === 0n) {
+        return { result: 0n, remainder: 0n };
+      }
+      return { result: left / right, remainder: left % right };
+    }
+    return { result: applyOperation(left, right, operator), remainder: null };
+  }
+
   function pressOperator(calc, operator, limits) {
     if (calc.operand1Error || calc.operand2Error) {
       return calc;
     }
 
-    var entryValue = toBigInt(calc.entry || calc.display);
     if (calc.pendingOp === "+" || calc.pendingOp === "-" || calc.pendingOp === "*" || calc.pendingOp === "/") {
-      var right = calc.entry === "" ? 0n : toBigInt(calc.entry);
-      var result = applyOperation(toBigInt(calc.accumulator), right, calc.pendingOp);
-      if (result < 0n) {
-        return {
-          display: "Err",
-          entry: calc.entry,
-          accumulator: null,
-          pendingOp: operator,
-          justEvaluated: false,
-          operand1Error: true,
-          operand2Error: false
-        };
-      }
-      if (exceedsDigitLimit(result.toString(), limits.operand1Digits)) {
-        return {
-          display: "Err",
-          entry: calc.entry,
-          accumulator: null,
-          pendingOp: operator,
-          justEvaluated: false,
-          operand1Error: true,
-          operand2Error: calc.operand2Error
-        };
-      }
       return {
-        display: result.toString(),
-        entry: "",
-        accumulator: result,
+        display: calc.display,
+        entry: "0",
+        accumulator: calc.accumulator,
         pendingOp: operator,
         justEvaluated: false,
         operand1Error: false,
-        operand2Error: false
+        operand2Error: false,
+        remainderValue: calc.remainderValue
       };
     }
+
+    var entryValue = toBigInt(calc.entry || calc.display);
     return {
       display: entryValue.toString(),
-      entry: "",
+      entry: "0",
       accumulator: entryValue,
       pendingOp: operator,
       justEvaluated: false,
       operand1Error: false,
-      operand2Error: false
+      operand2Error: false,
+      remainderValue: calc.remainderValue
     };
   }
 
@@ -302,7 +295,8 @@
     var rightText = calc.entry === "" ? "0" : calc.entry;
     var left = calc.accumulator == null ? toBigInt(calc.display) : toBigInt(calc.accumulator);
     var right = toBigInt(rightText);
-    var result = applyOperation(left, right, calc.pendingOp);
+    var operation = applyOperationDetailed(left, right, calc.pendingOp);
+    var result = operation.result;
     if (result < 0n) {
       return {
         display: "Err",
@@ -311,11 +305,12 @@
         pendingOp: calc.pendingOp,
         justEvaluated: true,
         operand1Error: true,
-        operand2Error: false
+        operand2Error: false,
+        remainderValue: calc.remainderValue
       };
     }
 
-    if (exceedsDigitLimit(result.toString(), limits.operand1Digits)) {
+    if (exceedsDigitLimit(result.toString(), limits.displayDigits)) {
       return {
         display: "Err",
         entry: rightText,
@@ -323,7 +318,8 @@
         pendingOp: calc.pendingOp,
         justEvaluated: true,
         operand1Error: true,
-        operand2Error: calc.operand2Error
+        operand2Error: calc.operand2Error,
+        remainderValue: calc.remainderValue
       };
     }
 
@@ -334,7 +330,8 @@
       pendingOp: calc.pendingOp,
       justEvaluated: true,
       operand1Error: false,
-      operand2Error: false
+      operand2Error: false,
+      remainderValue: operation.remainder == null ? calc.remainderValue : operation.remainder.toString()
     };
   }
 
@@ -346,7 +343,8 @@
       pendingOp: null,
       justEvaluated: false,
       operand1Error: calc.operand1Error,
-      operand2Error: false
+      operand2Error: false,
+      remainderValue: calc.remainderValue
     };
   }
 
@@ -383,9 +381,6 @@
   }
 
   function isDigitUnlocked(unlocked, digit) {
-    if (digit === "1") {
-      return true;
-    }
     return !!unlocked[digit];
   }
 
@@ -429,7 +424,21 @@
           unlockedOperators: state.unlockedOperators,
           unlockedUtilities: nextUtilities,
           displayUnlocks: state.displayUnlocks,
-          storeRevealed: state.storeRevealed
+          storeRevealed: state.storeRevealed,
+          remainderReserveRevealed: state.remainderReserveRevealed
+        };
+      }
+      if (rule.digit && !state.unlocked[rule.digit]) {
+        var nextDigits = Object.assign({}, state.unlocked);
+        nextDigits[rule.digit] = true;
+        state = {
+          calculator: state.calculator,
+          unlocked: nextDigits,
+          unlockedOperators: state.unlockedOperators,
+          unlockedUtilities: state.unlockedUtilities,
+          displayUnlocks: state.displayUnlocks,
+          storeRevealed: state.storeRevealed,
+          remainderReserveRevealed: state.remainderReserveRevealed
         };
       }
       if (rule.operator && !state.unlockedOperators[rule.operator]) {
@@ -441,7 +450,8 @@
           unlockedOperators: nextOperators,
           unlockedUtilities: state.unlockedUtilities,
           displayUnlocks: state.displayUnlocks,
-          storeRevealed: state.storeRevealed
+          storeRevealed: state.storeRevealed,
+          remainderReserveRevealed: state.remainderReserveRevealed
         };
       }
     }
@@ -471,7 +481,7 @@
     if (prevState.calculator.pendingOp !== "-") {
       return false;
     }
-    return action.key === "=" || action.key === "+" || action.key === "-" || action.key === "*" || action.key === "/";
+    return action.key === "=";
   }
 
   function getSubtractionAmountFromState(state) {
@@ -505,7 +515,8 @@
         unlockedOperators: state.unlockedOperators,
         unlockedUtilities: state.unlockedUtilities,
         displayUnlocks: state.displayUnlocks,
-        storeRevealed: state.storeRevealed
+        storeRevealed: state.storeRevealed,
+        remainderReserveRevealed: state.remainderReserveRevealed
       };
     }
 
@@ -521,7 +532,8 @@
         unlockedOperators: nextOperators,
         unlockedUtilities: state.unlockedUtilities,
         displayUnlocks: state.displayUnlocks,
-        storeRevealed: state.storeRevealed
+        storeRevealed: state.storeRevealed,
+        remainderReserveRevealed: state.remainderReserveRevealed
       };
     }
 
@@ -537,7 +549,8 @@
         unlockedOperators: state.unlockedOperators,
         unlockedUtilities: state.unlockedUtilities,
         displayUnlocks: nextCaps,
-        storeRevealed: state.storeRevealed
+        storeRevealed: state.storeRevealed,
+        remainderReserveRevealed: state.remainderReserveRevealed
       };
     }
 
@@ -574,7 +587,8 @@
         unlockedOperators: state.unlockedOperators,
         unlockedUtilities: state.unlockedUtilities,
         displayUnlocks: state.displayUnlocks,
-        storeRevealed: state.storeRevealed || key === "-"
+        storeRevealed: state.storeRevealed || key === "-",
+        remainderReserveRevealed: state.remainderReserveRevealed || key === "/"
       };
     }
 
@@ -590,7 +604,8 @@
         unlockedOperators: state.unlockedOperators,
         unlockedUtilities: state.unlockedUtilities,
         displayUnlocks: state.displayUnlocks,
-        storeRevealed: state.storeRevealed
+        storeRevealed: state.storeRevealed,
+        remainderReserveRevealed: state.remainderReserveRevealed
       };
     }
 
@@ -613,7 +628,8 @@
         unlockedOperators: unlockedOpsAll,
         unlockedUtilities: unlockedUtilitiesAll,
         displayUnlocks: state.displayUnlocks,
-        storeRevealed: state.storeRevealed
+        storeRevealed: state.storeRevealed,
+        remainderReserveRevealed: state.remainderReserveRevealed
       };
     }
 
@@ -632,6 +648,7 @@
       unlockedUtilities: state.unlockedUtilities,
       displayUnlocks: state.displayUnlocks,
       storeRevealed: !!state.storeRevealed,
+      remainderReserveRevealed: !!state.remainderReserveRevealed,
       calculator: {
         display: String(state.calculator.display),
         entry: String(state.calculator.entry),
@@ -639,7 +656,8 @@
         pendingOp: state.calculator.pendingOp,
         justEvaluated: !!state.calculator.justEvaluated,
         operand1Error: !!state.calculator.operand1Error,
-        operand2Error: !!state.calculator.operand2Error
+        operand2Error: !!state.calculator.operand2Error,
+        remainderValue: String(state.calculator.remainderValue == null ? "0" : state.calculator.remainderValue)
       }
     };
   }
@@ -677,9 +695,17 @@
       parsedUtilityUnlocks[utility] = !!(raw.unlockedUtilities && raw.unlockedUtilities[utility]);
     }
 
+    var legacyOperand1 = Number(raw.displayUnlocks && raw.displayUnlocks.operand1Digits) || 1;
+    var legacyOperand2 = Number(raw.displayUnlocks && raw.displayUnlocks.operand2Digits) || 2;
+    var legacyRemainder = Number(raw.displayUnlocks && raw.displayUnlocks.remainderDigits) || 1;
     var parsedDisplayUnlocks = {
-      operand1Digits: Math.max(1, Math.min(DISPLAY_SLOTS, Number(raw.displayUnlocks && raw.displayUnlocks.operand1Digits) || 1)),
-      operand2Digits: Math.max(1, Math.min(DISPLAY_SLOTS, Number(raw.displayUnlocks && raw.displayUnlocks.operand2Digits) || 1))
+      displayDigits: Math.max(
+        1,
+        Math.min(
+          DISPLAY_SLOTS,
+          Number(raw.displayUnlocks && raw.displayUnlocks.displayDigits) || Math.max(legacyOperand1, legacyOperand2, legacyRemainder)
+        )
+      )
     };
 
     return {
@@ -690,13 +716,15 @@
         pendingOp: raw.calculator ? raw.calculator.pendingOp : null,
         justEvaluated: !!(raw.calculator && raw.calculator.justEvaluated),
         operand1Error: !!(raw.calculator && raw.calculator.operand1Error),
-        operand2Error: !!(raw.calculator && raw.calculator.operand2Error)
+        operand2Error: !!(raw.calculator && raw.calculator.operand2Error),
+        remainderValue: String(raw.calculator && raw.calculator.remainderValue != null ? raw.calculator.remainderValue : "0")
       },
       unlocked: parsedUnlocks,
       unlockedOperators: parsedOperatorUnlocks,
       unlockedUtilities: parsedUtilityUnlocks,
       displayUnlocks: parsedDisplayUnlocks,
-      storeRevealed: !!raw.storeRevealed
+      storeRevealed: !!raw.storeRevealed,
+      remainderReserveRevealed: !!raw.remainderReserveRevealed
     };
   }
 
@@ -834,19 +862,60 @@
     if (item.type !== "display_cap") {
       return item.label;
     }
-    var current = state.displayUnlocks[item.target];
+    var current = state.displayUnlocks.displayDigits;
     if (current >= DISPLAY_SLOTS) {
-      return item.target === "operand1Digits" ? "Operand 1 maxed" : "Operand 2 maxed";
+      return "All displays maxed";
     }
     var nextPlace = getDigitPlaceName(current + 1);
-    var operandPrefix = item.target === "operand1Digits" ? "Operand 1" : "Operand 2";
-    return operandPrefix + ": " + nextPlace + " digit";
+    return "All displays: " + nextPlace + " digit";
   }
 
   function renderStoreList(state, nodes) {
+    var tierDigits = state.displayUnlocks.displayDigits;
+    var maxVisiblePrice = 1n;
+    for (var d = 0; d < tierDigits; d += 1) {
+      maxVisiblePrice *= 10n;
+    }
+    maxVisiblePrice -= 1n;
+
+    function absBigInt(value) {
+      return value < 0n ? -value : value;
+    }
+
+    function priceUsesOnlyUnlockedDigits(price) {
+      var text = absBigInt(price).toString();
+      for (var i = 0; i < text.length; i += 1) {
+        var digit = text.charAt(i);
+        if (!state.unlocked[digit]) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    var visibleItems = STORE_ITEMS.filter(function (item) {
+      return absBigInt(item.price) <= maxVisiblePrice && priceUsesOnlyUnlockedDigits(item.price);
+    }).sort(function (a, b) {
+      var aa = absBigInt(a.price);
+      var bb = absBigInt(b.price);
+      if (aa < bb) {
+        return -1;
+      }
+      if (aa > bb) {
+        return 1;
+      }
+      if (a.label < b.label) {
+        return -1;
+      }
+      if (a.label > b.label) {
+        return 1;
+      }
+      return 0;
+    });
+
     var items = [];
-    for (var i = 0; i < STORE_ITEMS.length; i += 1) {
-      var item = STORE_ITEMS[i];
+    for (var i = 0; i < visibleItems.length; i += 1) {
+      var item = visibleItems[i];
       var status = getStoreItemStatus(state, item);
       var label = getStoreItemLabel(state, item);
       var checkClass = status.checked ? "on" : "off";
@@ -925,8 +994,359 @@
     }
   }
 
+  function getUnlockedDigits(state) {
+    var digits = [];
+    for (var i = 0; i <= 9; i += 1) {
+      var d = String(i);
+      if (state.unlocked[d]) {
+        digits.push(i);
+      }
+    }
+    return digits;
+  }
+
+  function formatBigInt(value) {
+    var raw = value.toString();
+    var out = "";
+    var count = 0;
+    for (var i = raw.length - 1; i >= 0; i -= 1) {
+      out = raw.charAt(i) + out;
+      count += 1;
+      if (count % 3 === 0 && i > 0) {
+        out = "," + out;
+      }
+    }
+    return out;
+  }
+
+  function powBigInt(base, exp) {
+    var result = 1n;
+    for (var i = 0; i < exp; i += 1) {
+      result *= base;
+    }
+    return result;
+  }
+
+  function computeConstructibleCount(unlockedDigits, maxLen) {
+    var n = unlockedDigits.length;
+    if (n === 0 || maxLen <= 0) {
+      return 0n;
+    }
+    var hasZero = unlockedDigits.indexOf(0) !== -1;
+    var total = BigInt(n);
+    for (var len = 2; len <= maxLen; len += 1) {
+      var firstChoices = n - (hasZero ? 1 : 0);
+      if (firstChoices <= 0) {
+        break;
+      }
+      total += BigInt(firstChoices) * powBigInt(BigInt(n), len - 1);
+    }
+    return total;
+  }
+
+  function computeResidueCounts(unlockedDigits, maxLen, modulus) {
+    var counts = new Array(modulus);
+    for (var i = 0; i < modulus; i += 1) {
+      counts[i] = 0n;
+    }
+    if (unlockedDigits.length === 0 || maxLen <= 0 || modulus <= 0) {
+      return counts;
+    }
+
+    for (var len = 1; len <= maxLen; len += 1) {
+      var firstDigits = len === 1 ? unlockedDigits : unlockedDigits.filter(function (d) { return d !== 0; });
+      if (firstDigits.length === 0) {
+        continue;
+      }
+
+      var exact = new Array(modulus);
+      for (var r = 0; r < modulus; r += 1) {
+        exact[r] = 0n;
+      }
+
+      for (var f = 0; f < firstDigits.length; f += 1) {
+        var fr = firstDigits[f] % modulus;
+        exact[fr] += 1n;
+      }
+
+      for (var pos = 2; pos <= len; pos += 1) {
+        var next = new Array(modulus);
+        for (var nr = 0; nr < modulus; nr += 1) {
+          next[nr] = 0n;
+        }
+        for (var res = 0; res < modulus; res += 1) {
+          var c = exact[res];
+          if (c === 0n) {
+            continue;
+          }
+          for (var di = 0; di < unlockedDigits.length; di += 1) {
+            var d = unlockedDigits[di];
+            var rr = (res * 10 + d) % modulus;
+            next[rr] += c;
+          }
+        }
+        exact = next;
+      }
+
+      for (var add = 0; add < modulus; add += 1) {
+        counts[add] += exact[add];
+      }
+    }
+    return counts;
+  }
+
+  function residueSetFromCounts(counts) {
+    var set = [];
+    for (var i = 0; i < counts.length; i += 1) {
+      if (counts[i] > 0n) {
+        set.push(i);
+      }
+    }
+    return set;
+  }
+
+  function isPositiveTypeable(state, value) {
+    var text = String(value);
+    if (text.length === 0 || text.length > state.displayUnlocks.displayDigits) {
+      return false;
+    }
+    if (text.charAt(0) === "0") {
+      return false;
+    }
+    for (var i = 0; i < text.length; i += 1) {
+      if (!state.unlocked[text.charAt(i)]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function percentOf(total, part) {
+    if (total === 0n) {
+      return "0.00%";
+    }
+    var scaled = (part * 10000n) / total;
+    var whole = scaled / 100n;
+    var frac = scaled % 100n;
+    var fracText = frac < 10n ? "0" + frac.toString() : frac.toString();
+    return whole.toString() + "." + fracText + "%";
+  }
+
+  function buildTypeablePriceCandidates(state, maxPrice, limit) {
+    var unlockedDigits = getUnlockedDigits(state).slice().sort(function (a, b) { return a - b; });
+    var tierDigits = state.displayUnlocks.displayDigits;
+    var out = [];
+
+    function pushIfValid(text) {
+      if (text.length === 0) {
+        return false;
+      }
+      if (text.length > tierDigits) {
+        return false;
+      }
+      var value = BigInt(text);
+      if (value <= 0n || value > maxPrice) {
+        return false;
+      }
+      out.push(value);
+      return out.length >= limit;
+    }
+
+    function dfs(prefix, depth, maxDepth) {
+      if (out.length >= limit) {
+        return true;
+      }
+      if (depth > 0) {
+        if (pushIfValid(prefix)) {
+          return true;
+        }
+      }
+      if (depth === maxDepth) {
+        return false;
+      }
+      for (var i = 0; i < unlockedDigits.length; i += 1) {
+        var d = unlockedDigits[i];
+        if (depth === 0 && d === 0) {
+          continue;
+        }
+        if (dfs(prefix + d.toString(), depth + 1, maxDepth)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    for (var len = 1; len <= tierDigits; len += 1) {
+      if (dfs("", 0, len)) {
+        break;
+      }
+    }
+
+    return out;
+  }
+
+  function rankRarityCandidates(state) {
+    var tierDigits = state.displayUnlocks.displayDigits;
+    var maxVisiblePrice = powBigInt(10n, tierDigits) - 1n;
+    var maxCandidates = 6000;
+    var candidates = buildTypeablePriceCandidates(state, maxVisiblePrice, maxCandidates);
+    var total2 = computeConstructibleCount(getUnlockedDigits(state), state.displayUnlocks.displayDigits);
+    var mods = [2, 3, 5, 7, 9];
+    var residueCounts = {};
+    for (var i = 0; i < mods.length; i += 1) {
+      residueCounts[mods[i]] = computeResidueCounts(getUnlockedDigits(state), state.displayUnlocks.displayDigits, mods[i]);
+    }
+
+    function scorePrice(price) {
+      var score = 0;
+      for (var i = 0; i < mods.length; i += 1) {
+        var m = mods[i];
+        var residue = Number(price % BigInt(m));
+        var count = residueCounts[m][residue];
+        var ratio = total2 === 0n ? 1 : Number(count) / Number(total2);
+        var safeRatio = ratio <= 0 ? 1e-12 : ratio;
+        score += -Math.log(safeRatio);
+      }
+      return score;
+    }
+
+    var ranked = candidates.map(function (price) {
+      return { price: price, score: scorePrice(price) };
+    });
+
+    ranked.sort(function (a, b) {
+      if (a.score > b.score) {
+        return -1;
+      }
+      if (a.score < b.score) {
+        return 1;
+      }
+      if (a.price < b.price) {
+        return -1;
+      }
+      if (a.price > b.price) {
+        return 1;
+      }
+      return 0;
+    });
+
+    return {
+      ranked: ranked,
+      capped: candidates.length >= maxCandidates
+    };
+  }
+
+  function runNumberTheoryAnalysis(currentState) {
+    var unlockedDigits = getUnlockedDigits(currentState);
+    var mods = [2, 3, 5, 7, 9, 10];
+    var lines = [];
+
+    lines.push("Unlocked digits: " + (unlockedDigits.length ? unlockedDigits.join(", ") : "(none)"));
+    lines.push(
+      "Digit caps: total=" +
+        currentState.displayUnlocks.displayDigits
+    );
+
+    var count1 = computeConstructibleCount(unlockedDigits, currentState.displayUnlocks.displayDigits);
+    var count2 = computeConstructibleCount(unlockedDigits, currentState.displayUnlocks.displayDigits);
+    lines.push("Constructible totals: " + formatBigInt(count1));
+    lines.push("Constructible operand2 values: " + formatBigInt(count2));
+
+    var parityCounts = computeResidueCounts(unlockedDigits, currentState.displayUnlocks.displayDigits, 2);
+    var even = parityCounts[0];
+    var odd = parityCounts[1];
+    lines.push(
+      "Operand2 parity split: even=" +
+        formatBigInt(even) +
+        " (" +
+        percentOf(count2, even) +
+        "), odd=" +
+        formatBigInt(odd) +
+        " (" +
+        percentOf(count2, odd) +
+        ")"
+    );
+
+    lines.push("");
+    lines.push("Reachable residue classes:");
+    for (var m = 0; m < mods.length; m += 1) {
+      var mod = mods[m];
+      var c1 = computeResidueCounts(unlockedDigits, currentState.displayUnlocks.displayDigits, mod);
+      var c2 = computeResidueCounts(unlockedDigits, currentState.displayUnlocks.displayDigits, mod);
+      var r1 = residueSetFromCounts(c1);
+      var r2 = residueSetFromCounts(c2);
+      lines.push(
+        "  mod " + mod + ": total {" + r1.join(",") + "}, operand2 {" + r2.join(",") + "}"
+      );
+
+      var sub = {};
+      for (var i = 0; i < r1.length; i += 1) {
+        for (var j = 0; j < r2.length; j += 1) {
+          var rr = ((r1[i] - r2[j]) % mod + mod) % mod;
+          sub[rr] = true;
+        }
+      }
+      var subList = Object.keys(sub)
+        .map(function (k) { return Number(k); })
+        .sort(function (a, b) { return a - b; });
+      lines.push("    subtraction residues: {" + subList.join(",") + "}");
+    }
+
+    lines.push("");
+    lines.push("Modulo remainder coverage (for typeable divisors 2..12):");
+    var anyDivisor = false;
+    for (var d = 2; d <= 12; d += 1) {
+      if (!isPositiveTypeable(currentState, d)) {
+        continue;
+      }
+      anyDivisor = true;
+      var rc = computeResidueCounts(unlockedDigits, currentState.displayUnlocks.displayDigits, d);
+      var reachable = residueSetFromCounts(rc);
+      lines.push("  % " + d + " -> remainders {" + reachable.join(",") + "}");
+    }
+    if (!anyDivisor) {
+      lines.push("  (no typeable divisors in 2..12)");
+    }
+
+    lines.push("");
+    lines.push("Price-class suggestions:");
+    if (even > odd) {
+      lines.push("  Odd prices are currently rarer than even prices.");
+    } else if (odd > even) {
+      lines.push("  Even prices are currently rarer than odd prices.");
+    } else {
+      lines.push("  Even/odd are balanced in operand2 space.");
+    }
+
+    var rarity = rankRarityCandidates(currentState);
+    lines.push("");
+    lines.push("Top candidate prices by rarity score:");
+    var topN = Math.min(20, rarity.ranked.length);
+    if (topN === 0) {
+      lines.push("  (no currently typeable positive prices in visible tier)");
+    } else {
+      for (var i = 0; i < topN; i += 1) {
+        var row = rarity.ranked[i];
+        lines.push(
+          "  " +
+            String(i + 1).padStart(2, " ") +
+            ". " +
+            row.price.toString() +
+            "  (score " +
+            row.score.toFixed(3) +
+            ")"
+        );
+      }
+    }
+    if (rarity.capped) {
+      lines.push("  Note: candidate set capped for performance; showing best from sampled typeable space.");
+    }
+
+    return lines.join("\n");
+  }
+
   function render(state, nodes) {
-    renderLcd(nodes.displayChars, state.calculator.display, state.displayUnlocks.operand1Digits);
+    renderLcd(nodes.displayChars, state.calculator.display, state.displayUnlocks.displayDigits);
     renderLcd(
       nodes.secondaryDisplayChars,
       state.calculator.pendingOp
@@ -936,10 +1356,12 @@
             ? "0"
             : state.calculator.entry
         : "",
-      state.displayUnlocks.operand2Digits
+      state.displayUnlocks.displayDigits
     );
+    renderLcd(nodes.remainderDisplayChars, state.calculator.remainderValue, state.displayUnlocks.displayDigits);
     nodes.secondaryOp.textContent = state.calculator.pendingOp ? state.calculator.pendingOp : "";
     nodes.unlockWindow.classList.toggle("hidden", !state.storeRevealed);
+    nodes.remainderReserve.classList.toggle("revealed", !!state.remainderReserveRevealed);
 
     for (var i = 0; i < LOCKABLE_DIGITS.length; i += 1) {
       var digit = LOCKABLE_DIGITS[i];
@@ -1009,8 +1431,14 @@
   var nodes = {
     display: document.getElementById("display"),
     secondaryDisplay: document.getElementById("secondary-display"),
+    remainderDisplay: document.getElementById("remainder-display"),
     secondaryOp: document.getElementById("secondary-op"),
     unlockWindow: document.getElementById("unlock-window"),
+    remainderReserve: document.getElementById("remainder-reserve"),
+    debugWindow: document.getElementById("debug-window"),
+    debugToggle: document.getElementById("debug-toggle"),
+    debugRunAnalysis: document.getElementById("debug-run-analysis"),
+    debugAnalysisOutput: document.getElementById("debug-analysis-output"),
     storeList: document.getElementById("store-list"),
     keyButtons: collectKeyButtons(),
     operatorKeyButtons: collectOperatorKeyButtons(),
@@ -1018,9 +1446,17 @@
   };
   nodes.displayChars = buildLcd(nodes.display, DISPLAY_SLOTS);
   nodes.secondaryDisplayChars = buildLcd(nodes.secondaryDisplay, DISPLAY_SLOTS);
+  nodes.remainderDisplayChars = buildLcd(nodes.remainderDisplay, DISPLAY_SLOTS);
 
   var state = loadState();
   var isDirty = false;
+
+  function syncDebugWindow() {
+    if (!nodes.debugWindow || !nodes.debugToggle) {
+      return;
+    }
+    nodes.debugWindow.classList.toggle("hidden", !nodes.debugToggle.checked);
+  }
 
   function doSave() {
     saveState(state);
@@ -1094,7 +1530,19 @@
     }
   });
 
+  if (nodes.debugToggle) {
+    nodes.debugToggle.addEventListener("change", syncDebugWindow);
+  }
+  if (nodes.debugRunAnalysis) {
+    nodes.debugRunAnalysis.addEventListener("click", function () {
+      if (nodes.debugAnalysisOutput) {
+        nodes.debugAnalysisOutput.textContent = runNumberTheoryAnalysis(state);
+      }
+    });
+  }
+
   render(state, nodes);
+  syncDebugWindow();
   setInterval(function () {
     if (isDirty) {
       doSave();

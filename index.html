@@ -8,10 +8,43 @@
   </head>
   <body>
     <div class="workspace">
+      <aside id="remainder-reserve" class="remainder-reserve">
+        <h2>Remainder Reserve</h2>
+        <p class="reserve-note">Reach the relevant remainder to recieve.</p>
+        <div class="reserve-display-wrap">
+          <span class="reserve-prefix">r=</span>
+          <div id="remainder-display" class="display lcd" aria-live="polite"></div>
+        </div>
+        <div class="store-table-wrap">
+          <table class="store-table" aria-label="Remainder Reserve">
+            <thead>
+              <tr>
+                <th class="col-price">$</th>
+                <th class="col-item">Item</th>
+                <th class="col-state">State</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-price"></td>
+                <td class="col-item"></td>
+                <td class="col-state"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </aside>
+
       <main class="app">
         <header class="top">
           <h1>AutoCalc v0.1</h1>
-          <button id="reset-save" type="button">Reset save</button>
+          <div class="top-actions">
+            <label class="debug-toggle">
+              <input id="debug-toggle" type="checkbox" />
+              <span>Debug</span>
+            </label>
+            <button id="reset-save" type="button">Reset save</button>
+          </div>
         </header>
 
         <section class="display-panel">
@@ -42,18 +75,19 @@
             <button data-key="1" type="button">1</button>
             <button data-key="2" type="button">2</button>
             <button data-key="3" type="button">3</button>
-            <button data-key="/" type="button">&divide;</button>
+            <button data-key="/" type="button">%</button>
             <button data-key="0" class="zero-wide" type="button">0</button>
             <button data-key="=" type="button">=</button>
             <button data-key="*" type="button">&times;</button>
           </div>
         </section>
+
       </main>
 
       <aside id="unlock-window" class="unlock-window">
         <h2>Subtraction Store</h2>
         <section class="unlock">
-          <p class="store-note">Subtract the exact listed price to purchase.</p>
+          <p class="store-note">Subtract the specific salesprice to secure.</p>
           <div class="store-table-wrap">
             <table class="store-table" aria-label="Subtraction Store">
               <thead>
@@ -66,8 +100,14 @@
               <tbody id="store-list"></tbody>
             </table>
           </div>
-          <button id="debug-unlock-all" type="button">Debug unlock all</button>
         </section>
+      </aside>
+
+      <aside id="debug-window" class="debug-window hidden">
+        <h2>Debug</h2>
+        <button id="debug-run-analysis" type="button">Run number theory analysis</button>
+        <button id="debug-unlock-all" type="button">Debug unlock all</button>
+        <pre id="debug-analysis-output" class="debug-output"></pre>
       </aside>
     </div>
 
