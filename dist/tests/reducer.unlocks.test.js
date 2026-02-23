@@ -1,0 +1,34 @@
+import assert from "node:assert/strict";
+import { reducer } from "../src/domain/reducer.js";
+import { initialState } from "../src/domain/state.js";
+const press = (state, key) => reducer(state, { type: "PRESS_KEY", key });
+export const runReducerUnlockTests = () => {
+    let state = initialState();
+    state = press(state, "=");
+    state = press(state, "=");
+    assert.equal(state.unlocks.utilities.CE, false, "CE should still be locked at roll length 2");
+    state = press(state, "=");
+    assert.equal(state.calculator.roll.length, 3, "roll length should be 3");
+    assert.equal(state.unlocks.utilities.CE, true, "CE unlocks at roll length 3");
+    assert.ok(state.completedUnlockIds.includes("unlock-ce-on-roll-3"), "unlock id should be recorded");
+    state = initialState();
+    state = press(state, "1");
+    state = press(state, "+");
+    state = press(state, "2");
+    state = press(state, "=");
+    assert.equal(state.calculator.total, 3n, "single-slot plus updates total");
+    assert.equal(state.calculator.roll.at(-1), 3n, "single-slot plus appends to roll");
+    assert.equal(state.calculator.operationSlots.length, 1, "slot remains configured");
+    state = initialState();
+    state = press(state, "=");
+    state = press(state, "=");
+    state = press(state, "=");
+    state = press(state, "+");
+    state = press(state, "5");
+    state = press(state, "CE");
+    assert.equal(state.calculator.total, 0n, "CE keeps total");
+    assert.equal(state.calculator.roll.length, 3, "CE keeps roll");
+    assert.equal(state.calculator.operationSlots.length, 0, "CE clears operation slots");
+    assert.equal(state.calculator.draftingSlot, null, "CE clears draft slot");
+};
+//# sourceMappingURL=reducer.unlocks.test.js.map

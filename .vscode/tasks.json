@@ -1,0 +1,35 @@
+﻿{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "build",
+      "group": "build",
+      "problemMatcher": ["$tsc"],
+      "label": "npm: build"
+    },
+    {
+      "type": "npm",
+      "script": "dev:serve",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": ".*"
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "SERVER_READY",
+          "endsPattern": "SERVER_READY"
+        }
+      },
+      "label": "npm: dev:serve"
+    },
+    {
+      "label": "debug: prepare",
+      "dependsOn": ["npm: build", "npm: dev:serve"],
+      "dependsOrder": "sequence"
+    }
+  ]
+}

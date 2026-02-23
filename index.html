@@ -1,0 +1,82 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoCalc v1 Slice</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #f3f4f6;
+        color: #111827;
+      }
+      main {
+        max-width: 720px;
+        margin: 32px auto;
+        padding: 20px;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+      }
+      h1 {
+        margin-top: 0;
+        font-size: 1.25rem;
+      }
+      .panel {
+        margin-bottom: 14px;
+      }
+      .label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: #6b7280;
+      }
+      .value {
+        font-size: 1rem;
+        margin-top: 4px;
+        word-break: break-word;
+      }
+      [data-keys] {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      button {
+        padding: 10px;
+        border: 1px solid #9ca3af;
+        background: #f9fafb;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app">
+      <h1>AutoCalc v1 Vertical Slice</h1>
+      <div class="panel">
+        <div class="label">Total</div>
+        <div class="value" data-total></div>
+      </div>
+      <div class="panel">
+        <div class="label">Operation Slot</div>
+        <div class="value" data-slot></div>
+      </div>
+      <div class="panel">
+        <div class="label">Roll</div>
+        <div class="value" data-roll></div>
+      </div>
+      <div class="panel">
+        <div class="label">Unlocks</div>
+        <div class="value" data-unlocks></div>
+      </div>
+      <div data-keys></div>
+    </main>
+    <script type="module" src="./dist/src/app/bootstrap.js"></script>
+  </body>
+</html>
+
