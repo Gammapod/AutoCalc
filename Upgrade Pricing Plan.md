@@ -1,80 +1,76 @@
-# Upgrade Pricing Plan
+## Early Flow (Current Runtime)
 
-Purpose: define hard progression constraints before assigning final upgrade prices.
+1. At boot, only `+` is usable.
+2. First `+` press auto-unlocks digit `1`.
+3. Reaching main-display `Err` (`operand1Error`) auto-unlocks `C`.
+4. Reaching operand2 `Err` (`operand2Error`) auto-unlocks `CE`.
+5. First time main display reaches exactly `99`, `-` auto-unlocks.
+6. First `CE` press auto-unlocks `=`.
+7. First `-` press reveals Subtraction Store.
+8. First `/` press reveals Remainder Reserve.
+9. Store progression is executed by subtraction + equals (details below).
 
-Note: display digit caps are now unified; one `display_cap` upgrade increases Total, Operand 2, and Remainder displays together.
+## Purchase Trigger Semantics (Current Runtime)
 
-## Current Flow (Early Game)
+A purchase attempt only happens when all of the following are true:
 
-1. Only `+` is interactable at boot; first `+` press auto-unlocks `1`.
-2. Digits only affect operand 2 (never write directly into total).
-3. If operand 1 overflows, `C` auto-unlocks.
-4. First `C` press auto-unlocks `-`; first `-` press reveals the subtraction store.
-5. First time total equals `4`, `=` auto-unlocks.
-6. If operand 2 overflows, `CE` auto-unlocks.
-7. First `%` press reveals Remainder Reserve.
-8. After store reveal, progression depends on subtraction-typed exact prices.
+1. Current action is `PRESS_KEY` with key `=`.
+2. Previous calculator pending operator was `-`.
+3. Reduced state has no `operand1Error` and no `operand2Error`.
 
-## Hard Constraints (Must Always Hold)
+Then:
 
-1. Prices must be strictly positive.
-2. A purchase only triggers after executing a pending subtraction (`-`) with `=`, `+`, `-`, `*`, or `/`.
-3. If subtraction execution errors, no purchase is applied.
-4. For `operand2Digits = d2`, price must satisfy `1 <= price <= 10^d2 - 1`.
-5. Price text must be typeable using currently unlocked digits.
-6. For `operand1Digits = d1`, effective one-step affordability is bounded by display capacity (`<= 10^d1 - 1`) and current display value.
-7. Every progression state must expose at least one reachable unpurchased "bridge" item, or the run deadlocks.
-8. Prices must be unique across store items to avoid first-match shadowing.
-9. Each `operand2Digits +1` upgrade must itself be reachable in the current `d2` tier (it is the gate to the next price band).
+1. Read subtraction amount from previous state's `calculator.entry` (`""` treated as `0`).
+2. If amount is `<= 0`, no purchase.
+3. Find first store item whose `price === amount`.
+4. If item is already purchased, no change.
+5. Otherwise apply item effect immediately.
 
-## Tier Price Bands
+## Hard Invariants (Current Runtime)
 
-- Tier `d2 = 1`: reachable prices are `1..9`
-- Tier `d2 = 2`: reachable prices are `1..99`
-- Tier `d2 = 3`: reachable prices are `1..999`
-- Tier `d2 = n`: reachable prices are `1..(10^n - 1)`
+1. All store prices are positive (`BigInt` literals).
+2. Item matching is exact-price equality (no ranges/fuzzy matching).
+3. Item matching is first-match in `STORE_ITEMS` order.
+4. Purchase executes only through subtraction-equals path.
+5. Error states block purchase execution.
+6. `display_cap` increments shared `displayDigits` by +1 per purchase up to max 12.
+7. Store list visibility is filtered by:
+   - price <= `10^displayDigits - 1`
+   - all digits in price text currently unlocked
 
-## Planning Table (Fill In)
+## All Unlockables
 
-Use one row per item. Keep this sorted by intended unlock order.
+| Unlockable | Category | Unlock Type | Unlock Trigger | Price |
+| ---------- | -------- | ----------- | -------------- | ----- |
+| `+` | operator | `Conditional` | default unlocked at boot | n/a |
+| `1` | digit | `Conditional` | first `+` press | n/a |
+| `C` | utility | `Conditional` | first transition to `operand1Error` | n/a |
+| `CE` | utility | `Conditional` | first transition to `operand2Error` | n/a |
+| `-` | operator | `Conditional` | first time main display becomes `99` | n/a |
+| `=` | operator | `Conditional` | first `CE` press | n/a |
+| `Subtraction Store` panel | feature | `Conditional` | first `-` press (`storeRevealed`) | n/a |
+| `Remainder Reserve` panel | feature | `Conditional` | first `/` press (`remainderReserveRevealed`) | n/a |
+| `digit_9` (`9`) | digit | `Subtraction` | subtraction amount matches item price | `1` |
+| `display_cap` (`displayDigits +1`) | display cap | `Subtraction` | subtraction amount matches item price | `9` |
+| `digit_0` (`0`) | digit | `Subtraction` | subtraction amount matches item price | `10` |
+| `digit_2` (`2`) | digit | `Subtraction` | subtraction amount matches item price | `12` |
+| `digit_3` (`3`) | digit | `Subtraction` | subtraction amount matches item price | `13` |
+| `digit_4` (`4`) | digit | `Subtraction` | subtraction amount matches item price | `14` |
+| `digit_5` (`5`) | digit | `Subtraction` | subtraction amount matches item price | `15` |
+| `digit_6` (`6`) | digit | `Subtraction` | subtraction amount matches item price | `16` |
+| `digit_7` (`7`) | digit | `Subtraction` | subtraction amount matches item price | `17` |
+| `digit_8` (`8`) | digit | `Subtraction` | subtraction amount matches item price | `18` |
+| `op_mul` (`*`) | operator | `Remainder` | subtraction amount matches item price | `25` |
+| `op_div` (`/`) | operator | `Subtraction` | subtraction amount matches item price | `91` |
 
-| Item ID          | Type        | Prerequisites   | Possible Price Range     | Price |
-| ---------------- | ----------- | --------------- | ------------------------ | ----- |
-| operand2_cap_2   | display_cap | game start      |                          |       |
-| auto_unlock_+    | auto_unlock | game start      |                          |       |
-| auto_unlock_1    | auto_unlock | first `+` press |                          |       |
-| auto_unlock_ce   | auto_unlock | operand overflow|                          |       |
-| auto_unlock_equals| auto_unlock | first `CE` press|                         |       |
-| auto_unlock_c    | auto_unlock | total overflow  |                          |       |
-| auto_unlock_minus | auto_unlock | first `C` press|                          |       |
-| digit_9          | digit       |                 |                          |     1 |
-| display_cap_2    | display_cap | none            | 1..9                     |    99 |
-| op_div           | operator    |                 |                          |    91 |
-| digit_6          | digit       |                 |                          |       |
-| digit_0          | digit       |                 |                          |       |
-| digit_2          | digit       |                 |                          |       |
-| digit_3          | digit       |                 |                          |       |
-| digit_4          | digit       |                 |                          |       |
-| digit_5          | digit       |                 |                          |       |
-| digit_7          | digit       |                 |                          |       |
-| digit_8          | digit       |                 |                          |       |
-| op_mul           | operator    |                 |                          |       |
-| display_cap_3    | display_cap | display_cap_2   | 10..99                   |       |
-| display_cap_4    | display_cap | display_cap_3   | 100..999                 |       |
-| display_cap_5    | display_cap | display_cap_4   | 1000..9999               |       |
-| display_cap_6    | display_cap | display_cap_5   | 10000..99999             |       |
-| display_cap_7    | display_cap | display_cap_6   | 100000..999999           |       |
-| display_cap_8    | display_cap | display_cap_7   | 1000000..9999999         |       |
-| display_cap_9    | display_cap | display_cap_8   | 10000000..99999999       |       |
-| display_cap_10   | display_cap | display_cap_9   | 100000000..999999999     |       |
-| display_cap_11   | display_cap | display_cap_10  | 1000000000..9999999999   |       |
-| display_cap_12   | display_cap | display_cap_11  | 10000000000..99999999999 |       |
+Notes:
 
-## Validation Checklist for Any Candidate Price Set
+- Unlock type enum for docs is now: `Subtraction`, `Remainder`, `Conditional`.
 
-1. Are all prices positive and unique?
-2. From initial post-store state, is there at least one reachable purchase?
-3. After each planned purchase, does at least one next purchase remain reachable?
-4. Do all cap-upgrade prices fit inside the current operand-2 price band?
-5. Are no critical bridge prices blocked by requiring not-yet-unlocked digits?
-6. Is there always a feasible path to increase both `operand1Digits` and `operand2Digits` over time?
+## Validation Checklist for Future Price Changes
+
+1. Keep all prices positive and unique.
+2. Verify progression cannot deadlock due to visibility/typeability filters.
+3. Ensure at least one reachable visible item exists after store reveal.
+4. Re-check first-match behavior if introducing duplicate prices.
+5. Ensure any new cap or operator item remains reachable under current unlock ordering.

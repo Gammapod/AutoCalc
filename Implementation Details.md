@@ -1,148 +1,273 @@
-Recommended stack
-Build tooling
+# AutoCalc v1 Implementation Details (Rewrite Strategy)
 
-Vite + TypeScript
-Fast dev server, simple build pipeline, minimal ceremony.
+Note: `legacy/` contains the prototype app, for reference. It should not be edited, copied, or used as an implementation guide.
 
-UI approach (pick one)
-Option A: Vanilla DOM + TypeScript (default recommendation)
-For a calculator UI, this is straightforward and avoids framework overhead.
-You’ll have a small set of event handlers + a single render(state) function.
+Last updated: 2026-02-23
+Precedence rule: When docs conflict, `Upgrade Pricing Plan.md` wins over `Design Summary.md`.
+Scope: This document replaces v0.1 implementation details and defines the new TypeScript architecture.
 
-Option B: Svelte + TypeScript
-If you want reactive UI without React-style complexity.
-Less boilerplate; feels closer to “UI as a function of state.”
+## Goals
 
-Numeric model
-BigInt-first internal representation (even if MVP caps at 12 digits)
-Keeps the “exactness/number theory” identity intact.
-Avoids a painful migration later.
+- Preserve core calculator and unlock behavior semantics from the prototype.
+- Allow progression/pricing to change without touching engine code.
+- Replace monolithic `legacy/src/app.js` with modular TypeScript domain architecture.
+- Keep desktop-first UX while avoiding decisions that block responsive/mobile later.
+- Accept save-format reset in the rewrite.
 
-Storage
-localStorage for MVP (simple)
-Upgrade path: IndexedDB if you start storing lots of challenge history / automation scripts.
-Testing & hygiene (lightweight)
-Vitest (unit tests)
-ESLint + Prettier (so the code stays readable even when AI generates chunks)
+## Non-Goals (Phase 1)
 
-Core implementation shape
-1) Separate “game logic” from “UI”
+- No feature placeholders for challenges, automation, or offline progress.
+- No commitment to full mobile UX in this phase.
+- No migration compatibility with `autocalc.v0_1.save`.
 
-Make your codebase two worlds:
+## Architecture Overview
 
-- Game module (pure logic)
-- Defines state, rules, transitions, validators.
-- No DOM, no rendering, no browser APIs (except time and persistence via adapters).
-- UI module
-- Renders state
-- Sends inputs (button presses, upgrade purchases)
-- Displays feedback, errors, challenge status
+The app is split into four layers:
 
-This structure is what keeps the project reviewable and prevents “JS sprawl.”
+1. Domain (pure, framework-agnostic TypeScript)
+2. Application (orchestration, effects, persistence boundaries)
+3. Infrastructure (localStorage, DOM adapters)
+4. UI (rendering + input mapping only)
 
-2) Use a deterministic state machine
+Rules:
 
-Define your entire game as:
+- Domain modules must be pure and deterministic.
+- UI must not contain game rules.
+- Progression content is data-driven and editable directly.
 
-- state: GameState
-- dispatch(action): state'
-- Actions like:
-- PRESS_KEY("1")
-- PRESS_KEY("+")
-- EQUALS()
-- BUY_UNLOCK("digit_7")
-- START_CHALLENGE(id)
-- SUBMIT_CHALLENGE_RESULT(...)
+## Proposed Module Layout
 
-Even if you don’t implement all actions in MVP, designing around this prevents ad-hoc rules creeping into UI callbacks.
+```txt
+src/
+  app/
+    bootstrap.ts
+    store.ts
+    dispatcher.ts
+  domain/
+    types.ts
+    state.ts
+    actions.ts
+    reducer.ts
+    calculator/
+      engine.ts
+      guards.ts
+    progression/
+      rules.ts
+      evaluator.ts
+    economy/
+      catalog.ts
+      purchase.ts
+      visibility.ts
+      validation.ts
+  content/
+    progression.catalog.ts
+    progression.rules.ts
+  infra/
+    persistence/
+      schema.ts
+      localStorageRepo.ts
+    clock/
+      interval.ts
+  ui/
+    render.ts
+    domBindings.ts
+    viewModel.ts
+tests/
+  unit/
+    calculator.engine.test.ts
+    reducer.unlocks.test.ts
+    purchase.execution.test.ts
+    content.validation.test.ts
+```
 
-3) Exact arithmetic model: BigInt + calculator semantics
+## Domain Model (TypeScript)
 
-Treat the calculator as its own mini-engine:
+```ts
+export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+export type Operator = "+" | "-" | "*" | "/" | "=";
+export type UtilityKey = "C" | "CE";
 
-- Input buffer (what’s on the display)
-- Pending operator
-- Accumulator / last value
-- “Error/overflow” state
+export type CalculatorState = {
+  display: string;
+  entry: string;
+  accumulator: bigint | null;
+  pendingOp: Operator | null;
+  justEvaluated: boolean;
+  operand1Error: boolean;
+  operand2Error: boolean;
+  remainderValue: string;
+};
 
-And keep it integer-only for as long as your puzzle design remains number-theory-centered.
+export type UnlockState = {
+  digits: Record<Digit, boolean>;
+  operators: Record<Exclude<Operator, "+">, boolean>;
+  utilities: Record<UtilityKey, boolean>;
+};
 
-Overflow for MVP:
+export type DisplayState = {
+  displayDigits: number; // shared cap, max 12
+};
 
-If abs(value) > 999_999_999_999n (12 digits), enter ERROR (or clamp, but error is more “calculator-authentic”).
-This makes correctness easy, and it aligns with your “literal calculator” framing.
+export type MetaState = {
+  storeRevealed: boolean;
+  remainderReserveRevealed: boolean;
+};
 
-4) Idle/incremental simulation: tick with delta time, but don’t overthink it
+export type GameState = {
+  calculator: CalculatorState;
+  unlocks: UnlockState;
+  display: DisplayState;
+  meta: MetaState;
+  purchasedItemIds: string[];
+};
+```
 
-For MVP:
+Notes:
 
-Run a loop that updates “earned currency” based on elapsed time.
-Update at ~10–20 Hz for simulation, and render at animation frame rate if you want smooth display.
+- `+` remains always usable and is not tracked as lockable.
+- `BigInt` remains authoritative numeric type.
+- Shared display cap remains a single value across all displays.
 
-Key idea:
+## Action Model
 
-Simulation doesn’t need to be 60 fps.
-Rendering can be decoupled from simulation.
-This matters later when you add automation and challenge validation—your logic stays stable.
+Phase-1 actions:
 
-5) Challenges are validators, not scripted sequences
+- `PRESS_KEY` (`Digit | Operator | UtilityKey`)
+- `RESET_RUN` (new-game reset and save deletion)
+- `HYDRATE_SAVE` (load validated v1 save)
+- `DEBUG_UNLOCK_ALL` (dev-only, optional build flag)
 
-Given your design, model each challenge as:
+Action processing:
 
-- A goal predicate (e.g., “reach target X”)
-- A constraint predicate (e.g., “never hit multiple of 5”)
-- A trace requirement (needs access to the sequence of intermediate values / operations)
-- So your game state should optionally maintain a trace log of:
-- operations entered
-- intermediate display values
-- timestamps (optional)
+- `reducer.ts` is the single state transition entrypoint.
+- `PRESS_KEY` flow:
+  1. gate key by unlock state
+  2. execute calculator transition
+  3. execute conditional unlock/reveal rules
+  4. execute subtraction purchase check on `=`
+  5. return next state + domain events
 
-This makes constraints like “never hit a multiple of five anywhere in between” implementable as pure checks.
+## Calculator Semantics (Behavior Parity Required)
 
-6) Automation should be a “program” acting on the same input API
+Must match prototype behavior for:
 
-When you get there:
+- Integer-only arithmetic with `bigint`.
+- Pending-op workflow with `accumulator` + `entry`.
+- Error behavior:
+  - operand1 overflow -> display `Err`, `operand1Error = true`
+  - operand2 overflow -> `operand2Error = true`
+  - negative result -> display `Err`, `operand1Error = true`
+- Division:
+  - integer quotient
+  - remainder stored in `remainderValue`
+  - divide-by-zero -> result `0`, remainder `0`
+- `C` and `CE` behavior equivalent to current prototype.
 
-Automation shouldn’t mutate state directly.
-It should “press keys” through the same action interface the player uses.
-That keeps puzzles honest and makes it easy to validate runs (manual vs automated is just a different input source).
+## Progression and Economy (Data-Driven)
 
-7) Save format from day 1
+Progression is defined in `src/content/*` and validated at startup.
 
-Even in MVP, define a single JSON save blob:
+### Catalog shape (editable data)
 
-- version number
-- unlocked keys/features
-- current currency
-- calculator state (display, buffer, pending op)
-- current challenge progress (if any)
+```ts
+export type CatalogItem =
+  | { id: string; kind: "digit"; target: Digit; price: bigint }
+  | { id: string; kind: "operator"; target: Exclude<Operator, "+">; price: bigint }
+  | { id: string; kind: "display_cap"; amount: number; max: number; price: bigint };
+```
 
-Keep it explicit, and add migration functions later.
+### Rule shape (editable data)
 
-Concrete project layout
+```ts
+export type ConditionalRule = {
+  id: string;
+  when: RulePredicate;
+  effect: RuleEffect;
+  once: boolean;
+};
+```
 
-src/game/
-state.ts (types + initial state)
-reducer.ts (dispatch / transitions)
-calc.ts (calculator semantics, exact integer ops)
-sim.ts (idle tick/update rules)
-challenges.ts (challenge definitions + validators)
-save.ts (serialize/deserialize + versioning)
+### Required invariants
 
-src/ui/
-render.ts (render state → DOM)
-events.ts (wire buttons → actions)
-index.ts (boot: load save, start loops)
+- All prices must be positive.
+- All item ids must be unique.
+- Duplicate prices are disallowed in phase 1 (avoids first-match ambiguity).
+- `display_cap` must never exceed max cap (12).
+- At least one reachable visible purchase exists after store reveal under configured progression.
 
-This keeps AI-generated code corralled and reviewable.
+### Purchase semantics (retained)
 
-MVP Clarifications (added 2026-02-22)
-- Numeric limit for MVP: 12 digits maximum (overflow threshold remains abs(value) > 999_999_999_999n).
-- MVP uses one currency only: the calculator display value. Ignore separate idle-earned currency for MVP.
-- MVP win condition: trigger display overflow (attempt to represent a value beyond 12 digits).
-- Calculator semantics (operator behavior, repeated equals, divide behavior, negatives) are intentionally unresolved and will be finalized during MVP prototyping.
-- Unlock balancing (order, prices, progression curve) is intentionally unresolved for MVP.
-- First-slice implementation requirement: include debug commands/events to directly fire unlock events for implemented unlockables.
-- Challenge system implementation details are deferred to a post-MVP phase.
-- Offline progress behavior is deferred to a post-MVP phase.
-- Document encoding note: mojibake characters in earlier lines were unintentional; this addendum preserves original text and records corrections without rewriting prior content.
+Purchase attempt occurs only when:
+
+1. current action is `PRESS_KEY "="`
+2. previous `pendingOp` was `-`
+3. no operand errors in reduced state
+
+Then:
+
+1. parse previous `entry` as subtraction amount (`""` => `0`)
+2. if amount `<= 0`, no purchase
+3. find exact-price matching item
+4. if already purchased, no-op
+5. apply item effect immediately
+
+## Persistence Strategy (v1)
+
+- New storage key: `autocalc.v1.save`
+- New schema version: `1`
+- No backward parser for v0.1
+- Save payload is a strict typed snapshot of `GameState` plus metadata
+- `zod`-style schema validation is recommended before hydrate (or equivalent custom validator)
+- Autosave remains interval-based (default 5000 ms) and can be tuned via app config
+
+## UI Strategy
+
+- Desktop-first layout in phase 1.
+- Render from a derived view model (`ui/viewModel.ts`) to keep DOM logic simple.
+- Keypad/store/remainder panels are presentational; all enable/disable/reveal logic comes from state.
+- No architectural assumptions that prevent responsive breakpoints in phase 2.
+
+## Testing Strategy (Minimum Unit Baseline)
+
+Required unit tests:
+
+- `calculator.engine.test.ts`
+  - arithmetic semantics
+  - divide-by-zero behavior
+  - overflow/negative error transitions
+- `reducer.unlocks.test.ts`
+  - conditional unlock rules and reveal triggers
+- `purchase.execution.test.ts`
+  - subtraction-equals purchase gating and exact-match behavior
+- `content.validation.test.ts`
+  - catalog/rule invariant validation
+
+Not required in phase 1:
+
+- integration tests
+- property/fuzz tests
+- snapshot UI tests
+
+## Known Discrepancies Between Source Docs
+
+No irreconcilable conflicts for the chosen scope. Clarifications applied:
+
+- `Upgrade Pricing Plan.md` says unlock type enum includes `Remainder`, but current execution path still routes purchases through subtraction-equals semantics. In rewrite, unlock source is represented by explicit rule/effect definitions; pricing trigger remains subtraction-based unless a dedicated remainder-purchase mechanic is intentionally added.
+- Exact prices/progression order are intentionally treated as editable content, not hard-coded parity requirements.
+
+## Initial Implementation Sequence
+
+1. Set up TypeScript build and strict compiler options.
+2. Implement domain types + calculator engine + reducer skeleton.
+3. Move progression/pricing into `src/content` data and add validation.
+4. Implement purchase evaluator and rule evaluator.
+5. Wire persistence (`autocalc.v1.save`) and app dispatcher.
+6. Replace UI bindings/rendering to consume new state/store.
+7. Add baseline unit tests listed above.
+
+## Success Criteria
+
+- `legacy/src/app.js` is no longer runtime source of truth.
+- Core operation and unlock semantics match intended parity.
+- Progression/pricing edits can be performed via content files only.
+- Unit test suite covers calculator semantics, unlock behavior, and purchase path.
