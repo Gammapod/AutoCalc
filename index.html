@@ -7,36 +7,67 @@
     <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
-    <main class="app">
-      <header class="top">
-        <h1>AutoCalc v0.1</h1>
-        <button id="reset-save" type="button">Reset save</button>
-      </header>
+    <div class="workspace">
+      <main class="app">
+        <header class="top">
+          <h1>AutoCalc v0.1</h1>
+          <button id="reset-save" type="button">Reset save</button>
+        </header>
 
-      <section class="display-panel">
-        <div class="label">Display</div>
-        <div id="display" class="display lcd" aria-live="polite"></div>
-      </section>
+        <section class="display-panel">
+          <div class="label">Display</div>
+          <div class="display-row">
+            <div class="op-spacer" aria-hidden="true"></div>
+            <div id="display" class="display lcd" aria-live="polite"></div>
+          </div>
+        </section>
 
-      <section class="secondary-panel">
-        <div id="secondary-op" class="op-indicator" aria-live="polite"></div>
-        <div id="secondary-display" class="display lcd" aria-live="polite"></div>
-      </section>
+        <section class="secondary-panel display-row">
+          <div id="secondary-op" class="op-indicator" aria-live="polite"></div>
+          <div id="secondary-display" class="display lcd" aria-live="polite"></div>
+        </section>
 
-      <section class="controls">
-        <div class="keypad">
-          <button data-key="1" type="button">1</button>
-          <button data-key="2" id="key-2" type="button">2</button>
-          <button data-key="+" type="button">+</button>
-          <button data-key="C" type="button">C</button>
-        </div>
-      </section>
+        <section class="controls">
+          <div class="keypad">
+            <button data-key="7" type="button">7</button>
+            <button data-key="8" type="button">8</button>
+            <button data-key="9" type="button">9</button>
+            <button data-key="-" type="button">-</button>
+            <button data-key="4" type="button">4</button>
+            <button data-key="5" type="button">5</button>
+            <button data-key="6" type="button">6</button>
+            <button data-key="+" type="button">+</button>
+            <button data-key="1" type="button">1</button>
+            <button data-key="2" type="button">2</button>
+            <button data-key="3" type="button">3</button>
+            <button data-key="/" type="button">&divide;</button>
+            <button data-key="0" class="zero-wide" type="button">0</button>
+            <button data-key="=" type="button">=</button>
+            <button data-key="*" type="button">&times;</button>
+          </div>
+        </section>
+      </main>
 
-      <section class="unlock">
-        <button id="buy-2" type="button">Unlock 2 (cost: 25)</button>
-        <button id="debug-unlock-2" type="button">Debug unlock 2</button>
-      </section>
-    </main>
+      <aside id="unlock-window" class="unlock-window">
+        <h2>Unlocks</h2>
+        <section class="unlock">
+          <div class="unlock-grid">
+            <button data-buy-digit="0" type="button">Unlock 0 (cost: 1)</button>
+            <button data-buy-digit="2" type="button">Unlock 2 (cost: 1)</button>
+            <button data-buy-digit="3" type="button">Unlock 3 (cost: 1)</button>
+            <button data-buy-digit="4" type="button">Unlock 4 (cost: 1)</button>
+            <button data-buy-digit="5" type="button">Unlock 5 (cost: 1)</button>
+            <button data-buy-digit="6" type="button">Unlock 6 (cost: 1)</button>
+            <button data-buy-digit="7" type="button">Unlock 7 (cost: 1)</button>
+            <button data-buy-digit="8" type="button">Unlock 8 (cost: 1)</button>
+            <button data-buy-digit="9" type="button">Unlock 9 (cost: 1)</button>
+            <button data-buy-op="*" type="button">Unlock * (cost: 1)</button>
+            <button data-buy-op="/" type="button">Unlock / (cost: 1)</button>
+          </div>
+          <button id="debug-unlock-all" type="button">Debug unlock all digits</button>
+        </section>
+      </aside>
+    </div>
 
     <script defer src="./src/app.js"></script>
   </body>
