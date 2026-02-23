@@ -1,65 +1,94 @@
 ## Core Identity
 
-AutoCalc is a calculator-first progression game. The calculator itself is the ruleset:
+AutoCalc is a calculator-first progression game where the calculator itself is the ruleset:
 
 - Key availability is gated by unlocks.
 - Arithmetic behavior and display limits drive progression.
-- Purchases are executed by entering arithmetic expressions, not by clicking buy buttons.
+- Progression is earned by *demonstrating structural behaviors* (sequence predicates), not by clicking buy buttons or spending abstract currency.
 
 ## Gameplay Loop
 
-1. Player presses currently unlocked calculator keys.
-2. Calculator state updates with integer-only arithmetic (`BigInt` internal model).
-3. Specific events auto-unlock new controls.
-4. Subtraction can execute store purchases when the typed subtraction amount matches a listed item price.
-5. Display capacity upgrades increase visible/typeable digit capacity (shared cap across all three displays).
+1. Player presses currently unlocked calculator keys to:
+   - set an initial total, and/or
+   - configure a short, **sequential operation pipeline** (operation slots).
+2. Pressing `=` applies the operation pipeline to the current total, producing a new total.
+3. Each `=` appends the resulting total to a **calculator roll** (a visible history strip).
+4. Unlock conditions (sequence predicates) are evaluated against the roll and current calculator configuration.
+5. Upgrades expand expressive power (more keys, more operation slots, larger digit cap).
 
 ## UI Model
 
-- Main display (total/result).
-- Secondary display (operand 2 entry when an operator is pending).
-- Remainder display (`r=`) that stores division remainder output.
-- Subtraction Store panel (hidden until revealed).
-- Remainder Reserve panel (hidden until revealed).
-- Debug panel with:
+- **Main display**: current total.
+- **Calculator roll**: history of totals produced by `=` (a receipt/roll emerging from the top).
+- **Operation field**: a fixed number of ordered operation slots, e.g. `[ % 3 ] → [ + 5 ] → [ * 2 ]`.
+- **Unlock panel**: a list of sequence-based unlock conditions (and their current progress).
+- **Debug panel** (dev only):
   - `Debug unlock all`
-  - `Run number theory analysis`
+  - `Run analyzer`
+
+## Operation Model
+
+- The calculator maintains:
+  - `total` (current bigint value)
+  - `roll` (list of totals after each `=` press)
+  - `operationSlots` (ordered list of `(operator, operand)` pairs)
+  - `maxSlots` (upgradeable cap on `operationSlots.length`)
+- Pressing `=` applies each slot sequentially to the current total (left-to-right).
+- If no operation slots exist, `=` applies the **identity function**:
+  - total remains unchanged
+  - the unchanged total is appended to the roll
+
+### Utility Key Semantics
+
+- `CE`: clears the current operation (empties `operationSlots`) and **keeps**:
+  - current `total`
+  - current `roll`
+- `C`: clears the entire calculator run (resets):
+  - `total` to `0`
+  - `roll` to empty
+  - `operationSlots` to empty
 
 ## Numeric and Error Model
 
-- Arithmetic uses `BigInt`.
-- Effective max visible/typeable digits are controlled by `displayUnlocks.displayDigits`, capped at 12.
-- Overflow or invalid result behavior:
-  - Operand 1 overflow sets `Err` and `operand1Error`.
-  - Operand 2 overflow sets `operand2Error`.
-  - Negative result sets `Err` and `operand1Error`.
-- Division behavior:
-  - `/` performs integer division.
-  - Divide-by-zero returns `0` with remainder `0` (not an error state).
+- Arithmetic uses `BigInt` (integer-only).
+- A single digit-cap controls maximum visible/typeable digits (`displayUnlocks.displayDigits`, max 12).
+- The digit-cap applies uniformly to:
+  - the main total display
+  - roll entries
+  - operands entered into operation slots
+- Overflow and invalid result behavior (phase 1, subject to later tuning):
+  - overflow of the current total => display `Err` and enter an error state
+  - negative result => display `Err` and enter an error state (until negatives are intentionally introduced)
+- Division and modulo (inside operation slots):
+  - `/` performs integer division
+  - `%` performs remainder
+  - divide-by-zero and mod-by-zero behavior is intentionally configurable; prototype parity used `0` result (not an error) but may be tightened later as part of the number-theory identity.
 
-## Implemented Progression Systems
+## Progression Systems (v1 direction)
 
 - Unlock categories:
   - Digits: `0..9`
-  - Operators: `-`, `*`, `/`, `=` (`+` is always available)
+  - Slot operators: `+`, `-`, `*`, `/`, `%`
   - Utilities: `C`, `CE`
-- Conditional unlock rules are implemented and event-driven.
-- Store purchases are subtraction-driven and price-matched.
-- Display-cap upgrade is implemented as a single shared `display_cap` item.
+  - Capacity upgrades:
+    - `maxSlots` (operation length)
+    - `displayDigits` (digit cap)
+- Unlocks are triggered by:
+  - **Conditional** events (early onboarding discoveries)
+  - **Predicate** completion (sequence/roll behaviors)
+  - **Challenge** completions (future phases)
 
 ## Persistence
 
 - Save medium: `localStorage`
-- Save key: `autocalc.v0_1.save`
-- Save version: `1`
-- Autosave interval: 5000 ms
-- Immediate save triggers include key progression moments (debug unlocks, `C`/`CE`, store purchase, conditional unlock events).
+- Save key and version are v1-specific (save reset is acceptable in rewrite).
+- Autosave can remain interval-based (default 5000 ms).
 
 ## Scope Notes
 
-- This document now reflects the current prototype behavior, not earlier planned-but-unimplemented phase docs.
-- Future features include:
-  - Challenges
-  - Automation systems
-  - Additional calculator functions
-  - Offline progress.
+- This document reflects the new rewrite direction (slot pipeline + roll + predicate unlocks).
+- Future features remain out of scope for phase 1:
+  - challenges menu (phase 3)
+  - automation / idle currency
+  - additional scientific functions (trig, graphing)
+  - offline progress

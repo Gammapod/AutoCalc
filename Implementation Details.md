@@ -3,13 +3,17 @@
 Note: `legacy/` contains the prototype app, for reference. It should not be edited, copied, or used as an implementation guide.
 
 Last updated: 2026-02-23
-Precedence rule: When docs conflict, `Upgrade Pricing Plan.md` wins over `Design Summary.md`.
-Scope: This document replaces v0.1 implementation details and defines the new TypeScript architecture.
+Source-of-truth rule: Unlock requirements live in `src/content/unlocks.catalog.ts` (data), and should be treated as self-documenting. This doc describes architecture and semantics, not the specific unlock list.
+Scope: This document defines the new TypeScript architecture.
 
 ## Goals
 
-- Preserve core calculator and unlock behavior semantics from the prototype.
-- Allow progression/pricing to change without touching engine code.
+- Preserve the *calculator-as-ruleset* identity while pivoting progression toward number-theory constraints.
+- Replace the operand1/operator/operand2 model with:
+  - **current total**
+  - **calculator roll**
+  - **sequential operation slots**
+- Allow progression/unlock content to change without touching engine code.
 - Replace monolithic `legacy/src/app.js` with modular TypeScript domain architecture.
 - Keep desktop-first UX while avoiding decisions that block responsive/mobile later.
 - Accept save-format reset in the rewrite.
@@ -33,7 +37,7 @@ Rules:
 
 - Domain modules must be pure and deterministic.
 - UI must not contain game rules.
-- Progression content is data-driven and editable directly.
+- Progression content is data-driven and validated at startup.
 
 ## Proposed Module Layout
 
@@ -51,17 +55,16 @@ src/
     calculator/
       engine.ts
       guards.ts
-    progression/
-      rules.ts
+      slots.ts
+    unlocks/
+      predicates.ts
+      effects.ts
       evaluator.ts
-    economy/
-      catalog.ts
-      purchase.ts
-      visibility.ts
+      analyzer.ts
       validation.ts
   content/
-    progression.catalog.ts
-    progression.rules.ts
+    unlocks.catalog.ts
+    unlocks.rules.ts
   infra/
     persistence/
       schema.ts
@@ -76,7 +79,8 @@ tests/
   unit/
     calculator.engine.test.ts
     reducer.unlocks.test.ts
-    purchase.execution.test.ts
+    unlock.evaluator.test.ts
+    analyzer.reachability.test.ts
     content.validation.test.ts
 ```
 
@@ -84,55 +88,53 @@ tests/
 
 ```ts
 export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-export type Operator = "+" | "-" | "*" | "/" | "=";
+
+export type SlotOperator = "+" | "-" | "*" | "/" | "%";
 export type UtilityKey = "C" | "CE";
+export type ExecKey = "=";
+
+export type Slot = {
+  operator: SlotOperator;
+  operand: bigint;
+};
 
 export type CalculatorState = {
-  display: string;
-  entry: string;
-  accumulator: bigint | null;
-  pendingOp: Operator | null;
-  justEvaluated: boolean;
-  operand1Error: boolean;
-  operand2Error: boolean;
-  remainderValue: string;
+  total: bigint;
+  roll: bigint[];          // appended on every '=' press
+  operationSlots: Slot[];  // length <= unlocks.maxSlots
+  error: null | { kind: "Err"; reason: string };
 };
 
 export type UnlockState = {
   digits: Record<Digit, boolean>;
-  operators: Record<Exclude<Operator, "+">, boolean>;
+  slotOperators: Record<SlotOperator, boolean>; // if you want '+' always-on, omit it here
   utilities: Record<UtilityKey, boolean>;
+  maxSlots: number; // operation pipeline length cap
 };
 
 export type DisplayState = {
   displayDigits: number; // shared cap, max 12
 };
 
-export type MetaState = {
-  storeRevealed: boolean;
-  remainderReserveRevealed: boolean;
-};
-
 export type GameState = {
   calculator: CalculatorState;
   unlocks: UnlockState;
   display: DisplayState;
-  meta: MetaState;
-  purchasedItemIds: string[];
+  completedUnlockIds: string[];
 };
 ```
 
 Notes:
 
-- `+` remains always usable and is not tracked as lockable.
 - `BigInt` remains authoritative numeric type.
-- Shared display cap remains a single value across all displays.
+- `displayDigits` is a single shared cap and applies to total, roll entries, and slot operands.
+- The operand1/operand2/pendingOp model is removed entirely.
 
 ## Action Model
 
 Phase-1 actions:
 
-- `PRESS_KEY` (`Digit | Operator | UtilityKey`)
+- `PRESS_KEY` (`Digit | SlotOperator | UtilityKey | ExecKey`)
 - `RESET_RUN` (new-game reset and save deletion)
 - `HYDRATE_SAVE` (load validated v1 save)
 - `DEBUG_UNLOCK_ALL` (dev-only, optional build flag)
@@ -142,105 +144,130 @@ Action processing:
 - `reducer.ts` is the single state transition entrypoint.
 - `PRESS_KEY` flow:
   1. gate key by unlock state
-  2. execute calculator transition
-  3. execute conditional unlock/reveal rules
-  4. execute subtraction purchase check on `=`
-  5. return next state + domain events
+  2. update calculator state (digit entry / slot entry / utility handling)
+  3. if key is `=`, execute slot pipeline and append to roll
+  4. evaluate conditional rules (onboarding) + predicate unlocks (sequence-based)
+  5. apply unlock effects and return next state + domain events
 
-## Calculator Semantics (Behavior Parity Required)
+## Calculator Semantics (v1)
 
-Must match prototype behavior for:
+### Entering digits (initial total and slot operands)
 
-- Integer-only arithmetic with `bigint`.
-- Pending-op workflow with `accumulator` + `entry`.
-- Error behavior:
-  - operand1 overflow -> display `Err`, `operand1Error = true`
-  - operand2 overflow -> `operand2Error = true`
-  - negative result -> display `Err`, `operand1Error = true`
-- Division:
-  - integer quotient
-  - remainder stored in `remainderValue`
-  - divide-by-zero -> result `0`, remainder `0`
-- `C` and `CE` behavior equivalent to current prototype.
+- Digits enter into either:
+  - the current total (if no slot is currently being filled), or
+  - the operand field of the current slot being filled
+- A digit-cap guard rejects values that exceed `display.displayDigits`.
 
-## Progression and Economy (Data-Driven)
+### Operation slots (sequential pipeline)
 
-Progression is defined in `src/content/*` and validated at startup.
+- The operation field is a fixed-length slot list, filled left-to-right.
+- A slot is created by pressing an operator, then typing its operand digits.
+- No mid-chain editing in phase 1.
 
-### Catalog shape (editable data)
+### `=` execution
+
+- If `operationSlots` is empty, `=` applies the identity function:
+  - total remains unchanged
+  - append total to roll
+- Otherwise, `=` applies each slot left-to-right:
+  - `total = op(total, operand)`
+  - append resulting total to roll
+
+### Utility keys
+
+- `CE`: clears `operationSlots` only; keeps `total` and `roll`.
+- `C`: clears `total` (to 0), clears `roll`, clears `operationSlots`.
+
+### Error behavior (phase 1)
+
+- Overflow / invalid transitions set `calculator.error` to `{ kind: "Err", reason }`.
+- While in error, input gating rules are content-driven (e.g., allow `C` always, allow `CE` optionally).
+- Negative totals can remain invalid until negatives are intentionally introduced later.
+
+### Division/modulo by zero
+
+- Semantics are intentionally configurable and should be enforced consistently in the engine.
+- Prototype parity returned `0` (non-error), but a stricter error may better serve number-theory identity.
+
+## Unlock System (Data-Driven)
+
+Unlocks are defined in `src/content/*` and validated at startup.
+
+### Unlock definition shape (editable data)
 
 ```ts
-export type CatalogItem =
-  | { id: string; kind: "digit"; target: Digit; price: bigint }
-  | { id: string; kind: "operator"; target: Exclude<Operator, "+">; price: bigint }
-  | { id: string; kind: "display_cap"; amount: number; max: number; price: bigint };
-```
+export type UnlockPredicate =
+  | { type: "roll_length_at_least"; length: number }
+  | { type: "ends_with_exact"; sequence: bigint[] }
+  | { type: "all_even_tail"; count: number }
+  | { type: "cycle_length_tail"; length: number; maxSteps: number }
+  | { type: "hits_all_residues"; modulus: number; window: number }
+  | { type: "custom"; id: string }; // domain-registered predicate
 
-### Rule shape (editable data)
+export type UnlockEffect =
+  | { type: "unlock_digit"; digit: Digit }
+  | { type: "unlock_operator"; operator: SlotOperator }
+  | { type: "unlock_utility"; key: UtilityKey }
+  | { type: "increase_max_slots"; amount: number; max: number }
+  | { type: "increase_display_digits"; amount: number; max: number };
 
-```ts
-export type ConditionalRule = {
+export type UnlockDefinition = {
   id: string;
-  when: RulePredicate;
-  effect: RuleEffect;
+  description: string;
+  predicate: UnlockPredicate;
+  effect: UnlockEffect;
   once: boolean;
 };
 ```
 
-### Required invariants
+### Required invariants (phase 1)
 
-- All prices must be positive.
-- All item ids must be unique.
-- Duplicate prices are disallowed in phase 1 (avoids first-match ambiguity).
-- `display_cap` must never exceed max cap (12).
-- At least one reachable visible purchase exists after store reveal under configured progression.
+- All unlock ids are unique.
+- All predicates are analyzable or explicitly marked as custom.
+- All unlock effects are valid and bounded (`maxSlots` and `displayDigits` must not exceed configured maxima).
+- Content validation must confirm that at least one unlock is reachable after onboarding under the configured initial unlock set.
 
-### Purchase semantics (retained)
+### Analyzer (designer tool)
 
-Purchase attempt occurs only when:
-
-1. current action is `PRESS_KEY "="`
-2. previous `pendingOp` was `-`
-3. no operand errors in reduced state
-
-Then:
-
-1. parse previous `entry` as subtraction amount (`""` => `0`)
-2. if amount `<= 0`, no purchase
-3. find exact-price matching item
-4. if already purchased, no-op
-5. apply item effect immediately
+- Enumerates reachable behaviors under the current unlock grammar (digits, operators, maxSlots, displayDigits).
+- Can answer:
+  - reachability of a predicate (possible / impossible)
+  - rarity estimates (optional; bounded sampling)
+- Used for content validation, not player-facing logic.
 
 ## Persistence Strategy (v1)
 
-- New storage key: `autocalc.v1.save`
-- New schema version: `1`
-- No backward parser for v0.1
+- Storage key: `autocalc.v1.save`
+- Schema version: `1`
 - Save payload is a strict typed snapshot of `GameState` plus metadata
-- `zod`-style schema validation is recommended before hydrate (or equivalent custom validator)
+- Schema validation is required before hydrate
 - Autosave remains interval-based (default 5000 ms) and can be tuned via app config
 
 ## UI Strategy
 
 - Desktop-first layout in phase 1.
 - Render from a derived view model (`ui/viewModel.ts`) to keep DOM logic simple.
-- Keypad/store/remainder panels are presentational; all enable/disable/reveal logic comes from state.
-- No architectural assumptions that prevent responsive breakpoints in phase 2.
+- Operation slots and roll are presentational; all gating/execution rules come from domain state.
 
 ## Testing Strategy (Minimum Unit Baseline)
 
 Required unit tests:
 
 - `calculator.engine.test.ts`
-  - arithmetic semantics
-  - divide-by-zero behavior
-  - overflow/negative error transitions
+  - slot execution order
+  - identity behavior when no slots exist
+  - CE/C semantics
+  - digit-cap enforcement
+  - division/modulo semantics
 - `reducer.unlocks.test.ts`
-  - conditional unlock rules and reveal triggers
-- `purchase.execution.test.ts`
-  - subtraction-equals purchase gating and exact-match behavior
+  - conditional onboarding rules
+  - predicate evaluation integration
+- `unlock.evaluator.test.ts`
+  - predicate truth tables
+- `analyzer.reachability.test.ts`
+  - reachability checks for representative predicates
 - `content.validation.test.ts`
-  - catalog/rule invariant validation
+  - unlock catalog invariants
 
 Not required in phase 1:
 
@@ -248,26 +275,19 @@ Not required in phase 1:
 - property/fuzz tests
 - snapshot UI tests
 
-## Known Discrepancies Between Source Docs
-
-No irreconcilable conflicts for the chosen scope. Clarifications applied:
-
-- `Upgrade Pricing Plan.md` says unlock type enum includes `Remainder`, but current execution path still routes purchases through subtraction-equals semantics. In rewrite, unlock source is represented by explicit rule/effect definitions; pricing trigger remains subtraction-based unless a dedicated remainder-purchase mechanic is intentionally added.
-- Exact prices/progression order are intentionally treated as editable content, not hard-coded parity requirements.
-
 ## Initial Implementation Sequence
 
 1. Set up TypeScript build and strict compiler options.
-2. Implement domain types + calculator engine + reducer skeleton.
-3. Move progression/pricing into `src/content` data and add validation.
-4. Implement purchase evaluator and rule evaluator.
+2. Implement domain types + slot calculator engine + reducer skeleton.
+3. Move unlock definitions into `src/content` and add validation.
+4. Implement unlock predicate evaluator and minimal analyzer.
 5. Wire persistence (`autocalc.v1.save`) and app dispatcher.
-6. Replace UI bindings/rendering to consume new state/store.
+6. Implement UI bindings/rendering for total, roll, and slot entry.
 7. Add baseline unit tests listed above.
 
 ## Success Criteria
 
 - `legacy/src/app.js` is no longer runtime source of truth.
-- Core operation and unlock semantics match intended parity.
-- Progression/pricing edits can be performed via content files only.
-- Unit test suite covers calculator semantics, unlock behavior, and purchase path.
+- Slot pipeline + roll iteration works deterministically with BigInt.
+- Unlock content can be edited without changing engine code.
+- Unit test suite covers calculator semantics, unlock evaluation, and analyzer validation.
