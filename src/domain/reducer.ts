@@ -2,7 +2,7 @@ import { executeSlots } from "./engine.js";
 import { initialState } from "./state.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyUnlocks } from "./unlocks.js";
-import type { Action, Digit, GameState, Key } from "./types.js";
+import type { Action, Digit, GameState, Key, SlotOperator } from "./types.js";
 
 const DIGITS: Digit[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -151,7 +151,17 @@ const applyCE = (state: GameState): GameState => {
 };
 
 const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
-const isOperator = (key: Key): boolean => key === "+";
+const isOperator = (key: Key): key is SlotOperator => key === "+";
+
+const resetRunState = (state: GameState): GameState => ({
+  ...state,
+  calculator: {
+    total: 0n,
+    roll: [],
+    operationSlots: [],
+    draftingSlot: null,
+  },
+});
 
 const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
   if (state.calculator.roll.length === 0) {
@@ -162,10 +172,13 @@ const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
     if (state.calculator.draftingSlot) {
       return state;
     }
-    return applyC(state);
+    return resetRunState(state);
   }
 
   if (isOperator(key)) {
+    if (!state.unlocks.slotOperators[key]) {
+      return state;
+    }
     return clearOperationEntry(state);
   }
 

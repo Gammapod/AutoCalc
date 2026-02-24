@@ -22,17 +22,20 @@ export const applyEffect = (effect, state) => {
 export const applyUnlocks = (state, catalog) => {
     let nextState = state;
     for (const unlock of catalog) {
-        if (unlock.once && nextState.completedUnlockIds.includes(unlock.id)) {
+        const isAlreadyCompleted = nextState.completedUnlockIds.includes(unlock.id);
+        if (unlock.once && isAlreadyCompleted) {
             continue;
         }
         if (!evaluatePredicate(unlock.predicate, nextState)) {
             continue;
         }
         nextState = applyEffect(unlock.effect, nextState);
-        nextState = {
-            ...nextState,
-            completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
-        };
+        if (!isAlreadyCompleted) {
+            nextState = {
+                ...nextState,
+                completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
+            };
+        }
     }
     return nextState;
 };

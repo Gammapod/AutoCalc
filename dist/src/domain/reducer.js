@@ -129,6 +129,15 @@ const applyCE = (state) => {
 };
 const isDigit = (key) => DIGITS.includes(key);
 const isOperator = (key) => key === "+";
+const resetRunState = (state) => ({
+    ...state,
+    calculator: {
+        total: 0n,
+        roll: [],
+        operationSlots: [],
+        draftingSlot: null,
+    },
+});
 const preprocessForActiveRoll = (state, key) => {
     if (state.calculator.roll.length === 0) {
         return state;
@@ -137,9 +146,12 @@ const preprocessForActiveRoll = (state, key) => {
         if (state.calculator.draftingSlot) {
             return state;
         }
-        return applyC(state);
+        return resetRunState(state);
     }
     if (isOperator(key)) {
+        if (!state.unlocks.slotOperators[key]) {
+            return state;
+        }
         return clearOperationEntry(state);
     }
     return state;

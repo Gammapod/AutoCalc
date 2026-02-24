@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
+import { applyUnlocks } from "../src/domain/unlocks.js";
 const press = (state, key) => reducer(state, { type: "PRESS_KEY", key });
 export const runReducerUnlockTests = () => {
     const state = initialState();
@@ -21,5 +22,23 @@ export const runReducerUnlockTests = () => {
     assert.deepEqual(nextState.calculator.roll, [], "roll remains unchanged without equals");
     assert.equal(nextState.calculator.operationSlots.length, 0, "no slots are created while plus is locked");
     assert.deepEqual(nextState.completedUnlockIds, [], "no unlock conditions are defined yet");
+    const repeatableUnlock = {
+        id: "repeatable_unlock_utility_c",
+        description: "repeatable unlock for C",
+        predicate: { type: "roll_length_at_least", length: 1 },
+        effect: { type: "unlock_utility", key: "C" },
+        once: false,
+    };
+    const unlockState = {
+        ...state,
+        calculator: {
+            ...state.calculator,
+            roll: [1n],
+        },
+    };
+    const firstApply = applyUnlocks(unlockState, [repeatableUnlock]);
+    const secondApply = applyUnlocks(firstApply, [repeatableUnlock]);
+    assert.equal(secondApply.unlocks.utilities.C, true, "repeatable unlock effect still applies");
+    assert.deepEqual(secondApply.completedUnlockIds, [repeatableUnlock.id], "completed unlock ids stay unique for repeatable unlocks");
 };
 //# sourceMappingURL=reducer.unlocks.test.js.map

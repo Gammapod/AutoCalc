@@ -27,7 +27,9 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
   let nextState = state;
 
   for (const unlock of catalog) {
-    if (unlock.once && nextState.completedUnlockIds.includes(unlock.id)) {
+    const isAlreadyCompleted = nextState.completedUnlockIds.includes(unlock.id);
+
+    if (unlock.once && isAlreadyCompleted) {
       continue;
     }
 
@@ -36,10 +38,12 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
     }
 
     nextState = applyEffect(unlock.effect, nextState);
-    nextState = {
-      ...nextState,
-      completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
-    };
+    if (!isAlreadyCompleted) {
+      nextState = {
+        ...nextState,
+        completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
+      };
+    }
   }
 
   return nextState;
