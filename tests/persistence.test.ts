@@ -1,6 +1,6 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { createLocalStorageRepo } from "../src/infra/persistence/localStorageRepo.js";
-import { SAVE_KEY, SAVE_SCHEMA_VERSION, initialState } from "../src/domain/state.js";
+import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout, initialState } from "../src/domain/state.js";
 
 type MemoryStorage = {
   getItem: (key: string) => string | null;
@@ -34,6 +34,9 @@ export const runPersistenceTests = (): void => {
       roll: [3n, 9n, 15n],
       operationSlots: [{ operator: "+" as const, operand: 6n }],
     },
+    ui: {
+      keyLayout: [state.ui.keyLayout[1], state.ui.keyLayout[0], ...state.ui.keyLayout.slice(2)],
+    },
   };
 
   repo.save(nextState);
@@ -45,6 +48,33 @@ export const runPersistenceTests = (): void => {
   assert.equal(loaded.calculator.total, 15n, "hydrate bigint total");
   assert.deepEqual(loaded.calculator.roll, [3n, 9n, 15n], "hydrate bigint roll");
   assert.deepEqual(loaded.calculator.operationSlots, [{ operator: "+", operand: 6n }], "hydrate slot bigint operand");
+  assert.deepEqual(loaded.ui.keyLayout.slice(0, 2), [state.ui.keyLayout[1], state.ui.keyLayout[0]], "hydrate ui key layout");
+
+  const legacyStorage = createMemoryStorage();
+  legacyStorage.setItem(
+    SAVE_KEY,
+    JSON.stringify({
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "9",
+          roll: ["9"],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        unlocks: state.unlocks,
+        completedUnlockIds: [],
+      },
+    }),
+  );
+
+  const legacyRepo = createLocalStorageRepo(legacyStorage);
+  const loadedLegacy = legacyRepo.load();
+  if (!loadedLegacy) {
+    throw new Error("Expected legacy payload to hydrate with default layout.");
+  }
+  assert.deepEqual(loadedLegacy.ui.keyLayout, defaultKeyLayout(), "legacy saves hydrate default ui layout");
 
   const badSchemaStorage = createMemoryStorage();
   badSchemaStorage.setItem(

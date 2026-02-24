@@ -1,5 +1,5 @@
-﻿import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
-import type { GameState, Slot } from "../../domain/types.js";
+import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout } from "../../domain/state.js";
+import type { GameState, LayoutCell, Slot } from "../../domain/types.js";
 
 type SerializableSlot = {
   operator: Slot["operator"];
@@ -12,6 +12,9 @@ type SerializableState = {
     roll: string[];
     operationSlots: SerializableSlot[];
     draftingSlot: GameState["calculator"]["draftingSlot"];
+  };
+  ui?: {
+    keyLayout?: LayoutCell[];
   };
   unlocks: GameState["unlocks"];
   completedUnlockIds: string[];
@@ -52,6 +55,9 @@ const fromSerializableState = (payloadState: SerializableState): GameState => ({
       operator: slot.operator,
       operand: BigInt(slot.operand),
     })),
+  },
+  ui: {
+    keyLayout: payloadState.ui?.keyLayout ?? defaultKeyLayout(),
   },
 });
 

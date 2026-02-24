@@ -1,4 +1,4 @@
-import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
+import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout } from "../../domain/state.js";
 const toSerializableState = (state) => ({
     ...state,
     calculator: {
@@ -21,6 +21,9 @@ const fromSerializableState = (payloadState) => ({
             operator: slot.operator,
             operand: BigInt(slot.operand),
         })),
+    },
+    ui: {
+        keyLayout: payloadState.ui?.keyLayout ?? defaultKeyLayout(),
     },
 });
 export const createLocalStorageRepo = (storage) => ({

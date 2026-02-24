@@ -4,6 +4,20 @@ export type UtilityKey = "C" | "CE";
 export type ExecKey = "=";
 export type Key = Digit | SlotOperator | UtilityKey | ExecKey;
 
+export type KeyCell = {
+  kind: "key";
+  key: Key;
+  wide?: boolean;
+  tall?: boolean;
+};
+
+export type PlaceholderCell = {
+  kind: "placeholder";
+  area: string;
+};
+
+export type LayoutCell = KeyCell | PlaceholderCell;
+
 export type Slot = {
   operator: SlotOperator;
   operand: bigint;
@@ -50,6 +64,9 @@ export type UnlockDefinition = {
 
 export type GameState = {
   calculator: CalculatorState;
+  ui: {
+    keyLayout: LayoutCell[];
+  };
   unlocks: UnlockState;
   completedUnlockIds: string[];
 };
@@ -68,7 +85,24 @@ export type HydrateSaveAction = {
   state: GameState;
 };
 
-export type Action = PressKeyAction | ResetRunAction | HydrateSaveAction;
+export type MoveKeySlotAction = {
+  type: "MOVE_KEY_SLOT";
+  fromIndex: number;
+  toIndex: number;
+};
+
+export type SwapKeySlotsAction = {
+  type: "SWAP_KEY_SLOTS";
+  firstIndex: number;
+  secondIndex: number;
+};
+
+export type Action =
+  | PressKeyAction
+  | ResetRunAction
+  | HydrateSaveAction
+  | MoveKeySlotAction
+  | SwapKeySlotsAction;
 
 export type Store = {
   getState: () => GameState;

@@ -1,39 +1,4 @@
-﻿import type { GameState, Key } from "../domain/types.js";
-
-type KeyCell = {
-  kind: "key";
-  key: Key;
-  wide?: boolean;
-  tall?: boolean;
-};
-
-type PlaceholderCell = {
-  kind: "placeholder";
-  area: string;
-};
-
-type LayoutCell = KeyCell | PlaceholderCell;
-
-const keyLayout: LayoutCell[] = [
-  { kind: "key", key: "C" },
-  { kind: "key", key: "CE" },
-  { kind: "placeholder", area: "mul" },
-  { kind: "placeholder", area: "div" },
-  { kind: "key", key: "7" },
-  { kind: "key", key: "8" },
-  { kind: "key", key: "9" },
-  { kind: "placeholder", area: "sub" },
-  { kind: "key", key: "4" },
-  { kind: "key", key: "5" },
-  { kind: "key", key: "6" },
-  { kind: "key", key: "+" },
-  { kind: "key", key: "1" },
-  { kind: "key", key: "2" },
-  { kind: "key", key: "3" },
-  { kind: "key", key: "=", tall: true },
-  { kind: "key", key: "0", wide: true },
-  { kind: "placeholder", area: "dot" },
-];
+import type { Action, GameState, Key } from "../domain/types.js";
 
 const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key)) {
@@ -51,11 +16,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   return false;
 };
 
-export const render = (
-  root: Element,
-  state: GameState,
-  dispatch: (action: { type: "PRESS_KEY"; key: Key }) => unknown,
-): void => {
+export const render = (root: Element, state: GameState, dispatch: (action: Action) => unknown): void => {
   const totalEl = root.querySelector("[data-total]");
   const slotEl = root.querySelector("[data-slot]");
   const rollEl = root.querySelector("[data-roll]");
@@ -93,7 +54,7 @@ export const render = (
   unlockEl.textContent = `CE unlocked: ${state.unlocks.utilities.CE ? "yes" : "no"}`;
 
   keysEl.innerHTML = "";
-  for (const cell of keyLayout) {
+  for (const cell of state.ui.keyLayout) {
     if (cell.kind === "placeholder") {
       const placeholder = document.createElement("div");
       placeholder.className = "placeholder";
