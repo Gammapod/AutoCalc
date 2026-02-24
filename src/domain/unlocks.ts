@@ -20,6 +20,15 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
       },
     };
   }
+  if (effect.type === "increase_max_total_digits") {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        maxTotalDigits: state.unlocks.maxTotalDigits + effect.amount,
+      },
+    };
+  }
   return state;
 };
 

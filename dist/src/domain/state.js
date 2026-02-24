@@ -54,6 +54,7 @@ export const initialState = () => ({
             "=": false,
         },
         maxSlots: 1,
+        maxTotalDigits: 2,
     },
     completedUnlockIds: [],
 });

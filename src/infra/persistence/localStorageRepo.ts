@@ -72,6 +72,7 @@ const normalizeUnlocks = (source?: SerializableState["unlocks"]): UnlockState =>
       ...(source?.execution ?? {}),
     },
     maxSlots: source?.maxSlots ?? defaults.maxSlots,
+    maxTotalDigits: source?.maxTotalDigits ?? defaults.maxTotalDigits,
   };
 };
 

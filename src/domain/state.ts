@@ -58,6 +58,7 @@ export const initialState = (): GameState => ({
       "=": false,
     },
     maxSlots: 1,
+    maxTotalDigits: 2,
   },
   completedUnlockIds: [],
 });

@@ -17,6 +17,15 @@ export const applyEffect = (effect, state) => {
             },
         };
     }
+    if (effect.type === "increase_max_total_digits") {
+        return {
+            ...state,
+            unlocks: {
+                ...state.unlocks,
+                maxTotalDigits: state.unlocks.maxTotalDigits + effect.amount,
+            },
+        };
+    }
     return state;
 };
 export const applyUnlocks = (state, catalog) => {

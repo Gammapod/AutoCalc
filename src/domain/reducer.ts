@@ -33,7 +33,12 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
     };
   }
 
-  const nextTotal = BigInt(withDigit(state.calculator.total.toString(), digit));
+  const nextTotalInput = withDigit(state.calculator.total.toString(), digit);
+  if (nextTotalInput.length > state.unlocks.maxTotalDigits) {
+    return state;
+  }
+
+  const nextTotal = BigInt(nextTotalInput);
 
   return {
     ...state,

@@ -26,7 +26,11 @@ const applyDigit = (state, digit) => {
             },
         };
     }
-    const nextTotal = BigInt(withDigit(state.calculator.total.toString(), digit));
+    const nextTotalInput = withDigit(state.calculator.total.toString(), digit);
+    if (nextTotalInput.length > state.unlocks.maxTotalDigits) {
+        return state;
+    }
+    const nextTotal = BigInt(nextTotalInput);
     return {
         ...state,
         calculator: {

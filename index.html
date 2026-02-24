@@ -107,15 +107,92 @@
       }
 
       [data-total] {
-        min-height: 54px;
+        min-height: 70px;
         display: flex;
         justify-content: flex-end;
         align-items: center;
-        font-family: "Courier New", monospace;
-        font-size: clamp(1.5rem, 5vw, 2rem);
-        color: var(--lit);
-        letter-spacing: 0.08em;
-        white-space: nowrap;
+      }
+
+      .seg-frame {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 6px;
+      }
+
+      .seg-digit {
+        position: relative;
+        width: clamp(16px, 2.6vw, 22px);
+        height: clamp(28px, 4.2vw, 38px);
+      }
+
+      .seg {
+        position: absolute;
+        border-radius: 999px;
+        background: var(--lit);
+        opacity: 0.12;
+      }
+
+      .seg-digit--locked .seg {
+        opacity: 0;
+      }
+
+      .seg--on {
+        opacity: 1;
+        box-shadow: 0 0 6px rgba(188, 255, 214, 0.45);
+      }
+
+      .seg-a,
+      .seg-d,
+      .seg-g {
+        left: 20%;
+        width: 60%;
+        height: 10%;
+      }
+
+      .seg-a {
+        top: 2%;
+      }
+
+      .seg-g {
+        top: 45%;
+      }
+
+      .seg-d {
+        top: 88%;
+      }
+
+      .seg-b,
+      .seg-c,
+      .seg-e,
+      .seg-f {
+        width: 12%;
+        height: 42%;
+      }
+
+      .seg-b,
+      .seg-c {
+        left: 82%;
+      }
+
+      .seg-e,
+      .seg-f {
+        left: 6%;
+      }
+
+      .seg-f {
+        top: 6%;
+      }
+
+      .seg-b {
+        top: 6%;
+      }
+
+      .seg-e {
+        top: 52%;
+      }
+
+      .seg-c {
+        top: 52%;
       }
 
       [data-slot] {

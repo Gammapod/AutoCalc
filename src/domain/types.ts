@@ -41,6 +41,7 @@ export type UnlockState = {
   utilities: Record<UtilityKey, boolean>;
   execution: Record<ExecKey, boolean>;
   maxSlots: number;
+  maxTotalDigits: number;
 };
 
 export type RollLengthAtLeastPredicate = {
@@ -50,10 +51,17 @@ export type RollLengthAtLeastPredicate = {
 
 export type UnlockPredicate = RollLengthAtLeastPredicate;
 
-export type UnlockEffect = {
+export type UnlockUtilityEffect = {
   type: "unlock_utility";
   key: UtilityKey;
 };
+
+export type IncreaseMaxTotalDigitsEffect = {
+  type: "increase_max_total_digits";
+  amount: number;
+};
+
+export type UnlockEffect = UnlockUtilityEffect | IncreaseMaxTotalDigitsEffect;
 
 export type UnlockDefinition = {
   id: string;

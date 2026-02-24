@@ -1,5 +1,96 @@
 import type { Action, GameState, Key } from "../domain/types.js";
 
+const MAX_UNLOCKED_TOTAL_DIGITS = 12;
+const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
+type SegmentName = (typeof SEGMENT_NAMES)[number];
+
+type TotalSlotModel = {
+  state: "locked" | "unlocked" | "active";
+  digit: string | null;
+  activeSegments: readonly SegmentName[];
+};
+
+const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
+  "0": ["a", "b", "c", "d", "e", "f"],
+  "1": ["b", "c"],
+  "2": ["a", "b", "d", "e", "g"],
+  "3": ["a", "b", "c", "d", "g"],
+  "4": ["b", "c", "f", "g"],
+  "5": ["a", "c", "d", "f", "g"],
+  "6": ["a", "c", "d", "e", "f", "g"],
+  "7": ["a", "b", "c"],
+  "8": ["a", "b", "c", "d", "e", "f", "g"],
+  "9": ["a", "b", "c", "d", "f", "g"],
+};
+
+const clampUnlockedDigits = (value: number): number =>
+  Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
+
+export const buildTotalSlotModel = (total: bigint, unlockedDigits: number): TotalSlotModel[] => {
+  const clampedUnlocked = clampUnlockedDigits(unlockedDigits);
+  const lockedCount = MAX_UNLOCKED_TOTAL_DIGITS - clampedUnlocked;
+  const renderedDigits = total.toString().slice(-clampedUnlocked);
+  const leadingUnlockedCount = clampedUnlocked - renderedDigits.length;
+  const slots: TotalSlotModel[] = [];
+
+  for (let index = 0; index < MAX_UNLOCKED_TOTAL_DIGITS; index += 1) {
+    if (index < lockedCount) {
+      slots.push({
+        state: "locked",
+        digit: null,
+        activeSegments: [],
+      });
+      continue;
+    }
+
+    const unlockedIndex = index - lockedCount;
+    if (unlockedIndex < leadingUnlockedCount) {
+      slots.push({
+        state: "unlocked",
+        digit: null,
+        activeSegments: [],
+      });
+      continue;
+    }
+
+    const digit = renderedDigits[unlockedIndex - leadingUnlockedCount];
+    slots.push({
+      state: "active",
+      digit,
+      activeSegments: DIGIT_SEGMENTS[digit] ?? [],
+    });
+  }
+
+  return slots;
+};
+
+const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
+  const slotModels = buildTotalSlotModel(state.calculator.total, state.unlocks.maxTotalDigits);
+  totalEl.innerHTML = "";
+
+  const frame = document.createElement("div");
+  frame.className = "seg-frame";
+
+  for (const slot of slotModels) {
+    const digitEl = document.createElement("div");
+    digitEl.className = `seg-digit seg-digit--${slot.state}`;
+
+    for (const segmentName of SEGMENT_NAMES) {
+      const segmentEl = document.createElement("div");
+      segmentEl.className = `seg seg-${segmentName}`;
+      if (slot.state === "active" && slot.activeSegments.includes(segmentName)) {
+        segmentEl.classList.add("seg--on");
+      }
+      digitEl.appendChild(segmentEl);
+    }
+
+    frame.appendChild(digitEl);
+  }
+
+  totalEl.setAttribute("aria-label", `Total ${state.calculator.total.toString()}`);
+  totalEl.appendChild(frame);
+};
+
 const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key)) {
     return state.unlocks.digits[key as keyof GameState["unlocks"]["digits"]];
@@ -27,7 +118,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     throw new Error("UI mount points are missing.");
   }
 
-  totalEl.textContent = state.calculator.total.toString();
+  renderTotalDisplay(totalEl, state);
 
   const committed = state.calculator.operationSlots.map((slot) => `[ ${slot.operator} ${slot.operand.toString()} ]`);
   const draft = state.calculator.draftingSlot

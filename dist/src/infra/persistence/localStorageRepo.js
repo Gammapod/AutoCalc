@@ -32,6 +32,7 @@ const normalizeUnlocks = (source) => {
             ...(source?.execution ?? {}),
         },
         maxSlots: source?.maxSlots ?? defaults.maxSlots,
+        maxTotalDigits: source?.maxTotalDigits ?? defaults.maxTotalDigits,
     };
 };
 const fromSerializableState = (payloadState) => ({
