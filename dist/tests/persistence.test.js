@@ -59,6 +59,8 @@ export const runPersistenceTests = () => {
         throw new Error("Expected legacy payload to hydrate with default layout.");
     }
     assert.deepEqual(loadedLegacy.ui.keyLayout, defaultKeyLayout(), "legacy saves hydrate default ui layout");
+    assert.equal(loadedLegacy.unlocks.execution["="], false, "legacy unlock payload hydrates default execution unlocks");
+    assert.equal(loadedLegacy.unlocks.digits["1"], true, "legacy unlock payload hydrates current default digit unlocks");
     const badSchemaStorage = createMemoryStorage();
     badSchemaStorage.setItem(SAVE_KEY, JSON.stringify({ schemaVersion: SAVE_SCHEMA_VERSION + 1, state: { calculator: {} } }));
     const badSchemaRepo = createLocalStorageRepo(badSchemaStorage);

@@ -191,6 +191,42 @@
         opacity: 0.75;
       }
 
+      .debug-shell {
+        margin-top: 14px;
+        width: min(92vw, 420px);
+        min-width: 300px;
+        border: 1px solid rgba(32, 39, 52, 0.25);
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.42);
+      }
+
+      .debug-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+      }
+
+      .debug-menu {
+        margin-top: 10px;
+      }
+
+      .debug-action {
+        border: 1px solid #7a3434;
+        border-radius: 8px;
+        padding: 8px 10px;
+        background: linear-gradient(180deg, #f1d7d7, #deaaaa);
+        color: #3a1111;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .debug-action:hover {
+        filter: brightness(1.03);
+      }
+
       @media (max-width: 639px) {
         body {
           padding: 16px 10px;
@@ -224,6 +260,15 @@
         <div class="status" data-unlocks></div>
       </section>
     </main>
+    <section class="debug-shell" aria-label="Debug controls">
+      <label class="debug-toggle">
+        <input type="checkbox" data-debug-toggle />
+        <span>Debug Menu</span>
+      </label>
+      <div class="debug-menu" data-debug-menu hidden>
+        <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
+      </div>
+    </section>
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>

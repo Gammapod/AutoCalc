@@ -11,7 +11,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
     return state.unlocks.utilities[key];
   }
   if (key === "=") {
-    return true;
+    return state.unlocks.execution["="];
   }
   return false;
 };
@@ -51,7 +51,9 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     rollEl.appendChild(line);
   }
 
-  unlockEl.textContent = `CE unlocked: ${state.unlocks.utilities.CE ? "yes" : "no"}`;
+  const keyCells = state.ui.keyLayout.filter((cell) => cell.kind === "key");
+  const unlockedCount = keyCells.filter((cell) => isKeyUnlocked(state, cell.key)).length;
+  unlockEl.textContent = `Unlocked keys: ${unlockedCount}/${keyCells.length}`;
 
   keysEl.innerHTML = "";
   for (const cell of state.ui.keyLayout) {

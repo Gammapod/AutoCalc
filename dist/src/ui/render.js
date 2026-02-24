@@ -9,7 +9,7 @@ const isKeyUnlocked = (state, key) => {
         return state.unlocks.utilities[key];
     }
     if (key === "=") {
-        return true;
+        return state.unlocks.execution["="];
     }
     return false;
 };
@@ -44,7 +44,9 @@ export const render = (root, state, dispatch) => {
         line.textContent = "(empty)";
         rollEl.appendChild(line);
     }
-    unlockEl.textContent = `CE unlocked: ${state.unlocks.utilities.CE ? "yes" : "no"}`;
+    const keyCells = state.ui.keyLayout.filter((cell) => cell.kind === "key");
+    const unlockedCount = keyCells.filter((cell) => isKeyUnlocked(state, cell.key)).length;
+    unlockEl.textContent = `Unlocked keys: ${unlockedCount}/${keyCells.length}`;
     keysEl.innerHTML = "";
     for (const cell of state.ui.keyLayout) {
         if (cell.kind === "placeholder") {

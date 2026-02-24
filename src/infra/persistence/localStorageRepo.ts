@@ -1,5 +1,5 @@
-import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout } from "../../domain/state.js";
-import type { GameState, LayoutCell, Slot } from "../../domain/types.js";
+import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout, initialState } from "../../domain/state.js";
+import type { GameState, LayoutCell, Slot, UnlockState } from "../../domain/types.js";
 
 type SerializableSlot = {
   operator: Slot["operator"];
@@ -16,8 +16,13 @@ type SerializableState = {
   ui?: {
     keyLayout?: LayoutCell[];
   };
-  unlocks: GameState["unlocks"];
-  completedUnlockIds: string[];
+  unlocks?: Partial<UnlockState> & {
+    digits?: Partial<UnlockState["digits"]>;
+    slotOperators?: Partial<UnlockState["slotOperators"]>;
+    utilities?: Partial<UnlockState["utilities"]>;
+    execution?: Partial<UnlockState["execution"]>;
+  };
+  completedUnlockIds?: string[];
 };
 
 type SavePayload = {
@@ -45,6 +50,31 @@ const toSerializableState = (state: GameState): SerializableState => ({
   },
 });
 
+const defaultUnlocks = (): UnlockState => initialState().unlocks;
+
+const normalizeUnlocks = (source?: SerializableState["unlocks"]): UnlockState => {
+  const defaults = defaultUnlocks();
+  return {
+    digits: {
+      ...defaults.digits,
+      ...(source?.digits ?? {}),
+    },
+    slotOperators: {
+      ...defaults.slotOperators,
+      ...(source?.slotOperators ?? {}),
+    },
+    utilities: {
+      ...defaults.utilities,
+      ...(source?.utilities ?? {}),
+    },
+    execution: {
+      ...defaults.execution,
+      ...(source?.execution ?? {}),
+    },
+    maxSlots: source?.maxSlots ?? defaults.maxSlots,
+  };
+};
+
 const fromSerializableState = (payloadState: SerializableState): GameState => ({
   ...payloadState,
   calculator: {
@@ -59,6 +89,8 @@ const fromSerializableState = (payloadState: SerializableState): GameState => ({
   ui: {
     keyLayout: payloadState.ui?.keyLayout ?? defaultKeyLayout(),
   },
+  unlocks: normalizeUnlocks(payloadState.unlocks),
+  completedUnlockIds: payloadState.completedUnlockIds ?? [],
 });
 
 export const createLocalStorageRepo = (storage: KeyValueStorage) => ({

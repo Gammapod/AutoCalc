@@ -98,6 +98,10 @@ const finalizeDraftingSlot = (state: GameState): GameState => {
 };
 
 const applyEquals = (state: GameState): GameState => {
+  if (!state.unlocks.execution["="]) {
+    return state;
+  }
+
   const finalized = finalizeDraftingSlot(state);
   const nextTotal = executeSlots(finalized.calculator.total, finalized.calculator.operationSlots);
   const withRoll: GameState = {
@@ -112,15 +116,21 @@ const applyEquals = (state: GameState): GameState => {
   return applyUnlocks(withRoll, unlockCatalog);
 };
 
-const applyC = (state: GameState): GameState => ({
-  ...state,
-  calculator: {
-    total: 0n,
-    roll: [],
-    operationSlots: [],
-    draftingSlot: null,
-  },
-});
+const applyC = (state: GameState): GameState => {
+  if (!state.unlocks.utilities.C) {
+    return state;
+  }
+
+  return {
+    ...state,
+    calculator: {
+      total: 0n,
+      roll: [],
+      operationSlots: [],
+      draftingSlot: null,
+    },
+  };
+};
 
 const clearOperationEntry = (state: GameState): GameState => ({
   ...state,

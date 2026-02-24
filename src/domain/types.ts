@@ -39,6 +39,7 @@ export type UnlockState = {
   digits: Record<Digit, boolean>;
   slotOperators: Record<SlotOperator, boolean>;
   utilities: Record<UtilityKey, boolean>;
+  execution: Record<ExecKey, boolean>;
   maxSlots: number;
 };
 

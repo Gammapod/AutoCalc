@@ -1,4 +1,4 @@
-import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout } from "../../domain/state.js";
+import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout, initialState } from "../../domain/state.js";
 const toSerializableState = (state) => ({
     ...state,
     calculator: {
@@ -11,6 +11,29 @@ const toSerializableState = (state) => ({
         })),
     },
 });
+const defaultUnlocks = () => initialState().unlocks;
+const normalizeUnlocks = (source) => {
+    const defaults = defaultUnlocks();
+    return {
+        digits: {
+            ...defaults.digits,
+            ...(source?.digits ?? {}),
+        },
+        slotOperators: {
+            ...defaults.slotOperators,
+            ...(source?.slotOperators ?? {}),
+        },
+        utilities: {
+            ...defaults.utilities,
+            ...(source?.utilities ?? {}),
+        },
+        execution: {
+            ...defaults.execution,
+            ...(source?.execution ?? {}),
+        },
+        maxSlots: source?.maxSlots ?? defaults.maxSlots,
+    };
+};
 const fromSerializableState = (payloadState) => ({
     ...payloadState,
     calculator: {
@@ -25,6 +48,8 @@ const fromSerializableState = (payloadState) => ({
     ui: {
         keyLayout: payloadState.ui?.keyLayout ?? defaultKeyLayout(),
     },
+    unlocks: normalizeUnlocks(payloadState.unlocks),
+    completedUnlockIds: payloadState.completedUnlockIds ?? [],
 });
 export const createLocalStorageRepo = (storage) => ({
     load: () => {
