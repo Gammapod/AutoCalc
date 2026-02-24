@@ -1,4 +1,4 @@
-﻿{
+{
   "version": "0.2.0",
   "configurations": [
     {
@@ -6,10 +6,17 @@
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:4173/index.html",
-      "preLaunchTask": "debug: prepare",
       "webRoot": "${workspaceFolder}",
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ]
+    },
+    {
+      "type": "node-terminal",
+      "name": "JavaScript Debug Terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

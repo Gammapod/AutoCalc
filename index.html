@@ -6,77 +6,224 @@
     <title>AutoCalc v1 Slice</title>
     <style>
       :root {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        --bg-top: #cfd4dc;
+        --bg-bottom: #a8aeb8;
+        --body-top: #b8bdc7;
+        --body-bottom: #8f96a1;
+        --body-stroke: #66707d;
+        --panel-dark: #12161c;
+        --panel-mid: #202734;
+        --panel-soft: #2a3444;
+        --lit: #bcffd6;
+        --paper: #f4f1e8;
+        --paper-ink: #3f3a32;
+        --key-top: #eef2f5;
+        --key-bottom: #d4dae0;
+        --key-stroke: #5d6773;
+        --placeholder: #798291;
+        --gap: 10px;
       }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
-        background: #f3f4f6;
-        color: #111827;
-      }
-      main {
-        max-width: 720px;
-        margin: 32px auto;
-        padding: 20px;
-        background: #ffffff;
-        border: 1px solid #d1d5db;
-      }
-      h1 {
-        margin-top: 0;
-        font-size: 1.25rem;
-      }
-      .panel {
-        margin-bottom: 14px;
-      }
-      .label {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        color: #6b7280;
-      }
-      .value {
-        font-size: 1rem;
-        margin-top: 4px;
-        word-break: break-word;
-      }
-      [data-keys] {
+        min-height: 100vh;
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        place-items: center;
+        padding: 24px 14px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+        color: #0f1218;
+      }
+
+      .device {
+        width: min(92vw, 420px);
+        min-width: 300px;
+        display: grid;
+        gap: 0;
+      }
+
+      .roll {
+        margin: 0 auto;
+        width: calc(100% - 56px);
+        height: clamp(96px, 18vh, 180px);
+        background: repeating-linear-gradient(
+          180deg,
+          var(--paper) 0px,
+          var(--paper) 26px,
+          #ece8de 27px,
+          var(--paper) 28px
+        );
+        border: 1px solid #c8c2b4;
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
+        overflow-y: auto;
+        padding: 10px 12px 8px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.85rem;
+        color: var(--paper-ink);
+      }
+
+      .roll-line {
+        white-space: nowrap;
+        line-height: 1.4;
+      }
+
+      .calc {
+        border-radius: 24px;
+        padding: 16px;
+        border: 1px solid var(--body-stroke);
+        background: linear-gradient(180deg, var(--body-top), var(--body-bottom));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.42),
+          inset 0 -5px 10px rgba(0, 0, 0, 0.2),
+          0 10px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      .slot {
+        height: 10px;
+        margin: 0 22px 12px;
+        border-radius: 999px;
+        border: 1px solid #596271;
+        background: linear-gradient(180deg, #3f4854, #2e3540);
+        box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.6);
+      }
+
+      .display-stack {
+        display: grid;
         gap: 8px;
       }
-      button {
-        padding: 10px;
-        border: 1px solid #9ca3af;
-        background: #f9fafb;
-        cursor: pointer;
-        font-size: 1rem;
+
+      .display {
+        border: 1px solid #515c6a;
+        border-radius: 7px;
+        padding: 10px 12px;
+        background: linear-gradient(180deg, var(--panel-mid), var(--panel-dark));
+        box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
       }
-      button:disabled {
+
+      [data-total] {
+        min-height: 54px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        font-family: "Courier New", monospace;
+        font-size: clamp(1.5rem, 5vw, 2rem);
+        color: var(--lit);
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+      }
+
+      [data-slot] {
+        min-height: 30px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.76rem;
+        color: #b4f1d3;
+        white-space: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+
+      [data-keys] {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-rows: repeat(5, minmax(48px, 1fr));
+        gap: var(--gap);
+      }
+
+      .key {
+        border: 1px solid var(--key-stroke);
+        border-radius: 10px;
+        background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.7),
+          0 2px 0 rgba(45, 53, 63, 0.9),
+          0 4px 8px rgba(0, 0, 0, 0.28);
+        color: #12151a;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 70ms ease, filter 120ms ease;
+      }
+
+      .key:hover:not(:disabled) {
+        filter: brightness(1.04);
+      }
+
+      .key:active:not(:disabled) {
+        transform: translateY(2px);
+        box-shadow:
+          inset 0 1px 2px rgba(255, 255, 255, 0.35),
+          0 1px 0 rgba(45, 53, 63, 0.9),
+          0 3px 6px rgba(0, 0, 0, 0.25);
+      }
+
+      .key:disabled {
+        opacity: 0.42;
         cursor: not-allowed;
-        opacity: 0.5;
+      }
+
+      .key--wide {
+        grid-column: span 2;
+      }
+
+      .key--tall {
+        grid-row: span 2;
+        background: linear-gradient(180deg, #e8f6ea, #c4d5c8);
+      }
+
+      .placeholder {
+        border-radius: 10px;
+        border: 1px dashed rgba(26, 31, 39, 0.25);
+        background: linear-gradient(180deg, rgba(121, 130, 145, 0.25), rgba(94, 104, 120, 0.18));
+      }
+
+      .status {
+        margin-top: 10px;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #1f2430;
+        opacity: 0.75;
+      }
+
+      @media (max-width: 639px) {
+        body {
+          padding: 16px 10px;
+        }
+
+        .device {
+          width: min(92vw, 360px);
+          min-width: 300px;
+        }
+
+        .roll {
+          height: 96px;
+        }
+
+        :root {
+          --gap: 8px;
+        }
       }
     </style>
   </head>
   <body>
-    <main id="app">
-      <h1>AutoCalc v1 Vertical Slice</h1>
-      <div class="panel">
-        <div class="label">Total</div>
-        <div class="value" data-total></div>
-      </div>
-      <div class="panel">
-        <div class="label">Operation Slot</div>
-        <div class="value" data-slot></div>
-      </div>
-      <div class="panel">
-        <div class="label">Roll</div>
-        <div class="value" data-roll></div>
-      </div>
-      <div class="panel">
-        <div class="label">Unlocks</div>
-        <div class="value" data-unlocks></div>
-      </div>
-      <div data-keys></div>
+    <main id="app" class="device" aria-label="AutoCalc">
+      <section class="roll" data-roll aria-label="Calculator roll"></section>
+      <section class="calc">
+        <div class="slot" aria-hidden="true"></div>
+        <div class="display-stack">
+          <div class="display" data-total aria-live="polite"></div>
+          <div class="display" data-slot></div>
+        </div>
+        <div data-keys></div>
+        <div class="status" data-unlocks></div>
+      </section>
     </main>
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>
-
