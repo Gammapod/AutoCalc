@@ -104,37 +104,56 @@ const applyC = (state) => ({
         draftingSlot: null,
     },
 });
+const clearOperationEntry = (state) => ({
+    ...state,
+    calculator: {
+        ...state.calculator,
+        roll: [],
+        operationSlots: [],
+        draftingSlot: null,
+    },
+});
 const applyCE = (state) => {
     if (!state.unlocks.utilities.CE) {
         return state;
     }
-    return {
-        ...state,
-        calculator: {
-            ...state.calculator,
-            operationSlots: [],
-            draftingSlot: null,
-        },
-    };
+    return clearOperationEntry(state);
 };
 const isDigit = (key) => DIGITS.includes(key);
-const applyKey = (state, key) => {
+const isOperator = (key) => key === "+";
+const preprocessForActiveRoll = (state, key) => {
+    if (state.calculator.roll.length === 0) {
+        return state;
+    }
     if (isDigit(key)) {
-        return applyDigit(state, key);
-    }
-    if (key === "+") {
-        return applyPlus(state);
-    }
-    if (key === "=") {
-        return applyEquals(state);
-    }
-    if (key === "C") {
+        if (state.calculator.draftingSlot) {
+            return state;
+        }
         return applyC(state);
     }
-    if (key === "CE") {
-        return applyCE(state);
+    if (isOperator(key)) {
+        return clearOperationEntry(state);
     }
     return state;
+};
+const applyKey = (state, key) => {
+    const preprocessed = preprocessForActiveRoll(state, key);
+    if (isDigit(key)) {
+        return applyDigit(preprocessed, key);
+    }
+    if (key === "+") {
+        return applyPlus(preprocessed);
+    }
+    if (key === "=") {
+        return applyEquals(preprocessed);
+    }
+    if (key === "C") {
+        return applyC(preprocessed);
+    }
+    if (key === "CE") {
+        return applyCE(preprocessed);
+    }
+    return preprocessed;
 };
 export const reducer = (state = initialState(), action) => {
     if (action.type === "PRESS_KEY") {
