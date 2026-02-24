@@ -40,13 +40,15 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
 
   const nextTotal = BigInt(nextTotalInput);
 
-  return {
+  const withNextTotal: GameState = {
     ...state,
     calculator: {
       ...state.calculator,
       total: nextTotal,
     },
   };
+
+  return applyUnlocks(withNextTotal, unlockCatalog);
 };
 
 const applyPlus = (state: GameState): GameState => {

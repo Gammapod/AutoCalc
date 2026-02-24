@@ -49,7 +49,12 @@ export type RollLengthAtLeastPredicate = {
   length: number;
 };
 
-export type UnlockPredicate = RollLengthAtLeastPredicate;
+export type TotalEqualsPredicate = {
+  type: "total_equals";
+  value: bigint;
+};
+
+export type UnlockPredicate = RollLengthAtLeastPredicate | TotalEqualsPredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";
@@ -61,7 +66,12 @@ export type IncreaseMaxTotalDigitsEffect = {
   amount: number;
 };
 
-export type UnlockEffect = UnlockUtilityEffect | IncreaseMaxTotalDigitsEffect;
+export type UnlockSlotOperatorEffect = {
+  type: "unlock_slot_operator";
+  key: SlotOperator;
+};
+
+export type UnlockEffect = UnlockUtilityEffect | IncreaseMaxTotalDigitsEffect | UnlockSlotOperatorEffect;
 
 export type UnlockDefinition = {
   id: string;

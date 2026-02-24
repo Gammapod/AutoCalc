@@ -32,11 +32,12 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(nextState.calculator.total, 1n, "pressing unlocked 1 updates total");
   nextState = press(nextState, "1");
   assert.equal(nextState.calculator.total, 11n, "second digit is accepted under 2-digit cap");
+  assert.equal(nextState.unlocks.slotOperators["+"], true, "plus unlocks when total first reaches 11");
+  assert.ok(nextState.completedUnlockIds.includes("unlock_plus_on_total_11"), "plus unlock id is recorded");
   nextState = press(nextState, "1");
   assert.equal(nextState.calculator.total, 11n, "third digit is blocked by 2-digit cap");
   assert.deepEqual(nextState.calculator.roll, [], "roll remains unchanged without equals");
-  assert.equal(nextState.calculator.operationSlots.length, 0, "no slots are created while plus is locked");
-  assert.deepEqual(nextState.completedUnlockIds, [], "no unlock is triggered without roll progress");
+  assert.equal(nextState.calculator.operationSlots.length, 0, "no slots are created without pressing plus");
 
   const increaseDigitCapUnlock: UnlockDefinition = {
     id: "increase_digit_cap_once",

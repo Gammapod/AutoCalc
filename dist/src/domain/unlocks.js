@@ -2,6 +2,9 @@ export const evaluatePredicate = (predicate, state) => {
     if (predicate.type === "roll_length_at_least") {
         return state.calculator.roll.length >= predicate.length;
     }
+    if (predicate.type === "total_equals") {
+        return state.calculator.total === predicate.value;
+    }
     return false;
 };
 export const applyEffect = (effect, state) => {
@@ -23,6 +26,18 @@ export const applyEffect = (effect, state) => {
             unlocks: {
                 ...state.unlocks,
                 maxTotalDigits: state.unlocks.maxTotalDigits + effect.amount,
+            },
+        };
+    }
+    if (effect.type === "unlock_slot_operator") {
+        return {
+            ...state,
+            unlocks: {
+                ...state.unlocks,
+                slotOperators: {
+                    ...state.unlocks.slotOperators,
+                    [effect.key]: true,
+                },
             },
         };
     }

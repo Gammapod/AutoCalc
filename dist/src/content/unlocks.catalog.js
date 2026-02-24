@@ -1,5 +1,12 @@
 export const unlockCatalog = [
     {
+        id: "unlock_plus_on_total_11",
+        description: "Unlock + when total first reaches 11.",
+        predicate: { type: "total_equals", value: 11n },
+        effect: { type: "unlock_slot_operator", key: "+" },
+        once: true,
+    },
+    {
         id: "max_total_digits_3",
         description: "Increase max total digits to 3.",
         predicate: { type: "roll_length_at_least", length: 1 },

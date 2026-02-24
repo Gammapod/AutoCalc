@@ -31,13 +31,14 @@ const applyDigit = (state, digit) => {
         return state;
     }
     const nextTotal = BigInt(nextTotalInput);
-    return {
+    const withNextTotal = {
         ...state,
         calculator: {
             ...state.calculator,
             total: nextTotal,
         },
     };
+    return applyUnlocks(withNextTotal, unlockCatalog);
 };
 const applyPlus = (state) => {
     if (!state.unlocks.slotOperators["+"]) {
