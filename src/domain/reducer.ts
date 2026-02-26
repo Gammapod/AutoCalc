@@ -24,13 +24,15 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
       operandInput: withDigit(state.calculator.draftingSlot.operandInput, digit),
     };
 
-    return {
+    const withDraftingSlot: GameState = {
       ...state,
       calculator: {
         ...state.calculator,
         draftingSlot,
       },
     };
+
+    return applyUnlocks(withDraftingSlot, unlockCatalog);
   }
 
   const nextTotalInput = withDigit(state.calculator.total.toString(), digit);

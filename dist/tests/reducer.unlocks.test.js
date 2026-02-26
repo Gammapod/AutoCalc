@@ -28,6 +28,13 @@ export const runReducerUnlockTests = () => {
     assert.equal(nextState.calculator.total, 11n, "third digit is blocked by 2-digit cap");
     assert.deepEqual(nextState.calculator.roll, [], "roll remains unchanged without equals");
     assert.equal(nextState.calculator.operationSlots.length, 0, "no slots are created without pressing plus");
+    assert.equal(nextState.unlocks.execution["="], false, "equals remains locked before [+ 1]");
+    nextState = press(nextState, "+");
+    assert.equal(nextState.calculator.draftingSlot?.operator, "+", "plus starts drafting an operation slot");
+    nextState = press(nextState, "1");
+    assert.equal(nextState.calculator.draftingSlot?.operandInput, "1", "drafting slot captures operand input");
+    assert.equal(nextState.unlocks.execution["="], true, "equals unlocks when operation is [+ 1]");
+    assert.ok(nextState.completedUnlockIds.includes("unlock_equals_on_operation_plus_1"), "equals unlock id is recorded");
     const increaseDigitCapUnlock = {
         id: "increase_digit_cap_once",
         description: "increase max total digits by one",
@@ -40,6 +47,8 @@ export const runReducerUnlockTests = () => {
         calculator: {
             ...nextState.calculator,
             roll: [11n],
+            operationSlots: [],
+            draftingSlot: null,
         },
     };
     const withIncreasedCap = applyUnlocks(withRollProgress, [increaseDigitCapUnlock]);

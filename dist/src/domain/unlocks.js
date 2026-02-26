@@ -5,6 +5,20 @@ export const evaluatePredicate = (predicate, state) => {
     if (predicate.type === "total_equals") {
         return state.calculator.total === predicate.value;
     }
+    if (predicate.type === "operation_equals") {
+        const slots = [...state.calculator.operationSlots];
+        if (predicate.includeDrafting ?? true) {
+            const { draftingSlot } = state.calculator;
+            if (draftingSlot && draftingSlot.operandInput !== "") {
+                slots.push({
+                    operator: draftingSlot.operator,
+                    operand: BigInt(draftingSlot.operandInput),
+                });
+            }
+        }
+        return (slots.length === predicate.slots.length &&
+            slots.every((slot, index) => slot.operator === predicate.slots[index].operator && slot.operand === predicate.slots[index].operand));
+    }
     return false;
 };
 export const applyEffect = (effect, state) => {
@@ -36,6 +50,18 @@ export const applyEffect = (effect, state) => {
                 ...state.unlocks,
                 slotOperators: {
                     ...state.unlocks.slotOperators,
+                    [effect.key]: true,
+                },
+            },
+        };
+    }
+    if (effect.type === "unlock_execution") {
+        return {
+            ...state,
+            unlocks: {
+                ...state.unlocks,
+                execution: {
+                    ...state.unlocks.execution,
                     [effect.key]: true,
                 },
             },

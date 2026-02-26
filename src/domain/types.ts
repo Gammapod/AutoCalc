@@ -54,7 +54,13 @@ export type TotalEqualsPredicate = {
   value: bigint;
 };
 
-export type UnlockPredicate = RollLengthAtLeastPredicate | TotalEqualsPredicate;
+export type OperationEqualsPredicate = {
+  type: "operation_equals";
+  slots: Slot[];
+  includeDrafting?: boolean;
+};
+
+export type UnlockPredicate = RollLengthAtLeastPredicate | TotalEqualsPredicate | OperationEqualsPredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";
@@ -71,7 +77,16 @@ export type UnlockSlotOperatorEffect = {
   key: SlotOperator;
 };
 
-export type UnlockEffect = UnlockUtilityEffect | IncreaseMaxTotalDigitsEffect | UnlockSlotOperatorEffect;
+export type UnlockExecutionEffect = {
+  type: "unlock_execution";
+  key: ExecKey;
+};
+
+export type UnlockEffect =
+  | UnlockUtilityEffect
+  | IncreaseMaxTotalDigitsEffect
+  | UnlockSlotOperatorEffect
+  | UnlockExecutionEffect;
 
 export type UnlockDefinition = {
   id: string;

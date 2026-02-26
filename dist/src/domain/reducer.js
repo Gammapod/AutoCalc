@@ -18,13 +18,14 @@ const applyDigit = (state, digit) => {
             ...state.calculator.draftingSlot,
             operandInput: withDigit(state.calculator.draftingSlot.operandInput, digit),
         };
-        return {
+        const withDraftingSlot = {
             ...state,
             calculator: {
                 ...state.calculator,
                 draftingSlot,
             },
         };
+        return applyUnlocks(withDraftingSlot, unlockCatalog);
     }
     const nextTotalInput = withDigit(state.calculator.total.toString(), digit);
     if (nextTotalInput.length > state.unlocks.maxTotalDigits) {

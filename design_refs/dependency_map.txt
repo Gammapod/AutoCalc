@@ -1,0 +1,74 @@
+flowchart TD
+
+%% =========================
+%% FOUNDATIONS
+%% =========================
+P0["P0 Distinguishability"]
+P1["P1 Equality"]
+P2["P2 Discreteness"]
+P3["P3 Succession"]
+P4["P4 Iteration"]
+
+P0 --> P1 --> P2 --> P3 --> P4
+
+%% =========================
+%% NUMBER SYSTEMS
+%% =========================
+NN["Nℕ"]
+N0["N0"]
+NZ["Nℤ"]
+NQ["Nℚ"]
+NR["Nℝ"]
+NC["Nℂ"]
+
+Ominus --> NZ
+P3 --> NN --> Oplus --> N0
+
+NZ --> NQ
+
+NQ --> NR
+NR --> NC
+
+%% =========================
+%% OPERATIONS
+%% =========================
+Oplus["O+"]
+Ominus["O−"]
+Omul["O×"]
+Opow["O^"]
+Oeudiv["O#"]
+Omod["O⟡"]
+Odiv["O÷"]
+
+P4 --> Oplus
+
+N0 --> Ominus
+
+Oplus --> Omul --> Opow --> Fexp --> Flog
+
+Omul --> Oeudiv
+NQ --> Odiv
+
+NZ --> Oeudiv
+Omul --> Odiv
+
+Ominus --> Omod
+Oeudiv --> Omod
+Omul --> Omod
+
+%% =========================
+%% FUNCTIONS
+%% =========================
+Fid["Identity"]
+Flin["Linear"]
+Fpoly["Polynomial"]
+Fexp["Exponential"]
+Flog["Logarithmic"]
+Ftrig["Trigonometry"]
+Fcalc["Calculus"]
+
+P1--> Fid
+Oplus --> Flin
+
+NR --> Ftrig
+NR --> Fcalc

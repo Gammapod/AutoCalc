@@ -1,0 +1,274 @@
+# Mathematics Tech Tree – Glossary of Nodes
+
+This glossary describes each technology as a capability unlock rather than a school topic.  
+Each node represents a structural or conceptual ability that enables downstream mechanics.
+
+---
+
+## 🌱 FOUNDATIONAL PRIMITIVES
+
+### **P0 – Distinguishability**
+**Meaning:** Objects can be told apart.  
+**Why it matters:** Without distinguishability, there are no "things" to reason about.  
+**Unlocks:** Identity, sets, counting.
+
+---
+
+### **P1 – Identity / Equality**
+**Meaning:** Recognition of “same vs different.”  
+**Why it matters:** Enables comparison, classification, persistence.  
+**Unlocks:** Stable objects, equivalence, substitution.
+
+---
+
+### **P2 – Discreteness**
+**Meaning:** Reality modeled as separable units.  
+**Why it matters:** Counting requires discrete entities.  
+**Unlocks:** Natural numbers, finite quantities.
+
+---
+
+### **P3 – Ordering / Succession**
+**Meaning:** Concept of “next,” “before,” “after.”  
+**Why it matters:** Arithmetic relies on ordered progression.  
+**Unlocks:** Counting, comparison, subtraction logic.
+
+---
+
+### **P4 – Iteration / Repetition**
+**Meaning:** Applying processes repeatedly.  
+**Why it matters:** Arithmetic operations derive from repetition.  
+**Unlocks:** Addition, multiplication, exponentiation.
+
+---
+
+## 🏗 ALGEBRAIC STRUCTURES
+
+### **SSet – Set**
+**Meaning:** A collection of distinguishable objects.  
+**Why it matters:** Foundation of modern mathematics.  
+**Unlocks:** Membership, relations, operations.
+
+---
+
+### **SMagma – Magma**
+**Meaning:** A set with a binary operation.  
+**Why it matters:** Introduces computation/composition.  
+**Unlocks:** Raw arithmetic behavior.
+
+---
+
+### **SMonoid – Monoid**
+**Meaning:** Associative operation + identity element.  
+**Why it matters:** Enables stable iteration.  
+**Unlocks:** Addition-like and multiplication-like systems.
+
+---
+
+### **SGroup – Group**
+**Meaning:** Monoid + inverses.  
+**Why it matters:** Enables cancellation and subtraction.  
+**Unlocks:** Negative values, reversible operations.
+
+---
+
+### **SRing – Ring**
+**Meaning:** Compatible addition & multiplication structures.  
+**Why it matters:** Supports polynomials and factorization.  
+**Unlocks:** Algebraic expressions, scaling laws.
+
+---
+
+### **SField – Field**
+**Meaning:** Ring + multiplicative inverses.  
+**Why it matters:** Enables true division.  
+**Unlocks:** Fractions, ratios, continuous scaling.
+
+---
+
+### **SEuclidean – Euclidean Domain**
+**Meaning:** Ring supporting division with remainder.  
+**Why it matters:** Gateway to number theory.  
+**Unlocks:** Modulo arithmetic, GCD, primes ⭐
+
+---
+
+## 🔢 NUMBER SYSTEMS
+
+### **Nℕ – Natural Numbers**
+**Meaning:** Positive counting numbers.  
+**Why it matters:** Fundamental discrete quantities.  
+**Unlocks:** Counting, ordering, basic arithmetic.
+
+---
+
+### **N0 – Zero**
+**Meaning:** Additive identity / null quantity.  
+**Why it matters:** Enables symmetry & balance.  
+**Unlocks:** Integers, algebraic closure pressure.
+
+---
+
+### **Nℤ – Integers**
+**Meaning:** Positive + negative whole numbers.  
+**Why it matters:** Closure under subtraction.  
+**Unlocks:** Signed arithmetic, directionality.
+
+---
+
+### **Nℚ – Rational Numbers**
+**Meaning:** Fractions / ratios of integers.  
+**Why it matters:** Closure under division.  
+**Unlocks:** Proportions, scaling precision.
+
+---
+
+### **Nℝ – Real Numbers**
+**Meaning:** Continuous number line.  
+**Why it matters:** Measurement & geometry compatibility.  
+**Unlocks:** Limits, calculus, trig.
+
+---
+
+### **Nℂ – Complex Numbers**
+**Meaning:** Extension including √−1.  
+**Why it matters:** Full algebraic closure.  
+**Unlocks:** Oscillation, rotation, wave mechanics.
+
+---
+
+## ➕ OPERATIONS
+
+### **O+ – Addition**
+**Meaning:** Combining quantities.  
+**Why it matters:** Fundamental composition operator.  
+**Unlocks:** Linear growth, accumulation.
+
+---
+
+### **O− – Subtraction**
+**Meaning:** Inverse of addition / difference.  
+**Why it matters:** Enables removal & balancing.  
+**Unlocks:** Negative reasoning, cancellation.
+
+---
+
+### **O× – Multiplication**
+**Meaning:** Repeated addition / scaling.  
+**Why it matters:** Introduces proportional change.  
+**Unlocks:** Area models, combinatorics.
+
+---
+
+### **O÷ – True Division**
+**Meaning:** Inverse of multiplication.  
+**Why it matters:** Enables ratios & fractions.  
+**Unlocks:** Continuous scaling.
+
+---
+
+### **O% – Division with Remainder (Modulo)**
+**Meaning:** Residual after division.  
+**Why it matters:** Structural shift into constraints & cycles ⭐  
+**Unlocks:** Modular arithmetic, residue classes, number theory.
+
+---
+
+### **O^ – Exponentiation**
+**Meaning:** Repeated multiplication.  
+**Why it matters:** Nonlinear growth dynamics.  
+**Unlocks:** Exponential systems, logs.
+
+---
+
+### **O√ – Roots**
+**Meaning:** Inverse of exponentiation.  
+**Why it matters:** Closure pressure for ℝ → ℂ.  
+**Unlocks:** Irrationals, polynomial solutions.
+
+---
+
+## 🔣 REPRESENTATION SYSTEMS (Interface Technologies)
+
+### **Rint – Integer Notation**
+**Meaning:** Symbolic compression of discrete quantities.  
+**Unlocks:** Efficient arithmetic manipulation.
+
+---
+
+### **Rfrac – Fraction Notation**
+**Meaning:** Explicit ratio representation.  
+**Unlocks:** Rational intuition & simplification.
+
+---
+
+### **Rdecimal – Decimal System**
+**Meaning:** Positional base-10 encoding.  
+**Unlocks:** Compactness, estimation, scaling usability.
+
+---
+
+### **Rscientific – Scientific Notation**
+**Meaning:** Magnitude compression.  
+**Unlocks:** Extreme scale management.
+
+---
+
+### **Rsymbolic – Symbolic Algebra**
+**Meaning:** Variables & expressions.  
+**Unlocks:** Generalized reasoning.
+
+---
+
+## 📈 FUNCTION TECHNOLOGIES
+
+### **Fid – Identity Function**
+**Meaning:** Output equals input.  
+**Why it matters:** Neutral baseline operator.
+
+---
+
+### **Flin – Linear Functions**
+**Meaning:** Addition + multiplication structure.  
+**Unlocks:** Constant-rate dynamics.
+
+---
+
+### **Fpoly – Polynomial Functions**
+**Meaning:** Ring-based expressions.  
+**Unlocks:** Curvature, roots, factorization.
+
+---
+
+### **Fexp – Exponential Functions**
+**Meaning:** Power-based growth.  
+**Unlocks:** Explosive dynamics.
+
+---
+
+### **Flog – Logarithmic Functions**
+**Meaning:** Inverse of exponentiation.  
+**Unlocks:** Scale compression & inversion.
+
+---
+
+### **Ftrig – Trigonometric Functions**
+**Meaning:** Periodic / rotational functions.  
+**Why it matters:** Requires ℝ + geometry ⭐  
+**Unlocks:** Oscillation, cycles, waves.
+
+---
+
+### **Fcalc – Calculus Operators**
+**Meaning:** Limits, derivatives, integrals.  
+**Unlocks:** Continuous change mechanics.
+
+---
+
+# 🎮 Design Insight
+
+Nodes differ in *what kind of reasoning becomes possible*:
+
+Arithmetic → Scaling → Constraints → Cycles → Continuity → Oscillation → Dynamics
+
+Certain unlocks (notably **SEuclidean / O%**) produce disproportionate gameplay richness.
