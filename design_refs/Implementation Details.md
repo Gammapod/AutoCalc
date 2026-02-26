@@ -100,7 +100,7 @@ export type Slot = {
 
 export type CalculatorState = {
   total: bigint;
-  roll: bigint[];          // appended on every '=' press
+  roll: bigint[];          // first operation-backed '=' seeds [startingTotal, result], then appends each result
   operationSlots: Slot[];  // length <= unlocks.maxSlots
   error: null | { kind: "Err"; reason: string };
 };
@@ -171,7 +171,8 @@ Action processing:
   - append total to roll
 - Otherwise, `=` applies each slot left-to-right:
   - `total = op(total, operand)`
-  - append resulting total to roll
+  - if roll is empty, append starting total and resulting total
+  - otherwise append resulting total
 
 ### Utility keys
 

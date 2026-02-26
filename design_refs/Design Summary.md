@@ -12,7 +12,9 @@ AutoCalc is a calculator-first progression game where the calculator itself is t
    - set an initial total, and/or
    - configure a short, **sequential operation pipeline** (operation slots).
 2. Pressing `=` applies the operation pipeline to the current total, producing a new total.
-3. Each `=` appends the resulting total to a **calculator roll** (a visible history strip).
+3. Each `=` appends to a **calculator roll** (a visible history strip):
+   - if operations exist and roll is empty, append the starting total and the first result
+   - otherwise append only the resulting total
 4. Unlock conditions (sequence predicates) are evaluated against the roll and current calculator configuration.
 5. Upgrades expand expressive power (more keys, more operation slots, larger digit cap).
 
@@ -37,6 +39,10 @@ AutoCalc is a calculator-first progression game where the calculator itself is t
 - If no operation slots exist, `=` applies the **identity function**:
   - total remains unchanged
   - the unchanged total is appended to the roll
+- If operation slots exist and the roll is empty:
+  - append current total, then append resulting total
+- For subsequent operation-backed `=` presses:
+  - append resulting total only
 
 ### Utility Key Semantics
 

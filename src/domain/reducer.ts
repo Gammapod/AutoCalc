@@ -112,13 +112,18 @@ const applyEquals = (state: GameState): GameState => {
   }
 
   const finalized = finalizeDraftingSlot(state);
-  const nextTotal = executeSlots(finalized.calculator.total, finalized.calculator.operationSlots);
+  const startingTotal = finalized.calculator.total;
+  const { operationSlots, roll } = finalized.calculator;
+  const rollWasEmpty = roll.length === 0;
+  const hasOperations = operationSlots.length > 0;
+  const nextTotal = executeSlots(startingTotal, operationSlots);
+  const appendedRoll = rollWasEmpty && hasOperations ? [startingTotal, nextTotal] : [nextTotal];
   const withRoll: GameState = {
     ...finalized,
     calculator: {
       ...finalized.calculator,
       total: nextTotal,
-      roll: [...finalized.calculator.roll, nextTotal],
+      roll: [...roll, ...appendedRoll],
     },
   };
 

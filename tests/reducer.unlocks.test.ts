@@ -49,6 +49,35 @@ export const runReducerUnlockTests = (): void => {
     nextState.completedUnlockIds.includes("unlock_equals_on_operation_plus_1"),
     "equals unlock id is recorded",
   );
+  nextState = press(nextState, "=");
+  assert.deepEqual(
+    nextState.calculator.roll,
+    [11n, 12n],
+    "first equals with operations seeds roll with baseline total and first result",
+  );
+  nextState = press(nextState, "=");
+  assert.deepEqual(
+    nextState.calculator.roll,
+    [11n, 12n, 13n],
+    "subsequent equals appends only the resulting total",
+  );
+
+  const identityEqualsState: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      execution: {
+        ...initialState().unlocks.execution,
+        "=": true,
+      },
+    },
+    calculator: {
+      ...initialState().calculator,
+      total: 11n,
+    },
+  };
+  const afterIdentityEquals = press(identityEqualsState, "=");
+  assert.deepEqual(afterIdentityEquals.calculator.roll, [11n], "identity equals appends one unchanged total");
 
   const increaseDigitCapUnlock: UnlockDefinition = {
     id: "increase_digit_cap_once",
@@ -59,9 +88,10 @@ export const runReducerUnlockTests = (): void => {
   };
 
   const withRollProgress: GameState = {
-    ...nextState,
+    ...initialState(),
     calculator: {
-      ...nextState.calculator,
+      ...initialState().calculator,
+      total: 11n,
       roll: [11n],
       operationSlots: [],
       draftingSlot: null,
