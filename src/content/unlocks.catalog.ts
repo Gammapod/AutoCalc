@@ -25,4 +25,11 @@ export const unlockCatalog: UnlockDefinition[] = [
     effect: { type: "increase_max_total_digits", amount: 1 },
     once: true,
   },
+  {
+    id: "unlock_c_on_roll_suffix_11_12_13_14",
+    description: "Unlock C when roll ends with [11, 12, 13, 14].",
+    predicate: { type: "roll_ends_with_sequence", sequence: [11n, 12n, 13n, 14n] },
+    effect: { type: "unlock_utility", key: "C" },
+    once: true,
+  },
 ];

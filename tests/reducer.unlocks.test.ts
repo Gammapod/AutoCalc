@@ -104,4 +104,33 @@ export const runReducerUnlockTests = (): void => {
     [repeatableUnlock.id],
     "completed unlock ids stay unique for repeatable unlocks",
   );
+
+  const rollSuffixUnlock: UnlockDefinition = {
+    id: "unlock_c_on_roll_suffix",
+    description: "unlock C when roll ends with [11, 12, 13, 14]",
+    predicate: { type: "roll_ends_with_sequence", sequence: [11n, 12n, 13n, 14n] },
+    effect: { type: "unlock_utility", key: "C" },
+    once: true,
+  };
+
+  const withMatchingSuffix: GameState = {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      roll: [3n, 11n, 12n, 13n, 14n],
+    },
+  };
+  const afterSuffixUnlock = applyUnlocks(withMatchingSuffix, [rollSuffixUnlock]);
+  assert.equal(afterSuffixUnlock.unlocks.utilities.C, true, "suffix predicate unlocks C on longer rolls");
+  assert.ok(afterSuffixUnlock.completedUnlockIds.includes(rollSuffixUnlock.id), "suffix unlock id is recorded");
+
+  const withNonMatchingSuffix: GameState = {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      roll: [11n, 12n, 13n, 15n],
+    },
+  };
+  const afterNonMatch = applyUnlocks(withNonMatchingSuffix, [rollSuffixUnlock]);
+  assert.equal(afterNonMatch.unlocks.utilities.C, false, "suffix predicate does not unlock on non-matching suffix");
 };

@@ -60,7 +60,16 @@ export type OperationEqualsPredicate = {
   includeDrafting?: boolean;
 };
 
-export type UnlockPredicate = RollLengthAtLeastPredicate | TotalEqualsPredicate | OperationEqualsPredicate;
+export type RollEndsWithSequencePredicate = {
+  type: "roll_ends_with_sequence";
+  sequence: bigint[];
+};
+
+export type UnlockPredicate =
+  | RollLengthAtLeastPredicate
+  | TotalEqualsPredicate
+  | OperationEqualsPredicate
+  | RollEndsWithSequencePredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";

@@ -7,6 +7,14 @@ export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState):
   if (predicate.type === "total_equals") {
     return state.calculator.total === predicate.value;
   }
+  if (predicate.type === "roll_ends_with_sequence") {
+    const { sequence } = predicate;
+    if (sequence.length === 0 || state.calculator.roll.length < sequence.length) {
+      return false;
+    }
+    const rollSuffix = state.calculator.roll.slice(-sequence.length);
+    return rollSuffix.every((value, index) => value === sequence[index]);
+  }
   if (predicate.type === "operation_equals") {
     const slots = [...state.calculator.operationSlots];
     if (predicate.includeDrafting ?? true) {
