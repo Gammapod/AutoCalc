@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { reducer } from "../src/domain/reducer.js";
-import { initialState } from "../src/domain/state.js";
+import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
 import { applyUnlocks } from "../src/domain/unlocks.js";
 import type { UnlockDefinition } from "../src/domain/types.js";
 import type { GameState, Key } from "../src/domain/types.js";
@@ -31,6 +31,11 @@ export const runReducerUnlockTests = (): void => {
   for (const key of keys) {
     nextState = press(nextState, key);
   }
+  assert.equal(
+    nextState.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID),
+    false,
+    "attempting C while locked does not unlock checklist drawer",
+  );
 
   assert.equal(nextState.calculator.total, 1n, "pressing unlocked 1 updates total");
   nextState = press(nextState, "1");
@@ -72,6 +77,28 @@ export const runReducerUnlockTests = (): void => {
   assert.ok(
     nextState.completedUnlockIds.includes("unlock_c_on_roll_suffix_11_12_13_14"),
     "C unlock id is recorded",
+  );
+  const afterFirstSuccessfulC = press(nextState, "C");
+  assert.equal(
+    afterFirstSuccessfulC.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID),
+    true,
+    "first successful C press unlocks checklist drawer",
+  );
+  assert.deepEqual(
+    afterFirstSuccessfulC.calculator,
+    {
+      total: 0n,
+      roll: [],
+      operationSlots: [],
+      draftingSlot: null,
+    },
+    "successful C preserves reset calculator behavior",
+  );
+  const afterSecondSuccessfulC = press(afterFirstSuccessfulC, "C");
+  assert.equal(
+    afterSecondSuccessfulC.completedUnlockIds.filter((id) => id === CHECKLIST_UNLOCK_ID).length,
+    1,
+    "repeated successful C presses do not duplicate checklist unlock id",
   );
 
   const identityEqualsState: GameState = {

@@ -1,0 +1,135 @@
+import assert from "node:assert/strict";
+import { CHECKLIST_UNLOCK_ID } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
+import { unlockCatalog } from "../src/content/unlocks.catalog.js";
+import { buildUnlockRows, isChecklistUnlocked } from "../src/ui/render.js";
+import type { GameState, UnlockDefinition } from "../src/domain/types.js";
+
+export const runUnlocksDisplayTests = (): void => {
+  const base = initialState();
+  assert.equal(isChecklistUnlocked(base), false, "checklist drawer is locked when unlock id is absent");
+
+  const checklistUnlockedState: GameState = {
+    ...base,
+    completedUnlockIds: [CHECKLIST_UNLOCK_ID],
+  };
+  assert.equal(isChecklistUnlocked(checklistUnlockedState), true, "checklist drawer is unlocked when unlock id is present");
+
+  const effectMappingCatalog: UnlockDefinition[] = [
+    {
+      id: "u_digit",
+      description: "digit",
+      predicate: { type: "total_equals", value: 1n },
+      effect: { type: "unlock_digit", key: "4" },
+      once: true,
+    },
+    {
+      id: "u_slot_op",
+      description: "slot op",
+      predicate: { type: "total_equals", value: 1n },
+      effect: { type: "unlock_slot_operator", key: "+" },
+      once: true,
+    },
+    {
+      id: "u_exec",
+      description: "exec",
+      predicate: { type: "total_equals", value: 1n },
+      effect: { type: "unlock_execution", key: "=" },
+      once: true,
+    },
+    {
+      id: "u_utility",
+      description: "utility",
+      predicate: { type: "total_equals", value: 1n },
+      effect: { type: "unlock_utility", key: "C" },
+      once: true,
+    },
+    {
+      id: "u_total_digits",
+      description: "digits cap",
+      predicate: { type: "total_equals", value: 1n },
+      effect: { type: "increase_max_total_digits", amount: 1 },
+      once: true,
+    },
+  ];
+  const mappedRows = buildUnlockRows(base, effectMappingCatalog);
+  assert.deepEqual(
+    mappedRows.map((row) => row.name),
+    ["4", "+", "=", "C", "maxTotalDigits"],
+    "row names map from unlock effect keys/variables",
+  );
+
+  const totalCriteriaCatalog: UnlockDefinition[] = [
+    {
+      id: "u_total_eq",
+      description: "total eq",
+      predicate: { type: "total_equals", value: 11n },
+      effect: { type: "unlock_digit", key: "4" },
+      once: true,
+    },
+    {
+      id: "u_total_at_least",
+      description: "total at least",
+      predicate: { type: "total_at_least", value: 25n },
+      effect: { type: "unlock_slot_operator", key: "-" },
+      once: true,
+    },
+  ];
+  const totalCriteriaRows = buildUnlockRows(base, totalCriteriaCatalog);
+  assert.equal(totalCriteriaRows[0]?.criteria.length, 1, "total_equals uses a single criterion checkbox");
+  assert.equal(totalCriteriaRows[0]?.criteria[0]?.label, "11", "total_equals checkbox label is required value");
+  assert.equal(totalCriteriaRows[1]?.criteria.length, 1, "total_at_least uses a single criterion checkbox");
+  assert.equal(totalCriteriaRows[1]?.criteria[0]?.label, "25", "total_at_least checkbox label is threshold value");
+
+  const rollProgressState: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      roll: [10n, 11n, 12n, 13n],
+    },
+  };
+  const rollRow = buildUnlockRows(rollProgressState, unlockCatalog).find(
+    (row) => row.id === "unlock_c_on_roll_suffix_11_12_13_14",
+  );
+  assert.equal(rollRow?.criteria.length, 4, "roll sequence renders one checkbox per sequence value");
+  assert.deepEqual(
+    rollRow?.criteria.map((criterion) => criterion.checked),
+    [true, true, true, false],
+    "progressive suffix marks first three criteria checked for [10,11,12,13] against [11,12,13,14]",
+  );
+
+  const completedState: GameState = {
+    ...rollProgressState,
+    completedUnlockIds: ["unlock_plus_on_total_11"],
+  };
+  const orderedRows = buildUnlockRows(completedState, unlockCatalog);
+  const plusIndex = orderedRows.findIndex((row) => row.id === "unlock_plus_on_total_11");
+  const firstCompletedIndex = orderedRows.findIndex((row) => row.state === "completed");
+  assert.equal(firstCompletedIndex, plusIndex, "first completed row appears where completed section starts");
+  assert.equal(orderedRows.at(-1)?.id, "unlock_plus_on_total_11", "completed rows move to the bottom");
+  const completedPlus = orderedRows.find((row) => row.id === "unlock_plus_on_total_11");
+  assert.deepEqual(
+    completedPlus?.criteria.map((criterion) => criterion.checked),
+    [true],
+    "completed criteria remain permanently checked",
+  );
+
+  const withImpossible = buildUnlockRows(
+    base,
+    unlockCatalog,
+    (unlock) => unlock.id === "unlock_minus_on_total_25_or_more",
+  );
+  assert.equal(
+    withImpossible.some((row) => row.id === "unlock_minus_on_total_25_or_more"),
+    false,
+    "rows marked impossible are omitted from the list",
+  );
+
+  const rowsWhenDrawerLocked = buildUnlockRows(base, unlockCatalog);
+  const rowsWhenDrawerUnlocked = buildUnlockRows(checklistUnlockedState, unlockCatalog);
+  assert.deepEqual(
+    rowsWhenDrawerUnlocked,
+    rowsWhenDrawerLocked,
+    "checklist row models are independent from checklist drawer visibility",
+  );
+};

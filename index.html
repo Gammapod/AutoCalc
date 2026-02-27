@@ -118,6 +118,7 @@
 
       .calc {
         position: relative;
+        overflow: visible;
         z-index: 2;
         border-radius: 24px;
         padding: 16px;
@@ -131,6 +132,10 @@
 
       @media (prefers-reduced-motion: reduce) {
         .roll {
+          transition: none;
+        }
+
+        .status {
           transition: none;
         }
       }
@@ -312,11 +317,71 @@
       }
 
       .status {
-        margin-top: 10px;
-        text-align: center;
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        top: calc(100% - 10px);
+        border: 1px solid #515c6a;
+        border-radius: 7px;
+        padding: 8px 10px;
+        background: linear-gradient(180deg, var(--panel-mid), var(--panel-dark));
+        color: #b4f1d3;
+        font-family: Consolas, "Courier New", monospace;
         font-size: 0.75rem;
-        color: #1f2430;
-        opacity: 0.75;
+        box-shadow: 0 8px 14px rgba(0, 0, 0, 0.26);
+        transform: translateY(-8px);
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .status[data-checklist-state="open"] {
+        transform: translateY(0);
+        opacity: 1;
+        max-height: 240px;
+        pointer-events: auto;
+      }
+
+      .status[data-checklist-animate="true"] {
+        transition: transform 220ms ease-out, opacity 180ms ease-out, max-height 220ms ease-out;
+      }
+
+      .unlock-title {
+        margin-bottom: 6px;
+        font-weight: 700;
+      }
+
+      .unlock-header,
+      .unlock-row {
+        display: grid;
+        grid-template-columns: minmax(40px, 60px) 1fr;
+        column-gap: 8px;
+        align-items: start;
+      }
+
+      .unlock-header {
+        margin-bottom: 4px;
+        font-weight: 700;
+      }
+
+      .unlock-row {
+        margin-bottom: 2px;
+      }
+
+      .unlock-row--completed {
+        text-decoration: line-through;
+        opacity: 0.72;
+      }
+
+      .unlock-criteria {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .unlock-criterion {
+        white-space: nowrap;
       }
 
       .debug-shell {

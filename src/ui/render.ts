@@ -1,4 +1,6 @@
-import type { Action, GameState, Key } from "../domain/types.js";
+import { unlockCatalog } from "../content/unlocks.catalog.js";
+import { CHECKLIST_UNLOCK_ID } from "../domain/state.js";
+import type { Action, GameState, Key, Slot, UnlockDefinition, UnlockEffect, UnlockPredicate } from "../domain/types.js";
 
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
@@ -20,6 +22,22 @@ type RollViewModel = {
   isVisible: boolean;
   lineCount: number;
   valueColumnChars: number;
+};
+
+let previousChecklistUnlocked: boolean | null = null;
+
+export type UnlockRowState = "not_completed" | "completed" | "impossible";
+
+export type UnlockCriterionVm = {
+  label: string;
+  checked: boolean;
+};
+
+export type UnlockRowVm = {
+  id: string;
+  name: string;
+  state: UnlockRowState;
+  criteria: UnlockCriterionVm[];
 };
 
 const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
@@ -99,6 +117,197 @@ export const buildRollViewModel = (roll: bigint[]): RollViewModel => {
   };
 };
 
+export const buildOperationSlotDisplay = (state: GameState): string => {
+  const visibleSlots = state.unlocks.maxSlots;
+  if (visibleSlots <= 0) {
+    return "(no operation slots)";
+  }
+
+  const filledTokens = state.calculator.operationSlots.map((slot) => `[ ${slot.operator} ${slot.operand.toString()} ]`);
+  if (state.calculator.draftingSlot) {
+    const operand = state.calculator.draftingSlot.operandInput || "_";
+    filledTokens.push(`[ ${state.calculator.draftingSlot.operator} ${operand} ]`);
+  }
+
+  const tokens = filledTokens.slice(0, visibleSlots);
+  while (tokens.length < visibleSlots) {
+    tokens.push("[ _ _ ]");
+  }
+
+  return tokens.join(" -> ");
+};
+
+const getUnlockName = (effect: UnlockEffect): string => {
+  if (effect.type === "unlock_digit") {
+    return effect.key;
+  }
+  if (effect.type === "unlock_slot_operator") {
+    return effect.key;
+  }
+  if (effect.type === "unlock_execution") {
+    return effect.key;
+  }
+  if (effect.type === "unlock_utility") {
+    return effect.key;
+  }
+  if (effect.type === "increase_max_total_digits") {
+    return "maxTotalDigits";
+  }
+  return "unknown";
+};
+
+const getOperationSnapshot = (state: GameState): Slot[] => {
+  const slots = [...state.calculator.operationSlots];
+  const drafting = state.calculator.draftingSlot;
+  if (!drafting || drafting.operandInput.length === 0) {
+    return slots;
+  }
+  slots.push({
+    operator: drafting.operator,
+    operand: BigInt(drafting.operandInput),
+  });
+  return slots;
+};
+
+const getProgressiveRollSequenceMatches = (roll: bigint[], required: bigint[]): number => {
+  const maxCandidate = Math.min(roll.length, required.length);
+  for (let candidate = maxCandidate; candidate >= 0; candidate -= 1) {
+    const rollSuffix = roll.slice(roll.length - candidate);
+    const requiredPrefix = required.slice(0, candidate);
+    const isMatch = rollSuffix.every((value, index) => value === requiredPrefix[index]);
+    if (isMatch) {
+      return candidate;
+    }
+  }
+  return 0;
+};
+
+const buildCriteriaForPredicate = (predicate: UnlockPredicate, state: GameState): UnlockCriterionVm[] => {
+  if (predicate.type === "total_equals") {
+    return [{ label: predicate.value.toString(), checked: state.calculator.total === predicate.value }];
+  }
+
+  if (predicate.type === "total_at_least") {
+    return [{ label: predicate.value.toString(), checked: state.calculator.total >= predicate.value }];
+  }
+
+  if (predicate.type === "roll_ends_with_sequence") {
+    const matchedCount = getProgressiveRollSequenceMatches(state.calculator.roll, predicate.sequence);
+    return predicate.sequence.map((value, index) => ({
+      label: value.toString(),
+      checked: index < matchedCount,
+    }));
+  }
+
+  if (predicate.type === "operation_equals") {
+    const requiredTokens = predicate.slots.flatMap((slot) => [slot.operator, slot.operand.toString()]);
+    const currentSlots = getOperationSnapshot(state);
+    const currentTokens = currentSlots.flatMap((slot) => [slot.operator, slot.operand.toString()]);
+    return requiredTokens.map((token, index) => ({
+      label: token,
+      checked: currentTokens[index] === token,
+    }));
+  }
+
+  if (predicate.type === "roll_length_at_least") {
+    return [
+      {
+        label: `len >= ${predicate.length.toString()}`,
+        checked: state.calculator.roll.length >= predicate.length,
+      },
+    ];
+  }
+
+  return [];
+};
+
+const isUnlockImpossible = (_unlock: UnlockDefinition, _state: GameState): boolean => false;
+
+export const buildUnlockRows = (
+  state: GameState,
+  catalog: UnlockDefinition[],
+  impossibleCheck: (unlock: UnlockDefinition, state: GameState) => boolean = isUnlockImpossible,
+): UnlockRowVm[] => {
+  const rows = catalog.map<UnlockRowVm>((unlock) => {
+    const completed = state.completedUnlockIds.includes(unlock.id);
+    const impossible = impossibleCheck(unlock, state);
+    const rowState: UnlockRowState = impossible ? "impossible" : completed ? "completed" : "not_completed";
+    const criteria = buildCriteriaForPredicate(unlock.predicate, state);
+    return {
+      id: unlock.id,
+      name: getUnlockName(unlock.effect),
+      state: rowState,
+      criteria: completed ? criteria.map((criterion) => ({ ...criterion, checked: true })) : criteria,
+    };
+  });
+
+  const visible = rows.filter((row) => row.state !== "impossible");
+  const pending = visible.filter((row) => row.state === "not_completed");
+  const completed = visible.filter((row) => row.state === "completed");
+  return [...pending, ...completed];
+};
+
+export const isChecklistUnlocked = (state: GameState): boolean =>
+  state.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID);
+
+const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
+  const checklistUnlocked = isChecklistUnlocked(state);
+  const shouldAnimateOpen = previousChecklistUnlocked === false && checklistUnlocked;
+  previousChecklistUnlocked = checklistUnlocked;
+
+  unlockEl.setAttribute("data-checklist-state", checklistUnlocked ? "open" : "locked");
+  unlockEl.setAttribute("data-checklist-animate", shouldAnimateOpen ? "true" : "false");
+
+  if (!checklistUnlocked) {
+    unlockEl.innerHTML = "";
+    unlockEl.setAttribute("aria-hidden", "true");
+    return;
+  }
+
+  unlockEl.setAttribute("aria-hidden", "false");
+  unlockEl.innerHTML = "";
+
+  const title = document.createElement("div");
+  title.className = "unlock-title";
+  title.textContent = "Unlocks";
+  unlockEl.appendChild(title);
+
+  const header = document.createElement("div");
+  header.className = "unlock-header";
+  const nameHeader = document.createElement("span");
+  nameHeader.textContent = "Name |";
+  const criteriaHeader = document.createElement("span");
+  criteriaHeader.textContent = "Criteria";
+  header.append(nameHeader, criteriaHeader);
+  unlockEl.appendChild(header);
+
+  const rows = buildUnlockRows(state, unlockCatalog);
+  for (const row of rows) {
+    const rowEl = document.createElement("div");
+    rowEl.className = "unlock-row";
+    if (row.state === "completed") {
+      rowEl.classList.add("unlock-row--completed");
+    }
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "unlock-name";
+    nameEl.textContent = row.name;
+    rowEl.appendChild(nameEl);
+
+    const criteriaEl = document.createElement("span");
+    criteriaEl.className = "unlock-criteria";
+    for (const criterion of row.criteria) {
+      const criterionEl = document.createElement("span");
+      criterionEl.className = "unlock-criterion";
+      criterionEl.textContent = `[${criterion.checked ? "x" : " "}] ${criterion.label}`;
+      criteriaEl.appendChild(criterionEl);
+    }
+    rowEl.appendChild(criteriaEl);
+
+    unlockEl.appendChild(rowEl);
+  }
+};
+
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   const slotModels = buildTotalSlotModel(state.calculator.total, state.unlocks.maxTotalDigits);
   totalEl.innerHTML = "";
@@ -154,12 +363,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   }
 
   renderTotalDisplay(totalEl, state);
-
-  const committed = state.calculator.operationSlots.map((slot) => `[ ${slot.operator} ${slot.operand.toString()} ]`);
-  const draft = state.calculator.draftingSlot
-    ? `[ ${state.calculator.draftingSlot.operator} ${state.calculator.draftingSlot.operandInput || "_"} ]`
-    : null;
-  slotEl.textContent = [...committed, draft].filter(Boolean).join(" -> ") || "(no operation slots)";
+  slotEl.textContent = buildOperationSlotDisplay(state);
 
   const rollView = buildRollViewModel(state.calculator.roll);
   rollEl.innerHTML = "";
@@ -186,9 +390,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     rollEl.appendChild(line);
   }
 
-  const keyCells = state.ui.keyLayout.filter((cell) => cell.kind === "key");
-  const unlockedCount = keyCells.filter((cell) => isKeyUnlocked(state, cell.key)).length;
-  unlockEl.textContent = `Unlocked keys: ${unlockedCount}/${keyCells.length}`;
+  renderUnlockChecklist(unlockEl, state);
 
   keysEl.innerHTML = "";
   for (const cell of state.ui.keyLayout) {

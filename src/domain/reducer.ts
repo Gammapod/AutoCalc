@@ -1,5 +1,5 @@
 import { executeSlots } from "./engine.js";
-import { initialState } from "./state.js";
+import { CHECKLIST_UNLOCK_ID, initialState } from "./state.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyUnlocks } from "./unlocks.js";
 import type { Action, Digit, GameState, Key, SlotOperator } from "./types.js";
@@ -139,7 +139,7 @@ const applyC = (state: GameState): GameState => {
     return state;
   }
 
-  return {
+  const resetState: GameState = {
     ...state,
     calculator: {
       total: 0n,
@@ -147,6 +147,15 @@ const applyC = (state: GameState): GameState => {
       operationSlots: [],
       draftingSlot: null,
     },
+  };
+
+  if (resetState.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID)) {
+    return resetState;
+  }
+
+  return {
+    ...resetState,
+    completedUnlockIds: [...resetState.completedUnlockIds, CHECKLIST_UNLOCK_ID],
   };
 };
 
