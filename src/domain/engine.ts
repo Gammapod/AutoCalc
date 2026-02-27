@@ -1,8 +1,9 @@
 import { addInt, divInt, mulInt, subInt } from "../infra/math/rationalEngine.js";
+import { euclideanDivide } from "../infra/math/euclideanEngine.js";
 import type { RationalValue, Slot } from "./types.js";
 
 export type ExecuteSlotsResult =
-  | { ok: true; total: RationalValue }
+  | { ok: true; total: RationalValue; euclidRemainder?: RationalValue }
   | { ok: false; reason: "division_by_zero" };
 
 export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsResult => {
@@ -11,6 +12,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
   }
 
   let nextTotal = total;
+  let lastEuclidRemainder: RationalValue | undefined;
   for (const slot of slots) {
     if (slot.operator === "+") {
       nextTotal = addInt(nextTotal, slot.operand);
@@ -31,8 +33,20 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       nextTotal = divInt(nextTotal, slot.operand);
       continue;
     }
+    if (slot.operator === "#") {
+      const euclidean = euclideanDivide(nextTotal, slot.operand);
+      if (!euclidean.ok) {
+        return euclidean;
+      }
+      nextTotal = euclidean.quotient;
+      lastEuclidRemainder = euclidean.remainder;
+      continue;
+    }
     throw new Error(`Unsupported operator: ${slot.operator}`);
   }
 
+  if (lastEuclidRemainder) {
+    return { ok: true, total: nextTotal, euclidRemainder: lastEuclidRemainder };
+  }
   return { ok: true, total: nextTotal };
 };

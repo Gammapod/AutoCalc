@@ -34,6 +34,7 @@ export const runPersistenceTests = (): void => {
       ...state.calculator,
       total: r(15n, 2n),
       roll: [r(3n), r(9n), r(15n, 2n)],
+      euclidRemainders: [{ rollIndex: 2, value: r(1n, 2n) }],
       operationSlots: [{ operator: "*" as const, operand: 6n }],
     },
     ui: {
@@ -49,6 +50,11 @@ export const runPersistenceTests = (): void => {
 
   assert.deepEqual(loaded.calculator.total, r(15n, 2n), "hydrate rational total");
   assert.deepEqual(loaded.calculator.roll, [r(3n), r(9n), r(15n, 2n)], "hydrate rational roll");
+  assert.deepEqual(
+    loaded.calculator.euclidRemainders,
+    [{ rollIndex: 2, value: r(1n, 2n) }],
+    "hydrate euclidean remainder annotations",
+  );
   assert.deepEqual(loaded.calculator.operationSlots, [{ operator: "*", operand: 6n }], "hydrate slot bigint operand");
   assert.deepEqual(loaded.ui.keyLayout.slice(0, 2), [state.ui.keyLayout[1], state.ui.keyLayout[0]], "hydrate ui key layout");
 
@@ -78,6 +84,7 @@ export const runPersistenceTests = (): void => {
   }
   assert.deepEqual(loadedLegacy.calculator.total, r(9n), "v1 save migrates integer total to rational");
   assert.deepEqual(loadedLegacy.calculator.roll, [r(9n)], "v1 save migrates integer roll to rationals");
+  assert.deepEqual(loadedLegacy.calculator.euclidRemainders, [], "v1 save defaults euclidean remainder annotations");
   assert.deepEqual(loadedLegacy.ui.keyLayout, defaultKeyLayout(), "legacy saves hydrate default ui layout");
   assert.equal(loadedLegacy.unlocks.execution["="], false, "legacy unlock payload hydrates default execution unlocks");
   assert.equal(loadedLegacy.unlocks.slotOperators["-"], false, "legacy unlock payload hydrates default minus unlock");
@@ -193,11 +200,46 @@ export const runPersistenceTests = (): void => {
     "legacy div placeholder migrates to div key",
   );
 
+  const legacyEuclidLayoutStorage = createMemoryStorage();
+  const legacyEuclidLayout = defaultKeyLayout().map((cell) =>
+    cell.kind === "key" && cell.key === "#" ? { kind: "placeholder" as const, area: "euclid_divmod" } : cell,
+  );
+  legacyEuclidLayoutStorage.setItem(
+    SAVE_KEY,
+    JSON.stringify({
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          roll: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: legacyEuclidLayout,
+        },
+        unlocks: state.unlocks,
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  const legacyEuclidRepo = createLocalStorageRepo(legacyEuclidLayoutStorage);
+  const loadedLegacyEuclidLayout = legacyEuclidRepo.load();
+  if (!loadedLegacyEuclidLayout) {
+    throw new Error("Expected legacy euclidean layout payload to hydrate.");
+  }
+  assert.ok(
+    loadedLegacyEuclidLayout.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === "#"),
+    "legacy euclid placeholder migrates to euclidean key",
+  );
+
   const duplicateGuardStorage = createMemoryStorage();
   const customLayoutWithMulKeyAndPlaceholder = [
     ...defaultKeyLayout(),
     { kind: "placeholder" as const, area: "mul" },
     { kind: "placeholder" as const, area: "div" },
+    { kind: "placeholder" as const, area: "euclid_divmod" },
   ];
   duplicateGuardStorage.setItem(
     SAVE_KEY,
@@ -233,6 +275,11 @@ export const runPersistenceTests = (): void => {
     loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "/").length,
     1,
     "existing div key prevents additional div insertion",
+  );
+  assert.equal(
+    loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "#").length,
+    1,
+    "existing euclidean key prevents additional euclidean insertion",
   );
 
   const badSchemaStorage = createMemoryStorage();

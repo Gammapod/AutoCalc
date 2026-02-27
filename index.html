@@ -132,7 +132,7 @@
 
       .roll-line {
         display: grid;
-        grid-template-columns: 3ch 1fr auto;
+        grid-template-columns: 3ch 2fr 1fr;
         column-gap: 1ch;
         line-height: 1.4;
       }
@@ -144,6 +144,14 @@
       }
 
       .roll-value {
+        grid-column: 2;
+        justify-self: end;
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .roll-remainder {
         grid-column: 3;
         justify-self: end;
         text-align: right;

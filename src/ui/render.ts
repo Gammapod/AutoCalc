@@ -1,7 +1,18 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { CHECKLIST_UNLOCK_ID } from "../domain/state.js";
-import type { Action, GameState, Key, Slot, SlotOperator, UnlockDefinition, UnlockEffect, UnlockPredicate } from "../domain/types.js";
+import type {
+  Action,
+  EuclidRemainderEntry,
+  GameState,
+  Key,
+  Slot,
+  SlotOperator,
+  UnlockDefinition,
+  UnlockEffect,
+  UnlockPredicate,
+} from "../domain/types.js";
 import { equalsBigInt, gteBigInt, isInteger, lteBigInt, toDisplayString } from "../infra/math/rationalEngine.js";
+import { toPreferredFractionString } from "../infra/math/euclideanEngine.js";
 
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
@@ -16,6 +27,7 @@ type TotalSlotModel = {
 type RollRow = {
   prefix: string;
   value: string;
+  remainder?: string;
 };
 
 type RollViewModel = {
@@ -142,7 +154,7 @@ const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
   operator === "*" ? "×" : operator === "/" ? "÷" : operator;
 export const formatKeyLabel = (key: Key): string =>
-  key === "NEG" ? "-𝑥" : key === "*" || key === "/" ? formatOperatorForDisplay(key) : key;
+  key === "NEG" ? "-𝑥" : key === "#" ? "#/⟡" : key === "*" || key === "/" ? formatOperatorForDisplay(key) : key;
 
 const clampUnlockedDigits = (value: number): number =>
   Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
@@ -187,20 +199,32 @@ export const buildTotalSlotModel = (total: { num: bigint; den: bigint }, unlocke
 };
 
 export const buildRollLines = (roll: Array<{ num: bigint; den: bigint }>): string[] => {
-  return roll.map((value) => toDisplayString(value));
+  return roll.map((value) => toPreferredFractionString(value));
 };
 
-export const buildRollRows = (rollLines: string[]): RollRow[] => {
+export const buildRollRows = (rollLines: string[], euclidRemainders: EuclidRemainderEntry[] = []): RollRow[] => {
+  const remainderByRollIndex = new Map<number, string>();
+  for (const remainder of euclidRemainders) {
+    remainderByRollIndex.set(remainder.rollIndex, toPreferredFractionString(remainder.value));
+  }
+
   return rollLines.map((value, index) => ({
     prefix: index === 0 ? "X =" : "  =",
     value,
+    remainder: remainderByRollIndex.get(index),
   }));
 };
 
-export const buildRollViewModel = (roll: Array<{ num: bigint; den: bigint }>): RollViewModel => {
+export const buildRollViewModel = (
+  roll: Array<{ num: bigint; den: bigint }>,
+  euclidRemainders: EuclidRemainderEntry[] = [],
+): RollViewModel => {
   const lines = buildRollLines(roll);
-  const rows = buildRollRows(lines);
-  const valueColumnChars = lines.reduce((max, value) => Math.max(max, value.length), 0);
+  const rows = buildRollRows(lines, euclidRemainders);
+  const valueColumnChars = rows.reduce(
+    (max, row) => Math.max(max, row.value.length, row.remainder ? `⟡= ${row.remainder}`.length : 0),
+    0,
+  );
   return {
     rows,
     isVisible: rows.length > 0,
@@ -208,6 +232,9 @@ export const buildRollViewModel = (roll: Array<{ num: bigint; den: bigint }>): R
     valueColumnChars,
   };
 };
+
+export const getRollLineClassName = (row: RollRow): string =>
+  row.remainder ? "roll-line roll-line--with-remainder" : "roll-line";
 
 export const buildGraphPoints = (roll: Array<{ num: bigint; den: bigint }>): GraphPoint[] => {
   return roll.map((value, index) => ({
@@ -655,10 +682,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key)) {
     return state.unlocks.digits[key as keyof GameState["unlocks"]["digits"]];
   }
-  if (key === "+" || key === "-" || key === "*") {
-    return state.unlocks.slotOperators[key];
-  }
-  if (key === "/") {
+  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#") {
     return state.unlocks.slotOperators[key];
   }
   if (key === "C" || key === "CE" || key === "NEG") {
@@ -751,7 +775,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   renderTotalDisplay(totalEl, state);
   slotEl.textContent = buildOperationSlotDisplay(state);
 
-  const rollView = buildRollViewModel(state.calculator.roll);
+  const rollView = buildRollViewModel(state.calculator.roll, state.calculator.euclidRemainders);
   rollEl.innerHTML = "";
   rollEl.setAttribute("data-roll-visible", rollView.isVisible ? "true" : "false");
   rollEl.setAttribute("aria-hidden", rollView.isVisible ? "false" : "true");
@@ -761,7 +785,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   }
   for (const row of rollView.rows) {
     const line = document.createElement("div");
-    line.className = "roll-line";
+    line.className = getRollLineClassName(row);
 
     const prefix = document.createElement("span");
     prefix.className = "roll-prefix";
@@ -772,6 +796,13 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     value.className = "roll-value";
     value.textContent = row.value;
     line.appendChild(value);
+
+    if (row.remainder) {
+      const remainder = document.createElement("span");
+      remainder.className = "roll-remainder";
+      remainder.textContent = `⟡= ${row.remainder}`;
+      line.appendChild(remainder);
+    }
 
     rollEl.appendChild(line);
   }

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { buildRollLines, buildRollRows, buildRollViewModel } from "../src/ui/render.js";
+import { buildRollLines, buildRollRows, buildRollViewModel, getRollLineClassName } from "../src/ui/render.js";
+import type { EuclidRemainderEntry } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 
@@ -14,9 +15,9 @@ export const runRollDisplayTests = (): void => {
   assert.deepEqual(
     buildRollRows(["3", "9", "15"]),
     [
-      { prefix: "X =", value: "3" },
-      { prefix: "  =", value: "9" },
-      { prefix: "  =", value: "15" },
+      { prefix: "X =", value: "3", remainder: undefined },
+      { prefix: "  =", value: "9", remainder: undefined },
+      { prefix: "  =", value: "15", remainder: undefined },
     ],
     "roll rows use first-line X = and then aligned equals prefixes",
   );
@@ -34,12 +35,43 @@ export const runRollDisplayTests = (): void => {
   assert.deepEqual(
     visibleRoll.rows,
     [
-      { prefix: "X =", value: "3" },
-      { prefix: "  =", value: "9" },
-      { prefix: "  =", value: "15" },
+      { prefix: "X =", value: "3", remainder: undefined },
+      { prefix: "  =", value: "9", remainder: undefined },
+      { prefix: "  =", value: "15", remainder: undefined },
     ],
     "roll model rows preserve chronological order and prefixes",
   );
 
   assert.deepEqual(buildRollLines([r(3n, 2n)]), ["3/2"], "fraction roll values render as exact fractions");
+
+  const remainderRows: EuclidRemainderEntry[] = [{ rollIndex: 1, value: r(1n, 2n) }];
+  assert.deepEqual(
+    buildRollRows(["10", "1"], remainderRows),
+    [
+      { prefix: "X =", value: "10", remainder: undefined },
+      { prefix: "  =", value: "1", remainder: "1/2" },
+    ],
+    "roll rows place euclidean remainders on the same line as their target roll entry",
+  );
+
+  const rollWithRemainder = buildRollViewModel([r(10n), r(1n)], remainderRows);
+  assert.deepEqual(
+    rollWithRemainder.rows,
+    [
+      { prefix: "X =", value: "10", remainder: undefined },
+      { prefix: "  =", value: "1", remainder: "1/2" },
+    ],
+    "roll view model includes the same-line euclidean remainder",
+  );
+
+  assert.equal(
+    getRollLineClassName({ prefix: "  =", value: "10" }),
+    "roll-line",
+    "rows without remainders use the base line class",
+  );
+  assert.equal(
+    getRollLineClassName({ prefix: "  =", value: "10", remainder: "1/2" }),
+    "roll-line roll-line--with-remainder",
+    "rows with remainders use the remainder line class",
+  );
 };

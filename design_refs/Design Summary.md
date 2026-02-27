@@ -4,97 +4,82 @@ AutoCalc is a calculator-first progression game where the calculator itself is t
 
 - Key availability is gated by unlocks.
 - Arithmetic behavior and display limits drive progression.
-- Progression is earned by *demonstrating structural behaviors* (sequence predicates), not by clicking buy buttons or spending abstract currency.
+- Progression is earned by demonstrating structural behaviors (sequence predicates), not by spending currency.
 
 ## Gameplay Loop
 
 1. Player presses currently unlocked calculator keys to:
    - set an initial total, and/or
-   - configure a short, **sequential operation pipeline** (operation slots).
+   - configure a short sequential operation pipeline (operation slots).
 2. Pressing `=` applies the operation pipeline to the current total, producing a new total.
-3. Each `=` appends to a **calculator roll** (a visible history strip):
-   - if operations exist and roll is empty, append the starting total and the first result
+3. Each `=` appends to the calculator roll:
+   - if operations exist and roll is empty, append starting total and first result
    - otherwise append only the resulting total
-4. Unlock conditions (sequence predicates) are evaluated against the roll and current calculator configuration.
-5. Upgrades expand expressive power (more keys, more operation slots, larger digit cap).
+4. Unlock conditions are evaluated against the roll and current calculator configuration.
+5. Upgrades expand expressive power (more keys, more slots, larger digit cap).
 
 ## UI Model
 
-- **Main display**: current total.
-- **Calculator roll**: history of totals produced by `=` (a receipt/roll emerging from the top).
-- **Operation field**: a fixed number of ordered operation slots, e.g. `[ % 3 ] → [ + 5 ] → [ * 2 ]`.
-- **Unlock panel**: a list of sequence-based unlock conditions (and their current progress).
-- **Debug panel** (dev only):
-  - `Debug unlock all`
-  - `Run analyzer`
+- Main display: current total.
+- Calculator roll: history of totals produced by `=`.
+- Euclidean remainder annotation: when `#` executes, the final remainder appears as `⟡= <value>` on the same printed line as its target total.
+- Operation field: ordered operation slots, e.g. `[ # 3 ] -> [ + 5 ] -> [ * 2 ]`.
+- Unlock panel: list of unlock conditions and progress.
+- Debug panel (dev only):
+  - `Clear Save`
+  - `Unlock All`
 
 ## Operation Model
 
-- The calculator maintains:
-  - `total` (current bigint value)
-  - `roll` (list of totals after each `=` press)
-  - `operationSlots` (ordered list of `(operator, operand)` pairs)
-  - `maxSlots` (upgradeable cap on `operationSlots.length`)
-- Pressing `=` applies each slot sequentially to the current total (left-to-right).
-- If no operation slots exist, `=` applies the **identity function**:
-  - total remains unchanged
-  - the unchanged total is appended to the roll
-- If operation slots exist and the roll is empty:
-  - append current total, then append resulting total
-- For subsequent operation-backed `=` presses:
-  - append resulting total only
+The calculator maintains:
 
-### Utility Key Semantics
+- `total` (current rational value)
+- `roll` (list of totals after each `=` press)
+- `euclidRemainders` (line annotations keyed to roll index)
+- `operationSlots` (ordered list of `(operator, operand)` pairs)
+- `maxSlots` (upgradeable cap on `operationSlots.length`)
 
-- `CE`: clears the current operation (empties `operationSlots`) and **keeps**:
-  - current `total`
-  - current `roll`
-- `C`: clears the entire calculator run (resets):
-  - `total` to `0`
-  - `roll` to empty
-  - `operationSlots` to empty
+Pressing `=` applies each slot left-to-right.
 
-## Numeric and Error Model
+- If no operation slots exist, `=` is identity and appends unchanged total to roll.
+- If operation slots exist and roll is empty, append current total then resulting total.
+- On later operation-backed `=` presses, append resulting total only.
 
-- Arithmetic uses `BigInt` (integer-only).
-- A single digit-cap controls maximum visible/typeable digits (`displayUnlocks.displayDigits`, max 12).
-- The digit-cap applies uniformly to:
-  - the main total display
-  - roll entries
-  - operands entered into operation slots
-- Overflow and invalid result behavior (phase 1, subject to later tuning):
-  - overflow of the current total => display `Err` and enter an error state
-  - negative result => display `Err` and enter an error state (until negatives are intentionally introduced)
-- Division and modulo (inside operation slots):
-  - `/` performs integer division
-  - `%` performs remainder
-  - divide-by-zero and mod-by-zero behavior is intentionally configurable; prototype parity used `0` result (not an error) but may be tightened later as part of the number-theory identity.
+## Utility Key Semantics
 
-## Progression Systems (v1 direction)
+- `CE`: clears operation entry state for a fresh run section (clears `operationSlots`, roll, and Euclidean remainder annotations; keeps total).
+- `C`: full reset of calculator state (`total = 0`, clear roll, clear Euclidean remainder annotations, clear operation slots, clear drafting state).
+- `NEG`: toggles sign for total/drafting operand under current gating rules.
 
-- Unlock categories:
-  - Digits: `0..9`
-  - Slot operators: `+`, `-`, `*`, `/`, `%`
-  - Utilities: `C`, `CE`
-  - Capacity upgrades:
-    - `maxSlots` (operation length)
-    - `displayDigits` (digit cap)
-- Unlocks are triggered by:
-  - **Conditional** events (early onboarding discoveries)
-  - **Predicate** completion (sequence/roll behaviors)
-  - **Challenge** completions (future phases)
+## Numeric and Division Model
+
+- Arithmetic is rational (`num/den`), not integer-only.
+- `/` performs true division and may produce fractions.
+- `#` performs Euclidean division:
+  - quotient is `floor(total / operand)`
+  - total becomes quotient
+  - remainder is recorded as `total_before - operand * quotient`
+- For `/` and `#`, divisor `0` makes `=` a no-op (state unchanged).
+
+## Progression Systems
+
+Unlock categories:
+
+- Digits: `0..9`
+- Slot operators: `+`, `-`, `*`, `/`, `#`
+- Utilities: `C`, `CE`, `NEG`
+- Execution: `=`
+- Capacity upgrades:
+  - `maxSlots`
+  - `maxTotalDigits`
 
 ## Persistence
 
 - Save medium: `localStorage`
-- Save key and version are v1-specific (save reset is acceptable in rewrite).
-- Autosave can remain interval-based (default 5000 ms).
+- Save key/version are `autocalc.v1.save` / schema v2.
+- Saved state includes rational totals, roll, operation slots, and Euclidean remainder annotations.
 
 ## Scope Notes
 
-- This document reflects the new rewrite direction (slot pipeline + roll + predicate unlocks).
-- Future features remain out of scope for phase 1:
-  - challenges menu (phase 3)
-  - automation / idle currency
-  - additional scientific functions (trig, graphing)
-  - offline progress
+- This document reflects current runtime behavior in `src/`.
+- Legacy prototype behavior in `legacy/` is not authoritative.

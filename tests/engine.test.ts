@@ -27,4 +27,36 @@ export const runEngineTests = (): void => {
 
   const divByZero = executeSlots(r(10n), [{ operator: "/", operand: 0n }]);
   assert.deepEqual(divByZero, { ok: false, reason: "division_by_zero" }, "division by zero returns explicit failure");
+
+  const euclidResult = executeSlots(r(10n), [{ operator: "#", operand: 4n }]);
+  assert.deepEqual(
+    euclidResult,
+    { ok: true, total: r(2n), euclidRemainder: r(2n) },
+    "euclidean division returns integer quotient and remainder",
+  );
+
+  const euclidNegative = executeSlots(r(-10n), [{ operator: "#", operand: 4n }]);
+  assert.deepEqual(
+    euclidNegative,
+    { ok: true, total: r(-3n), euclidRemainder: r(2n) },
+    "euclidean division on negative totals uses floor quotient with non-negative remainder",
+  );
+
+  const euclidFromFraction = executeSlots(r(5n, 2n), [{ operator: "#", operand: 2n }]);
+  assert.deepEqual(
+    euclidFromFraction,
+    { ok: true, total: r(1n), euclidRemainder: r(1n, 2n) },
+    "euclidean division on fractional totals preserves fractional remainder",
+  );
+
+  const mixedEuclid = executeSlots(r(20n), [
+    { operator: "#", operand: 6n },
+    { operator: "+", operand: 1n },
+    { operator: "#", operand: 2n },
+  ]);
+  assert.deepEqual(
+    mixedEuclid,
+    { ok: true, total: r(2n), euclidRemainder: r(0n) },
+    "mixed pipeline reports the final euclidean remainder",
+  );
 };

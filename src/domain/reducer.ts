@@ -194,7 +194,7 @@ const applyEquals = (state: GameState): GameState => {
   }
 
   const executionSlots = getExecutionSlots(state);
-  if (executionSlots.some((slot) => slot.operator === "/" && slot.operand === 0n)) {
+  if (executionSlots.some((slot) => (slot.operator === "/" || slot.operator === "#") && slot.operand === 0n)) {
     return state;
   }
 
@@ -210,12 +210,20 @@ const applyEquals = (state: GameState): GameState => {
 
   const nextTotal = execution.total;
   const appendedRoll = rollWasEmpty && hasOperations ? [startingTotal, nextTotal] : [nextTotal];
+  const nextRemainders = [...finalized.calculator.euclidRemainders];
+  if (execution.euclidRemainder) {
+    nextRemainders.push({
+      rollIndex: roll.length + appendedRoll.length - 1,
+      value: execution.euclidRemainder,
+    });
+  }
   const withRoll: GameState = {
     ...finalized,
     calculator: {
       ...finalized.calculator,
       total: nextTotal,
       roll: [...roll, ...appendedRoll],
+      euclidRemainders: nextRemainders,
     },
   };
 
@@ -233,6 +241,7 @@ const applyC = (state: GameState): GameState => {
       total: fromBigInt(0n),
       pendingNegativeTotal: false,
       roll: [],
+      euclidRemainders: [],
       operationSlots: [],
       draftingSlot: null,
     },
@@ -253,6 +262,7 @@ const clearOperationEntry = (state: GameState): GameState => ({
   calculator: {
     ...state.calculator,
     roll: [],
+    euclidRemainders: [],
     operationSlots: [],
     draftingSlot: null,
   },
@@ -267,7 +277,7 @@ const applyCE = (state: GameState): GameState => {
 };
 
 const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
-const isOperator = (key: Key): key is SlotOperator => key === "+" || key === "-" || key === "*" || key === "/";
+const isOperator = (key: Key): key is SlotOperator => key === "+" || key === "-" || key === "*" || key === "/" || key === "#";
 
 const resetRunState = (state: GameState): GameState => ({
   ...state,
@@ -275,6 +285,7 @@ const resetRunState = (state: GameState): GameState => ({
     total: fromBigInt(0n),
     pendingNegativeTotal: false,
     roll: [],
+    euclidRemainders: [],
     operationSlots: [],
     draftingSlot: null,
   },

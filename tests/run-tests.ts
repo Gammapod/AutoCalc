@@ -10,6 +10,7 @@ import { runUnlockDomainResolverTests } from "./unlockDomainResolver.test.js";
 import { runRuntimeDependencyMapTests } from "./runtimeDependencyMap.test.js";
 import { runGraphDisplayTests } from "./graphDisplay.test.js";
 import { runKeyLabelDisplayTests } from "./keyLabelDisplay.test.js";
+import { runBrowserImportSafetyTests } from "./browserImportSafety.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -24,6 +25,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/unlocks-display", runUnlocksDisplayTests],
   ["content/unlock-domain-resolver", runUnlockDomainResolverTests],
   ["scripts/runtime-dependency-map", runRuntimeDependencyMapTests],
+  ["browser/import-safety", runBrowserImportSafetyTests],
 ];
 
 let passed = 0;

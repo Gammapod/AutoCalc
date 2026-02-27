@@ -131,4 +131,13 @@ export const runOperationSlotDisplayTests = (): void => {
     },
   };
   assert.equal(buildOperationSlotDisplay(committedMultiply), "[ × 2 ]", "committed multiply slot renders operator as ×");
+
+  const committedEuclidean: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      operationSlots: [{ operator: "#", operand: 3n }],
+    },
+  };
+  assert.equal(buildOperationSlotDisplay(committedEuclidean), "[ # 3 ]", "committed euclidean slot renders operator as #");
 };

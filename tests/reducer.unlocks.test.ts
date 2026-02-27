@@ -25,6 +25,7 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.unlocks.slotOperators["-"], false, "minus starts locked");
   assert.equal(state.unlocks.slotOperators["*"], false, "mul starts locked");
   assert.equal(state.unlocks.slotOperators["/"], false, "div starts locked");
+  assert.equal(state.unlocks.slotOperators["#"], false, "euclidean div starts locked");
   assert.equal(state.unlocks.digits["4"], false, "digit 4 starts locked");
   assert.equal(state.unlocks.utilities.C, false, "C starts locked");
   assert.equal(state.unlocks.utilities.CE, false, "CE starts locked");
@@ -35,8 +36,10 @@ export const runReducerUnlockTests = (): void => {
   let lockedDivState = state;
   lockedDivState = press(lockedDivState, "/");
   assert.equal(lockedDivState.calculator.draftingSlot, null, "division key is ignored while locked");
+  lockedDivState = press(lockedDivState, "#");
+  assert.equal(lockedDivState.calculator.draftingSlot, null, "euclidean division key is ignored while locked");
 
-  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "*", "/", "C", "CE", "NEG", "="];
+  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "*", "/", "#", "C", "CE", "NEG", "="];
   let nextState = state;
   for (const key of keys) {
     nextState = press(nextState, key);
@@ -100,6 +103,7 @@ export const runReducerUnlockTests = (): void => {
       total: r(0n),
       pendingNegativeTotal: false,
       roll: [],
+      euclidRemainders: [],
       operationSlots: [],
       draftingSlot: null,
     },
@@ -394,6 +398,44 @@ export const runReducerUnlockTests = (): void => {
   const afterDivEquals = press(divOperand, "=");
   assert.deepEqual(afterDivEquals.calculator.total, r(5n, 2n), "division produces exact fraction");
   assert.deepEqual(afterDivEquals.calculator.roll, [r(10n), r(5n, 2n)], "division appends rational roll values");
+  assert.deepEqual(afterDivEquals.calculator.euclidRemainders, [], "true division does not append euclidean remainder rows");
+
+  const euclidUnlockedState: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      slotOperators: {
+        ...initialState().unlocks.slotOperators,
+        "#": true,
+      },
+      execution: {
+        ...initialState().unlocks.execution,
+        "=": true,
+      },
+      digits: {
+        ...initialState().unlocks.digits,
+        "2": true,
+        "4": true,
+      },
+    },
+    calculator: {
+      ...initialState().calculator,
+      total: r(10n),
+    },
+  };
+  const euclidDrafting = press(euclidUnlockedState, "#");
+  assert.equal(euclidDrafting.calculator.draftingSlot?.operator, "#", "euclidean div starts drafting an operation slot");
+  const euclidOperand = press(euclidDrafting, "4");
+  const afterEuclidEquals = press(euclidOperand, "=");
+  assert.deepEqual(afterEuclidEquals.calculator.total, r(2n), "euclidean division stores integer quotient");
+  assert.deepEqual(afterEuclidEquals.calculator.roll, [r(10n), r(2n)], "euclidean division appends normal roll totals");
+  assert.deepEqual(
+    afterEuclidEquals.calculator.euclidRemainders,
+    [{ rollIndex: 1, value: r(2n) }],
+    "euclidean division appends one remainder annotation targeting the result row",
+  );
+  const afterEuclidCE = press({ ...afterEuclidEquals, unlocks: { ...afterEuclidEquals.unlocks, utilities: { ...afterEuclidEquals.unlocks.utilities, CE: true } } }, "CE");
+  assert.deepEqual(afterEuclidCE.calculator.euclidRemainders, [], "CE clears euclidean remainder annotations");
 
   const divZeroState: GameState = {
     ...divUnlockedState,
@@ -412,6 +454,7 @@ export const runReducerUnlockTests = (): void => {
   assert.ok(Object.values(allUnlocked.unlocks.utilities).every(Boolean), "UNLOCK_ALL unlocks all utilities");
   assert.ok(Object.values(allUnlocked.unlocks.execution).every(Boolean), "UNLOCK_ALL unlocks execution keys");
   assert.equal(allUnlocked.unlocks.slotOperators["/"], true, "UNLOCK_ALL unlocks division key");
+  assert.equal(allUnlocked.unlocks.slotOperators["#"], true, "UNLOCK_ALL unlocks euclidean division key");
   for (const unlock of unlockCatalog) {
     assert.ok(
       allUnlocked.completedUnlockIds.includes(unlock.id),

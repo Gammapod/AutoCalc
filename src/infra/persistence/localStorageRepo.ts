@@ -12,6 +12,7 @@ type SerializableState = {
     total: string;
     pendingNegativeTotal?: boolean;
     roll: string[];
+    euclidRemainders?: Array<{ rollIndex: number; value: string }>;
     operationSlots: SerializableSlot[];
     draftingSlot: GameState["calculator"]["draftingSlot"];
   };
@@ -66,6 +67,16 @@ const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
     }
   }
 
+  const hasEuclidDivKey = normalized.some((cell) => cell.kind === "key" && cell.key === "#");
+  if (!hasEuclidDivKey) {
+    const euclidPlaceholderIndex = normalized.findIndex(
+      (cell) => cell.kind === "placeholder" && cell.area === "euclid_divmod",
+    );
+    if (euclidPlaceholderIndex >= 0) {
+      normalized[euclidPlaceholderIndex] = { kind: "key", key: "#" };
+    }
+  }
+
   return normalized;
 };
 
@@ -75,6 +86,10 @@ const toSerializableState = (state: GameState): SerializableState => ({
     ...state.calculator,
     total: toDisplayString(state.calculator.total),
     roll: state.calculator.roll.map((value) => toDisplayString(value)),
+    euclidRemainders: state.calculator.euclidRemainders.map((entry) => ({
+      rollIndex: entry.rollIndex,
+      value: toDisplayString(entry.value),
+    })),
     operationSlots: state.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,
       operand: slot.operand.toString(),
@@ -115,6 +130,10 @@ const fromSerializableState = (payloadState: SerializableState): GameState => ({
     total: parseRational(payloadState.calculator.total),
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal ?? false,
     roll: payloadState.calculator.roll.map((value) => parseRational(value)),
+    euclidRemainders: (payloadState.calculator.euclidRemainders ?? []).map((entry) => ({
+      rollIndex: entry.rollIndex,
+      value: parseRational(entry.value),
+    })),
     operationSlots: payloadState.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,
       operand: BigInt(slot.operand),
