@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout, initialState } from "../src/domain/state.js";
-import { createLocalStorageRepo } from "../src/infra/persistence/localStorageRepo.js";
+import { createLocalStorageRepo, loadFromRawSave, LoadFailureReason } from "../src/infra/persistence/localStorageRepo.js";
 
 type MemoryStorage = {
   getItem: (key: string) => string | null;
@@ -43,6 +43,10 @@ export const runPersistenceTests = (): void => {
   };
 
   repo.save(nextState);
+  const rawSaved = storage.getItem(SAVE_KEY);
+  assert.ok(rawSaved, "save writes payload");
+  const parsedSaved = JSON.parse(rawSaved);
+  assert.equal(parsedSaved.schemaVersion, SAVE_SCHEMA_VERSION, "save writes the current schema version");
   const loaded = repo.load();
   if (!loaded) {
     throw new Error("Expected hydrated state, received null.");
@@ -94,6 +98,38 @@ export const runPersistenceTests = (): void => {
   assert.equal(loadedLegacy.unlocks.digits["1"], true, "legacy unlock payload hydrates current default digit unlocks");
   assert.equal(loadedLegacy.unlocks.maxTotalDigits, 2, "legacy unlock payload hydrates default total-digit cap");
 
+  const v2Storage = createMemoryStorage();
+  v2Storage.setItem(
+    SAVE_KEY,
+    JSON.stringify({
+      schemaVersion: 2,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "5/2",
+          pendingNegativeTotal: true,
+          roll: ["1", "5/2"],
+          euclidRemainders: [{ rollIndex: 1, value: "1/2" }],
+          operationSlots: [{ operator: "+", operand: "1" }],
+          draftingSlot: { operator: "-", operandInput: "1", isNegative: true },
+        },
+        ui: {
+          keyLayout: defaultKeyLayout(),
+        },
+        unlocks: state.unlocks,
+        completedUnlockIds: ["unlock_plus_on_total_11"],
+      },
+    }),
+  );
+  const v2Repo = createLocalStorageRepo(v2Storage);
+  const loadedV2 = v2Repo.load();
+  if (!loadedV2) {
+    throw new Error("Expected v2 payload to hydrate through v3 migration.");
+  }
+  assert.deepEqual(loadedV2.calculator.total, r(5n, 2n), "v2 payload migrates total to runtime rational");
+  assert.equal(loadedV2.calculator.pendingNegativeTotal, true, "v2 payload preserves pending negative total");
+  assert.deepEqual(loadedV2.calculator.roll, [r(1n), r(5n, 2n)], "v2 payload migrates roll");
+
   const legacyLayoutStorage = createMemoryStorage();
   const legacyLayout = defaultKeyLayout().map((cell) =>
     cell.kind === "key" && cell.key === "NEG" ? { kind: "placeholder" as const, area: "negate" } : cell,
@@ -101,7 +137,7 @@ export const runPersistenceTests = (): void => {
   legacyLayoutStorage.setItem(
     SAVE_KEY,
     JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
+      schemaVersion: 2,
       savedAt: Date.now(),
       state: {
         calculator: {
@@ -135,7 +171,7 @@ export const runPersistenceTests = (): void => {
   legacyMulLayoutStorage.setItem(
     SAVE_KEY,
     JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
+      schemaVersion: 2,
       savedAt: Date.now(),
       state: {
         calculator: {
@@ -174,7 +210,7 @@ export const runPersistenceTests = (): void => {
   legacyDivLayoutStorage.setItem(
     SAVE_KEY,
     JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
+      schemaVersion: 2,
       savedAt: Date.now(),
       state: {
         calculator: {
@@ -208,7 +244,7 @@ export const runPersistenceTests = (): void => {
   legacyModLayoutStorage.setItem(
     SAVE_KEY,
     JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
+      schemaVersion: 2,
       savedAt: Date.now(),
       state: {
         calculator: {
@@ -242,7 +278,7 @@ export const runPersistenceTests = (): void => {
   legacyEuclidLayoutStorage.setItem(
     SAVE_KEY,
     JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
+      schemaVersion: 2,
       savedAt: Date.now(),
       state: {
         calculator: {
@@ -280,7 +316,7 @@ export const runPersistenceTests = (): void => {
   duplicateGuardStorage.setItem(
     SAVE_KEY,
     JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
+      schemaVersion: 2,
       savedAt: Date.now(),
       state: {
         calculator: {
@@ -350,4 +386,53 @@ export const runPersistenceTests = (): void => {
   );
   const badFractionRepo = createLocalStorageRepo(badFractionStorage);
   assert.equal(badFractionRepo.load(), null, "malformed fraction values fail safely");
+
+  const badJson = loadFromRawSave("{");
+  assert.equal(badJson.state, null, "invalid JSON fails safely");
+  assert.equal(
+    badJson.reason,
+    LoadFailureReason.InvalidJson,
+    "invalid JSON reports invalid-json reason",
+  );
+
+  const missingState = loadFromRawSave(JSON.stringify({ schemaVersion: SAVE_SCHEMA_VERSION }));
+  assert.equal(missingState.state, null, "missing state envelope is rejected");
+  assert.equal(
+    missingState.reason,
+    LoadFailureReason.InvalidPayloadEnvelope,
+    "missing state uses invalid envelope reason",
+  );
+
+  const malformedUnlockSubtree = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: defaultKeyLayout(),
+        },
+        unlocks: {
+          ...state.unlocks,
+          execution: {
+            "=": "true",
+          },
+        },
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  assert.equal(malformedUnlockSubtree.state, null, "malformed unlock subtree is rejected");
+  assert.equal(
+    malformedUnlockSubtree.reason,
+    LoadFailureReason.MigrationFailed,
+    "malformed unlock subtree fails validation during migration stage",
+  );
 };

@@ -1,37 +1,12 @@
 import { parseRational, toDisplayString } from "../math/rationalEngine.js";
-import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout, initialState } from "../../domain/state.js";
-import type { GameState, LayoutCell, Slot, UnlockState } from "../../domain/types.js";
-
-type SerializableSlot = {
-  operator: Slot["operator"];
-  operand: string;
-};
-
-type SerializableState = {
-  calculator: {
-    total: string;
-    pendingNegativeTotal?: boolean;
-    roll: string[];
-    euclidRemainders?: Array<{ rollIndex: number; value: string }>;
-    operationSlots: SerializableSlot[];
-    draftingSlot: GameState["calculator"]["draftingSlot"];
-  };
-  ui?: {
-    keyLayout?: LayoutCell[];
-  };
-  unlocks?: Partial<UnlockState> & {
-    digits?: Partial<UnlockState["digits"]>;
-    slotOperators?: Partial<UnlockState["slotOperators"]>;
-    utilities?: Partial<UnlockState["utilities"]>;
-    execution?: Partial<UnlockState["execution"]>;
-  };
-  completedUnlockIds?: string[];
-};
+import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
+import { isValidSchemaVersion, migrateToLatest, type SerializableStateV3, type SerializableSlot } from "./migrations.js";
+import type { GameState } from "../../domain/types.js";
 
 type SavePayload = {
   schemaVersion: number;
   savedAt: number;
-  state: SerializableState;
+  state: unknown;
 };
 
 type KeyValueStorage = {
@@ -40,105 +15,51 @@ type KeyValueStorage = {
   removeItem: (key: string) => void;
 };
 
-const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
-  const normalized = [...(layout ?? defaultKeyLayout())];
+export const enum LoadFailureReason {
+  MissingSave = "missing_save",
+  InvalidJson = "invalid_json",
+  InvalidPayloadEnvelope = "invalid_payload_envelope",
+  UnsupportedSchemaVersion = "unsupported_schema_version",
+  MigrationFailed = "migration_failed",
+  DeserializeFailed = "deserialize_failed",
+}
 
-  const hasNegKey = normalized.some((cell) => cell.kind === "key" && cell.key === "NEG");
-  if (!hasNegKey) {
-    const negatePlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "negate");
-    if (negatePlaceholderIndex >= 0) {
-      normalized[negatePlaceholderIndex] = { kind: "key", key: "NEG" };
-    }
-  }
-
-  const hasDivKey = normalized.some((cell) => cell.kind === "key" && cell.key === "/");
-  if (!hasDivKey) {
-    const divPlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "div");
-    if (divPlaceholderIndex >= 0) {
-      normalized[divPlaceholderIndex] = { kind: "key", key: "/" };
-    }
-  }
-
-  const hasModKey = normalized.some((cell) => cell.kind === "key" && cell.key === "⟡");
-  if (!hasModKey) {
-    const modPlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "mod");
-    if (modPlaceholderIndex >= 0) {
-      normalized[modPlaceholderIndex] = { kind: "key", key: "⟡" };
-    }
-  }
-
-  const hasMulKey = normalized.some((cell) => cell.kind === "key" && cell.key === "*");
-  if (!hasMulKey) {
-    const mulPlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "mul");
-    if (mulPlaceholderIndex >= 0) {
-      normalized[mulPlaceholderIndex] = { kind: "key", key: "*" };
-    }
-  }
-
-  const hasEuclidDivKey = normalized.some((cell) => cell.kind === "key" && cell.key === "#");
-  if (!hasEuclidDivKey) {
-    const euclidPlaceholderIndex = normalized.findIndex(
-      (cell) => cell.kind === "placeholder" && cell.area === "euclid_divmod",
-    );
-    if (euclidPlaceholderIndex >= 0) {
-      normalized[euclidPlaceholderIndex] = { kind: "key", key: "#" };
-    }
-  }
-
-  return normalized;
+export type LoadResult = {
+  state: GameState | null;
+  reason: LoadFailureReason | null;
 };
 
-const toSerializableState = (state: GameState): SerializableState => ({
-  ...state,
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const toSerializableState = (state: GameState): SerializableStateV3 => ({
   calculator: {
-    ...state.calculator,
     total: toDisplayString(state.calculator.total),
+    pendingNegativeTotal: state.calculator.pendingNegativeTotal,
     roll: state.calculator.roll.map((value) => toDisplayString(value)),
     euclidRemainders: state.calculator.euclidRemainders.map((entry) => ({
       rollIndex: entry.rollIndex,
       value: toDisplayString(entry.value),
     })),
-    operationSlots: state.calculator.operationSlots.map((slot) => ({
+    operationSlots: state.calculator.operationSlots.map<SerializableSlot>((slot) => ({
       operator: slot.operator,
       operand: slot.operand.toString(),
     })),
+    draftingSlot: state.calculator.draftingSlot,
   },
+  ui: {
+    keyLayout: state.ui.keyLayout,
+  },
+  unlocks: state.unlocks,
+  completedUnlockIds: state.completedUnlockIds,
 });
 
-const defaultUnlocks = (): UnlockState => initialState().unlocks;
-
-const normalizeUnlocks = (source?: SerializableState["unlocks"]): UnlockState => {
-  const defaults = defaultUnlocks();
-  return {
-    digits: {
-      ...defaults.digits,
-      ...(source?.digits ?? {}),
-    },
-    slotOperators: {
-      ...defaults.slotOperators,
-      ...(source?.slotOperators ?? {}),
-    },
-    utilities: {
-      ...defaults.utilities,
-      ...(source?.utilities ?? {}),
-    },
-    execution: {
-      ...defaults.execution,
-      ...(source?.execution ?? {}),
-    },
-    maxSlots: source?.maxSlots ?? defaults.maxSlots,
-    maxTotalDigits: source?.maxTotalDigits ?? defaults.maxTotalDigits,
-  };
-};
-
-const fromSerializableState = (payloadState: SerializableState): GameState => ({
-  ...payloadState,
+const fromSerializableStateV3 = (payloadState: SerializableStateV3): GameState => ({
   calculator: {
-    ...payloadState.calculator,
     total: parseRational(payloadState.calculator.total),
-    pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal ?? false,
+    pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
     roll: payloadState.calculator.roll.map((value) => parseRational(value)),
-    euclidRemainders: (payloadState.calculator.euclidRemainders ?? []).map((entry) => ({
+    euclidRemainders: payloadState.calculator.euclidRemainders.map((entry) => ({
       rollIndex: entry.rollIndex,
       value: parseRational(entry.value),
     })),
@@ -146,43 +67,74 @@ const fromSerializableState = (payloadState: SerializableState): GameState => ({
       operator: slot.operator,
       operand: BigInt(slot.operand),
     })),
-    draftingSlot: payloadState.calculator.draftingSlot
-      ? {
-          ...payloadState.calculator.draftingSlot,
-          isNegative: payloadState.calculator.draftingSlot.isNegative ?? false,
-        }
-      : null,
+    draftingSlot: payloadState.calculator.draftingSlot,
   },
   ui: {
-    keyLayout: normalizeKeyLayout(payloadState.ui?.keyLayout),
+    keyLayout: payloadState.ui.keyLayout,
   },
-  unlocks: normalizeUnlocks(payloadState.unlocks),
-  completedUnlockIds: payloadState.completedUnlockIds ?? [],
+  unlocks: payloadState.unlocks,
+  completedUnlockIds: payloadState.completedUnlockIds,
 });
 
-export const createLocalStorageRepo = (storage: KeyValueStorage) => ({
-  load: (): GameState | null => {
-    const raw = storage.getItem(SAVE_KEY);
-    if (!raw) {
-      return null;
-    }
+const parsePayloadEnvelope = (
+  raw: string,
+): { payload: SavePayload | null; reason: LoadFailureReason.InvalidJson | LoadFailureReason.InvalidPayloadEnvelope | null } => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw) as unknown;
+  } catch {
+    return { payload: null, reason: LoadFailureReason.InvalidJson };
+  }
 
-    try {
-      const parsed = JSON.parse(raw) as SavePayload;
-      if (!parsed.state) {
-        return null;
-      }
-      if (parsed.schemaVersion !== 1 && parsed.schemaVersion !== SAVE_SCHEMA_VERSION) {
-        return null;
-      }
-      return fromSerializableState(parsed.state);
-    } catch {
-      return null;
-    }
-  },
+  if (!isObject(parsed)) {
+    return { payload: null, reason: LoadFailureReason.InvalidPayloadEnvelope };
+  }
+  if (!("schemaVersion" in parsed) || !("state" in parsed)) {
+    return { payload: null, reason: LoadFailureReason.InvalidPayloadEnvelope };
+  }
+
+  return {
+    payload: {
+      schemaVersion: parsed.schemaVersion as number,
+      savedAt: (parsed.savedAt as number | undefined) ?? Date.now(),
+      state: parsed.state,
+    },
+    reason: null,
+  };
+};
+
+export const loadFromRawSave = (raw: string | null): LoadResult => {
+  if (!raw) {
+    return { state: null, reason: LoadFailureReason.MissingSave };
+  }
+
+  const parsedEnvelope = parsePayloadEnvelope(raw);
+  if (!parsedEnvelope.payload) {
+    return { state: null, reason: parsedEnvelope.reason };
+  }
+  const payload = parsedEnvelope.payload;
+
+  if (!isValidSchemaVersion(payload.schemaVersion)) {
+    return { state: null, reason: LoadFailureReason.UnsupportedSchemaVersion };
+  }
+
+  const migrated = migrateToLatest(payload.schemaVersion, payload.state);
+  if (!migrated) {
+    return { state: null, reason: LoadFailureReason.MigrationFailed };
+  }
+
+  try {
+    return { state: fromSerializableStateV3(migrated), reason: null };
+  } catch {
+    return { state: null, reason: LoadFailureReason.DeserializeFailed };
+  }
+};
+
+export const createLocalStorageRepo = (storage: KeyValueStorage) => ({
+  load: (): GameState | null => loadFromRawSave(storage.getItem(SAVE_KEY)).state,
 
   save: (state: GameState): void => {
-    const payload: SavePayload = {
+    const payload = {
       schemaVersion: SAVE_SCHEMA_VERSION,
       savedAt: Date.now(),
       state: toSerializableState(state),

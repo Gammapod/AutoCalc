@@ -1,5 +1,7 @@
 import { runEngineTests } from "./engine.test.js";
+import { runReducerInputTests } from "./reducer.input.test.js";
 import { runReducerLayoutTests } from "./reducer.layout.test.js";
+import { runReducerLifecycleTests } from "./reducer.lifecycle.test.js";
 import { runReducerUnlockTests } from "./reducer.unlocks.test.js";
 import { runPersistenceTests } from "./persistence.test.js";
 import { runOperationSlotDisplayTests } from "./operationSlotDisplay.test.js";
@@ -15,7 +17,9 @@ import { runUnlockEngineTests } from "./unlockEngine.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
+  ["reducer/input", runReducerInputTests],
   ["reducer/layout", runReducerLayoutTests],
+  ["reducer/lifecycle", runReducerLifecycleTests],
   ["reducer/unlocks", runReducerUnlockTests],
   ["persistence", runPersistenceTests],
   ["ui/operation-slot-display", runOperationSlotDisplayTests],

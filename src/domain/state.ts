@@ -1,7 +1,7 @@
 import type { GameState, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 2;
+export const SAVE_SCHEMA_VERSION = 3;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 
 export const defaultKeyLayout = (): LayoutCell[] => [
