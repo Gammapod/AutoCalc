@@ -9,6 +9,7 @@ type SerializableSlot = {
 type SerializableState = {
   calculator: {
     total: string;
+    pendingNegativeTotal?: boolean;
     roll: string[];
     operationSlots: SerializableSlot[];
     draftingSlot: GameState["calculator"]["draftingSlot"];
@@ -35,6 +36,23 @@ type KeyValueStorage = {
   getItem: (key: string) => string | null;
   setItem: (key: string, value: string) => void;
   removeItem: (key: string) => void;
+};
+
+const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
+  const base = layout ?? defaultKeyLayout();
+  const hasNegKey = base.some((cell) => cell.kind === "key" && cell.key === "NEG");
+  if (hasNegKey) {
+    return base;
+  }
+
+  const negatePlaceholderIndex = base.findIndex((cell) => cell.kind === "placeholder" && cell.area === "negate");
+  if (negatePlaceholderIndex >= 0) {
+    const migrated = [...base];
+    migrated[negatePlaceholderIndex] = { kind: "key", key: "NEG" };
+    return migrated;
+  }
+
+  return base;
 };
 
 const toSerializableState = (state: GameState): SerializableState => ({
@@ -81,14 +99,21 @@ const fromSerializableState = (payloadState: SerializableState): GameState => ({
   calculator: {
     ...payloadState.calculator,
     total: BigInt(payloadState.calculator.total),
+    pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal ?? false,
     roll: payloadState.calculator.roll.map((value) => BigInt(value)),
     operationSlots: payloadState.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,
       operand: BigInt(slot.operand),
     })),
+    draftingSlot: payloadState.calculator.draftingSlot
+      ? {
+          ...payloadState.calculator.draftingSlot,
+          isNegative: payloadState.calculator.draftingSlot.isNegative ?? false,
+        }
+      : null,
   },
   ui: {
-    keyLayout: payloadState.ui?.keyLayout ?? defaultKeyLayout(),
+    keyLayout: normalizeKeyLayout(payloadState.ui?.keyLayout),
   },
   unlocks: normalizeUnlocks(payloadState.unlocks),
   completedUnlockIds: payloadState.completedUnlockIds ?? [],

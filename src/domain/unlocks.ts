@@ -28,7 +28,10 @@ export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState):
       if (draftingSlot && draftingSlot.operandInput !== "") {
         slots.push({
           operator: draftingSlot.operator,
-          operand: BigInt(draftingSlot.operandInput),
+          operand:
+            draftingSlot.isNegative && draftingSlot.operandInput !== "0"
+              ? -BigInt(draftingSlot.operandInput)
+              : BigInt(draftingSlot.operandInput),
         });
       }
     }

@@ -144,7 +144,7 @@ const clampUnlockedDigits = (value: number): number =>
 export const buildTotalSlotModel = (total: bigint, unlockedDigits: number): TotalSlotModel[] => {
   const clampedUnlocked = clampUnlockedDigits(unlockedDigits);
   const lockedCount = MAX_UNLOCKED_TOTAL_DIGITS - clampedUnlocked;
-  const renderedDigits = total.toString().slice(-clampedUnlocked);
+  const renderedDigits = (total < 0n ? -total : total).toString().slice(-clampedUnlocked);
   const leadingUnlockedCount = clampedUnlocked - renderedDigits.length;
   const slots: TotalSlotModel[] = [];
 
@@ -219,7 +219,11 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
 
   const filledTokens = state.calculator.operationSlots.map((slot) => `[ ${slot.operator} ${slot.operand.toString()} ]`);
   if (state.calculator.draftingSlot) {
-    const operand = state.calculator.draftingSlot.operandInput || "_";
+    const operand = state.calculator.draftingSlot.operandInput
+      ? `${state.calculator.draftingSlot.isNegative ? "-" : ""}${state.calculator.draftingSlot.operandInput}`
+      : state.calculator.draftingSlot.isNegative
+        ? "-_"
+        : "_";
     filledTokens.push(`[ ${state.calculator.draftingSlot.operator} ${operand} ]`);
   }
 
@@ -258,7 +262,7 @@ const getOperationSnapshot = (state: GameState): Slot[] => {
   }
   slots.push({
     operator: drafting.operator,
-    operand: BigInt(drafting.operandInput),
+    operand: drafting.isNegative && drafting.operandInput !== "0" ? -BigInt(drafting.operandInput) : BigInt(drafting.operandInput),
   });
   return slots;
 };
@@ -409,6 +413,14 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   const slotModels = buildTotalSlotModel(state.calculator.total, state.unlocks.maxTotalDigits);
   totalEl.innerHTML = "";
+  const isNegative = state.calculator.total < 0n || (state.calculator.total === 0n && state.calculator.pendingNegativeTotal);
+
+  if (isNegative) {
+    const sign = document.createElement("div");
+    sign.className = "seg-sign";
+    sign.textContent = "-";
+    totalEl.appendChild(sign);
+  }
 
   const frame = document.createElement("div");
   frame.className = "seg-frame";
@@ -625,7 +637,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (key === "+" || key === "-") {
     return state.unlocks.slotOperators[key];
   }
-  if (key === "C" || key === "CE") {
+  if (key === "C" || key === "CE" || key === "NEG") {
     return state.unlocks.utilities[key];
   }
   if (key === "=") {
@@ -765,7 +777,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     if (cell.tall) {
       button.classList.add("key--tall");
     }
-    button.textContent = cell.key;
+    button.textContent = cell.key === "NEG" ? "-𝑥" : cell.key;
     button.disabled = !isKeyUnlocked(state, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {

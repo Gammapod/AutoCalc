@@ -23,10 +23,11 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.unlocks.digits["4"], false, "digit 4 starts locked");
   assert.equal(state.unlocks.utilities.C, false, "C starts locked");
   assert.equal(state.unlocks.utilities.CE, false, "CE starts locked");
+  assert.equal(state.unlocks.utilities.NEG, false, "NEG starts locked");
   assert.equal(state.unlocks.execution["="], false, "equals starts locked");
   assert.equal(state.unlocks.maxTotalDigits, 2, "total starts with a 2-digit cap");
 
-  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "C", "CE", "="];
+  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "C", "CE", "NEG", "="];
   let nextState = state;
   for (const key of keys) {
     nextState = press(nextState, key);
@@ -88,6 +89,7 @@ export const runReducerUnlockTests = (): void => {
     afterFirstSuccessfulC.calculator,
     {
       total: 0n,
+      pendingNegativeTotal: false,
       roll: [],
       operationSlots: [],
       draftingSlot: null,
@@ -241,4 +243,104 @@ export const runReducerUnlockTests = (): void => {
     minusState.completedUnlockIds.includes("unlock_ce_on_total_below_0"),
     "CE unlock id is recorded",
   );
+
+  const negUnlockedState: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      utilities: {
+        ...initialState().unlocks.utilities,
+        NEG: true,
+      },
+    },
+  };
+  const pendingNegativeZero = press(negUnlockedState, "NEG");
+  assert.equal(pendingNegativeZero.calculator.total, 0n, "NEG on zero keeps total at zero");
+  assert.equal(
+    pendingNegativeZero.calculator.pendingNegativeTotal,
+    true,
+    "NEG on zero toggles pending negative sign on",
+  );
+  const pendingNegativeZeroCleared = press(pendingNegativeZero, "NEG");
+  assert.equal(
+    pendingNegativeZeroCleared.calculator.pendingNegativeTotal,
+    false,
+    "NEG on zero toggles pending negative sign off",
+  );
+
+  const negativeOneFromPending = press(pendingNegativeZero, "1");
+  assert.equal(negativeOneFromPending.calculator.total, -1n, "digit entry uses pending sign to create negative total");
+  assert.equal(
+    negativeOneFromPending.calculator.pendingNegativeTotal,
+    false,
+    "pending sign clears once non-zero total is entered",
+  );
+
+  const totalFlippedPositive = press(negativeOneFromPending, "NEG");
+  assert.equal(totalFlippedPositive.calculator.total, 1n, "NEG flips sign for non-zero total");
+
+  const plusUnlockedForDrafting: GameState = {
+    ...totalFlippedPositive,
+    unlocks: {
+      ...totalFlippedPositive.unlocks,
+      slotOperators: {
+        ...totalFlippedPositive.unlocks.slotOperators,
+        "+": true,
+      },
+      execution: {
+        ...totalFlippedPositive.unlocks.execution,
+        "=": true,
+      },
+    },
+  };
+  const draftingNegateState = press(press(plusUnlockedForDrafting, "+"), "NEG");
+  assert.equal(
+    draftingNegateState.calculator.draftingSlot?.isNegative,
+    true,
+    "NEG toggles drafting slot sign when an operator is active",
+  );
+  assert.equal(
+    draftingNegateState.calculator.total,
+    1n,
+    "NEG on drafting slot does not change base total",
+  );
+  const draftingNegativeOperand = press(draftingNegateState, "1");
+  const finalizedNegativeOperand = press(draftingNegativeOperand, "=");
+  assert.equal(
+    finalizedNegativeOperand.calculator.total,
+    0n,
+    "finalized drafting slot applies negative operand value",
+  );
+
+  const rollNoopSource: GameState = {
+    ...negUnlockedState,
+    unlocks: {
+      ...negUnlockedState.unlocks,
+      execution: {
+        ...negUnlockedState.unlocks.execution,
+        "=": true,
+      },
+    },
+    calculator: {
+      ...negUnlockedState.calculator,
+      total: 5n,
+      operationSlots: [{ operator: "+", operand: 1n }],
+    },
+  };
+  const withRoll = press(rollNoopSource, "=");
+  assert.ok(withRoll.calculator.roll.length > 0, "setup produced an active roll");
+  const afterNegDuringRoll = press(withRoll, "NEG");
+  assert.deepEqual(afterNegDuringRoll, withRoll, "NEG is a no-op while roll is active");
+
+  const allUnlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
+  assert.ok(Object.values(allUnlocked.unlocks.digits).every(Boolean), "UNLOCK_ALL unlocks all digits");
+  assert.ok(Object.values(allUnlocked.unlocks.slotOperators).every(Boolean), "UNLOCK_ALL unlocks all slot operators");
+  assert.ok(Object.values(allUnlocked.unlocks.utilities).every(Boolean), "UNLOCK_ALL unlocks all utilities");
+  assert.ok(Object.values(allUnlocked.unlocks.execution).every(Boolean), "UNLOCK_ALL unlocks execution keys");
+  for (const unlock of unlockCatalog) {
+    assert.ok(
+      allUnlocked.completedUnlockIds.includes(unlock.id),
+      `UNLOCK_ALL marks catalog unlock as completed: ${unlock.id}`,
+    );
+  }
 };

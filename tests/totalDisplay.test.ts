@@ -39,4 +39,16 @@ export const runTotalDisplayTests = (): void => {
     0,
     "unlocked digit count is clamped to max 12",
   );
+
+  const negativeSingleDigit = buildTotalSlotModel(-1n, 2);
+  assert.equal(
+    negativeSingleDigit.filter((slot) => slot.state === "active").length,
+    1,
+    "negative totals render digit slots from magnitude only",
+  );
+  assert.deepEqual(
+    negativeSingleDigit.at(-1)?.activeSegments,
+    ["b", "c"],
+    "negative -1 keeps 1 segments in the rightmost digit slot",
+  );
 };

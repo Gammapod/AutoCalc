@@ -26,12 +26,13 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "3" },
   { kind: "key", key: "=", tall: true },
   { kind: "key", key: "0", wide: true },
-  { kind: "placeholder", area: "negate" },
+  { kind: "key", key: "NEG" },
 ];
 
 export const initialState = (): GameState => ({
   calculator: {
     total: 0n,
+    pendingNegativeTotal: false,
     roll: [],
     operationSlots: [],
     draftingSlot: null,
@@ -59,6 +60,7 @@ export const initialState = (): GameState => ({
     utilities: {
       C: false,
       CE: false,
+      NEG: false,
     },
     execution: {
       "=": false,

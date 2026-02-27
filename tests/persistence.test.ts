@@ -80,6 +80,40 @@ export const runPersistenceTests = (): void => {
   assert.equal(loadedLegacy.unlocks.digits["1"], true, "legacy unlock payload hydrates current default digit unlocks");
   assert.equal(loadedLegacy.unlocks.maxTotalDigits, 2, "legacy unlock payload hydrates default total-digit cap");
 
+  const legacyLayoutStorage = createMemoryStorage();
+  const legacyLayout = defaultKeyLayout().map((cell) =>
+    cell.kind === "key" && cell.key === "NEG" ? { kind: "placeholder" as const, area: "negate" } : cell,
+  );
+  legacyLayoutStorage.setItem(
+    SAVE_KEY,
+    JSON.stringify({
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          roll: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: legacyLayout,
+        },
+        unlocks: state.unlocks,
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  const legacyLayoutRepo = createLocalStorageRepo(legacyLayoutStorage);
+  const loadedLegacyLayout = legacyLayoutRepo.load();
+  if (!loadedLegacyLayout) {
+    throw new Error("Expected legacy layout payload to hydrate.");
+  }
+  assert.ok(
+    loadedLegacyLayout.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === "NEG"),
+    "legacy negate placeholder migrates to NEG key",
+  );
+
   const badSchemaStorage = createMemoryStorage();
   badSchemaStorage.setItem(
     SAVE_KEY,

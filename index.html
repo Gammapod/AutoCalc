@@ -198,10 +198,24 @@
       }
 
       [data-total] {
+        position: relative;
         min-height: 70px;
         display: flex;
         justify-content: flex-end;
         align-items: center;
+      }
+
+      .seg-sign {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(24px, 4vw, 34px);
+        line-height: 1;
+        color: var(--lit);
+        text-shadow: 0 0 6px rgba(188, 255, 214, 0.45);
+        pointer-events: none;
       }
 
       .seg-frame {
@@ -518,6 +532,7 @@
       </label>
       <div class="debug-menu" data-debug-menu hidden>
         <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
+        <button type="button" class="debug-action" data-debug-unlock-all>Unlock All</button>
       </div>
     </section>
     <div class="app-shell">

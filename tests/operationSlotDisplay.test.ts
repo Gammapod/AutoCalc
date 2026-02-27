@@ -12,19 +12,45 @@ export const runOperationSlotDisplayTests = (): void => {
     ...base,
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: "+", operandInput: "" },
+      draftingSlot: { operator: "+", operandInput: "", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(draftingOperatorOnly), "[ + _ ]", "drafting slot shows operator before operand");
+
+  const draftingOperatorOnlyNegative: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      draftingSlot: { operator: "+", operandInput: "", isNegative: true },
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(draftingOperatorOnlyNegative),
+    "[ + -_ ]",
+    "drafting slot shows sign marker when negated before operand entry",
+  );
 
   const draftingWithOperand: GameState = {
     ...base,
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: "+", operandInput: "1" },
+      draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(draftingWithOperand), "[ + 1 ]", "drafting slot shows operand when provided");
+
+  const draftingWithNegativeOperand: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      draftingSlot: { operator: "+", operandInput: "1", isNegative: true },
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(draftingWithNegativeOperand),
+    "[ + -1 ]",
+    "drafting slot prefixes operand with minus when negated",
+  );
 
   const committedWithExtraCapacity: GameState = {
     ...base,
@@ -52,7 +78,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...base.calculator,
       operationSlots: [{ operator: "+", operand: 1n }],
-      draftingSlot: { operator: "-", operandInput: "" },
+      draftingSlot: { operator: "-", operandInput: "", isNegative: false },
     },
   };
   assert.equal(
@@ -79,7 +105,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...base.calculator,
       operationSlots: [{ operator: "+", operand: 1n }],
-      draftingSlot: { operator: "-", operandInput: "" },
+      draftingSlot: { operator: "-", operandInput: "", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(overflowState), "[ + 1 ]", "overflow state truncates display to max slot capacity");

@@ -1,7 +1,7 @@
 import { executeSlots } from "./engine.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "./state.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { applyUnlocks } from "./unlocks.js";
+import { applyEffect, applyUnlocks } from "./unlocks.js";
 import type { Action, Digit, GameState, Key, SlotOperator } from "./types.js";
 
 const DIGITS: Digit[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -12,6 +12,8 @@ const withDigit = (source: string, digit: Digit): string => {
   }
   return `${source}${digit}`;
 };
+
+const getMagnitudeText = (value: bigint): string => (value < 0n ? (-value).toString() : value.toString());
 
 const applyDigit = (state: GameState, digit: Digit): GameState => {
   if (!state.unlocks.digits[digit]) {
@@ -39,18 +41,21 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
     return applyUnlocks(withDraftingSlot, unlockCatalog);
   }
 
-  const nextTotalInput = withDigit(state.calculator.total.toString(), digit);
-  if (nextTotalInput.length > state.unlocks.maxTotalDigits) {
+  const nextTotalMagnitudeInput = withDigit(getMagnitudeText(state.calculator.total), digit);
+  if (nextTotalMagnitudeInput.length > state.unlocks.maxTotalDigits) {
     return state;
   }
 
-  const nextTotal = BigInt(nextTotalInput);
+  const nextMagnitude = BigInt(nextTotalMagnitudeInput);
+  const shouldBeNegative = state.calculator.total < 0n || state.calculator.pendingNegativeTotal;
+  const nextTotal = nextMagnitude === 0n ? 0n : shouldBeNegative ? -nextMagnitude : nextMagnitude;
 
   const withNextTotal: GameState = {
     ...state,
     calculator: {
       ...state.calculator,
       total: nextTotal,
+      pendingNegativeTotal: nextMagnitude === 0n ? state.calculator.pendingNegativeTotal : false,
     },
   };
 
@@ -73,9 +78,55 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
       draftingSlot: {
         operator,
         operandInput: "",
+        isNegative: false,
       },
     },
   };
+};
+
+const applyNegate = (state: GameState): GameState => {
+  if (!state.unlocks.utilities.NEG) {
+    return state;
+  }
+
+  if (state.calculator.roll.length > 0) {
+    return state;
+  }
+
+  if (state.calculator.draftingSlot) {
+    const withDraftingNegated: GameState = {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        draftingSlot: {
+          ...state.calculator.draftingSlot,
+          isNegative: !state.calculator.draftingSlot.isNegative,
+        },
+      },
+    };
+    return applyUnlocks(withDraftingNegated, unlockCatalog);
+  }
+
+  if (state.calculator.total === 0n) {
+    const withPendingZeroSign: GameState = {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        pendingNegativeTotal: !state.calculator.pendingNegativeTotal,
+      },
+    };
+    return applyUnlocks(withPendingZeroSign, unlockCatalog);
+  }
+
+  const withNegatedTotal: GameState = {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      total: -state.calculator.total,
+      pendingNegativeTotal: false,
+    },
+  };
+  return applyUnlocks(withNegatedTotal, unlockCatalog);
 };
 
 const finalizeDraftingSlot = (state: GameState): GameState => {
@@ -102,7 +153,10 @@ const finalizeDraftingSlot = (state: GameState): GameState => {
         ...state.calculator.operationSlots,
         {
           operator: draftingSlot.operator,
-          operand: BigInt(draftingSlot.operandInput),
+          operand:
+            draftingSlot.isNegative && draftingSlot.operandInput !== "0"
+              ? -BigInt(draftingSlot.operandInput)
+              : BigInt(draftingSlot.operandInput),
         },
       ],
       draftingSlot: null,
@@ -143,6 +197,7 @@ const applyC = (state: GameState): GameState => {
     ...state,
     calculator: {
       total: 0n,
+      pendingNegativeTotal: false,
       roll: [],
       operationSlots: [],
       draftingSlot: null,
@@ -184,6 +239,7 @@ const resetRunState = (state: GameState): GameState => ({
   ...state,
   calculator: {
     total: 0n,
+    pendingNegativeTotal: false,
     roll: [],
     operationSlots: [],
     draftingSlot: null,
@@ -229,6 +285,9 @@ const applyKey = (state: GameState, key: Key): GameState => {
   }
   if (key === "CE") {
     return applyCE(preprocessed);
+  }
+  if (key === "NEG") {
+    return applyNegate(preprocessed);
   }
   return preprocessed;
 };
@@ -279,6 +338,29 @@ const applySwapKeySlots = (state: GameState, firstIndex: number, secondIndex: nu
   };
 };
 
+const applyUnlockAll = (state: GameState): GameState => {
+  const withCatalogEffects = unlockCatalog.reduce((next, unlock) => applyEffect(unlock.effect, next), state);
+  return {
+    ...withCatalogEffects,
+    unlocks: {
+      ...withCatalogEffects.unlocks,
+      digits: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.digits).map((digit) => [digit, true]),
+      ) as GameState["unlocks"]["digits"],
+      slotOperators: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.slotOperators).map((operator) => [operator, true]),
+      ) as GameState["unlocks"]["slotOperators"],
+      utilities: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.utilities).map((utility) => [utility, true]),
+      ) as GameState["unlocks"]["utilities"],
+      execution: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.execution).map((executionKey) => [executionKey, true]),
+      ) as GameState["unlocks"]["execution"],
+    },
+    completedUnlockIds: [...new Set([...withCatalogEffects.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)])],
+  };
+};
+
 export const reducer = (state: GameState = initialState(), action: Action): GameState => {
   if (action.type === "PRESS_KEY") {
     return applyKey(state, action.key);
@@ -288,6 +370,9 @@ export const reducer = (state: GameState = initialState(), action: Action): Game
   }
   if (action.type === "HYDRATE_SAVE") {
     return action.state;
+  }
+  if (action.type === "UNLOCK_ALL") {
+    return applyUnlockAll(state);
   }
   if (action.type === "MOVE_KEY_SLOT") {
     return applyMoveKeySlot(state, action.fromIndex, action.toIndex);

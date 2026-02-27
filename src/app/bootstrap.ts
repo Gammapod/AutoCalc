@@ -11,7 +11,8 @@ if (!root) {
 const debugToggle = document.querySelector<HTMLInputElement>("[data-debug-toggle]");
 const debugMenu = document.querySelector<HTMLElement>("[data-debug-menu]");
 const clearSaveButton = document.querySelector<HTMLButtonElement>("[data-debug-clear-save]");
-if (!debugToggle || !debugMenu || !clearSaveButton) {
+const unlockAllButton = document.querySelector<HTMLButtonElement>("[data-debug-unlock-all]");
+if (!debugToggle || !debugMenu || !clearSaveButton || !unlockAllButton) {
   throw new Error("Debug controls are missing.");
 }
 
@@ -42,6 +43,10 @@ debugToggle.addEventListener("change", () => {
 clearSaveButton.addEventListener("click", () => {
   store.dispatch({ type: "RESET_RUN" });
   storageRepo.clear();
+});
+
+unlockAllButton.addEventListener("click", () => {
+  store.dispatch({ type: "UNLOCK_ALL" });
 });
 
 syncDebugUiState();

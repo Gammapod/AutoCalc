@@ -1,6 +1,6 @@
 ﻿export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 export type SlotOperator = "+" | "-";
-export type UtilityKey = "C" | "CE";
+export type UtilityKey = "C" | "CE" | "NEG";
 export type ExecKey = "=";
 export type Key = Digit | SlotOperator | UtilityKey | ExecKey;
 
@@ -26,10 +26,12 @@ export type Slot = {
 export type DraftingSlot = {
   operator: SlotOperator;
   operandInput: string;
+  isNegative: boolean;
 };
 
 export type CalculatorState = {
   total: bigint;
+  pendingNegativeTotal: boolean;
   roll: bigint[];
   operationSlots: Slot[];
   draftingSlot: DraftingSlot | null;
@@ -149,6 +151,10 @@ export type HydrateSaveAction = {
   state: GameState;
 };
 
+export type UnlockAllAction = {
+  type: "UNLOCK_ALL";
+};
+
 export type MoveKeySlotAction = {
   type: "MOVE_KEY_SLOT";
   fromIndex: number;
@@ -165,6 +171,7 @@ export type Action =
   | PressKeyAction
   | ResetRunAction
   | HydrateSaveAction
+  | UnlockAllAction
   | MoveKeySlotAction
   | SwapKeySlotsAction;
 
