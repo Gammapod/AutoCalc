@@ -11,7 +11,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "7" },
   { kind: "key", key: "8" },
   { kind: "key", key: "9" },
-  { kind: "placeholder", area: "sub" },
+  { kind: "key", key: "-" },
   { kind: "key", key: "4" },
   { kind: "key", key: "5" },
   { kind: "key", key: "6" },
@@ -49,6 +49,7 @@ export const initialState = (): GameState => ({
     },
     slotOperators: {
       "+": false,
+      "-": false,
     },
     utilities: {
       C: false,

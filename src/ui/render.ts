@@ -130,8 +130,8 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key)) {
     return state.unlocks.digits[key as keyof GameState["unlocks"]["digits"]];
   }
-  if (key === "+") {
-    return state.unlocks.slotOperators["+"];
+  if (key === "+" || key === "-") {
+    return state.unlocks.slotOperators[key];
   }
   if (key === "C" || key === "CE") {
     return state.unlocks.utilities[key];

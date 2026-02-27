@@ -10,6 +10,13 @@
     },
     {
       "type": "npm",
+      "script": "build:watch",
+      "isBackground": true,
+      "problemMatcher": ["$tsc-watch"],
+      "label": "npm: build:watch"
+    },
+    {
+      "type": "npm",
       "script": "dev:serve",
       "isBackground": true,
       "problemMatcher": {
@@ -28,8 +35,8 @@
     },
     {
       "label": "debug: prepare",
-      "dependsOn": ["npm: build", "npm: dev:serve"],
-      "dependsOrder": "sequence"
+      "dependsOn": ["npm: build:watch", "npm: dev:serve"],
+      "dependsOrder": "parallel"
     }
   ]
 }

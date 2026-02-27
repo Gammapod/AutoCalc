@@ -19,6 +19,10 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
   }
 
   if (state.calculator.draftingSlot) {
+    if (state.calculator.draftingSlot.operandInput.length >= 1) {
+      return state;
+    }
+
     const draftingSlot = {
       ...state.calculator.draftingSlot,
       operandInput: withDigit(state.calculator.draftingSlot.operandInput, digit),
@@ -53,8 +57,8 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
   return applyUnlocks(withNextTotal, unlockCatalog);
 };
 
-const applyPlus = (state: GameState): GameState => {
-  if (!state.unlocks.slotOperators["+"]) {
+const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
+  if (!state.unlocks.slotOperators[operator]) {
     return state;
   }
 
@@ -67,7 +71,7 @@ const applyPlus = (state: GameState): GameState => {
     calculator: {
       ...state.calculator,
       draftingSlot: {
-        operator: "+",
+        operator,
         operandInput: "",
       },
     },
@@ -165,7 +169,7 @@ const applyCE = (state: GameState): GameState => {
 };
 
 const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
-const isOperator = (key: Key): key is SlotOperator => key === "+";
+const isOperator = (key: Key): key is SlotOperator => key === "+" || key === "-";
 
 const resetRunState = (state: GameState): GameState => ({
   ...state,
@@ -205,8 +209,8 @@ const applyKey = (state: GameState, key: Key): GameState => {
   if (isDigit(key)) {
     return applyDigit(preprocessed, key);
   }
-  if (key === "+") {
-    return applyPlus(preprocessed);
+  if (isOperator(key)) {
+    return applyOperator(preprocessed, key);
   }
   if (key === "=") {
     return applyEquals(preprocessed);

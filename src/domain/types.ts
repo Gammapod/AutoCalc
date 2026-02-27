@@ -1,5 +1,5 @@
 ﻿export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-export type SlotOperator = "+";
+export type SlotOperator = "+" | "-";
 export type UtilityKey = "C" | "CE";
 export type ExecKey = "=";
 export type Key = Digit | SlotOperator | UtilityKey | ExecKey;
@@ -54,6 +54,11 @@ export type TotalEqualsPredicate = {
   value: bigint;
 };
 
+export type TotalAtLeastPredicate = {
+  type: "total_at_least";
+  value: bigint;
+};
+
 export type OperationEqualsPredicate = {
   type: "operation_equals";
   slots: Slot[];
@@ -68,6 +73,7 @@ export type RollEndsWithSequencePredicate = {
 export type UnlockPredicate =
   | RollLengthAtLeastPredicate
   | TotalEqualsPredicate
+  | TotalAtLeastPredicate
   | OperationEqualsPredicate
   | RollEndsWithSequencePredicate;
 
@@ -91,11 +97,17 @@ export type UnlockExecutionEffect = {
   key: ExecKey;
 };
 
+export type UnlockDigitEffect = {
+  type: "unlock_digit";
+  key: Digit;
+};
+
 export type UnlockEffect =
   | UnlockUtilityEffect
   | IncreaseMaxTotalDigitsEffect
   | UnlockSlotOperatorEffect
-  | UnlockExecutionEffect;
+  | UnlockExecutionEffect
+  | UnlockDigitEffect;
 
 export type UnlockDefinition = {
   id: string;

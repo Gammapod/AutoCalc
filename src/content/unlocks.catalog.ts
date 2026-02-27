@@ -19,17 +19,24 @@ export const unlockCatalog: UnlockDefinition[] = [
     once: true,
   },
   {
-    id: "max_total_digits_3",
-    description: "Increase max total digits to 3.",
-    predicate: { type: "roll_length_at_least", length: 1 },
-    effect: { type: "increase_max_total_digits", amount: 1 },
-    once: true,
-  },
-  {
     id: "unlock_c_on_roll_suffix_11_12_13_14",
     description: "Unlock C when roll ends with [11, 12, 13, 14].",
     predicate: { type: "roll_ends_with_sequence", sequence: [11n, 12n, 13n, 14n] },
     effect: { type: "unlock_utility", key: "C" },
+    once: true,
+  },
+  {
+    id: "unlock_digit_4_on_roll_suffix_1_2_3_4",
+    description: "Unlock 4 when roll ends with [1, 2, 3, 4].",
+    predicate: { type: "roll_ends_with_sequence", sequence: [1n, 2n, 3n, 4n] },
+    effect: { type: "unlock_digit", key: "4" },
+    once: true,
+  },
+  {
+    id: "unlock_minus_on_total_25_or_more",
+    description: "Unlock - when total is at least 25.",
+    predicate: { type: "total_at_least", value: 25n },
+    effect: { type: "unlock_slot_operator", key: "-" },
     once: true,
   },
 ];

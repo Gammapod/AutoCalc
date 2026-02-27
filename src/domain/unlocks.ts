@@ -7,6 +7,9 @@ export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState):
   if (predicate.type === "total_equals") {
     return state.calculator.total === predicate.value;
   }
+  if (predicate.type === "total_at_least") {
+    return state.calculator.total >= predicate.value;
+  }
   if (predicate.type === "roll_ends_with_sequence") {
     const { sequence } = predicate;
     if (sequence.length === 0 || state.calculator.roll.length < sequence.length) {
@@ -78,6 +81,18 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
         ...state.unlocks,
         execution: {
           ...state.unlocks.execution,
+          [effect.key]: true,
+        },
+      },
+    };
+  }
+  if (effect.type === "unlock_digit") {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        digits: {
+          ...state.unlocks.digits,
           [effect.key]: true,
         },
       },

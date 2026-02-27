@@ -5,6 +5,7 @@
       "name": "Debug AutoCalc (Chrome)",
       "type": "chrome",
       "request": "launch",
+      "preLaunchTask": "debug: prepare",
       "url": "http://localhost:4173/index.html",
       "webRoot": "${workspaceFolder}",
       "sourceMaps": true,

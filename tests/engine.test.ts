@@ -6,4 +6,7 @@ export const runEngineTests = (): void => {
 
   const result = executeSlots(10n, [{ operator: "+", operand: 5n }]);
   assert.equal(result, 15n, "single plus slot executes");
+
+  const subtractionResult = executeSlots(10n, [{ operator: "-", operand: 3n }]);
+  assert.equal(subtractionResult, 7n, "single minus slot executes");
 };
