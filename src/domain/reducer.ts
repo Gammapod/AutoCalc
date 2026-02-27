@@ -74,7 +74,40 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
     return state;
   }
 
-  if (state.calculator.draftingSlot || state.calculator.operationSlots.length >= state.unlocks.maxSlots) {
+  const draftingSlot = state.calculator.draftingSlot;
+  if (draftingSlot) {
+    if (draftingSlot.operandInput === "") {
+      return state;
+    }
+
+    if (state.calculator.operationSlots.length + 1 >= state.unlocks.maxSlots) {
+      return state;
+    }
+
+    return {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        operationSlots: [
+          ...state.calculator.operationSlots,
+          {
+            operator: draftingSlot.operator,
+            operand:
+              draftingSlot.isNegative && draftingSlot.operandInput !== "0"
+                ? -BigInt(draftingSlot.operandInput)
+                : BigInt(draftingSlot.operandInput),
+          },
+        ],
+        draftingSlot: {
+          operator,
+          operandInput: "",
+          isNegative: false,
+        },
+      },
+    };
+  }
+
+  if (state.calculator.operationSlots.length >= state.unlocks.maxSlots) {
     return state;
   }
 
@@ -386,24 +419,25 @@ const applySwapKeySlots = (state: GameState, firstIndex: number, secondIndex: nu
 
 const applyUnlockAll = (state: GameState): GameState => {
   const withCatalogEffects = unlockCatalog.reduce((next, unlock) => applyEffect(unlock.effect, next), state);
+  const withSecondSlotUnlocked = applyEffect({ type: "unlock_second_slot" }, withCatalogEffects);
   return {
-    ...withCatalogEffects,
+    ...withSecondSlotUnlocked,
     unlocks: {
-      ...withCatalogEffects.unlocks,
+      ...withSecondSlotUnlocked.unlocks,
       digits: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.digits).map((digit) => [digit, true]),
+        Object.keys(withSecondSlotUnlocked.unlocks.digits).map((digit) => [digit, true]),
       ) as GameState["unlocks"]["digits"],
       slotOperators: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.slotOperators).map((operator) => [operator, true]),
+        Object.keys(withSecondSlotUnlocked.unlocks.slotOperators).map((operator) => [operator, true]),
       ) as GameState["unlocks"]["slotOperators"],
       utilities: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.utilities).map((utility) => [utility, true]),
+        Object.keys(withSecondSlotUnlocked.unlocks.utilities).map((utility) => [utility, true]),
       ) as GameState["unlocks"]["utilities"],
       execution: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.execution).map((executionKey) => [executionKey, true]),
+        Object.keys(withSecondSlotUnlocked.unlocks.execution).map((executionKey) => [executionKey, true]),
       ) as GameState["unlocks"]["execution"],
     },
-    completedUnlockIds: [...new Set([...withCatalogEffects.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)])],
+    completedUnlockIds: [...new Set([...withSecondSlotUnlocked.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)])],
   };
 };
 

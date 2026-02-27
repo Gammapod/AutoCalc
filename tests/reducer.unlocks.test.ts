@@ -32,6 +32,7 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.unlocks.utilities.CE, false, "CE starts locked");
   assert.equal(state.unlocks.utilities.NEG, false, "NEG starts locked");
   assert.equal(state.unlocks.execution["="], false, "equals starts locked");
+  assert.equal(state.unlocks.maxSlots, 1, "operation slots start with a 1-slot cap");
   assert.equal(state.unlocks.maxTotalDigits, 2, "total starts with a 2-digit cap");
 
   let lockedDivState = state;
@@ -144,6 +145,7 @@ export const runReducerUnlockTests = (): void => {
     },
   };
   const afterCatalogAtNinetyNine = applyUnlocks(atNinetyNine, unlockCatalog);
+  assert.equal(afterCatalogAtNinetyNine.unlocks.maxSlots, 1, "catalog progression does not increase slot capacity");
   assert.equal(afterCatalogAtNinetyNine.unlocks.maxTotalDigits, 2, "digit-cap unlock is no longer present in catalog");
   assert.ok(
     !afterCatalogAtNinetyNine.completedUnlockIds.includes("max_total_digits_3"),
@@ -482,11 +484,71 @@ export const runReducerUnlockTests = (): void => {
   const afterDivZeroEquals = press(divZeroState, "=");
   assert.deepEqual(afterDivZeroEquals, divZeroState, "division by zero is a no-op for total/roll/slots");
 
+  const debugUnlockedState = reducer(initialState(), { type: "UNLOCK_ALL" });
+  const twoSlotCapacityState: GameState = {
+    ...debugUnlockedState,
+    calculator: {
+      ...debugUnlockedState.calculator,
+      total: r(8n),
+      roll: [],
+      euclidRemainders: [],
+      operationSlots: [{ operator: "+", operand: 1n }],
+      draftingSlot: null,
+    },
+  };
+  const draftingSecondSlot = press(twoSlotCapacityState, "-");
+  assert.equal(draftingSecondSlot.calculator.draftingSlot?.operator, "-", "second slot operator drafting is allowed after debug unlock");
+  const finalizedSecondSlot = press(press(draftingSecondSlot, "1"), "=");
+  assert.equal(finalizedSecondSlot.calculator.operationSlots.length, 2, "second slot is committed on equals");
+  assert.deepEqual(
+    finalizedSecondSlot.calculator.operationSlots,
+    [
+      { operator: "+", operand: 1n },
+      { operator: "-", operand: 1n },
+    ],
+    "committed operations preserve both slots in order",
+  );
+  const fullSlotsState: GameState = {
+    ...debugUnlockedState,
+    calculator: {
+      ...debugUnlockedState.calculator,
+      total: r(8n),
+      roll: [],
+      euclidRemainders: [],
+      operationSlots: [
+        { operator: "+", operand: 1n },
+        { operator: "-", operand: 1n },
+      ],
+      draftingSlot: null,
+    },
+  };
+  const blockedThirdSlot = press(fullSlotsState, "+");
+  assert.equal(blockedThirdSlot.calculator.draftingSlot, null, "third slot drafting is blocked at 2-slot capacity");
+  assert.equal(blockedThirdSlot.calculator.operationSlots.length, 2, "operation slot list stays capped at two slots");
+  const autoAdvanceSecondSlot = press(press(press(debugUnlockedState, "+"), "1"), "-");
+  assert.deepEqual(
+    autoAdvanceSecondSlot.calculator.operationSlots,
+    [{ operator: "+", operand: 1n }],
+    "pressing an operator after slot 1 is filled auto-commits slot 1",
+  );
+  assert.equal(
+    autoAdvanceSecondSlot.calculator.draftingSlot?.operator,
+    "-",
+    "next operator keypress activates slot 2 operator",
+  );
+  const secondSlotAcceptsDigits = press(autoAdvanceSecondSlot, "2");
+  assert.equal(
+    secondSlotAcceptsDigits.calculator.draftingSlot?.operandInput,
+    "2",
+    "slot 2 becomes active and accepts digit input immediately",
+  );
+
   const allUnlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
   assert.ok(Object.values(allUnlocked.unlocks.digits).every(Boolean), "UNLOCK_ALL unlocks all digits");
   assert.ok(Object.values(allUnlocked.unlocks.slotOperators).every(Boolean), "UNLOCK_ALL unlocks all slot operators");
   assert.ok(Object.values(allUnlocked.unlocks.utilities).every(Boolean), "UNLOCK_ALL unlocks all utilities");
   assert.ok(Object.values(allUnlocked.unlocks.execution).every(Boolean), "UNLOCK_ALL unlocks execution keys");
+  assert.equal(allUnlocked.unlocks.maxSlots, 2, "UNLOCK_ALL unlocks second operation slot capacity");
   assert.equal(allUnlocked.unlocks.slotOperators["/"], true, "UNLOCK_ALL unlocks division key");
   assert.equal(allUnlocked.unlocks.slotOperators["#"], true, "UNLOCK_ALL unlocks euclidean division key");
   assert.equal(allUnlocked.unlocks.slotOperators["⟡"], true, "UNLOCK_ALL unlocks modulo key");

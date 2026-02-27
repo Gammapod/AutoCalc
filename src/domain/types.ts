@@ -121,12 +121,17 @@ export type UnlockDigitEffect = {
   key: Digit;
 };
 
+export type UnlockSecondSlotEffect = {
+  type: "unlock_second_slot";
+};
+
 export type UnlockEffect =
   | UnlockUtilityEffect
   | IncreaseMaxTotalDigitsEffect
   | UnlockSlotOperatorEffect
   | UnlockExecutionEffect
-  | UnlockDigitEffect;
+  | UnlockDigitEffect
+  | UnlockSecondSlotEffect;
 
 export type NumberDomainNodeId = "NN" | "NZ" | "NQ" | "NA" | "NR" | "NC";
 
