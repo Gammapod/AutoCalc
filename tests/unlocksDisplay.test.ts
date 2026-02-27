@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { CHECKLIST_UNLOCK_ID } from "../src/domain/state.js";
-import { initialState } from "../src/domain/state.js";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
-import { buildUnlockRows, isChecklistUnlocked } from "../src/ui/render.js";
+import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
 import type { GameState, UnlockDefinition } from "../src/domain/types.js";
+import { buildUnlockRows, isChecklistUnlocked } from "../src/ui/render.js";
+
+const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 
 export const runUnlocksDisplayTests = (): void => {
   const base = initialState();
@@ -101,7 +102,7 @@ export const runUnlocksDisplayTests = (): void => {
     ...base,
     calculator: {
       ...base.calculator,
-      roll: [10n, 11n, 12n, 13n],
+      roll: [r(10n), r(11n), r(12n), r(13n)],
     },
   };
   const rollRow = buildUnlockRows(rollProgressState, unlockCatalog).find(

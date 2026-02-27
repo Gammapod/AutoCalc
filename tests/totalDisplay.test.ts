@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { buildTotalSlotModel } from "../src/ui/render.js";
 
+const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+
 export const runTotalDisplayTests = (): void => {
-  const baseline = buildTotalSlotModel(0n, 2);
+  const baseline = buildTotalSlotModel(r(0n), 2);
   assert.equal(baseline.length, 12, "display always renders 12 fixed-width slots");
   assert.equal(
     baseline.filter((slot) => slot.state === "locked").length,
@@ -20,7 +22,7 @@ export const runTotalDisplayTests = (): void => {
     "rightmost active digit renders 0 segments",
   );
 
-  const twoDigitTotal = buildTotalSlotModel(42n, 2);
+  const twoDigitTotal = buildTotalSlotModel(r(42n), 2);
   assert.equal(
     twoDigitTotal.filter((slot) => slot.state === "active").length,
     2,
@@ -33,14 +35,14 @@ export const runTotalDisplayTests = (): void => {
     "right active digit renders 2 segments",
   );
 
-  const clamped = buildTotalSlotModel(1234n, 20);
+  const clamped = buildTotalSlotModel(r(1234n), 20);
   assert.equal(
     clamped.filter((slot) => slot.state === "locked").length,
     0,
     "unlocked digit count is clamped to max 12",
   );
 
-  const negativeSingleDigit = buildTotalSlotModel(-1n, 2);
+  const negativeSingleDigit = buildTotalSlotModel(r(-1n), 2);
   assert.equal(
     negativeSingleDigit.filter((slot) => slot.state === "active").length,
     1,

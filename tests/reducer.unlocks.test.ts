@@ -3,10 +3,13 @@ import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { reducer } from "../src/domain/reducer.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
 import { applyUnlocks } from "../src/domain/unlocks.js";
-import type { UnlockDefinition } from "../src/domain/types.js";
-import type { GameState, Key } from "../src/domain/types.js";
+import type { GameState, Key, UnlockDefinition } from "../src/domain/types.js";
 
+const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const rs = (...values: bigint[]): Array<{ num: bigint; den: bigint }> => values.map((value) => r(value));
 const press = (state: GameState, key: Key): GameState => reducer(state, { type: "PRESS_KEY", key });
+const assertIntTotal = (state: GameState, value: bigint, message: string): void =>
+  assert.deepEqual(state.calculator.total, r(value), message);
 
 export const runReducerUnlockTests = (): void => {
   const state = initialState();
@@ -21,6 +24,7 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.unlocks.slotOperators["+"], false, "plus starts locked");
   assert.equal(state.unlocks.slotOperators["-"], false, "minus starts locked");
   assert.equal(state.unlocks.slotOperators["*"], false, "mul starts locked");
+  assert.equal(state.unlocks.slotOperators["/"], false, "div starts locked");
   assert.equal(state.unlocks.digits["4"], false, "digit 4 starts locked");
   assert.equal(state.unlocks.utilities.C, false, "C starts locked");
   assert.equal(state.unlocks.utilities.CE, false, "CE starts locked");
@@ -28,7 +32,11 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.unlocks.execution["="], false, "equals starts locked");
   assert.equal(state.unlocks.maxTotalDigits, 2, "total starts with a 2-digit cap");
 
-  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "*", "C", "CE", "NEG", "="];
+  let lockedDivState = state;
+  lockedDivState = press(lockedDivState, "/");
+  assert.equal(lockedDivState.calculator.draftingSlot, null, "division key is ignored while locked");
+
+  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "*", "/", "C", "CE", "NEG", "="];
   let nextState = state;
   for (const key of keys) {
     nextState = press(nextState, key);
@@ -39,13 +47,13 @@ export const runReducerUnlockTests = (): void => {
     "attempting C while locked does not unlock checklist drawer",
   );
 
-  assert.equal(nextState.calculator.total, 1n, "pressing unlocked 1 updates total");
+  assertIntTotal(nextState, 1n, "pressing unlocked 1 updates total");
   nextState = press(nextState, "1");
-  assert.equal(nextState.calculator.total, 11n, "second digit is accepted under 2-digit cap");
+  assertIntTotal(nextState, 11n, "second digit is accepted under 2-digit cap");
   assert.equal(nextState.unlocks.slotOperators["+"], true, "plus unlocks when total first reaches 11");
   assert.ok(nextState.completedUnlockIds.includes("unlock_plus_on_total_11"), "plus unlock id is recorded");
   nextState = press(nextState, "1");
-  assert.equal(nextState.calculator.total, 11n, "third digit is blocked by 2-digit cap");
+  assertIntTotal(nextState, 11n, "third digit is blocked by 2-digit cap");
   assert.deepEqual(nextState.calculator.roll, [], "roll remains unchanged without equals");
   assert.equal(nextState.calculator.operationSlots.length, 0, "no slots are created without pressing plus");
   assert.equal(nextState.unlocks.execution["="], false, "equals remains locked before [+ 1]");
@@ -64,17 +72,17 @@ export const runReducerUnlockTests = (): void => {
   nextState = press(nextState, "=");
   assert.deepEqual(
     nextState.calculator.roll,
-    [11n, 12n],
+    rs(11n, 12n),
     "first equals with operations seeds roll with baseline total and first result",
   );
   nextState = press(nextState, "=");
   assert.deepEqual(
     nextState.calculator.roll,
-    [11n, 12n, 13n],
+    rs(11n, 12n, 13n),
     "subsequent equals appends only the resulting total",
   );
   nextState = press(nextState, "=");
-  assert.deepEqual(nextState.calculator.roll, [11n, 12n, 13n, 14n], "roll continues appending successive totals");
+  assert.deepEqual(nextState.calculator.roll, rs(11n, 12n, 13n, 14n), "roll continues appending successive totals");
   assert.equal(nextState.unlocks.utilities.C, true, "C unlocks on roll suffix [11, 12, 13, 14]");
   assert.ok(
     nextState.completedUnlockIds.includes("unlock_c_on_roll_suffix_11_12_13_14"),
@@ -89,7 +97,7 @@ export const runReducerUnlockTests = (): void => {
   assert.deepEqual(
     afterFirstSuccessfulC.calculator,
     {
-      total: 0n,
+      total: r(0n),
       pendingNegativeTotal: false,
       roll: [],
       operationSlots: [],
@@ -115,17 +123,17 @@ export const runReducerUnlockTests = (): void => {
     },
     calculator: {
       ...initialState().calculator,
-      total: 11n,
+      total: r(11n),
     },
   };
   const afterIdentityEquals = press(identityEqualsState, "=");
-  assert.deepEqual(afterIdentityEquals.calculator.roll, [11n], "identity equals appends one unchanged total");
+  assert.deepEqual(afterIdentityEquals.calculator.roll, [r(11n)], "identity equals appends one unchanged total");
 
   const atNinetyNine: GameState = {
     ...initialState(),
     calculator: {
       ...initialState().calculator,
-      total: 99n,
+      total: r(99n),
     },
   };
   const afterCatalogAtNinetyNine = applyUnlocks(atNinetyNine, unlockCatalog);
@@ -147,7 +155,7 @@ export const runReducerUnlockTests = (): void => {
     ...state,
     calculator: {
       ...state.calculator,
-      roll: [1n],
+      roll: [r(1n)],
     },
   };
 
@@ -172,7 +180,7 @@ export const runReducerUnlockTests = (): void => {
     ...state,
     calculator: {
       ...state.calculator,
-      roll: [3n, 11n, 12n, 13n, 14n],
+      roll: [r(3n), r(11n), r(12n), r(13n), r(14n)],
     },
   };
   const afterSuffixUnlock = applyUnlocks(withMatchingSuffix, [rollSuffixUnlock]);
@@ -183,7 +191,7 @@ export const runReducerUnlockTests = (): void => {
     ...state,
     calculator: {
       ...state.calculator,
-      roll: [11n, 12n, 13n, 15n],
+      roll: [r(11n), r(12n), r(13n), r(15n)],
     },
   };
   const afterNonMatch = applyUnlocks(withNonMatchingSuffix, [rollSuffixUnlock]);
@@ -200,7 +208,7 @@ export const runReducerUnlockTests = (): void => {
     ...state,
     calculator: {
       ...state.calculator,
-      roll: [1n, 2n, 3n, 4n],
+      roll: [r(1n), r(2n), r(3n), r(4n)],
     },
   };
   const afterFourSuffixUnlock = applyUnlocks(withFourSuffix, [rollUnlocksFour]);
@@ -215,10 +223,10 @@ export const runReducerUnlockTests = (): void => {
   for (let index = 0; index < 13; index += 1) {
     minusState = press(minusState, "=");
   }
-  assert.equal(minusState.calculator.total, 24n, "state reaches 24 before minus unlock threshold");
+  assertIntTotal(minusState, 24n, "state reaches 24 before minus unlock threshold");
   assert.equal(minusState.unlocks.slotOperators["-"], false, "minus stays locked below threshold");
   minusState = press(minusState, "=");
-  assert.equal(minusState.calculator.total, 25n, "state reaches 25 at threshold");
+  assertIntTotal(minusState, 25n, "state reaches 25 at threshold");
   assert.equal(minusState.unlocks.slotOperators["-"], true, "minus unlocks at total >= 25");
   assert.ok(
     minusState.completedUnlockIds.includes("unlock_minus_on_total_25_or_more"),
@@ -229,16 +237,16 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(minusState.calculator.draftingSlot?.operator, "-", "minus starts drafting an operation slot");
   minusState = press(minusState, "1");
   minusState = press(minusState, "=");
-  assert.equal(minusState.calculator.total, 24n, "minus operation subtracts one when executed");
+  assertIntTotal(minusState, 24n, "minus operation subtracts one when executed");
   assert.equal(minusState.unlocks.utilities.CE, false, "CE remains locked while total is non-negative");
 
   for (let index = 0; index < 24; index += 1) {
     minusState = press(minusState, "=");
   }
-  assert.equal(minusState.calculator.total, 0n, "state reaches 0 before CE unlock threshold");
+  assertIntTotal(minusState, 0n, "state reaches 0 before CE unlock threshold");
   assert.equal(minusState.unlocks.utilities.CE, false, "CE stays locked at total 0");
   minusState = press(minusState, "=");
-  assert.equal(minusState.calculator.total, -1n, "state reaches -1 at CE unlock threshold");
+  assertIntTotal(minusState, -1n, "state reaches -1 at CE unlock threshold");
   assert.equal(minusState.unlocks.utilities.CE, true, "CE unlocks when total becomes negative");
   assert.ok(
     minusState.completedUnlockIds.includes("unlock_ce_on_total_below_0"),
@@ -256,7 +264,7 @@ export const runReducerUnlockTests = (): void => {
     },
   };
   const pendingNegativeZero = press(negUnlockedState, "NEG");
-  assert.equal(pendingNegativeZero.calculator.total, 0n, "NEG on zero keeps total at zero");
+  assertIntTotal(pendingNegativeZero, 0n, "NEG on zero keeps total at zero");
   assert.equal(
     pendingNegativeZero.calculator.pendingNegativeTotal,
     true,
@@ -270,7 +278,7 @@ export const runReducerUnlockTests = (): void => {
   );
 
   const negativeOneFromPending = press(pendingNegativeZero, "1");
-  assert.equal(negativeOneFromPending.calculator.total, -1n, "digit entry uses pending sign to create negative total");
+  assertIntTotal(negativeOneFromPending, -1n, "digit entry uses pending sign to create negative total");
   assert.equal(
     negativeOneFromPending.calculator.pendingNegativeTotal,
     false,
@@ -278,7 +286,7 @@ export const runReducerUnlockTests = (): void => {
   );
 
   const totalFlippedPositive = press(negativeOneFromPending, "NEG");
-  assert.equal(totalFlippedPositive.calculator.total, 1n, "NEG flips sign for non-zero total");
+  assertIntTotal(totalFlippedPositive, 1n, "NEG flips sign for non-zero total");
 
   const plusUnlockedForDrafting: GameState = {
     ...totalFlippedPositive,
@@ -300,18 +308,10 @@ export const runReducerUnlockTests = (): void => {
     true,
     "NEG toggles drafting slot sign when an operator is active",
   );
-  assert.equal(
-    draftingNegateState.calculator.total,
-    1n,
-    "NEG on drafting slot does not change base total",
-  );
+  assertIntTotal(draftingNegateState, 1n, "NEG on drafting slot does not change base total");
   const draftingNegativeOperand = press(draftingNegateState, "1");
   const finalizedNegativeOperand = press(draftingNegativeOperand, "=");
-  assert.equal(
-    finalizedNegativeOperand.calculator.total,
-    0n,
-    "finalized drafting slot applies negative operand value",
-  );
+  assertIntTotal(finalizedNegativeOperand, 0n, "finalized drafting slot applies negative operand value");
 
   const rollNoopSource: GameState = {
     ...negUnlockedState,
@@ -324,7 +324,7 @@ export const runReducerUnlockTests = (): void => {
     },
     calculator: {
       ...negUnlockedState.calculator,
-      total: 5n,
+      total: r(5n),
       operationSlots: [{ operator: "+", operand: 1n }],
     },
   };
@@ -353,7 +353,7 @@ export const runReducerUnlockTests = (): void => {
     },
     calculator: {
       ...initialState().calculator,
-      total: 4n,
+      total: r(4n),
     },
   };
   const mulDrafting = press(mulUnlockedState, "*");
@@ -363,13 +363,55 @@ export const runReducerUnlockTests = (): void => {
   const mulOverflowOperand = press(mulWithOperand, "2");
   assert.equal(mulOverflowOperand.calculator.draftingSlot?.operandInput, "3", "mul drafting keeps 1-digit operand cap");
   const afterMulEquals = press(mulOverflowOperand, "=");
-  assert.equal(afterMulEquals.calculator.total, 12n, "mul operation applies on equals");
+  assertIntTotal(afterMulEquals, 12n, "mul operation applies on equals");
+
+  const divUnlockedState: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      slotOperators: {
+        ...initialState().unlocks.slotOperators,
+        "/": true,
+      },
+      execution: {
+        ...initialState().unlocks.execution,
+        "=": true,
+      },
+      digits: {
+        ...initialState().unlocks.digits,
+        "2": true,
+        "4": true,
+      },
+    },
+    calculator: {
+      ...initialState().calculator,
+      total: r(10n),
+    },
+  };
+  const divDrafting = press(divUnlockedState, "/");
+  assert.equal(divDrafting.calculator.draftingSlot?.operator, "/", "div starts drafting an operation slot");
+  const divOperand = press(divDrafting, "4");
+  const afterDivEquals = press(divOperand, "=");
+  assert.deepEqual(afterDivEquals.calculator.total, r(5n, 2n), "division produces exact fraction");
+  assert.deepEqual(afterDivEquals.calculator.roll, [r(10n), r(5n, 2n)], "division appends rational roll values");
+
+  const divZeroState: GameState = {
+    ...divUnlockedState,
+    calculator: {
+      ...divUnlockedState.calculator,
+      operationSlots: [{ operator: "/", operand: 0n }],
+      roll: [r(1n)],
+    },
+  };
+  const afterDivZeroEquals = press(divZeroState, "=");
+  assert.deepEqual(afterDivZeroEquals, divZeroState, "division by zero is a no-op for total/roll/slots");
 
   const allUnlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
   assert.ok(Object.values(allUnlocked.unlocks.digits).every(Boolean), "UNLOCK_ALL unlocks all digits");
   assert.ok(Object.values(allUnlocked.unlocks.slotOperators).every(Boolean), "UNLOCK_ALL unlocks all slot operators");
   assert.ok(Object.values(allUnlocked.unlocks.utilities).every(Boolean), "UNLOCK_ALL unlocks all utilities");
   assert.ok(Object.values(allUnlocked.unlocks.execution).every(Boolean), "UNLOCK_ALL unlocks execution keys");
+  assert.equal(allUnlocked.unlocks.slotOperators["/"], true, "UNLOCK_ALL unlocks division key");
   for (const unlock of unlockCatalog) {
     assert.ok(
       allUnlocked.completedUnlockIds.includes(unlock.id),

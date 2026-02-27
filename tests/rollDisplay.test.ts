@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { buildRollLines, buildRollRows, buildRollViewModel } from "../src/ui/render.js";
 
+const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+
 export const runRollDisplayTests = (): void => {
   assert.deepEqual(
-    buildRollLines([3n, 9n, 15n]),
+    buildRollLines([r(3n), r(9n), r(15n)]),
     ["3", "9", "15"],
     "roll lines render oldest-to-newest (top-to-bottom)",
   );
@@ -25,7 +27,7 @@ export const runRollDisplayTests = (): void => {
   assert.equal(hiddenRoll.valueColumnChars, 0, "empty roll value column width is zero");
   assert.deepEqual(hiddenRoll.rows, [], "empty roll model returns no rows");
 
-  const visibleRoll = buildRollViewModel([3n, 9n, 15n]);
+  const visibleRoll = buildRollViewModel([r(3n), r(9n), r(15n)]);
   assert.equal(visibleRoll.isVisible, true, "non-empty roll is visible");
   assert.equal(visibleRoll.lineCount, 3, "non-empty roll line count matches entry count");
   assert.equal(visibleRoll.valueColumnChars, 2, "value column width tracks longest rendered value");
@@ -38,4 +40,6 @@ export const runRollDisplayTests = (): void => {
     ],
     "roll model rows preserve chronological order and prefixes",
   );
+
+  assert.deepEqual(buildRollLines([r(3n, 2n)]), ["3/2"], "fraction roll values render as exact fractions");
 };

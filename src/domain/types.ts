@@ -1,5 +1,5 @@
 ﻿export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-export type SlotOperator = "+" | "-" | "*";
+export type SlotOperator = "+" | "-" | "*" | "/";
 export type UtilityKey = "C" | "CE" | "NEG";
 export type ExecKey = "=";
 export type Key = Digit | SlotOperator | UtilityKey | ExecKey;
@@ -23,6 +23,11 @@ export type Slot = {
   operand: bigint;
 };
 
+export type RationalValue = {
+  num: bigint;
+  den: bigint;
+};
+
 export type DraftingSlot = {
   operator: SlotOperator;
   operandInput: string;
@@ -30,9 +35,9 @@ export type DraftingSlot = {
 };
 
 export type CalculatorState = {
-  total: bigint;
+  total: RationalValue;
   pendingNegativeTotal: boolean;
-  roll: bigint[];
+  roll: RationalValue[];
   operationSlots: Slot[];
   draftingSlot: DraftingSlot | null;
 };

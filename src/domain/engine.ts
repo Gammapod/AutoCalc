@@ -1,20 +1,38 @@
-﻿import type { Slot } from "./types.js";
+import { addInt, divInt, mulInt, subInt } from "../infra/math/rationalEngine.js";
+import type { RationalValue, Slot } from "./types.js";
 
-export const executeSlots = (total: bigint, slots: Slot[]): bigint => {
+export type ExecuteSlotsResult =
+  | { ok: true; total: RationalValue }
+  | { ok: false; reason: "division_by_zero" };
+
+export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsResult => {
   if (slots.length === 0) {
-    return total;
+    return { ok: true, total };
   }
 
-  return slots.reduce((nextTotal, slot) => {
+  let nextTotal = total;
+  for (const slot of slots) {
     if (slot.operator === "+") {
-      return nextTotal + slot.operand;
+      nextTotal = addInt(nextTotal, slot.operand);
+      continue;
     }
     if (slot.operator === "-") {
-      return nextTotal - slot.operand;
+      nextTotal = subInt(nextTotal, slot.operand);
+      continue;
     }
     if (slot.operator === "*") {
-      return nextTotal * slot.operand;
+      nextTotal = mulInt(nextTotal, slot.operand);
+      continue;
+    }
+    if (slot.operator === "/") {
+      if (slot.operand === 0n) {
+        return { ok: false, reason: "division_by_zero" };
+      }
+      nextTotal = divInt(nextTotal, slot.operand);
+      continue;
     }
     throw new Error(`Unsupported operator: ${slot.operator}`);
-  }, total);
+  }
+
+  return { ok: true, total: nextTotal };
 };

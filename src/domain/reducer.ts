@@ -2,7 +2,8 @@ import { executeSlots } from "./engine.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "./state.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyEffect, applyUnlocks } from "./unlocks.js";
-import type { Action, Digit, GameState, Key, SlotOperator } from "./types.js";
+import { fromBigInt, isInteger } from "../infra/math/rationalEngine.js";
+import type { Action, Digit, GameState, Key, RationalValue, Slot, SlotOperator } from "./types.js";
 
 const DIGITS: Digit[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -13,7 +14,12 @@ const withDigit = (source: string, digit: Digit): string => {
   return `${source}${digit}`;
 };
 
-const getMagnitudeText = (value: bigint): string => (value < 0n ? (-value).toString() : value.toString());
+const getMagnitudeText = (value: RationalValue): string => {
+  if (!isInteger(value)) {
+    return "0";
+  }
+  return value.num < 0n ? (-value.num).toString() : value.num.toString();
+};
 
 const applyDigit = (state: GameState, digit: Digit): GameState => {
   if (!state.unlocks.digits[digit]) {
@@ -47,8 +53,9 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
   }
 
   const nextMagnitude = BigInt(nextTotalMagnitudeInput);
-  const shouldBeNegative = state.calculator.total < 0n || state.calculator.pendingNegativeTotal;
-  const nextTotal = nextMagnitude === 0n ? 0n : shouldBeNegative ? -nextMagnitude : nextMagnitude;
+  const shouldBeNegative = state.calculator.total.num < 0n || state.calculator.pendingNegativeTotal;
+  const nextTotalBigInt = nextMagnitude === 0n ? 0n : shouldBeNegative ? -nextMagnitude : nextMagnitude;
+  const nextTotal = fromBigInt(nextTotalBigInt);
 
   const withNextTotal: GameState = {
     ...state,
@@ -107,7 +114,7 @@ const applyNegate = (state: GameState): GameState => {
     return applyUnlocks(withDraftingNegated, unlockCatalog);
   }
 
-  if (state.calculator.total === 0n) {
+  if (state.calculator.total.num === 0n) {
     const withPendingZeroSign: GameState = {
       ...state,
       calculator: {
@@ -122,7 +129,10 @@ const applyNegate = (state: GameState): GameState => {
     ...state,
     calculator: {
       ...state.calculator,
-      total: -state.calculator.total,
+      total: {
+        ...state.calculator.total,
+        num: -state.calculator.total.num,
+      },
       pendingNegativeTotal: false,
     },
   };
@@ -164,8 +174,27 @@ const finalizeDraftingSlot = (state: GameState): GameState => {
   };
 };
 
+const getExecutionSlots = (state: GameState): Slot[] => {
+  const slots = [...state.calculator.operationSlots];
+  const draftingSlot = state.calculator.draftingSlot;
+  if (!draftingSlot || draftingSlot.operandInput === "") {
+    return slots;
+  }
+
+  slots.push({
+    operator: draftingSlot.operator,
+    operand: draftingSlot.isNegative && draftingSlot.operandInput !== "0" ? -BigInt(draftingSlot.operandInput) : BigInt(draftingSlot.operandInput),
+  });
+  return slots;
+};
+
 const applyEquals = (state: GameState): GameState => {
   if (!state.unlocks.execution["="]) {
+    return state;
+  }
+
+  const executionSlots = getExecutionSlots(state);
+  if (executionSlots.some((slot) => slot.operator === "/" && slot.operand === 0n)) {
     return state;
   }
 
@@ -174,7 +203,12 @@ const applyEquals = (state: GameState): GameState => {
   const { operationSlots, roll } = finalized.calculator;
   const rollWasEmpty = roll.length === 0;
   const hasOperations = operationSlots.length > 0;
-  const nextTotal = executeSlots(startingTotal, operationSlots);
+  const execution = executeSlots(startingTotal, operationSlots);
+  if (!execution.ok) {
+    return state;
+  }
+
+  const nextTotal = execution.total;
   const appendedRoll = rollWasEmpty && hasOperations ? [startingTotal, nextTotal] : [nextTotal];
   const withRoll: GameState = {
     ...finalized,
@@ -196,7 +230,7 @@ const applyC = (state: GameState): GameState => {
   const resetState: GameState = {
     ...state,
     calculator: {
-      total: 0n,
+      total: fromBigInt(0n),
       pendingNegativeTotal: false,
       roll: [],
       operationSlots: [],
@@ -233,12 +267,12 @@ const applyCE = (state: GameState): GameState => {
 };
 
 const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
-const isOperator = (key: Key): key is SlotOperator => key === "+" || key === "-" || key === "*";
+const isOperator = (key: Key): key is SlotOperator => key === "+" || key === "-" || key === "*" || key === "/";
 
 const resetRunState = (state: GameState): GameState => ({
   ...state,
   calculator: {
-    total: 0n,
+    total: fromBigInt(0n),
     pendingNegativeTotal: false,
     roll: [],
     operationSlots: [],

@@ -1,3 +1,4 @@
+import { parseRational, toDisplayString } from "../math/rationalEngine.js";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout, initialState } from "../../domain/state.js";
 import type { GameState, LayoutCell, Slot, UnlockState } from "../../domain/types.js";
 
@@ -49,6 +50,14 @@ const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
     }
   }
 
+  const hasDivKey = normalized.some((cell) => cell.kind === "key" && cell.key === "/");
+  if (!hasDivKey) {
+    const divPlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "div");
+    if (divPlaceholderIndex >= 0) {
+      normalized[divPlaceholderIndex] = { kind: "key", key: "/" };
+    }
+  }
+
   const hasMulKey = normalized.some((cell) => cell.kind === "key" && cell.key === "*");
   if (!hasMulKey) {
     const mulPlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "mul");
@@ -64,8 +73,8 @@ const toSerializableState = (state: GameState): SerializableState => ({
   ...state,
   calculator: {
     ...state.calculator,
-    total: state.calculator.total.toString(),
-    roll: state.calculator.roll.map((value) => value.toString()),
+    total: toDisplayString(state.calculator.total),
+    roll: state.calculator.roll.map((value) => toDisplayString(value)),
     operationSlots: state.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,
       operand: slot.operand.toString(),
@@ -103,9 +112,9 @@ const fromSerializableState = (payloadState: SerializableState): GameState => ({
   ...payloadState,
   calculator: {
     ...payloadState.calculator,
-    total: BigInt(payloadState.calculator.total),
+    total: parseRational(payloadState.calculator.total),
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal ?? false,
-    roll: payloadState.calculator.roll.map((value) => BigInt(value)),
+    roll: payloadState.calculator.roll.map((value) => parseRational(value)),
     operationSlots: payloadState.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,
       operand: BigInt(slot.operand),
@@ -133,7 +142,10 @@ export const createLocalStorageRepo = (storage: KeyValueStorage) => ({
 
     try {
       const parsed = JSON.parse(raw) as SavePayload;
-      if (parsed.schemaVersion !== SAVE_SCHEMA_VERSION || !parsed.state) {
+      if (!parsed.state) {
+        return null;
+      }
+      if (parsed.schemaVersion !== 1 && parsed.schemaVersion !== SAVE_SCHEMA_VERSION) {
         return null;
       }
       return fromSerializableState(parsed.state);

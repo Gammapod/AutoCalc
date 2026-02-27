@@ -1,7 +1,7 @@
 import type { GameState, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 1;
+export const SAVE_SCHEMA_VERSION = 2;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 
 export const defaultKeyLayout = (): LayoutCell[] => [
@@ -9,7 +9,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "empty" },
   { kind: "key", key: "CE" },
   { kind: "key", key: "C" },
-  { kind: "placeholder", area: "div" },
+  { kind: "key", key: "/" },
   { kind: "placeholder", area: "mod" },
   { kind: "placeholder", area: "euclid_divmod" },
   { kind: "key", key: "*" },
@@ -31,7 +31,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
 
 export const initialState = (): GameState => ({
   calculator: {
-    total: 0n,
+    total: { num: 0n, den: 1n },
     pendingNegativeTotal: false,
     roll: [],
     operationSlots: [],
@@ -57,6 +57,7 @@ export const initialState = (): GameState => ({
       "+": false,
       "-": false,
       "*": false,
+      "/": false,
     },
     utilities: {
       C: false,

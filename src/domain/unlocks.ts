@@ -1,17 +1,18 @@
-﻿import type { GameState, UnlockEffect, UnlockPredicate, UnlockDefinition } from "./types.js";
+import { equalsBigInt, gteBigInt, isInteger, lteBigInt } from "../infra/math/rationalEngine.js";
+import type { GameState, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 
 export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean => {
   if (predicate.type === "roll_length_at_least") {
     return state.calculator.roll.length >= predicate.length;
   }
   if (predicate.type === "total_equals") {
-    return state.calculator.total === predicate.value;
+    return equalsBigInt(state.calculator.total, predicate.value);
   }
   if (predicate.type === "total_at_least") {
-    return state.calculator.total >= predicate.value;
+    return gteBigInt(state.calculator.total, predicate.value);
   }
   if (predicate.type === "total_at_most") {
-    return state.calculator.total <= predicate.value;
+    return lteBigInt(state.calculator.total, predicate.value);
   }
   if (predicate.type === "roll_ends_with_sequence") {
     const { sequence } = predicate;
@@ -19,7 +20,7 @@ export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState):
       return false;
     }
     const rollSuffix = state.calculator.roll.slice(-sequence.length);
-    return rollSuffix.every((value, index) => value === sequence[index]);
+    return rollSuffix.every((value, index) => isInteger(value) && value.num === sequence[index]);
   }
   if (predicate.type === "operation_equals") {
     const slots = [...state.calculator.operationSlots];

@@ -1,6 +1,7 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { CHECKLIST_UNLOCK_ID } from "../domain/state.js";
 import type { Action, GameState, Key, Slot, SlotOperator, UnlockDefinition, UnlockEffect, UnlockPredicate } from "../domain/types.js";
+import { equalsBigInt, gteBigInt, isInteger, lteBigInt, toDisplayString } from "../infra/math/rationalEngine.js";
 
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
@@ -138,17 +139,19 @@ const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "9": ["a", "b", "c", "d", "f", "g"],
 };
 
-export const formatOperatorForDisplay = (operator: SlotOperator): string => (operator === "*" ? "×" : operator);
+export const formatOperatorForDisplay = (operator: SlotOperator): string =>
+  operator === "*" ? "×" : operator === "/" ? "÷" : operator;
 export const formatKeyLabel = (key: Key): string =>
-  key === "NEG" ? "-𝑥" : key === "*" ? formatOperatorForDisplay(key) : key;
+  key === "NEG" ? "-𝑥" : key === "*" || key === "/" ? formatOperatorForDisplay(key) : key;
 
 const clampUnlockedDigits = (value: number): number =>
   Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
 
-export const buildTotalSlotModel = (total: bigint, unlockedDigits: number): TotalSlotModel[] => {
+export const buildTotalSlotModel = (total: { num: bigint; den: bigint }, unlockedDigits: number): TotalSlotModel[] => {
   const clampedUnlocked = clampUnlockedDigits(unlockedDigits);
   const lockedCount = MAX_UNLOCKED_TOTAL_DIGITS - clampedUnlocked;
-  const renderedDigits = (total < 0n ? -total : total).toString().slice(-clampedUnlocked);
+  const magnitude = total.num < 0n ? -total.num : total.num;
+  const renderedDigits = magnitude.toString().slice(-clampedUnlocked);
   const leadingUnlockedCount = clampedUnlocked - renderedDigits.length;
   const slots: TotalSlotModel[] = [];
 
@@ -183,8 +186,8 @@ export const buildTotalSlotModel = (total: bigint, unlockedDigits: number): Tota
   return slots;
 };
 
-export const buildRollLines = (roll: bigint[]): string[] => {
-  return roll.map((value) => value.toString());
+export const buildRollLines = (roll: Array<{ num: bigint; den: bigint }>): string[] => {
+  return roll.map((value) => toDisplayString(value));
 };
 
 export const buildRollRows = (rollLines: string[]): RollRow[] => {
@@ -194,7 +197,7 @@ export const buildRollRows = (rollLines: string[]): RollRow[] => {
   }));
 };
 
-export const buildRollViewModel = (roll: bigint[]): RollViewModel => {
+export const buildRollViewModel = (roll: Array<{ num: bigint; den: bigint }>): RollViewModel => {
   const lines = buildRollLines(roll);
   const rows = buildRollRows(lines);
   const valueColumnChars = lines.reduce((max, value) => Math.max(max, value.length), 0);
@@ -206,14 +209,14 @@ export const buildRollViewModel = (roll: bigint[]): RollViewModel => {
   };
 };
 
-export const buildGraphPoints = (roll: bigint[]): GraphPoint[] => {
+export const buildGraphPoints = (roll: Array<{ num: bigint; den: bigint }>): GraphPoint[] => {
   return roll.map((value, index) => ({
     x: index,
-    y: Number(value),
+    y: Number(value.num) / Number(value.den),
   }));
 };
 
-export const isGraphVisible = (roll: bigint[]): boolean => roll.length > 0;
+export const isGraphVisible = (roll: Array<{ num: bigint; den: bigint }>): boolean => roll.length > 0;
 
 export const buildOperationSlotDisplay = (state: GameState): string => {
   const visibleSlots = state.unlocks.maxSlots;
@@ -273,12 +276,12 @@ const getOperationSnapshot = (state: GameState): Slot[] => {
   return slots;
 };
 
-const getProgressiveRollSequenceMatches = (roll: bigint[], required: bigint[]): number => {
+const getProgressiveRollSequenceMatches = (roll: Array<{ num: bigint; den: bigint }>, required: bigint[]): number => {
   const maxCandidate = Math.min(roll.length, required.length);
   for (let candidate = maxCandidate; candidate >= 0; candidate -= 1) {
     const rollSuffix = roll.slice(roll.length - candidate);
     const requiredPrefix = required.slice(0, candidate);
-    const isMatch = rollSuffix.every((value, index) => value === requiredPrefix[index]);
+    const isMatch = rollSuffix.every((value, index) => isInteger(value) && value.num === requiredPrefix[index]);
     if (isMatch) {
       return candidate;
     }
@@ -288,15 +291,15 @@ const getProgressiveRollSequenceMatches = (roll: bigint[], required: bigint[]): 
 
 const buildCriteriaForPredicate = (predicate: UnlockPredicate, state: GameState): UnlockCriterionVm[] => {
   if (predicate.type === "total_equals") {
-    return [{ label: predicate.value.toString(), checked: state.calculator.total === predicate.value }];
+    return [{ label: predicate.value.toString(), checked: equalsBigInt(state.calculator.total, predicate.value) }];
   }
 
   if (predicate.type === "total_at_least") {
-    return [{ label: predicate.value.toString(), checked: state.calculator.total >= predicate.value }];
+    return [{ label: predicate.value.toString(), checked: gteBigInt(state.calculator.total, predicate.value) }];
   }
 
   if (predicate.type === "total_at_most") {
-    return [{ label: predicate.value.toString(), checked: state.calculator.total <= predicate.value }];
+    return [{ label: predicate.value.toString(), checked: lteBigInt(state.calculator.total, predicate.value) }];
   }
 
   if (predicate.type === "roll_ends_with_sequence") {
@@ -417,9 +420,11 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
 };
 
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
-  const slotModels = buildTotalSlotModel(state.calculator.total, state.unlocks.maxTotalDigits);
+  const hasIntegerTotal = state.calculator.total.den === 1n;
   totalEl.innerHTML = "";
-  const isNegative = state.calculator.total < 0n || (state.calculator.total === 0n && state.calculator.pendingNegativeTotal);
+  const isNegative =
+    hasIntegerTotal &&
+    (state.calculator.total.num < 0n || (state.calculator.total.num === 0n && state.calculator.pendingNegativeTotal));
 
   if (isNegative) {
     const sign = document.createElement("div");
@@ -428,6 +433,16 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
     totalEl.appendChild(sign);
   }
 
+  if (!hasIntegerTotal) {
+    const fraction = document.createElement("div");
+    fraction.className = "seg-fraction";
+    fraction.textContent = toDisplayString(state.calculator.total);
+    totalEl.appendChild(fraction);
+    totalEl.setAttribute("aria-label", `Total ${toDisplayString(state.calculator.total)}`);
+    return;
+  }
+
+  const slotModels = buildTotalSlotModel(state.calculator.total, state.unlocks.maxTotalDigits);
   const frame = document.createElement("div");
   frame.className = "seg-frame";
 
@@ -447,7 +462,7 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
     frame.appendChild(digitEl);
   }
 
-  totalEl.setAttribute("aria-label", `Total ${state.calculator.total.toString()}`);
+  totalEl.setAttribute("aria-label", `Total ${toDisplayString(state.calculator.total)}`);
   totalEl.appendChild(frame);
 };
 
@@ -583,7 +598,7 @@ const destroyGraphChart = (): void => {
   graphCanvas = null;
 };
 
-const renderGraphDisplay = (root: Element, roll: bigint[]): void => {
+const renderGraphDisplay = (root: Element, roll: Array<{ num: bigint; den: bigint }>): void => {
   const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
   if (!canvas) {
     destroyGraphChart();
@@ -641,6 +656,9 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
     return state.unlocks.digits[key as keyof GameState["unlocks"]["digits"]];
   }
   if (key === "+" || key === "-" || key === "*") {
+    return state.unlocks.slotOperators[key];
+  }
+  if (key === "/") {
     return state.unlocks.slotOperators[key];
   }
   if (key === "C" || key === "CE" || key === "NEG") {

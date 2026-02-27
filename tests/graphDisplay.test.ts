@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { buildGraphPoints, buildGraphXWindow, isGraphVisible } from "../src/ui/render.js";
 
+const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+
 export const runGraphDisplayTests = (): void => {
   assert.deepEqual(buildGraphPoints([]), [], "empty roll returns no graph points");
   assert.equal(isGraphVisible([]), false, "empty roll hides graph plotting");
 
   assert.deepEqual(
-    buildGraphPoints([5n, -2n, 99n]),
+    buildGraphPoints([r(5n), r(-2n), r(99n)]),
     [
       { x: 0, y: 5 },
       { x: 1, y: -2 },
@@ -14,10 +16,10 @@ export const runGraphDisplayTests = (): void => {
     ],
     "graph points map index to x and roll value to y",
   );
-  assert.equal(isGraphVisible([5n]), true, "non-empty roll shows graph plotting");
+  assert.equal(isGraphVisible([r(5n)]), true, "non-empty roll shows graph plotting");
 
   const huge = 9007199254740993n;
-  const hugePoint = buildGraphPoints([huge])[0];
+  const hugePoint = buildGraphPoints([r(huge)])[0];
   assert.equal(hugePoint.x, 0, "large values still map to their index");
   assert.equal(
     Number.isSafeInteger(hugePoint.y),
