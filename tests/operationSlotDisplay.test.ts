@@ -39,6 +39,19 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(buildOperationSlotDisplay(draftingWithOperand), "[ + 1 ]", "drafting slot shows operand when provided");
 
+  const draftingMultiplyOperatorOnly: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      draftingSlot: { operator: "*", operandInput: "", isNegative: false },
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(draftingMultiplyOperatorOnly),
+    "[ × _ ]",
+    "drafting multiply slot renders operator as ×",
+  );
+
   const draftingWithNegativeOperand: GameState = {
     ...base,
     calculator: {
@@ -109,4 +122,13 @@ export const runOperationSlotDisplayTests = (): void => {
     },
   };
   assert.equal(buildOperationSlotDisplay(overflowState), "[ + 1 ]", "overflow state truncates display to max slot capacity");
+
+  const committedMultiply: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      operationSlots: [{ operator: "*", operand: 2n }],
+    },
+  };
+  assert.equal(buildOperationSlotDisplay(committedMultiply), "[ × 2 ]", "committed multiply slot renders operator as ×");
 };

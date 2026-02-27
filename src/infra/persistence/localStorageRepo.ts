@@ -39,20 +39,25 @@ type KeyValueStorage = {
 };
 
 const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
-  const base = layout ?? defaultKeyLayout();
-  const hasNegKey = base.some((cell) => cell.kind === "key" && cell.key === "NEG");
-  if (hasNegKey) {
-    return base;
+  const normalized = [...(layout ?? defaultKeyLayout())];
+
+  const hasNegKey = normalized.some((cell) => cell.kind === "key" && cell.key === "NEG");
+  if (!hasNegKey) {
+    const negatePlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "negate");
+    if (negatePlaceholderIndex >= 0) {
+      normalized[negatePlaceholderIndex] = { kind: "key", key: "NEG" };
+    }
   }
 
-  const negatePlaceholderIndex = base.findIndex((cell) => cell.kind === "placeholder" && cell.area === "negate");
-  if (negatePlaceholderIndex >= 0) {
-    const migrated = [...base];
-    migrated[negatePlaceholderIndex] = { kind: "key", key: "NEG" };
-    return migrated;
+  const hasMulKey = normalized.some((cell) => cell.kind === "key" && cell.key === "*");
+  if (!hasMulKey) {
+    const mulPlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "mul");
+    if (mulPlaceholderIndex >= 0) {
+      normalized[mulPlaceholderIndex] = { kind: "key", key: "*" };
+    }
   }
 
-  return base;
+  return normalized;
 };
 
 const toSerializableState = (state: GameState): SerializableState => ({

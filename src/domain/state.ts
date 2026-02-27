@@ -12,7 +12,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "div" },
   { kind: "placeholder", area: "mod" },
   { kind: "placeholder", area: "euclid_divmod" },
-  { kind: "placeholder", area: "mul" },
+  { kind: "key", key: "*" },
   { kind: "key", key: "7" },
   { kind: "key", key: "8" },
   { kind: "key", key: "9" },
@@ -56,6 +56,7 @@ export const initialState = (): GameState => ({
     slotOperators: {
       "+": false,
       "-": false,
+      "*": false,
     },
     utilities: {
       C: false,

@@ -1,6 +1,6 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { CHECKLIST_UNLOCK_ID } from "../domain/state.js";
-import type { Action, GameState, Key, Slot, UnlockDefinition, UnlockEffect, UnlockPredicate } from "../domain/types.js";
+import type { Action, GameState, Key, Slot, SlotOperator, UnlockDefinition, UnlockEffect, UnlockPredicate } from "../domain/types.js";
 
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
@@ -138,6 +138,10 @@ const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "9": ["a", "b", "c", "d", "f", "g"],
 };
 
+export const formatOperatorForDisplay = (operator: SlotOperator): string => (operator === "*" ? "×" : operator);
+export const formatKeyLabel = (key: Key): string =>
+  key === "NEG" ? "-𝑥" : key === "*" ? formatOperatorForDisplay(key) : key;
+
 const clampUnlockedDigits = (value: number): number =>
   Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
 
@@ -217,14 +221,16 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
     return "(no operation slots)";
   }
 
-  const filledTokens = state.calculator.operationSlots.map((slot) => `[ ${slot.operator} ${slot.operand.toString()} ]`);
+  const filledTokens = state.calculator.operationSlots.map(
+    (slot) => `[ ${formatOperatorForDisplay(slot.operator)} ${slot.operand.toString()} ]`,
+  );
   if (state.calculator.draftingSlot) {
     const operand = state.calculator.draftingSlot.operandInput
       ? `${state.calculator.draftingSlot.isNegative ? "-" : ""}${state.calculator.draftingSlot.operandInput}`
       : state.calculator.draftingSlot.isNegative
         ? "-_"
         : "_";
-    filledTokens.push(`[ ${state.calculator.draftingSlot.operator} ${operand} ]`);
+    filledTokens.push(`[ ${formatOperatorForDisplay(state.calculator.draftingSlot.operator)} ${operand} ]`);
   }
 
   const tokens = filledTokens.slice(0, visibleSlots);
@@ -240,7 +246,7 @@ const getUnlockName = (effect: UnlockEffect): string => {
     return effect.key;
   }
   if (effect.type === "unlock_slot_operator") {
-    return effect.key;
+    return formatOperatorForDisplay(effect.key);
   }
   if (effect.type === "unlock_execution") {
     return effect.key;
@@ -634,7 +640,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key)) {
     return state.unlocks.digits[key as keyof GameState["unlocks"]["digits"]];
   }
-  if (key === "+" || key === "-") {
+  if (key === "+" || key === "-" || key === "*") {
     return state.unlocks.slotOperators[key];
   }
   if (key === "C" || key === "CE" || key === "NEG") {
@@ -777,7 +783,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     if (cell.tall) {
       button.classList.add("key--tall");
     }
-    button.textContent = cell.key === "NEG" ? "-𝑥" : cell.key;
+    button.textContent = formatKeyLabel(cell.key);
     button.disabled = !isKeyUnlocked(state, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {

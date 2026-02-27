@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "autocalc-v1-slice",
   "version": "0.1.0",
   "private": true,
@@ -12,5 +12,8 @@
   "devDependencies": {
     "@types/node": "^25.3.0",
     "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "algebrite": "^1.4.0"
   }
 }

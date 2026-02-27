@@ -9,4 +9,13 @@ export const runEngineTests = (): void => {
 
   const subtractionResult = executeSlots(10n, [{ operator: "-", operand: 3n }]);
   assert.equal(subtractionResult, 7n, "single minus slot executes");
+
+  const multiplicationResult = executeSlots(10n, [{ operator: "*", operand: 3n }]);
+  assert.equal(multiplicationResult, 30n, "single multiply slot executes");
+
+  const mixedResult = executeSlots(10n, [
+    { operator: "+", operand: 2n },
+    { operator: "*", operand: 3n },
+  ]);
+  assert.equal(mixedResult, 36n, "slots execute left-to-right with multiplication");
 };

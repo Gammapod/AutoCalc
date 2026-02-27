@@ -12,6 +12,9 @@ export const executeSlots = (total: bigint, slots: Slot[]): bigint => {
     if (slot.operator === "-") {
       return nextTotal - slot.operand;
     }
+    if (slot.operator === "*") {
+      return nextTotal * slot.operand;
+    }
     throw new Error(`Unsupported operator: ${slot.operator}`);
   }, total);
 };

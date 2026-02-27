@@ -38,6 +38,13 @@ export const runUnlocksDisplayTests = (): void => {
       once: true,
     },
     {
+      id: "u_slot_op_mul",
+      description: "slot op mul",
+      predicate: { type: "total_equals", value: 1n },
+      effect: { type: "unlock_slot_operator", key: "*" },
+      once: true,
+    },
+    {
       id: "u_utility",
       description: "utility",
       predicate: { type: "total_equals", value: 1n },
@@ -55,7 +62,7 @@ export const runUnlocksDisplayTests = (): void => {
   const mappedRows = buildUnlockRows(base, effectMappingCatalog);
   assert.deepEqual(
     mappedRows.map((row) => row.name),
-    ["4", "+", "=", "C", "maxTotalDigits"],
+    ["4", "+", "=", "×", "C", "maxTotalDigits"],
     "row names map from unlock effect keys/variables",
   );
 

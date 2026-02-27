@@ -1,5 +1,5 @@
 ﻿export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-export type SlotOperator = "+" | "-";
+export type SlotOperator = "+" | "-" | "*";
 export type UtilityKey = "C" | "CE" | "NEG";
 export type ExecKey = "=";
 export type Key = Digit | SlotOperator | UtilityKey | ExecKey;

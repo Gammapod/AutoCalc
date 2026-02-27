@@ -5,6 +5,15 @@ import { initialState } from "../src/domain/state.js";
 export const runReducerLayoutTests = (): void => {
   const baseline = initialState();
   const baselineLayout = baseline.ui.keyLayout;
+  assert.ok(
+    baselineLayout.some((cell) => cell.kind === "key" && cell.key === "*"),
+    "default layout includes mul key",
+  );
+  assert.equal(
+    baselineLayout.some((cell) => cell.kind === "placeholder" && cell.area === "mul"),
+    false,
+    "default layout no longer includes mul placeholder",
+  );
 
   const moved = reducer(baseline, { type: "MOVE_KEY_SLOT", fromIndex: 0, toIndex: 3 });
   assert.equal(moved.ui.keyLayout.length, baselineLayout.length, "move preserves layout length");

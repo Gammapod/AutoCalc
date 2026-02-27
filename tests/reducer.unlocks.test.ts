@@ -20,6 +20,7 @@ export const runReducerUnlockTests = (): void => {
   );
   assert.equal(state.unlocks.slotOperators["+"], false, "plus starts locked");
   assert.equal(state.unlocks.slotOperators["-"], false, "minus starts locked");
+  assert.equal(state.unlocks.slotOperators["*"], false, "mul starts locked");
   assert.equal(state.unlocks.digits["4"], false, "digit 4 starts locked");
   assert.equal(state.unlocks.utilities.C, false, "C starts locked");
   assert.equal(state.unlocks.utilities.CE, false, "CE starts locked");
@@ -27,7 +28,7 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.unlocks.execution["="], false, "equals starts locked");
   assert.equal(state.unlocks.maxTotalDigits, 2, "total starts with a 2-digit cap");
 
-  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "C", "CE", "NEG", "="];
+  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "*", "C", "CE", "NEG", "="];
   let nextState = state;
   for (const key of keys) {
     nextState = press(nextState, key);
@@ -331,6 +332,38 @@ export const runReducerUnlockTests = (): void => {
   assert.ok(withRoll.calculator.roll.length > 0, "setup produced an active roll");
   const afterNegDuringRoll = press(withRoll, "NEG");
   assert.deepEqual(afterNegDuringRoll, withRoll, "NEG is a no-op while roll is active");
+
+  const mulUnlockedState: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      slotOperators: {
+        ...initialState().unlocks.slotOperators,
+        "*": true,
+      },
+      execution: {
+        ...initialState().unlocks.execution,
+        "=": true,
+      },
+      digits: {
+        ...initialState().unlocks.digits,
+        "2": true,
+        "3": true,
+      },
+    },
+    calculator: {
+      ...initialState().calculator,
+      total: 4n,
+    },
+  };
+  const mulDrafting = press(mulUnlockedState, "*");
+  assert.equal(mulDrafting.calculator.draftingSlot?.operator, "*", "mul starts drafting an operation slot");
+  const mulWithOperand = press(mulDrafting, "3");
+  assert.equal(mulWithOperand.calculator.draftingSlot?.operandInput, "3", "mul drafting captures operand input");
+  const mulOverflowOperand = press(mulWithOperand, "2");
+  assert.equal(mulOverflowOperand.calculator.draftingSlot?.operandInput, "3", "mul drafting keeps 1-digit operand cap");
+  const afterMulEquals = press(mulOverflowOperand, "=");
+  assert.equal(afterMulEquals.calculator.total, 12n, "mul operation applies on equals");
 
   const allUnlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
   assert.ok(Object.values(allUnlocked.unlocks.digits).every(Boolean), "UNLOCK_ALL unlocks all digits");
