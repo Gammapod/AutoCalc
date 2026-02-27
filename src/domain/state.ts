@@ -10,7 +10,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "CE" },
   { kind: "key", key: "C" },
   { kind: "key", key: "/" },
-  { kind: "placeholder", area: "mod" },
+  { kind: "key", key: "⟡" },
   { kind: "key", key: "#" },
   { kind: "key", key: "*" },
   { kind: "key", key: "7" },
@@ -60,6 +60,7 @@ export const initialState = (): GameState => ({
       "*": false,
       "/": false,
       "#": false,
+      "⟡": false,
     },
     utilities: {
       C: false,

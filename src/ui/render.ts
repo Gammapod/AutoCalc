@@ -154,7 +154,7 @@ const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
   operator === "*" ? "×" : operator === "/" ? "÷" : operator;
 export const formatKeyLabel = (key: Key): string =>
-  key === "NEG" ? "-𝑥" : key === "#" ? "#/⟡" : key === "*" || key === "/" ? formatOperatorForDisplay(key) : key;
+  key === "NEG" ? "-𝑥" : key === "#" ? "#/⟡" : key === "⟡" ? "⟡" : key === "*" || key === "/" ? formatOperatorForDisplay(key) : key;
 
 const clampUnlockedDigits = (value: number): number =>
   Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
@@ -682,7 +682,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key)) {
     return state.unlocks.digits[key as keyof GameState["unlocks"]["digits"]];
   }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#") {
+  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "⟡") {
     return state.unlocks.slotOperators[key];
   }
   if (key === "C" || key === "CE" || key === "NEG") {

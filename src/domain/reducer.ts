@@ -194,7 +194,7 @@ const applyEquals = (state: GameState): GameState => {
   }
 
   const executionSlots = getExecutionSlots(state);
-  if (executionSlots.some((slot) => (slot.operator === "/" || slot.operator === "#") && slot.operand === 0n)) {
+  if (executionSlots.some((slot) => (slot.operator === "/" || slot.operator === "#" || slot.operator === "⟡") && slot.operand === 0n)) {
     return state;
   }
 
@@ -277,7 +277,8 @@ const applyCE = (state: GameState): GameState => {
 };
 
 const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
-const isOperator = (key: Key): key is SlotOperator => key === "+" || key === "-" || key === "*" || key === "/" || key === "#";
+const isOperator = (key: Key): key is SlotOperator =>
+  key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "⟡";
 
 const resetRunState = (state: GameState): GameState => ({
   ...state,

@@ -140,4 +140,13 @@ export const runOperationSlotDisplayTests = (): void => {
     },
   };
   assert.equal(buildOperationSlotDisplay(committedEuclidean), "[ # 3 ]", "committed euclidean slot renders operator as #");
+
+  const committedModulo: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      operationSlots: [{ operator: "⟡", operand: 3n }],
+    },
+  };
+  assert.equal(buildOperationSlotDisplay(committedModulo), "[ ⟡ 3 ]", "committed modulo slot renders operator as ⟡");
 };

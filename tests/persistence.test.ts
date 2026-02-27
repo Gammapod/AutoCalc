@@ -90,6 +90,7 @@ export const runPersistenceTests = (): void => {
   assert.equal(loadedLegacy.unlocks.slotOperators["-"], false, "legacy unlock payload hydrates default minus unlock");
   assert.equal(loadedLegacy.unlocks.slotOperators["*"], false, "legacy unlock payload hydrates default mul unlock");
   assert.equal(loadedLegacy.unlocks.slotOperators["/"], false, "legacy unlock payload hydrates default div unlock");
+  assert.equal(loadedLegacy.unlocks.slotOperators["⟡"], false, "legacy unlock payload hydrates default modulo unlock");
   assert.equal(loadedLegacy.unlocks.digits["1"], true, "legacy unlock payload hydrates current default digit unlocks");
   assert.equal(loadedLegacy.unlocks.maxTotalDigits, 2, "legacy unlock payload hydrates default total-digit cap");
 
@@ -200,6 +201,40 @@ export const runPersistenceTests = (): void => {
     "legacy div placeholder migrates to div key",
   );
 
+  const legacyModLayoutStorage = createMemoryStorage();
+  const legacyModLayout = defaultKeyLayout().map((cell) =>
+    cell.kind === "key" && cell.key === "⟡" ? { kind: "placeholder" as const, area: "mod" } : cell,
+  );
+  legacyModLayoutStorage.setItem(
+    SAVE_KEY,
+    JSON.stringify({
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          roll: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: legacyModLayout,
+        },
+        unlocks: state.unlocks,
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  const legacyModRepo = createLocalStorageRepo(legacyModLayoutStorage);
+  const loadedLegacyModLayout = legacyModRepo.load();
+  if (!loadedLegacyModLayout) {
+    throw new Error("Expected legacy mod layout payload to hydrate.");
+  }
+  assert.ok(
+    loadedLegacyModLayout.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === "⟡"),
+    "legacy mod placeholder migrates to modulo key",
+  );
+
   const legacyEuclidLayoutStorage = createMemoryStorage();
   const legacyEuclidLayout = defaultKeyLayout().map((cell) =>
     cell.kind === "key" && cell.key === "#" ? { kind: "placeholder" as const, area: "euclid_divmod" } : cell,
@@ -239,6 +274,7 @@ export const runPersistenceTests = (): void => {
     ...defaultKeyLayout(),
     { kind: "placeholder" as const, area: "mul" },
     { kind: "placeholder" as const, area: "div" },
+    { kind: "placeholder" as const, area: "mod" },
     { kind: "placeholder" as const, area: "euclid_divmod" },
   ];
   duplicateGuardStorage.setItem(
@@ -275,6 +311,11 @@ export const runPersistenceTests = (): void => {
     loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "/").length,
     1,
     "existing div key prevents additional div insertion",
+  );
+  assert.equal(
+    loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "⟡").length,
+    1,
+    "existing modulo key prevents additional modulo insertion",
   );
   assert.equal(
     loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "#").length,

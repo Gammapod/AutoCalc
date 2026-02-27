@@ -59,6 +59,14 @@ const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
     }
   }
 
+  const hasModKey = normalized.some((cell) => cell.kind === "key" && cell.key === "⟡");
+  if (!hasModKey) {
+    const modPlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "mod");
+    if (modPlaceholderIndex >= 0) {
+      normalized[modPlaceholderIndex] = { kind: "key", key: "⟡" };
+    }
+  }
+
   const hasMulKey = normalized.some((cell) => cell.kind === "key" && cell.key === "*");
   if (!hasMulKey) {
     const mulPlaceholderIndex = normalized.findIndex((cell) => cell.kind === "placeholder" && cell.area === "mul");

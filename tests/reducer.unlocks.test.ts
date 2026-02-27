@@ -26,6 +26,7 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.unlocks.slotOperators["*"], false, "mul starts locked");
   assert.equal(state.unlocks.slotOperators["/"], false, "div starts locked");
   assert.equal(state.unlocks.slotOperators["#"], false, "euclidean div starts locked");
+  assert.equal(state.unlocks.slotOperators["⟡"], false, "modulo starts locked");
   assert.equal(state.unlocks.digits["4"], false, "digit 4 starts locked");
   assert.equal(state.unlocks.utilities.C, false, "C starts locked");
   assert.equal(state.unlocks.utilities.CE, false, "CE starts locked");
@@ -38,8 +39,10 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(lockedDivState.calculator.draftingSlot, null, "division key is ignored while locked");
   lockedDivState = press(lockedDivState, "#");
   assert.equal(lockedDivState.calculator.draftingSlot, null, "euclidean division key is ignored while locked");
+  lockedDivState = press(lockedDivState, "⟡");
+  assert.equal(lockedDivState.calculator.draftingSlot, null, "modulo key is ignored while locked");
 
-  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "*", "/", "#", "C", "CE", "NEG", "="];
+  const keys: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "*", "/", "#", "⟡", "C", "CE", "NEG", "="];
   let nextState = state;
   for (const key of keys) {
     nextState = press(nextState, key);
@@ -437,6 +440,37 @@ export const runReducerUnlockTests = (): void => {
   const afterEuclidCE = press({ ...afterEuclidEquals, unlocks: { ...afterEuclidEquals.unlocks, utilities: { ...afterEuclidEquals.unlocks.utilities, CE: true } } }, "CE");
   assert.deepEqual(afterEuclidCE.calculator.euclidRemainders, [], "CE clears euclidean remainder annotations");
 
+  const moduloUnlockedState: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      slotOperators: {
+        ...initialState().unlocks.slotOperators,
+        "⟡": true,
+      },
+      execution: {
+        ...initialState().unlocks.execution,
+        "=": true,
+      },
+      digits: {
+        ...initialState().unlocks.digits,
+        "2": true,
+        "4": true,
+      },
+    },
+    calculator: {
+      ...initialState().calculator,
+      total: r(10n),
+    },
+  };
+  const moduloDrafting = press(moduloUnlockedState, "⟡");
+  assert.equal(moduloDrafting.calculator.draftingSlot?.operator, "⟡", "modulo starts drafting an operation slot");
+  const moduloOperand = press(moduloDrafting, "4");
+  const afterModuloEquals = press(moduloOperand, "=");
+  assert.deepEqual(afterModuloEquals.calculator.total, r(2n), "modulo stores remainder as resulting total");
+  assert.deepEqual(afterModuloEquals.calculator.roll, [r(10n), r(2n)], "modulo appends normal roll totals");
+  assert.deepEqual(afterModuloEquals.calculator.euclidRemainders, [], "modulo does not append # remainder annotation rows");
+
   const divZeroState: GameState = {
     ...divUnlockedState,
     calculator: {
@@ -455,6 +489,7 @@ export const runReducerUnlockTests = (): void => {
   assert.ok(Object.values(allUnlocked.unlocks.execution).every(Boolean), "UNLOCK_ALL unlocks execution keys");
   assert.equal(allUnlocked.unlocks.slotOperators["/"], true, "UNLOCK_ALL unlocks division key");
   assert.equal(allUnlocked.unlocks.slotOperators["#"], true, "UNLOCK_ALL unlocks euclidean division key");
+  assert.equal(allUnlocked.unlocks.slotOperators["⟡"], true, "UNLOCK_ALL unlocks modulo key");
   for (const unlock of unlockCatalog) {
     assert.ok(
       allUnlocked.completedUnlockIds.includes(unlock.id),

@@ -42,6 +42,14 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       lastEuclidRemainder = euclidean.remainder;
       continue;
     }
+    if (slot.operator === "⟡") {
+      const euclidean = euclideanDivide(nextTotal, slot.operand);
+      if (!euclidean.ok) {
+        return euclidean;
+      }
+      nextTotal = euclidean.remainder;
+      continue;
+    }
     throw new Error(`Unsupported operator: ${slot.operator}`);
   }
 
