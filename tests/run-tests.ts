@@ -2,6 +2,7 @@ import { runEngineTests } from "./engine.test.js";
 import { runReducerLayoutTests } from "./reducer.layout.test.js";
 import { runReducerUnlockTests } from "./reducer.unlocks.test.js";
 import { runPersistenceTests } from "./persistence.test.js";
+import { runRollDisplayTests } from "./rollDisplay.test.js";
 import { runTotalDisplayTests } from "./totalDisplay.test.js";
 
 const tests: Array<[string, () => void]> = [
@@ -9,6 +10,7 @@ const tests: Array<[string, () => void]> = [
   ["reducer/layout", runReducerLayoutTests],
   ["reducer/unlocks", runReducerUnlockTests],
   ["persistence", runPersistenceTests],
+  ["ui/roll-display", runRollDisplayTests],
   ["ui/total-display", runTotalDisplayTests],
 ];
 

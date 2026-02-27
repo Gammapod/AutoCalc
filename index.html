@@ -21,6 +21,9 @@
         --key-bottom: #d4dae0;
         --key-stroke: #5d6773;
         --placeholder: #798291;
+        --roll-row-height: 1.19rem;
+        --roll-pad-top: 10px;
+        --roll-pad-bottom: 8px;
         --gap: 10px;
       }
 
@@ -49,14 +52,18 @@
       .device {
         width: min(100%, 420px);
         min-width: 300px;
-        display: grid;
+        position: relative;
         gap: 0;
       }
 
       .roll {
-        margin: 0 auto;
+        position: absolute;
+        left: 50%;
+        bottom: 100%;
+        z-index: 1;
+        transform: translateX(-50%);
         width: calc(100% - 56px);
-        height: clamp(96px, 18vh, 180px);
+        height: 0;
         background: repeating-linear-gradient(
           180deg,
           var(--paper) 0px,
@@ -64,23 +71,54 @@
           #ece8de 27px,
           var(--paper) 28px
         );
-        border: 1px solid #c8c2b4;
+        border: 0 solid #c8c2b4;
         border-bottom: none;
         border-radius: 8px 8px 0 0;
-        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
-        overflow-y: auto;
-        padding: 10px 12px 8px;
-        font-family: Consolas, "Courier New", monospace;
+        box-shadow: none;
+        overflow: hidden;
+        pointer-events: none;
+        scrollbar-width: none;
+        padding: var(--roll-pad-top) 12px var(--roll-pad-bottom);
+        font-family: "Courier Prime", "Special Elite", "American Typewriter", "Lucida Typewriter", "Courier New", monospace;
         font-size: 0.85rem;
         color: var(--paper-ink);
+        transition: height 160ms ease-out, border-width 120ms ease-out, box-shadow 120ms ease-out;
+      }
+
+      .roll::-webkit-scrollbar {
+        display: none;
+      }
+
+      .roll[data-roll-visible="true"] {
+        height: calc(var(--roll-line-count, 0) * var(--roll-row-height) + var(--roll-pad-top) + var(--roll-pad-bottom));
+        border-width: 1px;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
       }
 
       .roll-line {
-        white-space: nowrap;
+        display: grid;
+        grid-template-columns: 3ch 1fr auto;
+        column-gap: 1ch;
         line-height: 1.4;
       }
 
+      .roll-prefix {
+        grid-column: 1;
+        text-align: left;
+        white-space: pre;
+      }
+
+      .roll-value {
+        grid-column: 3;
+        justify-self: end;
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+
       .calc {
+        position: relative;
+        z-index: 2;
         border-radius: 24px;
         padding: 16px;
         border: 1px solid var(--body-stroke);
@@ -89,6 +127,12 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.42),
           inset 0 -5px 10px rgba(0, 0, 0, 0.2),
           0 10px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .roll {
+          transition: none;
+        }
       }
 
       .slot {
@@ -312,50 +356,6 @@
         filter: brightness(1.03);
       }
 
-      .debug-tech-list {
-        border: 1px solid rgba(32, 39, 52, 0.25);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.65);
-        max-height: 340px;
-        overflow-y: auto;
-        padding: 8px;
-        display: grid;
-        gap: 6px;
-      }
-
-      .debug-tech-summary {
-        font-size: 0.78rem;
-        font-weight: 700;
-        color: #1b2230;
-      }
-
-      .debug-tech-row {
-        display: grid;
-        grid-template-columns: 62px 1fr;
-        gap: 8px;
-        align-items: center;
-        font-size: 0.76rem;
-        padding: 5px 6px;
-        border-radius: 6px;
-        background: rgba(230, 235, 242, 0.65);
-      }
-
-      .debug-tech-status {
-        font-weight: 700;
-        color: #293140;
-      }
-
-      .debug-tech-label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .debug-tech-error {
-        font-size: 0.78rem;
-        color: #5a1f1f;
-      }
-
       @media (max-width: 639px) {
         body {
           padding: 16px 10px;
@@ -375,10 +375,6 @@
           min-width: 300px;
         }
 
-        .roll {
-          height: 96px;
-        }
-
         :root {
           --gap: 8px;
         }
@@ -394,7 +390,6 @@
         </label>
         <div class="debug-menu" data-debug-menu hidden>
           <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
-          <div class="debug-tech-list" data-debug-tech-list></div>
         </div>
       </section>
       <main id="app" class="device" aria-label="AutoCalc">

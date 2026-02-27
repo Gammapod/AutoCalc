@@ -10,6 +10,18 @@ type TotalSlotModel = {
   activeSegments: readonly SegmentName[];
 };
 
+type RollRow = {
+  prefix: string;
+  value: string;
+};
+
+type RollViewModel = {
+  rows: RollRow[];
+  isVisible: boolean;
+  lineCount: number;
+  valueColumnChars: number;
+};
+
 const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "0": ["a", "b", "c", "d", "e", "f"],
   "1": ["b", "c"],
@@ -62,6 +74,29 @@ export const buildTotalSlotModel = (total: bigint, unlockedDigits: number): Tota
   }
 
   return slots;
+};
+
+export const buildRollLines = (roll: bigint[]): string[] => {
+  return roll.map((value) => value.toString());
+};
+
+export const buildRollRows = (rollLines: string[]): RollRow[] => {
+  return rollLines.map((value, index) => ({
+    prefix: index === 0 ? "X =" : "  =",
+    value,
+  }));
+};
+
+export const buildRollViewModel = (roll: bigint[]): RollViewModel => {
+  const lines = buildRollLines(roll);
+  const rows = buildRollRows(lines);
+  const valueColumnChars = lines.reduce((max, value) => Math.max(max, value.length), 0);
+  return {
+    rows,
+    isVisible: rows.length > 0,
+    lineCount: rows.length,
+    valueColumnChars,
+  };
 };
 
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
@@ -126,19 +161,28 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     : null;
   slotEl.textContent = [...committed, draft].filter(Boolean).join(" -> ") || "(no operation slots)";
 
+  const rollView = buildRollViewModel(state.calculator.roll);
   rollEl.innerHTML = "";
-  if (state.calculator.roll.length) {
-    const recentFirst = [...state.calculator.roll].reverse();
-    for (const value of recentFirst) {
-      const line = document.createElement("div");
-      line.className = "roll-line";
-      line.textContent = value.toString();
-      rollEl.appendChild(line);
-    }
-  } else {
+  rollEl.setAttribute("data-roll-visible", rollView.isVisible ? "true" : "false");
+  rollEl.setAttribute("aria-hidden", rollView.isVisible ? "false" : "true");
+  rollEl.setAttribute("aria-label", rollView.isVisible ? "Calculator roll" : "Calculator roll hidden");
+  if (rollEl instanceof HTMLElement) {
+    rollEl.style.setProperty("--roll-line-count", rollView.lineCount.toString());
+  }
+  for (const row of rollView.rows) {
     const line = document.createElement("div");
     line.className = "roll-line";
-    line.textContent = "(empty)";
+
+    const prefix = document.createElement("span");
+    prefix.className = "roll-prefix";
+    prefix.textContent = row.prefix;
+    line.appendChild(prefix);
+
+    const value = document.createElement("span");
+    value.className = "roll-value";
+    value.textContent = row.value;
+    line.appendChild(value);
+
     rollEl.appendChild(line);
   }
 

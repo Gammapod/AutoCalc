@@ -1,74 +1,67 @@
 flowchart TD
 
-%% =========================
-%% FOUNDATIONS
-%% =========================
-P0["P0 Distinguishability"]
-P1["P1 Equality"]
-P2["P2 Discreteness"]
-P3["P3 Succession"]
-P4["P4 Iteration"]
 
-P0 --> P1 --> P2 --> P3 --> P4
 
-%% =========================
-%% NUMBER SYSTEMS
-%% =========================
-NN["Nℕ"]
-N0["N0"]
-NZ["Nℤ"]
-NQ["Nℚ"]
-NR["Nℝ"]
-NC["Nℂ"]
+subgraph Operations ["Operations"]
+    Oinc["++"]
+    Oplus["+"]
+    Ominus["−"]
+    Omul["×"]
+    Odiv["÷"]
+    Opow["^"]
+    Oeudiv["#/⟡"]
+    Omod["⟡"]
+    Olog["log(n)"]
+    Oroot["^(1/n)"]
+    
+    subgraph Inputs ["Value Expression"]
+        Ineg["0-n"]
+        Ifrac["a/b"]
+        Iroot["√"]
+    
+        subgraph Constants ["Constants"]
+            Iim["i"]
+            Ireal["π, e"]
+            Idigits["0-9"]
+        end
+    end
 
-Ominus --> NZ
-P3 --> NN --> Oplus --> N0
+    Oinc -->|Iterate| Oplus
 
-NZ --> NQ
+    Oplus -->|Invert| Ominus
+    Oplus -->|Iterate| Omul
 
-NQ --> NR
-NR --> NC
+    Omul -->|Decompose| Oeudiv
+    Omul -->|Iterate| Opow
+    
+    Oeudiv -->|Generalize| Odiv
+    Oeudiv -->|Remainder| Omod
 
-%% =========================
-%% OPERATIONS
-%% =========================
-Oplus["O+"]
-Ominus["O−"]
-Omul["O×"]
-Opow["O^"]
-Oeudiv["O#"]
-Omod["O⟡"]
-Odiv["O÷"]
+    Opow -->|Invert| Oroot
+    Opow -->|Invert| Olog
+end
 
-P4 --> Oplus
+subgraph Expressable ["Expressable Values"]
+    NN["ℕ (1)"]
+    NZ["ℤ (-1)"]
+    NQ["ℚ (1/2)"]
+    NA["Algebraic (√2)"]
+    NR["ℝ (π)"]
+    NC["ℂ (√-1)"]
+end
 
-N0 --> Ominus
+    NN --> NZ --> NQ --> NA --> NR --> NC
+    
+    Idigits --> NN
+    
+    Ineg --> NZ
+    Ominus --> Ineg
+    Odiv --> Ifrac
+    Oroot --> Iroot
+    
+    Ifrac --> NQ
+    
+    Iroot --> NA
+    Ireal --> NR
 
-Oplus --> Omul --> Opow --> Fexp --> Flog
-
-Omul --> Oeudiv
-NQ --> Odiv
-
-NZ --> Oeudiv
-Omul --> Odiv
-
-Ominus --> Omod
-Oeudiv --> Omod
-Omul --> Omod
-
-%% =========================
-%% FUNCTIONS
-%% =========================
-Fid["Identity"]
-Flin["Linear"]
-Fpoly["Polynomial"]
-Fexp["Exponential"]
-Flog["Logarithmic"]
-Ftrig["Trigonometry"]
-Fcalc["Calculus"]
-
-P1--> Fid
-Oplus --> Flin
-
-NR --> Ftrig
-NR --> Fcalc
+    Iim --> NC
