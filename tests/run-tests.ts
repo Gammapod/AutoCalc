@@ -8,6 +8,7 @@ import { runTotalDisplayTests } from "./totalDisplay.test.js";
 import { runUnlocksDisplayTests } from "./unlocksDisplay.test.js";
 import { runUnlockDomainResolverTests } from "./unlockDomainResolver.test.js";
 import { runRuntimeDependencyMapTests } from "./runtimeDependencyMap.test.js";
+import { runGraphDisplayTests } from "./graphDisplay.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -16,6 +17,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
   ["ui/operation-slot-display", runOperationSlotDisplayTests],
   ["ui/roll-display", runRollDisplayTests],
+  ["ui/graph-display", runGraphDisplayTests],
   ["ui/total-display", runTotalDisplayTests],
   ["ui/unlocks-display", runUnlocksDisplayTests],
   ["content/unlock-domain-resolver", runUnlockDomainResolverTests],

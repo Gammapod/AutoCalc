@@ -25,6 +25,7 @@
         --roll-pad-top: 10px;
         --roll-pad-bottom: 8px;
         --gap: 10px;
+        --device-width: clamp(300px, 38vw, 420px);
       }
 
       * {
@@ -44,16 +45,50 @@
 
       .app-shell {
         display: grid;
-        grid-template-columns: minmax(260px, 300px) minmax(300px, 420px);
+        grid-template-columns: auto;
+        align-items: start;
+      }
+
+      .device-row {
+        display: grid;
+        grid-template-columns: var(--device-width) var(--device-width);
         align-items: start;
         gap: 16px;
       }
 
       .device {
-        width: min(100%, 420px);
-        min-width: 300px;
+        width: 100%;
+        min-width: 0;
         position: relative;
         gap: 0;
+      }
+
+      .device--grapher {
+        display: flex;
+        border-radius: 24px;
+        padding: 14px;
+        border: 1px solid var(--body-stroke);
+        background: linear-gradient(180deg, var(--body-top), var(--body-bottom));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.42),
+          inset 0 -5px 10px rgba(0, 0, 0, 0.2),
+          0 10px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      .grapher-screen {
+        flex: 1;
+        min-height: 0;
+        border: 1px solid #515c6a;
+        border-radius: 10px;
+        padding: 10px;
+        background: linear-gradient(180deg, rgba(18, 22, 28, 0.98), rgba(15, 19, 24, 0.98));
+        box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+      }
+
+      .grapher-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
       }
 
       .roll {
@@ -385,8 +420,11 @@
       }
 
       .debug-shell {
-        width: 100%;
-        min-width: 260px;
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 50;
+        width: min(280px, calc(100vw - 24px));
         border: 1px solid rgba(32, 39, 52, 0.25);
         border-radius: 10px;
         padding: 10px 12px;
@@ -426,18 +464,22 @@
           padding: 16px 10px;
         }
 
-        .app-shell {
+        .device-row {
           grid-template-columns: 1fr;
         }
 
-        .device {
+        .app-shell {
           width: min(92vw, 360px);
-          min-width: 300px;
+        }
+
+        .device {
+          width: 100%;
         }
 
         .debug-shell {
-          width: min(92vw, 360px);
-          min-width: 300px;
+          width: min(220px, calc(100vw - 20px));
+          right: 10px;
+          top: 10px;
         }
 
         :root {
@@ -447,29 +489,37 @@
     </style>
   </head>
   <body>
+    <section class="debug-shell" aria-label="Debug controls">
+      <label class="debug-toggle">
+        <input type="checkbox" data-debug-toggle />
+        <span>Debug Menu</span>
+      </label>
+      <div class="debug-menu" data-debug-menu hidden>
+        <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
+      </div>
+    </section>
     <div class="app-shell">
-      <section class="debug-shell" aria-label="Debug controls">
-        <label class="debug-toggle">
-          <input type="checkbox" data-debug-toggle />
-          <span>Debug Menu</span>
-        </label>
-        <div class="debug-menu" data-debug-menu hidden>
-          <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
-        </div>
-      </section>
-      <main id="app" class="device" aria-label="AutoCalc">
-        <section class="roll" data-roll aria-label="Calculator roll"></section>
-        <section class="calc">
-          <div class="slot" aria-hidden="true"></div>
-          <div class="display-stack">
-            <div class="display" data-total aria-live="polite"></div>
-            <div class="display" data-slot></div>
+      <main id="app" class="device-row" aria-label="AutoCalc">
+        <section class="device device--grapher" data-grapher-device aria-label="Grapher">
+          <div class="grapher-screen">
+            <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
           </div>
-          <div data-keys></div>
-          <div class="status" data-unlocks></div>
+        </section>
+        <section class="device device--calc" data-calc-device>
+          <section class="roll" data-roll aria-label="Calculator roll"></section>
+          <section class="calc">
+            <div class="slot" aria-hidden="true"></div>
+            <div class="display-stack">
+              <div class="display" data-total aria-live="polite"></div>
+              <div class="display" data-slot></div>
+            </div>
+            <div data-keys></div>
+            <div class="status" data-unlocks></div>
+          </section>
         </section>
       </main>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>

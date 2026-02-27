@@ -24,7 +24,91 @@ type RollViewModel = {
   valueColumnChars: number;
 };
 
+export type GraphPoint = {
+  x: number;
+  y: number;
+};
+
+type GraphDataset = {
+  data: GraphPoint[];
+  showLine: boolean;
+  pointRadius: number;
+  pointHoverRadius: number;
+  pointBackgroundColor: string;
+  pointBorderColor: string;
+  pointBorderWidth: number;
+};
+
+type GraphScale = {
+  display?: boolean;
+  min?: number;
+  max?: number;
+  ticks?: {
+    color?: string;
+    precision?: number;
+    autoSkip?: boolean;
+    callback?: (value: string | number, index?: number, ticks?: Array<{ value: number }>) => string | number;
+  };
+  grid?: {
+    color?: string;
+    display?: boolean;
+  };
+  border?: {
+    color?: string;
+    display?: boolean;
+  };
+};
+
+type GraphOptions = {
+  animation: boolean;
+  responsive: boolean;
+  maintainAspectRatio: boolean;
+  plugins: {
+    legend: {
+      display: boolean;
+    };
+    tooltip: {
+      enabled: boolean;
+    };
+  };
+  scales: {
+    x: GraphScale;
+    y: GraphScale;
+  };
+};
+
+type GraphChartConfig = {
+  type: "scatter";
+  data: {
+    datasets: GraphDataset[];
+  };
+  options: GraphOptions;
+};
+
+type ChartHandle = {
+  data: {
+    datasets: GraphDataset[];
+  };
+  options: GraphOptions;
+  update: (mode?: "none") => void;
+  destroy: () => void;
+};
+
+type ChartCtor = new (ctx: CanvasRenderingContext2D, config: GraphChartConfig) => ChartHandle;
+
+declare global {
+  interface Window {
+    Chart?: ChartCtor;
+  }
+}
+
 let previousChecklistUnlocked: boolean | null = null;
+let graphChart: ChartHandle | null = null;
+let graphCanvas: HTMLCanvasElement | null = null;
+let grapherResizeObserver: ResizeObserver | null = null;
+let observedCalculatorDevice: HTMLElement | null = null;
+const GRAPH_WINDOW_SIZE = 25;
+const GRAPH_MIN_Y_RANGE = 15;
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -116,6 +200,15 @@ export const buildRollViewModel = (roll: bigint[]): RollViewModel => {
     valueColumnChars,
   };
 };
+
+export const buildGraphPoints = (roll: bigint[]): GraphPoint[] => {
+  return roll.map((value, index) => ({
+    x: index,
+    y: Number(value),
+  }));
+};
+
+export const isGraphVisible = (roll: bigint[]): boolean => roll.length > 0;
 
 export const buildOperationSlotDisplay = (state: GameState): string => {
   const visibleSlots = state.unlocks.maxSlots;
@@ -339,6 +432,191 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   totalEl.appendChild(frame);
 };
 
+const getGraphBounds = (points: GraphPoint[]): { min: number; max: number } => {
+  const values = points.map((point) => point.y);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = max - min;
+  const padding = Math.max(spread * 0.12, 0.1);
+  let lower = min - padding;
+  let upper = max + padding;
+
+  const range = upper - lower;
+  if (range < GRAPH_MIN_Y_RANGE) {
+    const deficit = GRAPH_MIN_Y_RANGE - range;
+    lower -= deficit / 2;
+    upper += deficit / 2;
+  }
+
+  return { min: lower, max: upper };
+};
+
+export const buildGraphXWindow = (
+  rollLength: number,
+  windowSize: number = GRAPH_WINDOW_SIZE,
+): { min: number; max: number } => {
+  if (rollLength < windowSize) {
+    return { min: 0, max: windowSize };
+  }
+  return { min: rollLength - windowSize, max: rollLength - 1 };
+};
+
+const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[]): GraphOptions => {
+  const bounds = hasPoints ? getGraphBounds(points) : { min: 0, max: 1 };
+  const xWindow = buildGraphXWindow(points.length);
+  const makeTickLabelCallback =
+    (axisMax: number) =>
+    (value: string | number): string => {
+      const numeric = typeof value === "number" ? value : Number(value);
+      if (!Number.isFinite(numeric)) {
+        return "";
+      }
+      if (Math.abs(numeric - axisMax) < 1e-9) {
+        return "";
+      }
+      const nearestFive = Math.round(numeric / 5) * 5;
+      if (Math.abs(numeric - nearestFive) > 1e-6) {
+        return "";
+      }
+      return nearestFive.toString();
+    };
+  return {
+    animation: false,
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: hasPoints },
+    },
+    scales: {
+      x: {
+        min: hasPoints ? xWindow.min : 0,
+        max: hasPoints ? xWindow.max : GRAPH_WINDOW_SIZE,
+        display: hasPoints,
+        ticks: {
+          color: "#bcffd6",
+          precision: 0,
+          autoSkip: true,
+          callback: makeTickLabelCallback(xWindow.max),
+        },
+        grid: {
+          color: "rgba(188, 255, 214, 0.2)",
+          display: hasPoints,
+        },
+        border: {
+          color: "rgba(188, 255, 214, 0.45)",
+          display: hasPoints,
+        },
+      },
+      y: {
+        min: bounds.min,
+        max: bounds.max,
+        display: hasPoints,
+        ticks: {
+          color: "#bcffd6",
+          autoSkip: true,
+          callback: makeTickLabelCallback(bounds.max),
+        },
+        grid: {
+          color: "rgba(188, 255, 214, 0.2)",
+          display: hasPoints,
+        },
+        border: {
+          color: "rgba(188, 255, 214, 0.45)",
+          display: hasPoints,
+        },
+      },
+    },
+  };
+};
+
+const ensureGrapherHeightSync = (root: Element): void => {
+  const calculatorDevice = root.querySelector<HTMLElement>("[data-calc-device]");
+  const grapherDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
+  if (!calculatorDevice || !grapherDevice) {
+    return;
+  }
+
+  const syncHeight = (): void => {
+    const calculatorHeight = calculatorDevice.getBoundingClientRect().height;
+    grapherDevice.style.height = `${Math.max(120, Math.round(calculatorHeight * 0.5))}px`;
+  };
+
+  syncHeight();
+
+  if (typeof ResizeObserver === "undefined") {
+    return;
+  }
+
+  if (observedCalculatorDevice !== calculatorDevice) {
+    grapherResizeObserver?.disconnect();
+    grapherResizeObserver = new ResizeObserver(() => {
+      syncHeight();
+    });
+    grapherResizeObserver.observe(calculatorDevice);
+    observedCalculatorDevice = calculatorDevice;
+  }
+};
+
+const destroyGraphChart = (): void => {
+  graphChart?.destroy();
+  graphChart = null;
+  graphCanvas = null;
+};
+
+const renderGraphDisplay = (root: Element, roll: bigint[]): void => {
+  const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
+  if (!canvas) {
+    destroyGraphChart();
+    return;
+  }
+
+  if (graphCanvas !== canvas) {
+    destroyGraphChart();
+    graphCanvas = canvas;
+  }
+
+  const chartCtor = window.Chart;
+  if (!chartCtor) {
+    return;
+  }
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+
+  const points = buildGraphPoints(roll);
+  const hasPoints = isGraphVisible(roll);
+  const options = buildGraphOptions(hasPoints, points);
+
+  if (!graphChart) {
+    graphChart = new chartCtor(context, {
+      type: "scatter",
+      data: {
+        datasets: [
+          {
+            data: points,
+            showLine: false,
+            pointRadius: hasPoints ? 3 : 0,
+            pointHoverRadius: 4,
+            pointBackgroundColor: "#bcffd6",
+            pointBorderColor: "rgba(188, 255, 214, 0.9)",
+            pointBorderWidth: 1,
+          },
+        ],
+      },
+      options,
+    });
+    return;
+  }
+
+  graphChart.data.datasets[0].data = points;
+  graphChart.data.datasets[0].pointRadius = hasPoints ? 3 : 0;
+  graphChart.options = options;
+  graphChart.update("none");
+};
+
 const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key)) {
     return state.unlocks.digits[key as keyof GameState["unlocks"]["digits"]];
@@ -365,6 +643,9 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl) {
     throw new Error("UI mount points are missing.");
   }
+
+  ensureGrapherHeightSync(root);
+  renderGraphDisplay(root, state.calculator.roll);
 
   renderTotalDisplay(totalEl, state);
   slotEl.textContent = buildOperationSlotDisplay(state);
