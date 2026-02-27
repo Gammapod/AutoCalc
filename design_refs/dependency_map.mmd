@@ -1,6 +1,20 @@
 flowchart TD
 
-
+subgraph Inputs ["Value Expression"]
+    Ineg["0-n"]
+    Ifrac["a/b"]
+    Iroot["√"]
+    subgraph Constants ["Constants"]
+        Iim["i"]
+        Ireal["π, e"]
+        Idigits["0-9"]
+    end
+end
+    
+subgraph Utilities ["Utilities"]
+    Uc["C"]
+    Uce["CE"]
+end
 
 subgraph Operations ["Operations"]
     Oinc["++"]
@@ -13,18 +27,6 @@ subgraph Operations ["Operations"]
     Omod["⟡"]
     Olog["log(n)"]
     Oroot["^(1/n)"]
-    
-    subgraph Inputs ["Value Expression"]
-        Ineg["0-n"]
-        Ifrac["a/b"]
-        Iroot["√"]
-    
-        subgraph Constants ["Constants"]
-            Iim["i"]
-            Ireal["π, e"]
-            Idigits["0-9"]
-        end
-    end
 
     Oinc -->|Iterate| Oplus
 
@@ -48,20 +50,19 @@ subgraph Expressable ["Expressable Values"]
     NA["Algebraic (√2)"]
     NR["ℝ (π)"]
     NC["ℂ (√-1)"]
-end
 
     NN --> NZ --> NQ --> NA --> NR --> NC
-    
-    Idigits --> NN
-    
-    Ineg --> NZ
-    Ominus --> Ineg
-    Odiv --> Ifrac
-    Oroot --> Iroot
-    
-    Ifrac --> NQ
-    
-    Iroot --> NA
-    Ireal --> NR
+end
 
-    Iim --> NC
+    
+Idigits --> NN
+
+Ineg --> NZ
+Ominus --> Ineg
+Odiv --> Ifrac
+Oroot --> Iroot
+
+Ifrac --> NQ
+Iroot --> NA
+Ireal --> NR
+Iim --> NC

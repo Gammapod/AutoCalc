@@ -1,0 +1,62 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { unlockCatalog } from "../src/content/unlocks.catalog.js";
+
+const toMermaidNodeId = (unlockId: string): string => {
+  const normalized = unlockId.replace(/[^A-Za-z0-9_]/g, "_");
+  return /^[A-Za-z]/.test(normalized) ? `U_${normalized}` : `U_unlock_${normalized}`;
+};
+
+export const runRuntimeDependencyMapTests = async (): Promise<void> => {
+  const generatorModuleUrl = pathToFileURL(
+    join(process.cwd(), "scripts", "generate-runtime-dependency-map.mjs"),
+  ).href;
+  const generatorModule = await import(generatorModuleUrl);
+  await generatorModule.generateRuntimeDependencyMap(process.cwd());
+
+  const runtimeMapPath = join(process.cwd(), "design_refs", "dependency_map.runtime.mmd");
+  const runtimeMap = readFileSync(runtimeMapPath, "utf8");
+
+  assert.match(runtimeMap, /subgraph Unlocks \["Unlocks"\]/, "generated map includes Unlocks subgraph");
+
+  const unlockNodeMatches = runtimeMap.match(/^\s*U_[A-Za-z0-9_]+\["/gm) ?? [];
+  assert.equal(
+    unlockNodeMatches.length,
+    unlockCatalog.length,
+    "generated map has one unlock node per unlock definition",
+  );
+
+  const domainEdgeMatches = runtimeMap.match(/^(NN|NZ|NQ|NA|NR|NC) --> U_[A-Za-z0-9_]+$/gm) ?? [];
+  assert.equal(
+    domainEdgeMatches.length,
+    unlockCatalog.length,
+    "generated map has one number-domain edge per unlock definition",
+  );
+
+  const unlockTargetEdgeMatches = runtimeMap.match(/^U_[A-Za-z0-9_]+ --> [A-Za-z][A-Za-z0-9_]*$/gm) ?? [];
+  assert.equal(
+    unlockTargetEdgeMatches.length,
+    unlockCatalog.length,
+    "generated map has one unlock-target edge per unlock definition",
+  );
+
+  const plusNodeId = toMermaidNodeId("unlock_plus_on_total_11");
+  const minusNodeId = toMermaidNodeId("unlock_minus_on_total_25_or_more");
+  const cNodeId = toMermaidNodeId("unlock_c_on_roll_suffix_11_12_13_14");
+  const ceNodeId = toMermaidNodeId("unlock_ce_on_total_below_0");
+  const digitFourNodeId = toMermaidNodeId("unlock_digit_4_on_roll_suffix_1_2_3_4");
+  const equalsNodeId = toMermaidNodeId("unlock_equals_on_operation_plus_1");
+
+  assert.match(runtimeMap, new RegExp(`^NN --> ${minusNodeId}$`, "m"), "minus unlock is downstream of NN");
+  assert.match(runtimeMap, new RegExp(`^NZ --> ${ceNodeId}$`, "m"), "CE unlock is downstream of NZ");
+  assert.match(runtimeMap, new RegExp(`^${plusNodeId} --> Oplus$`, "m"), "plus unlock points to Oplus");
+  assert.match(runtimeMap, new RegExp(`^${minusNodeId} --> Ominus$`, "m"), "minus unlock points to Ominus");
+  assert.match(runtimeMap, new RegExp(`^${cNodeId} --> Uc$`, "m"), "C unlock points to Uc");
+  assert.match(runtimeMap, new RegExp(`^${ceNodeId} --> Uce$`, "m"), "CE unlock points to Uce");
+  assert.match(runtimeMap, new RegExp(`^${digitFourNodeId} --> Idigits$`, "m"), "digit unlock points to Idigits");
+  assert.match(runtimeMap, new RegExp(`^${equalsNodeId} --> Ut_exec_eq$`, "m"), "equals unlock points to synthetic execution node");
+  assert.match(runtimeMap, /^\s*Ut_exec_eq\["="\]$/m, "synthetic execution node is defined");
+  assert.doesNotMatch(runtimeMap, /Ut_digit_/, "no synthetic digit nodes are generated");
+};

@@ -74,12 +74,21 @@ export const runUnlocksDisplayTests = (): void => {
       effect: { type: "unlock_slot_operator", key: "-" },
       once: true,
     },
+    {
+      id: "u_total_at_most",
+      description: "total at most",
+      predicate: { type: "total_at_most", value: -1n },
+      effect: { type: "unlock_utility", key: "CE" },
+      once: true,
+    },
   ];
   const totalCriteriaRows = buildUnlockRows(base, totalCriteriaCatalog);
   assert.equal(totalCriteriaRows[0]?.criteria.length, 1, "total_equals uses a single criterion checkbox");
   assert.equal(totalCriteriaRows[0]?.criteria[0]?.label, "11", "total_equals checkbox label is required value");
   assert.equal(totalCriteriaRows[1]?.criteria.length, 1, "total_at_least uses a single criterion checkbox");
   assert.equal(totalCriteriaRows[1]?.criteria[0]?.label, "25", "total_at_least checkbox label is threshold value");
+  assert.equal(totalCriteriaRows[2]?.criteria.length, 1, "total_at_most uses a single criterion checkbox");
+  assert.equal(totalCriteriaRows[2]?.criteria[0]?.label, "-1", "total_at_most checkbox label is threshold value");
 
   const rollProgressState: GameState = {
     ...base,

@@ -6,8 +6,10 @@ import { runOperationSlotDisplayTests } from "./operationSlotDisplay.test.js";
 import { runRollDisplayTests } from "./rollDisplay.test.js";
 import { runTotalDisplayTests } from "./totalDisplay.test.js";
 import { runUnlocksDisplayTests } from "./unlocksDisplay.test.js";
+import { runUnlockDomainResolverTests } from "./unlockDomainResolver.test.js";
+import { runRuntimeDependencyMapTests } from "./runtimeDependencyMap.test.js";
 
-const tests: Array<[string, () => void]> = [
+const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
   ["reducer/layout", runReducerLayoutTests],
   ["reducer/unlocks", runReducerUnlockTests],
@@ -16,12 +18,14 @@ const tests: Array<[string, () => void]> = [
   ["ui/roll-display", runRollDisplayTests],
   ["ui/total-display", runTotalDisplayTests],
   ["ui/unlocks-display", runUnlocksDisplayTests],
+  ["content/unlock-domain-resolver", runUnlockDomainResolverTests],
+  ["scripts/runtime-dependency-map", runRuntimeDependencyMapTests],
 ];
 
 let passed = 0;
 for (const [name, fn] of tests) {
   try {
-    fn();
+    await fn();
     console.log(`PASS ${name}`);
     passed += 1;
   } catch (error) {

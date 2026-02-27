@@ -39,4 +39,11 @@ export const unlockCatalog: UnlockDefinition[] = [
     effect: { type: "unlock_slot_operator", key: "-" },
     once: true,
   },
+  {
+    id: "unlock_ce_on_total_below_0",
+    description: "Unlock CE when total becomes negative.",
+    predicate: { type: "total_at_most", value: -1n },
+    effect: { type: "unlock_utility", key: "CE" },
+    once: true,
+  },
 ];

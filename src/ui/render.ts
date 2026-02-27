@@ -191,6 +191,10 @@ const buildCriteriaForPredicate = (predicate: UnlockPredicate, state: GameState)
     return [{ label: predicate.value.toString(), checked: state.calculator.total >= predicate.value }];
   }
 
+  if (predicate.type === "total_at_most") {
+    return [{ label: predicate.value.toString(), checked: state.calculator.total <= predicate.value }];
+  }
+
   if (predicate.type === "roll_ends_with_sequence") {
     const matchedCount = getProgressiveRollSequenceMatches(state.calculator.roll, predicate.sequence);
     return predicate.sequence.map((value, index) => ({

@@ -59,6 +59,11 @@ export type TotalAtLeastPredicate = {
   value: bigint;
 };
 
+export type TotalAtMostPredicate = {
+  type: "total_at_most";
+  value: bigint;
+};
+
 export type OperationEqualsPredicate = {
   type: "operation_equals";
   slots: Slot[];
@@ -74,6 +79,7 @@ export type UnlockPredicate =
   | RollLengthAtLeastPredicate
   | TotalEqualsPredicate
   | TotalAtLeastPredicate
+  | TotalAtMostPredicate
   | OperationEqualsPredicate
   | RollEndsWithSequencePredicate;
 
@@ -109,12 +115,15 @@ export type UnlockEffect =
   | UnlockExecutionEffect
   | UnlockDigitEffect;
 
+export type NumberDomainNodeId = "NN" | "NZ" | "NQ" | "NA" | "NR" | "NC";
+
 export type UnlockDefinition = {
   id: string;
   description: string;
   predicate: UnlockPredicate;
   effect: UnlockEffect;
   once: boolean;
+  domainNodeId?: NumberDomainNodeId;
 };
 
 export type GameState = {

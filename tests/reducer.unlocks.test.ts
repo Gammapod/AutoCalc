@@ -227,4 +227,18 @@ export const runReducerUnlockTests = (): void => {
   minusState = press(minusState, "1");
   minusState = press(minusState, "=");
   assert.equal(minusState.calculator.total, 24n, "minus operation subtracts one when executed");
+  assert.equal(minusState.unlocks.utilities.CE, false, "CE remains locked while total is non-negative");
+
+  for (let index = 0; index < 24; index += 1) {
+    minusState = press(minusState, "=");
+  }
+  assert.equal(minusState.calculator.total, 0n, "state reaches 0 before CE unlock threshold");
+  assert.equal(minusState.unlocks.utilities.CE, false, "CE stays locked at total 0");
+  minusState = press(minusState, "=");
+  assert.equal(minusState.calculator.total, -1n, "state reaches -1 at CE unlock threshold");
+  assert.equal(minusState.unlocks.utilities.CE, true, "CE unlocks when total becomes negative");
+  assert.ok(
+    minusState.completedUnlockIds.includes("unlock_ce_on_total_below_0"),
+    "CE unlock id is recorded",
+  );
 };
