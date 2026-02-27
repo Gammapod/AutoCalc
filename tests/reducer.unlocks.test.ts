@@ -158,6 +158,8 @@ export const runReducerUnlockTests = (): void => {
     predicate: { type: "roll_length_at_least", length: 1 },
     effect: { type: "unlock_utility", key: "C" },
     once: false,
+    domainNodeId: "NN",
+    targetNodeId: "Uc",
   };
 
   const unlockState: GameState = {
@@ -183,6 +185,8 @@ export const runReducerUnlockTests = (): void => {
     predicate: { type: "roll_ends_with_sequence", sequence: [11n, 12n, 13n, 14n] },
     effect: { type: "unlock_utility", key: "C" },
     once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Uc",
   };
 
   const withMatchingSuffix: GameState = {
@@ -212,6 +216,8 @@ export const runReducerUnlockTests = (): void => {
     predicate: { type: "roll_ends_with_sequence", sequence: [1n, 2n, 3n, 4n] },
     effect: { type: "unlock_digit", key: "4" },
     once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Idigits",
   };
   const withFourSuffix: GameState = {
     ...state,

@@ -8,42 +8,30 @@ const numberDomainNodeIds: NumberDomainNodeId[] = ["NN", "NZ", "NQ", "NA", "NR",
 export const runUnlockDomainResolverTests = (): void => {
   const minusUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_minus_on_total_25_or_more");
   assert.ok(minusUnlock, "minus unlock exists in catalog");
-  assert.equal(resolveUnlockDomainNodeId(minusUnlock), "NN", "total_at_least 25 resolves to NN");
+  assert.equal(resolveUnlockDomainNodeId(minusUnlock), "NN", "resolver returns domain metadata");
 
   const ceUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_ce_on_total_below_0");
   assert.ok(ceUnlock, "CE unlock exists in catalog");
-  assert.equal(resolveUnlockDomainNodeId(ceUnlock), "NZ", "total_at_most -1 resolves to NZ");
+  assert.equal(resolveUnlockDomainNodeId(ceUnlock), "NZ", "resolver returns negative-domain metadata");
 
   const digitFourUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_digit_4_on_roll_suffix_1_2_3_4");
   assert.ok(digitFourUnlock, "digit 4 unlock exists in catalog");
   assert.equal(
     resolveUnlockDomainNodeId(digitFourUnlock),
     "NN",
-    "non-negative roll suffix resolves to NN",
+    "resolver returns catalog metadata for digit unlock",
   );
 
-  const overrideUnlock: UnlockDefinition = {
-    id: "unlock_override_to_q",
-    description: "override to rational",
+  const customUnlock: UnlockDefinition = {
+    id: "unlock_custom_domain_q",
+    description: "custom rational domain",
     predicate: { type: "total_equals", value: 1n },
     effect: { type: "unlock_digit", key: "4" },
     once: true,
     domainNodeId: "NQ",
+    targetNodeId: "Idigits",
   };
-  assert.equal(resolveUnlockDomainNodeId(overrideUnlock), "NQ", "explicit override beats inference");
-
-  const unsupportedUnlock = {
-    id: "unlock_unknown_predicate",
-    description: "unknown predicate should fail",
-    predicate: { type: "mystery" },
-    effect: { type: "unlock_digit", key: "4" },
-    once: true,
-  } as unknown as UnlockDefinition;
-  assert.throws(
-    () => resolveUnlockDomainNodeId(unsupportedUnlock),
-    /unlock "unlock_unknown_predicate".*predicate "mystery".*domainNodeId override/,
-    "unsupported predicate without override fails with remediation hint",
-  );
+  assert.equal(resolveUnlockDomainNodeId(customUnlock), "NQ", "resolver supports all explicit domain ids");
 
   for (const unlock of unlockCatalog) {
     const domainNodeId = resolveUnlockDomainNodeId(unlock);

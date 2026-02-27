@@ -7,6 +7,8 @@ export const unlockCatalog: UnlockDefinition[] = [
     predicate: { type: "total_equals", value: 11n },
     effect: { type: "unlock_slot_operator", key: "+" },
     once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Oplus",
   },
   {
     id: "unlock_equals_on_operation_plus_1",
@@ -17,6 +19,9 @@ export const unlockCatalog: UnlockDefinition[] = [
     },
     effect: { type: "unlock_execution", key: "=" },
     once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Ut_exec_eq",
+    targetLabel: "=",
   },
   {
     id: "unlock_c_on_roll_suffix_11_12_13_14",
@@ -24,6 +29,8 @@ export const unlockCatalog: UnlockDefinition[] = [
     predicate: { type: "roll_ends_with_sequence", sequence: [11n, 12n, 13n, 14n] },
     effect: { type: "unlock_utility", key: "C" },
     once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Uc",
   },
   {
     id: "unlock_digit_4_on_roll_suffix_1_2_3_4",
@@ -31,6 +38,8 @@ export const unlockCatalog: UnlockDefinition[] = [
     predicate: { type: "roll_ends_with_sequence", sequence: [1n, 2n, 3n, 4n] },
     effect: { type: "unlock_digit", key: "4" },
     once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Idigits",
   },
   {
     id: "unlock_minus_on_total_25_or_more",
@@ -38,6 +47,8 @@ export const unlockCatalog: UnlockDefinition[] = [
     predicate: { type: "total_at_least", value: 25n },
     effect: { type: "unlock_slot_operator", key: "-" },
     once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Ominus",
   },
   {
     id: "unlock_ce_on_total_below_0",
@@ -45,5 +56,7 @@ export const unlockCatalog: UnlockDefinition[] = [
     predicate: { type: "total_at_most", value: -1n },
     effect: { type: "unlock_utility", key: "CE" },
     once: true,
+    domainNodeId: "NZ",
+    targetNodeId: "Uce",
   },
 ];

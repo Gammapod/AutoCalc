@@ -1,51 +1,8 @@
-import { equalsBigInt, gteBigInt, isInteger, lteBigInt } from "../infra/math/rationalEngine.js";
 import type { GameState, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
+import { evaluateUnlockPredicate } from "./unlockEngine.js";
 
-export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean => {
-  if (predicate.type === "roll_length_at_least") {
-    return state.calculator.roll.length >= predicate.length;
-  }
-  if (predicate.type === "total_equals") {
-    return equalsBigInt(state.calculator.total, predicate.value);
-  }
-  if (predicate.type === "total_at_least") {
-    return gteBigInt(state.calculator.total, predicate.value);
-  }
-  if (predicate.type === "total_at_most") {
-    return lteBigInt(state.calculator.total, predicate.value);
-  }
-  if (predicate.type === "roll_ends_with_sequence") {
-    const { sequence } = predicate;
-    if (sequence.length === 0 || state.calculator.roll.length < sequence.length) {
-      return false;
-    }
-    const rollSuffix = state.calculator.roll.slice(-sequence.length);
-    return rollSuffix.every((value, index) => isInteger(value) && value.num === sequence[index]);
-  }
-  if (predicate.type === "operation_equals") {
-    const slots = [...state.calculator.operationSlots];
-    if (predicate.includeDrafting ?? true) {
-      const { draftingSlot } = state.calculator;
-      if (draftingSlot && draftingSlot.operandInput !== "") {
-        slots.push({
-          operator: draftingSlot.operator,
-          operand:
-            draftingSlot.isNegative && draftingSlot.operandInput !== "0"
-              ? -BigInt(draftingSlot.operandInput)
-              : BigInt(draftingSlot.operandInput),
-        });
-      }
-    }
-    return (
-      slots.length === predicate.slots.length &&
-      slots.every(
-        (slot, index) =>
-          slot.operator === predicate.slots[index].operator && slot.operand === predicate.slots[index].operand,
-      )
-    );
-  }
-  return false;
-};
+export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean =>
+  evaluateUnlockPredicate(predicate, state);
 
 export const applyEffect = (effect: UnlockEffect, state: GameState): GameState => {
   if (effect.type === "unlock_utility") {
@@ -127,7 +84,7 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
       continue;
     }
 
-    if (!evaluatePredicate(unlock.predicate, nextState)) {
+    if (!evaluateUnlockPredicate(unlock.predicate, nextState)) {
       continue;
     }
 

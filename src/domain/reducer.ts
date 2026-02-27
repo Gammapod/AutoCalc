@@ -3,6 +3,7 @@ import { CHECKLIST_UNLOCK_ID, initialState } from "./state.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyEffect, applyUnlocks } from "./unlocks.js";
 import { fromBigInt, isInteger } from "../infra/math/rationalEngine.js";
+import { getOperationSnapshot, toCommittedDraftingSlot } from "./slotDrafting.js";
 import type { Action, Digit, GameState, Key, RationalValue, Slot, SlotOperator } from "./types.js";
 
 const DIGITS: Digit[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -84,20 +85,16 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
       return state;
     }
 
+    const committedDraftingSlot = toCommittedDraftingSlot(draftingSlot);
+    if (!committedDraftingSlot) {
+      return state;
+    }
+
     return {
       ...state,
       calculator: {
         ...state.calculator,
-        operationSlots: [
-          ...state.calculator.operationSlots,
-          {
-            operator: draftingSlot.operator,
-            operand:
-              draftingSlot.isNegative && draftingSlot.operandInput !== "0"
-                ? -BigInt(draftingSlot.operandInput)
-                : BigInt(draftingSlot.operandInput),
-          },
-        ],
+        operationSlots: [...state.calculator.operationSlots, committedDraftingSlot],
         draftingSlot: {
           operator,
           operandInput: "",
@@ -188,38 +185,22 @@ const finalizeDraftingSlot = (state: GameState): GameState => {
     };
   }
 
+  const committedDraftingSlot = toCommittedDraftingSlot(draftingSlot);
+  if (!committedDraftingSlot) {
+    return state;
+  }
+
   return {
     ...state,
     calculator: {
       ...state.calculator,
-      operationSlots: [
-        ...state.calculator.operationSlots,
-        {
-          operator: draftingSlot.operator,
-          operand:
-            draftingSlot.isNegative && draftingSlot.operandInput !== "0"
-              ? -BigInt(draftingSlot.operandInput)
-              : BigInt(draftingSlot.operandInput),
-        },
-      ],
+      operationSlots: [...state.calculator.operationSlots, committedDraftingSlot],
       draftingSlot: null,
     },
   };
 };
 
-const getExecutionSlots = (state: GameState): Slot[] => {
-  const slots = [...state.calculator.operationSlots];
-  const draftingSlot = state.calculator.draftingSlot;
-  if (!draftingSlot || draftingSlot.operandInput === "") {
-    return slots;
-  }
-
-  slots.push({
-    operator: draftingSlot.operator,
-    operand: draftingSlot.isNegative && draftingSlot.operandInput !== "0" ? -BigInt(draftingSlot.operandInput) : BigInt(draftingSlot.operandInput),
-  });
-  return slots;
-};
+const getExecutionSlots = (state: GameState): Slot[] => getOperationSnapshot(state.calculator);
 
 const applyEquals = (state: GameState): GameState => {
   if (!state.unlocks.execution["="]) {
@@ -268,17 +249,7 @@ const applyC = (state: GameState): GameState => {
     return state;
   }
 
-  const resetState: GameState = {
-    ...state,
-    calculator: {
-      total: fromBigInt(0n),
-      pendingNegativeTotal: false,
-      roll: [],
-      euclidRemainders: [],
-      operationSlots: [],
-      draftingSlot: null,
-    },
-  };
+  const resetState: GameState = { ...state, calculator: createResetCalculatorState() };
 
   if (resetState.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID)) {
     return resetState;
@@ -290,15 +261,26 @@ const applyC = (state: GameState): GameState => {
   };
 };
 
+const createClearedOperationCalculatorState = (calculator: GameState["calculator"]): GameState["calculator"] => ({
+  ...calculator,
+  roll: [],
+  euclidRemainders: [],
+  operationSlots: [],
+  draftingSlot: null,
+});
+
+const createResetCalculatorState = (): GameState["calculator"] => ({
+  total: fromBigInt(0n),
+  pendingNegativeTotal: false,
+  roll: [],
+  euclidRemainders: [],
+  operationSlots: [],
+  draftingSlot: null,
+});
+
 const clearOperationEntry = (state: GameState): GameState => ({
   ...state,
-  calculator: {
-    ...state.calculator,
-    roll: [],
-    euclidRemainders: [],
-    operationSlots: [],
-    draftingSlot: null,
-  },
+  calculator: createClearedOperationCalculatorState(state.calculator),
 });
 
 const applyCE = (state: GameState): GameState => {
@@ -315,14 +297,7 @@ const isOperator = (key: Key): key is SlotOperator =>
 
 const resetRunState = (state: GameState): GameState => ({
   ...state,
-  calculator: {
-    total: fromBigInt(0n),
-    pendingNegativeTotal: false,
-    roll: [],
-    euclidRemainders: [],
-    operationSlots: [],
-    draftingSlot: null,
-  },
+  calculator: createResetCalculatorState(),
 });
 
 const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {

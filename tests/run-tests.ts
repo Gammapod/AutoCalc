@@ -11,6 +11,7 @@ import { runRuntimeDependencyMapTests } from "./runtimeDependencyMap.test.js";
 import { runGraphDisplayTests } from "./graphDisplay.test.js";
 import { runKeyLabelDisplayTests } from "./keyLabelDisplay.test.js";
 import { runBrowserImportSafetyTests } from "./browserImportSafety.test.js";
+import { runUnlockEngineTests } from "./unlockEngine.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -23,6 +24,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/total-display", runTotalDisplayTests],
   ["ui/unlocks-display", runUnlocksDisplayTests],
+  ["domain/unlock-engine", runUnlockEngineTests],
   ["content/unlock-domain-resolver", runUnlockDomainResolverTests],
   ["scripts/runtime-dependency-map", runRuntimeDependencyMapTests],
   ["browser/import-safety", runBrowserImportSafetyTests],

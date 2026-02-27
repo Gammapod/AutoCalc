@@ -13,7 +13,7 @@ export type KeyCell = {
 
 export type PlaceholderCell = {
   kind: "placeholder";
-  area: string;
+  area: "graph" | "empty" | "negate" | "div" | "mod" | "mul" | "euclid_divmod";
 };
 
 export type LayoutCell = KeyCell | PlaceholderCell;
@@ -141,7 +141,9 @@ export type UnlockDefinition = {
   predicate: UnlockPredicate;
   effect: UnlockEffect;
   once: boolean;
-  domainNodeId?: NumberDomainNodeId;
+  domainNodeId: NumberDomainNodeId;
+  targetNodeId: string;
+  targetLabel?: string;
 };
 
 export type GameState = {

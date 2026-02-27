@@ -23,6 +23,8 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_equals", value: 1n },
       effect: { type: "unlock_digit", key: "4" },
       once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Idigits",
     },
     {
       id: "u_slot_op",
@@ -30,6 +32,8 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_equals", value: 1n },
       effect: { type: "unlock_slot_operator", key: "+" },
       once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Oplus",
     },
     {
       id: "u_exec",
@@ -37,6 +41,9 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_equals", value: 1n },
       effect: { type: "unlock_execution", key: "=" },
       once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Ut_exec_eq",
+      targetLabel: "=",
     },
     {
       id: "u_slot_op_mul",
@@ -44,6 +51,8 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_equals", value: 1n },
       effect: { type: "unlock_slot_operator", key: "*" },
       once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Omul",
     },
     {
       id: "u_utility",
@@ -51,6 +60,8 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_equals", value: 1n },
       effect: { type: "unlock_utility", key: "C" },
       once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Uc",
     },
     {
       id: "u_total_digits",
@@ -58,6 +69,9 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_equals", value: 1n },
       effect: { type: "increase_max_total_digits", amount: 1 },
       once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Ut_max_total_digits_plus_1",
+      targetLabel: "max total digits +1",
     },
   ];
   const mappedRows = buildUnlockRows(base, effectMappingCatalog);
@@ -74,6 +88,8 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_equals", value: 11n },
       effect: { type: "unlock_digit", key: "4" },
       once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Idigits",
     },
     {
       id: "u_total_at_least",
@@ -81,6 +97,8 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_at_least", value: 25n },
       effect: { type: "unlock_slot_operator", key: "-" },
       once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Ominus",
     },
     {
       id: "u_total_at_most",
@@ -88,6 +106,8 @@ export const runUnlocksDisplayTests = (): void => {
       predicate: { type: "total_at_most", value: -1n },
       effect: { type: "unlock_utility", key: "CE" },
       once: true,
+      domainNodeId: "NZ",
+      targetNodeId: "Uce",
     },
   ];
   const totalCriteriaRows = buildUnlockRows(base, totalCriteriaCatalog);

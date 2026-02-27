@@ -1,13 +1,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { toMermaidNodeId } from "./mermaid-node-id.mjs";
 
 const RUNTIME_FILE_NAME = "dependency_map.runtime.mmd";
-
-const toMermaidNodeId = (unlockId) => {
-  const normalized = unlockId.replace(/[^A-Za-z0-9_]/g, "_");
-  return normalized.match(/^[A-Za-z]/) ? `U_${normalized}` : `U_unlock_${normalized}`;
-};
+const NUMBER_DOMAIN_NODE_IDS = new Set(["NN", "NZ", "NQ", "NA", "NR", "NC"]);
 
 const escapeMermaidLabel = (label) => label.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
@@ -53,23 +50,24 @@ const stripSubgraphEdges = (source) => {
 
 const loadCompiledUnlockModules = async (projectRoot) => {
   const catalogModulePath = join(projectRoot, "dist", "src", "content", "unlocks.catalog.js");
-  const resolverModulePath = join(projectRoot, "dist", "src", "content", "unlockDomainResolver.js");
 
   const catalogModule = await import(pathToFileURL(catalogModulePath).href);
-  const resolverModule = await import(pathToFileURL(resolverModulePath).href);
 
   if (!Array.isArray(catalogModule.unlockCatalog)) {
     throw new Error("unlockCatalog export not found in compiled catalog module.");
   }
+  return { unlockCatalog: catalogModule.unlockCatalog };
+};
 
-  if (typeof resolverModule.resolveUnlockDomainNodeId !== "function") {
-    throw new Error("resolveUnlockDomainNodeId export not found in compiled resolver module.");
+const assertUnlockMetadata = (unlock) => {
+  if (!NUMBER_DOMAIN_NODE_IDS.has(unlock.domainNodeId)) {
+    throw new Error(
+      `Invalid or missing domainNodeId for unlock "${unlock.id}". Expected one of ${[...NUMBER_DOMAIN_NODE_IDS].join(", ")}.`,
+    );
   }
-
-  return {
-    unlockCatalog: catalogModule.unlockCatalog,
-    resolveUnlockDomainNodeId: resolverModule.resolveUnlockDomainNodeId,
-  };
+  if (typeof unlock.targetNodeId !== "string" || unlock.targetNodeId.trim().length === 0) {
+    throw new Error(`Missing targetNodeId for unlock "${unlock.id}".`);
+  }
 };
 
 const buildUnlockSubgraph = (unlocks) => {
@@ -86,63 +84,23 @@ const buildUnlockSubgraph = (unlocks) => {
   return lines.join("\n");
 };
 
-const buildDomainEdges = (unlocks, resolveUnlockDomainNodeId) =>
+const buildDomainEdges = (unlocks) =>
   unlocks.map((unlock) => {
+    assertUnlockMetadata(unlock);
     const nodeId = toMermaidNodeId(unlock.id);
-    const domainNodeId = resolveUnlockDomainNodeId(unlock);
-    return `${domainNodeId} --> ${nodeId}`;
+    return `${unlock.domainNodeId} --> ${nodeId}`;
   });
 
 const resolveUnlockTarget = (unlock, existingNodeIds) => {
-  const makeTarget = (preferredNodeId, label, fallbackNodeId) => {
-    if (existingNodeIds.has(preferredNodeId)) {
-      return { nodeId: preferredNodeId, label, synthetic: false };
-    }
-    return { nodeId: fallbackNodeId, label, synthetic: true };
-  };
-
-  if (unlock.effect.type === "unlock_slot_operator") {
-    if (unlock.effect.key === "+") {
-      return makeTarget("Oplus", "+", "Ut_op_plus");
-    }
-    if (unlock.effect.key === "-") {
-      return makeTarget("Ominus", "-", "Ut_op_minus");
-    }
+  assertUnlockMetadata(unlock);
+  if (existingNodeIds.has(unlock.targetNodeId)) {
+    return { nodeId: unlock.targetNodeId, label: unlock.targetLabel, synthetic: false };
   }
-
-  if (unlock.effect.type === "unlock_utility") {
-    if (unlock.effect.key === "C") {
-      return makeTarget("Uc", "C", "Ut_utility_C");
-    }
-    if (unlock.effect.key === "CE") {
-      return makeTarget("Uce", "CE", "Ut_utility_CE");
-    }
+  if (unlock.targetLabel) {
+    return { nodeId: unlock.targetNodeId, label: unlock.targetLabel, synthetic: true };
   }
-
-  if (unlock.effect.type === "unlock_execution") {
-    return makeTarget("Oeq", "=", "Ut_exec_eq");
-  }
-
-  if (unlock.effect.type === "unlock_digit") {
-    if (!existingNodeIds.has("Idigits")) {
-      throw new Error(
-        `Cannot resolve unlock target for "${unlock.id}" with effect "unlock_digit". Missing Idigits node in dependency_map.mmd.`,
-      );
-    }
-    return { nodeId: "Idigits", label: "0-9", synthetic: false };
-  }
-
-  if (unlock.effect.type === "increase_max_total_digits") {
-    return {
-      nodeId: `Ut_max_total_digits_plus_${unlock.effect.amount}`,
-      label: `max total digits +${unlock.effect.amount}`,
-      synthetic: true,
-    };
-  }
-
-  const effectType = unlock.effect && typeof unlock.effect.type === "string" ? unlock.effect.type : "unknown";
   throw new Error(
-    `Cannot resolve unlock target for "${unlock.id}" with effect "${effectType}". Add mapping rule or explicit target metadata.`,
+    `Cannot resolve unlock target "${unlock.targetNodeId}" for "${unlock.id}". Add targetLabel metadata or define the node in dependency_map.mmd.`,
   );
 };
 
@@ -192,12 +150,12 @@ export const generateRuntimeDependencyMap = async (projectRoot) => {
 
   const dependencyMap = readFileSync(dependencyMapPath, "utf8");
   const existingNodeIds = extractNodeIds(dependencyMap);
-  const { unlockCatalog, resolveUnlockDomainNodeId } = await loadCompiledUnlockModules(projectRoot);
+  const { unlockCatalog } = await loadCompiledUnlockModules(projectRoot);
   const unlockTargets = buildUnlockTargetEdgesAndSyntheticNodes(unlockCatalog, existingNodeIds);
   const withoutSubgraphEdges = stripSubgraphEdges(dependencyMap);
   const withSyntheticUtilities = addSyntheticUtilitiesNodes(withoutSubgraphEdges, unlockTargets.syntheticNodes);
   const unlockSubgraph = buildUnlockSubgraph(unlockCatalog);
-  const domainEdges = buildDomainEdges(unlockCatalog, resolveUnlockDomainNodeId);
+  const domainEdges = buildDomainEdges(unlockCatalog);
   const generated = `${withSyntheticUtilities.trimEnd()}\n\n${unlockSubgraph}\n\n${domainEdges.join("\n")}\n\n${unlockTargets.edges.join("\n")}\n`;
 
   writeFileSync(outputPath, generated, "utf8");

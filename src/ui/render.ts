@@ -1,17 +1,16 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { CHECKLIST_UNLOCK_ID } from "../domain/state.js";
+import { buildUnlockCriteria } from "../domain/unlockEngine.js";
 import type {
   Action,
   EuclidRemainderEntry,
   GameState,
   Key,
-  Slot,
   SlotOperator,
   UnlockDefinition,
   UnlockEffect,
-  UnlockPredicate,
 } from "../domain/types.js";
-import { equalsBigInt, gteBigInt, isInteger, lteBigInt, toDisplayString } from "../infra/math/rationalEngine.js";
+import { toDisplayString } from "../infra/math/rationalEngine.js";
 import { toPreferredFractionString } from "../infra/math/euclideanEngine.js";
 
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
@@ -290,75 +289,6 @@ const getUnlockName = (effect: UnlockEffect): string => {
   return "unknown";
 };
 
-const getOperationSnapshot = (state: GameState): Slot[] => {
-  const slots = [...state.calculator.operationSlots];
-  const drafting = state.calculator.draftingSlot;
-  if (!drafting || drafting.operandInput.length === 0) {
-    return slots;
-  }
-  slots.push({
-    operator: drafting.operator,
-    operand: drafting.isNegative && drafting.operandInput !== "0" ? -BigInt(drafting.operandInput) : BigInt(drafting.operandInput),
-  });
-  return slots;
-};
-
-const getProgressiveRollSequenceMatches = (roll: Array<{ num: bigint; den: bigint }>, required: bigint[]): number => {
-  const maxCandidate = Math.min(roll.length, required.length);
-  for (let candidate = maxCandidate; candidate >= 0; candidate -= 1) {
-    const rollSuffix = roll.slice(roll.length - candidate);
-    const requiredPrefix = required.slice(0, candidate);
-    const isMatch = rollSuffix.every((value, index) => isInteger(value) && value.num === requiredPrefix[index]);
-    if (isMatch) {
-      return candidate;
-    }
-  }
-  return 0;
-};
-
-const buildCriteriaForPredicate = (predicate: UnlockPredicate, state: GameState): UnlockCriterionVm[] => {
-  if (predicate.type === "total_equals") {
-    return [{ label: predicate.value.toString(), checked: equalsBigInt(state.calculator.total, predicate.value) }];
-  }
-
-  if (predicate.type === "total_at_least") {
-    return [{ label: predicate.value.toString(), checked: gteBigInt(state.calculator.total, predicate.value) }];
-  }
-
-  if (predicate.type === "total_at_most") {
-    return [{ label: predicate.value.toString(), checked: lteBigInt(state.calculator.total, predicate.value) }];
-  }
-
-  if (predicate.type === "roll_ends_with_sequence") {
-    const matchedCount = getProgressiveRollSequenceMatches(state.calculator.roll, predicate.sequence);
-    return predicate.sequence.map((value, index) => ({
-      label: value.toString(),
-      checked: index < matchedCount,
-    }));
-  }
-
-  if (predicate.type === "operation_equals") {
-    const requiredTokens = predicate.slots.flatMap((slot) => [slot.operator, slot.operand.toString()]);
-    const currentSlots = getOperationSnapshot(state);
-    const currentTokens = currentSlots.flatMap((slot) => [slot.operator, slot.operand.toString()]);
-    return requiredTokens.map((token, index) => ({
-      label: token,
-      checked: currentTokens[index] === token,
-    }));
-  }
-
-  if (predicate.type === "roll_length_at_least") {
-    return [
-      {
-        label: `len >= ${predicate.length.toString()}`,
-        checked: state.calculator.roll.length >= predicate.length,
-      },
-    ];
-  }
-
-  return [];
-};
-
 const isUnlockImpossible = (_unlock: UnlockDefinition, _state: GameState): boolean => false;
 
 export const buildUnlockRows = (
@@ -370,7 +300,7 @@ export const buildUnlockRows = (
     const completed = state.completedUnlockIds.includes(unlock.id);
     const impossible = impossibleCheck(unlock, state);
     const rowState: UnlockRowState = impossible ? "impossible" : completed ? "completed" : "not_completed";
-    const criteria = buildCriteriaForPredicate(unlock.predicate, state);
+    const criteria = buildUnlockCriteria(unlock.predicate, state);
     return {
       id: unlock.id,
       name: getUnlockName(unlock.effect),
