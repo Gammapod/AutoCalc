@@ -5,10 +5,14 @@ export const SAVE_SCHEMA_VERSION = 1;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 
 export const defaultKeyLayout = (): LayoutCell[] => [
-  { kind: "key", key: "C" },
+  { kind: "placeholder", area: "graph" },
+  { kind: "placeholder", area: "empty" },
   { kind: "key", key: "CE" },
-  { kind: "placeholder", area: "mul" },
+  { kind: "key", key: "C" },
   { kind: "placeholder", area: "div" },
+  { kind: "placeholder", area: "mod" },
+  { kind: "placeholder", area: "euclid_divmod" },
+  { kind: "placeholder", area: "mul" },
   { kind: "key", key: "7" },
   { kind: "key", key: "8" },
   { kind: "key", key: "9" },
@@ -22,7 +26,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "3" },
   { kind: "key", key: "=", tall: true },
   { kind: "key", key: "0", wide: true },
-  { kind: "placeholder", area: "dot" },
+  { kind: "placeholder", area: "negate" },
 ];
 
 export const initialState = (): GameState => ({

@@ -109,6 +109,7 @@ let grapherResizeObserver: ResizeObserver | null = null;
 let observedCalculatorDevice: HTMLElement | null = null;
 const GRAPH_WINDOW_SIZE = 25;
 const GRAPH_MIN_Y_RANGE = 15;
+const KEYPAD_COLUMNS = 4;
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -633,6 +634,70 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   return false;
 };
 
+const toGridKey = (row: number, column: number): string => `${row}:${column}`;
+
+const canPlaceGridCell = (
+  occupied: Set<string>,
+  row: number,
+  column: number,
+  colSpan: number,
+  rowSpan: number,
+): boolean => {
+  if (column + colSpan - 1 > KEYPAD_COLUMNS) {
+    return false;
+  }
+  for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
+    for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
+      if (occupied.has(toGridKey(row + rowOffset, column + colOffset))) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+const claimGridCells = (occupied: Set<string>, row: number, column: number, colSpan: number, rowSpan: number): void => {
+  for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
+    for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
+      occupied.add(toGridKey(row + rowOffset, column + colOffset));
+    }
+  }
+};
+
+const buildKeypadSlotLabels = (layout: GameState["ui"]["keyLayout"]): string[] => {
+  const labels: string[] = [];
+  const occupied = new Set<string>();
+  let searchIndex = 0;
+
+  for (let index = 0; index < layout.length; index += 1) {
+    const cell = layout[index];
+    const colSpan = cell.kind === "key" && cell.wide ? 2 : 1;
+    const rowSpan = cell.kind === "key" && cell.tall ? 2 : 1;
+
+    while (true) {
+      const row = Math.floor(searchIndex / KEYPAD_COLUMNS) + 1;
+      const column = (searchIndex % KEYPAD_COLUMNS) + 1;
+      if (canPlaceGridCell(occupied, row, column, colSpan, rowSpan)) {
+        claimGridCells(occupied, row, column, colSpan, rowSpan);
+        labels.push(`R${row}C${column} #${index}`);
+        searchIndex += 1;
+        break;
+      }
+      searchIndex += 1;
+    }
+  }
+
+  return labels;
+};
+
+const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => {
+  const slotLabel = document.createElement("span");
+  slotLabel.className = "slot-label";
+  slotLabel.setAttribute("aria-hidden", "true");
+  slotLabel.textContent = label;
+  cellElement.appendChild(slotLabel);
+};
+
 export const render = (root: Element, state: GameState, dispatch: (action: Action) => unknown): void => {
   const totalEl = root.querySelector("[data-total]");
   const slotEl = root.querySelector("[data-slot]");
@@ -678,11 +743,15 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   renderUnlockChecklist(unlockEl, state);
 
   keysEl.innerHTML = "";
-  for (const cell of state.ui.keyLayout) {
+  const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout);
+  for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
+    const cell = state.ui.keyLayout[index];
+    const slotLabel = slotLabels[index] ?? `#${index}`;
     if (cell.kind === "placeholder") {
       const placeholder = document.createElement("div");
       placeholder.className = "placeholder";
       placeholder.setAttribute("aria-hidden", "true");
+      appendDebugSlotLabel(placeholder, slotLabel);
       keysEl.appendChild(placeholder);
       continue;
     }
@@ -698,6 +767,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     }
     button.textContent = cell.key;
     button.disabled = !isKeyUnlocked(state, cell.key);
+    appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {
       dispatch({ type: "PRESS_KEY", key: cell.key });
     });

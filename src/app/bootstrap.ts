@@ -23,6 +23,12 @@ const redraw = (): void => {
   render(root, store.getState(), store.dispatch);
 };
 
+const syncDebugUiState = (): void => {
+  const isOpen = debugToggle.checked;
+  debugMenu.hidden = !isOpen;
+  document.body.setAttribute("data-debug-menu-open", isOpen ? "true" : "false");
+};
+
 redraw();
 store.subscribe((state) => {
   render(root, state, store.dispatch);
@@ -30,10 +36,12 @@ store.subscribe((state) => {
 });
 
 debugToggle.addEventListener("change", () => {
-  debugMenu.hidden = !debugToggle.checked;
+  syncDebugUiState();
 });
 
 clearSaveButton.addEventListener("click", () => {
   store.dispatch({ type: "RESET_RUN" });
   storageRepo.clear();
 });
+
+syncDebugUiState();

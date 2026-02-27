@@ -10,14 +10,14 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(moved.ui.keyLayout.length, baselineLayout.length, "move preserves layout length");
   assert.deepEqual(
     moved.ui.keyLayout.slice(0, 4).map((cell) => (cell.kind === "key" ? cell.key : cell.area)),
-    ["CE", "mul", "div", "C"],
+    ["empty", "CE", "C", "graph"],
     "move shifts intermediate entries and reinserts moved entry",
   );
 
   const swapped = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: 0, secondIndex: 1 });
   assert.deepEqual(
     swapped.ui.keyLayout.slice(0, 2).map((cell) => (cell.kind === "key" ? cell.key : cell.area)),
-    ["CE", "C"],
+    ["empty", "graph"],
     "swap exchanges the two target slots",
   );
 

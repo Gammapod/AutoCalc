@@ -300,11 +300,12 @@
         margin-top: 14px;
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        grid-template-rows: repeat(5, minmax(48px, 1fr));
+        grid-template-rows: repeat(6, minmax(48px, 1fr));
         gap: var(--gap);
       }
 
       .key {
+        position: relative;
         border: 1px solid var(--key-stroke);
         border-radius: 10px;
         background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
@@ -346,9 +347,30 @@
       }
 
       .placeholder {
+        position: relative;
         border-radius: 10px;
         border: 1px dashed rgba(26, 31, 39, 0.25);
         background: linear-gradient(180deg, rgba(121, 130, 145, 0.25), rgba(94, 104, 120, 0.18));
+      }
+
+      .slot-label {
+        position: absolute;
+        top: 4px;
+        left: 6px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.62rem;
+        line-height: 1;
+        color: rgba(18, 21, 26, 0.72);
+        background: rgba(255, 255, 255, 0.55);
+        border: 1px solid rgba(18, 21, 26, 0.16);
+        border-radius: 4px;
+        padding: 1px 4px;
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      body[data-debug-menu-open="true"] .slot-label {
+        opacity: 1;
       }
 
       .status {
