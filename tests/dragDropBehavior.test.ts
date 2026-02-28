@@ -12,8 +12,8 @@ export const runDragDropBehaviorTests = (): void => {
     ...base,
     ui: {
       ...base.ui,
-      keyLayout: [...base.ui.keyLayout, { kind: "placeholder", area: "empty" }],
-      keypadColumns: 4,
+      keyLayout: [...base.ui.keyLayout, { kind: "placeholder", area: "empty" }, { kind: "placeholder", area: "empty" }],
+      keypadColumns: 5,
       keypadRows: 1,
       storageLayout: [{ kind: "key", key: "1" }, ...base.ui.storageLayout.slice(1)],
     },
@@ -48,6 +48,42 @@ export const runDragDropBehaviorTests = (): void => {
     { surface: "keypad", index: 3 },
   );
   assert.equal(swapAction, "swap", "dragging key onto occupied key slot is a swap");
+
+  const blockedBottomRightMove = classifyDropAction(
+    withStorageKey,
+    { surface: "storage", index: 0 },
+    { surface: "keypad", index: 4 },
+  );
+  assert.equal(
+    blockedBottomRightMove,
+    null,
+    "dragging non-execution key into bottom-right keypad slot is rejected",
+  );
+
+  const withExecutionStorageKey: GameState = {
+    ...withStorageKey,
+    unlocks: {
+      ...withStorageKey.unlocks,
+      execution: {
+        ...withStorageKey.unlocks.execution,
+        "=": true,
+      },
+    },
+    ui: {
+      ...withStorageKey.ui,
+      storageLayout: [{ kind: "key", key: "=" }, ...withStorageKey.ui.storageLayout.slice(1)],
+    },
+  };
+  const allowedBottomRightMove = classifyDropAction(
+    withExecutionStorageKey,
+    { surface: "storage", index: 0 },
+    { surface: "keypad", index: 4 },
+  );
+  assert.equal(
+    allowedBottomRightMove,
+    "move",
+    "dragging execution key into bottom-right keypad slot is allowed",
+  );
 
   const invalid = classifyDropAction(
     withStorageKey,

@@ -731,6 +731,8 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   return "execution";
 };
 
+const isExecutionKey = (key: Key): boolean => key === "=" || key === "\u23EF";
+
 const buildKeypadSlotLabels = (
   layout: GameState["ui"]["keyLayout"],
   columns: number,
@@ -870,6 +872,57 @@ const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
   return isKeyUnlocked(state, slot.key) ? "key" : "invalid";
 };
 
+const getKeyAtTarget = (state: GameState, target: DragTarget): Key | null => {
+  if (target.surface === "keypad") {
+    const cell = state.ui.keyLayout[target.index];
+    if (!cell || cell.kind !== "key") {
+      return null;
+    }
+    return cell.key;
+  }
+  const slot = state.ui.storageLayout[target.index];
+  return slot?.key ?? null;
+};
+
+const getBottomRightKeypadIndex = (state: GameState): number =>
+  Math.max(0, state.ui.keypadColumns * state.ui.keypadRows - 1);
+
+const violatesBottomRightExecutionRule = (
+  state: GameState,
+  source: DragTarget,
+  destination: DragTarget,
+  action: DropAction,
+): boolean => {
+  const bottomRightIndex = getBottomRightKeypadIndex(state);
+  const sourceIsBottomRight = source.surface === "keypad" && source.index === bottomRightIndex;
+  const destinationIsBottomRight = destination.surface === "keypad" && destination.index === bottomRightIndex;
+  if (!sourceIsBottomRight && !destinationIsBottomRight) {
+    return false;
+  }
+
+  if (action === "move") {
+    if (!destinationIsBottomRight) {
+      return false;
+    }
+    const sourceKey = getKeyAtTarget(state, source);
+    return !sourceKey || !isExecutionKey(sourceKey);
+  }
+
+  if (destinationIsBottomRight) {
+    const sourceKey = getKeyAtTarget(state, source);
+    if (!sourceKey || !isExecutionKey(sourceKey)) {
+      return true;
+    }
+  }
+  if (sourceIsBottomRight) {
+    const destinationKey = getKeyAtTarget(state, destination);
+    if (!destinationKey || !isExecutionKey(destinationKey)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const isStorageDropGeometryValid = (
   state: GameState,
   source: DragTarget,
@@ -923,6 +976,9 @@ export const classifyDropAction = (
     return null;
   }
   const action: DropAction = destinationOccupancy === "key" ? "swap" : "move";
+  if (violatesBottomRightExecutionRule(state, source, destination, action)) {
+    return null;
+  }
   return isStorageDropGeometryValid(state, source, destination, action) ? action : null;
 };
 
@@ -1205,6 +1261,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     }
   }
   const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout, state.ui.keypadColumns, state.ui.keypadRows);
+  const bottomRightKeypadIndex = Math.max(0, state.ui.keyLayout.length - 1);
   for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
     const cell = state.ui.keyLayout[index];
     const slotLabel = slotLabels[index] ?? `#${index}`;
@@ -1212,6 +1269,10 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     if (cell.kind === "placeholder") {
       const placeholder = document.createElement("div");
       placeholder.className = "placeholder placeholder--drop-slot";
+      if (index === bottomRightKeypadIndex) {
+        placeholder.classList.add("keypad-slot--execution-frame");
+        placeholder.classList.add("placeholder--execution-empty");
+      }
       placeholder.setAttribute("aria-hidden", "true");
       bindDropTargetCell(placeholder, "keypad", index);
       placeholder.dataset.layoutOccupied = "empty";
@@ -1223,6 +1284,9 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     if (!isKeyUnlocked(state, cell.key)) {
       const hidden = document.createElement("div");
       hidden.className = "placeholder placeholder--drop-slot placeholder--locked-hidden";
+      if (index === bottomRightKeypadIndex) {
+        hidden.classList.add("keypad-slot--execution-frame");
+      }
       hidden.setAttribute("aria-hidden", "true");
       hidden.dataset.keypadCellId = slotId;
       appendDebugSlotLabel(hidden, slotLabel);
@@ -1233,6 +1297,9 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     const button = document.createElement("button");
     button.type = "button";
     button.className = "key key--draggable";
+    if (index === bottomRightKeypadIndex) {
+      button.classList.add("keypad-slot--execution-frame");
+    }
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
     if (newlyUnlockedKeys.has(cell.key)) {
       button.classList.add("key--unlock-animate");

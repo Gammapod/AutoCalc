@@ -146,6 +146,62 @@ export const runReducerLayoutTests = (): void => {
   );
   assert.equal(swapAcross.ui.keyLayout[emptyKeypadIndex]?.key, "C", "swap across surfaces places storage key into keypad");
 
+  const bottomRightIndex = baselineWithSpace.ui.keyLayout.length - 1;
+  const firstStorageEmptyIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell === null);
+  assert.ok(firstStorageEmptyIndex >= 0, "baseline storage includes at least one empty slot");
+
+  const withBottomRightEmptied = reducer(baselineWithSpace, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad",
+    fromIndex: bottomRightIndex,
+    toSurface: "storage",
+    toIndex: firstStorageEmptyIndex,
+  });
+  assert.equal(
+    withBottomRightEmptied.ui.keyLayout[bottomRightIndex]?.kind,
+    "placeholder",
+    "execution key can move out of bottom-right slot",
+  );
+
+  const invalidBottomRightMove = reducer(withBottomRightEmptied, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "storage",
+    fromIndex: 0,
+    toSurface: "keypad",
+    toIndex: bottomRightIndex,
+  });
+  assert.equal(
+    invalidBottomRightMove,
+    withBottomRightEmptied,
+    "moving non-execution key into bottom-right slot is rejected",
+  );
+
+  const validBottomRightMove = reducer(withBottomRightEmptied, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "storage",
+    fromIndex: firstStorageEmptyIndex,
+    toSurface: "keypad",
+    toIndex: bottomRightIndex,
+  });
+  assert.equal(
+    validBottomRightMove.ui.keyLayout[bottomRightIndex]?.kind === "key" ? validBottomRightMove.ui.keyLayout[bottomRightIndex].key : null,
+    "=",
+    "execution key can move back into bottom-right slot",
+  );
+
+  const invalidBottomRightSwap = reducer(baselineWithSpace, {
+    type: "SWAP_LAYOUT_CELLS",
+    fromSurface: "keypad",
+    fromIndex: 1,
+    toSurface: "keypad",
+    toIndex: bottomRightIndex,
+  });
+  assert.equal(
+    invalidBottomRightSwap,
+    baselineWithSpace,
+    "swapping a non-execution key into bottom-right slot is rejected",
+  );
+
   const acrossSurfaceSwapTriggersC = reducer(cUnlockedWithRoll, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "keypad",

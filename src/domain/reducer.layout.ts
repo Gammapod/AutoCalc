@@ -24,6 +24,7 @@ const isKeyCell = (cell: LayoutCell | KeyCell | null): cell is KeyCell =>
 
 const isKeypadEmptyCell = (cell: LayoutCell): boolean => cell.kind === "placeholder";
 const isStorageEmptyCell = (cell: KeyCell | null): boolean => cell === null;
+const isExecutionKey = (key: KeyCell["key"]): boolean => key === "=" || key === "\u23EF";
 
 export const isStorageLayoutValid = (storageLayout: Array<KeyCell | null>): boolean => {
   return storageLayout.length > 0 && storageLayout.length % STORAGE_COLUMNS === 0;
@@ -198,6 +199,30 @@ const isStorageOutcomeValid = (
   return isStorageLayoutValid(nextStorage);
 };
 
+const violatesBottomRightExecutionRule = (
+  state: GameState,
+  fromSurface: LayoutSurface,
+  fromIndex: number,
+  fromNextValue: LayoutCell | KeyCell | null,
+  toSurface: LayoutSurface,
+  toIndex: number,
+  toNextValue: LayoutCell | KeyCell | null,
+): boolean => {
+  const bottomRightIndex =
+    (state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS) * (state.ui.keypadRows || KEYPAD_DEFAULT_ROWS) - 1;
+  let nextBottomRight: LayoutCell | KeyCell | null | undefined;
+  if (fromSurface === "keypad" && fromIndex === bottomRightIndex) {
+    nextBottomRight = fromNextValue;
+  }
+  if (toSurface === "keypad" && toIndex === bottomRightIndex) {
+    nextBottomRight = toNextValue;
+  }
+  if (typeof nextBottomRight === "undefined") {
+    return false;
+  }
+  return isKeyCell(nextBottomRight) && !isExecutionKey(nextBottomRight.key);
+};
+
 export const applyMoveKeySlot = (state: GameState, fromIndex: number, toIndex: number): GameState => {
   const columns = state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
   const rows = state.ui.keypadRows || KEYPAD_DEFAULT_ROWS;
@@ -256,6 +281,19 @@ export const applyMoveLayoutCell = (
     return state;
   }
   if (
+    violatesBottomRightExecutionRule(
+      state,
+      fromSurface,
+      fromIndex,
+      sourceClearedCell(fromSurface),
+      toSurface,
+      toIndex,
+      sourceCell,
+    )
+  ) {
+    return state;
+  }
+  if (
     !isStorageOutcomeValid(
       state,
       fromSurface,
@@ -299,6 +337,19 @@ export const applySwapLayoutCells = (
   const sourceCell = readSurfaceCell(state, fromSurface, fromIndex);
   const destinationCell = readSurfaceCell(state, toSurface, toIndex);
   if (!isKeyCell(sourceCell) || !isKeyCell(destinationCell)) {
+    return state;
+  }
+  if (
+    violatesBottomRightExecutionRule(
+      state,
+      fromSurface,
+      fromIndex,
+      destinationCell,
+      toSurface,
+      toIndex,
+      sourceCell,
+    )
+  ) {
     return state;
   }
   if (!isStorageOutcomeValid(state, fromSurface, fromIndex, destinationCell, toSurface, toIndex, sourceCell)) {
