@@ -8,8 +8,6 @@ export type Key = ValueExpressionKey | SlotOperator | UtilityKey | ExecKey;
 export type KeyCell = {
   kind: "key";
   key: Key;
-  wide?: boolean;
-  tall?: boolean;
 };
 
 export type PlaceholderCell = {

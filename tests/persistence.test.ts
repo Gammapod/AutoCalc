@@ -62,8 +62,7 @@ export const runPersistenceTests = (): void => {
   );
   assert.deepEqual(loaded.calculator.operationSlots, [{ operator: "*", operand: 6n }], "hydrate slot bigint operand");
   assert.deepEqual(loaded.ui.keyLayout.slice(0, 2), [state.ui.keyLayout[1], state.ui.keyLayout[0]], "hydrate ui key layout");
-  assert.equal(loaded.ui.storageLayout.length, 8, "hydrate storage layout as fixed slots");
-  assert.ok(loaded.ui.storageLayout.every((slot) => slot === null), "fresh storage layout slots are empty");
+  assert.deepEqual(loaded.ui.storageLayout, state.ui.storageLayout, "hydrate storage layout");
 
   const legacyStorage = createMemoryStorage();
   legacyStorage.setItem(

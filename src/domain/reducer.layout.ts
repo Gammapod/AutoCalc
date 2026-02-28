@@ -10,41 +10,8 @@ const isKeyCell = (cell: LayoutCell | KeyCell | null): cell is KeyCell =>
 
 const isKeypadEmptyCell = (cell: LayoutCell): boolean => cell.kind === "placeholder";
 const isStorageEmptyCell = (cell: KeyCell | null): boolean => cell === null;
-const KEYPAD_COLUMNS = 4;
-
-const getSpans = (cell: KeyCell): { colSpan: number; rowSpan: number } => ({
-  colSpan: cell.wide ? 2 : 1,
-  rowSpan: cell.tall ? 2 : 1,
-});
-
 export const isStorageLayoutValid = (storageLayout: Array<KeyCell | null>): boolean => {
-  if (storageLayout.length === 0 || storageLayout.length % STORAGE_COLUMNS !== 0) {
-    return false;
-  }
-  const rows = storageLayout.length / STORAGE_COLUMNS;
-  const occupied = new Set<number>();
-  for (let index = 0; index < storageLayout.length; index += 1) {
-    const cell = storageLayout[index];
-    if (!cell) {
-      continue;
-    }
-    const row = Math.floor(index / STORAGE_COLUMNS);
-    const column = index % STORAGE_COLUMNS;
-    const { colSpan, rowSpan } = getSpans(cell);
-    if (column + colSpan > STORAGE_COLUMNS || row + rowSpan > rows) {
-      return false;
-    }
-    for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
-      for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
-        const footprintIndex = (row + rowOffset) * STORAGE_COLUMNS + (column + colOffset);
-        if (occupied.has(footprintIndex)) {
-          return false;
-        }
-        occupied.add(footprintIndex);
-      }
-    }
-  }
-  return true;
+  return storageLayout.length > 0 && storageLayout.length % STORAGE_COLUMNS === 0;
 };
 
 const nextStorageWithTrailingEmptyRow = (storageLayout: Array<KeyCell | null>): Array<KeyCell | null> => {
@@ -107,7 +74,7 @@ const keySignature = (cell: LayoutCell | KeyCell | null): string | null => {
   if (!cell || cell.kind !== "key") {
     return null;
   }
-  return `${cell.key}|${cell.wide ? "w" : "_"}|${cell.tall ? "t" : "_"}`;
+  return cell.key;
 };
 
 type SurfaceIndex = {
@@ -146,89 +113,6 @@ const hasOnlyExpectedKeyChanges = (
     }
   }
 
-  return true;
-};
-
-const countKeypadEmptySlots = (layout: LayoutCell[]): number => layout.filter((cell) => cell.kind === "placeholder").length;
-const isLargeKey = (cell: KeyCell): boolean => Boolean(cell.wide || cell.tall);
-
-const toGridKey = (row: number, column: number): string => `${row}:${column}`;
-const canPlaceKeypadCell = (
-  occupied: Set<string>,
-  row: number,
-  column: number,
-  colSpan: number,
-  rowSpan: number,
-): boolean => {
-  if (column + colSpan - 1 > KEYPAD_COLUMNS) {
-    return false;
-  }
-  for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
-    for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
-      if (occupied.has(toGridKey(row + rowOffset, column + colOffset))) {
-        return false;
-      }
-    }
-  }
-  return true;
-};
-const claimKeypadCells = (occupied: Set<string>, row: number, column: number, colSpan: number, rowSpan: number): void => {
-  for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
-    for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
-      occupied.add(toGridKey(row + rowOffset, column + colOffset));
-    }
-  }
-};
-const buildKeypadAnchors = (layout: LayoutCell[]): string[] => {
-  const anchors: string[] = [];
-  const occupied = new Set<string>();
-  let searchIndex = 0;
-  for (let index = 0; index < layout.length; index += 1) {
-    const cell = layout[index];
-    const colSpan = cell.kind === "key" && cell.wide ? 2 : 1;
-    const rowSpan = cell.kind === "key" && cell.tall ? 2 : 1;
-    while (true) {
-      const row = Math.floor(searchIndex / KEYPAD_COLUMNS) + 1;
-      const column = (searchIndex % KEYPAD_COLUMNS) + 1;
-      if (canPlaceKeypadCell(occupied, row, column, colSpan, rowSpan)) {
-        claimKeypadCells(occupied, row, column, colSpan, rowSpan);
-        anchors.push(`${row}:${column}`);
-        searchIndex += 1;
-        break;
-      }
-      searchIndex += 1;
-    }
-  }
-  return anchors;
-};
-
-const hasOnlyExpectedKeypadAnchorChanges = (
-  previous: GameState,
-  next: GameState,
-  allowedChanges: SurfaceIndex[],
-): boolean => {
-  const allowedKeypad = new Set(
-    allowedChanges.filter((entry) => entry.surface === "keypad").map((entry) => entry.index.toString()),
-  );
-  const previousAnchors = buildKeypadAnchors(previous.ui.keyLayout);
-  const nextAnchors = buildKeypadAnchors(next.ui.keyLayout);
-
-  for (let index = 0; index < previous.ui.keyLayout.length; index += 1) {
-    if (allowedKeypad.has(index.toString())) {
-      continue;
-    }
-    const previousCell = previous.ui.keyLayout[index];
-    const nextCell = next.ui.keyLayout[index];
-    if (!isKeyCell(previousCell) || !isKeyCell(nextCell)) {
-      continue;
-    }
-    if (keySignature(previousCell) !== keySignature(nextCell)) {
-      continue;
-    }
-    if (previousAnchors[index] !== nextAnchors[index]) {
-      return false;
-    }
-  }
   return true;
 };
 
@@ -314,11 +198,6 @@ export const applyMoveLayoutCell = (
   if (!isKeyCell(sourceCell) || !isEmptyCell(toSurface, destinationCell)) {
     return state;
   }
-  const sourceIsLargeKey = isLargeKey(sourceCell);
-  const touchesKeypad = fromSurface === "keypad" || toSurface === "keypad";
-  if (sourceIsLargeKey && touchesKeypad && countKeypadEmptySlots(state.ui.keyLayout) < 2) {
-    return state;
-  }
   if (
     !isStorageOutcomeValid(
       state,
@@ -339,11 +218,7 @@ export const applyMoveLayoutCell = (
     { surface: fromSurface, index: fromIndex },
     { surface: toSurface, index: toIndex },
   ];
-  if (
-    (sourceIsLargeKey && touchesKeypad && countKeypadEmptySlots(nextState.ui.keyLayout) < 2) ||
-    !hasOnlyExpectedKeyChanges(state, nextState, allowed) ||
-    !hasOnlyExpectedKeypadAnchorChanges(state, nextState, allowed)
-  ) {
+  if (!hasOnlyExpectedKeyChanges(state, nextState, allowed)) {
     return state;
   }
   return nextState;
@@ -369,12 +244,6 @@ export const applySwapLayoutCells = (
   if (!isKeyCell(sourceCell) || !isKeyCell(destinationCell)) {
     return state;
   }
-  const sourceIsLargeKey = isLargeKey(sourceCell);
-  const destinationIsLargeKey = isLargeKey(destinationCell);
-  const touchesKeypad = fromSurface === "keypad" || toSurface === "keypad";
-  if ((sourceIsLargeKey || destinationIsLargeKey) && touchesKeypad && countKeypadEmptySlots(state.ui.keyLayout) < 2) {
-    return state;
-  }
   if (!isStorageOutcomeValid(state, fromSurface, fromIndex, destinationCell, toSurface, toIndex, sourceCell)) {
     return state;
   }
@@ -385,11 +254,7 @@ export const applySwapLayoutCells = (
     { surface: fromSurface, index: fromIndex },
     { surface: toSurface, index: toIndex },
   ];
-  if (
-    ((sourceIsLargeKey || destinationIsLargeKey) && touchesKeypad && countKeypadEmptySlots(nextState.ui.keyLayout) < 2) ||
-    !hasOnlyExpectedKeyChanges(state, nextState, allowed) ||
-    !hasOnlyExpectedKeypadAnchorChanges(state, nextState, allowed)
-  ) {
+  if (!hasOnlyExpectedKeyChanges(state, nextState, allowed)) {
     return state;
   }
   return nextState;

@@ -712,9 +712,8 @@ const buildKeypadSlotLabels = (layout: GameState["ui"]["keyLayout"]): string[] =
   let searchIndex = 0;
 
   for (let index = 0; index < layout.length; index += 1) {
-    const cell = layout[index];
-    const colSpan = cell.kind === "key" && cell.wide ? 2 : 1;
-    const rowSpan = cell.kind === "key" && cell.tall ? 2 : 1;
+    const colSpan = 1;
+    const rowSpan = 1;
 
     while (true) {
       const row = Math.floor(searchIndex / KEYPAD_COLUMNS) + 1;
@@ -781,19 +780,6 @@ const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
   return slot ? "key" : "empty";
 };
 
-const countKeypadEmptySlots = (state: GameState): number =>
-  state.ui.keyLayout.reduce((count, cell) => (cell.kind === "placeholder" ? count + 1 : count), 0);
-
-const getTargetKeyCell = (state: GameState, target: DragTarget): KeyCell | null => {
-  if (target.surface === "keypad") {
-    const cell = state.ui.keyLayout[target.index];
-    return cell?.kind === "key" ? cell : null;
-  }
-  return state.ui.storageLayout[target.index] ?? null;
-};
-
-const isLargeKeyCell = (cell: KeyCell | null): boolean => Boolean(cell && (cell.wide || cell.tall));
-
 const isStorageDropGeometryValid = (
   state: GameState,
   source: DragTarget,
@@ -847,14 +833,6 @@ export const classifyDropAction = (
     return null;
   }
   const action: DropAction = destinationOccupancy === "key" ? "swap" : "move";
-  const sourceCell = getTargetKeyCell(state, source);
-  const destinationCell = getTargetKeyCell(state, destination);
-  const touchesKeypad = source.surface === "keypad" || destination.surface === "keypad";
-  if (touchesKeypad && (isLargeKeyCell(sourceCell) || (action === "swap" && isLargeKeyCell(destinationCell)))) {
-    if (countKeypadEmptySlots(state) < 2) {
-      return null;
-    }
-  }
   return isStorageDropGeometryValid(state, source, destination, action) ? action : null;
 };
 
@@ -1085,12 +1063,6 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     button.type = "button";
     button.className = "key key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    if (cell.wide) {
-      button.classList.add("key--wide");
-    }
-    if (cell.tall) {
-      button.classList.add("key--tall");
-    }
     button.textContent = formatKeyLabel(cell.key);
     button.disabled = !isKeyUnlocked(state, cell.key);
     bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
@@ -1129,12 +1101,6 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     button.type = "button";
     button.className = "key key--storage key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    if (cell.wide) {
-      button.classList.add("key--wide");
-    }
-    if (cell.tall) {
-      button.classList.add("key--tall");
-    }
     button.textContent = formatKeyLabel(cell.key);
     button.disabled = !isKeyUnlocked(state, cell.key);
     bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);

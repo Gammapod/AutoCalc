@@ -23,8 +23,17 @@ export const runDragDropBehaviorTests = (): void => {
   );
   assert.equal(moveAction, "move", "dragging key onto empty keypad placeholder is a move");
 
+  const withKeypadKey: GameState = {
+    ...withStorageKey,
+    ui: {
+      ...withStorageKey.ui,
+      keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
+        index === 2 ? ({ kind: "key", key: "2" } as const) : cell,
+      ),
+    },
+  };
   const swapAction = classifyDropAction(
-    withStorageKey,
+    withKeypadKey,
     { surface: "storage", index: 0 },
     { surface: "keypad", index: 2 },
   );
@@ -36,27 +45,4 @@ export const runDragDropBehaviorTests = (): void => {
     { surface: "storage", index: 999 },
   );
   assert.equal(invalid, null, "invalid target index rejects drop");
-
-  const wideBlocked = classifyDropAction(
-    withStorageKey,
-    { surface: "keypad", index: 20 },
-    { surface: "storage", index: 7 },
-  );
-  assert.equal(wideBlocked, null, "wide key drop is blocked when span exceeds storage row");
-
-  const oneFreeSlotState: GameState = {
-    ...withStorageKey,
-    ui: {
-      ...withStorageKey.ui,
-      keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
-        index === 1 ? ({ kind: "key", key: "1" } as const) : cell,
-      ),
-    },
-  };
-  const blockedByFreeSlotRule = classifyDropAction(
-    oneFreeSlotState,
-    { surface: "keypad", index: 20 },
-    { surface: "storage", index: 0 },
-  );
-  assert.equal(blockedByFreeSlotRule, null, "large key drag is blocked when keypad has fewer than two free slots");
 };

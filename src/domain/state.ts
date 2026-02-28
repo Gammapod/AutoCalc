@@ -1,4 +1,4 @@
-import type { GameState, LayoutCell } from "./types.js";
+import type { GameState, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 4;
@@ -7,7 +7,31 @@ export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
 
-export const defaultStorageLayout = (): Array<null> => Array.from({ length: STORAGE_INITIAL_SLOTS }, () => null);
+export const defaultStorageKeys = (): KeyCell[] =>
+  defaultKeyLayout()
+    .filter((cell): cell is KeyCell => cell.kind === "key")
+    .map((cell) => ({ ...cell }));
+
+export const defaultStorageLayout = (): Array<KeyCell | null> => {
+  const keys = defaultStorageKeys();
+  const slots: Array<KeyCell | null> = [...keys];
+  const minSlots = Math.max(
+    STORAGE_INITIAL_SLOTS,
+    Math.ceil(slots.length / STORAGE_COLUMNS) * STORAGE_COLUMNS,
+  );
+  while (slots.length < minSlots) {
+    slots.push(null);
+  }
+  if (!slots.some((slot) => slot === null)) {
+    for (let index = 0; index < STORAGE_COLUMNS; index += 1) {
+      slots.push(null);
+    }
+  }
+  return slots;
+};
+
+export const defaultDrawerKeyLayout = (): LayoutCell[] =>
+  defaultKeyLayout().map((cell) => (cell.kind === "placeholder" ? cell : { kind: "placeholder", area: "empty" }));
 
 export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "graph" },
@@ -29,8 +53,8 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "1" },
   { kind: "key", key: "2" },
   { kind: "key", key: "3" },
-  { kind: "key", key: "=", tall: true },
-  { kind: "key", key: "0", wide: true },
+  { kind: "key", key: "=" },
+  { kind: "key", key: "0" },
   { kind: "key", key: "NEG" },
 ];
 
@@ -44,7 +68,7 @@ export const initialState = (): GameState => ({
     draftingSlot: null,
   },
   ui: {
-    keyLayout: defaultKeyLayout(),
+    keyLayout: defaultDrawerKeyLayout(),
     storageLayout: defaultStorageLayout(),
   },
   unlocks: {
