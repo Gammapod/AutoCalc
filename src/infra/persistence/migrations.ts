@@ -48,6 +48,19 @@ export type SerializableStateV3 = {
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
+const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
+const UTILITY_KEY_VALUES = ["C", "CE", "NEG"] as const;
+const EXEC_KEY_VALUES = ["="] as const;
+const KEY_VALUES: readonly Key[] = [
+  ...DIGIT_VALUES,
+  ...SLOT_OPERATOR_VALUES,
+  ...UTILITY_KEY_VALUES,
+  ...EXEC_KEY_VALUES,
+];
+const MAX_SLOTS_MIN = 1;
+const MAX_SLOTS_MAX = 2;
+const MAX_TOTAL_DIGITS_MIN = 1;
+const MAX_TOTAL_DIGITS_MAX = 12;
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -58,6 +71,7 @@ const isInteger = (value: unknown): value is number => typeof value === "number"
 const isRationalString = (value: unknown): value is string => isString(value) && RATIONAL_RE.test(value);
 const isSlotOperator = (value: unknown): value is Slot["operator"] =>
   isString(value) && SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
+const isKnownKey = (value: unknown): value is Key => isString(value) && KEY_VALUES.includes(value as Key);
 
 const hasOnlyKnownLayoutCells = (layout: unknown): layout is LayoutCell[] =>
   Array.isArray(layout) &&
@@ -72,7 +86,7 @@ const hasOnlyKnownLayoutCells = (layout: unknown): layout is LayoutCell[] =>
       );
     }
     if (cell.kind === "key") {
-      return isString(cell.key);
+      return isKnownKey(cell.key);
     }
     return false;
   });
@@ -88,6 +102,13 @@ const isSerializableSlot = (value: unknown): value is SerializableSlot =>
 
 const defaultUnlocks = (): UnlockState => initialState().unlocks;
 
+const normalizeUnlockCap = (value: unknown, fallback: number, min: number, max: number): number => {
+  if (!isInteger(value) || value < min || value > max) {
+    return fallback;
+  }
+  return value;
+};
+
 const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState => {
   const defaults = defaultUnlocks();
   return {
@@ -95,8 +116,13 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
     slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
     utilities: { ...defaults.utilities, ...(source?.utilities ?? {}) },
     execution: { ...defaults.execution, ...(source?.execution ?? {}) },
-    maxSlots: source?.maxSlots ?? defaults.maxSlots,
-    maxTotalDigits: source?.maxTotalDigits ?? defaults.maxTotalDigits,
+    maxSlots: normalizeUnlockCap(source?.maxSlots, defaults.maxSlots, MAX_SLOTS_MIN, MAX_SLOTS_MAX),
+    maxTotalDigits: normalizeUnlockCap(
+      source?.maxTotalDigits,
+      defaults.maxTotalDigits,
+      MAX_TOTAL_DIGITS_MIN,
+      MAX_TOTAL_DIGITS_MAX,
+    ),
   };
 };
 
@@ -210,7 +236,11 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     v2State = state as SerializableStateV2;
   } else {
     const asV3 = state as SerializableStateV3;
-    return validateSerializableStateV3(asV3) ? asV3 : null;
+    const normalizedV3: SerializableStateV3 = {
+      ...asV3,
+      unlocks: normalizeUnlocks(asV3.unlocks),
+    };
+    return validateSerializableStateV3(normalizedV3) ? normalizedV3 : null;
   }
 
   const v3State = migrateV2ToV3(v2State);

@@ -1,0 +1,33 @@
+import type { GameState } from "../../src/domain/types.js";
+
+export const collectInvariantViolations = (state: GameState): string[] => {
+  const violations: string[] = [];
+
+  if (state.calculator.total.den === 0n) {
+    violations.push("total denominator must not be zero");
+  }
+
+  if (state.completedUnlockIds.length !== new Set(state.completedUnlockIds).size) {
+    violations.push("completedUnlockIds must be unique");
+  }
+
+  if (state.calculator.draftingSlot) {
+    const { operandInput } = state.calculator.draftingSlot;
+    if (!/^\d*$/.test(operandInput)) {
+      violations.push("draftingSlot operandInput must be numeric");
+    }
+  }
+
+  if (state.calculator.euclidRemainders.some((entry) => entry.rollIndex < 0)) {
+    violations.push("euclid remainder rollIndex must be non-negative");
+  }
+
+  return violations;
+};
+
+export const assertInvariants = (state: GameState): void => {
+  const violations = collectInvariantViolations(state);
+  if (violations.length > 0) {
+    throw new Error(`Invariant violations: ${violations.join("; ")}`);
+  }
+};

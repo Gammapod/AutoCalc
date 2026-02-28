@@ -435,4 +435,135 @@ export const runPersistenceTests = (): void => {
     LoadFailureReason.MigrationFailed,
     "malformed unlock subtree fails validation during migration stage",
   );
+
+  const outOfRangeLowCaps = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 2,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: defaultKeyLayout(),
+        },
+        unlocks: {
+          ...state.unlocks,
+          maxSlots: -1,
+          maxTotalDigits: -5,
+        },
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  assert.ok(outOfRangeLowCaps.state, "v2 payload with low out-of-range caps still hydrates");
+  assert.equal(
+    outOfRangeLowCaps.state?.unlocks.maxSlots,
+    initialState().unlocks.maxSlots,
+    "low out-of-range maxSlots normalizes to defaults",
+  );
+  assert.equal(
+    outOfRangeLowCaps.state?.unlocks.maxTotalDigits,
+    initialState().unlocks.maxTotalDigits,
+    "low out-of-range maxTotalDigits normalizes to defaults",
+  );
+
+  const outOfRangeHighCaps = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 2,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: defaultKeyLayout(),
+        },
+        unlocks: {
+          ...state.unlocks,
+          maxSlots: 999,
+          maxTotalDigits: 999,
+        },
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  assert.ok(outOfRangeHighCaps.state, "v2 payload with high out-of-range caps still hydrates");
+  assert.equal(
+    outOfRangeHighCaps.state?.unlocks.maxSlots,
+    initialState().unlocks.maxSlots,
+    "high out-of-range maxSlots normalizes to defaults",
+  );
+  assert.equal(
+    outOfRangeHighCaps.state?.unlocks.maxTotalDigits,
+    initialState().unlocks.maxTotalDigits,
+    "high out-of-range maxTotalDigits normalizes to defaults",
+  );
+
+  const inRangeCaps = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 2,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: defaultKeyLayout(),
+        },
+        unlocks: {
+          ...state.unlocks,
+          maxSlots: 2,
+          maxTotalDigits: 12,
+        },
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  assert.ok(inRangeCaps.state, "v2 payload with in-range caps hydrates");
+  assert.equal(inRangeCaps.state?.unlocks.maxSlots, 2, "in-range maxSlots is preserved");
+  assert.equal(inRangeCaps.state?.unlocks.maxTotalDigits, 12, "in-range maxTotalDigits is preserved");
+
+  const unknownLayoutKey = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: [{ kind: "key", key: "BOGUS" }, ...defaultKeyLayout().slice(1)],
+        },
+        unlocks: state.unlocks,
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  assert.equal(unknownLayoutKey.state, null, "unknown layout keys are rejected");
+  assert.equal(
+    unknownLayoutKey.reason,
+    LoadFailureReason.MigrationFailed,
+    "unknown layout keys fail during migration validation",
+  );
 };
