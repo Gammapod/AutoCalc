@@ -1,5 +1,6 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { CHECKLIST_UNLOCK_ID, STORAGE_COLUMNS } from "../domain/state.js";
+import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { isStorageLayoutValid } from "../domain/reducer.layout.js";
 import { buildUnlockCriteria } from "../domain/unlockEngine.js";
 import type {
@@ -730,61 +731,15 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   return "execution";
 };
 
-const toGridKey = (row: number, column: number): string => `${row}:${column}`;
-
-const canPlaceGridCell = (
-  occupied: Set<string>,
+const buildKeypadSlotLabels = (
+  layout: GameState["ui"]["keyLayout"],
   columns: number,
-  row: number,
-  column: number,
-  colSpan: number,
-  rowSpan: number,
-): boolean => {
-  if (column + colSpan - 1 > columns) {
-    return false;
-  }
-  for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
-    for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
-      if (occupied.has(toGridKey(row + rowOffset, column + colOffset))) {
-        return false;
-      }
-    }
-  }
-  return true;
-};
-
-const claimGridCells = (occupied: Set<string>, row: number, column: number, colSpan: number, rowSpan: number): void => {
-  for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
-    for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
-      occupied.add(toGridKey(row + rowOffset, column + colOffset));
-    }
-  }
-};
-
-const buildKeypadSlotLabels = (layout: GameState["ui"]["keyLayout"], columns: number): string[] => {
-  const labels: string[] = [];
-  const occupied = new Set<string>();
-  let searchIndex = 0;
-
-  for (let index = 0; index < layout.length; index += 1) {
-    const colSpan = 1;
-    const rowSpan = 1;
-
-    while (true) {
-      const row = Math.floor(searchIndex / columns) + 1;
-      const column = (searchIndex % columns) + 1;
-      if (canPlaceGridCell(occupied, columns, row, column, colSpan, rowSpan)) {
-        claimGridCells(occupied, row, column, colSpan, rowSpan);
-        labels.push(`R${row}C${column} #${index}`);
-        searchIndex += 1;
-        break;
-      }
-      searchIndex += 1;
-    }
-  }
-
-  return labels;
-};
+  rows: number,
+): string[] =>
+  layout.map((_cell, index) => {
+    const coord = toCoordFromIndex(index, columns, rows);
+    return `R${coord.row}C${coord.col} #${index}`;
+  });
 
 export const getStorageRowCount = (buttonCount: number, columns: number = STORAGE_COLUMNS): number => {
   if (columns <= 0) {
@@ -836,31 +791,19 @@ const playKeypadFlip = (container: Element, beforeRects: Map<string, DOMRect>): 
     if (!cellId) {
       continue;
     }
-    const before = beforeRects.get(cellId);
-    if (!before) {
-      continue;
+    if (!beforeRects.has(cellId)) {
+      element.classList.add("keypad-slot-enter");
+      animatedElements.push(element);
     }
-    const after = element.getBoundingClientRect();
-    const deltaX = before.left - after.left;
-    const deltaY = before.top - after.top;
-    if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
-      continue;
-    }
-    element.style.transition = "none";
-    element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-    animatedElements.push(element);
   }
 
   if (animatedElements.length === 0) {
     return;
   }
 
-  void document.body.offsetWidth;
   for (const element of animatedElements) {
-    element.style.transition = `transform ${KEYPAD_FLIP_DURATION_MS}ms cubic-bezier(0.22, 0.62, 0.22, 1)`;
-    element.style.transform = "";
     window.setTimeout(() => {
-      element.style.transition = "";
+      element.classList.remove("keypad-slot-enter");
     }, KEYPAD_FLIP_DURATION_MS + 20);
   }
 };
@@ -1261,17 +1204,18 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       }
     }
   }
-  const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout, state.ui.keypadColumns);
+  const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout, state.ui.keypadColumns, state.ui.keypadRows);
   for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
     const cell = state.ui.keyLayout[index];
     const slotLabel = slotLabels[index] ?? `#${index}`;
+    const slotId = getSlotIdAtIndex(index, state.ui.keypadColumns, state.ui.keypadRows);
     if (cell.kind === "placeholder") {
       const placeholder = document.createElement("div");
       placeholder.className = "placeholder placeholder--drop-slot";
       placeholder.setAttribute("aria-hidden", "true");
       bindDropTargetCell(placeholder, "keypad", index);
       placeholder.dataset.layoutOccupied = "empty";
-      placeholder.dataset.keypadCellId = index.toString();
+      placeholder.dataset.keypadCellId = slotId;
       appendDebugSlotLabel(placeholder, slotLabel);
       keysEl.appendChild(placeholder);
       continue;
@@ -1280,7 +1224,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       const hidden = document.createElement("div");
       hidden.className = "placeholder placeholder--drop-slot placeholder--locked-hidden";
       hidden.setAttribute("aria-hidden", "true");
-      hidden.dataset.keypadCellId = index.toString();
+      hidden.dataset.keypadCellId = slotId;
       appendDebugSlotLabel(hidden, slotLabel);
       keysEl.appendChild(hidden);
       continue;
@@ -1304,7 +1248,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     }
     button.setAttribute("aria-pressed", keypadToggleActive ? "true" : "false");
     button.disabled = false;
-    button.dataset.keypadCellId = index.toString();
+    button.dataset.keypadCellId = slotId;
     bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {

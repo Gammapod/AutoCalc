@@ -10,8 +10,19 @@ import {
   STORAGE_COLUMNS,
   STORAGE_INITIAL_SLOTS,
 } from "../../domain/state.js";
+import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { resizeKeyLayout } from "../../domain/reducer.layout.js";
-import type { DraftingSlot, Key, KeyCell, LayoutCell, PlaceholderCell, Slot, UnlockState, ValueExpressionKey } from "../../domain/types.js";
+import type {
+  DraftingSlot,
+  Key,
+  KeyCell,
+  KeypadCellRecord,
+  LayoutCell,
+  PlaceholderCell,
+  Slot,
+  UnlockState,
+  ValueExpressionKey,
+} from "../../domain/types.js";
 
 export type SerializableSlot = {
   operator: Slot["operator"];
@@ -88,6 +99,7 @@ export type SerializableStateV5 = {
   };
   ui: {
     keyLayout: LayoutCell[];
+    keypadCells?: KeypadCellRecord[];
     storageLayout: Array<KeyCell | null>;
     keypadColumns: number;
     keypadRows: number;
@@ -172,6 +184,19 @@ const hasOnlyKnownStorageCells = (layout: unknown): layout is KeyCell[] =>
 
 const hasOnlyKnownStorageSlots = (layout: unknown): layout is Array<KeyCell | null> =>
   Array.isArray(layout) && layout.every((cell) => cell === null || (isObject(cell) && hasOnlyKnownStorageCells([cell])));
+
+const hasOnlyKnownKeypadCells = (cells: unknown): cells is KeypadCellRecord[] =>
+  Array.isArray(cells) &&
+  cells.every(
+    (cell) =>
+      isObject(cell) &&
+      isString(cell.id) &&
+      isInteger(cell.row) &&
+      isInteger(cell.col) &&
+      cell.row >= 1 &&
+      cell.col >= 1 &&
+      hasOnlyKnownLayoutCells([cell.cell]),
+  );
 
 const isDraftingSlot = (value: unknown): value is DraftingSlot =>
   isObject(value) &&
@@ -381,6 +406,7 @@ export const migrateV4ToV5 = (input: SerializableStateV4): SerializableStateV5 =
     ...input,
     ui: {
       keyLayout: normalizedKeyLayout,
+      keypadCells: fromKeyLayoutArray(normalizedKeyLayout, keypadColumns, keypadRows),
       storageLayout,
       keypadColumns,
       keypadRows,
@@ -521,6 +547,7 @@ export const validateSerializableStateV5 = (state: unknown): state is Serializab
   const ui = state.ui;
   if (
     !hasOnlyKnownLayoutCells(ui.keyLayout) ||
+    (ui.keypadCells !== undefined && !hasOnlyKnownKeypadCells(ui.keypadCells)) ||
     !hasOnlyKnownStorageSlots(ui.storageLayout) ||
     !isInteger(ui.keypadColumns) ||
     !isInteger(ui.keypadRows) ||
@@ -612,6 +639,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       ...asV5,
       ui: {
         keyLayout: normalizedKeyLayout,
+        keypadCells: fromKeyLayoutArray(normalizedKeyLayout, keypadColumns, keypadRows),
         storageLayout,
         keypadColumns,
         keypadRows,

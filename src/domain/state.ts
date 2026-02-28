@@ -1,4 +1,5 @@
-﻿import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
+import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
+import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 5;
@@ -54,7 +55,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "CE" },
   { kind: "key", key: "C" },
   { kind: "key", key: "/" },
-  { kind: "key", key: "⟡" },
+  { kind: "key", key: "\u27E1" },
   { kind: "key", key: "#" },
   { kind: "key", key: "*" },
   { kind: "key", key: "7" },
@@ -74,54 +75,58 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "\u23EF", behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
 ];
 
-export const initialState = (): GameState => ({
-  calculator: {
-    total: { num: 0n, den: 1n },
-    pendingNegativeTotal: false,
-    roll: [],
-    euclidRemainders: [],
-    operationSlots: [],
-    draftingSlot: null,
-  },
-  ui: {
-    keyLayout: defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
-    storageLayout: defaultStorageLayout(),
-    keypadColumns: KEYPAD_DEFAULT_COLUMNS,
-    keypadRows: KEYPAD_DEFAULT_ROWS,
-    buttonFlags: {},
-  },
-  unlocks: {
-    valueExpression: {
-      "0": false,
-      "1": true,
-      "2": false,
-      "3": false,
-      "4": false,
-      "5": false,
-      "6": false,
-      "7": false,
-      "8": false,
-      "9": false,
-      NEG: false,
+export const initialState = (): GameState => {
+  const keyLayout = defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS);
+  return {
+    calculator: {
+      total: { num: 0n, den: 1n },
+      pendingNegativeTotal: false,
+      roll: [],
+      euclidRemainders: [],
+      operationSlots: [],
+      draftingSlot: null,
     },
-    slotOperators: {
-      "+": false,
-      "-": false,
-      "*": false,
-      "/": false,
-      "#": false,
-      "⟡": false,
+    ui: {
+      keyLayout,
+      keypadCells: fromKeyLayoutArray(keyLayout, KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+      storageLayout: defaultStorageLayout(),
+      keypadColumns: KEYPAD_DEFAULT_COLUMNS,
+      keypadRows: KEYPAD_DEFAULT_ROWS,
+      buttonFlags: {},
     },
-    utilities: {
-      C: false,
-      CE: false,
+    unlocks: {
+      valueExpression: {
+        "0": false,
+        "1": true,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        NEG: false,
+      },
+      slotOperators: {
+        "+": false,
+        "-": false,
+        "*": false,
+        "/": false,
+        "#": false,
+        "\u27E1": false,
+      },
+      utilities: {
+        C: false,
+        CE: false,
+      },
+      execution: {
+        "=": false,
+        "\u23EF": false,
+      },
+      maxSlots: 1,
+      maxTotalDigits: 2,
     },
-    execution: {
-      "=": false,
-      "\u23EF": false,
-    },
-    maxSlots: 1,
-    maxTotalDigits: 2,
-  },
-  completedUnlockIds: [],
-});
+    completedUnlockIds: [],
+  };
+};

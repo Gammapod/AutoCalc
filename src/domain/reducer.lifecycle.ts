@@ -1,4 +1,5 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
+import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { initialState } from "./state.js";
 import { applyEffect } from "./unlocks.js";
 import type { Action, GameState } from "./types.js";
@@ -35,7 +36,21 @@ export const applyLifecycleAction = (state: GameState, action: Action): GameStat
     return initialState();
   }
   if (action.type === "HYDRATE_SAVE") {
-    return action.state;
+    const expectedLength = Math.max(1, action.state.ui.keypadColumns * action.state.ui.keypadRows);
+    if (action.state.ui.keypadCells.length === expectedLength) {
+      return action.state;
+    }
+    return {
+      ...action.state,
+      ui: {
+        ...action.state.ui,
+        keypadCells: fromKeyLayoutArray(
+          action.state.ui.keyLayout,
+          action.state.ui.keypadColumns,
+          action.state.ui.keypadRows,
+        ),
+      },
+    };
   }
   if (action.type === "UNLOCK_ALL") {
     return applyUnlockAll(state);

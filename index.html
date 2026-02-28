@@ -518,6 +518,10 @@
         animation: key-unlock-pulse 1200ms cubic-bezier(0.22, 0.62, 0.22, 1) 1;
       }
 
+      .keypad-slot-enter {
+        animation: keypad-slot-enter 760ms cubic-bezier(0.2, 0.74, 0.2, 1) 1;
+      }
+
       @keyframes key-unlock-pulse {
         0% {
           transform: translateY(0);
@@ -538,6 +542,19 @@
         100% {
           transform: translateY(0);
           filter: brightness(1);
+        }
+      }
+
+      @keyframes keypad-slot-enter {
+        0% {
+          opacity: 0;
+          transform: scale(0.92);
+          filter: saturate(0.9);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+          filter: saturate(1);
         }
       }
 

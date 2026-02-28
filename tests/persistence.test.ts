@@ -78,6 +78,11 @@ export const runPersistenceTests = (): void => {
   );
   assert.deepEqual(loaded.calculator.operationSlots, [{ operator: "*", operand: 6n }], "hydrate slot bigint operand");
   assert.deepEqual(loaded.ui.keyLayout.slice(0, 2), [state.ui.keyLayout[1], state.ui.keyLayout[0]], "hydrate ui key layout");
+  assert.equal(
+    loaded.ui.keypadCells.length,
+    loaded.ui.keypadColumns * loaded.ui.keypadRows,
+    "hydrate canonical keypad cells for every slot",
+  );
   assert.deepEqual(loaded.ui.storageLayout, state.ui.storageLayout, "hydrate storage layout");
   assert.equal(loaded.ui.keypadColumns, state.ui.keypadColumns, "hydrate keypad columns");
   assert.equal(loaded.ui.keypadRows, state.ui.keypadRows, "hydrate keypad rows");

@@ -18,6 +18,20 @@ export type PlaceholderCell = {
 
 export type LayoutCell = KeyCell | PlaceholderCell;
 
+export type SlotId = string;
+
+export type KeypadCoord = {
+  row: number;
+  col: number;
+};
+
+export type KeypadCellRecord = {
+  id: SlotId;
+  row: number;
+  col: number;
+  cell: LayoutCell;
+};
+
 export type PressKeyButtonBehavior = {
   type: "press_key";
 };
@@ -161,6 +175,7 @@ export type GameState = {
   calculator: CalculatorState;
   ui: {
     keyLayout: LayoutCell[];
+    keypadCells: KeypadCellRecord[];
     storageLayout: Array<KeyCell | null>;
     keypadColumns: number;
     keypadRows: number;

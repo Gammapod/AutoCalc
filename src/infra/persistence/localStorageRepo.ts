@@ -1,5 +1,6 @@
 import { parseRational, toDisplayString } from "../math/rationalEngine.js";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
+import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { isValidSchemaVersion, migrateToLatest, type SerializableStateV5, type SerializableSlot } from "./migrations.js";
 import type { GameState } from "../../domain/types.js";
 
@@ -49,6 +50,7 @@ const toSerializableState = (state: GameState): SerializableStateV5 => ({
   },
   ui: {
     keyLayout: state.ui.keyLayout,
+    keypadCells: state.ui.keypadCells,
     storageLayout: state.ui.storageLayout,
     keypadColumns: state.ui.keypadColumns,
     keypadRows: state.ui.keypadRows,
@@ -75,6 +77,14 @@ const fromSerializableStateV3 = (payloadState: SerializableStateV5): GameState =
   },
   ui: {
     keyLayout: payloadState.ui.keyLayout,
+    keypadCells:
+      payloadState.ui.keypadCells && payloadState.ui.keypadCells.length === payloadState.ui.keypadColumns * payloadState.ui.keypadRows
+        ? payloadState.ui.keypadCells
+        : fromKeyLayoutArray(
+            payloadState.ui.keyLayout,
+            payloadState.ui.keypadColumns,
+            payloadState.ui.keypadRows,
+          ),
     storageLayout: payloadState.ui.storageLayout,
     keypadColumns: payloadState.ui.keypadColumns,
     keypadRows: payloadState.ui.keypadRows,
