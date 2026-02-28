@@ -2,6 +2,7 @@ import {
   defaultDrawerKeyLayout,
   defaultKeyLayout,
   defaultStorageLayout,
+  GRAPH_VISIBLE_FLAG,
   initialState,
   KEYPAD_DEFAULT_COLUMNS,
   KEYPAD_DEFAULT_ROWS,
@@ -46,7 +47,7 @@ export type SerializableStateV1 = {
     digits?: Partial<Record<Exclude<ValueExpressionKey, "NEG">, boolean>>;
     valueExpression?: Partial<UnlockState["valueExpression"]>;
     slotOperators?: Partial<UnlockState["slotOperators"]>;
-    utilities?: Partial<Record<"C" | "CE" | "NEG", boolean>>;
+    utilities?: Partial<Record<"C" | "CE" | "GRAPH" | "NEG", boolean>>;
     execution?: Partial<UnlockState["execution"]>;
   };
   completedUnlockIds?: string[];
@@ -115,7 +116,7 @@ const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
-const UTILITY_KEY_VALUES = ["C", "CE"] as const;
+const UTILITY_KEY_VALUES = ["C", "CE", "GRAPH"] as const;
 const EXEC_KEY_VALUES = ["=", "++", "\u23EF"] as const;
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
@@ -153,6 +154,11 @@ const normalizeButtonFlags = (value: unknown): Record<string, boolean> => {
   }
   return normalized;
 };
+
+const withDefaultButtonFlags = (flags: Record<string, boolean>): Record<string, boolean> => ({
+  [GRAPH_VISIBLE_FLAG]: false,
+  ...flags,
+});
 
 const hasOnlyKnownLayoutCells = (layout: unknown): layout is LayoutCell[] =>
   Array.isArray(layout) &&
@@ -411,7 +417,7 @@ export const migrateV4ToV5 = (input: SerializableStateV4): SerializableStateV5 =
       storageLayout,
       keypadColumns,
       keypadRows,
-      buttonFlags: {},
+      buttonFlags: withDefaultButtonFlags({}),
     },
     calculator: {
       ...input.calculator,
@@ -655,7 +661,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         storageLayout,
         keypadColumns,
         keypadRows,
-        buttonFlags: normalizeButtonFlags(asV5.ui.buttonFlags),
+        buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV5.ui.buttonFlags)),
       },
       unlocks: normalizeUnlocks(asV5.unlocks),
     };

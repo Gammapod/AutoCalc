@@ -350,6 +350,9 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   if (key === "CE") {
     return applyCE(preprocessed);
   }
+  if (key === "GRAPH") {
+    return preprocessed;
+  }
   if (key === "NEG") {
     return applyNegate(preprocessed);
   }

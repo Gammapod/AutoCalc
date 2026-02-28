@@ -1,5 +1,5 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { CHECKLIST_UNLOCK_ID, STORAGE_COLUMNS } from "../domain/state.js";
+import { CHECKLIST_UNLOCK_ID, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { isStorageLayoutValid } from "../domain/reducer.layout.js";
 import { buildUnlockCriteria } from "../domain/unlockEngine.js";
@@ -127,8 +127,6 @@ let previousKeypadColumns: number | null = null;
 let previousKeypadRows: number | null = null;
 let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
-let grapherResizeObserver: ResizeObserver | null = null;
-let observedCalculatorDevice: HTMLElement | null = null;
 let dragSession: DragSession | null = null;
 let suppressClicksUntil = 0;
 const GRAPH_WINDOW_SIZE = 25;
@@ -214,12 +212,25 @@ export const formatKeyLabel = (key: Key): string => {
 };
 
 const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
+const GRAPH_TOGGLE_BEHAVIOR: KeyButtonBehavior = { type: "toggle_flag", flag: GRAPH_VISIBLE_FLAG };
 
-export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => cell.behavior ?? PRESS_KEY_BEHAVIOR;
+const getButtonFlag = (state: GameState, flag: string): boolean => {
+  if (flag === GRAPH_VISIBLE_FLAG) {
+    return state.ui.buttonFlags[GRAPH_VISIBLE_FLAG] ?? false;
+  }
+  return Boolean(state.ui.buttonFlags[flag]);
+};
+
+export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => {
+  if (cell.key === "GRAPH") {
+    return cell.behavior ?? GRAPH_TOGGLE_BEHAVIOR;
+  }
+  return cell.behavior ?? PRESS_KEY_BEHAVIOR;
+};
 
 export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => {
   const behavior = getKeyButtonBehavior(cell);
-  return behavior.type === "toggle_flag" ? Boolean(state.ui.buttonFlags[behavior.flag]) : false;
+  return behavior.type === "toggle_flag" ? getButtonFlag(state, behavior.flag) : false;
 };
 
 export const formatKeyCellLabel = (state: GameState, cell: KeyCell): string => {
@@ -683,34 +694,6 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[]): GraphOptio
   };
 };
 
-const ensureGrapherHeightSync = (root: Element): void => {
-  const calculatorDevice = root.querySelector<HTMLElement>("[data-calc-device]");
-  const grapherDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
-  if (!calculatorDevice || !grapherDevice) {
-    return;
-  }
-
-  const syncHeight = (): void => {
-    const calculatorHeight = calculatorDevice.getBoundingClientRect().height;
-    grapherDevice.style.height = `${Math.max(120, Math.round(calculatorHeight * 0.5))}px`;
-  };
-
-  syncHeight();
-
-  if (typeof ResizeObserver === "undefined") {
-    return;
-  }
-
-  if (observedCalculatorDevice !== calculatorDevice) {
-    grapherResizeObserver?.disconnect();
-    grapherResizeObserver = new ResizeObserver(() => {
-      syncHeight();
-    });
-    grapherResizeObserver.observe(calculatorDevice);
-    observedCalculatorDevice = calculatorDevice;
-  }
-};
-
 const destroyGraphChart = (): void => {
   graphChart?.destroy();
   graphChart = null;
@@ -777,7 +760,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return state.unlocks.slotOperators[key];
   }
-  if (key === "C" || key === "CE") {
+  if (key === "C" || key === "CE" || key === "GRAPH") {
     return state.unlocks.utilities[key];
   }
   if (key === "=" || key === "++" || key === "\u23EF") {
@@ -793,7 +776,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return "slot_operator";
   }
-  if (key === "C" || key === "CE") {
+  if (key === "C" || key === "CE" || key === "GRAPH") {
     return "utility";
   }
   return "execution";
@@ -1248,6 +1231,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   const unlockEl = root.querySelector("[data-unlocks]");
   const keysEl = root.querySelector("[data-keys]");
   const storageEl = root.querySelector("[data-storage-keys]");
+  const grapherDeviceEl = root.querySelector<HTMLElement>("[data-grapher-device]");
 
   if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl || !storageEl) {
     throw new Error("UI mount points are missing.");
@@ -1255,8 +1239,15 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
 
   const newlyUnlockedKeys = getNewlyUnlockedKeys(state);
 
-  ensureGrapherHeightSync(root);
-  renderGraphDisplay(root, state.calculator.roll);
+  const isGraphVisible = getButtonFlag(state, GRAPH_VISIBLE_FLAG);
+  if (grapherDeviceEl) {
+    grapherDeviceEl.hidden = !isGraphVisible;
+  }
+  if (isGraphVisible) {
+    renderGraphDisplay(root, state.calculator.roll);
+  } else {
+    destroyGraphChart();
+  }
 
   renderTotalDisplay(totalEl, state);
   slotEl.textContent = buildOperationSlotDisplay(state);

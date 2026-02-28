@@ -1,7 +1,7 @@
 export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 export type SlotOperator = "+" | "-" | "*" | "/" | "#" | "⟡";
 export type ValueExpressionKey = Digit | "NEG";
-export type UtilityKey = "C" | "CE";
+export type UtilityKey = "C" | "CE" | "GRAPH";
 export type ExecKey = "=" | "++" | "\u23EF";
 export type Key = ValueExpressionKey | SlotOperator | UtilityKey | ExecKey;
 

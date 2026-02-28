@@ -5,6 +5,7 @@ export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 5;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const AUTO_EQUALS_FLAG = "execution.pause";
+export const GRAPH_VISIBLE_FLAG = "graph.visible";
 export const KEYPAD_DEFAULT_COLUMNS = 3;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
@@ -54,6 +55,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "empty" },
   { kind: "key", key: "CE" },
   { kind: "key", key: "C" },
+  { kind: "key", key: "GRAPH", behavior: { type: "toggle_flag", flag: GRAPH_VISIBLE_FLAG } },
   { kind: "key", key: "/" },
   { kind: "key", key: "\u27E1" },
   { kind: "key", key: "#" },
@@ -94,7 +96,9 @@ export const initialState = (): GameState => {
       storageLayout: defaultStorageLayout(),
       keypadColumns: KEYPAD_DEFAULT_COLUMNS,
       keypadRows: KEYPAD_DEFAULT_ROWS,
-      buttonFlags: {},
+      buttonFlags: {
+        [GRAPH_VISIBLE_FLAG]: false,
+      },
     },
     unlocks: {
       valueExpression: {
@@ -121,6 +125,7 @@ export const initialState = (): GameState => {
       utilities: {
         C: false,
         CE: false,
+        GRAPH: true,
       },
       execution: {
         "=": false,
