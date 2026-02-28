@@ -106,6 +106,7 @@ export const runReducerUnlockTests = (): void => {
     {
       total: r(0n),
       pendingNegativeTotal: false,
+      singleDigitInitialTotalEntry: true,
       roll: [],
       euclidRemainders: [],
       operationSlots: [],

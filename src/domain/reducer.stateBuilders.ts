@@ -15,6 +15,7 @@ export const createClearedOperationCalculatorState = (
 export const createResetCalculatorState = (): GameState["calculator"] => ({
   total: fromBigInt(0n),
   pendingNegativeTotal: false,
+  singleDigitInitialTotalEntry: true,
   roll: [],
   euclidRemainders: [],
   operationSlots: [],

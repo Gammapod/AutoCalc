@@ -10,6 +10,10 @@ const applyUnlockAll = (state: GameState): GameState => {
   const withSecondSlotUnlocked = applyEffect({ type: "unlock_second_slot" }, withCatalogEffects);
   return {
     ...withSecondSlotUnlocked,
+    calculator: {
+      ...withSecondSlotUnlocked.calculator,
+      singleDigitInitialTotalEntry: true,
+    },
     unlocks: {
       ...withSecondSlotUnlocked.unlocks,
       valueExpression: Object.fromEntries(

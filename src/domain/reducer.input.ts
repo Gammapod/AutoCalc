@@ -24,6 +24,13 @@ const getMagnitudeText = (value: RationalValue): string => {
   return value.num < 0n ? (-value.num).toString() : value.num.toString();
 };
 
+const isSingleDigitPostClearEntry = (state: GameState): boolean =>
+  state.calculator.singleDigitInitialTotalEntry &&
+  state.calculator.roll.length === 0 &&
+  state.calculator.euclidRemainders.length === 0 &&
+  state.calculator.operationSlots.length === 0 &&
+  state.calculator.draftingSlot === null;
+
 const applyDigit = (state: GameState, digit: Digit): GameState => {
   if (!state.unlocks.valueExpression[digit]) {
     return state;
@@ -50,7 +57,12 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
     return applyUnlocks(withDraftingSlot, unlockCatalog);
   }
 
-  const nextTotalMagnitudeInput = withDigit(getMagnitudeText(state.calculator.total), digit);
+  const currentTotalMagnitudeInput = getMagnitudeText(state.calculator.total);
+  if (isSingleDigitPostClearEntry(state) && currentTotalMagnitudeInput !== "0") {
+    return state;
+  }
+
+  const nextTotalMagnitudeInput = withDigit(currentTotalMagnitudeInput, digit);
   if (nextTotalMagnitudeInput.length > state.unlocks.maxTotalDigits) {
     return state;
   }

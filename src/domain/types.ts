@@ -67,6 +67,7 @@ export type DraftingSlot = {
 export type CalculatorState = {
   total: RationalValue;
   pendingNegativeTotal: boolean;
+  singleDigitInitialTotalEntry: boolean;
   roll: RationalValue[];
   euclidRemainders: EuclidRemainderEntry[];
   operationSlots: Slot[];

@@ -37,6 +37,7 @@ const toSerializableState = (state: GameState): SerializableStateV5 => ({
   calculator: {
     total: toDisplayString(state.calculator.total),
     pendingNegativeTotal: state.calculator.pendingNegativeTotal,
+    singleDigitInitialTotalEntry: state.calculator.singleDigitInitialTotalEntry,
     roll: state.calculator.roll.map((value) => toDisplayString(value)),
     euclidRemainders: state.calculator.euclidRemainders.map((entry) => ({
       rollIndex: entry.rollIndex,
@@ -64,6 +65,7 @@ const fromSerializableStateV3 = (payloadState: SerializableStateV5): GameState =
   calculator: {
     total: parseRational(payloadState.calculator.total),
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
+    singleDigitInitialTotalEntry: payloadState.calculator.singleDigitInitialTotalEntry ?? false,
     roll: payloadState.calculator.roll.map((value) => parseRational(value)),
     euclidRemainders: payloadState.calculator.euclidRemainders.map((entry) => ({
       rollIndex: entry.rollIndex,

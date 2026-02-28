@@ -92,6 +92,7 @@ export type SerializableStateV5 = {
   calculator: {
     total: string;
     pendingNegativeTotal: boolean;
+    singleDigitInitialTotalEntry?: boolean;
     roll: string[];
     euclidRemainders: Array<{ rollIndex: number; value: string }>;
     operationSlots: SerializableSlot[];
@@ -412,6 +413,10 @@ export const migrateV4ToV5 = (input: SerializableStateV4): SerializableStateV5 =
       keypadRows,
       buttonFlags: {},
     },
+    calculator: {
+      ...input.calculator,
+      singleDigitInitialTotalEntry: false,
+    },
   };
 };
 
@@ -431,6 +436,7 @@ export const validateSerializableStateV3 = (state: unknown): state is Serializab
   if (
     !isRationalString(calculator.total) ||
     !isBoolean(calculator.pendingNegativeTotal) ||
+    (calculator.singleDigitInitialTotalEntry !== undefined && !isBoolean(calculator.singleDigitInitialTotalEntry)) ||
     !Array.isArray(calculator.roll) ||
     !calculator.roll.every(isRationalString) ||
     !Array.isArray(calculator.euclidRemainders) ||
@@ -637,6 +643,12 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     const storageLayout = normalizeStorageSlots(appendKeysIntoStorage(existingStorageSlots, overflowKeys));
     const normalizedV5: SerializableStateV5 = {
       ...asV5,
+      calculator: {
+        ...asV5.calculator,
+        singleDigitInitialTotalEntry: isBoolean(asV5.calculator.singleDigitInitialTotalEntry)
+          ? asV5.calculator.singleDigitInitialTotalEntry
+          : false,
+      },
       ui: {
         keyLayout: normalizedKeyLayout,
         keypadCells: fromKeyLayoutArray(normalizedKeyLayout, keypadColumns, keypadRows),

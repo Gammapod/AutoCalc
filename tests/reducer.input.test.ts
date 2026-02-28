@@ -49,4 +49,40 @@ export const runReducerInputTests = (): void => {
   };
   const afterNeg = applyKeyAction(negSource, "NEG");
   assert.equal(afterNeg.calculator.pendingNegativeTotal, true, "NEG toggles pending sign on zero total");
+
+  const freshBootNoSaveState: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      singleDigitInitialTotalEntry: true,
+    },
+  };
+  const freshFirstDigit = applyKeyAction(freshBootNoSaveState, "1");
+  assert.deepEqual(freshFirstDigit.calculator.total, r(1n), "fresh boot accepts one initial total digit");
+  const freshBlockedSecondDigit = applyKeyAction(freshFirstDigit, "1");
+  assert.deepEqual(
+    freshBlockedSecondDigit.calculator.total,
+    r(1n),
+    "fresh boot blocks a second initial total digit",
+  );
+
+  const fullyUnlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
+  const firstFreshDigit = applyKeyAction(fullyUnlocked, "9");
+  assert.deepEqual(firstFreshDigit.calculator.total, r(9n), "first total digit on fresh cleared save is accepted");
+  const blockedFreshSecondDigit = applyKeyAction(firstFreshDigit, "8");
+  assert.deepEqual(
+    blockedFreshSecondDigit.calculator.total,
+    r(9n),
+    "second total digit on fresh cleared save is blocked by 1-digit cap",
+  );
+
+  const afterClear = applyKeyAction(fullyUnlocked, "C");
+  const firstTotalDigit = applyKeyAction(afterClear, "9");
+  assert.deepEqual(firstTotalDigit.calculator.total, r(9n), "first total digit after clear is accepted");
+  const blockedSecondTotalDigit = applyKeyAction(firstTotalDigit, "8");
+  assert.deepEqual(
+    blockedSecondTotalDigit.calculator.total,
+    r(9n),
+    "second total digit after clear is blocked by 1-digit cap",
+  );
 };

@@ -34,7 +34,20 @@ if (
 
 const storageRepo = createLocalStorageRepo(window.localStorage);
 const loaded = storageRepo.load();
-const store = createStore(normalizeLoadedStateForRuntime(loaded) ?? initialState());
+const runtimeLoaded = normalizeLoadedStateForRuntime(loaded);
+const bootState =
+  runtimeLoaded ??
+  (() => {
+    const fresh = initialState();
+    return {
+      ...fresh,
+      calculator: {
+        ...fresh.calculator,
+        singleDigitInitialTotalEntry: true,
+      },
+    };
+  })();
+const store = createStore(bootState);
 const autoEqualsScheduler = createAutoEqualsScheduler(store);
 
 const redraw = (): void => {
@@ -75,6 +88,17 @@ debugToggle.addEventListener("change", () => {
 
 clearSaveButton.addEventListener("click", () => {
   store.dispatch({ type: "RESET_RUN" });
+  const reset = store.getState();
+  store.dispatch({
+    type: "HYDRATE_SAVE",
+    state: {
+      ...reset,
+      calculator: {
+        ...reset.calculator,
+        singleDigitInitialTotalEntry: true,
+      },
+    },
+  });
   storageRepo.clear();
 });
 

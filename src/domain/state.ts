@@ -81,6 +81,7 @@ export const initialState = (): GameState => {
     calculator: {
       total: { num: 0n, den: 1n },
       pendingNegativeTotal: false,
+      singleDigitInitialTotalEntry: false,
       roll: [],
       euclidRemainders: [],
       operationSlots: [],
