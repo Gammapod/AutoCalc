@@ -3,6 +3,8 @@ import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
 import { render } from "../ui/render.js";
 import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "./autoEqualsScheduler.js";
+import { analyzeNumberDomains } from "../domain/analysis.js";
+import { formatNumberDomainReport } from "./analysisReport.js";
 
 const root = document.querySelector("#app");
 if (!root) {
@@ -18,6 +20,9 @@ const keypadHeightInput = document.querySelector<HTMLInputElement>("[data-debug-
 const applyKeypadSizeButton = document.querySelector<HTMLButtonElement>("[data-debug-apply-keypad-size]");
 const upgradeKeypadRowButton = document.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-row]");
 const upgradeKeypadColumnButton = document.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-column]");
+const runAnalysisButton = document.querySelector<HTMLButtonElement>("[data-debug-run-analysis]");
+const analysisAllUnlockedCheckbox = document.querySelector<HTMLInputElement>("[data-debug-analysis-all-unlocked]");
+const analysisReportEl = document.querySelector<HTMLElement>("[data-debug-analysis-report]");
 if (
   !debugToggle ||
   !debugMenu ||
@@ -27,7 +32,10 @@ if (
   !keypadHeightInput ||
   !applyKeypadSizeButton ||
   !upgradeKeypadRowButton ||
-  !upgradeKeypadColumnButton
+  !upgradeKeypadColumnButton ||
+  !runAnalysisButton ||
+  !analysisAllUnlockedCheckbox ||
+  !analysisReportEl
 ) {
   throw new Error("Debug controls are missing.");
 }
@@ -119,6 +127,13 @@ upgradeKeypadRowButton.addEventListener("click", () => {
 
 upgradeKeypadColumnButton.addEventListener("click", () => {
   store.dispatch({ type: "UPGRADE_KEYPAD_COLUMN" });
+});
+
+runAnalysisButton.addEventListener("click", () => {
+  const report = analyzeNumberDomains(store.getState(), new Date(), {
+    useAllUnlockedKeys: analysisAllUnlockedCheckbox.checked,
+  });
+  analysisReportEl.textContent = formatNumberDomainReport(report);
 });
 
 syncDebugUiState();

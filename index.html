@@ -966,6 +966,28 @@
         filter: brightness(1.03);
       }
 
+      .debug-report {
+        margin: 0;
+        border: 1px solid rgba(45, 53, 63, 0.35);
+        border-radius: 8px;
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.62);
+        color: #1b212b;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: 0.73rem;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .debug-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.78rem;
+        color: #1b212b;
+      }
+
       @media (max-width: 639px) {
         body {
           padding: 16px 10px;
@@ -1023,6 +1045,12 @@
         <button type="button" class="debug-action" data-debug-upgrade-keypad-column>Upgrade Column</button>
         <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
         <button type="button" class="debug-action" data-debug-unlock-all>Unlock All</button>
+        <label class="debug-option">
+          <input type="checkbox" data-debug-analysis-all-unlocked />
+          <span>Use all unlocked keys</span>
+        </label>
+        <button type="button" class="debug-action" data-debug-run-analysis>Run Analysis</button>
+        <pre class="debug-report" data-debug-analysis-report>Run analysis to generate report.</pre>
       </div>
     </section>
     <div class="app-shell">

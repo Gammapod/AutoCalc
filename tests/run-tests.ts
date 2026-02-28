@@ -23,6 +23,7 @@ import { runReducerFlagsTests } from "./reducer.flags.test.js";
 import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
 import { runAutoEqualsSchedulerTests } from "./autoEqualsScheduler.test.js";
 import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
+import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -39,6 +40,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/button-behavior", runButtonBehaviorTests],
   ["app/auto-equals-scheduler", runAutoEqualsSchedulerTests],
   ["domain/keypad-layout-model", runKeypadLayoutModelTests],
+  ["domain/number-domain-analysis", runNumberDomainAnalysisTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],
