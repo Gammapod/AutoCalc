@@ -530,7 +530,7 @@
           0 2px 0 rgba(45, 53, 63, 0.9),
           0 4px 8px rgba(0, 0, 0, 0.28);
         color: #12151a;
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         font-weight: 600;
         cursor: pointer;
         transition: transform 95ms ease, box-shadow 95ms ease, background 110ms ease, filter 120ms ease;
@@ -598,7 +598,7 @@
       }
 
       .key--storage {
-        font-size: 0.95rem;
+        font-size: 1rem;
         box-shadow:
           inset 0 1px 0 rgba(255, 255, 255, 0.58),
           0 1px 0 rgba(57, 39, 22, 0.7),
@@ -929,8 +929,11 @@
 
       .debug-menu {
         margin-top: 10px;
-        display: grid;
         gap: 10px;
+      }
+
+      .debug-menu:not([hidden]) {
+        display: grid;
       }
 
       .debug-size {

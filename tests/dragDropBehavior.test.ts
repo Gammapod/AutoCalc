@@ -10,6 +10,17 @@ export const runDragDropBehaviorTests = (): void => {
   const base = initialState();
   const withStorageKey: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      uiUnlocks: {
+        ...base.unlocks.uiUnlocks,
+        storageVisible: true,
+      },
+      valueExpression: {
+        ...base.unlocks.valueExpression,
+        "1": true,
+      },
+    },
     ui: {
       ...base.ui,
       keyLayout: [

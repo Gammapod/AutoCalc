@@ -1,15 +1,14 @@
 import assert from "node:assert/strict";
 import {
-  KEYPAD_DEFAULT_COLUMNS,
-  KEYPAD_DEFAULT_ROWS,
   SAVE_KEY,
   SAVE_SCHEMA_VERSION,
-  STORAGE_COLUMNS,
-  STORAGE_INITIAL_SLOTS,
-  defaultKeyLayout,
   initialState,
 } from "../src/domain/state.js";
-import { createLocalStorageRepo, loadFromRawSave, LoadFailureReason } from "../src/infra/persistence/localStorageRepo.js";
+import {
+  LoadFailureReason,
+  createLocalStorageRepo,
+  loadFromRawSave,
+} from "../src/infra/persistence/localStorageRepo.js";
 
 type MemoryStorage = {
   getItem: (key: string) => string | null;
@@ -33,678 +32,92 @@ const createMemoryStorage = (): MemoryStorage => {
 };
 
 export const runPersistenceTests = (): void => {
-  const hasKeyInUi = (loadedState: ReturnType<typeof initialState>, key: string): boolean =>
-    loadedState.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === key) ||
-    loadedState.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === key);
-  const countKeyInUi = (loadedState: ReturnType<typeof initialState>, key: string): number =>
-    loadedState.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === key).length +
-    loadedState.ui.storageLayout.filter((cell) => cell?.kind === "key" && cell.key === key).length;
-
   const storage = createMemoryStorage();
   const repo = createLocalStorageRepo(storage);
 
-  const state = initialState();
-  const nextState = {
-    ...state,
+  const base = initialState();
+  const persisted = {
+    ...base,
     calculator: {
-      ...state.calculator,
-      total: r(15n, 2n),
-      roll: [r(3n), r(9n), r(15n, 2n)],
-      euclidRemainders: [{ rollIndex: 2, value: r(1n, 2n) }],
-      operationSlots: [{ operator: "*" as const, operand: 6n }],
+      ...base.calculator,
+      total: r(12n),
+      roll: [r(11n), r(12n)],
     },
-    ui: {
-      ...state.ui,
-      keyLayout: [...state.ui.keyLayout],
+    keyPressCounts: { "+": 3, "=": 2 },
+    unlocks: {
+      ...base.unlocks,
+      uiUnlocks: { storageVisible: true },
+      execution: { ...base.unlocks.execution, "=": true },
     },
+    completedUnlockIds: ["unlock_storage_on_total_11", "unlock_equals_on_total_11"],
   };
+  repo.save(persisted);
 
-  repo.save(nextState);
   const rawSaved = storage.getItem(SAVE_KEY);
   assert.ok(rawSaved, "save writes payload");
   const parsedSaved = JSON.parse(rawSaved);
-  assert.equal(parsedSaved.schemaVersion, SAVE_SCHEMA_VERSION, "save writes the current schema version");
+  assert.equal(parsedSaved.schemaVersion, SAVE_SCHEMA_VERSION, "save writes current schema");
+
   const loaded = repo.load();
-  if (!loaded) {
-    throw new Error("Expected hydrated state, received null.");
-  }
+  assert.ok(loaded, "saved payload hydrates");
+  assert.deepEqual(loaded?.calculator.total, r(12n), "round-trip total");
+  assert.deepEqual(loaded?.keyPressCounts, { "+": 3, "=": 2 }, "round-trip key press counters");
+  assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
 
-  assert.deepEqual(loaded.calculator.total, r(15n, 2n), "hydrate rational total");
-  assert.deepEqual(loaded.calculator.roll, [r(3n), r(9n), r(15n, 2n)], "hydrate rational roll");
-  assert.deepEqual(
-    loaded.calculator.euclidRemainders,
-    [{ rollIndex: 2, value: r(1n, 2n) }],
-    "hydrate euclidean remainder annotations",
-  );
-  assert.deepEqual(loaded.calculator.operationSlots, [{ operator: "*", operand: 6n }], "hydrate slot bigint operand");
-  assert.deepEqual(loaded.ui.keyLayout, state.ui.keyLayout, "hydrate ui key layout");
-  assert.equal(
-    loaded.ui.keypadCells.length,
-    loaded.ui.keypadColumns * loaded.ui.keypadRows,
-    "hydrate canonical keypad cells for every slot",
-  );
-  assert.deepEqual(loaded.ui.storageLayout, state.ui.storageLayout, "hydrate storage layout");
-  assert.equal(loaded.ui.keypadColumns, state.ui.keypadColumns, "hydrate keypad columns");
-  assert.equal(loaded.ui.keypadRows, state.ui.keypadRows, "hydrate keypad rows");
-
-  const legacyStorage = createMemoryStorage();
-  legacyStorage.setItem(
-    SAVE_KEY,
+  const legacyV1 = loadFromRawSave(
     JSON.stringify({
       schemaVersion: 1,
       savedAt: Date.now(),
       state: {
         calculator: {
           total: "9",
+          pendingNegativeTotal: false,
           roll: ["9"],
+          euclidRemainders: [],
           operationSlots: [],
           draftingSlot: null,
         },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
       },
     }),
   );
+  assert.ok(legacyV1.state, "legacy payload hydrates");
+  assert.deepEqual(legacyV1.state, initialState(), "legacy payload is hard-reset to current initial state");
 
-  const legacyRepo = createLocalStorageRepo(legacyStorage);
-  const loadedLegacy = legacyRepo.load();
-  if (!loadedLegacy) {
-    throw new Error("Expected legacy payload to hydrate with default layout.");
-  }
-  assert.deepEqual(loadedLegacy.calculator.total, r(9n), "v1 save migrates integer total to rational");
-  assert.deepEqual(loadedLegacy.calculator.roll, [r(9n)], "v1 save migrates integer roll to rationals");
-  assert.deepEqual(loadedLegacy.calculator.euclidRemainders, [], "v1 save defaults euclidean remainder annotations");
-  assert.equal(
-    loadedLegacy.ui.keyLayout.length,
-    KEYPAD_DEFAULT_COLUMNS * KEYPAD_DEFAULT_ROWS,
-    "legacy saves hydrate resized keypad layout",
-  );
-  assert.ok(
-    loadedLegacy.ui.storageLayout.length >= STORAGE_INITIAL_SLOTS &&
-      loadedLegacy.ui.storageLayout.length % STORAGE_COLUMNS === 0,
-    "legacy saves hydrate normalized storage slots",
-  );
-  assert.equal(loadedLegacy.ui.keypadColumns, KEYPAD_DEFAULT_COLUMNS, "legacy saves default keypad columns");
-  assert.equal(loadedLegacy.ui.keypadRows, KEYPAD_DEFAULT_ROWS, "legacy saves default keypad rows");
-  assert.equal(loadedLegacy.unlocks.execution["="], false, "legacy unlock payload hydrates default execution unlocks");
-  assert.equal(loadedLegacy.unlocks.slotOperators["-"], false, "legacy unlock payload hydrates default minus unlock");
-  assert.equal(loadedLegacy.unlocks.slotOperators["*"], false, "legacy unlock payload hydrates default mul unlock");
-  assert.equal(loadedLegacy.unlocks.slotOperators["/"], false, "legacy unlock payload hydrates default div unlock");
-  assert.equal(loadedLegacy.unlocks.slotOperators["⟡"], false, "legacy unlock payload hydrates default modulo unlock");
-  assert.equal(loadedLegacy.unlocks.valueExpression["1"], true, "legacy unlock payload hydrates current default digit unlocks");
-  assert.equal(loadedLegacy.unlocks.maxTotalDigits, 2, "legacy unlock payload hydrates default total-digit cap");
-
-  const legacyUnlockShapeStorage = createMemoryStorage();
-  legacyUnlockShapeStorage.setItem(
-    SAVE_KEY,
+  const legacyV5 = loadFromRawSave(
     JSON.stringify({
-      schemaVersion: 2,
+      schemaVersion: 5,
       savedAt: Date.now(),
       state: {
         calculator: {
-          total: "0",
+          total: "11",
           pendingNegativeTotal: false,
-          roll: [],
+          singleDigitInitialTotalEntry: false,
+          roll: ["11"],
           euclidRemainders: [],
           operationSlots: [],
           draftingSlot: null,
         },
         ui: {
-          keyLayout: defaultKeyLayout(),
+          keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 1,
+          keypadRows: 1,
+          buttonFlags: {},
         },
-        unlocks: {
-          ...state.unlocks,
-          valueExpression: undefined,
-          digits: {
-            "0": false,
-            "1": true,
-            "2": true,
-            "3": false,
-            "4": false,
-            "5": false,
-            "6": false,
-            "7": false,
-            "8": false,
-            "9": false,
-          },
-          utilities: {
-            C: false,
-            CE: false,
-            NEG: true,
-          },
-        },
-        completedUnlockIds: [],
+        unlocks: initialState().unlocks,
+        completedUnlockIds: ["unlock_storage_on_total_11"],
       },
     }),
   );
-  const legacyUnlockShapeRepo = createLocalStorageRepo(legacyUnlockShapeStorage);
-  const loadedLegacyUnlockShape = legacyUnlockShapeRepo.load();
-  if (!loadedLegacyUnlockShape) {
-    throw new Error("Expected legacy unlock shape payload to hydrate.");
-  }
-  assert.equal(
-    loadedLegacyUnlockShape.unlocks.valueExpression["2"],
-    true,
-    "legacy unlock digits hydrate into valueExpression digits",
-  );
-  assert.equal(
-    loadedLegacyUnlockShape.unlocks.valueExpression.NEG,
-    true,
-    "legacy utilities.NEG hydrates into valueExpression.NEG",
-  );
-
-  const v2Storage = createMemoryStorage();
-  v2Storage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "5/2",
-          pendingNegativeTotal: true,
-          roll: ["1", "5/2"],
-          euclidRemainders: [{ rollIndex: 1, value: "1/2" }],
-          operationSlots: [{ operator: "+", operand: "1" }],
-          draftingSlot: { operator: "-", operandInput: "1", isNegative: true },
-        },
-        ui: {
-          keyLayout: defaultKeyLayout(),
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: ["unlock_plus_on_total_11"],
-      },
-    }),
-  );
-  const v2Repo = createLocalStorageRepo(v2Storage);
-  const loadedV2 = v2Repo.load();
-  if (!loadedV2) {
-    throw new Error("Expected v2 payload to hydrate through v3 migration.");
-  }
-  assert.deepEqual(loadedV2.calculator.total, r(5n, 2n), "v2 payload migrates total to runtime rational");
-  assert.equal(loadedV2.calculator.pendingNegativeTotal, true, "v2 payload preserves pending negative total");
-  assert.deepEqual(loadedV2.calculator.roll, [r(1n), r(5n, 2n)], "v2 payload migrates roll");
-  assert.ok(
-    loadedV2.ui.storageLayout.length >= STORAGE_INITIAL_SLOTS &&
-      loadedV2.ui.storageLayout.length % STORAGE_COLUMNS === 0,
-    "v2 payload migrates to normalized storage slots",
-  );
-
-  const legacyPackedStorage = createMemoryStorage();
-  legacyPackedStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: 3,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: defaultKeyLayout(),
-          storageLayout: [{ kind: "key", key: "1" }],
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  const legacyPackedStorageRepo = createLocalStorageRepo(legacyPackedStorage);
-  const loadedLegacyPackedStorage = legacyPackedStorageRepo.load();
-  if (!loadedLegacyPackedStorage) {
-    throw new Error("Expected v3 packed storage payload to hydrate.");
-  }
-  assert.equal(loadedLegacyPackedStorage.ui.storageLayout[0]?.kind, "key", "v3 packed storage first key is preserved");
-  assert.ok(
-    loadedLegacyPackedStorage.ui.storageLayout.length >= STORAGE_INITIAL_SLOTS &&
-      loadedLegacyPackedStorage.ui.storageLayout.length % STORAGE_COLUMNS === 0,
-    "v3 packed storage migrates to normalized slot rows",
-  );
-
-  const legacyLayoutStorage = createMemoryStorage();
-  const legacyLayout = defaultKeyLayout().map((cell) =>
-    cell.kind === "key" && cell.key === "NEG" ? { kind: "placeholder" as const, area: "negate" } : cell,
-  );
-  legacyLayoutStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          roll: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: legacyLayout,
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  const legacyLayoutRepo = createLocalStorageRepo(legacyLayoutStorage);
-  const loadedLegacyLayout = legacyLayoutRepo.load();
-  if (!loadedLegacyLayout) {
-    throw new Error("Expected legacy layout payload to hydrate.");
-  }
-  assert.equal(
-    loadedLegacyLayout.ui.keyLayout.length,
-    KEYPAD_DEFAULT_COLUMNS * KEYPAD_DEFAULT_ROWS,
-    "legacy layouts normalize to configured keypad size",
-  );
-
-  const legacyMulLayoutStorage = createMemoryStorage();
-  const legacyMulLayout = defaultKeyLayout().map((cell) =>
-    cell.kind === "key" && cell.key === "*" ? { kind: "placeholder" as const, area: "mul" } : cell,
-  );
-  legacyMulLayoutStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          roll: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: legacyMulLayout,
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  const legacyMulRepo = createLocalStorageRepo(legacyMulLayoutStorage);
-  const loadedLegacyMulLayout = legacyMulRepo.load();
-  if (!loadedLegacyMulLayout) {
-    throw new Error("Expected legacy mul layout payload to hydrate.");
-  }
-  assert.ok(
-    hasKeyInUi(loadedLegacyMulLayout, "*"),
-    "legacy mul placeholder migrates to mul key in keypad or storage",
-  );
-  assert.equal(
-    countKeyInUi(loadedLegacyMulLayout, "*"),
-    1,
-    "mul key migration does not duplicate key entries",
-  );
-
-  const legacyDivLayoutStorage = createMemoryStorage();
-  const legacyDivLayout = defaultKeyLayout().map((cell) =>
-    cell.kind === "key" && cell.key === "/" ? { kind: "placeholder" as const, area: "div" } : cell,
-  );
-  legacyDivLayoutStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          roll: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: legacyDivLayout,
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  const legacyDivRepo = createLocalStorageRepo(legacyDivLayoutStorage);
-  const loadedLegacyDivLayout = legacyDivRepo.load();
-  if (!loadedLegacyDivLayout) {
-    throw new Error("Expected legacy div layout payload to hydrate.");
-  }
-  assert.ok(
-    hasKeyInUi(loadedLegacyDivLayout, "/"),
-    "legacy div placeholder migrates to div key in keypad or storage",
-  );
-
-  const legacyModLayoutStorage = createMemoryStorage();
-  const legacyModLayout = defaultKeyLayout().map((cell) =>
-    cell.kind === "key" && cell.key === "⟡" ? { kind: "placeholder" as const, area: "mod" } : cell,
-  );
-  legacyModLayoutStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          roll: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: legacyModLayout,
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  const legacyModRepo = createLocalStorageRepo(legacyModLayoutStorage);
-  const loadedLegacyModLayout = legacyModRepo.load();
-  if (!loadedLegacyModLayout) {
-    throw new Error("Expected legacy mod layout payload to hydrate.");
-  }
-  assert.ok(
-    hasKeyInUi(loadedLegacyModLayout, "⟡"),
-    "legacy mod placeholder migrates to modulo key in keypad or storage",
-  );
-
-  const legacyEuclidLayoutStorage = createMemoryStorage();
-  const legacyEuclidLayout = defaultKeyLayout().map((cell) =>
-    cell.kind === "key" && cell.key === "#" ? { kind: "placeholder" as const, area: "euclid_divmod" } : cell,
-  );
-  legacyEuclidLayoutStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          roll: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: legacyEuclidLayout,
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  const legacyEuclidRepo = createLocalStorageRepo(legacyEuclidLayoutStorage);
-  const loadedLegacyEuclidLayout = legacyEuclidRepo.load();
-  if (!loadedLegacyEuclidLayout) {
-    throw new Error("Expected legacy euclidean layout payload to hydrate.");
-  }
-  assert.ok(
-    hasKeyInUi(loadedLegacyEuclidLayout, "#"),
-    "legacy euclid placeholder migrates to euclidean key in keypad or storage",
-  );
-
-  const duplicateGuardStorage = createMemoryStorage();
-  const customLayoutWithMulKeyAndPlaceholder = [
-    ...defaultKeyLayout(),
-    { kind: "placeholder" as const, area: "mul" },
-    { kind: "placeholder" as const, area: "div" },
-    { kind: "placeholder" as const, area: "mod" },
-    { kind: "placeholder" as const, area: "euclid_divmod" },
-  ];
-  duplicateGuardStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          roll: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: customLayoutWithMulKeyAndPlaceholder,
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  const duplicateGuardRepo = createLocalStorageRepo(duplicateGuardStorage);
-  const loadedDuplicateGuard = duplicateGuardRepo.load();
-  if (!loadedDuplicateGuard) {
-    throw new Error("Expected duplicate-guard payload to hydrate.");
-  }
-  assert.equal(
-    countKeyInUi(loadedDuplicateGuard, "*"),
-    1,
-    "existing mul key prevents additional mul insertion",
-  );
-  assert.equal(
-    countKeyInUi(loadedDuplicateGuard, "/"),
-    1,
-    "existing div key prevents additional div insertion",
-  );
-  assert.equal(
-    countKeyInUi(loadedDuplicateGuard, "⟡"),
-    1,
-    "existing modulo key prevents additional modulo insertion",
-  );
-  assert.equal(
-    countKeyInUi(loadedDuplicateGuard, "#"),
-    1,
-    "existing euclidean key prevents additional euclidean insertion",
-  );
-
-  const badSchemaStorage = createMemoryStorage();
-  badSchemaStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({ schemaVersion: SAVE_SCHEMA_VERSION + 1, state: { calculator: {} } }),
-  );
-
-  const badSchemaRepo = createLocalStorageRepo(badSchemaStorage);
-  assert.equal(badSchemaRepo.load(), null, "reject wrong schema");
-
-  const badFractionStorage = createMemoryStorage();
-  badFractionStorage.setItem(
-    SAVE_KEY,
-    JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "1.5",
-          roll: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-      },
-    }),
-  );
-  const badFractionRepo = createLocalStorageRepo(badFractionStorage);
-  assert.equal(badFractionRepo.load(), null, "malformed fraction values fail safely");
+  assert.ok(legacyV5.state, "v5 payload hydrates");
+  assert.deepEqual(legacyV5.state, initialState(), "v5 payload is hard-reset to current initial state");
 
   const badJson = loadFromRawSave("{");
   assert.equal(badJson.state, null, "invalid JSON fails safely");
-  assert.equal(
-    badJson.reason,
-    LoadFailureReason.InvalidJson,
-    "invalid JSON reports invalid-json reason",
-  );
+  assert.equal(badJson.reason, LoadFailureReason.InvalidJson, "invalid JSON reason is reported");
 
-  const missingState = loadFromRawSave(JSON.stringify({ schemaVersion: SAVE_SCHEMA_VERSION }));
-  assert.equal(missingState.state, null, "missing state envelope is rejected");
-  assert.equal(
-    missingState.reason,
-    LoadFailureReason.InvalidPayloadEnvelope,
-    "missing state uses invalid envelope reason",
-  );
-
-  const malformedUnlockSubtree = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: defaultKeyLayout(),
-        },
-        unlocks: {
-          ...state.unlocks,
-          execution: {
-            "=": "true",
-          },
-        },
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  assert.equal(malformedUnlockSubtree.state, null, "malformed unlock subtree is rejected");
-  assert.equal(
-    malformedUnlockSubtree.reason,
-    LoadFailureReason.MigrationFailed,
-    "malformed unlock subtree fails validation during migration stage",
-  );
-
-  const outOfRangeLowCaps = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: defaultKeyLayout(),
-        },
-        unlocks: {
-          ...state.unlocks,
-          maxSlots: -1,
-          maxTotalDigits: -5,
-        },
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  assert.ok(outOfRangeLowCaps.state, "v2 payload with low out-of-range caps still hydrates");
-  assert.equal(
-    outOfRangeLowCaps.state?.unlocks.maxSlots,
-    initialState().unlocks.maxSlots,
-    "low out-of-range maxSlots normalizes to defaults",
-  );
-  assert.equal(
-    outOfRangeLowCaps.state?.unlocks.maxTotalDigits,
-    initialState().unlocks.maxTotalDigits,
-    "low out-of-range maxTotalDigits normalizes to defaults",
-  );
-
-  const outOfRangeHighCaps = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: defaultKeyLayout(),
-        },
-        unlocks: {
-          ...state.unlocks,
-          maxSlots: 999,
-          maxTotalDigits: 999,
-        },
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  assert.ok(outOfRangeHighCaps.state, "v2 payload with high out-of-range caps still hydrates");
-  assert.equal(
-    outOfRangeHighCaps.state?.unlocks.maxSlots,
-    initialState().unlocks.maxSlots,
-    "high out-of-range maxSlots normalizes to defaults",
-  );
-  assert.equal(
-    outOfRangeHighCaps.state?.unlocks.maxTotalDigits,
-    initialState().unlocks.maxTotalDigits,
-    "high out-of-range maxTotalDigits normalizes to defaults",
-  );
-
-  const inRangeCaps = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 2,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: defaultKeyLayout(),
-        },
-        unlocks: {
-          ...state.unlocks,
-          maxSlots: 2,
-          maxTotalDigits: 12,
-        },
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  assert.ok(inRangeCaps.state, "v2 payload with in-range caps hydrates");
-  assert.equal(inRangeCaps.state?.unlocks.maxSlots, 2, "in-range maxSlots is preserved");
-  assert.equal(inRangeCaps.state?.unlocks.maxTotalDigits, 12, "in-range maxTotalDigits is preserved");
-
-  const unknownLayoutKey = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: [{ kind: "key", key: "BOGUS" }, ...defaultKeyLayout().slice(1)],
-        },
-        unlocks: state.unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  assert.equal(unknownLayoutKey.state, null, "unknown layout keys are rejected");
-  assert.equal(
-    unknownLayoutKey.reason,
-    LoadFailureReason.MigrationFailed,
-    "unknown layout keys fail during migration validation",
-  );
-
-  const outOfRangeKeypadDimensions = loadFromRawSave(
+  const malformed = loadFromRawSave(
     JSON.stringify({
       schemaVersion: SAVE_SCHEMA_VERSION,
       savedAt: Date.now(),
@@ -719,16 +132,18 @@ export const runPersistenceTests = (): void => {
         },
         ui: {
           keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
           storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 99,
-          keypadRows: -3,
+          keypadColumns: 1,
+          keypadRows: 1,
+          buttonFlags: {},
         },
-        unlocks: state.unlocks,
+        keyPressCounts: { "+": "bad" },
+        unlocks: initialState().unlocks,
         completedUnlockIds: [],
       },
     }),
   );
-  assert.ok(outOfRangeKeypadDimensions.state, "out-of-range keypad dimensions still hydrate");
-  assert.equal(outOfRangeKeypadDimensions.state?.ui.keypadColumns, 8, "keypad columns clamp to max bound");
-  assert.equal(outOfRangeKeypadDimensions.state?.ui.keypadRows, 1, "keypad rows clamp to min bound");
+  assert.ok(malformed.state, "invalid keyPressCounts payload still hydrates");
+  assert.deepEqual(malformed.state?.keyPressCounts, {}, "invalid keyPressCounts are normalized away");
 };

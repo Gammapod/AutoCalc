@@ -55,20 +55,17 @@ export const runRuntimeDependencyMapTests = async (): Promise<void> => {
     );
   }
 
-  const plusNodeId = toMermaidNodeId("unlock_plus_on_total_11");
-  const minusNodeId = toMermaidNodeId("unlock_minus_on_total_25_or_more");
-  const cNodeId = toMermaidNodeId("unlock_c_on_roll_suffix_11_12_13_14");
-  const ceNodeId = toMermaidNodeId("unlock_ce_on_total_below_0");
-  const digitFourNodeId = toMermaidNodeId("unlock_digit_4_on_roll_suffix_1_2_3_4");
-  const equalsNodeId = toMermaidNodeId("unlock_equals_on_operation_plus_1");
+  const equalsNodeId = toMermaidNodeId("unlock_equals_on_total_11");
+  const storageNodeId = toMermaidNodeId("unlock_storage_on_total_11");
+  const plusNodeId = toMermaidNodeId("unlock_plus_on_equal_run_4");
+  const oneNodeId = toMermaidNodeId("unlock_1_on_plus_press_first");
+  const cNodeId = toMermaidNodeId("unlock_c_on_increment_run_4");
 
-  assert.match(runtimeMap, new RegExp(`^NN --> ${minusNodeId}$`, "m"), "minus unlock is downstream of NN");
-  assert.match(runtimeMap, new RegExp(`^NZ --> ${ceNodeId}$`, "m"), "CE unlock is downstream of NZ");
+  assert.match(runtimeMap, new RegExp(`^NN --> ${storageNodeId}$`, "m"), "storage unlock is downstream of NN");
+  assert.match(runtimeMap, new RegExp(`^NN --> ${plusNodeId}$`, "m"), "plus unlock is downstream of NN");
   assert.match(runtimeMap, new RegExp(`^${plusNodeId} --> Oplus$`, "m"), "plus unlock points to Oplus");
-  assert.match(runtimeMap, new RegExp(`^${minusNodeId} --> Ominus$`, "m"), "minus unlock points to Ominus");
-  assert.match(runtimeMap, new RegExp(`^${cNodeId} --> Uc$`, "m"), "C unlock points to Uc");
-  assert.match(runtimeMap, new RegExp(`^${ceNodeId} --> Uce$`, "m"), "CE unlock points to Uce");
-  assert.match(runtimeMap, new RegExp(`^${digitFourNodeId} --> Idigits$`, "m"), "digit unlock points to Idigits");
+  assert.match(runtimeMap, new RegExp(`^${oneNodeId} --> I1_unlock$`, "m"), "digit-1 unlock points to I1 unlock target");
+  assert.match(runtimeMap, new RegExp(`^${cNodeId} --> Uc_unlock$`, "m"), "C unlock points to Uc unlock target");
   assert.match(runtimeMap, new RegExp(`^${equalsNodeId} --> Ut_exec_eq$`, "m"), "equals unlock points to synthetic execution node");
   assert.match(runtimeMap, /^\s*Ut_exec_eq\["="\]$/m, "synthetic execution node is defined");
   assert.doesNotMatch(runtimeMap, /Ut_digit_/, "no synthetic digit nodes are generated");

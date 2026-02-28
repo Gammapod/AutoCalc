@@ -1,12 +1,12 @@
-import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
+﻿import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 5;
+export const SAVE_SCHEMA_VERSION = 6;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const AUTO_EQUALS_FLAG = "execution.pause";
 export const GRAPH_VISIBLE_FLAG = "graph.visible";
-export const KEYPAD_DEFAULT_COLUMNS = 1;
+export const KEYPAD_DEFAULT_COLUMNS = 3;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
@@ -56,6 +56,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "graph" },
   { kind: "placeholder", area: "empty" },
   { kind: "key", key: "CE" },
+  { kind: "key", key: "UNDO" },
   { kind: "key", key: "C" },
   { kind: "key", key: "GRAPH", behavior: { type: "toggle_flag", flag: GRAPH_VISIBLE_FLAG } },
   { kind: "key", key: "/" },
@@ -102,10 +103,11 @@ export const initialState = (): GameState => {
         [GRAPH_VISIBLE_FLAG]: false,
       },
     },
+    keyPressCounts: {},
     unlocks: {
       valueExpression: {
         "0": false,
-        "1": true,
+        "1": false,
         "2": false,
         "3": false,
         "4": false,
@@ -127,12 +129,16 @@ export const initialState = (): GameState => {
       utilities: {
         C: false,
         CE: false,
-        GRAPH: true,
+        UNDO: false,
+        GRAPH: false,
       },
       execution: {
         "=": false,
         "++": true,
         "\u23EF": false,
+      },
+      uiUnlocks: {
+        storageVisible: false,
       },
       maxSlots: 1,
       maxTotalDigits: 2,

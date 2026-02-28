@@ -1,7 +1,7 @@
 import { parseRational, toDisplayString } from "../math/rationalEngine.js";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
-import { isValidSchemaVersion, migrateToLatest, type SerializableStateV5, type SerializableSlot } from "./migrations.js";
+import { isValidSchemaVersion, migrateToLatest, type SerializableStateV6, type SerializableSlot } from "./migrations.js";
 import type { GameState } from "../../domain/types.js";
 
 type SavePayload = {
@@ -33,7 +33,7 @@ export type LoadResult = {
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const toSerializableState = (state: GameState): SerializableStateV5 => ({
+const toSerializableState = (state: GameState): SerializableStateV6 => ({
   calculator: {
     total: toDisplayString(state.calculator.total),
     pendingNegativeTotal: state.calculator.pendingNegativeTotal,
@@ -57,11 +57,12 @@ const toSerializableState = (state: GameState): SerializableStateV5 => ({
     keypadRows: state.ui.keypadRows,
     buttonFlags: state.ui.buttonFlags,
   },
+  keyPressCounts: state.keyPressCounts,
   unlocks: state.unlocks,
   completedUnlockIds: state.completedUnlockIds,
 });
 
-const fromSerializableStateV3 = (payloadState: SerializableStateV5): GameState => ({
+const fromSerializableStateV3 = (payloadState: SerializableStateV6): GameState => ({
   calculator: {
     total: parseRational(payloadState.calculator.total),
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
@@ -92,6 +93,7 @@ const fromSerializableStateV3 = (payloadState: SerializableStateV5): GameState =
     keypadRows: payloadState.ui.keypadRows,
     buttonFlags: payloadState.ui.buttonFlags,
   },
+  keyPressCounts: payloadState.keyPressCounts ?? {},
   unlocks: payloadState.unlocks,
   completedUnlockIds: payloadState.completedUnlockIds,
 });

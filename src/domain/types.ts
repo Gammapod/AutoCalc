@@ -1,7 +1,7 @@
 export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 export type SlotOperator = "+" | "-" | "*" | "/" | "#" | "⟡";
 export type ValueExpressionKey = Digit | "NEG";
-export type UtilityKey = "C" | "CE" | "GRAPH";
+export type UtilityKey = "C" | "CE" | "UNDO" | "GRAPH";
 export type ExecKey = "=" | "++" | "\u23EF";
 export type Key = ValueExpressionKey | SlotOperator | UtilityKey | ExecKey;
 
@@ -79,6 +79,9 @@ export type UnlockState = {
   slotOperators: Record<SlotOperator, boolean>;
   utilities: Record<UtilityKey, boolean>;
   execution: Record<ExecKey, boolean>;
+  uiUnlocks: {
+    storageVisible: boolean;
+  };
   maxSlots: number;
   maxTotalDigits: number;
 };
@@ -114,13 +117,39 @@ export type RollEndsWithSequencePredicate = {
   sequence: bigint[];
 };
 
+export type RollContainsValuePredicate = {
+  type: "roll_contains_value";
+  value: bigint;
+};
+
+export type RollEndsWithEqualRunPredicate = {
+  type: "roll_ends_with_equal_run";
+  length: number;
+};
+
+export type RollEndsWithIncrementingRunPredicate = {
+  type: "roll_ends_with_incrementing_run";
+  length: number;
+  step?: bigint;
+};
+
+export type KeyPressCountAtLeastPredicate = {
+  type: "key_press_count_at_least";
+  key: Key;
+  count: number;
+};
+
 export type UnlockPredicate =
   | RollLengthAtLeastPredicate
   | TotalEqualsPredicate
   | TotalAtLeastPredicate
   | TotalAtMostPredicate
   | OperationEqualsPredicate
-  | RollEndsWithSequencePredicate;
+  | RollEndsWithSequencePredicate
+  | RollContainsValuePredicate
+  | RollEndsWithEqualRunPredicate
+  | RollEndsWithIncrementingRunPredicate
+  | KeyPressCountAtLeastPredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";
@@ -151,13 +180,37 @@ export type UnlockSecondSlotEffect = {
   type: "unlock_second_slot";
 };
 
+export type UnlockStorageDrawerEffect = {
+  type: "unlock_storage_drawer";
+};
+
+export type UpgradeKeypadColumnEffect = {
+  type: "upgrade_keypad_column";
+};
+
+export type UpgradeKeypadRowEffect = {
+  type: "upgrade_keypad_row";
+};
+
+export type MoveKeyToCoordEffect = {
+  type: "move_key_to_coord";
+  key: Key;
+  row: number;
+  col: number;
+  onOccupied: "push_to_storage";
+};
+
 export type UnlockEffect =
   | UnlockUtilityEffect
   | IncreaseMaxTotalDigitsEffect
   | UnlockSlotOperatorEffect
   | UnlockExecutionEffect
   | UnlockDigitEffect
-  | UnlockSecondSlotEffect;
+  | UnlockSecondSlotEffect
+  | UnlockStorageDrawerEffect
+  | UpgradeKeypadColumnEffect
+  | UpgradeKeypadRowEffect
+  | MoveKeyToCoordEffect;
 
 export type NumberDomainNodeId = "NN" | "NZ" | "NQ" | "NA" | "NR" | "NC";
 
@@ -182,6 +235,7 @@ export type GameState = {
     keypadRows: number;
     buttonFlags: Record<string, boolean>;
   };
+  keyPressCounts: Partial<Record<Key, number>>;
   unlocks: UnlockState;
   completedUnlockIds: string[];
 };

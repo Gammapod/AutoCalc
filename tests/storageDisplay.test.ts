@@ -26,8 +26,13 @@ export const runStorageDisplayTests = (): void => {
     },
     unlocks: {
       ...base.unlocks,
+      uiUnlocks: {
+        ...base.unlocks.uiUnlocks,
+        storageVisible: true,
+      },
       valueExpression: {
         ...base.unlocks.valueExpression,
+        "1": true,
         "3": true,
       },
     },

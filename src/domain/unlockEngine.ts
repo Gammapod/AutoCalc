@@ -2,7 +2,11 @@ import { equalsBigInt, gteBigInt, isInteger, lteBigInt } from "../infra/math/rat
 import { getOperationSnapshot } from "./slotDrafting.js";
 import type {
   GameState,
+  KeyPressCountAtLeastPredicate,
   OperationEqualsPredicate,
+  RollContainsValuePredicate,
+  RollEndsWithEqualRunPredicate,
+  RollEndsWithIncrementingRunPredicate,
   RollEndsWithSequencePredicate,
   RollLengthAtLeastPredicate,
   TotalAtLeastPredicate,
@@ -71,6 +75,55 @@ const analyzeRollEndsWithSequence: PredicateAnalyzer<RollEndsWithSequencePredica
   };
 };
 
+const analyzeRollContainsValue: PredicateAnalyzer<RollContainsValuePredicate> = (predicate, state) => {
+  const isMet = state.calculator.roll.some((value) => isInteger(value) && value.num === predicate.value);
+  return {
+    isMet,
+    criteria: [{ label: predicate.value.toString(), checked: isMet }],
+  };
+};
+
+const readIntegerSuffix = (roll: GameState["calculator"]["roll"], length: number): bigint[] | null => {
+  if (length <= 0 || roll.length < length) {
+    return null;
+  }
+  const suffix = roll.slice(-length);
+  if (!suffix.every(isInteger)) {
+    return null;
+  }
+  return suffix.map((value) => value.num);
+};
+
+const analyzeRollEndsWithEqualRun: PredicateAnalyzer<RollEndsWithEqualRunPredicate> = (predicate, state) => {
+  const suffix = readIntegerSuffix(state.calculator.roll, predicate.length);
+  const isMet = !!suffix && suffix.every((value) => value === suffix[0]);
+  return {
+    isMet,
+    criteria: [{ label: `equal run x${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
+const analyzeRollEndsWithIncrementingRun: PredicateAnalyzer<RollEndsWithIncrementingRunPredicate> = (predicate, state) => {
+  const step = predicate.step ?? 1n;
+  const suffix = readIntegerSuffix(state.calculator.roll, predicate.length);
+  const isMet =
+    !!suffix &&
+    suffix.every((value, index) => index === 0 || value === suffix[index - 1] + step);
+  return {
+    isMet,
+    criteria: [{ label: `run +${step.toString()} x${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
+const analyzeKeyPressCountAtLeast: PredicateAnalyzer<KeyPressCountAtLeastPredicate> = (predicate, state) => {
+  const currentCount = state.keyPressCounts[predicate.key] ?? 0;
+  const isMet = currentCount >= predicate.count;
+  return {
+    isMet,
+    criteria: [{ label: `${predicate.key} >= ${predicate.count.toString()}`, checked: isMet }],
+  };
+};
+
 const analyzeOperationEquals: PredicateAnalyzer<OperationEqualsPredicate> = (predicate, state) => {
   const slots = getOperationSnapshot(state.calculator, predicate.includeDrafting ?? true);
   const isMet =
@@ -104,8 +157,12 @@ const analyzers = {
   total_at_least: analyzeTotalAtLeast,
   total_at_most: analyzeTotalAtMost,
   roll_ends_with_sequence: analyzeRollEndsWithSequence,
+  roll_contains_value: analyzeRollContainsValue,
   operation_equals: analyzeOperationEquals,
   roll_length_at_least: analyzeRollLengthAtLeast,
+  roll_ends_with_equal_run: analyzeRollEndsWithEqualRun,
+  roll_ends_with_incrementing_run: analyzeRollEndsWithIncrementingRun,
+  key_press_count_at_least: analyzeKeyPressCountAtLeast,
 } as const;
 
 export const analyzeUnlockPredicate = (predicate: UnlockPredicate, state: GameState): UnlockPredicateAnalysis =>

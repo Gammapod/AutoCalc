@@ -126,25 +126,25 @@ export const runUnlocksDisplayTests = (): void => {
     },
   };
   const rollRow = buildUnlockRows(rollProgressState, unlockCatalog).find(
-    (row) => row.id === "unlock_c_on_roll_suffix_11_12_13_14",
+    (row) => row.id === "unlock_c_on_increment_run_4",
   );
-  assert.equal(rollRow?.criteria.length, 4, "roll sequence renders one checkbox per sequence value");
+  assert.equal(rollRow?.criteria.length, 1, "dynamic run predicates render a single criterion row");
   assert.deepEqual(
     rollRow?.criteria.map((criterion) => criterion.checked),
-    [true, true, true, false],
-    "progressive suffix marks first three criteria checked for [10,11,12,13] against [11,12,13,14]",
+    [true],
+    "incrementing run criterion checks true for [10,11,12,13] suffix",
   );
 
   const completedState: GameState = {
     ...rollProgressState,
-    completedUnlockIds: ["unlock_plus_on_total_11"],
+    completedUnlockIds: ["unlock_equals_on_total_11"],
   };
   const orderedRows = buildUnlockRows(completedState, unlockCatalog);
-  const plusIndex = orderedRows.findIndex((row) => row.id === "unlock_plus_on_total_11");
+  const completedIndex = orderedRows.findIndex((row) => row.id === "unlock_equals_on_total_11");
   const firstCompletedIndex = orderedRows.findIndex((row) => row.state === "completed");
-  assert.equal(firstCompletedIndex, plusIndex, "first completed row appears where completed section starts");
-  assert.equal(orderedRows.at(-1)?.id, "unlock_plus_on_total_11", "completed rows move to the bottom");
-  const completedPlus = orderedRows.find((row) => row.id === "unlock_plus_on_total_11");
+  assert.equal(firstCompletedIndex, completedIndex, "first completed row appears where completed section starts");
+  assert.equal(orderedRows.at(-1)?.id, "unlock_equals_on_total_11", "completed rows move to the bottom");
+  const completedPlus = orderedRows.find((row) => row.id === "unlock_equals_on_total_11");
   assert.deepEqual(
     completedPlus?.criteria.map((criterion) => criterion.checked),
     [true],
@@ -154,10 +154,10 @@ export const runUnlocksDisplayTests = (): void => {
   const withImpossible = buildUnlockRows(
     base,
     unlockCatalog,
-    (unlock) => unlock.id === "unlock_minus_on_total_25_or_more",
+    (unlock) => unlock.id === "unlock_c_on_increment_run_4",
   );
   assert.equal(
-    withImpossible.some((row) => row.id === "unlock_minus_on_total_25_or_more"),
+    withImpossible.some((row) => row.id === "unlock_c_on_increment_run_4"),
     false,
     "rows marked impossible are omitted from the list",
   );

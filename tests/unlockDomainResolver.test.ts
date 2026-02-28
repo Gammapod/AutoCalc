@@ -6,18 +6,18 @@ import type { NumberDomainNodeId, UnlockDefinition } from "../src/domain/types.j
 const numberDomainNodeIds: NumberDomainNodeId[] = ["NN", "NZ", "NQ", "NA", "NR", "NC"];
 
 export const runUnlockDomainResolverTests = (): void => {
-  const minusUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_minus_on_total_25_or_more");
-  assert.ok(minusUnlock, "minus unlock exists in catalog");
-  assert.equal(resolveUnlockDomainNodeId(minusUnlock), "NN", "resolver returns domain metadata");
+  const plusUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_plus_on_equal_run_4");
+  assert.ok(plusUnlock, "plus unlock exists in catalog");
+  assert.equal(resolveUnlockDomainNodeId(plusUnlock), "NN", "resolver returns domain metadata");
 
-  const ceUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_ce_on_total_below_0");
-  assert.ok(ceUnlock, "CE unlock exists in catalog");
-  assert.equal(resolveUnlockDomainNodeId(ceUnlock), "NZ", "resolver returns negative-domain metadata");
+  const storageUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_storage_on_total_11");
+  assert.ok(storageUnlock, "storage unlock exists in catalog");
+  assert.equal(resolveUnlockDomainNodeId(storageUnlock), "NN", "resolver returns domain metadata");
 
-  const digitFourUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_digit_4_on_roll_suffix_1_2_3_4");
-  assert.ok(digitFourUnlock, "digit 4 unlock exists in catalog");
+  const digitOneUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_1_on_plus_press_first");
+  assert.ok(digitOneUnlock, "digit 1 unlock exists in catalog");
   assert.equal(
-    resolveUnlockDomainNodeId(digitFourUnlock),
+    resolveUnlockDomainNodeId(digitOneUnlock),
     "NN",
     "resolver returns catalog metadata for digit unlock",
   );

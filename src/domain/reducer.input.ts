@@ -10,6 +10,30 @@ import type { Digit, GameState, Key, RationalValue, Slot, SlotOperator } from ".
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
 const DIGITS: Digit[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
+const incrementKeyPressCount = (state: GameState, key: Key): GameState => ({
+  ...state,
+  keyPressCounts: {
+    ...state.keyPressCounts,
+    [key]: (state.keyPressCounts[key] ?? 0) + 1,
+  },
+});
+
+const isKeyUnlockedForInput = (state: GameState, key: Key): boolean => {
+  if (DIGITS.includes(key as Digit) || key === "NEG") {
+    return state.unlocks.valueExpression[key as keyof GameState["unlocks"]["valueExpression"]];
+  }
+  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
+    return state.unlocks.slotOperators[key];
+  }
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH") {
+    return state.unlocks.utilities[key];
+  }
+  if (key === "=" || key === "++" || key === "\u23EF") {
+    return state.unlocks.execution[key];
+  }
+  return false;
+};
+
 const withDigit = (source: string, digit: Digit): string => {
   if (source === "0") {
     return digit;
@@ -103,7 +127,7 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
       return state;
     }
 
-    return {
+    return applyUnlocks({
       ...state,
       calculator: {
         ...state.calculator,
@@ -114,14 +138,14 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
           isNegative: false,
         },
       },
-    };
+    }, unlockCatalog);
   }
 
   if (state.calculator.operationSlots.length >= state.unlocks.maxSlots) {
     return state;
   }
 
-  return {
+  return applyUnlocks({
     ...state,
     calculator: {
       ...state.calculator,
@@ -131,7 +155,7 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
         isNegative: false,
       },
     },
-  };
+  }, unlockCatalog);
 };
 
 const applyNegate = (state: GameState): GameState => {
@@ -295,12 +319,54 @@ const applyC = (state: GameState): GameState => {
   };
 };
 
+const applyCECore = (state: GameState): GameState => clearOperationEntry(state);
+
 const applyCE = (state: GameState): GameState => {
   if (!state.unlocks.utilities.CE) {
     return state;
   }
 
-  return clearOperationEntry(state);
+  return applyCECore(state);
+};
+
+const hasActiveOperatorSlot = (state: GameState): boolean =>
+  state.calculator.operationSlots.length > 0 || state.calculator.draftingSlot !== null;
+
+const applyUndo = (state: GameState): GameState => {
+  if (!state.unlocks.utilities.UNDO) {
+    return state;
+  }
+
+  const rollLength = state.calculator.roll.length;
+  if (rollLength > 0) {
+    const removedEntry = state.calculator.roll[rollLength - 1];
+    const nextRoll = state.calculator.roll.slice(0, -1);
+    const previousTotal = nextRoll.length > 0 ? nextRoll[nextRoll.length - 1] : removedEntry;
+    return {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        total: previousTotal,
+        roll: nextRoll,
+        euclidRemainders: state.calculator.euclidRemainders.filter((entry) => entry.rollIndex < nextRoll.length),
+      },
+    };
+  }
+
+  if (hasActiveOperatorSlot(state)) {
+    return applyCECore(state);
+  }
+
+  const resetState: GameState = { ...state, calculator: createResetCalculatorState() };
+
+  if (resetState.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID)) {
+    return resetState;
+  }
+
+  return {
+    ...resetState,
+    completedUnlockIds: [...resetState.completedUnlockIds, CHECKLIST_UNLOCK_ID],
+  };
 };
 
 const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
@@ -331,31 +397,35 @@ const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
 
 export const applyKeyAction = (state: GameState, key: Key): GameState => {
   const preprocessed = preprocessForActiveRoll(state, key);
+  const keyed = isKeyUnlockedForInput(preprocessed, key) ? incrementKeyPressCount(preprocessed, key) : preprocessed;
 
   if (isDigit(key)) {
-    return applyDigit(preprocessed, key);
+    return applyDigit(keyed, key);
   }
   if (isOperator(key)) {
-    return applyOperator(preprocessed, key);
+    return applyOperator(keyed, key);
   }
   if (key === "=") {
-    return applyEquals(preprocessed);
+    return applyEquals(keyed);
   }
   if (key === "++") {
-    return applyIncrement(preprocessed);
+    return applyIncrement(keyed);
   }
   if (key === "C") {
-    return applyC(preprocessed);
+    return applyC(keyed);
   }
   if (key === "CE") {
-    return applyCE(preprocessed);
+    return applyCE(keyed);
+  }
+  if (key === "UNDO") {
+    return applyUnlocks(applyUndo(keyed), unlockCatalog);
   }
   if (key === "GRAPH") {
-    return preprocessed;
+    return keyed;
   }
   if (key === "NEG") {
-    return applyNegate(preprocessed);
+    return applyNegate(keyed);
   }
-  return preprocessed;
+  return keyed;
 };
 

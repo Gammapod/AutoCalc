@@ -8,6 +8,7 @@ export const runKeyVisualGroupTests = (): void => {
   assert.equal(getKeyVisualGroup("⟡"), "slot_operator", "modulo operator uses slot_operator group");
   assert.equal(getKeyVisualGroup("C"), "utility", "C uses utility group");
   assert.equal(getKeyVisualGroup("CE"), "utility", "CE uses utility group");
+  assert.equal(getKeyVisualGroup("UNDO"), "utility", "UNDO uses utility group");
   assert.equal(getKeyVisualGroup("="), "execution", "equals uses execution group");
   assert.equal(getKeyVisualGroup("\u23EF"), "execution", "play/pause uses execution group");
 };

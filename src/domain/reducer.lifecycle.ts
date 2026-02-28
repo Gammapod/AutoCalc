@@ -28,6 +28,10 @@ const applyUnlockAll = (state: GameState): GameState => {
       execution: Object.fromEntries(
         Object.keys(withSecondSlotUnlocked.unlocks.execution).map((executionKey) => [executionKey, true]),
       ) as GameState["unlocks"]["execution"],
+      uiUnlocks: {
+        ...withSecondSlotUnlocked.unlocks.uiUnlocks,
+        storageVisible: true,
+      },
     },
     completedUnlockIds: [
       ...new Set([...withSecondSlotUnlocked.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)]),

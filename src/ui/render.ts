@@ -196,6 +196,9 @@ export const formatKeyLabel = (key: Key): string => {
   if (key === "NEG") {
     return "-\u{1D465}";
   }
+  if (key === "UNDO") {
+    return "\u21BA";
+  }
   if (key === "\u23EF") {
     return "\u23F5\uFE0E";
   }
@@ -436,6 +439,18 @@ const getUnlockName = (effect: UnlockEffect): string => {
   }
   if (effect.type === "increase_max_total_digits") {
     return "maxTotalDigits";
+  }
+  if (effect.type === "unlock_storage_drawer") {
+    return "storage";
+  }
+  if (effect.type === "upgrade_keypad_column") {
+    return "keypadCols";
+  }
+  if (effect.type === "upgrade_keypad_row") {
+    return "keypadRows";
+  }
+  if (effect.type === "move_key_to_coord") {
+    return `${formatKeyLabel(effect.key)}->R${effect.row.toString()}C${effect.col.toString()}`;
   }
   return "unknown";
 };
@@ -760,7 +775,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return state.unlocks.slotOperators[key];
   }
-  if (key === "C" || key === "CE" || key === "GRAPH") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH") {
     return state.unlocks.utilities[key];
   }
   if (key === "=" || key === "++" || key === "\u23EF") {
@@ -776,7 +791,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return "slot_operator";
   }
-  if (key === "C" || key === "CE" || key === "GRAPH") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH") {
     return "utility";
   }
   return "execution";
@@ -903,6 +918,9 @@ const parseDragTarget = (value: unknown): DragTarget | null => {
 };
 
 const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
+  if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {
+    return "invalid";
+  }
   if (target.surface === "keypad") {
     const cell = state.ui.keyLayout[target.index];
     if (!cell) {
@@ -924,6 +942,9 @@ const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
 };
 
 const getKeyAtTarget = (state: GameState, target: DragTarget): Key | null => {
+  if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {
+    return null;
+  }
   if (target.surface === "keypad") {
     const cell = state.ui.keyLayout[target.index];
     if (!cell || cell.kind !== "key") {
@@ -1388,56 +1409,63 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   previousKeypadRows = state.ui.keypadRows;
 
   storageEl.innerHTML = "";
-  const storageLabels = buildStorageSlotLabels(state.ui.storageLayout);
-  const storageRowCount = getStorageRowCount(state.ui.storageLayout.length);
-  storageEl.setAttribute("data-storage-rows", storageRowCount.toString());
-  if (storageEl instanceof HTMLElement) {
-    storageEl.style.setProperty("--storage-rows", storageRowCount.toString());
-  }
-  const storageRenderOrder = buildStorageRenderOrder(state);
-  for (const index of storageRenderOrder) {
-    const cell = state.ui.storageLayout[index];
-    const slotLabel = storageLabels[index] ?? `S#${index}`;
-    if (!cell) {
-      const empty = document.createElement("div");
-      empty.className = "placeholder placeholder--drop-slot placeholder--storage-empty";
-      empty.setAttribute("aria-hidden", "true");
-      bindDropTargetCell(empty, "storage", index);
-      empty.dataset.layoutOccupied = "empty";
-      appendDebugSlotLabel(empty, slotLabel);
-      storageEl.appendChild(empty);
-      continue;
+  if (!state.unlocks.uiUnlocks.storageVisible) {
+    storageEl.setAttribute("aria-hidden", "true");
+    storageEl.setAttribute("data-storage-visible", "false");
+  } else {
+    storageEl.setAttribute("aria-hidden", "false");
+    storageEl.setAttribute("data-storage-visible", "true");
+    const storageLabels = buildStorageSlotLabels(state.ui.storageLayout);
+    const storageRowCount = getStorageRowCount(state.ui.storageLayout.length);
+    storageEl.setAttribute("data-storage-rows", storageRowCount.toString());
+    if (storageEl instanceof HTMLElement) {
+      storageEl.style.setProperty("--storage-rows", storageRowCount.toString());
     }
-    if (!isKeyUnlocked(state, cell.key)) {
-      const hidden = document.createElement("div");
-      hidden.className = "placeholder placeholder--drop-slot placeholder--storage-empty placeholder--locked-hidden";
-      hidden.setAttribute("aria-hidden", "true");
-      appendDebugSlotLabel(hidden, slotLabel);
-      storageEl.appendChild(hidden);
-      continue;
-    }
+    const storageRenderOrder = buildStorageRenderOrder(state);
+    for (const index of storageRenderOrder) {
+      const cell = state.ui.storageLayout[index];
+      const slotLabel = storageLabels[index] ?? `S#${index}`;
+      if (!cell) {
+        const empty = document.createElement("div");
+        empty.className = "placeholder placeholder--drop-slot placeholder--storage-empty";
+        empty.setAttribute("aria-hidden", "true");
+        bindDropTargetCell(empty, "storage", index);
+        empty.dataset.layoutOccupied = "empty";
+        appendDebugSlotLabel(empty, slotLabel);
+        storageEl.appendChild(empty);
+        continue;
+      }
+      if (!isKeyUnlocked(state, cell.key)) {
+        const hidden = document.createElement("div");
+        hidden.className = "placeholder placeholder--drop-slot placeholder--storage-empty placeholder--locked-hidden";
+        hidden.setAttribute("aria-hidden", "true");
+        appendDebugSlotLabel(hidden, slotLabel);
+        storageEl.appendChild(hidden);
+        continue;
+      }
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "key key--storage key--storage-unlocked key--draggable";
-    button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    if (newlyUnlockedKeys.has(cell.key)) {
-      button.classList.add("key--unlock-animate");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "key key--storage key--storage-unlocked key--draggable";
+      button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
+      if (newlyUnlockedKeys.has(cell.key)) {
+        button.classList.add("key--unlock-animate");
+      }
+      button.textContent = formatKeyCellLabel(state, cell);
+      const storageToggleActive = isToggleFlagActive(state, cell);
+      button.classList.toggle("key--toggle-active", storageToggleActive);
+      const storageToggleAnimation = readToggleAnimation(cell);
+      if (storageToggleAnimation === "on") {
+        button.classList.add("key--toggle-animate-on");
+      } else if (storageToggleAnimation === "off") {
+        button.classList.add("key--toggle-animate-off");
+      }
+      button.setAttribute("aria-pressed", storageToggleActive ? "true" : "false");
+      button.disabled = false;
+      bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
+      appendDebugSlotLabel(button, slotLabel);
+      storageEl.appendChild(button);
     }
-    button.textContent = formatKeyCellLabel(state, cell);
-    const storageToggleActive = isToggleFlagActive(state, cell);
-    button.classList.toggle("key--toggle-active", storageToggleActive);
-    const storageToggleAnimation = readToggleAnimation(cell);
-    if (storageToggleAnimation === "on") {
-      button.classList.add("key--toggle-animate-on");
-    } else if (storageToggleAnimation === "off") {
-      button.classList.add("key--toggle-animate-off");
-    }
-    button.setAttribute("aria-pressed", storageToggleActive ? "true" : "false");
-    button.disabled = false;
-    bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
-    appendDebugSlotLabel(button, slotLabel);
-    storageEl.appendChild(button);
   }
 
   pendingToggleAnimationByFlag = {};

@@ -10,7 +10,7 @@ export const runReducerInputTests = (): void => {
   const base = initialState();
 
   const afterDigit = applyKeyAction(base, "1");
-  assert.deepEqual(afterDigit.calculator.total, r(1n), "digit key updates total");
+  assert.deepEqual(afterDigit.calculator.total, r(0n), "digit 1 is locked at start");
 
   const unlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
   const afterPlus = applyKeyAction(unlocked, "+");
@@ -37,6 +37,83 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(afterCe.calculator.operationSlots, [], "CE clears operation slots");
   assert.equal(afterCe.calculator.draftingSlot, null, "CE clears drafting slot");
 
+  const undoRollSource: GameState = {
+    ...unlocked,
+    calculator: {
+      ...unlocked.calculator,
+      total: r(9n),
+      roll: [r(3n), r(5n), r(9n)],
+      euclidRemainders: [
+        { rollIndex: 1, value: r(2n) },
+        { rollIndex: 2, value: r(4n) },
+      ],
+    },
+  };
+  const afterUndoRoll = applyKeyAction(undoRollSource, "UNDO");
+  assert.deepEqual(afterUndoRoll.calculator.roll, [r(3n), r(5n)], "UNDO removes the latest roll entry");
+  assert.deepEqual(afterUndoRoll.calculator.total, r(5n), "UNDO restores total to previous roll value");
+  assert.deepEqual(
+    afterUndoRoll.calculator.euclidRemainders,
+    [{ rollIndex: 1, value: r(2n) }],
+    "UNDO drops euclid remainders attached to removed roll entries",
+  );
+
+  const undoCeFallbackSource: GameState = {
+    ...unlocked,
+    calculator: {
+      ...unlocked.calculator,
+      total: r(7n),
+      roll: [],
+      euclidRemainders: [],
+      operationSlots: [{ operator: "+", operand: 3n }],
+      draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
+    },
+    unlocks: {
+      ...unlocked.unlocks,
+      utilities: {
+        ...unlocked.unlocks.utilities,
+        CE: false,
+      },
+    },
+  };
+  const afterUndoCeFallback = applyKeyAction(undoCeFallbackSource, "UNDO");
+  assert.deepEqual(afterUndoCeFallback.calculator.total, r(7n), "UNDO CE-fallback preserves total");
+  assert.deepEqual(afterUndoCeFallback.calculator.roll, [], "UNDO CE-fallback clears roll");
+  assert.deepEqual(afterUndoCeFallback.calculator.operationSlots, [], "UNDO CE-fallback clears operation slots");
+  assert.equal(afterUndoCeFallback.calculator.draftingSlot, null, "UNDO CE-fallback clears drafting slot");
+
+  const undoCFallbackSource: GameState = {
+    ...unlocked,
+    calculator: {
+      ...unlocked.calculator,
+      total: r(7n),
+      roll: [],
+      euclidRemainders: [],
+      operationSlots: [],
+      draftingSlot: null,
+    },
+    unlocks: {
+      ...unlocked.unlocks,
+      utilities: {
+        ...unlocked.unlocks.utilities,
+        C: false,
+      },
+    },
+    completedUnlockIds: [],
+  };
+  const afterUndoCFallback = applyKeyAction(undoCFallbackSource, "UNDO");
+  assert.deepEqual(afterUndoCFallback.calculator.total, r(0n), "UNDO C-fallback resets total");
+  assert.equal(
+    afterUndoCFallback.calculator.singleDigitInitialTotalEntry,
+    true,
+    "UNDO C-fallback applies full clear-entry state",
+  );
+  assert.equal(
+    afterUndoCFallback.completedUnlockIds.includes("unlock_checklist_on_first_c_press"),
+    true,
+    "UNDO C-fallback applies checklist unlock side effect",
+  );
+
   const negSource: GameState = {
     ...base,
     unlocks: {
@@ -55,6 +132,13 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...base.calculator,
       singleDigitInitialTotalEntry: true,
+    },
+    unlocks: {
+      ...base.unlocks,
+      valueExpression: {
+        ...base.unlocks.valueExpression,
+        "1": true,
+      },
     },
   };
   const freshFirstDigit = applyKeyAction(freshBootNoSaveState, "1");

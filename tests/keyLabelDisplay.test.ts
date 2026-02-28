@@ -8,6 +8,7 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel("/"), "\u00F7", "div key label renders as \u00F7");
   assert.equal(formatKeyLabel("#"), "#/⟡", "euclidean division key label renders as #/⟡");
   assert.equal(formatKeyLabel("⟡"), "⟡", "modulo key label renders as ⟡");
+  assert.equal(formatKeyLabel("UNDO"), "\u21BA", "undo key label renders as \u238C");
   assert.equal(formatKeyLabel("\u23EF"), "⏵︎", "play/pause key defaults to play icon");
   assert.equal(formatKeyLabel("+"), "+", "plus key label remains +");
   assert.equal(formatKeyLabel("NEG"), "-\u{1D465}", "NEG key label uses stylized indicator");

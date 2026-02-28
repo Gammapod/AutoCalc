@@ -84,6 +84,24 @@ export const runUnlockEngineTests = (): void => {
     "roll_ends_with_sequence unmet",
   );
 
+  const rollContains: UnlockPredicate = { type: "roll_contains_value", value: 0n };
+  assertCriteriaConsistency(
+    rollContains,
+    {
+      ...base,
+      calculator: { ...base.calculator, roll: [r(3n), r(0n), r(5n)] },
+    },
+    "roll_contains_value met",
+  );
+  assertCriteriaConsistency(
+    rollContains,
+    {
+      ...base,
+      calculator: { ...base.calculator, roll: [r(3n), r(4n), r(5n)] },
+    },
+    "roll_contains_value unmet",
+  );
+
   const operationEquals: UnlockPredicate = {
     type: "operation_equals",
     slots: [{ operator: "+", operand: 1n }],
