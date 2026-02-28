@@ -24,14 +24,14 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(moved.ui.keyLayout.length, baselineLayout.length, "move preserves layout length");
   assert.deepEqual(
     moved.ui.keyLayout.slice(0, 4).map((cell) => (cell.kind === "key" ? cell.key : cell.area)),
-    ["empty", "empty", "empty", "graph"],
-    "legacy move shifts placeholders and reinserts moved placeholder",
+    ["empty", "empty", "empty", "empty"],
+    "legacy move shifts placeholders and reinserts moved placeholder in empty keypad",
   );
 
   const swapped = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: 0, secondIndex: 1 });
   assert.deepEqual(
     swapped.ui.keyLayout.slice(0, 2).map((cell) => (cell.kind === "key" ? cell.key : cell.area)),
-    ["empty", "graph"],
+    ["empty", "empty"],
     "legacy swap exchanges placeholder slots",
   );
 
@@ -193,4 +193,29 @@ export const runReducerLayoutTests = (): void => {
       `swap changes only selected storage slot (index ${index})`,
     );
   }
+
+  const resizedBigger = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 4 });
+  assert.equal(resizedBigger.ui.keypadColumns, 5, "set keypad dimensions updates columns");
+  assert.equal(resizedBigger.ui.keypadRows, 4, "set keypad dimensions updates rows");
+  assert.equal(resizedBigger.ui.keyLayout.length, 20, "resizing up appends placeholder slots");
+  assert.ok(
+    resizedBigger.ui.keyLayout.slice(12).every((cell) => cell.kind === "placeholder"),
+    "resized-up slots are placeholders",
+  );
+
+  const resizedSmaller = reducer(resizedBigger, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 2 });
+  assert.equal(resizedSmaller.ui.keyLayout.length, 6, "resizing down truncates layout tail");
+  assert.equal(resizedSmaller.ui.keypadColumns, 3, "resizing down updates columns");
+  assert.equal(resizedSmaller.ui.keypadRows, 2, "resizing down updates rows");
+
+  const clampedResize = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 99, rows: -4 });
+  assert.equal(clampedResize.ui.keypadColumns, 8, "columns clamp to max bound");
+  assert.equal(clampedResize.ui.keypadRows, 1, "rows clamp to min bound");
+
+  const noopResize = reducer(baseline, {
+    type: "SET_KEYPAD_DIMENSIONS",
+    columns: baseline.ui.keypadColumns,
+    rows: baseline.ui.keypadRows,
+  });
+  assert.equal(noopResize, baseline, "unchanged dimensions are a no-op");
 };

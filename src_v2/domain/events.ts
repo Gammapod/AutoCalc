@@ -14,7 +14,8 @@ export type DomainEvent =
       fromIndex: number;
       toSurface: "keypad" | "storage";
       toIndex: number;
-    };
+    }
+  | { type: "KeypadDimensionsSet"; columns: number; rows: number };
 
 export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "PRESS_KEY") {
@@ -44,12 +45,19 @@ export const eventFromAction = (action: Action): DomainEvent => {
       toIndex: action.toIndex,
     };
   }
+  if (action.type === "SWAP_LAYOUT_CELLS") {
+    return {
+      type: "LayoutCellsSwapped",
+      fromSurface: action.fromSurface,
+      fromIndex: action.fromIndex,
+      toSurface: action.toSurface,
+      toIndex: action.toIndex,
+    };
+  }
   return {
-    type: "LayoutCellsSwapped",
-    fromSurface: action.fromSurface,
-    fromIndex: action.fromIndex,
-    toSurface: action.toSurface,
-    toIndex: action.toIndex,
+    type: "KeypadDimensionsSet",
+    columns: action.columns,
+    rows: action.rows,
   };
 };
 
@@ -81,11 +89,18 @@ export const actionFromEvent = (event: DomainEvent): Action => {
       toIndex: event.toIndex,
     };
   }
+  if (event.type === "LayoutCellsSwapped") {
+    return {
+      type: "SWAP_LAYOUT_CELLS",
+      fromSurface: event.fromSurface,
+      fromIndex: event.fromIndex,
+      toSurface: event.toSurface,
+      toIndex: event.toIndex,
+    };
+  }
   return {
-    type: "SWAP_LAYOUT_CELLS",
-    fromSurface: event.fromSurface,
-    fromIndex: event.fromIndex,
-    toSurface: event.toSurface,
-    toIndex: event.toIndex,
+    type: "SET_KEYPAD_DIMENSIONS",
+    columns: event.columns,
+    rows: event.rows,
   };
 };

@@ -25,6 +25,13 @@ export const runDragDropBehaviorTests = (): void => {
 
   const withKeypadKey: GameState = {
     ...withStorageKey,
+    unlocks: {
+      ...withStorageKey.unlocks,
+      valueExpression: {
+        ...withStorageKey.unlocks.valueExpression,
+        "2": true,
+      },
+    },
     ui: {
       ...withStorageKey.ui,
       keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
@@ -45,4 +52,20 @@ export const runDragDropBehaviorTests = (): void => {
     { surface: "storage", index: 999 },
   );
   assert.equal(invalid, null, "invalid target index rejects drop");
+
+  const lockedTarget: GameState = {
+    ...withStorageKey,
+    ui: {
+      ...withStorageKey.ui,
+      keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
+        index === 3 ? ({ kind: "key", key: "+" } as const) : cell,
+      ),
+    },
+  };
+  const lockedTargetAction = classifyDropAction(
+    lockedTarget,
+    { surface: "storage", index: 0 },
+    { surface: "keypad", index: 3 },
+  );
+  assert.equal(lockedTargetAction, null, "locked keys are not valid drop targets");
 };

@@ -1,4 +1,11 @@
-import { STORAGE_COLUMNS, STORAGE_INITIAL_SLOTS } from "./state.js";
+import {
+  KEYPAD_DEFAULT_COLUMNS,
+  KEYPAD_DEFAULT_ROWS,
+  KEYPAD_DIM_MAX,
+  KEYPAD_DIM_MIN,
+  STORAGE_COLUMNS,
+  STORAGE_INITIAL_SLOTS,
+} from "./state.js";
 import type { GameState, KeyCell, LayoutCell, LayoutSurface } from "./types.js";
 
 // Layout-only reducer logic for key slot move/swap actions.
@@ -114,6 +121,18 @@ const hasOnlyExpectedKeyChanges = (
   }
 
   return true;
+};
+
+const clampDimension = (value: number, fallback: number): number =>
+  Math.max(KEYPAD_DIM_MIN, Math.min(KEYPAD_DIM_MAX, Number.isInteger(value) ? value : fallback));
+
+export const resizeKeyLayout = (layout: LayoutCell[], columns: number, rows: number): LayoutCell[] => {
+  const targetLength = Math.max(1, columns * rows);
+  const next = layout.slice(0, targetLength);
+  while (next.length < targetLength) {
+    next.push({ kind: "placeholder", area: "empty" });
+  }
+  return next;
 };
 
 const isStorageOutcomeValid = (
@@ -258,4 +277,22 @@ export const applySwapLayoutCells = (
     return state;
   }
   return nextState;
+};
+
+export const applySetKeypadDimensions = (state: GameState, columns: number, rows: number): GameState => {
+  const clampedColumns = clampDimension(columns, state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS);
+  const clampedRows = clampDimension(rows, state.ui.keypadRows || KEYPAD_DEFAULT_ROWS);
+  if (state.ui.keypadColumns === clampedColumns && state.ui.keypadRows === clampedRows) {
+    return state;
+  }
+  const keyLayout = resizeKeyLayout(state.ui.keyLayout, clampedColumns, clampedRows);
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      keyLayout,
+      keypadColumns: clampedColumns,
+      keypadRows: clampedRows,
+    },
+  };
 };

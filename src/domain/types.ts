@@ -150,6 +150,8 @@ export type GameState = {
   ui: {
     keyLayout: LayoutCell[];
     storageLayout: Array<KeyCell | null>;
+    keypadColumns: number;
+    keypadRows: number;
   };
   unlocks: UnlockState;
   completedUnlockIds: string[];
@@ -203,6 +205,12 @@ export type SwapLayoutCellsAction = {
   toIndex: number;
 };
 
+export type SetKeypadDimensionsAction = {
+  type: "SET_KEYPAD_DIMENSIONS";
+  columns: number;
+  rows: number;
+};
+
 export type Action =
   | PressKeyAction
   | ResetRunAction
@@ -211,7 +219,8 @@ export type Action =
   | MoveKeySlotAction
   | SwapKeySlotsAction
   | MoveLayoutCellAction
-  | SwapLayoutCellsAction;
+  | SwapLayoutCellsAction
+  | SetKeypadDimensionsAction;
 
 export type Store = {
   getState: () => GameState;

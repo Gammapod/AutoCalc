@@ -1,5 +1,13 @@
 import assert from "node:assert/strict";
-import { SAVE_KEY, SAVE_SCHEMA_VERSION, defaultKeyLayout, initialState } from "../src/domain/state.js";
+import {
+  KEYPAD_DEFAULT_COLUMNS,
+  KEYPAD_DEFAULT_ROWS,
+  SAVE_KEY,
+  SAVE_SCHEMA_VERSION,
+  STORAGE_INITIAL_SLOTS,
+  defaultKeyLayout,
+  initialState,
+} from "../src/domain/state.js";
 import { createLocalStorageRepo, loadFromRawSave, LoadFailureReason } from "../src/infra/persistence/localStorageRepo.js";
 
 type MemoryStorage = {
@@ -63,6 +71,8 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loaded.calculator.operationSlots, [{ operator: "*", operand: 6n }], "hydrate slot bigint operand");
   assert.deepEqual(loaded.ui.keyLayout.slice(0, 2), [state.ui.keyLayout[1], state.ui.keyLayout[0]], "hydrate ui key layout");
   assert.deepEqual(loaded.ui.storageLayout, state.ui.storageLayout, "hydrate storage layout");
+  assert.equal(loaded.ui.keypadColumns, state.ui.keypadColumns, "hydrate keypad columns");
+  assert.equal(loaded.ui.keypadRows, state.ui.keypadRows, "hydrate keypad rows");
 
   const legacyStorage = createMemoryStorage();
   legacyStorage.setItem(
@@ -91,9 +101,18 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loadedLegacy.calculator.total, r(9n), "v1 save migrates integer total to rational");
   assert.deepEqual(loadedLegacy.calculator.roll, [r(9n)], "v1 save migrates integer roll to rationals");
   assert.deepEqual(loadedLegacy.calculator.euclidRemainders, [], "v1 save defaults euclidean remainder annotations");
-  assert.deepEqual(loadedLegacy.ui.keyLayout, defaultKeyLayout(), "legacy saves hydrate default ui layout");
-  assert.equal(loadedLegacy.ui.storageLayout.length, 8, "legacy saves hydrate fixed storage slots");
-  assert.ok(loadedLegacy.ui.storageLayout.every((slot) => slot === null), "legacy storage slots default to empty");
+  assert.equal(
+    loadedLegacy.ui.keyLayout.length,
+    KEYPAD_DEFAULT_COLUMNS * KEYPAD_DEFAULT_ROWS,
+    "legacy saves hydrate resized 4x3 keypad layout",
+  );
+  assert.equal(
+    loadedLegacy.ui.storageLayout.length,
+    STORAGE_INITIAL_SLOTS,
+    "legacy saves hydrate fixed storage slots",
+  );
+  assert.equal(loadedLegacy.ui.keypadColumns, KEYPAD_DEFAULT_COLUMNS, "legacy saves default keypad columns");
+  assert.equal(loadedLegacy.ui.keypadRows, KEYPAD_DEFAULT_ROWS, "legacy saves default keypad rows");
   assert.equal(loadedLegacy.unlocks.execution["="], false, "legacy unlock payload hydrates default execution unlocks");
   assert.equal(loadedLegacy.unlocks.slotOperators["-"], false, "legacy unlock payload hydrates default minus unlock");
   assert.equal(loadedLegacy.unlocks.slotOperators["*"], false, "legacy unlock payload hydrates default mul unlock");
@@ -192,7 +211,11 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loadedV2.calculator.total, r(5n, 2n), "v2 payload migrates total to runtime rational");
   assert.equal(loadedV2.calculator.pendingNegativeTotal, true, "v2 payload preserves pending negative total");
   assert.deepEqual(loadedV2.calculator.roll, [r(1n), r(5n, 2n)], "v2 payload migrates roll");
-  assert.equal(loadedV2.ui.storageLayout.length, 8, "v2 payload migrates to fixed storage slots");
+  assert.equal(
+    loadedV2.ui.storageLayout.length,
+    STORAGE_INITIAL_SLOTS,
+    "v2 payload migrates to fixed storage slots",
+  );
 
   const legacyPackedStorage = createMemoryStorage();
   legacyPackedStorage.setItem(
@@ -224,7 +247,11 @@ export const runPersistenceTests = (): void => {
     throw new Error("Expected v3 packed storage payload to hydrate.");
   }
   assert.equal(loadedLegacyPackedStorage.ui.storageLayout[0]?.kind, "key", "v3 packed storage first key is preserved");
-  assert.equal(loadedLegacyPackedStorage.ui.storageLayout.length, 8, "v3 packed storage migrates to fixed slot row");
+  assert.equal(
+    loadedLegacyPackedStorage.ui.storageLayout.length,
+    STORAGE_INITIAL_SLOTS,
+    "v3 packed storage migrates to fixed slot row",
+  );
 
   const legacyLayoutStorage = createMemoryStorage();
   const legacyLayout = defaultKeyLayout().map((cell) =>
@@ -255,9 +282,10 @@ export const runPersistenceTests = (): void => {
   if (!loadedLegacyLayout) {
     throw new Error("Expected legacy layout payload to hydrate.");
   }
-  assert.ok(
-    loadedLegacyLayout.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === "NEG"),
-    "legacy negate placeholder migrates to NEG key",
+  assert.equal(
+    loadedLegacyLayout.ui.keyLayout.length,
+    KEYPAD_DEFAULT_COLUMNS * KEYPAD_DEFAULT_ROWS,
+    "legacy layouts normalize to configured keypad size",
   );
 
   const legacyMulLayoutStorage = createMemoryStorage();
@@ -662,4 +690,32 @@ export const runPersistenceTests = (): void => {
     LoadFailureReason.MigrationFailed,
     "unknown layout keys fail during migration validation",
   );
+
+  const outOfRangeKeypadDimensions = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: initialState().ui.keyLayout,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 99,
+          keypadRows: -3,
+        },
+        unlocks: state.unlocks,
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  assert.ok(outOfRangeKeypadDimensions.state, "out-of-range keypad dimensions still hydrate");
+  assert.equal(outOfRangeKeypadDimensions.state?.ui.keypadColumns, 8, "keypad columns clamp to max bound");
+  assert.equal(outOfRangeKeypadDimensions.state?.ui.keypadRows, 1, "keypad rows clamp to min bound");
 };

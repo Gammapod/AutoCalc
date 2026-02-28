@@ -126,7 +126,6 @@ let dragSession: DragSession | null = null;
 let suppressClicksUntil = 0;
 const GRAPH_WINDOW_SIZE = 25;
 const GRAPH_MIN_Y_RANGE = 15;
-const KEYPAD_COLUMNS = 4;
 const DRAG_START_THRESHOLD_PX = 6;
 const DRAG_CLICK_SUPPRESS_MS = 220;
 
@@ -680,12 +679,13 @@ const toGridKey = (row: number, column: number): string => `${row}:${column}`;
 
 const canPlaceGridCell = (
   occupied: Set<string>,
+  columns: number,
   row: number,
   column: number,
   colSpan: number,
   rowSpan: number,
 ): boolean => {
-  if (column + colSpan - 1 > KEYPAD_COLUMNS) {
+  if (column + colSpan - 1 > columns) {
     return false;
   }
   for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
@@ -706,7 +706,7 @@ const claimGridCells = (occupied: Set<string>, row: number, column: number, colS
   }
 };
 
-const buildKeypadSlotLabels = (layout: GameState["ui"]["keyLayout"]): string[] => {
+const buildKeypadSlotLabels = (layout: GameState["ui"]["keyLayout"], columns: number): string[] => {
   const labels: string[] = [];
   const occupied = new Set<string>();
   let searchIndex = 0;
@@ -716,9 +716,9 @@ const buildKeypadSlotLabels = (layout: GameState["ui"]["keyLayout"]): string[] =
     const rowSpan = 1;
 
     while (true) {
-      const row = Math.floor(searchIndex / KEYPAD_COLUMNS) + 1;
-      const column = (searchIndex % KEYPAD_COLUMNS) + 1;
-      if (canPlaceGridCell(occupied, row, column, colSpan, rowSpan)) {
+      const row = Math.floor(searchIndex / columns) + 1;
+      const column = (searchIndex % columns) + 1;
+      if (canPlaceGridCell(occupied, columns, row, column, colSpan, rowSpan)) {
         claimGridCells(occupied, row, column, colSpan, rowSpan);
         labels.push(`R${row}C${column} #${index}`);
         searchIndex += 1;
@@ -744,6 +744,27 @@ const buildStorageSlotLabels = (layout: GameState["ui"]["storageLayout"]): strin
     const column = (index % STORAGE_COLUMNS) + 1;
     return `S${row}C${column} #${index}`;
   });
+
+export const buildStorageRenderOrder = (state: GameState): number[] => {
+  const unlocked: number[] = [];
+  const empty: number[] = [];
+  const locked: number[] = [];
+
+  for (let index = 0; index < state.ui.storageLayout.length; index += 1) {
+    const cell = state.ui.storageLayout[index];
+    if (!cell) {
+      empty.push(index);
+      continue;
+    }
+    if (isKeyUnlocked(state, cell.key)) {
+      unlocked.push(index);
+      continue;
+    }
+    locked.push(index);
+  }
+
+  return [...unlocked, ...empty, ...locked];
+};
 
 export const shouldStartDragFromDelta = (
   deltaX: number,
@@ -771,13 +792,19 @@ const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
     if (!cell) {
       return "invalid";
     }
-    return cell.kind === "key" ? "key" : "empty";
+    if (cell.kind !== "key") {
+      return "empty";
+    }
+    return isKeyUnlocked(state, cell.key) ? "key" : "invalid";
   }
   const slot = state.ui.storageLayout[target.index];
   if (typeof slot === "undefined") {
     return "invalid";
   }
-  return slot ? "key" : "empty";
+  if (!slot) {
+    return "empty";
+  }
+  return isKeyUnlocked(state, slot.key) ? "key" : "invalid";
 };
 
 const isStorageDropGeometryValid = (
@@ -1044,7 +1071,11 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   renderUnlockChecklist(unlockEl, state);
 
   keysEl.innerHTML = "";
-  const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout);
+  if (keysEl instanceof HTMLElement) {
+    keysEl.style.gridTemplateColumns = `repeat(${state.ui.keypadColumns}, minmax(0, 1fr))`;
+    keysEl.style.gridTemplateRows = `repeat(${state.ui.keypadRows}, minmax(48px, 1fr))`;
+  }
+  const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout, state.ui.keypadColumns);
   for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
     const cell = state.ui.keyLayout[index];
     const slotLabel = slotLabels[index] ?? `#${index}`;
@@ -1058,13 +1089,21 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       keysEl.appendChild(placeholder);
       continue;
     }
+    if (!isKeyUnlocked(state, cell.key)) {
+      const hidden = document.createElement("div");
+      hidden.className = "placeholder placeholder--drop-slot placeholder--locked-hidden";
+      hidden.setAttribute("aria-hidden", "true");
+      appendDebugSlotLabel(hidden, slotLabel);
+      keysEl.appendChild(hidden);
+      continue;
+    }
 
     const button = document.createElement("button");
     button.type = "button";
     button.className = "key key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
     button.textContent = formatKeyLabel(cell.key);
-    button.disabled = !isKeyUnlocked(state, cell.key);
+    button.disabled = false;
     bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {
@@ -1083,7 +1122,8 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   if (storageEl instanceof HTMLElement) {
     storageEl.style.setProperty("--storage-rows", storageRowCount.toString());
   }
-  for (let index = 0; index < state.ui.storageLayout.length; index += 1) {
+  const storageRenderOrder = buildStorageRenderOrder(state);
+  for (const index of storageRenderOrder) {
     const cell = state.ui.storageLayout[index];
     const slotLabel = storageLabels[index] ?? `S#${index}`;
     if (!cell) {
@@ -1096,13 +1136,21 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       storageEl.appendChild(empty);
       continue;
     }
+    if (!isKeyUnlocked(state, cell.key)) {
+      const hidden = document.createElement("div");
+      hidden.className = "placeholder placeholder--drop-slot placeholder--storage-empty placeholder--locked-hidden";
+      hidden.setAttribute("aria-hidden", "true");
+      appendDebugSlotLabel(hidden, slotLabel);
+      storageEl.appendChild(hidden);
+      continue;
+    }
 
     const button = document.createElement("button");
     button.type = "button";
     button.className = "key key--storage key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
     button.textContent = formatKeyLabel(cell.key);
-    button.disabled = !isKeyUnlocked(state, cell.key);
+    button.disabled = false;
     bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {

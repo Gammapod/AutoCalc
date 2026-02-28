@@ -1,6 +1,12 @@
 import { initialState } from "../../src/domain/state.js";
 import { applyKeyAction } from "../../src/domain/reducer.input.js";
-import { applyMoveKeySlot, applyMoveLayoutCell, applySwapKeySlots, applySwapLayoutCells } from "../../src/domain/reducer.layout.js";
+import {
+  applyMoveKeySlot,
+  applyMoveLayoutCell,
+  applySetKeypadDimensions,
+  applySwapKeySlots,
+  applySwapLayoutCells,
+} from "../../src/domain/reducer.layout.js";
 import { applyLifecycleAction } from "../../src/domain/reducer.lifecycle.js";
 import type { GameState } from "../../src/domain/types.js";
 import { actionFromEvent, type DomainEvent } from "./events.js";
@@ -27,6 +33,9 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
   }
   if (action.type === "SWAP_LAYOUT_CELLS") {
     return applySwapLayoutCells(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
+  }
+  if (action.type === "SET_KEYPAD_DIMENSIONS") {
+    return applySetKeypadDimensions(state, action.columns, action.rows);
   }
   return state;
 };

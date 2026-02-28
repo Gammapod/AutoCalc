@@ -1,10 +1,16 @@
 import {
+  defaultDrawerKeyLayout,
   defaultKeyLayout,
   defaultStorageLayout,
   initialState,
+  KEYPAD_DEFAULT_COLUMNS,
+  KEYPAD_DEFAULT_ROWS,
+  KEYPAD_DIM_MAX,
+  KEYPAD_DIM_MIN,
   STORAGE_COLUMNS,
   STORAGE_INITIAL_SLOTS,
 } from "../../domain/state.js";
+import { resizeKeyLayout } from "../../domain/reducer.layout.js";
 import type { DraftingSlot, Key, KeyCell, LayoutCell, PlaceholderCell, Slot, UnlockState, ValueExpressionKey } from "../../domain/types.js";
 
 export type SerializableSlot = {
@@ -66,6 +72,25 @@ export type SerializableStateV4 = {
   ui: {
     keyLayout: LayoutCell[];
     storageLayout: Array<KeyCell | null>;
+  };
+  unlocks: UnlockState;
+  completedUnlockIds: string[];
+};
+
+export type SerializableStateV5 = {
+  calculator: {
+    total: string;
+    pendingNegativeTotal: boolean;
+    roll: string[];
+    euclidRemainders: Array<{ rollIndex: number; value: string }>;
+    operationSlots: SerializableSlot[];
+    draftingSlot: DraftingSlot | null;
+  };
+  ui: {
+    keyLayout: LayoutCell[];
+    storageLayout: Array<KeyCell | null>;
+    keypadColumns: number;
+    keypadRows: number;
   };
   unlocks: UnlockState;
   completedUnlockIds: string[];
@@ -142,6 +167,22 @@ const isSerializableSlot = (value: unknown): value is SerializableSlot =>
   isObject(value) && isSlotOperator(value.operator) && isString(value.operand);
 
 const defaultUnlocks = (): UnlockState => initialState().unlocks;
+
+const normalizeKeypadDimension = (value: unknown, fallback: number): number => {
+  if (!isInteger(value)) {
+    return fallback;
+  }
+  return Math.max(KEYPAD_DIM_MIN, Math.min(KEYPAD_DIM_MAX, value));
+};
+
+const normalizeKeypadLayoutForDimensions = (
+  layout: LayoutCell[] | undefined,
+  columns: number,
+  rows: number,
+): LayoutCell[] => {
+  const normalizedLayout = hasOnlyKnownLayoutCells(layout) ? [...layout] : defaultDrawerKeyLayout(columns, rows);
+  return resizeKeyLayout(normalizedLayout, columns, rows);
+};
 
 const normalizeStorageSlots = (
   storageLayout: unknown,
@@ -262,8 +303,22 @@ export const migrateV3ToV4 = (input: SerializableStateV3): SerializableStateV4 =
   },
 });
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 =>
-  version === 1 || version === 2 || version === 3 || version === 4;
+export const migrateV4ToV5 = (input: SerializableStateV4): SerializableStateV5 => {
+  const keypadColumns = KEYPAD_DEFAULT_COLUMNS;
+  const keypadRows = KEYPAD_DEFAULT_ROWS;
+  return {
+    ...input,
+    ui: {
+      keyLayout: normalizeKeypadLayoutForDimensions(input.ui.keyLayout, keypadColumns, keypadRows),
+      storageLayout: normalizeStorageSlots(input.ui.storageLayout),
+      keypadColumns,
+      keypadRows,
+    },
+  };
+};
+
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 =>
+  version === 1 || version === 2 || version === 3 || version === 4 || version === 5;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -365,7 +420,62 @@ export const validateSerializableStateV4 = (state: unknown): state is Serializab
   return Array.isArray(state.completedUnlockIds) && state.completedUnlockIds.every(isString);
 };
 
-export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV4 | null => {
+export const validateSerializableStateV5 = (state: unknown): state is SerializableStateV5 => {
+  if (!isObject(state)) {
+    return false;
+  }
+
+  if (!isObject(state.calculator) || !isObject(state.ui) || !isObject(state.unlocks)) {
+    return false;
+  }
+
+  const calculator = state.calculator;
+  if (
+    !isRationalString(calculator.total) ||
+    !isBoolean(calculator.pendingNegativeTotal) ||
+    !Array.isArray(calculator.roll) ||
+    !calculator.roll.every(isRationalString) ||
+    !Array.isArray(calculator.euclidRemainders) ||
+    !calculator.euclidRemainders.every(
+      (entry) => isObject(entry) && isInteger(entry.rollIndex) && isRationalString(entry.value),
+    ) ||
+    !Array.isArray(calculator.operationSlots) ||
+    !calculator.operationSlots.every(isSerializableSlot) ||
+    !(calculator.draftingSlot === null || isDraftingSlot(calculator.draftingSlot))
+  ) {
+    return false;
+  }
+
+  const ui = state.ui;
+  if (
+    !hasOnlyKnownLayoutCells(ui.keyLayout) ||
+    !hasOnlyKnownStorageSlots(ui.storageLayout) ||
+    !isInteger(ui.keypadColumns) ||
+    !isInteger(ui.keypadRows)
+  ) {
+    return false;
+  }
+
+  const unlocks = state.unlocks;
+  const defaults = defaultUnlocks();
+  const hasValidBooleans = <K extends string>(keys: K[], source: unknown): boolean =>
+    isObject(source) && keys.every((key) => isBoolean(source[key]));
+
+  if (
+    !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
+    !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
+    !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
+    !isInteger(unlocks.maxSlots) ||
+    !isInteger(unlocks.maxTotalDigits)
+  ) {
+    return false;
+  }
+
+  return Array.isArray(state.completedUnlockIds) && state.completedUnlockIds.every(isString);
+};
+
+export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV5 | null => {
   if (!isObject(state) || !isValidSchemaVersion(schemaVersion)) {
     return null;
   }
@@ -380,7 +490,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     const normalizedV3: SerializableStateV3 = {
       ...asV3,
       ui: {
-        keyLayout: asV3.ui?.keyLayout ?? defaultKeyLayout(),
+        keyLayout: asV3.ui?.keyLayout ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: hasOnlyKnownStorageCells(asV3.ui?.storageLayout) ? asV3.ui.storageLayout : [],
       },
       unlocks: normalizeUnlocks(asV3.unlocks),
@@ -388,24 +498,45 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     if (!validateSerializableStateV3(normalizedV3)) {
       return null;
     }
-    return migrateV3ToV4(normalizedV3);
-  } else {
+    return migrateV4ToV5(migrateV3ToV4(normalizedV3));
+  } else if (schemaVersion === 4) {
     const asV4 = state as SerializableStateV4;
     const normalizedV4: SerializableStateV4 = {
       ...asV4,
       ui: {
-        keyLayout: asV4.ui?.keyLayout ?? defaultKeyLayout(),
+        keyLayout: asV4.ui?.keyLayout ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV4.ui?.storageLayout ?? defaultStorageLayout()),
       },
       unlocks: normalizeUnlocks(asV4.unlocks),
     };
-    return validateSerializableStateV4(normalizedV4) ? normalizedV4 : null;
+    if (!validateSerializableStateV4(normalizedV4)) {
+      return null;
+    }
+    return migrateV4ToV5(normalizedV4);
+  } else {
+    const asV5 = state as SerializableStateV5;
+    if (!hasOnlyKnownLayoutCells(asV5.ui?.keyLayout) || !hasOnlyKnownStorageSlots(asV5.ui?.storageLayout)) {
+      return null;
+    }
+    const keypadColumns = normalizeKeypadDimension(asV5.ui?.keypadColumns, KEYPAD_DEFAULT_COLUMNS);
+    const keypadRows = normalizeKeypadDimension(asV5.ui?.keypadRows, KEYPAD_DEFAULT_ROWS);
+    const normalizedV5: SerializableStateV5 = {
+      ...asV5,
+      ui: {
+        keyLayout: normalizeKeypadLayoutForDimensions(asV5.ui.keyLayout, keypadColumns, keypadRows),
+        storageLayout: normalizeStorageSlots(asV5.ui.storageLayout),
+        keypadColumns,
+        keypadRows,
+      },
+      unlocks: normalizeUnlocks(asV5.unlocks),
+    };
+    return validateSerializableStateV5(normalizedV5) ? normalizedV5 : null;
   }
 
   const v3State = migrateV2ToV3(v2State);
   if (!validateSerializableStateV3(v3State)) {
     return null;
   }
-  return migrateV3ToV4(v3State);
+  return migrateV4ToV5(migrateV3ToV4(v3State));
 };
 
