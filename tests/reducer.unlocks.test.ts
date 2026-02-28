@@ -14,9 +14,9 @@ const assertIntTotal = (state: GameState, value: bigint, message: string): void 
 export const runReducerUnlockTests = (): void => {
   const state = initialState();
 
-  assert.equal(state.unlocks.digits["1"], true, "digit 1 starts unlocked");
+  assert.equal(state.unlocks.valueExpression["1"], true, "digit 1 starts unlocked");
   assert.ok(
-    Object.entries(state.unlocks.digits)
+    Object.entries(state.unlocks.valueExpression)
       .filter(([digit]) => digit !== "1")
       .every(([, isUnlocked]) => !isUnlocked),
     "all other digits start locked",
@@ -27,10 +27,10 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.unlocks.slotOperators["/"], false, "div starts locked");
   assert.equal(state.unlocks.slotOperators["#"], false, "euclidean div starts locked");
   assert.equal(state.unlocks.slotOperators["⟡"], false, "modulo starts locked");
-  assert.equal(state.unlocks.digits["4"], false, "digit 4 starts locked");
+  assert.equal(state.unlocks.valueExpression["4"], false, "digit 4 starts locked");
   assert.equal(state.unlocks.utilities.C, false, "C starts locked");
   assert.equal(state.unlocks.utilities.CE, false, "CE starts locked");
-  assert.equal(state.unlocks.utilities.NEG, false, "NEG starts locked");
+  assert.equal(state.unlocks.valueExpression.NEG, false, "NEG starts locked");
   assert.equal(state.unlocks.execution["="], false, "equals starts locked");
   assert.equal(state.unlocks.maxSlots, 1, "operation slots start with a 1-slot cap");
   assert.equal(state.unlocks.maxTotalDigits, 2, "total starts with a 2-digit cap");
@@ -227,7 +227,7 @@ export const runReducerUnlockTests = (): void => {
     },
   };
   const afterFourSuffixUnlock = applyUnlocks(withFourSuffix, [rollUnlocksFour]);
-  assert.equal(afterFourSuffixUnlock.unlocks.digits["4"], true, "suffix predicate unlocks digit 4");
+  assert.equal(afterFourSuffixUnlock.unlocks.valueExpression["4"], true, "suffix predicate unlocks digit 4");
 
   let minusState = initialState();
   minusState = press(minusState, "1");
@@ -272,8 +272,8 @@ export const runReducerUnlockTests = (): void => {
     ...initialState(),
     unlocks: {
       ...initialState().unlocks,
-      utilities: {
-        ...initialState().unlocks.utilities,
+      valueExpression: {
+        ...initialState().unlocks.valueExpression,
         NEG: true,
       },
     },
@@ -360,8 +360,8 @@ export const runReducerUnlockTests = (): void => {
         ...initialState().unlocks.execution,
         "=": true,
       },
-      digits: {
-        ...initialState().unlocks.digits,
+      valueExpression: {
+        ...initialState().unlocks.valueExpression,
         "2": true,
         "3": true,
       },
@@ -392,8 +392,8 @@ export const runReducerUnlockTests = (): void => {
         ...initialState().unlocks.execution,
         "=": true,
       },
-      digits: {
-        ...initialState().unlocks.digits,
+      valueExpression: {
+        ...initialState().unlocks.valueExpression,
         "2": true,
         "4": true,
       },
@@ -423,8 +423,8 @@ export const runReducerUnlockTests = (): void => {
         ...initialState().unlocks.execution,
         "=": true,
       },
-      digits: {
-        ...initialState().unlocks.digits,
+      valueExpression: {
+        ...initialState().unlocks.valueExpression,
         "2": true,
         "4": true,
       },
@@ -460,8 +460,8 @@ export const runReducerUnlockTests = (): void => {
         ...initialState().unlocks.execution,
         "=": true,
       },
-      digits: {
-        ...initialState().unlocks.digits,
+      valueExpression: {
+        ...initialState().unlocks.valueExpression,
         "2": true,
         "4": true,
       },
@@ -550,7 +550,7 @@ export const runReducerUnlockTests = (): void => {
   );
 
   const allUnlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
-  assert.ok(Object.values(allUnlocked.unlocks.digits).every(Boolean), "UNLOCK_ALL unlocks all digits");
+  assert.ok(Object.values(allUnlocked.unlocks.valueExpression).every(Boolean), "UNLOCK_ALL unlocks all digits");
   assert.ok(Object.values(allUnlocked.unlocks.slotOperators).every(Boolean), "UNLOCK_ALL unlocks all slot operators");
   assert.ok(Object.values(allUnlocked.unlocks.utilities).every(Boolean), "UNLOCK_ALL unlocks all utilities");
   assert.ok(Object.values(allUnlocked.unlocks.execution).every(Boolean), "UNLOCK_ALL unlocks execution keys");

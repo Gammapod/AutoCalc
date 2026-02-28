@@ -137,6 +137,8 @@ export type UnlockRowVm = {
   criteria: UnlockCriterionVm[];
 };
 
+export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "execution";
+
 const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "0": ["a", "b", "c", "d", "e", "f"],
   "1": ["b", "c"],
@@ -151,9 +153,17 @@ const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
 };
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
-  operator === "*" ? "×" : operator === "/" ? "÷" : operator;
+  operator === "*" ? "\u00D7" : operator === "/" ? "\u00F7" : operator;
 export const formatKeyLabel = (key: Key): string =>
-  key === "NEG" ? "-𝑥" : key === "#" ? "#/⟡" : key === "⟡" ? "⟡" : key === "*" || key === "/" ? formatOperatorForDisplay(key) : key;
+  key === "NEG"
+    ? "-\u{1D465}"
+    : key === "#"
+      ? "#/⟡"
+      : key === "⟡"
+        ? "⟡"
+        : key === "*" || key === "/"
+          ? formatOperatorForDisplay(key)
+          : key;
 
 const clampUnlockedDigits = (value: number): number =>
   Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
@@ -609,19 +619,32 @@ const renderGraphDisplay = (root: Element, roll: Array<{ num: bigint; den: bigin
 };
 
 const isKeyUnlocked = (state: GameState, key: Key): boolean => {
-  if (/^\d$/.test(key)) {
-    return state.unlocks.digits[key as keyof GameState["unlocks"]["digits"]];
+  if (/^\d$/.test(key) || key === "NEG") {
+    return state.unlocks.valueExpression[key as keyof GameState["unlocks"]["valueExpression"]];
   }
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "⟡") {
     return state.unlocks.slotOperators[key];
   }
-  if (key === "C" || key === "CE" || key === "NEG") {
+  if (key === "C" || key === "CE") {
     return state.unlocks.utilities[key];
   }
   if (key === "=") {
     return state.unlocks.execution["="];
   }
   return false;
+};
+
+export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
+  if (/^\d$/.test(key) || key === "NEG") {
+    return "value_expression";
+  }
+  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "⟡") {
+    return "slot_operator";
+  }
+  if (key === "C" || key === "CE") {
+    return "utility";
+  }
+  return "execution";
 };
 
 const toGridKey = (row: number, column: number): string => `${row}:${column}`;
@@ -756,6 +779,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     const button = document.createElement("button");
     button.type = "button";
     button.className = "key";
+    button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
     if (cell.wide) {
       button.classList.add("key--wide");
     }

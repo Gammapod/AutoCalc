@@ -1,5 +1,5 @@
 import { defaultKeyLayout, initialState } from "../../domain/state.js";
-import type { DraftingSlot, Key, LayoutCell, PlaceholderCell, Slot, UnlockState } from "../../domain/types.js";
+import type { DraftingSlot, Key, LayoutCell, PlaceholderCell, Slot, UnlockState, ValueExpressionKey } from "../../domain/types.js";
 
 export type SerializableSlot = {
   operator: Slot["operator"];
@@ -19,9 +19,10 @@ export type SerializableStateV1 = {
     keyLayout?: LayoutCell[];
   };
   unlocks?: Partial<UnlockState> & {
-    digits?: Partial<UnlockState["digits"]>;
+    digits?: Partial<Record<Exclude<ValueExpressionKey, "NEG">, boolean>>;
+    valueExpression?: Partial<UnlockState["valueExpression"]>;
     slotOperators?: Partial<UnlockState["slotOperators"]>;
-    utilities?: Partial<UnlockState["utilities"]>;
+    utilities?: Partial<Record<"C" | "CE" | "NEG", boolean>>;
     execution?: Partial<UnlockState["execution"]>;
   };
   completedUnlockIds?: string[];
@@ -49,10 +50,11 @@ const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
-const UTILITY_KEY_VALUES = ["C", "CE", "NEG"] as const;
+const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
+const UTILITY_KEY_VALUES = ["C", "CE"] as const;
 const EXEC_KEY_VALUES = ["="] as const;
 const KEY_VALUES: readonly Key[] = [
-  ...DIGIT_VALUES,
+  ...VALUE_EXPRESSION_KEY_VALUES,
   ...SLOT_OPERATOR_VALUES,
   ...UTILITY_KEY_VALUES,
   ...EXEC_KEY_VALUES,
@@ -111,8 +113,21 @@ const normalizeUnlockCap = (value: unknown, fallback: number, min: number, max: 
 
 const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState => {
   const defaults = defaultUnlocks();
+  const sourceDigits = source?.digits ?? {};
+  const sourceValueExpression = source?.valueExpression ?? {};
+  const legacyNegUtility = source?.utilities?.NEG;
+  const legacyValueExpressionFromDigits = Object.fromEntries(
+    Object.keys(defaults.valueExpression)
+      .filter((key) => key !== "NEG")
+      .map((digit) => [digit, sourceDigits[digit as keyof typeof sourceDigits]]),
+  ) as Partial<Record<Exclude<ValueExpressionKey, "NEG">, boolean>>;
   return {
-    digits: { ...defaults.digits, ...(source?.digits ?? {}) },
+    valueExpression: {
+      ...defaults.valueExpression,
+      ...legacyValueExpressionFromDigits,
+      ...sourceValueExpression,
+      ...(typeof legacyNegUtility === "boolean" ? { NEG: legacyNegUtility } : {}),
+    },
     slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
     utilities: { ...defaults.utilities, ...(source?.utilities ?? {}) },
     execution: { ...defaults.execution, ...(source?.execution ?? {}) },
@@ -211,7 +226,7 @@ export const validateSerializableStateV3 = (state: unknown): state is Serializab
     isObject(source) && keys.every((key) => isBoolean(source[key]));
 
   if (
-    !hasValidBooleans(Object.keys(defaults.digits), unlocks.digits) ||
+    !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
@@ -246,3 +261,4 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
   const v3State = migrateV2ToV3(v2State);
   return validateSerializableStateV3(v3State) ? v3State : null;
 };
+

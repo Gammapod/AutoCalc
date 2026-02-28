@@ -55,8 +55,8 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
       ...state,
       unlocks: {
         ...state.unlocks,
-        digits: {
-          ...state.unlocks.digits,
+        valueExpression: {
+          ...state.unlocks.valueExpression,
           [effect.key]: true,
         },
       },

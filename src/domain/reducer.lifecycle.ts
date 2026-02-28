@@ -11,9 +11,9 @@ const applyUnlockAll = (state: GameState): GameState => {
     ...withSecondSlotUnlocked,
     unlocks: {
       ...withSecondSlotUnlocked.unlocks,
-      digits: Object.fromEntries(
-        Object.keys(withSecondSlotUnlocked.unlocks.digits).map((digit) => [digit, true]),
-      ) as GameState["unlocks"]["digits"],
+      valueExpression: Object.fromEntries(
+        Object.keys(withSecondSlotUnlocked.unlocks.valueExpression).map((key) => [key, true]),
+      ) as GameState["unlocks"]["valueExpression"],
       slotOperators: Object.fromEntries(
         Object.keys(withSecondSlotUnlocked.unlocks.slotOperators).map((operator) => [operator, true]),
       ) as GameState["unlocks"]["slotOperators"],

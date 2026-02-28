@@ -1,8 +1,9 @@
-﻿export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 export type SlotOperator = "+" | "-" | "*" | "/" | "#" | "⟡";
-export type UtilityKey = "C" | "CE" | "NEG";
+export type ValueExpressionKey = Digit | "NEG";
+export type UtilityKey = "C" | "CE";
 export type ExecKey = "=";
-export type Key = Digit | SlotOperator | UtilityKey | ExecKey;
+export type Key = ValueExpressionKey | SlotOperator | UtilityKey | ExecKey;
 
 export type KeyCell = {
   kind: "key";
@@ -49,7 +50,7 @@ export type CalculatorState = {
 };
 
 export type UnlockState = {
-  digits: Record<Digit, boolean>;
+  valueExpression: Record<ValueExpressionKey, boolean>;
   slotOperators: Record<SlotOperator, boolean>;
   utilities: Record<UtilityKey, boolean>;
   execution: Record<ExecKey, boolean>;

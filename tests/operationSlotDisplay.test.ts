@@ -48,8 +48,8 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(draftingMultiplyOperatorOnly),
-    "[ × _ ]",
-    "drafting multiply slot renders operator as ×",
+    "[ \u00D7 _ ]",
+    "drafting multiply slot renders operator as \u00D7",
   );
 
   const draftingWithNegativeOperand: GameState = {
@@ -130,7 +130,7 @@ export const runOperationSlotDisplayTests = (): void => {
       operationSlots: [{ operator: "*", operand: 2n }],
     },
   };
-  assert.equal(buildOperationSlotDisplay(committedMultiply), "[ × 2 ]", "committed multiply slot renders operator as ×");
+  assert.equal(buildOperationSlotDisplay(committedMultiply), "[ \u00D7 2 ]", "committed multiply slot renders operator as \u00D7");
 
   const committedEuclidean: GameState = {
     ...base,
@@ -150,3 +150,4 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(buildOperationSlotDisplay(committedModulo), "[ ⟡ 3 ]", "committed modulo slot renders operator as ⟡");
 };
+

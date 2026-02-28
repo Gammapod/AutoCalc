@@ -42,7 +42,7 @@ export const initialState = (): GameState => ({
     keyLayout: defaultKeyLayout(),
   },
   unlocks: {
-    digits: {
+    valueExpression: {
       "0": false,
       "1": true,
       "2": false,
@@ -53,6 +53,7 @@ export const initialState = (): GameState => ({
       "7": false,
       "8": false,
       "9": false,
+      NEG: false,
     },
     slotOperators: {
       "+": false,
@@ -65,7 +66,6 @@ export const initialState = (): GameState => ({
     utilities: {
       C: false,
       CE: false,
-      NEG: false,
     },
     execution: {
       "=": false,
@@ -75,3 +75,4 @@ export const initialState = (): GameState => ({
   },
   completedUnlockIds: [],
 });
+

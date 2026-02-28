@@ -25,7 +25,7 @@ const getMagnitudeText = (value: RationalValue): string => {
 };
 
 const applyDigit = (state: GameState, digit: Digit): GameState => {
-  if (!state.unlocks.digits[digit]) {
+  if (!state.unlocks.valueExpression[digit]) {
     return state;
   }
 
@@ -123,7 +123,7 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
 };
 
 const applyNegate = (state: GameState): GameState => {
-  if (!state.unlocks.utilities.NEG) {
+  if (!state.unlocks.valueExpression.NEG) {
     return state;
   }
 
@@ -323,3 +323,4 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   }
   return preprocessed;
 };
+

@@ -95,8 +95,67 @@ export const runPersistenceTests = (): void => {
   assert.equal(loadedLegacy.unlocks.slotOperators["*"], false, "legacy unlock payload hydrates default mul unlock");
   assert.equal(loadedLegacy.unlocks.slotOperators["/"], false, "legacy unlock payload hydrates default div unlock");
   assert.equal(loadedLegacy.unlocks.slotOperators["⟡"], false, "legacy unlock payload hydrates default modulo unlock");
-  assert.equal(loadedLegacy.unlocks.digits["1"], true, "legacy unlock payload hydrates current default digit unlocks");
+  assert.equal(loadedLegacy.unlocks.valueExpression["1"], true, "legacy unlock payload hydrates current default digit unlocks");
   assert.equal(loadedLegacy.unlocks.maxTotalDigits, 2, "legacy unlock payload hydrates default total-digit cap");
+
+  const legacyUnlockShapeStorage = createMemoryStorage();
+  legacyUnlockShapeStorage.setItem(
+    SAVE_KEY,
+    JSON.stringify({
+      schemaVersion: 2,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: defaultKeyLayout(),
+        },
+        unlocks: {
+          ...state.unlocks,
+          valueExpression: undefined,
+          digits: {
+            "0": false,
+            "1": true,
+            "2": true,
+            "3": false,
+            "4": false,
+            "5": false,
+            "6": false,
+            "7": false,
+            "8": false,
+            "9": false,
+          },
+          utilities: {
+            C: false,
+            CE: false,
+            NEG: true,
+          },
+        },
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  const legacyUnlockShapeRepo = createLocalStorageRepo(legacyUnlockShapeStorage);
+  const loadedLegacyUnlockShape = legacyUnlockShapeRepo.load();
+  if (!loadedLegacyUnlockShape) {
+    throw new Error("Expected legacy unlock shape payload to hydrate.");
+  }
+  assert.equal(
+    loadedLegacyUnlockShape.unlocks.valueExpression["2"],
+    true,
+    "legacy unlock digits hydrate into valueExpression digits",
+  );
+  assert.equal(
+    loadedLegacyUnlockShape.unlocks.valueExpression.NEG,
+    true,
+    "legacy utilities.NEG hydrates into valueExpression.NEG",
+  );
 
   const v2Storage = createMemoryStorage();
   v2Storage.setItem(

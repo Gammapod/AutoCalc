@@ -41,8 +41,8 @@ export const runReducerInputTests = (): void => {
     ...base,
     unlocks: {
       ...base.unlocks,
-      utilities: {
-        ...base.unlocks.utilities,
+      valueExpression: {
+        ...base.unlocks.valueExpression,
         NEG: true,
       },
     },

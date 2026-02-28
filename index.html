@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -20,6 +20,15 @@
         --key-top: #eef2f5;
         --key-bottom: #d4dae0;
         --key-stroke: #5d6773;
+        --key-slot-operator-top: #6a7380;
+        --key-slot-operator-bottom: #4a5360;
+        --key-slot-operator-stroke: #2f3742;
+        --key-utility-top: #d55f5f;
+        --key-utility-bottom: #a84040;
+        --key-utility-stroke: #6e2424;
+        --key-execution-top: #4f8f67;
+        --key-execution-bottom: #2f6c4a;
+        --key-execution-stroke: #1f4a33;
         --placeholder: #798291;
         --roll-row-height: 1.19rem;
         --roll-pad-top: 10px;
@@ -373,7 +382,24 @@
 
       .key--tall {
         grid-row: span 2;
-        background: linear-gradient(180deg, #e8f6ea, #c4d5c8);
+      }
+
+      .key--group-slot_operator {
+        border-color: var(--key-slot-operator-stroke);
+        background: linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
+        color: #ffffff;
+      }
+
+      .key--group-utility {
+        border-color: var(--key-utility-stroke);
+        background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
+        color: #ffffff;
+      }
+
+      .key--group-execution {
+        border-color: var(--key-execution-stroke);
+        background: linear-gradient(180deg, var(--key-execution-top), var(--key-execution-bottom));
+        color: #ffffff;
       }
 
       .placeholder {

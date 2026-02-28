@@ -20,7 +20,7 @@ export const runReducerLifecycleTests = (): void => {
   if (!unlockedAll) {
     throw new Error("UNLOCK_ALL should be handled by lifecycle reducer.");
   }
-  assert.ok(Object.values(unlockedAll.unlocks.digits).every(Boolean), "UNLOCK_ALL unlocks all digits");
+  assert.ok(Object.values(unlockedAll.unlocks.valueExpression).every(Boolean), "UNLOCK_ALL unlocks all digits");
   assert.ok(Object.values(unlockedAll.unlocks.slotOperators).every(Boolean), "UNLOCK_ALL unlocks all operators");
   assert.ok(Object.values(unlockedAll.unlocks.utilities).every(Boolean), "UNLOCK_ALL unlocks all utilities");
   assert.ok(Object.values(unlockedAll.unlocks.execution).every(Boolean), "UNLOCK_ALL unlocks execution keys");
@@ -29,3 +29,4 @@ export const runReducerLifecycleTests = (): void => {
   const unhandled = applyLifecycleAction(base, { type: "MOVE_KEY_SLOT", fromIndex: 0, toIndex: 1 } as Action);
   assert.equal(unhandled, null, "non-lifecycle actions return null (unhandled)");
 };
+
