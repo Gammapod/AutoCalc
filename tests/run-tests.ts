@@ -19,6 +19,8 @@ import { runV2ParityTests } from "./v2Parity.test.js";
 import { runV2PersistenceParityTests } from "./v2PersistenceParity.test.js";
 import { runStorageDisplayTests } from "./storageDisplay.test.js";
 import { runDragDropBehaviorTests } from "./dragDropBehavior.test.js";
+import { runReducerFlagsTests } from "./reducer.flags.test.js";
+import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -32,6 +34,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/graph-display", runGraphDisplayTests],
   ["ui/storage-display", runStorageDisplayTests],
   ["ui/drag-drop-behavior", runDragDropBehaviorTests],
+  ["ui/button-behavior", runButtonBehaviorTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],
@@ -42,6 +45,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["content/unlock-domain-resolver", runUnlockDomainResolverTests],
   ["scripts/runtime-dependency-map", runRuntimeDependencyMapTests],
   ["browser/import-safety", runBrowserImportSafetyTests],
+  ["reducer/flags", runReducerFlagsTests],
 ];
 
 let passed = 0;

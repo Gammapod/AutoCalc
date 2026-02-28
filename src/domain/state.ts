@@ -1,19 +1,20 @@
-import type { GameState, KeyCell, LayoutCell } from "./types.js";
+﻿import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 5;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
-export const KEYPAD_DEFAULT_COLUMNS = 4;
-export const KEYPAD_DEFAULT_ROWS = 3;
+export const KEYPAD_DEFAULT_COLUMNS = 3;
+export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
+const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["1", "+", "="];
 
 export const defaultStorageKeys = (): KeyCell[] =>
   defaultKeyLayout()
-    .filter((cell): cell is KeyCell => cell.kind === "key")
+    .filter((cell): cell is KeyCell => cell.kind === "key" && !DEFAULT_KEYPAD_KEYS.includes(cell.key))
     .map((cell) => ({ ...cell }));
 
 export const defaultStorageLayout = (): Array<KeyCell | null> => {
@@ -37,7 +38,14 @@ export const defaultStorageLayout = (): Array<KeyCell | null> => {
 export const defaultDrawerKeyLayout = (
   columns: number = KEYPAD_DEFAULT_COLUMNS,
   rows: number = KEYPAD_DEFAULT_ROWS,
-): LayoutCell[] => Array.from({ length: Math.max(1, columns * rows) }, () => ({ kind: "placeholder", area: "empty" as const }));
+): LayoutCell[] => {
+  const slotCount = Math.max(1, columns * rows);
+  const layout: LayoutCell[] = Array.from({ length: slotCount }, () => ({ kind: "placeholder", area: "empty" as const }));
+  for (let index = 0; index < Math.min(slotCount, DEFAULT_KEYPAD_KEYS.length); index += 1) {
+    layout[index] = { kind: "key", key: DEFAULT_KEYPAD_KEYS[index] };
+  }
+  return layout;
+};
 
 export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "graph" },
@@ -62,6 +70,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "=" },
   { kind: "key", key: "0" },
   { kind: "key", key: "NEG" },
+  { kind: "key", key: "\u23EF", behavior: { type: "toggle_flag", flag: "execution.pause" } },
 ];
 
 export const initialState = (): GameState => ({
@@ -78,6 +87,7 @@ export const initialState = (): GameState => ({
     storageLayout: defaultStorageLayout(),
     keypadColumns: KEYPAD_DEFAULT_COLUMNS,
     keypadRows: KEYPAD_DEFAULT_ROWS,
+    buttonFlags: {},
   },
   unlocks: {
     valueExpression: {
@@ -107,6 +117,7 @@ export const initialState = (): GameState => ({
     },
     execution: {
       "=": false,
+      "\u23EF": false,
     },
     maxSlots: 1,
     maxTotalDigits: 2,

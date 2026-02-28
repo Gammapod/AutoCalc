@@ -12,6 +12,9 @@ export const runDragDropBehaviorTests = (): void => {
     ...base,
     ui: {
       ...base.ui,
+      keyLayout: [...base.ui.keyLayout, { kind: "placeholder", area: "empty" }],
+      keypadColumns: 4,
+      keypadRows: 1,
       storageLayout: [{ kind: "key", key: "1" }, ...base.ui.storageLayout.slice(1)],
     },
   };
@@ -19,7 +22,7 @@ export const runDragDropBehaviorTests = (): void => {
   const moveAction = classifyDropAction(
     withStorageKey,
     { surface: "storage", index: 0 },
-    { surface: "keypad", index: 0 },
+    { surface: "keypad", index: 3 },
   );
   assert.equal(moveAction, "move", "dragging key onto empty keypad placeholder is a move");
 
@@ -35,14 +38,14 @@ export const runDragDropBehaviorTests = (): void => {
     ui: {
       ...withStorageKey.ui,
       keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
-        index === 2 ? ({ kind: "key", key: "2" } as const) : cell,
+        index === 3 ? ({ kind: "key", key: "2" } as const) : cell,
       ),
     },
   };
   const swapAction = classifyDropAction(
     withKeypadKey,
     { surface: "storage", index: 0 },
-    { surface: "keypad", index: 2 },
+    { surface: "keypad", index: 3 },
   );
   assert.equal(swapAction, "swap", "dragging key onto occupied key slot is a swap");
 

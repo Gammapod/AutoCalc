@@ -8,6 +8,7 @@ import {
   applySwapLayoutCells,
 } from "./reducer.layout.js";
 import { applyLifecycleAction } from "./reducer.lifecycle.js";
+import { applyToggleFlag } from "./reducer.flags.js";
 import type { Action, GameState } from "./types.js";
 import { reduceActionWithV2 } from "../../src_v2/compat/legacyReducerAdapter.js";
 import { compareParity } from "../../src_v2/compat/parityHarness.js";
@@ -42,6 +43,9 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
   }
   if (action.type === "SET_KEYPAD_DIMENSIONS") {
     return applySetKeypadDimensions(state, action.columns, action.rows);
+  }
+  if (action.type === "TOGGLE_FLAG") {
+    return applyToggleFlag(state, action.flag);
   }
   return state;
 };

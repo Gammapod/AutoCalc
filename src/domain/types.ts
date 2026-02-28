@@ -2,12 +2,13 @@ export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 export type SlotOperator = "+" | "-" | "*" | "/" | "#" | "⟡";
 export type ValueExpressionKey = Digit | "NEG";
 export type UtilityKey = "C" | "CE";
-export type ExecKey = "=";
+export type ExecKey = "=" | "\u23EF";
 export type Key = ValueExpressionKey | SlotOperator | UtilityKey | ExecKey;
 
 export type KeyCell = {
   kind: "key";
   key: Key;
+  behavior?: KeyButtonBehavior;
 };
 
 export type PlaceholderCell = {
@@ -16,6 +17,17 @@ export type PlaceholderCell = {
 };
 
 export type LayoutCell = KeyCell | PlaceholderCell;
+
+export type PressKeyButtonBehavior = {
+  type: "press_key";
+};
+
+export type ToggleFlagButtonBehavior = {
+  type: "toggle_flag";
+  flag: string;
+};
+
+export type KeyButtonBehavior = PressKeyButtonBehavior | ToggleFlagButtonBehavior;
 
 export type Slot = {
   operator: SlotOperator;
@@ -152,6 +164,7 @@ export type GameState = {
     storageLayout: Array<KeyCell | null>;
     keypadColumns: number;
     keypadRows: number;
+    buttonFlags: Record<string, boolean>;
   };
   unlocks: UnlockState;
   completedUnlockIds: string[];
@@ -211,6 +224,11 @@ export type SetKeypadDimensionsAction = {
   rows: number;
 };
 
+export type ToggleFlagAction = {
+  type: "TOGGLE_FLAG";
+  flag: string;
+};
+
 export type Action =
   | PressKeyAction
   | ResetRunAction
@@ -220,7 +238,8 @@ export type Action =
   | SwapKeySlotsAction
   | MoveLayoutCellAction
   | SwapLayoutCellsAction
-  | SetKeypadDimensionsAction;
+  | SetKeypadDimensionsAction
+  | ToggleFlagAction;
 
 export type Store = {
   getState: () => GameState;

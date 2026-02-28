@@ -8,6 +8,7 @@ import {
   applySwapLayoutCells,
 } from "../../src/domain/reducer.layout.js";
 import { applyLifecycleAction } from "../../src/domain/reducer.lifecycle.js";
+import { applyToggleFlag } from "../../src/domain/reducer.flags.js";
 import type { GameState } from "../../src/domain/types.js";
 import { actionFromEvent, type DomainEvent } from "./events.js";
 
@@ -36,6 +37,9 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
   }
   if (action.type === "SET_KEYPAD_DIMENSIONS") {
     return applySetKeypadDimensions(state, action.columns, action.rows);
+  }
+  if (action.type === "TOGGLE_FLAG") {
+    return applyToggleFlag(state, action.flag);
   }
   return state;
 };

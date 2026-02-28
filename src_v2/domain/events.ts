@@ -15,7 +15,8 @@ export type DomainEvent =
       toSurface: "keypad" | "storage";
       toIndex: number;
     }
-  | { type: "KeypadDimensionsSet"; columns: number; rows: number };
+  | { type: "KeypadDimensionsSet"; columns: number; rows: number }
+  | { type: "FlagToggled"; flag: string };
 
 export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "PRESS_KEY") {
@@ -54,11 +55,14 @@ export const eventFromAction = (action: Action): DomainEvent => {
       toIndex: action.toIndex,
     };
   }
-  return {
-    type: "KeypadDimensionsSet",
-    columns: action.columns,
-    rows: action.rows,
-  };
+  if (action.type === "SET_KEYPAD_DIMENSIONS") {
+    return {
+      type: "KeypadDimensionsSet",
+      columns: action.columns,
+      rows: action.rows,
+    };
+  }
+  return { type: "FlagToggled", flag: action.flag };
 };
 
 export const actionFromEvent = (event: DomainEvent): Action => {
@@ -98,9 +102,12 @@ export const actionFromEvent = (event: DomainEvent): Action => {
       toIndex: event.toIndex,
     };
   }
-  return {
-    type: "SET_KEYPAD_DIMENSIONS",
-    columns: event.columns,
-    rows: event.rows,
-  };
+  if (event.type === "KeypadDimensionsSet") {
+    return {
+      type: "SET_KEYPAD_DIMENSIONS",
+      columns: event.columns,
+      rows: event.rows,
+    };
+  }
+  return { type: "TOGGLE_FLAG", flag: event.flag };
 };

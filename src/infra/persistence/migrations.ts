@@ -91,6 +91,7 @@ export type SerializableStateV5 = {
     storageLayout: Array<KeyCell | null>;
     keypadColumns: number;
     keypadRows: number;
+    buttonFlags: Record<string, boolean>;
   };
   unlocks: UnlockState;
   completedUnlockIds: string[];
@@ -102,7 +103,7 @@ const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
 const UTILITY_KEY_VALUES = ["C", "CE"] as const;
-const EXEC_KEY_VALUES = ["="] as const;
+const EXEC_KEY_VALUES = ["=", "\u23EF"] as const;
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
   ...SLOT_OPERATOR_VALUES,
@@ -124,6 +125,21 @@ const isRationalString = (value: unknown): value is string => isString(value) &&
 const isSlotOperator = (value: unknown): value is Slot["operator"] =>
   isString(value) && SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
 const isKnownKey = (value: unknown): value is Key => isString(value) && KEY_VALUES.includes(value as Key);
+const isBooleanRecord = (value: unknown): value is Record<string, boolean> =>
+  isObject(value) && Object.values(value).every(isBoolean);
+
+const normalizeButtonFlags = (value: unknown): Record<string, boolean> => {
+  if (!isObject(value)) {
+    return {};
+  }
+  const normalized: Record<string, boolean> = {};
+  for (const [key, enabled] of Object.entries(value)) {
+    if (key.trim().length > 0 && isBoolean(enabled)) {
+      normalized[key] = enabled;
+    }
+  }
+  return normalized;
+};
 
 const hasOnlyKnownLayoutCells = (layout: unknown): layout is LayoutCell[] =>
   Array.isArray(layout) &&
@@ -210,6 +226,48 @@ const normalizeStorageSlots = (
     }
   }
   return nextSlots;
+};
+
+const collectLayoutKeys = (layout: LayoutCell[]): Set<Key> => {
+  const keys = new Set<Key>();
+  for (const cell of layout) {
+    if (cell.kind === "key") {
+      keys.add(cell.key);
+    }
+  }
+  return keys;
+};
+
+const collectOverflowStorageCandidates = (
+  layout: LayoutCell[],
+  keepLength: number,
+  disallowedKeys: Set<Key>,
+): KeyCell[] => {
+  const overflow: KeyCell[] = [];
+  for (const cell of layout.slice(keepLength)) {
+    if (cell.kind !== "key") {
+      continue;
+    }
+    if (disallowedKeys.has(cell.key)) {
+      continue;
+    }
+    disallowedKeys.add(cell.key);
+    overflow.push({ kind: "key", key: cell.key });
+  }
+  return overflow;
+};
+
+const appendKeysIntoStorage = (storageLayout: Array<KeyCell | null>, keys: KeyCell[]): Array<KeyCell | null> => {
+  const nextStorage = [...storageLayout];
+  for (const keyCell of keys) {
+    const emptyIndex = nextStorage.findIndex((cell) => cell === null);
+    if (emptyIndex >= 0) {
+      nextStorage[emptyIndex] = keyCell;
+      continue;
+    }
+    nextStorage.push(keyCell);
+  }
+  return nextStorage;
 };
 
 const normalizeUnlockCap = (value: unknown, fallback: number, min: number, max: number): number => {
@@ -306,13 +364,23 @@ export const migrateV3ToV4 = (input: SerializableStateV3): SerializableStateV4 =
 export const migrateV4ToV5 = (input: SerializableStateV4): SerializableStateV5 => {
   const keypadColumns = KEYPAD_DEFAULT_COLUMNS;
   const keypadRows = KEYPAD_DEFAULT_ROWS;
+  const targetLength = Math.max(1, keypadColumns * keypadRows);
+  const normalizedKeyLayout = normalizeKeypadLayoutForDimensions(input.ui.keyLayout, keypadColumns, keypadRows);
+  const existingStorageSlots = normalizeStorageSlots(input.ui.storageLayout);
+  const knownKeys = new Set<Key>([
+    ...collectLayoutKeys(normalizedKeyLayout),
+    ...existingStorageSlots.flatMap((cell) => (cell?.kind === "key" ? [cell.key] : [])),
+  ]);
+  const overflowKeys = collectOverflowStorageCandidates(input.ui.keyLayout, targetLength, knownKeys);
+  const storageLayout = normalizeStorageSlots(appendKeysIntoStorage(existingStorageSlots, overflowKeys));
   return {
     ...input,
     ui: {
-      keyLayout: normalizeKeypadLayoutForDimensions(input.ui.keyLayout, keypadColumns, keypadRows),
-      storageLayout: normalizeStorageSlots(input.ui.storageLayout),
+      keyLayout: normalizedKeyLayout,
+      storageLayout,
       keypadColumns,
       keypadRows,
+      buttonFlags: {},
     },
   };
 };
@@ -451,7 +519,8 @@ export const validateSerializableStateV5 = (state: unknown): state is Serializab
     !hasOnlyKnownLayoutCells(ui.keyLayout) ||
     !hasOnlyKnownStorageSlots(ui.storageLayout) ||
     !isInteger(ui.keypadColumns) ||
-    !isInteger(ui.keypadRows)
+    !isInteger(ui.keypadRows) ||
+    !isBooleanRecord(ui.buttonFlags)
   ) {
     return false;
   }
@@ -520,13 +589,23 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     }
     const keypadColumns = normalizeKeypadDimension(asV5.ui?.keypadColumns, KEYPAD_DEFAULT_COLUMNS);
     const keypadRows = normalizeKeypadDimension(asV5.ui?.keypadRows, KEYPAD_DEFAULT_ROWS);
+    const targetLength = Math.max(1, keypadColumns * keypadRows);
+    const normalizedKeyLayout = normalizeKeypadLayoutForDimensions(asV5.ui.keyLayout, keypadColumns, keypadRows);
+    const existingStorageSlots = normalizeStorageSlots(asV5.ui.storageLayout);
+    const knownKeys = new Set<Key>([
+      ...collectLayoutKeys(normalizedKeyLayout),
+      ...existingStorageSlots.flatMap((cell) => (cell?.kind === "key" ? [cell.key] : [])),
+    ]);
+    const overflowKeys = collectOverflowStorageCandidates(asV5.ui.keyLayout, targetLength, knownKeys);
+    const storageLayout = normalizeStorageSlots(appendKeysIntoStorage(existingStorageSlots, overflowKeys));
     const normalizedV5: SerializableStateV5 = {
       ...asV5,
       ui: {
-        keyLayout: normalizeKeypadLayoutForDimensions(asV5.ui.keyLayout, keypadColumns, keypadRows),
-        storageLayout: normalizeStorageSlots(asV5.ui.storageLayout),
+        keyLayout: normalizedKeyLayout,
+        storageLayout,
         keypadColumns,
         keypadRows,
+        buttonFlags: normalizeButtonFlags(asV5.ui.buttonFlags),
       },
       unlocks: normalizeUnlocks(asV5.unlocks),
     };

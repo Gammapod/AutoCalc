@@ -6,6 +6,7 @@ import type {
   Action,
   EuclidRemainderEntry,
   GameState,
+  KeyButtonBehavior,
   KeyCell,
   Key,
   LayoutSurface,
@@ -118,6 +119,8 @@ declare global {
 }
 
 let previousChecklistUnlocked: boolean | null = null;
+let previousUnlockSnapshot: Record<Key, boolean> | null = null;
+let pendingToggleAnimationByFlag: Record<string, "on" | "off"> = {};
 let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 let grapherResizeObserver: ResizeObserver | null = null;
@@ -182,16 +185,65 @@ const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
   operator === "*" ? "\u00D7" : operator === "/" ? "\u00F7" : operator;
-export const formatKeyLabel = (key: Key): string =>
-  key === "NEG"
-    ? "-\u{1D465}"
-    : key === "#"
-      ? "#/⟡"
-      : key === "⟡"
-        ? "⟡"
-        : key === "*" || key === "/"
-          ? formatOperatorForDisplay(key)
-          : key;
+
+export const formatKeyLabel = (key: Key): string => {
+  if (key === "NEG") {
+    return "-\u{1D465}";
+  }
+  if (key === "\u23EF") {
+    return "\u23F5\uFE0E";
+  }
+  if (key === "#") {
+    return "#/\u27E1";
+  }
+  if (key === "\u27E1") {
+    return "\u27E1";
+  }
+  if (key === "*" || key === "/") {
+    return formatOperatorForDisplay(key);
+  }
+  return key;
+};
+
+const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
+
+export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => cell.behavior ?? PRESS_KEY_BEHAVIOR;
+
+export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => {
+  const behavior = getKeyButtonBehavior(cell);
+  return behavior.type === "toggle_flag" ? Boolean(state.ui.buttonFlags[behavior.flag]) : false;
+};
+
+export const formatKeyCellLabel = (state: GameState, cell: KeyCell): string => {
+  if (cell.key === "\u23EF") {
+    return isToggleFlagActive(state, cell) ? "\u23F8\uFE0E" : "\u23F5\uFE0E";
+  }
+  return formatKeyLabel(cell.key);
+};
+
+export const buildKeyButtonAction = (state: GameState, cell: KeyCell): Action => {
+  const behavior = getKeyButtonBehavior(cell);
+  if (behavior.type === "toggle_flag") {
+    return { type: "TOGGLE_FLAG", flag: behavior.flag };
+  }
+  return { type: "PRESS_KEY", key: cell.key };
+};
+
+const queueToggleAnimation = (state: GameState, cell: KeyCell): void => {
+  const behavior = getKeyButtonBehavior(cell);
+  if (behavior.type !== "toggle_flag") {
+    return;
+  }
+  pendingToggleAnimationByFlag[behavior.flag] = isToggleFlagActive(state, cell) ? "off" : "on";
+};
+
+const readToggleAnimation = (cell: KeyCell): "on" | "off" | null => {
+  const behavior = getKeyButtonBehavior(cell);
+  if (behavior.type !== "toggle_flag") {
+    return null;
+  }
+  return pendingToggleAnimationByFlag[behavior.flag] ?? null;
+};
 
 const clampUnlockedDigits = (value: number): number =>
   Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
@@ -650,14 +702,14 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key) || key === "NEG") {
     return state.unlocks.valueExpression[key as keyof GameState["unlocks"]["valueExpression"]];
   }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "⟡") {
+  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return state.unlocks.slotOperators[key];
   }
   if (key === "C" || key === "CE") {
     return state.unlocks.utilities[key];
   }
-  if (key === "=") {
-    return state.unlocks.execution["="];
+  if (key === "=" || key === "\u23EF") {
+    return state.unlocks.execution[key];
   }
   return false;
 };
@@ -666,7 +718,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (/^\d$/.test(key) || key === "NEG") {
     return "value_expression";
   }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "⟡") {
+  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return "slot_operator";
   }
   if (key === "C" || key === "CE") {
@@ -1018,6 +1070,42 @@ const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => 
   cellElement.appendChild(slotLabel);
 };
 
+const buildUnlockSnapshot = (state: GameState): Record<Key, boolean> => {
+  const snapshot: Partial<Record<Key, boolean>> = {};
+
+  for (const [key, unlocked] of Object.entries(state.unlocks.valueExpression)) {
+    snapshot[key as Key] = unlocked;
+  }
+  for (const [key, unlocked] of Object.entries(state.unlocks.slotOperators)) {
+    snapshot[key as Key] = unlocked;
+  }
+  for (const [key, unlocked] of Object.entries(state.unlocks.utilities)) {
+    snapshot[key as Key] = unlocked;
+  }
+  for (const [key, unlocked] of Object.entries(state.unlocks.execution)) {
+    snapshot[key as Key] = unlocked;
+  }
+
+  return snapshot as Record<Key, boolean>;
+};
+
+const getNewlyUnlockedKeys = (state: GameState): Set<Key> => {
+  const currentSnapshot = buildUnlockSnapshot(state);
+  if (!previousUnlockSnapshot) {
+    previousUnlockSnapshot = currentSnapshot;
+    return new Set<Key>();
+  }
+
+  const newlyUnlocked = new Set<Key>();
+  for (const key of Object.keys(currentSnapshot) as Key[]) {
+    if (!previousUnlockSnapshot[key] && currentSnapshot[key]) {
+      newlyUnlocked.add(key);
+    }
+  }
+  previousUnlockSnapshot = currentSnapshot;
+  return newlyUnlocked;
+};
+
 export const render = (root: Element, state: GameState, dispatch: (action: Action) => unknown): void => {
   const totalEl = root.querySelector("[data-total]");
   const slotEl = root.querySelector("[data-slot]");
@@ -1029,6 +1117,8 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl || !storageEl) {
     throw new Error("UI mount points are missing.");
   }
+
+  const newlyUnlockedKeys = getNewlyUnlockedKeys(state);
 
   ensureGrapherHeightSync(root);
   renderGraphDisplay(root, state.calculator.roll);
@@ -1102,7 +1192,19 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     button.type = "button";
     button.className = "key key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    button.textContent = formatKeyLabel(cell.key);
+    if (newlyUnlockedKeys.has(cell.key)) {
+      button.classList.add("key--unlock-animate");
+    }
+    button.textContent = formatKeyCellLabel(state, cell);
+    const keypadToggleActive = isToggleFlagActive(state, cell);
+    button.classList.toggle("key--toggle-active", keypadToggleActive);
+    const keypadToggleAnimation = readToggleAnimation(cell);
+    if (keypadToggleAnimation === "on") {
+      button.classList.add("key--toggle-animate-on");
+    } else if (keypadToggleAnimation === "off") {
+      button.classList.add("key--toggle-animate-off");
+    }
+    button.setAttribute("aria-pressed", keypadToggleActive ? "true" : "false");
     button.disabled = false;
     bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
@@ -1110,7 +1212,8 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       if (shouldSuppressClick()) {
         return;
       }
-      dispatch({ type: "PRESS_KEY", key: cell.key });
+      queueToggleAnimation(state, cell);
+      dispatch(buildKeyButtonAction(state, cell));
     });
     keysEl.appendChild(button);
   }
@@ -1147,20 +1250,28 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
 
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "key key--storage key--draggable";
+    button.className = "key key--storage key--storage-unlocked key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    button.textContent = formatKeyLabel(cell.key);
+    if (newlyUnlockedKeys.has(cell.key)) {
+      button.classList.add("key--unlock-animate");
+    }
+    button.textContent = formatKeyCellLabel(state, cell);
+    const storageToggleActive = isToggleFlagActive(state, cell);
+    button.classList.toggle("key--toggle-active", storageToggleActive);
+    const storageToggleAnimation = readToggleAnimation(cell);
+    if (storageToggleAnimation === "on") {
+      button.classList.add("key--toggle-animate-on");
+    } else if (storageToggleAnimation === "off") {
+      button.classList.add("key--toggle-animate-off");
+    }
+    button.setAttribute("aria-pressed", storageToggleActive ? "true" : "false");
     button.disabled = false;
     bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
-    button.addEventListener("click", () => {
-      if (shouldSuppressClick()) {
-        return;
-      }
-      dispatch({ type: "PRESS_KEY", key: cell.key });
-    });
     storageEl.appendChild(button);
   }
+
+  pendingToggleAnimationByFlag = {};
 
   if (dragSession?.active) {
     const sourceNode = findDragTargetElement(dragSession.source);
@@ -1172,3 +1283,8 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     }
   }
 };
+
+
+
+
+

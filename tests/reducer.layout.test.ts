@@ -10,29 +10,31 @@ export const runReducerLayoutTests = (): void => {
 
   const baseline = initialState();
   const baselineLayout = baseline.ui.keyLayout;
-  assert.equal(
-    baselineLayout.some((cell) => cell.kind === "key"),
-    false,
-    "default keypad starts empty and all keys begin in storage",
+  assert.deepEqual(
+    baselineLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
+    ["1", "+", "="],
+    "default keypad starts with 1, +, = in slots 1-3",
   );
   assert.ok(
     baseline.ui.storageLayout.some((cell) => cell?.key === "*"),
     "default storage includes mul key",
   );
 
-  const moved = reducer(baseline, { type: "MOVE_KEY_SLOT", fromIndex: 0, toIndex: 3 });
+  const lastKeypadIndex = baselineLayout.length - 1;
+
+  const moved = reducer(baseline, { type: "MOVE_KEY_SLOT", fromIndex: 0, toIndex: lastKeypadIndex });
   assert.equal(moved.ui.keyLayout.length, baselineLayout.length, "move preserves layout length");
   assert.deepEqual(
-    moved.ui.keyLayout.slice(0, 4).map((cell) => (cell.kind === "key" ? cell.key : cell.area)),
-    ["empty", "empty", "empty", "empty"],
-    "legacy move shifts placeholders and reinserts moved placeholder in empty keypad",
+    moved.ui.keyLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
+    ["+", "=", "1"],
+    "legacy move reorders keypad cells",
   );
 
   const swapped = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: 0, secondIndex: 1 });
   assert.deepEqual(
-    swapped.ui.keyLayout.slice(0, 2).map((cell) => (cell.kind === "key" ? cell.key : cell.area)),
-    ["empty", "empty"],
-    "legacy swap exchanges placeholder slots",
+    swapped.ui.keyLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
+    ["+", "1", "="],
+    "legacy swap exchanges selected keypad slots",
   );
 
   const invalidMove = reducer(baseline, { type: "MOVE_KEY_SLOT", fromIndex: -1, toIndex: 2 });
@@ -41,57 +43,59 @@ export const runReducerLayoutTests = (): void => {
   const invalidSwap = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: 2, secondIndex: 99 });
   assert.equal(invalidSwap, baseline, "invalid swap index returns original state reference");
 
-  const noOpSwap = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: 4, secondIndex: 4 });
+  const noOpSwap = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: lastKeypadIndex, secondIndex: lastKeypadIndex });
   assert.equal(noOpSwap, baseline, "same-index swap is a no-op");
 
-  const toKeypadMove = reducer(baseline, {
+  const baselineWithSpace = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 1 });
+
+  const toKeypadMove = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
     fromIndex: 0,
     toSurface: "keypad",
-    toIndex: 2,
+    toIndex: 3,
   });
-  assert.equal(toKeypadMove.ui.keyLayout[2]?.kind, "key", "storage key can move onto empty keypad slot");
-  assert.equal(toKeypadMove.ui.keyLayout[2]?.key, "CE", "moved storage key lands in keypad destination slot");
+  assert.equal(toKeypadMove.ui.keyLayout[3]?.kind, "key", "storage key can move onto empty keypad slot");
+  assert.equal(toKeypadMove.ui.keyLayout[3]?.key, "CE", "moved storage key lands in keypad destination slot");
   assert.equal(toKeypadMove.ui.storageLayout[0], null, "moving from storage clears source storage slot");
 
   const backToStorage = reducer(toKeypadMove, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "keypad",
-    fromIndex: 2,
+    fromIndex: 3,
     toSurface: "storage",
     toIndex: 0,
   });
-  assert.equal(backToStorage.ui.keyLayout[2]?.kind, "placeholder", "moving keypad key to storage clears keypad source");
+  assert.equal(backToStorage.ui.keyLayout[3]?.kind, "placeholder", "moving keypad key to storage clears keypad source");
   assert.equal(backToStorage.ui.storageLayout[0]?.key, "CE", "moving keypad key to storage fills storage destination");
 
   const keypadPrepared = reducer(
-    reducer(baseline, {
+    reducer(baselineWithSpace, {
       type: "MOVE_LAYOUT_CELL",
       fromSurface: "storage",
       fromIndex: 0,
       toSurface: "keypad",
-      toIndex: 2,
+      toIndex: 3,
     }),
     {
       type: "MOVE_LAYOUT_CELL",
       fromSurface: "storage",
       fromIndex: 1,
       toSurface: "keypad",
-      toIndex: 3,
+      toIndex: 0,
     },
   );
   const swapWithinKeypad = reducer(keypadPrepared, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "keypad",
-    fromIndex: 2,
+    fromIndex: 3,
     toSurface: "keypad",
-    toIndex: 3,
+    toIndex: 0,
   });
-  assert.equal(swapWithinKeypad.ui.keyLayout[2]?.kind, "key", "swap preserves key occupancy in source slot");
-  assert.equal(swapWithinKeypad.ui.keyLayout[3]?.kind, "key", "swap preserves key occupancy in destination slot");
+  assert.equal(swapWithinKeypad.ui.keyLayout[3]?.kind, "key", "swap preserves key occupancy in source slot");
+  assert.equal(swapWithinKeypad.ui.keyLayout[0]?.kind, "key", "swap preserves key occupancy in destination slot");
 
-  const storagePrepared = reducer(baseline, {
+  const storagePrepared = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
     fromIndex: 0,
@@ -134,17 +138,17 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.equal(invalidSurfaceMove, baseline, "invalid surface indices are rejected");
 
-  const movedForInvariant = reducer(baseline, {
+  const movedForInvariant = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
     fromIndex: 0,
     toSurface: "keypad",
-    toIndex: 2,
+    toIndex: 3,
   });
-  const baselineSnapshot = keySnapshot(baseline);
+  const baselineSnapshot = keySnapshot(baselineWithSpace);
   const movedSnapshot = keySnapshot(movedForInvariant);
   for (let index = 0; index < baselineSnapshot.keypad.length; index += 1) {
-    if (index === 2) {
+    if (index === 3) {
       continue;
     }
     assert.equal(
@@ -169,12 +173,12 @@ export const runReducerLayoutTests = (): void => {
     fromSurface: "storage",
     fromIndex: 1,
     toSurface: "keypad",
-    toIndex: 2,
+    toIndex: 3,
   });
   const beforeSwapSnapshot = keySnapshot(movedForInvariant);
   const afterSwapSnapshot = keySnapshot(swappedForInvariant);
   for (let index = 0; index < beforeSwapSnapshot.keypad.length; index += 1) {
-    if (index === 2) {
+    if (index === 3) {
       continue;
     }
     assert.equal(
@@ -199,7 +203,7 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(resizedBigger.ui.keypadRows, 4, "set keypad dimensions updates rows");
   assert.equal(resizedBigger.ui.keyLayout.length, 20, "resizing up appends placeholder slots");
   assert.ok(
-    resizedBigger.ui.keyLayout.slice(12).every((cell) => cell.kind === "placeholder"),
+    resizedBigger.ui.keyLayout.slice(baselineLayout.length).every((cell) => cell.kind === "placeholder"),
     "resized-up slots are placeholders",
   );
 

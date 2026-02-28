@@ -4,6 +4,7 @@ import {
   KEYPAD_DEFAULT_ROWS,
   SAVE_KEY,
   SAVE_SCHEMA_VERSION,
+  STORAGE_COLUMNS,
   STORAGE_INITIAL_SLOTS,
   defaultKeyLayout,
   initialState,
@@ -32,6 +33,13 @@ const createMemoryStorage = (): MemoryStorage => {
 };
 
 export const runPersistenceTests = (): void => {
+  const hasKeyInUi = (loadedState: ReturnType<typeof initialState>, key: string): boolean =>
+    loadedState.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === key) ||
+    loadedState.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === key);
+  const countKeyInUi = (loadedState: ReturnType<typeof initialState>, key: string): number =>
+    loadedState.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === key).length +
+    loadedState.ui.storageLayout.filter((cell) => cell?.kind === "key" && cell.key === key).length;
+
   const storage = createMemoryStorage();
   const repo = createLocalStorageRepo(storage);
 
@@ -104,12 +112,12 @@ export const runPersistenceTests = (): void => {
   assert.equal(
     loadedLegacy.ui.keyLayout.length,
     KEYPAD_DEFAULT_COLUMNS * KEYPAD_DEFAULT_ROWS,
-    "legacy saves hydrate resized 4x3 keypad layout",
+    "legacy saves hydrate resized keypad layout",
   );
-  assert.equal(
-    loadedLegacy.ui.storageLayout.length,
-    STORAGE_INITIAL_SLOTS,
-    "legacy saves hydrate fixed storage slots",
+  assert.ok(
+    loadedLegacy.ui.storageLayout.length >= STORAGE_INITIAL_SLOTS &&
+      loadedLegacy.ui.storageLayout.length % STORAGE_COLUMNS === 0,
+    "legacy saves hydrate normalized storage slots",
   );
   assert.equal(loadedLegacy.ui.keypadColumns, KEYPAD_DEFAULT_COLUMNS, "legacy saves default keypad columns");
   assert.equal(loadedLegacy.ui.keypadRows, KEYPAD_DEFAULT_ROWS, "legacy saves default keypad rows");
@@ -211,10 +219,10 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loadedV2.calculator.total, r(5n, 2n), "v2 payload migrates total to runtime rational");
   assert.equal(loadedV2.calculator.pendingNegativeTotal, true, "v2 payload preserves pending negative total");
   assert.deepEqual(loadedV2.calculator.roll, [r(1n), r(5n, 2n)], "v2 payload migrates roll");
-  assert.equal(
-    loadedV2.ui.storageLayout.length,
-    STORAGE_INITIAL_SLOTS,
-    "v2 payload migrates to fixed storage slots",
+  assert.ok(
+    loadedV2.ui.storageLayout.length >= STORAGE_INITIAL_SLOTS &&
+      loadedV2.ui.storageLayout.length % STORAGE_COLUMNS === 0,
+    "v2 payload migrates to normalized storage slots",
   );
 
   const legacyPackedStorage = createMemoryStorage();
@@ -247,10 +255,10 @@ export const runPersistenceTests = (): void => {
     throw new Error("Expected v3 packed storage payload to hydrate.");
   }
   assert.equal(loadedLegacyPackedStorage.ui.storageLayout[0]?.kind, "key", "v3 packed storage first key is preserved");
-  assert.equal(
-    loadedLegacyPackedStorage.ui.storageLayout.length,
-    STORAGE_INITIAL_SLOTS,
-    "v3 packed storage migrates to fixed slot row",
+  assert.ok(
+    loadedLegacyPackedStorage.ui.storageLayout.length >= STORAGE_INITIAL_SLOTS &&
+      loadedLegacyPackedStorage.ui.storageLayout.length % STORAGE_COLUMNS === 0,
+    "v3 packed storage migrates to normalized slot rows",
   );
 
   const legacyLayoutStorage = createMemoryStorage();
@@ -318,11 +326,11 @@ export const runPersistenceTests = (): void => {
     throw new Error("Expected legacy mul layout payload to hydrate.");
   }
   assert.ok(
-    loadedLegacyMulLayout.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === "*"),
-    "legacy mul placeholder migrates to mul key",
+    hasKeyInUi(loadedLegacyMulLayout, "*"),
+    "legacy mul placeholder migrates to mul key in keypad or storage",
   );
   assert.equal(
-    loadedLegacyMulLayout.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "*").length,
+    countKeyInUi(loadedLegacyMulLayout, "*"),
     1,
     "mul key migration does not duplicate key entries",
   );
@@ -357,8 +365,8 @@ export const runPersistenceTests = (): void => {
     throw new Error("Expected legacy div layout payload to hydrate.");
   }
   assert.ok(
-    loadedLegacyDivLayout.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === "/"),
-    "legacy div placeholder migrates to div key",
+    hasKeyInUi(loadedLegacyDivLayout, "/"),
+    "legacy div placeholder migrates to div key in keypad or storage",
   );
 
   const legacyModLayoutStorage = createMemoryStorage();
@@ -391,8 +399,8 @@ export const runPersistenceTests = (): void => {
     throw new Error("Expected legacy mod layout payload to hydrate.");
   }
   assert.ok(
-    loadedLegacyModLayout.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === "⟡"),
-    "legacy mod placeholder migrates to modulo key",
+    hasKeyInUi(loadedLegacyModLayout, "⟡"),
+    "legacy mod placeholder migrates to modulo key in keypad or storage",
   );
 
   const legacyEuclidLayoutStorage = createMemoryStorage();
@@ -425,8 +433,8 @@ export const runPersistenceTests = (): void => {
     throw new Error("Expected legacy euclidean layout payload to hydrate.");
   }
   assert.ok(
-    loadedLegacyEuclidLayout.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === "#"),
-    "legacy euclid placeholder migrates to euclidean key",
+    hasKeyInUi(loadedLegacyEuclidLayout, "#"),
+    "legacy euclid placeholder migrates to euclidean key in keypad or storage",
   );
 
   const duplicateGuardStorage = createMemoryStorage();
@@ -463,22 +471,22 @@ export const runPersistenceTests = (): void => {
     throw new Error("Expected duplicate-guard payload to hydrate.");
   }
   assert.equal(
-    loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "*").length,
+    countKeyInUi(loadedDuplicateGuard, "*"),
     1,
     "existing mul key prevents additional mul insertion",
   );
   assert.equal(
-    loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "/").length,
+    countKeyInUi(loadedDuplicateGuard, "/"),
     1,
     "existing div key prevents additional div insertion",
   );
   assert.equal(
-    loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "⟡").length,
+    countKeyInUi(loadedDuplicateGuard, "⟡"),
     1,
     "existing modulo key prevents additional modulo insertion",
   );
   assert.equal(
-    loadedDuplicateGuard.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === "#").length,
+    countKeyInUi(loadedDuplicateGuard, "#"),
     1,
     "existing euclidean key prevents additional euclidean insertion",
   );
