@@ -55,15 +55,15 @@ export const runDragDropBehaviorTests = (): void => {
   );
   assert.equal(swapAction, "swap", "dragging key onto occupied key slot is a swap");
 
-  const blockedBottomRightMove = classifyDropAction(
+  const allowedFormerBottomRightMove = classifyDropAction(
     withStorageKey,
     { surface: "storage", index: 0 },
     { surface: "keypad", index: 4 },
   );
   assert.equal(
-    blockedBottomRightMove,
-    null,
-    "dragging non-execution key into bottom-right keypad slot is rejected",
+    allowedFormerBottomRightMove,
+    "move",
+    "dragging non-execution key into any empty keypad slot is allowed",
   );
 
   const withExecutionStorageKey: GameState = {
@@ -80,55 +80,55 @@ export const runDragDropBehaviorTests = (): void => {
       storageLayout: [{ kind: "key", key: "=" }, ...withStorageKey.ui.storageLayout.slice(1)],
     },
   };
-  const allowedBottomRightMove = classifyDropAction(
-    withExecutionStorageKey,
-    { surface: "storage", index: 0 },
-    { surface: "keypad", index: 4 },
-  );
-  assert.equal(
-    allowedBottomRightMove,
-    "move",
-    "dragging execution key into bottom-right keypad slot is allowed",
-  );
-
-  const blockedExecutionToNonBottomRightMove = classifyDropAction(
+  const blockedSecondExecutionMove = classifyDropAction(
     withExecutionStorageKey,
     { surface: "storage", index: 0 },
     { surface: "keypad", index: 3 },
   );
   assert.equal(
-    blockedExecutionToNonBottomRightMove,
+    blockedSecondExecutionMove,
     null,
-    "dragging execution key into non-bottom-right keypad slot is rejected",
+    "dragging an execution key onto keypad is rejected when keypad already has one execution key",
   );
 
-  const withExecutionAtBottomRight: GameState = {
-    ...withStorageKey,
+  const withExecutionMovedOffKeypad: GameState = {
+    ...withExecutionStorageKey,
     unlocks: {
-      ...withStorageKey.unlocks,
+      ...withExecutionStorageKey.unlocks,
       execution: {
-        ...withStorageKey.unlocks.execution,
+        ...withExecutionStorageKey.unlocks.execution,
         "=": true,
       },
     },
     ui: {
-      ...withStorageKey.ui,
-      keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
-        index === 2 ? ({ kind: "placeholder", area: "empty" } as const) : index === 4 ? ({ kind: "key", key: "=" } as const) : cell,
+      ...withExecutionStorageKey.ui,
+      keyLayout: withExecutionStorageKey.ui.keyLayout.map((cell, index) =>
+        index === 0 ? ({ kind: "placeholder", area: "empty" } as const) : cell,
       ),
     },
   };
-  const emptyStorageIndex = withExecutionAtBottomRight.ui.storageLayout.findIndex((cell) => cell === null);
+  const allowedFirstExecutionMove = classifyDropAction(
+    withExecutionMovedOffKeypad,
+    { surface: "storage", index: 0 },
+    { surface: "keypad", index: 3 },
+  );
+  assert.equal(
+    allowedFirstExecutionMove,
+    "move",
+    "dragging an execution key onto keypad is allowed when keypad currently has zero execution keys",
+  );
+
+  const emptyStorageIndex = withExecutionMovedOffKeypad.ui.storageLayout.findIndex((cell) => cell === null);
   assert.ok(emptyStorageIndex >= 0, "test state includes an empty storage slot");
-  const allowedExecutionMoveOutOfBottomRight = classifyDropAction(
-    withExecutionAtBottomRight,
-    { surface: "keypad", index: 4 },
+  const allowedExecutionMoveOutOfKeypad = classifyDropAction(
+    withStorageKey,
+    { surface: "keypad", index: 0 },
     { surface: "storage", index: emptyStorageIndex },
   );
   assert.equal(
-    allowedExecutionMoveOutOfBottomRight,
+    allowedExecutionMoveOutOfKeypad,
     "move",
-    "dragging execution key out of bottom-right slot into storage is allowed",
+    "dragging execution key out of keypad into storage is allowed",
   );
 
   const invalid = classifyDropAction(

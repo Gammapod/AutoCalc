@@ -11,6 +11,7 @@ import {
 } from "../../src/domain/reducer.layout.js";
 import { applyLifecycleAction } from "../../src/domain/reducer.lifecycle.js";
 import { applyToggleFlag } from "../../src/domain/reducer.flags.js";
+import { clearOperationEntry } from "../../src/domain/reducer.stateBuilders.js";
 import type { GameState } from "../../src/domain/types.js";
 import { actionFromEvent, type DomainEvent } from "./events.js";
 
@@ -34,14 +35,14 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
   if (action.type === "MOVE_LAYOUT_CELL") {
     const moved = applyMoveLayoutCell(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
     if (moved !== state && action.fromSurface !== action.toSurface) {
-      return applyKeyAction(moved, "C");
+      return clearOperationEntry(moved);
     }
     return moved;
   }
   if (action.type === "SWAP_LAYOUT_CELLS") {
     const swapped = applySwapLayoutCells(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
     if (swapped !== state && action.fromSurface !== action.toSurface) {
-      return applyKeyAction(swapped, "C");
+      return clearOperationEntry(swapped);
     }
     return swapped;
   }

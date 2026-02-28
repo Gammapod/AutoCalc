@@ -199,20 +199,44 @@ const isStorageOutcomeValid = (
   return isStorageLayoutValid(nextStorage);
 };
 
-const isKeyPlacementValid = (state: GameState, surface: LayoutSurface, index: number, key: KeyCell["key"]): boolean => {
-  if (surface !== "keypad") {
-    return true;
+const countKeypadExecutionKeys = (state: GameState): number =>
+  state.ui.keyLayout.reduce(
+    (count, cell) => (cell.kind === "key" && isExecutionKey(cell.key) ? count + 1 : count),
+    0,
+  );
+
+const clearButtonFlag = (state: GameState, flag: string): GameState => {
+  const trimmed = flag.trim();
+  if (trimmed.length === 0 || !state.ui.buttonFlags[trimmed]) {
+    return state;
   }
-  const bottomRightIndex =
-    (state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS) * (state.ui.keypadRows || KEYPAD_DEFAULT_ROWS) - 1;
-  const isBottomRightSlot = index === bottomRightIndex;
-  if (isExecutionKey(key)) {
-    return isBottomRightSlot;
-  }
-  return !isBottomRightSlot;
+  const nextFlags = { ...state.ui.buttonFlags };
+  delete nextFlags[trimmed];
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      buttonFlags: nextFlags,
+    },
+  };
 };
 
-const violatesExecutionPlacementRule = (
+const clearToggleFlagWhenLeavingKeypad = (
+  state: GameState,
+  keyCell: KeyCell,
+  fromSurface: LayoutSurface,
+  toSurface: LayoutSurface,
+): GameState => {
+  if (fromSurface !== "keypad" || toSurface !== "storage") {
+    return state;
+  }
+  if (keyCell.behavior?.type !== "toggle_flag") {
+    return state;
+  }
+  return clearButtonFlag(state, keyCell.behavior.flag);
+};
+
+const violatesExecutionCountRule = (
   state: GameState,
   fromSurface: LayoutSurface,
   fromIndex: number,
@@ -221,13 +245,27 @@ const violatesExecutionPlacementRule = (
   toIndex: number,
   destinationKey?: KeyCell["key"],
 ): boolean => {
-  if (!isKeyPlacementValid(state, toSurface, toIndex, sourceKey)) {
-    return true;
+  let nextExecutionCount = countKeypadExecutionKeys(state);
+  const sourceIsExecution = isExecutionKey(sourceKey);
+  const destinationIsExecution = destinationKey ? isExecutionKey(destinationKey) : false;
+
+  if (sourceIsExecution && fromSurface === "keypad") {
+    nextExecutionCount -= 1;
   }
-  if (destinationKey && !isKeyPlacementValid(state, fromSurface, fromIndex, destinationKey)) {
-    return true;
+  if (sourceIsExecution && toSurface === "keypad") {
+    nextExecutionCount += 1;
   }
-  return false;
+
+  if (destinationKey) {
+    if (destinationIsExecution && toSurface === "keypad") {
+      nextExecutionCount -= 1;
+    }
+    if (destinationIsExecution && fromSurface === "keypad") {
+      nextExecutionCount += 1;
+    }
+  }
+
+  return nextExecutionCount >= 2;
 };
 
 export const applyMoveKeySlot = (state: GameState, fromIndex: number, toIndex: number): GameState => {
@@ -288,7 +326,7 @@ export const applyMoveLayoutCell = (
     return state;
   }
   if (
-    violatesExecutionPlacementRule(
+    violatesExecutionCountRule(
       state,
       fromSurface,
       fromIndex,
@@ -313,7 +351,8 @@ export const applyMoveLayoutCell = (
     return state;
   }
 
-  const cleared = writeSurfaceCell(state, fromSurface, fromIndex, sourceClearedCell(fromSurface));
+  const toggledResetState = clearToggleFlagWhenLeavingKeypad(state, sourceCell, fromSurface, toSurface);
+  const cleared = writeSurfaceCell(toggledResetState, fromSurface, fromIndex, sourceClearedCell(fromSurface));
   const nextState = writeSurfaceCell(cleared, toSurface, toIndex, sourceCell);
   const allowed = [
     { surface: fromSurface, index: fromIndex },
@@ -346,7 +385,7 @@ export const applySwapLayoutCells = (
     return state;
   }
   if (
-    violatesExecutionPlacementRule(
+    violatesExecutionCountRule(
       state,
       fromSurface,
       fromIndex,
@@ -362,7 +401,9 @@ export const applySwapLayoutCells = (
     return state;
   }
 
-  const withSwappedFrom = writeSurfaceCell(state, fromSurface, fromIndex, destinationCell);
+  const sourceReset = clearToggleFlagWhenLeavingKeypad(state, sourceCell, fromSurface, toSurface);
+  const destinationReset = clearToggleFlagWhenLeavingKeypad(sourceReset, destinationCell, toSurface, fromSurface);
+  const withSwappedFrom = writeSurfaceCell(destinationReset, fromSurface, fromIndex, destinationCell);
   const nextState = writeSurfaceCell(withSwappedFrom, toSurface, toIndex, sourceCell);
   const allowed = [
     { surface: fromSurface, index: fromIndex },

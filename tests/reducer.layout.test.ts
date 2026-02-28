@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
-import { initialState } from "../src/domain/state.js";
+import { GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
+import type { GameState } from "../src/domain/types.js";
 
 export const runReducerLayoutTests = (): void => {
   const keySnapshot = (state: ReturnType<typeof initialState>): { keypad: Array<string | null>; storage: Array<string | null> } => ({
@@ -71,22 +72,26 @@ export const runReducerLayoutTests = (): void => {
   );
   assert.equal(backToStorage.ui.storageLayout[0]?.key, "CE", "moving keypad key to storage fills storage destination");
 
-  const cUnlockedWithRoll = {
+  const ceLockedWithEntryState: GameState = {
     ...baselineWithSpace,
     calculator: {
       ...baselineWithSpace.calculator,
       total: { num: 7n, den: 1n },
       roll: [{ num: 7n, den: 1n }],
+      euclidRemainders: [{ rollIndex: 0, value: { num: 1n, den: 1n } }],
+      operationSlots: [{ operator: "+", operand: 3n }],
+      draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
     },
     unlocks: {
       ...baselineWithSpace.unlocks,
       utilities: {
         ...baselineWithSpace.unlocks.utilities,
         C: true,
+        CE: false,
       },
     },
   };
-  const sameSurfaceMoveNoC = reducer(cUnlockedWithRoll, {
+  const sameSurfaceMoveNoCE = reducer(ceLockedWithEntryState, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "keypad",
     fromIndex: 1,
@@ -94,21 +99,64 @@ export const runReducerLayoutTests = (): void => {
     toIndex: emptyKeypadIndex,
   });
   assert.deepEqual(
-    sameSurfaceMoveNoC.calculator.total,
-    cUnlockedWithRoll.calculator.total,
-    "keypad-only move does not trigger C",
+    sameSurfaceMoveNoCE.calculator.total,
+    ceLockedWithEntryState.calculator.total,
+    "keypad-only move does not trigger CE-style clear entry",
   );
-  assert.equal(sameSurfaceMoveNoC.calculator.roll.length, 1, "keypad-only move preserves roll");
+  assert.equal(sameSurfaceMoveNoCE.calculator.roll.length, 1, "keypad-only move preserves roll");
 
-  const acrossSurfaceMoveTriggersC = reducer(cUnlockedWithRoll, {
+  const acrossSurfaceMoveTriggersCEStyle = reducer(ceLockedWithEntryState, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
     fromIndex: 0,
     toSurface: "keypad",
     toIndex: emptyKeypadIndex,
   });
-  assert.deepEqual(acrossSurfaceMoveTriggersC.calculator.total, { num: 0n, den: 1n }, "cross-surface move triggers C reset");
-  assert.equal(acrossSurfaceMoveTriggersC.calculator.roll.length, 0, "cross-surface move clears roll via C");
+  assert.deepEqual(
+    acrossSurfaceMoveTriggersCEStyle.calculator.total,
+    { num: 7n, den: 1n },
+    "cross-surface move triggers CE-style clear entry and preserves total",
+  );
+  assert.equal(acrossSurfaceMoveTriggersCEStyle.calculator.roll.length, 0, "cross-surface move clears roll via CE-style clear entry");
+  assert.equal(
+    acrossSurfaceMoveTriggersCEStyle.calculator.euclidRemainders.length,
+    0,
+    "cross-surface move clears euclid remainders via CE-style clear entry",
+  );
+  assert.equal(
+    acrossSurfaceMoveTriggersCEStyle.calculator.operationSlots.length,
+    0,
+    "cross-surface move clears operation slots via CE-style clear entry",
+  );
+  assert.equal(
+    acrossSurfaceMoveTriggersCEStyle.calculator.draftingSlot,
+    null,
+    "cross-surface move clears drafting slot via CE-style clear entry",
+  );
+
+  const graphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "GRAPH");
+  assert.ok(graphStorageIndex >= 0, "baseline storage includes GRAPH key");
+  const graphMovedToKeypad = reducer(baselineWithSpace, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "storage",
+    fromIndex: graphStorageIndex,
+    toSurface: "keypad",
+    toIndex: emptyKeypadIndex,
+  });
+  const graphToggledOn = reducer(graphMovedToKeypad, { type: "TOGGLE_FLAG", flag: GRAPH_VISIBLE_FLAG });
+  assert.equal(Boolean(graphToggledOn.ui.buttonFlags[GRAPH_VISIBLE_FLAG]), true, "GRAPH toggle can be enabled on keypad");
+  const graphMoveBackToStorage = reducer(graphToggledOn, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad",
+    fromIndex: emptyKeypadIndex,
+    toSurface: "storage",
+    toIndex: graphStorageIndex,
+  });
+  assert.equal(
+    Boolean(graphMoveBackToStorage.ui.buttonFlags[GRAPH_VISIBLE_FLAG]),
+    false,
+    "moving toggled GRAPH off keypad clears its toggle flag",
+  );
 
   const swapWithinKeypad = reducer(toKeypadMove, {
     type: "SWAP_LAYOUT_CELLS",
@@ -146,59 +194,68 @@ export const runReducerLayoutTests = (): void => {
   );
   assert.equal(swapAcross.ui.keyLayout[emptyKeypadIndex]?.key, "C", "swap across surfaces places storage key into keypad");
 
-  const bottomRightIndex = baselineWithSpace.ui.keyLayout.length - 1;
+  const executionKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex(
+    (cell) => cell.kind === "key" && (cell.key === "=" || cell.key === "++" || cell.key === "\u23EF"),
+  );
   const firstStorageEmptyIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell === null);
   const firstStorageExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "=");
+  const firstStorageNonExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex(
+    (cell) => !!cell && cell.key !== "=" && cell.key !== "++" && cell.key !== "\u23EF",
+  );
+  const firstEmptyKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
+  assert.ok(executionKeypadIndex >= 0, "baseline keypad includes an execution key");
   assert.ok(firstStorageEmptyIndex >= 0, "baseline storage includes at least one empty slot");
   assert.ok(firstStorageExecutionIndex >= 0, "baseline storage includes execution key in storage");
+  assert.ok(firstStorageNonExecutionIndex >= 0, "baseline storage includes a non-execution key");
+  assert.ok(firstEmptyKeypadIndex >= 0, "baseline keypad includes an empty slot");
 
-  const validBottomRightMoveOutToStorage = reducer(baselineWithSpace, {
+  const validExecutionMoveOutToStorage = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "keypad",
-    fromIndex: bottomRightIndex,
+    fromIndex: executionKeypadIndex,
     toSurface: "storage",
     toIndex: firstStorageEmptyIndex,
   });
   assert.equal(
-    validBottomRightMoveOutToStorage.ui.keyLayout[bottomRightIndex]?.kind,
+    validExecutionMoveOutToStorage.ui.keyLayout[executionKeypadIndex]?.kind,
     "placeholder",
-    "moving execution key out of bottom-right slot into storage is allowed",
+    "moving execution key out of keypad into storage is allowed",
   );
   assert.equal(
-    validBottomRightMoveOutToStorage.ui.storageLayout[firstStorageEmptyIndex]?.key,
+    validExecutionMoveOutToStorage.ui.storageLayout[firstStorageEmptyIndex]?.key,
     "++",
-    "moving execution key out of bottom-right slot places it into storage",
+    "moving execution key out of keypad places it into storage",
   );
 
-  const invalidBottomRightMove = reducer(baselineWithSpace, {
+  const invalidSecondExecutionMove = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
-    fromIndex: 0,
+    fromIndex: firstStorageExecutionIndex,
     toSurface: "keypad",
-    toIndex: bottomRightIndex,
+    toIndex: firstEmptyKeypadIndex,
   });
   assert.equal(
-    invalidBottomRightMove,
+    invalidSecondExecutionMove,
     baselineWithSpace,
-    "moving non-execution key into bottom-right slot is rejected",
+    "moving a second execution key onto keypad is rejected",
   );
 
-  const validBottomRightSwapWithExecution = reducer(baselineWithSpace, {
+  const validExecutionSwap = reducer(baselineWithSpace, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "storage",
     fromIndex: firstStorageExecutionIndex,
     toSurface: "keypad",
-    toIndex: bottomRightIndex,
+    toIndex: executionKeypadIndex,
   });
   assert.equal(
-    validBottomRightSwapWithExecution.ui.keyLayout[bottomRightIndex]?.kind === "key"
-      ? validBottomRightSwapWithExecution.ui.keyLayout[bottomRightIndex].key
+    validExecutionSwap.ui.keyLayout[executionKeypadIndex]?.kind === "key"
+      ? validExecutionSwap.ui.keyLayout[executionKeypadIndex].key
       : null,
     "=",
-    "swapping execution key into bottom-right slot is allowed even when storage receives an execution key",
+    "swapping execution key with execution key is allowed because keypad execution count stays at one",
   );
 
-  const invalidExecutionToNonBottomRightSwap = reducer(toKeypadMove, {
+  const invalidSecondExecutionSwap = reducer(toKeypadMove, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "storage",
     fromIndex: firstStorageExecutionIndex,
@@ -206,33 +263,103 @@ export const runReducerLayoutTests = (): void => {
     toIndex: emptyKeypadIndex,
   });
   assert.equal(
-    invalidExecutionToNonBottomRightSwap,
+    invalidSecondExecutionSwap,
     toKeypadMove,
-    "swapping execution key into non-bottom-right slot is rejected",
+    "swapping execution key into keypad is rejected when it would create two execution keys on keypad",
   );
 
-  const invalidBottomRightSwap = reducer(baselineWithSpace, {
+  const allowedNonExecutionSwapIntoExecutionSlot = reducer(baselineWithSpace, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "keypad",
-    fromIndex: 1,
+    fromIndex: executionKeypadIndex,
+    toSurface: "storage",
+    toIndex: firstStorageNonExecutionIndex,
+  });
+  assert.notEqual(
+    allowedNonExecutionSwapIntoExecutionSlot,
+    baselineWithSpace,
+    "swapping non-execution key onto keypad execution slot is allowed when keypad still has only one execution key",
+  );
+
+  const invalidSecondExecutionSwapOnKeypad = reducer(allowedNonExecutionSwapIntoExecutionSlot, {
+    type: "SWAP_LAYOUT_CELLS",
+    fromSurface: "storage",
+    fromIndex: firstStorageExecutionIndex,
     toSurface: "keypad",
-    toIndex: bottomRightIndex,
+    toIndex: firstEmptyKeypadIndex,
   });
   assert.equal(
-    invalidBottomRightSwap,
-    baselineWithSpace,
-    "swapping a non-execution key into bottom-right slot is rejected",
+    invalidSecondExecutionSwapOnKeypad,
+    allowedNonExecutionSwapIntoExecutionSlot,
+    "swapping in an additional execution key is rejected once keypad already has one execution key elsewhere",
   );
 
-  const acrossSurfaceSwapTriggersC = reducer(cUnlockedWithRoll, {
+  const acrossSurfaceSwapTriggersCEStyle = reducer(ceLockedWithEntryState, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "keypad",
-    fromIndex: bottomRightIndex,
+    fromIndex: executionKeypadIndex,
     toSurface: "storage",
     toIndex: firstStorageExecutionIndex,
   });
-  assert.deepEqual(acrossSurfaceSwapTriggersC.calculator.total, { num: 0n, den: 1n }, "cross-surface swap triggers C reset");
-  assert.equal(acrossSurfaceSwapTriggersC.calculator.roll.length, 0, "cross-surface swap clears roll via C");
+  assert.deepEqual(
+    acrossSurfaceSwapTriggersCEStyle.calculator.total,
+    { num: 7n, den: 1n },
+    "cross-surface swap triggers CE-style clear entry and preserves total",
+  );
+  assert.equal(acrossSurfaceSwapTriggersCEStyle.calculator.roll.length, 0, "cross-surface swap clears roll via CE-style clear entry");
+  assert.equal(
+    acrossSurfaceSwapTriggersCEStyle.calculator.euclidRemainders.length,
+    0,
+    "cross-surface swap clears euclid remainders via CE-style clear entry",
+  );
+  assert.equal(
+    acrossSurfaceSwapTriggersCEStyle.calculator.operationSlots.length,
+    0,
+    "cross-surface swap clears operation slots via CE-style clear entry",
+  );
+  assert.equal(
+    acrossSurfaceSwapTriggersCEStyle.calculator.draftingSlot,
+    null,
+    "cross-surface swap clears drafting slot via CE-style clear entry",
+  );
+
+  const swapGraphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "GRAPH");
+  assert.ok(swapGraphStorageIndex >= 0, "baseline storage includes GRAPH key for swap test");
+  const graphOnKeypadForSwap = reducer(baselineWithSpace, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "storage",
+    fromIndex: swapGraphStorageIndex,
+    toSurface: "keypad",
+    toIndex: emptyKeypadIndex,
+  });
+  const graphOnKeypadSwappedFlag = reducer(graphOnKeypadForSwap, { type: "TOGGLE_FLAG", flag: GRAPH_VISIBLE_FLAG });
+  const swapStorageTargetIndex = graphOnKeypadSwappedFlag.ui.storageLayout.findIndex((cell) => cell?.key === "C");
+  assert.ok(swapStorageTargetIndex >= 0, "storage includes C key for GRAPH swap target");
+  const graphSwappedOut = reducer(graphOnKeypadSwappedFlag, {
+    type: "SWAP_LAYOUT_CELLS",
+    fromSurface: "keypad",
+    fromIndex: emptyKeypadIndex,
+    toSurface: "storage",
+    toIndex: swapStorageTargetIndex,
+  });
+  assert.equal(
+    Boolean(graphSwappedOut.ui.buttonFlags[GRAPH_VISIBLE_FLAG]),
+    false,
+    "swapping toggled GRAPH off keypad clears its toggle flag",
+  );
+
+  const allowedFormerBottomRightSwap = reducer(toKeypadMove, {
+    type: "SWAP_LAYOUT_CELLS",
+    fromSurface: "keypad",
+    fromIndex: emptyKeypadIndex,
+    toSurface: "keypad",
+    toIndex: executionKeypadIndex,
+  });
+  assert.notEqual(
+    allowedFormerBottomRightSwap,
+    toKeypadMove,
+    "swapping non-execution into former bottom-right is now allowed",
+  );
 
   const filledStorage = {
     ...baseline,

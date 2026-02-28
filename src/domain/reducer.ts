@@ -11,6 +11,7 @@ import {
 } from "./reducer.layout.js";
 import { applyLifecycleAction } from "./reducer.lifecycle.js";
 import { applyToggleFlag } from "./reducer.flags.js";
+import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import type { Action, GameState } from "./types.js";
 import { reduceActionWithV2 } from "../../src_v2/compat/legacyReducerAdapter.js";
 import { compareParity } from "../../src_v2/compat/parityHarness.js";
@@ -40,14 +41,14 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
   if (action.type === "MOVE_LAYOUT_CELL") {
     const moved = applyMoveLayoutCell(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
     if (moved !== state && action.fromSurface !== action.toSurface) {
-      return applyKeyAction(moved, "C");
+      return clearOperationEntry(moved);
     }
     return moved;
   }
   if (action.type === "SWAP_LAYOUT_CELLS") {
     const swapped = applySwapLayoutCells(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
     if (swapped !== state && action.fromSurface !== action.toSurface) {
-      return applyKeyAction(swapped, "C");
+      return clearOperationEntry(swapped);
     }
     return swapped;
   }
