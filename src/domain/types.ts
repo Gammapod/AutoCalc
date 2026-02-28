@@ -151,6 +151,7 @@ export type GameState = {
   calculator: CalculatorState;
   ui: {
     keyLayout: LayoutCell[];
+    storageLayout: Array<KeyCell | null>;
   };
   unlocks: UnlockState;
   completedUnlockIds: string[];
@@ -186,13 +187,33 @@ export type SwapKeySlotsAction = {
   secondIndex: number;
 };
 
+export type LayoutSurface = "keypad" | "storage";
+
+export type MoveLayoutCellAction = {
+  type: "MOVE_LAYOUT_CELL";
+  fromSurface: LayoutSurface;
+  fromIndex: number;
+  toSurface: LayoutSurface;
+  toIndex: number;
+};
+
+export type SwapLayoutCellsAction = {
+  type: "SWAP_LAYOUT_CELLS";
+  fromSurface: LayoutSurface;
+  fromIndex: number;
+  toSurface: LayoutSurface;
+  toIndex: number;
+};
+
 export type Action =
   | PressKeyAction
   | ResetRunAction
   | HydrateSaveAction
   | UnlockAllAction
   | MoveKeySlotAction
-  | SwapKeySlotsAction;
+  | SwapKeySlotsAction
+  | MoveLayoutCellAction
+  | SwapLayoutCellsAction;
 
 export type Store = {
   getState: () => GameState;

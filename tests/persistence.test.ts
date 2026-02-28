@@ -38,6 +38,7 @@ export const runPersistenceTests = (): void => {
       operationSlots: [{ operator: "*" as const, operand: 6n }],
     },
     ui: {
+      ...state.ui,
       keyLayout: [state.ui.keyLayout[1], state.ui.keyLayout[0], ...state.ui.keyLayout.slice(2)],
     },
   };
@@ -61,6 +62,8 @@ export const runPersistenceTests = (): void => {
   );
   assert.deepEqual(loaded.calculator.operationSlots, [{ operator: "*", operand: 6n }], "hydrate slot bigint operand");
   assert.deepEqual(loaded.ui.keyLayout.slice(0, 2), [state.ui.keyLayout[1], state.ui.keyLayout[0]], "hydrate ui key layout");
+  assert.equal(loaded.ui.storageLayout.length, 8, "hydrate storage layout as fixed slots");
+  assert.ok(loaded.ui.storageLayout.every((slot) => slot === null), "fresh storage layout slots are empty");
 
   const legacyStorage = createMemoryStorage();
   legacyStorage.setItem(
@@ -90,6 +93,8 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loadedLegacy.calculator.roll, [r(9n)], "v1 save migrates integer roll to rationals");
   assert.deepEqual(loadedLegacy.calculator.euclidRemainders, [], "v1 save defaults euclidean remainder annotations");
   assert.deepEqual(loadedLegacy.ui.keyLayout, defaultKeyLayout(), "legacy saves hydrate default ui layout");
+  assert.equal(loadedLegacy.ui.storageLayout.length, 8, "legacy saves hydrate fixed storage slots");
+  assert.ok(loadedLegacy.ui.storageLayout.every((slot) => slot === null), "legacy storage slots default to empty");
   assert.equal(loadedLegacy.unlocks.execution["="], false, "legacy unlock payload hydrates default execution unlocks");
   assert.equal(loadedLegacy.unlocks.slotOperators["-"], false, "legacy unlock payload hydrates default minus unlock");
   assert.equal(loadedLegacy.unlocks.slotOperators["*"], false, "legacy unlock payload hydrates default mul unlock");
@@ -188,6 +193,39 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loadedV2.calculator.total, r(5n, 2n), "v2 payload migrates total to runtime rational");
   assert.equal(loadedV2.calculator.pendingNegativeTotal, true, "v2 payload preserves pending negative total");
   assert.deepEqual(loadedV2.calculator.roll, [r(1n), r(5n, 2n)], "v2 payload migrates roll");
+  assert.equal(loadedV2.ui.storageLayout.length, 8, "v2 payload migrates to fixed storage slots");
+
+  const legacyPackedStorage = createMemoryStorage();
+  legacyPackedStorage.setItem(
+    SAVE_KEY,
+    JSON.stringify({
+      schemaVersion: 3,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: defaultKeyLayout(),
+          storageLayout: [{ kind: "key", key: "1" }],
+        },
+        unlocks: state.unlocks,
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  const legacyPackedStorageRepo = createLocalStorageRepo(legacyPackedStorage);
+  const loadedLegacyPackedStorage = legacyPackedStorageRepo.load();
+  if (!loadedLegacyPackedStorage) {
+    throw new Error("Expected v3 packed storage payload to hydrate.");
+  }
+  assert.equal(loadedLegacyPackedStorage.ui.storageLayout[0]?.kind, "key", "v3 packed storage first key is preserved");
+  assert.equal(loadedLegacyPackedStorage.ui.storageLayout.length, 8, "v3 packed storage migrates to fixed slot row");
 
   const legacyLayoutStorage = createMemoryStorage();
   const legacyLayout = defaultKeyLayout().map((cell) =>

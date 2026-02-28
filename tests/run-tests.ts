@@ -17,6 +17,8 @@ import { runBrowserImportSafetyTests } from "./browserImportSafety.test.js";
 import { runUnlockEngineTests } from "./unlockEngine.test.js";
 import { runV2ParityTests } from "./v2Parity.test.js";
 import { runV2PersistenceParityTests } from "./v2PersistenceParity.test.js";
+import { runStorageDisplayTests } from "./storageDisplay.test.js";
+import { runDragDropBehaviorTests } from "./dragDropBehavior.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -28,6 +30,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/operation-slot-display", runOperationSlotDisplayTests],
   ["ui/roll-display", runRollDisplayTests],
   ["ui/graph-display", runGraphDisplayTests],
+  ["ui/storage-display", runStorageDisplayTests],
+  ["ui/drag-drop-behavior", runDragDropBehaviorTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],

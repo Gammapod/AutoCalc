@@ -1,8 +1,13 @@
 import type { GameState, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 3;
+export const SAVE_SCHEMA_VERSION = 4;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
+export const STORAGE_COLUMNS = 8;
+export const STORAGE_INITIAL_ROWS = 1;
+export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
+
+export const defaultStorageLayout = (): Array<null> => Array.from({ length: STORAGE_INITIAL_SLOTS }, () => null);
 
 export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "graph" },
@@ -40,6 +45,7 @@ export const initialState = (): GameState => ({
   },
   ui: {
     keyLayout: defaultKeyLayout(),
+    storageLayout: defaultStorageLayout(),
   },
   unlocks: {
     valueExpression: {

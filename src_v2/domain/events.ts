@@ -6,7 +6,15 @@ export type DomainEvent =
   | { type: "SaveHydrated"; state: GameState }
   | { type: "UnlockAllRequested" }
   | { type: "KeySlotMoved"; fromIndex: number; toIndex: number }
-  | { type: "KeySlotsSwapped"; firstIndex: number; secondIndex: number };
+  | { type: "KeySlotsSwapped"; firstIndex: number; secondIndex: number }
+  | { type: "LayoutCellMoved"; fromSurface: "keypad" | "storage"; fromIndex: number; toSurface: "keypad" | "storage"; toIndex: number }
+  | {
+      type: "LayoutCellsSwapped";
+      fromSurface: "keypad" | "storage";
+      fromIndex: number;
+      toSurface: "keypad" | "storage";
+      toIndex: number;
+    };
 
 export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "PRESS_KEY") {
@@ -24,7 +32,25 @@ export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "MOVE_KEY_SLOT") {
     return { type: "KeySlotMoved", fromIndex: action.fromIndex, toIndex: action.toIndex };
   }
-  return { type: "KeySlotsSwapped", firstIndex: action.firstIndex, secondIndex: action.secondIndex };
+  if (action.type === "SWAP_KEY_SLOTS") {
+    return { type: "KeySlotsSwapped", firstIndex: action.firstIndex, secondIndex: action.secondIndex };
+  }
+  if (action.type === "MOVE_LAYOUT_CELL") {
+    return {
+      type: "LayoutCellMoved",
+      fromSurface: action.fromSurface,
+      fromIndex: action.fromIndex,
+      toSurface: action.toSurface,
+      toIndex: action.toIndex,
+    };
+  }
+  return {
+    type: "LayoutCellsSwapped",
+    fromSurface: action.fromSurface,
+    fromIndex: action.fromIndex,
+    toSurface: action.toSurface,
+    toIndex: action.toIndex,
+  };
 };
 
 export const actionFromEvent = (event: DomainEvent): Action => {
@@ -43,5 +69,23 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   if (event.type === "KeySlotMoved") {
     return { type: "MOVE_KEY_SLOT", fromIndex: event.fromIndex, toIndex: event.toIndex };
   }
-  return { type: "SWAP_KEY_SLOTS", firstIndex: event.firstIndex, secondIndex: event.secondIndex };
+  if (event.type === "KeySlotsSwapped") {
+    return { type: "SWAP_KEY_SLOTS", firstIndex: event.firstIndex, secondIndex: event.secondIndex };
+  }
+  if (event.type === "LayoutCellMoved") {
+    return {
+      type: "MOVE_LAYOUT_CELL",
+      fromSurface: event.fromSurface,
+      fromIndex: event.fromIndex,
+      toSurface: event.toSurface,
+      toIndex: event.toIndex,
+    };
+  }
+  return {
+    type: "SWAP_LAYOUT_CELLS",
+    fromSurface: event.fromSurface,
+    fromIndex: event.fromIndex,
+    toSurface: event.toSurface,
+    toIndex: event.toIndex,
+  };
 };

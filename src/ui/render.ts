@@ -1,11 +1,14 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { CHECKLIST_UNLOCK_ID } from "../domain/state.js";
+import { CHECKLIST_UNLOCK_ID, STORAGE_COLUMNS } from "../domain/state.js";
+import { isStorageLayoutValid } from "../domain/reducer.layout.js";
 import { buildUnlockCriteria } from "../domain/unlockEngine.js";
 import type {
   Action,
   EuclidRemainderEntry,
   GameState,
+  KeyCell,
   Key,
+  LayoutSurface,
   SlotOperator,
   UnlockDefinition,
   UnlockEffect,
@@ -119,9 +122,13 @@ let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 let grapherResizeObserver: ResizeObserver | null = null;
 let observedCalculatorDevice: HTMLElement | null = null;
+let dragSession: DragSession | null = null;
+let suppressClicksUntil = 0;
 const GRAPH_WINDOW_SIZE = 25;
 const GRAPH_MIN_Y_RANGE = 15;
 const KEYPAD_COLUMNS = 4;
+const DRAG_START_THRESHOLD_PX = 6;
+const DRAG_CLICK_SUPPRESS_MS = 220;
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -138,6 +145,28 @@ export type UnlockRowVm = {
 };
 
 export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "execution";
+
+type Occupancy = "key" | "empty" | "invalid";
+type DropAction = "move" | "swap";
+type DragTarget = {
+  surface: LayoutSurface;
+  index: number;
+};
+
+type DragSession = {
+  state: GameState;
+  dispatch: (action: Action) => unknown;
+  source: DragTarget;
+  key: Key;
+  originElement: HTMLElement;
+  originX: number;
+  originY: number;
+  ghost: HTMLElement | null;
+  active: boolean;
+  target: DragTarget | null;
+  targetAction: DropAction | null;
+  targetElement: HTMLElement | null;
+};
 
 const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "0": ["a", "b", "c", "d", "e", "f"],
@@ -703,6 +732,279 @@ const buildKeypadSlotLabels = (layout: GameState["ui"]["keyLayout"]): string[] =
   return labels;
 };
 
+export const getStorageRowCount = (buttonCount: number, columns: number = STORAGE_COLUMNS): number => {
+  if (columns <= 0) {
+    return 1;
+  }
+  return Math.max(1, Math.ceil(buttonCount / columns));
+};
+
+const buildStorageSlotLabels = (layout: GameState["ui"]["storageLayout"]): string[] =>
+  layout.map((_cell, index) => {
+    const row = Math.floor(index / STORAGE_COLUMNS) + 1;
+    const column = (index % STORAGE_COLUMNS) + 1;
+    return `S${row}C${column} #${index}`;
+  });
+
+export const shouldStartDragFromDelta = (
+  deltaX: number,
+  deltaY: number,
+  thresholdPx: number = DRAG_START_THRESHOLD_PX,
+): boolean => deltaX * deltaX + deltaY * deltaY >= thresholdPx * thresholdPx;
+
+const parseDragTarget = (value: unknown): DragTarget | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const target = value as { surface?: unknown; index?: unknown };
+  if ((target.surface !== "keypad" && target.surface !== "storage") || typeof target.index !== "number") {
+    return null;
+  }
+  if (!Number.isInteger(target.index) || target.index < 0) {
+    return null;
+  }
+  return { surface: target.surface, index: target.index };
+};
+
+const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
+  if (target.surface === "keypad") {
+    const cell = state.ui.keyLayout[target.index];
+    if (!cell) {
+      return "invalid";
+    }
+    return cell.kind === "key" ? "key" : "empty";
+  }
+  const slot = state.ui.storageLayout[target.index];
+  if (typeof slot === "undefined") {
+    return "invalid";
+  }
+  return slot ? "key" : "empty";
+};
+
+const countKeypadEmptySlots = (state: GameState): number =>
+  state.ui.keyLayout.reduce((count, cell) => (cell.kind === "placeholder" ? count + 1 : count), 0);
+
+const getTargetKeyCell = (state: GameState, target: DragTarget): KeyCell | null => {
+  if (target.surface === "keypad") {
+    const cell = state.ui.keyLayout[target.index];
+    return cell?.kind === "key" ? cell : null;
+  }
+  return state.ui.storageLayout[target.index] ?? null;
+};
+
+const isLargeKeyCell = (cell: KeyCell | null): boolean => Boolean(cell && (cell.wide || cell.tall));
+
+const isStorageDropGeometryValid = (
+  state: GameState,
+  source: DragTarget,
+  destination: DragTarget,
+  action: DropAction,
+): boolean => {
+  if (source.surface !== "storage" && destination.surface !== "storage") {
+    return true;
+  }
+  const nextStorage = [...state.ui.storageLayout];
+  const sourceStorageCell = source.surface === "storage" ? nextStorage[source.index] : null;
+  const destinationStorageCell = destination.surface === "storage" ? nextStorage[destination.index] : null;
+  if (action === "move") {
+    if (source.surface === "storage") {
+      nextStorage[source.index] = null;
+    }
+    if (destination.surface === "storage") {
+      if (source.surface === "storage") {
+        nextStorage[destination.index] = sourceStorageCell;
+      } else {
+        const sourceKeypadCell = state.ui.keyLayout[source.index];
+        nextStorage[destination.index] = sourceKeypadCell?.kind === "key" ? sourceKeypadCell : null;
+      }
+    }
+  } else {
+    if (source.surface === "storage" && destination.surface === "storage") {
+      nextStorage[source.index] = destinationStorageCell;
+      nextStorage[destination.index] = sourceStorageCell;
+    } else if (source.surface === "storage" && destination.surface === "keypad") {
+      const destinationKeypadCell = state.ui.keyLayout[destination.index];
+      nextStorage[source.index] = destinationKeypadCell?.kind === "key" ? destinationKeypadCell : null;
+    } else if (source.surface === "keypad" && destination.surface === "storage") {
+      const sourceKeypadCell = state.ui.keyLayout[source.index];
+      nextStorage[destination.index] = sourceKeypadCell?.kind === "key" ? sourceKeypadCell : null;
+    }
+  }
+  return isStorageLayoutValid(nextStorage);
+};
+
+export const classifyDropAction = (
+  state: GameState,
+  source: DragTarget,
+  destination: DragTarget,
+): DropAction | null => {
+  if (source.surface === destination.surface && source.index === destination.index) {
+    return null;
+  }
+  const sourceOccupancy = getCellOccupancy(state, source);
+  const destinationOccupancy = getCellOccupancy(state, destination);
+  if (sourceOccupancy !== "key" || destinationOccupancy === "invalid") {
+    return null;
+  }
+  const action: DropAction = destinationOccupancy === "key" ? "swap" : "move";
+  const sourceCell = getTargetKeyCell(state, source);
+  const destinationCell = getTargetKeyCell(state, destination);
+  const touchesKeypad = source.surface === "keypad" || destination.surface === "keypad";
+  if (touchesKeypad && (isLargeKeyCell(sourceCell) || (action === "swap" && isLargeKeyCell(destinationCell)))) {
+    if (countKeypadEmptySlots(state) < 2) {
+      return null;
+    }
+  }
+  return isStorageDropGeometryValid(state, source, destination, action) ? action : null;
+};
+
+const findDragTargetElement = (target: DragTarget): HTMLElement | null =>
+  document.querySelector<HTMLElement>(
+    `[data-layout-surface="${target.surface}"][data-layout-index="${target.index.toString()}"]`,
+  );
+
+const clearDragDecorations = (): void => {
+  document.querySelectorAll(".drop-target-valid, .drop-target-invalid, .drag-source").forEach((node) => {
+    node.classList.remove("drop-target-valid", "drop-target-invalid", "drag-source");
+  });
+};
+
+const clearDragSession = (): void => {
+  if (!dragSession) {
+    return;
+  }
+  dragSession.ghost?.remove();
+  clearDragDecorations();
+  dragSession = null;
+};
+
+const onDragMove = (event: MouseEvent): void => {
+  if (!dragSession) {
+    return;
+  }
+
+  const deltaX = event.clientX - dragSession.originX;
+  const deltaY = event.clientY - dragSession.originY;
+  if (!dragSession.active && !shouldStartDragFromDelta(deltaX, deltaY)) {
+    return;
+  }
+
+  if (!dragSession.active) {
+    dragSession.active = true;
+    suppressClicksUntil = Date.now() + DRAG_CLICK_SUPPRESS_MS;
+    dragSession.originElement.classList.add("drag-source");
+    const ghost = dragSession.originElement.cloneNode(true) as HTMLElement;
+    ghost.classList.remove("drag-source", "drop-target-valid", "drop-target-invalid");
+    ghost.classList.add("drag-ghost");
+    ghost.style.width = `${Math.round(dragSession.originElement.getBoundingClientRect().width)}px`;
+    document.body.appendChild(ghost);
+    dragSession.ghost = ghost;
+  }
+
+  dragSession.ghost?.style.setProperty("left", `${event.clientX + 12}px`);
+  dragSession.ghost?.style.setProperty("top", `${event.clientY + 12}px`);
+
+  const hovered = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
+  const targetNode = hovered?.closest<HTMLElement>("[data-layout-surface][data-layout-index]") ?? null;
+  clearDragDecorations();
+  dragSession.originElement.classList.add("drag-source");
+  if (!targetNode) {
+    dragSession.target = null;
+    dragSession.targetAction = null;
+    dragSession.targetElement = null;
+    return;
+  }
+
+  const surface = targetNode.dataset.layoutSurface;
+  const indexRaw = targetNode.dataset.layoutIndex;
+  const parsed = parseDragTarget({ surface, index: indexRaw ? Number(indexRaw) : NaN });
+  if (!parsed) {
+    dragSession.target = null;
+    dragSession.targetAction = null;
+    dragSession.targetElement = null;
+    targetNode.classList.add("drop-target-invalid");
+    return;
+  }
+
+  const action = classifyDropAction(dragSession.state, dragSession.source, parsed);
+  dragSession.target = parsed;
+  dragSession.targetAction = action;
+  dragSession.targetElement = targetNode;
+  targetNode.classList.add(action ? "drop-target-valid" : "drop-target-invalid");
+};
+
+const onDragUp = (): void => {
+  if (!dragSession) {
+    window.removeEventListener("mousemove", onDragMove);
+    return;
+  }
+  if (dragSession.active && dragSession.target && dragSession.targetAction) {
+    if (dragSession.targetAction === "move") {
+      dragSession.dispatch({
+        type: "MOVE_LAYOUT_CELL",
+        fromSurface: dragSession.source.surface,
+        fromIndex: dragSession.source.index,
+        toSurface: dragSession.target.surface,
+        toIndex: dragSession.target.index,
+      });
+    } else {
+      dragSession.dispatch({
+        type: "SWAP_LAYOUT_CELLS",
+        fromSurface: dragSession.source.surface,
+        fromIndex: dragSession.source.index,
+        toSurface: dragSession.target.surface,
+        toIndex: dragSession.target.index,
+      });
+    }
+  }
+  window.removeEventListener("mousemove", onDragMove);
+  clearDragSession();
+};
+
+const bindDraggableCell = (
+  element: HTMLElement,
+  state: GameState,
+  dispatch: (action: Action) => unknown,
+  source: DragTarget,
+  key: Key,
+): void => {
+  element.dataset.layoutSurface = source.surface;
+  element.dataset.layoutIndex = source.index.toString();
+  element.dataset.layoutOccupied = "key";
+  element.addEventListener("mousedown", (event) => {
+    if (event.button !== 0) {
+      return;
+    }
+    if (element instanceof HTMLButtonElement && element.disabled) {
+      return;
+    }
+    clearDragSession();
+    dragSession = {
+      state,
+      dispatch,
+      source,
+      key,
+      originElement: element,
+      originX: event.clientX,
+      originY: event.clientY,
+      ghost: null,
+      active: false,
+      target: null,
+      targetAction: null,
+      targetElement: null,
+    };
+    window.addEventListener("mousemove", onDragMove, { once: false });
+    window.addEventListener("mouseup", onDragUp, { once: true });
+  });
+};
+
+const bindDropTargetCell = (element: HTMLElement, surface: LayoutSurface, index: number): void => {
+  element.dataset.layoutSurface = surface;
+  element.dataset.layoutIndex = index.toString();
+};
+
+const shouldSuppressClick = (): boolean => Date.now() < suppressClicksUntil;
+
 const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => {
   const slotLabel = document.createElement("span");
   slotLabel.className = "slot-label";
@@ -717,8 +1019,9 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   const rollEl = root.querySelector("[data-roll]");
   const unlockEl = root.querySelector("[data-unlocks]");
   const keysEl = root.querySelector("[data-keys]");
+  const storageEl = root.querySelector("[data-storage-keys]");
 
-  if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl) {
+  if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl || !storageEl) {
     throw new Error("UI mount points are missing.");
   }
 
@@ -769,8 +1072,10 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     const slotLabel = slotLabels[index] ?? `#${index}`;
     if (cell.kind === "placeholder") {
       const placeholder = document.createElement("div");
-      placeholder.className = "placeholder";
+      placeholder.className = "placeholder placeholder--drop-slot";
       placeholder.setAttribute("aria-hidden", "true");
+      bindDropTargetCell(placeholder, "keypad", index);
+      placeholder.dataset.layoutOccupied = "empty";
       appendDebugSlotLabel(placeholder, slotLabel);
       keysEl.appendChild(placeholder);
       continue;
@@ -778,7 +1083,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
 
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "key";
+    button.className = "key key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
     if (cell.wide) {
       button.classList.add("key--wide");
@@ -788,10 +1093,68 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     }
     button.textContent = formatKeyLabel(cell.key);
     button.disabled = !isKeyUnlocked(state, cell.key);
+    bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {
+      if (shouldSuppressClick()) {
+        return;
+      }
       dispatch({ type: "PRESS_KEY", key: cell.key });
     });
     keysEl.appendChild(button);
+  }
+
+  storageEl.innerHTML = "";
+  const storageLabels = buildStorageSlotLabels(state.ui.storageLayout);
+  const storageRowCount = getStorageRowCount(state.ui.storageLayout.length);
+  storageEl.setAttribute("data-storage-rows", storageRowCount.toString());
+  if (storageEl instanceof HTMLElement) {
+    storageEl.style.setProperty("--storage-rows", storageRowCount.toString());
+  }
+  for (let index = 0; index < state.ui.storageLayout.length; index += 1) {
+    const cell = state.ui.storageLayout[index];
+    const slotLabel = storageLabels[index] ?? `S#${index}`;
+    if (!cell) {
+      const empty = document.createElement("div");
+      empty.className = "placeholder placeholder--drop-slot placeholder--storage-empty";
+      empty.setAttribute("aria-hidden", "true");
+      bindDropTargetCell(empty, "storage", index);
+      empty.dataset.layoutOccupied = "empty";
+      appendDebugSlotLabel(empty, slotLabel);
+      storageEl.appendChild(empty);
+      continue;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "key key--storage key--draggable";
+    button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
+    if (cell.wide) {
+      button.classList.add("key--wide");
+    }
+    if (cell.tall) {
+      button.classList.add("key--tall");
+    }
+    button.textContent = formatKeyLabel(cell.key);
+    button.disabled = !isKeyUnlocked(state, cell.key);
+    bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
+    appendDebugSlotLabel(button, slotLabel);
+    button.addEventListener("click", () => {
+      if (shouldSuppressClick()) {
+        return;
+      }
+      dispatch({ type: "PRESS_KEY", key: cell.key });
+    });
+    storageEl.appendChild(button);
+  }
+
+  if (dragSession?.active) {
+    const sourceNode = findDragTargetElement(dragSession.source);
+    if (!sourceNode) {
+      clearDragSession();
+    } else {
+      dragSession.originElement = sourceNode;
+      sourceNode.classList.add("drag-source");
+    }
   }
 };

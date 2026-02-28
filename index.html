@@ -17,6 +17,11 @@
         --lit: #bcffd6;
         --paper: #f4f1e8;
         --paper-ink: #3f3a32;
+        --drawer-wood-top: #b98a57;
+        --drawer-wood-bottom: #8b6138;
+        --drawer-lining-top: #d5bf9c;
+        --drawer-lining-bottom: #bfa57f;
+        --drawer-stroke: #5b3e21;
         --key-top: #eef2f5;
         --key-bottom: #d4dae0;
         --key-stroke: #5d6773;
@@ -55,6 +60,19 @@
       .app-shell {
         display: grid;
         grid-template-columns: auto;
+        align-items: start;
+      }
+
+      .app-layout {
+        display: grid;
+        grid-template-columns: auto minmax(260px, 28vw);
+        align-items: stretch;
+        gap: 16px;
+      }
+
+      .play-area {
+        display: grid;
+        gap: 12px;
         align-items: start;
       }
 
@@ -187,7 +205,7 @@
           transition: none;
         }
 
-        .status {
+        .checklist {
           transition: none;
         }
       }
@@ -343,6 +361,43 @@
         gap: var(--gap);
       }
 
+      .storage {
+        justify-self: stretch;
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--drawer-stroke);
+        padding: 10px;
+        background: linear-gradient(180deg, var(--drawer-wood-top), var(--drawer-wood-bottom));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.3),
+          inset 0 -6px 10px rgba(0, 0, 0, 0.2),
+          0 10px 16px rgba(0, 0, 0, 0.22);
+      }
+
+      .storage-title {
+        margin: 0 0 8px;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #362312;
+        opacity: 0.9;
+      }
+
+      [data-storage-keys] {
+        min-height: 48px;
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        grid-auto-rows: minmax(48px, 1fr);
+        gap: var(--gap);
+        border: 1px solid rgba(91, 62, 33, 0.6);
+        border-radius: 10px;
+        padding: 10px;
+        background: linear-gradient(180deg, var(--drawer-lining-top), var(--drawer-lining-bottom));
+        box-shadow: inset 0 2px 6px rgba(70, 45, 20, 0.26);
+      }
+
       .key {
         position: relative;
         border: 1px solid var(--key-stroke);
@@ -374,6 +429,14 @@
       .key:disabled {
         opacity: 0.42;
         cursor: not-allowed;
+      }
+
+      .key--storage {
+        font-size: 0.95rem;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.58),
+          0 1px 0 rgba(57, 39, 22, 0.7),
+          0 3px 6px rgba(0, 0, 0, 0.2);
       }
 
       .key--wide {
@@ -409,6 +472,48 @@
         background: linear-gradient(180deg, rgba(121, 130, 145, 0.25), rgba(94, 104, 120, 0.18));
       }
 
+      .placeholder--drop-slot {
+        border-style: dashed;
+      }
+
+      .placeholder--storage-empty {
+        background: linear-gradient(180deg, rgba(211, 190, 154, 0.7), rgba(191, 165, 127, 0.7));
+      }
+
+      .key--draggable:not(:disabled) {
+        cursor: grab;
+      }
+
+      .key--draggable:active:not(:disabled) {
+        cursor: grabbing;
+      }
+
+      .drag-source {
+        opacity: 0.38;
+        outline: 2px solid rgba(98, 140, 215, 0.7);
+      }
+
+      .drop-target-valid {
+        outline: 2px solid rgba(48, 137, 84, 0.88);
+        outline-offset: -2px;
+        filter: brightness(1.05);
+      }
+
+      .drop-target-invalid {
+        outline: 2px solid rgba(188, 63, 63, 0.88);
+        outline-offset: -2px;
+      }
+
+      .drag-ghost {
+        position: fixed;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.9;
+        transform: rotate(-2deg);
+      }
+
       .slot-label {
         position: absolute;
         top: 4px;
@@ -429,57 +534,98 @@
         opacity: 1;
       }
 
-      .status {
+      .checklist-shell {
+        position: relative;
+        min-height: 100%;
+        border-radius: 12px;
+        border: 1px solid #6b4c2f;
+        padding: 14px 12px 12px;
+        background: linear-gradient(180deg, #8b6b4b, #6b5038);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.22),
+          inset 0 -6px 10px rgba(0, 0, 0, 0.2),
+          0 10px 16px rgba(0, 0, 0, 0.2);
+      }
+
+      .checklist-shell::before {
+        content: "";
         position: absolute;
-        left: 12px;
-        right: 12px;
-        top: calc(100% - 10px);
-        border: 1px solid #515c6a;
-        border-radius: 7px;
-        padding: 8px 10px;
-        background: linear-gradient(180deg, var(--panel-mid), var(--panel-dark));
-        color: #b4f1d3;
-        font-family: Consolas, "Courier New", monospace;
-        font-size: 0.75rem;
-        box-shadow: 0 8px 14px rgba(0, 0, 0, 0.26);
-        transform: translateY(-8px);
-        opacity: 0;
-        max-height: 0;
-        overflow: hidden;
-        pointer-events: none;
+        top: -8px;
+        left: 50%;
+        width: 110px;
+        height: 18px;
+        transform: translateX(-50%);
+        border-radius: 10px;
+        border: 1px solid #5a6068;
+        background: linear-gradient(180deg, #b8bec7, #8f97a3);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
       }
 
-      .status[data-checklist-state="open"] {
-        transform: translateY(0);
+      .checklist {
+        min-height: 100%;
+        border-radius: 9px;
+        border: 1px solid #b9b9ad;
+        padding: 10px;
+        background:
+          repeating-linear-gradient(180deg, rgba(124, 126, 138, 0.12) 0px, rgba(124, 126, 138, 0.12) 1px, transparent 1px, transparent 24px),
+          repeating-linear-gradient(90deg, rgba(124, 126, 138, 0.09) 0px, rgba(124, 126, 138, 0.09) 1px, transparent 1px, transparent 72px),
+          linear-gradient(180deg, #f5f3ec, #ebe7dc);
+        color: #25292f;
+        font-family: "Consolas", "Menlo", "Courier New", monospace;
+        font-size: 0.72rem;
+        overflow: auto;
+        opacity: 0.68;
+        transition: opacity 180ms ease-out;
+      }
+
+      .checklist[data-checklist-state="open"] {
         opacity: 1;
-        max-height: 240px;
-        pointer-events: auto;
       }
 
-      .status[data-checklist-animate="true"] {
-        transition: transform 220ms ease-out, opacity 180ms ease-out, max-height 220ms ease-out;
+      .checklist[data-checklist-animate="true"] {
+        animation: checklist-open 220ms ease-out;
+      }
+
+      @keyframes checklist-open {
+        from {
+          transform: translateY(4px);
+          opacity: 0.45;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
       }
 
       .unlock-title {
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         font-weight: 700;
+        letter-spacing: 0.02em;
       }
 
       .unlock-header,
       .unlock-row {
         display: grid;
-        grid-template-columns: minmax(40px, 60px) 1fr;
-        column-gap: 8px;
-        align-items: start;
+        grid-template-columns: minmax(56px, 72px) 1fr;
+        column-gap: 6px;
+        align-items: center;
+        min-height: 24px;
+        padding: 2px 4px;
+        border-bottom: 1px solid rgba(74, 80, 88, 0.25);
       }
 
       .unlock-header {
-        margin-bottom: 4px;
         font-weight: 700;
+        background: rgba(186, 190, 198, 0.35);
+        border-top: 1px solid rgba(74, 80, 88, 0.25);
       }
 
       .unlock-row {
-        margin-bottom: 2px;
+        background: rgba(255, 255, 255, 0.28);
+      }
+
+      .unlock-row:nth-of-type(even) {
+        background: rgba(218, 222, 230, 0.35);
       }
 
       .unlock-row--completed {
@@ -490,7 +636,7 @@
       .unlock-criteria {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 4px 6px;
       }
 
       .unlock-criterion {
@@ -542,8 +688,18 @@
           padding: 16px 10px;
         }
 
+        .app-layout {
+          grid-template-columns: 1fr;
+        }
+
         .device-row {
           grid-template-columns: 1fr;
+        }
+
+        .storage,
+        .checklist-shell {
+          width: min(92vw, 360px);
+          justify-self: center;
         }
 
         .app-shell {
@@ -578,24 +734,34 @@
       </div>
     </section>
     <div class="app-shell">
-      <main id="app" class="device-row" aria-label="AutoCalc">
-        <section class="device device--grapher" data-grapher-device aria-label="Grapher">
-          <div class="grapher-screen">
-            <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+      <main id="app" class="app-layout" aria-label="AutoCalc">
+        <section class="play-area">
+          <div class="device-row">
+            <section class="device device--grapher" data-grapher-device aria-label="Grapher">
+              <div class="grapher-screen">
+                <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+              </div>
+            </section>
+            <section class="device device--calc" data-calc-device>
+              <section class="roll" data-roll aria-label="Calculator roll"></section>
+              <section class="calc">
+                <div class="slot" aria-hidden="true"></div>
+                <div class="display-stack">
+                  <div class="display" data-total aria-live="polite"></div>
+                  <div class="display" data-slot></div>
+                </div>
+                <div data-keys></div>
+              </section>
+            </section>
           </div>
-        </section>
-        <section class="device device--calc" data-calc-device>
-          <section class="roll" data-roll aria-label="Calculator roll"></section>
-          <section class="calc">
-            <div class="slot" aria-hidden="true"></div>
-            <div class="display-stack">
-              <div class="display" data-total aria-live="polite"></div>
-              <div class="display" data-slot></div>
-            </div>
-            <div data-keys></div>
-            <div class="status" data-unlocks></div>
+          <section class="storage" aria-label="Button storage">
+            <h2 class="storage-title">Storage Drawer</h2>
+            <div data-storage-keys></div>
           </section>
         </section>
+        <aside class="checklist-shell" aria-label="Unlock checklist clipboard">
+          <div class="checklist" data-unlocks></div>
+        </aside>
       </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
