@@ -780,7 +780,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (key === "C" || key === "CE") {
     return state.unlocks.utilities[key];
   }
-  if (key === "=" || key === "\u23EF") {
+  if (key === "=" || key === "++" || key === "\u23EF") {
     return state.unlocks.execution[key];
   }
   return false;
@@ -799,7 +799,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   return "execution";
 };
 
-const isExecutionKey = (key: Key): boolean => key === "=" || key === "\u23EF";
+const isExecutionKey = (key: Key): boolean => key === "=" || key === "++" || key === "\u23EF";
 
 const buildKeypadSlotLabels = (
   layout: GameState["ui"]["keyLayout"],

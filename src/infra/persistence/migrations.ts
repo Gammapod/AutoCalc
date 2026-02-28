@@ -116,7 +116,7 @@ const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
 const UTILITY_KEY_VALUES = ["C", "CE"] as const;
-const EXEC_KEY_VALUES = ["=", "\u23EF"] as const;
+const EXEC_KEY_VALUES = ["=", "++", "\u23EF"] as const;
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
   ...SLOT_OPERATOR_VALUES,

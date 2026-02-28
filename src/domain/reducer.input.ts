@@ -1,5 +1,5 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { isInteger } from "../infra/math/rationalEngine.js";
+import { addInt, isInteger } from "../infra/math/rationalEngine.js";
 import { executeSlots } from "./engine.js";
 import { CHECKLIST_UNLOCK_ID } from "./state.js";
 import { applyUnlocks } from "./unlocks.js";
@@ -261,6 +261,23 @@ const applyEquals = (state: GameState): GameState => {
   return applyUnlocks(withRoll, unlockCatalog);
 };
 
+const applyIncrement = (state: GameState): GameState => {
+  if (!state.unlocks.execution["++"]) {
+    return state;
+  }
+
+  const withIncrementedTotal: GameState = {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      total: addInt(state.calculator.total, 1n),
+      pendingNegativeTotal: false,
+    },
+  };
+
+  return applyUnlocks(withIncrementedTotal, unlockCatalog);
+};
+
 const applyC = (state: GameState): GameState => {
   if (!state.unlocks.utilities.C) {
     return state;
@@ -323,6 +340,9 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   }
   if (key === "=") {
     return applyEquals(preprocessed);
+  }
+  if (key === "++") {
+    return applyIncrement(preprocessed);
   }
   if (key === "C") {
     return applyC(preprocessed);
