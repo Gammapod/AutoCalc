@@ -34,6 +34,8 @@ export const runV2ParityTests = (): void => {
     { type: "MOVE_KEY_SLOT", fromIndex: 1, toIndex: 0 },
     { type: "SWAP_KEY_SLOTS", firstIndex: 0, secondIndex: 1 },
     { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 4 },
+    { type: "UPGRADE_KEYPAD_ROW" },
+    { type: "UPGRADE_KEYPAD_COLUMN" },
     { type: "UNLOCK_ALL" },
   ];
 

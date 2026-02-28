@@ -4,6 +4,8 @@ import {
   applyMoveKeySlot,
   applyMoveLayoutCell,
   applySetKeypadDimensions,
+  applyUpgradeKeypadColumn,
+  applyUpgradeKeypadRow,
   applySwapKeySlots,
   applySwapLayoutCells,
 } from "../../src/domain/reducer.layout.js";
@@ -30,13 +32,27 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
     return applySwapKeySlots(state, action.firstIndex, action.secondIndex);
   }
   if (action.type === "MOVE_LAYOUT_CELL") {
-    return applyMoveLayoutCell(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
+    const moved = applyMoveLayoutCell(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
+    if (moved !== state && action.fromSurface !== action.toSurface) {
+      return applyKeyAction(moved, "C");
+    }
+    return moved;
   }
   if (action.type === "SWAP_LAYOUT_CELLS") {
-    return applySwapLayoutCells(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
+    const swapped = applySwapLayoutCells(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
+    if (swapped !== state && action.fromSurface !== action.toSurface) {
+      return applyKeyAction(swapped, "C");
+    }
+    return swapped;
   }
   if (action.type === "SET_KEYPAD_DIMENSIONS") {
     return applySetKeypadDimensions(state, action.columns, action.rows);
+  }
+  if (action.type === "UPGRADE_KEYPAD_ROW") {
+    return applyUpgradeKeypadRow(state);
+  }
+  if (action.type === "UPGRADE_KEYPAD_COLUMN") {
+    return applyUpgradeKeypadColumn(state);
   }
   if (action.type === "TOGGLE_FLAG") {
     return applyToggleFlag(state, action.flag);

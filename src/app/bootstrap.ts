@@ -2,6 +2,7 @@ import { createStore } from "./store.js";
 import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
 import { render } from "../ui/render.js";
+import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "./autoEqualsScheduler.js";
 
 const root = document.querySelector("#app");
 if (!root) {
@@ -15,6 +16,8 @@ const unlockAllButton = document.querySelector<HTMLButtonElement>("[data-debug-u
 const keypadWidthInput = document.querySelector<HTMLInputElement>("[data-debug-keypad-width]");
 const keypadHeightInput = document.querySelector<HTMLInputElement>("[data-debug-keypad-height]");
 const applyKeypadSizeButton = document.querySelector<HTMLButtonElement>("[data-debug-apply-keypad-size]");
+const upgradeKeypadRowButton = document.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-row]");
+const upgradeKeypadColumnButton = document.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-column]");
 if (
   !debugToggle ||
   !debugMenu ||
@@ -22,14 +25,17 @@ if (
   !unlockAllButton ||
   !keypadWidthInput ||
   !keypadHeightInput ||
-  !applyKeypadSizeButton
+  !applyKeypadSizeButton ||
+  !upgradeKeypadRowButton ||
+  !upgradeKeypadColumnButton
 ) {
   throw new Error("Debug controls are missing.");
 }
 
 const storageRepo = createLocalStorageRepo(window.localStorage);
 const loaded = storageRepo.load();
-const store = createStore(loaded ?? initialState());
+const store = createStore(normalizeLoadedStateForRuntime(loaded) ?? initialState());
+const autoEqualsScheduler = createAutoEqualsScheduler(store);
 
 const redraw = (): void => {
   render(root, store.getState(), store.dispatch);
@@ -55,7 +61,9 @@ const syncKeypadDimensionInputs = (): void => {
 };
 
 redraw();
+autoEqualsScheduler.startIfNeeded();
 store.subscribe((state) => {
+  autoEqualsScheduler.sync(state);
   render(root, state, store.dispatch);
   syncKeypadDimensionInputs();
   storageRepo.save(state);
@@ -79,6 +87,14 @@ applyKeypadSizeButton.addEventListener("click", () => {
   const columns = clampDimensionInput(Number(keypadWidthInput.value), state.ui.keypadColumns);
   const rows = clampDimensionInput(Number(keypadHeightInput.value), state.ui.keypadRows);
   store.dispatch({ type: "SET_KEYPAD_DIMENSIONS", columns, rows });
+});
+
+upgradeKeypadRowButton.addEventListener("click", () => {
+  store.dispatch({ type: "UPGRADE_KEYPAD_ROW" });
+});
+
+upgradeKeypadColumnButton.addEventListener("click", () => {
+  store.dispatch({ type: "UPGRADE_KEYPAD_COLUMN" });
 });
 
 syncDebugUiState();

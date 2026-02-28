@@ -16,6 +16,8 @@ export type DomainEvent =
       toIndex: number;
     }
   | { type: "KeypadDimensionsSet"; columns: number; rows: number }
+  | { type: "KeypadRowUpgraded" }
+  | { type: "KeypadColumnUpgraded" }
   | { type: "FlagToggled"; flag: string };
 
 export const eventFromAction = (action: Action): DomainEvent => {
@@ -61,6 +63,12 @@ export const eventFromAction = (action: Action): DomainEvent => {
       columns: action.columns,
       rows: action.rows,
     };
+  }
+  if (action.type === "UPGRADE_KEYPAD_ROW") {
+    return { type: "KeypadRowUpgraded" };
+  }
+  if (action.type === "UPGRADE_KEYPAD_COLUMN") {
+    return { type: "KeypadColumnUpgraded" };
   }
   return { type: "FlagToggled", flag: action.flag };
 };
@@ -108,6 +116,12 @@ export const actionFromEvent = (event: DomainEvent): Action => {
       columns: event.columns,
       rows: event.rows,
     };
+  }
+  if (event.type === "KeypadRowUpgraded") {
+    return { type: "UPGRADE_KEYPAD_ROW" };
+  }
+  if (event.type === "KeypadColumnUpgraded") {
+    return { type: "UPGRADE_KEYPAD_COLUMN" };
   }
   return { type: "TOGGLE_FLAG", flag: event.flag };
 };

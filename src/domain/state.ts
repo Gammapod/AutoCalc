@@ -3,6 +3,7 @@
 export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 5;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
+export const AUTO_EQUALS_FLAG = "execution.pause";
 export const KEYPAD_DEFAULT_COLUMNS = 3;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
@@ -70,7 +71,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "=" },
   { kind: "key", key: "0" },
   { kind: "key", key: "NEG" },
-  { kind: "key", key: "\u23EF", behavior: { type: "toggle_flag", flag: "execution.pause" } },
+  { kind: "key", key: "\u23EF", behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
 ];
 
 export const initialState = (): GameState => ({
@@ -124,4 +125,3 @@ export const initialState = (): GameState => ({
   },
   completedUnlockIds: [],
 });
-

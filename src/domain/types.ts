@@ -224,6 +224,14 @@ export type SetKeypadDimensionsAction = {
   rows: number;
 };
 
+export type UpgradeKeypadRowAction = {
+  type: "UPGRADE_KEYPAD_ROW";
+};
+
+export type UpgradeKeypadColumnAction = {
+  type: "UPGRADE_KEYPAD_COLUMN";
+};
+
 export type ToggleFlagAction = {
   type: "TOGGLE_FLAG";
   flag: string;
@@ -239,6 +247,8 @@ export type Action =
   | MoveLayoutCellAction
   | SwapLayoutCellsAction
   | SetKeypadDimensionsAction
+  | UpgradeKeypadRowAction
+  | UpgradeKeypadColumnAction
   | ToggleFlagAction;
 
 export type Store = {

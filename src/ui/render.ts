@@ -121,6 +121,8 @@ declare global {
 let previousChecklistUnlocked: boolean | null = null;
 let previousUnlockSnapshot: Record<Key, boolean> | null = null;
 let pendingToggleAnimationByFlag: Record<string, "on" | "off"> = {};
+let previousKeypadColumns: number | null = null;
+let previousKeypadRows: number | null = null;
 let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 let grapherResizeObserver: ResizeObserver | null = null;
@@ -131,6 +133,7 @@ const GRAPH_WINDOW_SIZE = 25;
 const GRAPH_MIN_Y_RANGE = 15;
 const DRAG_START_THRESHOLD_PX = 6;
 const DRAG_CLICK_SUPPRESS_MS = 220;
+const KEYPAD_FLIP_DURATION_MS = 760;
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -797,6 +800,71 @@ const buildStorageSlotLabels = (layout: GameState["ui"]["storageLayout"]): strin
     return `S${row}C${column} #${index}`;
   });
 
+const shouldReduceMotion = (): boolean => {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+};
+
+const collectKeypadCellRects = (container: Element): Map<string, DOMRect> => {
+  const rects = new Map<string, DOMRect>();
+  for (const element of Array.from(container.children)) {
+    if (!(element instanceof HTMLElement)) {
+      continue;
+    }
+    const cellId = element.dataset.keypadCellId;
+    if (!cellId) {
+      continue;
+    }
+    rects.set(cellId, element.getBoundingClientRect());
+  }
+  return rects;
+};
+
+const playKeypadFlip = (container: Element, beforeRects: Map<string, DOMRect>): void => {
+  if (shouldReduceMotion() || beforeRects.size === 0) {
+    return;
+  }
+
+  const animatedElements: HTMLElement[] = [];
+  for (const element of Array.from(container.children)) {
+    if (!(element instanceof HTMLElement)) {
+      continue;
+    }
+    const cellId = element.dataset.keypadCellId;
+    if (!cellId) {
+      continue;
+    }
+    const before = beforeRects.get(cellId);
+    if (!before) {
+      continue;
+    }
+    const after = element.getBoundingClientRect();
+    const deltaX = before.left - after.left;
+    const deltaY = before.top - after.top;
+    if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
+      continue;
+    }
+    element.style.transition = "none";
+    element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+    animatedElements.push(element);
+  }
+
+  if (animatedElements.length === 0) {
+    return;
+  }
+
+  void document.body.offsetWidth;
+  for (const element of animatedElements) {
+    element.style.transition = `transform ${KEYPAD_FLIP_DURATION_MS}ms cubic-bezier(0.22, 0.62, 0.22, 1)`;
+    element.style.transform = "";
+    window.setTimeout(() => {
+      element.style.transition = "";
+    }, KEYPAD_FLIP_DURATION_MS + 20);
+  }
+};
+
 export const buildStorageRenderOrder = (state: GameState): number[] => {
   const unlocked: number[] = [];
   const empty: number[] = [];
@@ -1160,10 +1228,38 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
 
   renderUnlockChecklist(unlockEl, state);
 
+  const hadPreviousKeypadDimensions = previousKeypadColumns !== null && previousKeypadRows !== null;
+  const keypadDimensionsChanged =
+    hadPreviousKeypadDimensions &&
+    (previousKeypadColumns !== state.ui.keypadColumns || previousKeypadRows !== state.ui.keypadRows);
+  const keypadBeforeRects = keypadDimensionsChanged ? collectKeypadCellRects(keysEl) : new Map<string, DOMRect>();
+  const calcBodyEl = keysEl.closest<HTMLElement>(".calc");
+
   keysEl.innerHTML = "";
   if (keysEl instanceof HTMLElement) {
     keysEl.style.gridTemplateColumns = `repeat(${state.ui.keypadColumns}, minmax(0, 1fr))`;
     keysEl.style.gridTemplateRows = `repeat(${state.ui.keypadRows}, minmax(48px, 1fr))`;
+    if (!keypadDimensionsChanged || shouldReduceMotion()) {
+      delete keysEl.dataset.keypadGrow;
+      if (calcBodyEl) {
+        delete calcBodyEl.dataset.keypadGrow;
+      }
+    } else {
+      const grewRows = previousKeypadRows !== null && state.ui.keypadRows > previousKeypadRows;
+      const grewColumns = previousKeypadColumns !== null && state.ui.keypadColumns > previousKeypadColumns;
+      const growDirection = grewRows && grewColumns ? "both" : grewRows ? "row" : grewColumns ? "column" : "";
+      if (growDirection) {
+        keysEl.dataset.keypadGrow = growDirection;
+        if (calcBodyEl) {
+          calcBodyEl.dataset.keypadGrow = growDirection;
+        }
+      } else {
+        delete keysEl.dataset.keypadGrow;
+        if (calcBodyEl) {
+          delete calcBodyEl.dataset.keypadGrow;
+        }
+      }
+    }
   }
   const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout, state.ui.keypadColumns);
   for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
@@ -1175,6 +1271,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       placeholder.setAttribute("aria-hidden", "true");
       bindDropTargetCell(placeholder, "keypad", index);
       placeholder.dataset.layoutOccupied = "empty";
+      placeholder.dataset.keypadCellId = index.toString();
       appendDebugSlotLabel(placeholder, slotLabel);
       keysEl.appendChild(placeholder);
       continue;
@@ -1183,6 +1280,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       const hidden = document.createElement("div");
       hidden.className = "placeholder placeholder--drop-slot placeholder--locked-hidden";
       hidden.setAttribute("aria-hidden", "true");
+      hidden.dataset.keypadCellId = index.toString();
       appendDebugSlotLabel(hidden, slotLabel);
       keysEl.appendChild(hidden);
       continue;
@@ -1206,6 +1304,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     }
     button.setAttribute("aria-pressed", keypadToggleActive ? "true" : "false");
     button.disabled = false;
+    button.dataset.keypadCellId = index.toString();
     bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {
@@ -1217,6 +1316,12 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     });
     keysEl.appendChild(button);
   }
+
+  if (keypadDimensionsChanged) {
+    playKeypadFlip(keysEl, keypadBeforeRects);
+  }
+  previousKeypadColumns = state.ui.keypadColumns;
+  previousKeypadRows = state.ui.keypadRows;
 
   storageEl.innerHTML = "";
   const storageLabels = buildStorageSlotLabels(state.ui.storageLayout);

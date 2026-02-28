@@ -21,6 +21,7 @@ import { runStorageDisplayTests } from "./storageDisplay.test.js";
 import { runDragDropBehaviorTests } from "./dragDropBehavior.test.js";
 import { runReducerFlagsTests } from "./reducer.flags.test.js";
 import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
+import { runAutoEqualsSchedulerTests } from "./autoEqualsScheduler.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -35,6 +36,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/storage-display", runStorageDisplayTests],
   ["ui/drag-drop-behavior", runDragDropBehaviorTests],
   ["ui/button-behavior", runButtonBehaviorTests],
+  ["app/auto-equals-scheduler", runAutoEqualsSchedulerTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],

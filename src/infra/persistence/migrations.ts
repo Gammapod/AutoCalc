@@ -195,9 +195,13 @@ const normalizeKeypadLayoutForDimensions = (
   layout: LayoutCell[] | undefined,
   columns: number,
   rows: number,
+  sourceColumns?: number,
+  sourceRows?: number,
 ): LayoutCell[] => {
   const normalizedLayout = hasOnlyKnownLayoutCells(layout) ? [...layout] : defaultDrawerKeyLayout(columns, rows);
-  return resizeKeyLayout(normalizedLayout, columns, rows);
+  const fromColumns = sourceColumns ?? columns;
+  const fromRows = sourceRows ?? rows;
+  return resizeKeyLayout(normalizedLayout, fromColumns, fromRows, columns, rows);
 };
 
 const normalizeStorageSlots = (
@@ -590,7 +594,13 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     const keypadColumns = normalizeKeypadDimension(asV5.ui?.keypadColumns, KEYPAD_DEFAULT_COLUMNS);
     const keypadRows = normalizeKeypadDimension(asV5.ui?.keypadRows, KEYPAD_DEFAULT_ROWS);
     const targetLength = Math.max(1, keypadColumns * keypadRows);
-    const normalizedKeyLayout = normalizeKeypadLayoutForDimensions(asV5.ui.keyLayout, keypadColumns, keypadRows);
+    const normalizedKeyLayout = normalizeKeypadLayoutForDimensions(
+      asV5.ui.keyLayout,
+      keypadColumns,
+      keypadRows,
+      keypadColumns,
+      keypadRows,
+    );
     const existingStorageSlots = normalizeStorageSlots(asV5.ui.storageLayout);
     const knownKeys = new Set<Key>([
       ...collectLayoutKeys(normalizedKeyLayout),

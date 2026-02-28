@@ -194,6 +194,7 @@
         position: relative;
         overflow: visible;
         z-index: 2;
+        transform-origin: bottom right;
         border-radius: 24px;
         padding: 16px;
         border: 1px solid var(--body-stroke);
@@ -202,6 +203,45 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.42),
           inset 0 -5px 10px rgba(0, 0, 0, 0.2),
           0 10px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      .calc[data-keypad-grow="row"] {
+        animation: calc-grow-row 920ms cubic-bezier(0.2, 0.7, 0.2, 1) 1;
+      }
+
+      .calc[data-keypad-grow="column"] {
+        animation: calc-grow-column 920ms cubic-bezier(0.2, 0.7, 0.2, 1) 1;
+      }
+
+      .calc[data-keypad-grow="both"] {
+        animation: calc-grow-both 980ms cubic-bezier(0.2, 0.7, 0.2, 1) 1;
+      }
+
+      @keyframes calc-grow-row {
+        from {
+          transform: scaleY(0.94);
+        }
+        to {
+          transform: scaleY(1);
+        }
+      }
+
+      @keyframes calc-grow-column {
+        from {
+          transform: scaleX(0.94);
+        }
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      @keyframes calc-grow-both {
+        from {
+          transform: scale(0.94);
+        }
+        to {
+          transform: scale(1);
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -367,6 +407,46 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
         grid-template-rows: repeat(3, minmax(48px, 1fr));
         gap: var(--gap);
+        transform-origin: bottom right;
+      }
+
+      [data-keys][data-keypad-grow="row"] {
+        animation: keypad-grow-row 820ms cubic-bezier(0.2, 0.7, 0.2, 1) 1;
+      }
+
+      [data-keys][data-keypad-grow="column"] {
+        animation: keypad-grow-column 820ms cubic-bezier(0.2, 0.7, 0.2, 1) 1;
+      }
+
+      [data-keys][data-keypad-grow="both"] {
+        animation: keypad-grow-both 880ms cubic-bezier(0.2, 0.7, 0.2, 1) 1;
+      }
+
+      @keyframes keypad-grow-row {
+        from {
+          transform: scaleY(0.92);
+        }
+        to {
+          transform: scaleY(1);
+        }
+      }
+
+      @keyframes keypad-grow-column {
+        from {
+          transform: scaleX(0.92);
+        }
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      @keyframes keypad-grow-both {
+        from {
+          transform: scale(0.92);
+        }
+        to {
+          transform: scale(1);
+        }
       }
 
       .storage {
@@ -581,6 +661,16 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
+        .calc {
+          animation: none !important;
+        }
+
+        [data-keys],
+        [data-keys] > * {
+          transition: none !important;
+          animation: none !important;
+        }
+
         .key,
         .key.key--toggle-animate-on:not(:disabled),
         .key.key--toggle-animate-off:not(:disabled) {
@@ -875,6 +965,8 @@
           <input id="debug-height" type="number" min="1" max="8" data-debug-keypad-height />
         </div>
         <button type="button" class="debug-action" data-debug-apply-keypad-size>Apply Keypad Size</button>
+        <button type="button" class="debug-action" data-debug-upgrade-keypad-row>Upgrade Row</button>
+        <button type="button" class="debug-action" data-debug-upgrade-keypad-column>Upgrade Column</button>
         <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
         <button type="button" class="debug-action" data-debug-unlock-all>Unlock All</button>
       </div>

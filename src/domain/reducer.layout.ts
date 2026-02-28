@@ -68,8 +68,10 @@ const writeSurfaceCell = (
   };
 };
 
+const emptyCell = (): LayoutCell => ({ kind: "placeholder", area: "empty" });
+
 const sourceClearedCell = (surface: LayoutSurface): LayoutCell | null =>
-  surface === "keypad" ? { kind: "placeholder", area: "empty" } : null;
+  surface === "keypad" ? emptyCell() : null;
 
 const isEmptyCell = (surface: LayoutSurface, cell: LayoutCell | KeyCell | null): boolean =>
   surface === "keypad" ? isKeypadEmptyCell(cell as LayoutCell) : isStorageEmptyCell(cell as KeyCell | null);
@@ -126,11 +128,39 @@ const hasOnlyExpectedKeyChanges = (
 const clampDimension = (value: number, fallback: number): number =>
   Math.max(KEYPAD_DIM_MIN, Math.min(KEYPAD_DIM_MAX, Number.isInteger(value) ? value : fallback));
 
-export const resizeKeyLayout = (layout: LayoutCell[], columns: number, rows: number): LayoutCell[] => {
-  const targetLength = Math.max(1, columns * rows);
-  const next = layout.slice(0, targetLength);
-  while (next.length < targetLength) {
-    next.push({ kind: "placeholder", area: "empty" });
+export const resizeKeyLayout = (
+  layout: LayoutCell[],
+  fromColumns: number,
+  fromRows: number,
+  toColumns: number,
+  toRows: number,
+): LayoutCell[] => {
+  const normalizedFromColumns = Math.max(1, fromColumns);
+  const normalizedFromRows = Math.max(1, fromRows);
+  const normalizedToColumns = Math.max(1, toColumns);
+  const normalizedToRows = Math.max(1, toRows);
+  const rowDelta = normalizedToRows - normalizedFromRows;
+  const columnDelta = normalizedToColumns - normalizedFromColumns;
+  const targetLength = normalizedToColumns * normalizedToRows;
+  const next: LayoutCell[] = [];
+
+  for (let index = 0; index < targetLength; index += 1) {
+    const destinationRow = Math.floor(index / normalizedToColumns);
+    const destinationColumn = index % normalizedToColumns;
+    const sourceRow = destinationRow - rowDelta;
+    const sourceColumn = destinationColumn - columnDelta;
+    if (
+      sourceRow < 0 ||
+      sourceColumn < 0 ||
+      sourceRow >= normalizedFromRows ||
+      sourceColumn >= normalizedFromColumns
+    ) {
+      next.push(emptyCell());
+      continue;
+    }
+
+    const sourceIndex = sourceRow * normalizedFromColumns + sourceColumn;
+    next.push(layout[sourceIndex] ?? emptyCell());
   }
   return next;
 };
@@ -280,12 +310,14 @@ export const applySwapLayoutCells = (
 };
 
 export const applySetKeypadDimensions = (state: GameState, columns: number, rows: number): GameState => {
-  const clampedColumns = clampDimension(columns, state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS);
-  const clampedRows = clampDimension(rows, state.ui.keypadRows || KEYPAD_DEFAULT_ROWS);
+  const currentColumns = state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
+  const currentRows = state.ui.keypadRows || KEYPAD_DEFAULT_ROWS;
+  const clampedColumns = clampDimension(columns, currentColumns);
+  const clampedRows = clampDimension(rows, currentRows);
   if (state.ui.keypadColumns === clampedColumns && state.ui.keypadRows === clampedRows) {
     return state;
   }
-  const keyLayout = resizeKeyLayout(state.ui.keyLayout, clampedColumns, clampedRows);
+  const keyLayout = resizeKeyLayout(state.ui.keyLayout, currentColumns, currentRows, clampedColumns, clampedRows);
   return {
     ...state,
     ui: {
@@ -293,6 +325,44 @@ export const applySetKeypadDimensions = (state: GameState, columns: number, rows
       keyLayout,
       keypadColumns: clampedColumns,
       keypadRows: clampedRows,
+    },
+  };
+};
+
+export const applyUpgradeKeypadRow = (state: GameState): GameState => {
+  const currentColumns = state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
+  const currentRows = state.ui.keypadRows || KEYPAD_DEFAULT_ROWS;
+  const upgradedRows = clampDimension(currentRows + 1, currentRows);
+  if (upgradedRows === currentRows) {
+    return state;
+  }
+  const keyLayout = resizeKeyLayout(state.ui.keyLayout, currentColumns, currentRows, currentColumns, upgradedRows);
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      keyLayout,
+      keypadColumns: currentColumns,
+      keypadRows: upgradedRows,
+    },
+  };
+};
+
+export const applyUpgradeKeypadColumn = (state: GameState): GameState => {
+  const currentColumns = state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
+  const currentRows = state.ui.keypadRows || KEYPAD_DEFAULT_ROWS;
+  const upgradedColumns = clampDimension(currentColumns + 1, currentColumns);
+  if (upgradedColumns === currentColumns) {
+    return state;
+  }
+  const keyLayout = resizeKeyLayout(state.ui.keyLayout, currentColumns, currentRows, upgradedColumns, currentRows);
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      keyLayout,
+      keypadColumns: upgradedColumns,
+      keypadRows: currentRows,
     },
   };
 };
