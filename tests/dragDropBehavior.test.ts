@@ -12,7 +12,13 @@ export const runDragDropBehaviorTests = (): void => {
     ...base,
     ui: {
       ...base.ui,
-      keyLayout: [...base.ui.keyLayout, { kind: "placeholder", area: "empty" }, { kind: "placeholder", area: "empty" }],
+      keyLayout: [
+        ...base.ui.keyLayout,
+        { kind: "placeholder", area: "empty" },
+        { kind: "placeholder", area: "empty" },
+        { kind: "placeholder", area: "empty" },
+        { kind: "placeholder", area: "empty" },
+      ],
       keypadColumns: 5,
       keypadRows: 1,
       storageLayout: [{ kind: "key", key: "1" }, ...base.ui.storageLayout.slice(1)],
@@ -83,6 +89,46 @@ export const runDragDropBehaviorTests = (): void => {
     allowedBottomRightMove,
     "move",
     "dragging execution key into bottom-right keypad slot is allowed",
+  );
+
+  const blockedExecutionToNonBottomRightMove = classifyDropAction(
+    withExecutionStorageKey,
+    { surface: "storage", index: 0 },
+    { surface: "keypad", index: 3 },
+  );
+  assert.equal(
+    blockedExecutionToNonBottomRightMove,
+    null,
+    "dragging execution key into non-bottom-right keypad slot is rejected",
+  );
+
+  const withExecutionAtBottomRight: GameState = {
+    ...withStorageKey,
+    unlocks: {
+      ...withStorageKey.unlocks,
+      execution: {
+        ...withStorageKey.unlocks.execution,
+        "=": true,
+      },
+    },
+    ui: {
+      ...withStorageKey.ui,
+      keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
+        index === 2 ? ({ kind: "placeholder", area: "empty" } as const) : index === 4 ? ({ kind: "key", key: "=" } as const) : cell,
+      ),
+    },
+  };
+  const emptyStorageIndex = withExecutionAtBottomRight.ui.storageLayout.findIndex((cell) => cell === null);
+  assert.ok(emptyStorageIndex >= 0, "test state includes an empty storage slot");
+  const allowedExecutionMoveOutOfBottomRight = classifyDropAction(
+    withExecutionAtBottomRight,
+    { surface: "keypad", index: 4 },
+    { surface: "storage", index: emptyStorageIndex },
+  );
+  assert.equal(
+    allowedExecutionMoveOutOfBottomRight,
+    "move",
+    "dragging execution key out of bottom-right slot into storage is allowed",
   );
 
   const invalid = classifyDropAction(

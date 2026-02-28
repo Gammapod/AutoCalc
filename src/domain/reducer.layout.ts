@@ -199,28 +199,35 @@ const isStorageOutcomeValid = (
   return isStorageLayoutValid(nextStorage);
 };
 
-const violatesBottomRightExecutionRule = (
+const isKeyPlacementValid = (state: GameState, surface: LayoutSurface, index: number, key: KeyCell["key"]): boolean => {
+  if (surface !== "keypad") {
+    return true;
+  }
+  const bottomRightIndex =
+    (state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS) * (state.ui.keypadRows || KEYPAD_DEFAULT_ROWS) - 1;
+  const isBottomRightSlot = index === bottomRightIndex;
+  if (isExecutionKey(key)) {
+    return isBottomRightSlot;
+  }
+  return !isBottomRightSlot;
+};
+
+const violatesExecutionPlacementRule = (
   state: GameState,
   fromSurface: LayoutSurface,
   fromIndex: number,
-  fromNextValue: LayoutCell | KeyCell | null,
+  sourceKey: KeyCell["key"],
   toSurface: LayoutSurface,
   toIndex: number,
-  toNextValue: LayoutCell | KeyCell | null,
+  destinationKey?: KeyCell["key"],
 ): boolean => {
-  const bottomRightIndex =
-    (state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS) * (state.ui.keypadRows || KEYPAD_DEFAULT_ROWS) - 1;
-  let nextBottomRight: LayoutCell | KeyCell | null | undefined;
-  if (fromSurface === "keypad" && fromIndex === bottomRightIndex) {
-    nextBottomRight = fromNextValue;
+  if (!isKeyPlacementValid(state, toSurface, toIndex, sourceKey)) {
+    return true;
   }
-  if (toSurface === "keypad" && toIndex === bottomRightIndex) {
-    nextBottomRight = toNextValue;
+  if (destinationKey && !isKeyPlacementValid(state, fromSurface, fromIndex, destinationKey)) {
+    return true;
   }
-  if (typeof nextBottomRight === "undefined") {
-    return false;
-  }
-  return isKeyCell(nextBottomRight) && !isExecutionKey(nextBottomRight.key);
+  return false;
 };
 
 export const applyMoveKeySlot = (state: GameState, fromIndex: number, toIndex: number): GameState => {
@@ -281,14 +288,13 @@ export const applyMoveLayoutCell = (
     return state;
   }
   if (
-    violatesBottomRightExecutionRule(
+    violatesExecutionPlacementRule(
       state,
       fromSurface,
       fromIndex,
-      sourceClearedCell(fromSurface),
+      sourceCell.key,
       toSurface,
       toIndex,
-      sourceCell,
     )
   ) {
     return state;
@@ -340,14 +346,14 @@ export const applySwapLayoutCells = (
     return state;
   }
   if (
-    violatesBottomRightExecutionRule(
+    violatesExecutionPlacementRule(
       state,
       fromSurface,
       fromIndex,
-      destinationCell,
+      sourceCell.key,
       toSurface,
       toIndex,
-      sourceCell,
+      destinationCell.key,
     )
   ) {
     return state;

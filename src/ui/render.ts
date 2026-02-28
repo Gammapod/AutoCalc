@@ -938,36 +938,37 @@ const getKeyAtTarget = (state: GameState, target: DragTarget): Key | null => {
 const getBottomRightKeypadIndex = (state: GameState): number =>
   Math.max(0, state.ui.keypadColumns * state.ui.keypadRows - 1);
 
-const violatesBottomRightExecutionRule = (
+const isKeyPlacementValid = (state: GameState, target: DragTarget, key: Key): boolean => {
+  if (target.surface !== "keypad") {
+    return true;
+  }
+  const bottomRightIndex = getBottomRightKeypadIndex(state);
+  const isBottomRightSlot = target.index === bottomRightIndex;
+  if (isExecutionKey(key)) {
+    return isBottomRightSlot;
+  }
+  return !isBottomRightSlot;
+};
+
+const violatesExecutionPlacementRule = (
   state: GameState,
   source: DragTarget,
   destination: DragTarget,
   action: DropAction,
 ): boolean => {
-  const bottomRightIndex = getBottomRightKeypadIndex(state);
-  const sourceIsBottomRight = source.surface === "keypad" && source.index === bottomRightIndex;
-  const destinationIsBottomRight = destination.surface === "keypad" && destination.index === bottomRightIndex;
-  if (!sourceIsBottomRight && !destinationIsBottomRight) {
-    return false;
+  const sourceKey = getKeyAtTarget(state, source);
+  if (!sourceKey) {
+    return true;
   }
-
-  if (action === "move") {
-    if (!destinationIsBottomRight) {
-      return false;
-    }
-    const sourceKey = getKeyAtTarget(state, source);
-    return !sourceKey || !isExecutionKey(sourceKey);
+  if (!isKeyPlacementValid(state, destination, sourceKey)) {
+    return true;
   }
-
-  if (destinationIsBottomRight) {
-    const sourceKey = getKeyAtTarget(state, source);
-    if (!sourceKey || !isExecutionKey(sourceKey)) {
+  if (action === "swap") {
+    const destinationKey = getKeyAtTarget(state, destination);
+    if (!destinationKey) {
       return true;
     }
-  }
-  if (sourceIsBottomRight) {
-    const destinationKey = getKeyAtTarget(state, destination);
-    if (!destinationKey || !isExecutionKey(destinationKey)) {
+    if (!isKeyPlacementValid(state, source, destinationKey)) {
       return true;
     }
   }
@@ -1027,7 +1028,7 @@ export const classifyDropAction = (
     return null;
   }
   const action: DropAction = destinationOccupancy === "key" ? "swap" : "move";
-  if (violatesBottomRightExecutionRule(state, source, destination, action)) {
+  if (violatesExecutionPlacementRule(state, source, destination, action)) {
     return null;
   }
   return isStorageDropGeometryValid(state, source, destination, action) ? action : null;

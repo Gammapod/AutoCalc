@@ -6,14 +6,14 @@ export const SAVE_SCHEMA_VERSION = 5;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const AUTO_EQUALS_FLAG = "execution.pause";
 export const GRAPH_VISIBLE_FLAG = "graph.visible";
-export const KEYPAD_DEFAULT_COLUMNS = 3;
+export const KEYPAD_DEFAULT_COLUMNS = 1;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
-const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["1", "+", "="];
+const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["++"];
 
 export const defaultStorageKeys = (): KeyCell[] =>
   defaultKeyLayout()
@@ -44,8 +44,10 @@ export const defaultDrawerKeyLayout = (
 ): LayoutCell[] => {
   const slotCount = Math.max(1, columns * rows);
   const layout: LayoutCell[] = Array.from({ length: slotCount }, () => ({ kind: "placeholder", area: "empty" as const }));
-  for (let index = 0; index < Math.min(slotCount, DEFAULT_KEYPAD_KEYS.length); index += 1) {
-    layout[index] = { kind: "key", key: DEFAULT_KEYPAD_KEYS[index] };
+  const visibleKeyCount = Math.min(slotCount, DEFAULT_KEYPAD_KEYS.length);
+  const startIndex = slotCount - visibleKeyCount;
+  for (let index = 0; index < visibleKeyCount; index += 1) {
+    layout[startIndex + index] = { kind: "key", key: DEFAULT_KEYPAD_KEYS[index] };
   }
   return layout;
 };
