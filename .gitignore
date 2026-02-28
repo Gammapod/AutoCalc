@@ -1,4 +1,6 @@
 dist/
 legacy/
 node_modules/
+release/
 design_refs/dependency_map.runtime.mmd
+node_modules/.package-lock.json

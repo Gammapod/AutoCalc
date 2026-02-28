@@ -30,3 +30,22 @@ Then open: `http://localhost:4173/index.html`
 ```bash
 npm test
 ```
+
+## Windows Portable EXE
+
+Build a Windows portable executable (no installer):
+
+```bash
+npm run build:desktop
+```
+
+Release build (verify + package):
+
+```bash
+npm run release:win:portable
+```
+
+Tag-driven GitHub release pipeline:
+
+- Push a tag in `v*` format (for example `v0.1.1`)
+- GitHub Actions will run build/tests, package Windows `x64` portable `.exe`, and publish it to GitHub Releases

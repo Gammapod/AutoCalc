@@ -1,0 +1,53 @@
+name: Release Windows Portable
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-win-portable:
+    runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Align package version to tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag.StartsWith("v")) {
+            throw "Expected a tag like v1.2.3. Got: $tag"
+          }
+          $version = $tag.Substring(1)
+          npm version $version --no-git-tag-version --allow-same-version
+
+      - name: Verify build and tests
+        run: npm run ci:verify
+
+      - name: Build portable executable
+        run: npm run build:desktop
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: AutoCalc ${{ github.ref_name }}
+          generate_release_notes: true
+          files: release/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
