@@ -145,9 +145,10 @@ export const runOperationSlotDisplayTests = (): void => {
     ...base,
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: "⟡", operand: 3n }],
+      operationSlots: [{ operator: "\u27E1", operand: 3n }],
     },
   };
-  assert.equal(buildOperationSlotDisplay(committedModulo), "[ ⟡ 3 ]", "committed modulo slot renders operator as ⟡");
+  assert.equal(buildOperationSlotDisplay(committedModulo), "[ \u2662 3 ]", "committed modulo slot renders operator as \u2662");
 };
+
 

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { buildTotalSlotModel } from "../src/ui/render.js";
+import { buildClearedTotalSlotModel, buildTotalSlotModel, isClearedCalculatorState } from "../src/ui/render.js";
+import { initialState } from "../src/domain/state.js";
 
 const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 
@@ -52,5 +53,37 @@ export const runTotalDisplayTests = (): void => {
     negativeSingleDigit.at(-1)?.activeSegments,
     ["b", "c"],
     "negative -1 keeps 1 segments in the rightmost digit slot",
+  );
+
+  const cleared = initialState().calculator;
+  assert.equal(isClearedCalculatorState(cleared), true, "initial/reset calculator state is treated as cleared");
+
+  const calculatedZero = {
+    ...cleared,
+    roll: [{ num: 0n, den: 1n }],
+  };
+  assert.equal(isClearedCalculatorState(calculatedZero), false, "calculated zero is not treated as cleared");
+
+  const typedNonZero = {
+    ...cleared,
+    total: { num: 5n, den: 1n },
+  };
+  assert.equal(isClearedCalculatorState(typedNonZero), false, "non-zero totals are not treated as cleared");
+
+  const clearedSlots = buildClearedTotalSlotModel(2);
+  assert.equal(
+    clearedSlots.filter((slot) => slot.state === "locked").length,
+    10,
+    "cleared model preserves locked vs unlocked digit structure",
+  );
+  assert.equal(
+    clearedSlots.filter((slot) => slot.state === "active").length,
+    1,
+    "cleared model lights exactly one slot for underscore",
+  );
+  assert.deepEqual(
+    clearedSlots.at(-1)?.activeSegments,
+    ["d"],
+    "cleared model renders underscore with the bottom segment",
   );
 };

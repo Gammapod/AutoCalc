@@ -5,6 +5,7 @@ import { isStorageLayoutValid } from "../domain/reducer.layout.js";
 import { buildUnlockCriteria } from "../domain/unlockEngine.js";
 import type {
   Action,
+  CalculatorState,
   EuclidRemainderEntry,
   GameState,
   KeyButtonBehavior,
@@ -190,6 +191,9 @@ const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
   operator === "*" ? "\u00D7" : operator === "/" ? "\u00F7" : operator;
 
+const formatOperatorForOperationSlotDisplay = (operator: SlotOperator): string =>
+  operator === "\u27E1" ? "\u2662" : formatOperatorForDisplay(operator);
+
 export const formatKeyLabel = (key: Key): string => {
   if (key === "NEG") {
     return "-\u{1D465}";
@@ -291,6 +295,48 @@ export const buildTotalSlotModel = (total: { num: bigint; den: bigint }, unlocke
   return slots;
 };
 
+export const buildClearedTotalSlotModel = (unlockedDigits: number): TotalSlotModel[] => {
+  const clampedUnlocked = clampUnlockedDigits(unlockedDigits);
+  const lockedCount = MAX_UNLOCKED_TOTAL_DIGITS - clampedUnlocked;
+  const slots: TotalSlotModel[] = [];
+
+  for (let index = 0; index < MAX_UNLOCKED_TOTAL_DIGITS; index += 1) {
+    if (index < lockedCount) {
+      slots.push({
+        state: "locked",
+        digit: null,
+        activeSegments: [],
+      });
+      continue;
+    }
+
+    slots.push({
+      state: "unlocked",
+      digit: null,
+      activeSegments: [],
+    });
+  }
+
+  if (slots.length > 0) {
+    slots[slots.length - 1] = {
+      state: "active",
+      digit: "_",
+      activeSegments: ["d"],
+    };
+  }
+
+  return slots;
+};
+
+export const isClearedCalculatorState = (calculator: CalculatorState): boolean =>
+  calculator.total.num === 0n &&
+  calculator.total.den === 1n &&
+  !calculator.pendingNegativeTotal &&
+  calculator.roll.length === 0 &&
+  calculator.euclidRemainders.length === 0 &&
+  calculator.operationSlots.length === 0 &&
+  calculator.draftingSlot === null;
+
 export const buildRollLines = (roll: Array<{ num: bigint; den: bigint }>): string[] => {
   return roll.map((value) => toPreferredFractionString(value));
 };
@@ -345,7 +391,7 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   }
 
   const filledTokens = state.calculator.operationSlots.map(
-    (slot) => `[ ${formatOperatorForDisplay(slot.operator)} ${slot.operand.toString()} ]`,
+    (slot) => `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${slot.operand.toString()} ]`,
   );
   if (state.calculator.draftingSlot) {
     const operand = state.calculator.draftingSlot.operandInput
@@ -353,7 +399,7 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
       : state.calculator.draftingSlot.isNegative
         ? "-_"
         : "_";
-    filledTokens.push(`[ ${formatOperatorForDisplay(state.calculator.draftingSlot.operator)} ${operand} ]`);
+    filledTokens.push(`[ ${formatOperatorForOperationSlotDisplay(state.calculator.draftingSlot.operator)} ${operand} ]`);
   }
 
   const tokens = filledTokens.slice(0, visibleSlots);
@@ -473,6 +519,28 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   const hasIntegerTotal = state.calculator.total.den === 1n;
   totalEl.innerHTML = "";
+  if (isClearedCalculatorState(state.calculator)) {
+    const frame = document.createElement("div");
+    frame.className = "seg-frame";
+    const slotModels = buildClearedTotalSlotModel(state.unlocks.maxTotalDigits);
+    for (const slot of slotModels) {
+      const digitEl = document.createElement("div");
+      digitEl.className = `seg-digit seg-digit--${slot.state}`;
+      for (const segmentName of SEGMENT_NAMES) {
+        const segmentEl = document.createElement("div");
+        segmentEl.className = `seg seg-${segmentName}`;
+        if (slot.state === "active" && slot.activeSegments.includes(segmentName)) {
+          segmentEl.classList.add("seg--on");
+        }
+        digitEl.appendChild(segmentEl);
+      }
+      frame.appendChild(digitEl);
+    }
+    totalEl.appendChild(frame);
+    totalEl.setAttribute("aria-label", "Total _");
+    return;
+  }
+
   const isNegative =
     hasIntegerTotal &&
     (state.calculator.total.num < 0n || (state.calculator.total.num === 0n && state.calculator.pendingNegativeTotal));
