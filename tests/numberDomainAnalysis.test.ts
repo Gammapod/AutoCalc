@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { analyzeNumberDomains } from "../src/domain/analysis.js";
+import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
 
@@ -15,6 +16,13 @@ export const runNumberDomainAnalysisTests = (): void => {
   assert.equal(initialReport.naturalNumbers, true, "initial state can prove natural numbers via ++ from 0");
   assert.equal(initialReport.integersNonNatural, false, "initial state cannot prove non-natural integers");
   assert.equal(initialReport.generatedAtIso, "2026-02-28T00:00:00.000Z", "report uses provided timestamp");
+  assert.equal(
+    initialReport.unlockSpecAnalysis.length,
+    unlockCatalog.length,
+    "spec analysis reports one row per unlock in catalog",
+  );
+  const initialTotal11 = initialReport.unlockSpecAnalysis.find((row) => row.unlockId === "unlock_storage_on_total_11");
+  assert.equal(initialTotal11?.status, "possible", "total=11 unlock is possible from initial config via spec capabilities");
 
   const withResetAndMinus: GameState = {
     ...base,
@@ -26,6 +34,7 @@ export const runNumberDomainAnalysisTests = (): void => {
       },
       slotOperators: {
         ...base.unlocks.slotOperators,
+        "+": true,
         "-": true,
       },
       utilities: {
@@ -62,6 +71,22 @@ export const runNumberDomainAnalysisTests = (): void => {
     reportWithResetAndMinusAllUnlocked.integersNonNatural,
     true,
     "all-unlocked scope enables non-natural integer proof",
+  );
+  const plusPressPossibleAllUnlocked = reportWithResetAndMinusAllUnlocked.unlockSpecAnalysis.find(
+    (row) => row.unlockId === "unlock_1_on_plus_press_first",
+  );
+  assert.equal(
+    plusPressPossibleAllUnlocked?.status,
+    "possible",
+    "all-unlocked scope marks plus-press unlock as possible when + is unlocked in config",
+  );
+  const plusPressBlockedKeypadOnly = reportWithResetAndMinus.unlockSpecAnalysis.find(
+    (row) => row.unlockId === "unlock_1_on_plus_press_first",
+  );
+  assert.equal(
+    plusPressBlockedKeypadOnly?.status,
+    "blocked",
+    "keypad-only scope blocks plus-press unlock when + is not present on keypad",
   );
 
   const highPositiveOnlyIncrement = withState(base, {

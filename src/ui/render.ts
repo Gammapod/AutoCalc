@@ -3,6 +3,7 @@ import { CHECKLIST_UNLOCK_ID, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../dom
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { isStorageLayoutValid } from "../domain/reducer.layout.js";
 import { buildUnlockCriteria } from "../domain/unlockEngine.js";
+import { analyzeUnlockSpecRows } from "../domain/analysis.js";
 import type {
   Action,
   CalculatorState,
@@ -456,16 +457,21 @@ const getUnlockName = (effect: UnlockEffect): string => {
 };
 
 const isUnlockImpossible = (_unlock: UnlockDefinition, _state: GameState): boolean => false;
+const isReachableOrUnknownStatus = (status: "satisfied" | "possible" | "blocked" | "unknown" | "todo"): boolean =>
+  status === "satisfied" || status === "possible" || status === "unknown" || status === "todo";
 
 export const buildUnlockRows = (
   state: GameState,
   catalog: UnlockDefinition[],
   impossibleCheck: (unlock: UnlockDefinition, state: GameState) => boolean = isUnlockImpossible,
 ): UnlockRowVm[] => {
+  const specRowsById = new Map(analyzeUnlockSpecRows(state, { useAllUnlockedKeys: false }, catalog).map((row) => [row.unlockId, row]));
   const rows = catalog.map<UnlockRowVm>((unlock) => {
     const completed = state.completedUnlockIds.includes(unlock.id);
     const impossible = impossibleCheck(unlock, state);
-    const rowState: UnlockRowState = impossible ? "impossible" : completed ? "completed" : "not_completed";
+    const specRow = specRowsById.get(unlock.id);
+    const specVisible = completed || !specRow || isReachableOrUnknownStatus(specRow.status);
+    const rowState: UnlockRowState = impossible || !specVisible ? "impossible" : completed ? "completed" : "not_completed";
     const criteria = buildUnlockCriteria(unlock.predicate, state);
     return {
       id: unlock.id,
@@ -1480,7 +1486,6 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     }
   }
 };
-
 
 
 

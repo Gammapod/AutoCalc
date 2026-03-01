@@ -1,14 +1,45 @@
-import type { GameState, Key, LayoutCell } from "./types.js";
+import { unlockCatalog } from "../content/unlocks.catalog.js";
+import {
+  getPredicateCapabilitySpec,
+  type CapabilityId,
+  type PredicateCapabilitySpec,
+} from "./predicateCapabilitySpec.js";
+import type { GameState, Key, LayoutCell, UnlockDefinition, UnlockPredicate } from "./types.js";
+import { evaluateUnlockPredicate } from "./unlockEngine.js";
+
+export type NumberDomainAnalysisOptions = {
+  useAllUnlockedKeys?: boolean;
+};
+
+export type UnlockSpecStatus = "satisfied" | "possible" | "blocked" | "unknown" | "todo";
+
+export type UnlockSpecAnalysisRow = {
+  unlockId: string;
+  predicateType: UnlockPredicate["type"];
+  status: UnlockSpecStatus;
+  predicateSatisfiedNow: boolean;
+  missingNecessary: CapabilityId[];
+  matchedSufficientSetIds: string[];
+  detail: string;
+};
 
 export type NumberDomainReport = {
   naturalNumbers: boolean;
   integersNonNatural: boolean;
   generatedAtIso: string;
   reasoning: string[];
+  unlockSpecAnalysis: UnlockSpecAnalysisRow[];
 };
 
-export type NumberDomainAnalysisOptions = {
-  useAllUnlockedKeys?: boolean;
+type CapabilityContext = {
+  executeActivation: boolean;
+  stepPlusOne: boolean;
+  stepMinusOne: boolean;
+  resetToZero: boolean;
+  formOperatorPlusOperand: boolean;
+  rollGrowth: boolean;
+  rollEqualRun: boolean;
+  rollIncrementingRun: boolean;
 };
 
 const formatPredicate = (name: string, value: boolean): string => `${name}=${value ? "true" : "false"}`;
@@ -31,27 +62,172 @@ const isUnlocked = (state: GameState, key: Key): boolean => {
   return false;
 };
 
+const createAvailabilityReader = (
+  state: GameState,
+  options: NumberDomainAnalysisOptions,
+): { isAvailable: (key: Key) => boolean; scopeLabel: string } => {
+  const useAllUnlockedKeys = options.useAllUnlockedKeys ?? false;
+  const keypadKeys = new Set(state.ui.keyLayout.filter(isKeyCell).map((cell) => cell.key));
+  return {
+    isAvailable: (key: Key): boolean => isUnlocked(state, key) && (useAllUnlockedKeys || keypadKeys.has(key)),
+    scopeLabel: useAllUnlockedKeys ? "all_unlocked" : "present_on_keypad",
+  };
+};
+
+const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolean): CapabilityContext => {
+  const hasEqualsKey = isAvailable("=");
+  const hasPauseKey = isAvailable("\u23EF");
+  const hasEqualsUnlocked = isUnlocked(state, "=");
+  const executeActivation = hasEqualsKey || (hasPauseKey && hasEqualsUnlocked);
+  const hasPlus = isAvailable("+");
+  const hasMinus = isAvailable("-");
+  const hasNeg = isAvailable("NEG");
+  const hasZero = isAvailable("0");
+  const hasOne = isAvailable("1");
+  const hasSomeDigit = Object.keys(state.unlocks.valueExpression).some((key) => isAvailable(key as Key));
+  const hasSomeOperator = ["+", "-", "*", "/", "#", "\u27E1"].some((key) => isAvailable(key as Key));
+
+  const stepPlusOne = isAvailable("++") || (executeActivation && hasPlus && hasOne);
+  const stepMinusOne = (executeActivation && hasMinus && hasOne) || (executeActivation && hasPlus && hasNeg && hasOne);
+  const resetToZero = isAvailable("C") || isAvailable("UNDO");
+  const formOperatorPlusOperand = hasSomeOperator && hasSomeDigit;
+  const rollGrowth = executeActivation && (formOperatorPlusOperand || stepPlusOne || stepMinusOne);
+  const rollEqualRun =
+    executeActivation &&
+    ((hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable("*") && hasOne) || (isAvailable("/") && hasOne));
+  const rollIncrementingRun = executeActivation && hasPlus && hasOne;
+
+  return {
+    executeActivation,
+    stepPlusOne,
+    stepMinusOne,
+    resetToZero,
+    formOperatorPlusOperand,
+    rollGrowth,
+    rollEqualRun,
+    rollIncrementingRun,
+  };
+};
+
+const resolveCapability = (
+  capability: CapabilityId,
+  predicate: UnlockPredicate,
+  caps: CapabilityContext,
+  isAvailable: (key: Key) => boolean,
+): boolean => {
+  if (capability === "execute_activation") {
+    return caps.executeActivation;
+  }
+  if (capability === "step_plus_one") {
+    return caps.stepPlusOne;
+  }
+  if (capability === "step_minus_one") {
+    return caps.stepMinusOne;
+  }
+  if (capability === "reset_to_zero") {
+    return caps.resetToZero;
+  }
+  if (capability === "form_operator_plus_operand") {
+    return caps.formOperatorPlusOperand;
+  }
+  if (capability === "roll_growth") {
+    return caps.rollGrowth;
+  }
+  if (capability === "roll_equal_run") {
+    return caps.rollEqualRun;
+  }
+  if (capability === "roll_incrementing_run") {
+    return caps.rollIncrementingRun;
+  }
+  if (capability === "press_target_key") {
+    if (predicate.type !== "key_press_count_at_least") {
+      return false;
+    }
+    return isAvailable(predicate.key);
+  }
+  return false;
+};
+
+const isTodoSpec = (spec: PredicateCapabilitySpec | undefined): boolean =>
+  Boolean(spec?.notes && spec.notes.startsWith("TODO:"));
+
+const analyzeUnlockBySpec = (
+  state: GameState,
+  unlock: UnlockDefinition,
+  caps: CapabilityContext,
+  isAvailable: (key: Key) => boolean,
+): UnlockSpecAnalysisRow => {
+  const spec = getPredicateCapabilitySpec(unlock.predicate.type);
+  const predicateSatisfiedNow = evaluateUnlockPredicate(unlock.predicate, state);
+
+  if (!spec || isTodoSpec(spec)) {
+    return {
+      unlockId: unlock.id,
+      predicateType: unlock.predicate.type,
+      status: "todo",
+      predicateSatisfiedNow,
+      missingNecessary: [],
+      matchedSufficientSetIds: [],
+      detail: "Spec TODO: predicate type lacks concrete capability metadata.",
+    };
+  }
+
+  const missingNecessary = spec.necessary
+    .filter((required) => !resolveCapability(required.capability, unlock.predicate, caps, isAvailable))
+    .map((required) => required.capability);
+
+  const matchedSufficientSetIds = spec.sufficientSets
+    .filter((set) => set.allOf.every((capability) => resolveCapability(capability, unlock.predicate, caps, isAvailable)))
+    .map((set) => set.id);
+
+  let status: UnlockSpecStatus = "unknown";
+  let detail = "Necessary capabilities present but no sufficient set currently satisfied.";
+  if (predicateSatisfiedNow) {
+    status = "satisfied";
+    detail = "Predicate already satisfied in current state.";
+  } else if (missingNecessary.length > 0) {
+    status = "blocked";
+    detail = `Missing necessary capabilities: ${missingNecessary.join(", ")}`;
+  } else if (matchedSufficientSetIds.length > 0) {
+    status = "possible";
+    detail = `Sufficient set(s) available: ${matchedSufficientSetIds.join(", ")}`;
+  }
+
+  return {
+    unlockId: unlock.id,
+    predicateType: unlock.predicate.type,
+    status,
+    predicateSatisfiedNow,
+    missingNecessary,
+    matchedSufficientSetIds,
+    detail,
+  };
+};
+
+export const analyzeUnlockSpecRows = (
+  state: GameState,
+  options: NumberDomainAnalysisOptions = {},
+  catalog: UnlockDefinition[] = unlockCatalog,
+): UnlockSpecAnalysisRow[] => {
+  const { isAvailable } = createAvailabilityReader(state, options);
+  const caps = computeCapabilities(state, isAvailable);
+  return catalog.map((unlock) => analyzeUnlockBySpec(state, unlock, caps, isAvailable));
+};
+
 export const analyzeNumberDomains = (
   state: GameState,
   now: Date = new Date(),
   options: NumberDomainAnalysisOptions = {},
 ): NumberDomainReport => {
-  const useAllUnlockedKeys = options.useAllUnlockedKeys ?? false;
-  const keypadKeys = new Set(state.ui.keyLayout.filter(isKeyCell).map((cell) => cell.key));
-  const isAvailable = (key: Key): boolean => isUnlocked(state, key) && (useAllUnlockedKeys || keypadKeys.has(key));
-
-  const canResetToZero = isAvailable("C") || isAvailable("UNDO");
-  const hasDigitOne = isAvailable("1");
-  const hasPlus = isAvailable("+");
-  const hasMinus = isAvailable("-");
-  const hasNeg = isAvailable("NEG");
-  const hasEquals = isAvailable("=");
-
-  const plusStep = isAvailable("++") || (hasEquals && hasPlus && hasDigitOne);
-  const minusStep = (hasEquals && hasMinus && hasDigitOne) || (hasEquals && hasPlus && hasNeg && hasDigitOne);
+  const { isAvailable, scopeLabel } = createAvailabilityReader(state, options);
+  const caps = computeCapabilities(state, isAvailable);
 
   const currentIsInteger = state.calculator.total.den === 1n;
   const currentValue = currentIsInteger ? state.calculator.total.num : null;
+  const plusStep = caps.stepPlusOne;
+  const minusStep = caps.stepMinusOne;
+  const canResetToZero = caps.resetToZero;
+  const hasDigitOne = isAvailable("1");
   const anchorIntegerExists = currentIsInteger || canResetToZero;
 
   const canReachOne =
@@ -68,37 +244,25 @@ export const analyzeNumberDomains = (
   const integersNonNatural = canReachZero && minusStep;
 
   const reasoning: string[] = [
-    `scope=${useAllUnlockedKeys ? "all_unlocked" : "present_on_keypad"}`,
-    formatPredicate("canResetToZero", canResetToZero),
-    formatPredicate("hasDigitOne", hasDigitOne),
-    formatPredicate("plusStep", plusStep),
-    formatPredicate("minusStep", minusStep),
+    `scope=${scopeLabel}`,
+    formatPredicate("executeActivation", caps.executeActivation),
+    formatPredicate("stepPlusOne", caps.stepPlusOne),
+    formatPredicate("stepMinusOne", caps.stepMinusOne),
+    formatPredicate("resetToZero", caps.resetToZero),
     formatPredicate("currentIsInteger", currentIsInteger),
     formatPredicate("anchorIntegerExists", anchorIntegerExists),
     formatPredicate("canReachOne", canReachOne),
     formatPredicate("canReachZero", canReachZero),
   ];
 
-  if (!naturalNumbers) {
-    reasoning.push(
-      `naturalNumbers=false (failed: ${formatPredicate("canReachOne", canReachOne)}, ${formatPredicate("plusStep", plusStep)})`,
-    );
-  } else {
-    reasoning.push("naturalNumbers=true");
-  }
-
-  if (!integersNonNatural) {
-    reasoning.push(
-      `integersNonNatural=false (failed: ${formatPredicate("canReachZero", canReachZero)}, ${formatPredicate("minusStep", minusStep)})`,
-    );
-  } else {
-    reasoning.push("integersNonNatural=true");
-  }
+  reasoning.push(naturalNumbers ? "naturalNumbers=true" : "naturalNumbers=false");
+  reasoning.push(integersNonNatural ? "integersNonNatural=true" : "integersNonNatural=false");
 
   return {
     naturalNumbers,
     integersNonNatural,
     generatedAtIso: now.toISOString(),
     reasoning,
+    unlockSpecAnalysis: analyzeUnlockSpecRows(state, options, unlockCatalog),
   };
 };

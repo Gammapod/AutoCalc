@@ -24,6 +24,7 @@ import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
 import { runAutoEqualsSchedulerTests } from "./autoEqualsScheduler.test.js";
 import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
 import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
+import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -41,6 +42,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["app/auto-equals-scheduler", runAutoEqualsSchedulerTests],
   ["domain/keypad-layout-model", runKeypadLayoutModelTests],
   ["domain/number-domain-analysis", runNumberDomainAnalysisTests],
+  ["domain/predicate-capability-spec", runPredicateCapabilitySpecTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],
