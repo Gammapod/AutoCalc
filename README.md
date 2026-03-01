@@ -16,6 +16,11 @@ npm install
 npm run build
 ```
 
+Build also generates progression graph reports:
+
+- `dist/reports/unlock-graph-report.md`
+- `dist/reports/unlock-graph-report.json`
+
 ## Play (Local)
 
 ```bash
