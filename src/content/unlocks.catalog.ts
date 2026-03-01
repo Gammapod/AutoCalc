@@ -121,16 +121,6 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetLabel: "move 1 to R1C3",
   },
   {
-    id: "upgrade_row_on_increment_run_4",
-    description: "Upgrade rows when roll ends with 4 incrementing values.",
-    predicate: { type: "roll_ends_with_incrementing_run", length: 4, step: 1n },
-    effect: { type: "upgrade_keypad_row" },
-    once: true,
-    domainNodeId: "NN",
-    targetNodeId: "Ui_keypad_row",
-    targetLabel: "keypad rows +1",
-  },
-  {
     id: "unlock_c_on_increment_run_4",
     description: "Unlock C when roll ends with 4 incrementing values.",
     predicate: { type: "roll_ends_with_incrementing_run", length: 4, step: 1n },

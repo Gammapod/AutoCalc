@@ -66,13 +66,11 @@ export const runReducerUnlockTests = (): void => {
   state = press(state, "=");
   state = press(state, "=");
   assert.equal(state.unlocks.slotOperators["+"], true, "plus unlocks on equal run of 4");
-  assert.equal(state.ui.keypadColumns, 2, "equal-run rule upgrades columns");
-  assert.equal(findKeypadIndex(state, "+"), 0, "plus moves to R1C2 after first column upgrade");
+  assert.equal(findKeypadIndex(state, "+"), -1, "plus remains off-keypad without automatic column upgrades");
 
   state = press(state, "+");
   assert.equal(state.unlocks.valueExpression["1"], true, "digit 1 unlocks on first plus press");
-  assert.equal(state.ui.keypadColumns, 3, "first plus press upgrades columns");
-  assert.equal(findKeypadIndex(state, "1"), 0, "digit 1 moves to R1C3");
+  assert.equal(findKeypadIndex(state, "1"), -1, "digit 1 remains off-keypad without automatic column upgrades");
 
   const withIncrementingSuffix = applyUnlocks(
     {
@@ -85,8 +83,7 @@ export const runReducerUnlockTests = (): void => {
     unlockCatalog,
   );
   assert.equal(withIncrementingSuffix.unlocks.utilities.C, true, "C unlocks on incrementing run of 4");
-  assert.equal(withIncrementingSuffix.ui.keypadRows, 2, "increment-run rule upgrades rows");
-  assert.equal(findKeypadIndex(withIncrementingSuffix, "C"), 2, "C moves to R2C1");
+  assert.equal(findKeypadIndex(withIncrementingSuffix, "C"), -1, "C remains off-keypad without automatic row upgrades");
   state = withIncrementingSuffix;
 
   const beforeC = state.completedUnlockIds.length;

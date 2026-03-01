@@ -183,14 +183,16 @@ export const runReducerLayoutTests = (): void => {
     toSurface: "keypad",
     toIndex: emptyKeypadIndex,
   });
+  const cStorageIndex = storagePrepared.ui.storageLayout.findIndex((cell) => cell?.key === "C");
+  assert.ok(cStorageIndex >= 0, "storage includes C key for cross-surface swap");
   const swapAcross = reducer(storagePrepared, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "keypad",
     fromIndex: emptyKeypadIndex,
     toSurface: "storage",
-    toIndex: 1,
+    toIndex: cStorageIndex,
   });
-  assert.equal(swapAcross.ui.storageLayout[1]?.key, "CE", "swap across surfaces places keypad key into storage");
+  assert.equal(swapAcross.ui.storageLayout[cStorageIndex]?.key, "CE", "swap across surfaces places keypad key into storage");
   assert.equal(
     swapAcross.ui.keyLayout[emptyKeypadIndex]?.kind,
     "key",

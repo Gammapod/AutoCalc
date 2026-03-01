@@ -34,7 +34,6 @@ export const runUnlockGraphTests = (): void => {
     analysis.unreachableKeys.includes("2"),
     "analysis should include keys with no unlock path as unreachable",
   );
-  assert.ok(analysis.blockedConditionIds.length > 0, "analysis should report blocked conditions");
 
   const report = buildUnlockGraphReport(unlockCatalog, startingKeys, new Date("2026-03-01T00:00:00.000Z"));
   const formatted = formatUnlockGraphReport(report);

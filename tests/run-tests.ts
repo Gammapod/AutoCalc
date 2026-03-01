@@ -25,6 +25,7 @@ import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
 import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
 import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.js";
 import { runUnlockGraphTests } from "./unlockGraph.test.js";
+import { runKeyBehaviorContractTests } from "./keyBehavior.contract.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -44,6 +45,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/number-domain-analysis", runNumberDomainAnalysisTests],
   ["domain/predicate-capability-spec", runPredicateCapabilitySpecTests],
   ["domain/unlock-graph", runUnlockGraphTests],
+  ["domain/key-behavior-contract", runKeyBehaviorContractTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],
