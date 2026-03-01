@@ -9,7 +9,6 @@ import { runRollDisplayTests } from "./rollDisplay.test.js";
 import { runTotalDisplayTests } from "./totalDisplay.test.js";
 import { runUnlocksDisplayTests } from "./unlocksDisplay.test.js";
 import { runUnlockDomainResolverTests } from "./unlockDomainResolver.test.js";
-import { runRuntimeDependencyMapTests } from "./runtimeDependencyMap.test.js";
 import { runGraphDisplayTests } from "./graphDisplay.test.js";
 import { runKeyLabelDisplayTests } from "./keyLabelDisplay.test.js";
 import { runKeyVisualGroupTests } from "./keyVisualGroup.test.js";
@@ -51,7 +50,6 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["v2/parity", runV2ParityTests],
   ["v2/persistence-parity", runV2PersistenceParityTests],
   ["content/unlock-domain-resolver", runUnlockDomainResolverTests],
-  ["scripts/runtime-dependency-map", runRuntimeDependencyMapTests],
   ["browser/import-safety", runBrowserImportSafetyTests],
   ["reducer/flags", runReducerFlagsTests],
 ];

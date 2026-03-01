@@ -131,5 +131,4 @@ Key coverage includes:
 - reducer unlock and key behavior
 - roll formatting/model behavior
 - persistence round-trip and legacy migration
-- runtime dependency map generation
 - browser import safety guard for Euclidean engine
