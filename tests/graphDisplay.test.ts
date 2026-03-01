@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { buildGraphPoints, buildGraphXWindow, isGraphVisible } from "../src/ui/render.js";
 
-const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
+  kind: "rational",
+  value: { num, den },
+});
 
 export const runGraphDisplayTests = (): void => {
   assert.deepEqual(buildGraphPoints([]), [], "empty roll returns no graph points");
@@ -10,9 +13,9 @@ export const runGraphDisplayTests = (): void => {
   assert.deepEqual(
     buildGraphPoints([r(5n), r(-2n), r(99n)]),
     [
-      { x: 0, y: 5 },
-      { x: 1, y: -2 },
-      { x: 2, y: 99 },
+      { x: 0, y: 5, hasError: false },
+      { x: 1, y: -2, hasError: false },
+      { x: 2, y: 99, hasError: false },
     ],
     "graph points map index to x and roll value to y",
   );
@@ -25,6 +28,16 @@ export const runGraphDisplayTests = (): void => {
     Number.isSafeInteger(hugePoint.y),
     false,
     "bigint graph values convert to number and may lose precision beyond safe range",
+  );
+
+  const mixedWithNaN = buildGraphPoints([r(7n), { kind: "nan" }, r(8n)], [{ rollIndex: 2, code: "x∉[-R,R] ∴ |x|=R×⌊x/R⌋", kind: "overflow" }]);
+  assert.deepEqual(
+    mixedWithNaN,
+    [
+      { x: 0, y: 7, hasError: false },
+      { x: 1, y: 8, hasError: true },
+    ],
+    "graph skips NaN roll rows and marks error-associated points",
   );
 
   assert.deepEqual(buildGraphXWindow(0), { min: 0, max: 25 }, "empty roll uses default 0..25 x window");

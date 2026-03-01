@@ -2,11 +2,11 @@
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 6;
+export const SAVE_SCHEMA_VERSION = 7;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const AUTO_EQUALS_FLAG = "execution.pause";
 export const GRAPH_VISIBLE_FLAG = "graph.visible";
-export const KEYPAD_DEFAULT_COLUMNS = 3;
+export const KEYPAD_DEFAULT_COLUMNS = 1;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
@@ -85,10 +85,11 @@ export const initialState = (): GameState => {
   const keyLayout = defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS);
   return {
     calculator: {
-      total: { num: 0n, den: 1n },
+      total: { kind: "rational", value: { num: 0n, den: 1n } },
       pendingNegativeTotal: false,
       singleDigitInitialTotalEntry: false,
       roll: [],
+      rollErrors: [],
       euclidRemainders: [],
       operationSlots: [],
       draftingSlot: null,

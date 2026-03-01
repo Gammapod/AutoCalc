@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
+import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
 import type { GameState, UnlockDefinition } from "../src/domain/types.js";
 import { buildUnlockRows, isChecklistUnlocked } from "../src/ui/render.js";
 
-const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 
 export const runUnlocksDisplayTests = (): void => {
   const base = initialState();

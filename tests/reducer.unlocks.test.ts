@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
+import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
 import { applyUnlocks } from "../src/domain/unlocks.js";
 import type { GameState, Key } from "../src/domain/types.js";
 
-const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const press = (state: GameState, key: Key): GameState => reducer(state, { type: "PRESS_KEY", key });
 
 const findKeypadIndex = (state: GameState, key: Key): number =>
@@ -16,11 +18,11 @@ export const runReducerUnlockTests = (): void => {
   for (let i = 0; i < 39; i += 1) {
     totalGateState = press(totalGateState, "++");
   }
-  assert.equal(totalGateState.calculator.total.num, 39n, "sanity check: total reaches 39");
+  assert.equal(totalGateState.calculator.total.kind === "rational" ? totalGateState.calculator.total.value.num : null, 39n, "sanity check: total reaches 39");
   assert.equal(totalGateState.unlocks.valueExpression["4"], false, "digit 4 stays locked below total 40");
   assert.equal(totalGateState.unlocks.utilities.UNDO, true, "UNDO unlocks at total >= 20");
   totalGateState = press(totalGateState, "++");
-  assert.equal(totalGateState.calculator.total.num, 40n, "sanity check: total reaches 40");
+  assert.equal(totalGateState.calculator.total.kind === "rational" ? totalGateState.calculator.total.value.num : null, 40n, "sanity check: total reaches 40");
   assert.equal(totalGateState.unlocks.valueExpression["4"], true, "digit 4 unlocks at total >= 40");
 
   const undoBeforePress = press(initialState(), "UNDO");

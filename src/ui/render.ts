@@ -1,4 +1,5 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
+import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../domain/calculatorValue.js";
 import { CHECKLIST_UNLOCK_ID, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { isStorageLayoutValid } from "../domain/reducer.layout.js";
@@ -6,6 +7,7 @@ import { buildUnlockCriteria } from "../domain/unlockEngine.js";
 import { analyzeUnlockSpecRows } from "../domain/analysis.js";
 import type {
   Action,
+  CalculatorValue,
   CalculatorState,
   EuclidRemainderEntry,
   GameState,
@@ -13,6 +15,7 @@ import type {
   KeyCell,
   Key,
   LayoutSurface,
+  RollErrorEntry,
   SlotOperator,
   UnlockDefinition,
   UnlockEffect,
@@ -34,6 +37,8 @@ type RollRow = {
   prefix: string;
   value: string;
   remainder?: string;
+  errorCode?: string;
+  graphPointIndex?: number;
 };
 
 type RollViewModel = {
@@ -46,6 +51,7 @@ type RollViewModel = {
 export type GraphPoint = {
   x: number;
   y: number;
+  hasError: boolean;
 };
 
 type GraphDataset = {
@@ -53,8 +59,8 @@ type GraphDataset = {
   showLine: boolean;
   pointRadius: number;
   pointHoverRadius: number;
-  pointBackgroundColor: string;
-  pointBorderColor: string;
+  pointBackgroundColor: string | string[];
+  pointBorderColor: string | string[];
   pointBorderWidth: number;
 };
 
@@ -271,10 +277,11 @@ const readToggleAnimation = (cell: KeyCell): "on" | "off" | null => {
 const clampUnlockedDigits = (value: number): number =>
   Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
 
-export const buildTotalSlotModel = (total: { num: bigint; den: bigint }, unlockedDigits: number): TotalSlotModel[] => {
+export const buildTotalSlotModel = (total: CalculatorValue, unlockedDigits: number): TotalSlotModel[] => {
+  const numericTotal = isRationalCalculatorValue(total) ? total.value : { num: 0n, den: 1n };
   const clampedUnlocked = clampUnlockedDigits(unlockedDigits);
   const lockedCount = MAX_UNLOCKED_TOTAL_DIGITS - clampedUnlocked;
-  const magnitude = total.num < 0n ? -total.num : total.num;
+  const magnitude = numericTotal.num < 0n ? -numericTotal.num : numericTotal.num;
   const renderedDigits = magnitude.toString().slice(-clampedUnlocked);
   const leadingUnlockedCount = clampedUnlocked - renderedDigits.length;
   const slots: TotalSlotModel[] = [];
@@ -344,41 +351,57 @@ export const buildClearedTotalSlotModel = (unlockedDigits: number): TotalSlotMod
 };
 
 export const isClearedCalculatorState = (calculator: CalculatorState): boolean =>
-  calculator.total.num === 0n &&
-  calculator.total.den === 1n &&
+  isRationalCalculatorValue(calculator.total) &&
+  calculator.total.value.num === 0n &&
+  calculator.total.value.den === 1n &&
   !calculator.pendingNegativeTotal &&
   calculator.roll.length === 0 &&
+  calculator.rollErrors.length === 0 &&
   calculator.euclidRemainders.length === 0 &&
   calculator.operationSlots.length === 0 &&
   calculator.draftingSlot === null;
 
-export const buildRollLines = (roll: Array<{ num: bigint; den: bigint }>): string[] => {
-  return roll.map((value) => toPreferredFractionString(value));
+export const buildRollLines = (roll: CalculatorValue[]): string[] => {
+  return roll.map((value) => (isRationalCalculatorValue(value) ? toPreferredFractionString(value.value) : "NaN"));
 };
 
-export const buildRollRows = (rollLines: string[], euclidRemainders: EuclidRemainderEntry[] = []): RollRow[] => {
+export const buildRollRows = (
+  rollLines: string[],
+  euclidRemainders: EuclidRemainderEntry[] = [],
+  rollErrors: RollErrorEntry[] = [],
+): RollRow[] => {
   const remainderByRollIndex = new Map<number, string>();
   for (const remainder of euclidRemainders) {
     remainderByRollIndex.set(remainder.rollIndex, toPreferredFractionString(remainder.value));
+  }
+  const errorByRollIndex = new Map<number, string>();
+  for (const error of rollErrors) {
+    errorByRollIndex.set(error.rollIndex, error.code);
   }
 
   return rollLines.map((value, index) => ({
     prefix: index === 0 ? "X =" : "  =",
     value,
-    remainder: remainderByRollIndex.get(index),
+    remainder: errorByRollIndex.has(index) ? undefined : remainderByRollIndex.get(index),
+    errorCode: errorByRollIndex.get(index),
   }));
 };
 
 export const buildRollViewModel = (
-  roll: Array<{ num: bigint; den: bigint }>,
+  roll: CalculatorValue[],
   euclidRemainders: EuclidRemainderEntry[] = [],
+  rollErrors: RollErrorEntry[] = [],
 ): RollViewModel => {
   const lines = buildRollLines(roll);
-  const rows = buildRollRows(lines, euclidRemainders);
-  const valueColumnChars = rows.reduce(
-    (max, row) => Math.max(max, row.value.length, row.remainder ? `⟡= ${row.remainder}`.length : 0),
-    0,
-  );
+  const rows = buildRollRows(lines, euclidRemainders, rollErrors);
+  const valueColumnChars = rows.reduce((max, row) => {
+    const suffixLength = row.errorCode
+      ? `Err: ${row.errorCode}`.length
+      : row.remainder
+        ? `⟡= ${row.remainder}`.length
+        : 0;
+    return Math.max(max, row.value.length, suffixLength);
+  }, 0);
   return {
     rows,
     isVisible: rows.length > 0,
@@ -388,16 +411,26 @@ export const buildRollViewModel = (
 };
 
 export const getRollLineClassName = (row: RollRow): string =>
-  row.remainder ? "roll-line roll-line--with-remainder" : "roll-line";
+  row.remainder || row.errorCode ? "roll-line roll-line--with-remainder" : "roll-line";
 
-export const buildGraphPoints = (roll: Array<{ num: bigint; den: bigint }>): GraphPoint[] => {
-  return roll.map((value, index) => ({
-    x: index,
-    y: Number(value.num) / Number(value.den),
-  }));
+export const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorEntry[] = []): GraphPoint[] => {
+  const errorByRollIndex = new Set(rollErrors.map((entry) => entry.rollIndex));
+  const points: GraphPoint[] = [];
+  for (let index = 0; index < roll.length; index += 1) {
+    const value = roll[index];
+    if (!isRationalCalculatorValue(value)) {
+      continue;
+    }
+    points.push({
+      x: points.length,
+      y: Number(value.value.num) / Number(value.value.den),
+      hasError: errorByRollIndex.has(index),
+    });
+  }
+  return points;
 };
 
-export const isGraphVisible = (roll: Array<{ num: bigint; den: bigint }>): boolean => roll.length > 0;
+export const isGraphVisible = (roll: CalculatorValue[]): boolean => roll.length > 0;
 
 export const buildOperationSlotDisplay = (state: GameState): string => {
   const visibleSlots = state.unlocks.maxSlots;
@@ -549,7 +582,9 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
 };
 
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
-  const hasIntegerTotal = state.calculator.total.den === 1n;
+  const rationalTotal = isRationalCalculatorValue(state.calculator.total) ? state.calculator.total.value : null;
+  const hasRationalTotal = rationalTotal !== null;
+  const hasIntegerTotal = hasRationalTotal && rationalTotal.den === 1n;
   totalEl.innerHTML = "";
   if (isClearedCalculatorState(state.calculator)) {
     const frame = document.createElement("div");
@@ -573,9 +608,18 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
     return;
   }
 
+  if (!hasRationalTotal) {
+    const fraction = document.createElement("div");
+    fraction.className = "seg-fraction";
+    fraction.textContent = "NaN";
+    totalEl.appendChild(fraction);
+    totalEl.setAttribute("aria-label", "Total NaN");
+    return;
+  }
+
   const isNegative =
     hasIntegerTotal &&
-    (state.calculator.total.num < 0n || (state.calculator.total.num === 0n && state.calculator.pendingNegativeTotal));
+    (rationalTotal.num < 0n || (rationalTotal.num === 0n && state.calculator.pendingNegativeTotal));
 
   if (isNegative) {
     const sign = document.createElement("div");
@@ -587,9 +631,9 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   if (!hasIntegerTotal) {
     const fraction = document.createElement("div");
     fraction.className = "seg-fraction";
-    fraction.textContent = toDisplayString(state.calculator.total);
+    fraction.textContent = toDisplayString(rationalTotal);
     totalEl.appendChild(fraction);
-    totalEl.setAttribute("aria-label", `Total ${toDisplayString(state.calculator.total)}`);
+    totalEl.setAttribute("aria-label", `Total ${toDisplayString(rationalTotal)}`);
     return;
   }
 
@@ -613,7 +657,7 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
     frame.appendChild(digitEl);
   }
 
-  totalEl.setAttribute("aria-label", `Total ${toDisplayString(state.calculator.total)}`);
+  totalEl.setAttribute("aria-label", `Total ${calculatorValueToDisplayString(state.calculator.total)}`);
   totalEl.appendChild(frame);
 };
 
@@ -721,7 +765,7 @@ const destroyGraphChart = (): void => {
   graphCanvas = null;
 };
 
-const renderGraphDisplay = (root: Element, roll: Array<{ num: bigint; den: bigint }>): void => {
+const renderGraphDisplay = (root: Element, roll: CalculatorValue[], rollErrors: RollErrorEntry[]): void => {
   const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
   if (!canvas) {
     destroyGraphChart();
@@ -743,9 +787,11 @@ const renderGraphDisplay = (root: Element, roll: Array<{ num: bigint; den: bigin
     return;
   }
 
-  const points = buildGraphPoints(roll);
+  const points = buildGraphPoints(roll, rollErrors);
   const hasPoints = isGraphVisible(roll);
   const options = buildGraphOptions(hasPoints, points);
+  const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
+  const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));
 
   if (!graphChart) {
     graphChart = new chartCtor(context, {
@@ -757,8 +803,8 @@ const renderGraphDisplay = (root: Element, roll: Array<{ num: bigint; den: bigin
             showLine: false,
             pointRadius: hasPoints ? 3 : 0,
             pointHoverRadius: 4,
-            pointBackgroundColor: "#bcffd6",
-            pointBorderColor: "rgba(188, 255, 214, 0.9)",
+            pointBackgroundColor,
+            pointBorderColor,
             pointBorderWidth: 1,
           },
         ],
@@ -770,6 +816,8 @@ const renderGraphDisplay = (root: Element, roll: Array<{ num: bigint; den: bigin
 
   graphChart.data.datasets[0].data = points;
   graphChart.data.datasets[0].pointRadius = hasPoints ? 3 : 0;
+  graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;
+  graphChart.data.datasets[0].pointBorderColor = pointBorderColor;
   graphChart.options = options;
   graphChart.update("none");
 };
@@ -1276,7 +1324,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     grapherDeviceEl.hidden = !isGraphVisible;
   }
   if (isGraphVisible) {
-    renderGraphDisplay(root, state.calculator.roll);
+    renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors);
   } else {
     destroyGraphChart();
   }
@@ -1284,7 +1332,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
   renderTotalDisplay(totalEl, state);
   slotEl.textContent = buildOperationSlotDisplay(state);
 
-  const rollView = buildRollViewModel(state.calculator.roll, state.calculator.euclidRemainders);
+  const rollView = buildRollViewModel(state.calculator.roll, state.calculator.euclidRemainders, state.calculator.rollErrors);
   rollEl.innerHTML = "";
   rollEl.setAttribute("data-roll-visible", rollView.isVisible ? "true" : "false");
   rollEl.setAttribute("aria-hidden", rollView.isVisible ? "false" : "true");
@@ -1306,7 +1354,12 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     value.textContent = row.value;
     line.appendChild(value);
 
-    if (row.remainder) {
+    if (row.errorCode) {
+      const remainder = document.createElement("span");
+      remainder.className = "roll-remainder";
+      remainder.textContent = `Err: ${row.errorCode}`;
+      line.appendChild(remainder);
+    } else if (row.remainder) {
       const remainder = document.createElement("span");
       remainder.className = "roll-remainder";
       remainder.textContent = `⟡= ${row.remainder}`;
@@ -1486,6 +1539,8 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     }
   }
 };
+
+
 
 
 

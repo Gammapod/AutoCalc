@@ -3,7 +3,7 @@ import type { GameState } from "../../src/domain/types.js";
 export const collectInvariantViolations = (state: GameState): string[] => {
   const violations: string[] = [];
 
-  if (state.calculator.total.den === 0n) {
+  if (state.calculator.total.kind === "rational" && state.calculator.total.value.den === 0n) {
     violations.push("total denominator must not be zero");
   }
 

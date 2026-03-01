@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { analyzeUnlockPredicate } from "../src/domain/unlockEngine.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState, UnlockPredicate } from "../src/domain/types.js";
 
-const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 
 const assertCriteriaConsistency = (
   predicate: UnlockPredicate,

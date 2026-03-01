@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { buildRollLines, buildRollRows, buildRollViewModel, getRollLineClassName } from "../src/ui/render.js";
 import type { EuclidRemainderEntry } from "../src/domain/types.js";
 
-const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
+  kind: "rational",
+  value: { num, den },
+});
 
 export const runRollDisplayTests = (): void => {
   assert.deepEqual(
@@ -15,9 +19,9 @@ export const runRollDisplayTests = (): void => {
   assert.deepEqual(
     buildRollRows(["3", "9", "15"]),
     [
-      { prefix: "X =", value: "3", remainder: undefined },
-      { prefix: "  =", value: "9", remainder: undefined },
-      { prefix: "  =", value: "15", remainder: undefined },
+      { prefix: "X =", value: "3", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "9", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "15", remainder: undefined, errorCode: undefined },
     ],
     "roll rows use first-line X = and then aligned equals prefixes",
   );
@@ -35,21 +39,21 @@ export const runRollDisplayTests = (): void => {
   assert.deepEqual(
     visibleRoll.rows,
     [
-      { prefix: "X =", value: "3", remainder: undefined },
-      { prefix: "  =", value: "9", remainder: undefined },
-      { prefix: "  =", value: "15", remainder: undefined },
+      { prefix: "X =", value: "3", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "9", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "15", remainder: undefined, errorCode: undefined },
     ],
     "roll model rows preserve chronological order and prefixes",
   );
 
   assert.deepEqual(buildRollLines([r(3n, 2n)]), ["3/2"], "fraction roll values render as exact fractions");
 
-  const remainderRows: EuclidRemainderEntry[] = [{ rollIndex: 1, value: r(1n, 2n) }];
+  const remainderRows: EuclidRemainderEntry[] = [{ rollIndex: 1, value: rv(1n, 2n) }];
   assert.deepEqual(
     buildRollRows(["10", "1"], remainderRows),
     [
-      { prefix: "X =", value: "10", remainder: undefined },
-      { prefix: "  =", value: "1", remainder: "1/2" },
+      { prefix: "X =", value: "10", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "1", remainder: "1/2", errorCode: undefined },
     ],
     "roll rows place euclidean remainders on the same line as their target roll entry",
   );
@@ -58,10 +62,24 @@ export const runRollDisplayTests = (): void => {
   assert.deepEqual(
     rollWithRemainder.rows,
     [
-      { prefix: "X =", value: "10", remainder: undefined },
-      { prefix: "  =", value: "1", remainder: "1/2" },
+      { prefix: "X =", value: "10", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "1", remainder: "1/2", errorCode: undefined },
     ],
     "roll view model includes the same-line euclidean remainder",
+  );
+
+  const rollWithErrorAndRemainder = buildRollRows(
+    ["10", "1"],
+    remainderRows,
+    [{ rollIndex: 1, code: "n/0, ∴ NaN", kind: "division_by_zero" }],
+  );
+  assert.deepEqual(
+    rollWithErrorAndRemainder,
+    [
+      { prefix: "X =", value: "10", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "1", remainder: undefined, errorCode: "n/0, ∴ NaN" },
+    ],
+    "error code takes precedence over displayed remainder on the same roll row",
   );
 
   assert.equal(

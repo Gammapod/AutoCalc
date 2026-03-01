@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
+import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import {
   deriveCatalogPredicateCapabilitySpecs,
   getPredicateCapabilitySpec,
@@ -9,6 +10,8 @@ import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
 import { evaluateUnlockPredicate } from "../src/domain/unlockEngine.js";
 import type { GameState, Key, UnlockPredicate } from "../src/domain/types.js";
+
+const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 
 type ProofFixture = {
   id: string;
@@ -110,13 +113,13 @@ const proofFixtures: ProofFixture[] = [
         ...unlocked,
         calculator: {
           ...unlocked.calculator,
-          total: { num: 0n, den: 1n },
+          total: r(0n),
           roll: [
-            { num: 0n, den: 1n },
-            { num: 0n, den: 1n },
-            { num: 0n, den: 1n },
-            { num: 0n, den: 1n },
-            { num: 0n, den: 1n },
+            r(0n),
+            r(0n),
+            r(0n),
+            r(0n),
+            r(0n),
           ],
           operationSlots: [{ operator: "+", operand: 0n }],
           draftingSlot: null,
@@ -136,13 +139,13 @@ const proofFixtures: ProofFixture[] = [
         ...unlocked,
         calculator: {
           ...unlocked.calculator,
-          total: { num: 5n, den: 1n },
+          total: r(5n),
           roll: [
-            { num: 1n, den: 1n },
-            { num: 2n, den: 1n },
-            { num: 3n, den: 1n },
-            { num: 4n, den: 1n },
-            { num: 5n, den: 1n },
+            r(1n),
+            r(2n),
+            r(3n),
+            r(4n),
+            r(5n),
           ],
           operationSlots: [{ operator: "+", operand: 1n }],
           draftingSlot: null,
@@ -201,7 +204,9 @@ export const runPredicateCapabilitySpecTests = (): void => {
 
   for (const fixture of proofFixtures) {
     const endingState = runScript(fixture.buildInitialState(), fixture.script);
-    const rollSnapshot = endingState.calculator.roll.map((value) => `${value.num.toString()}/${value.den.toString()}`);
+    const rollSnapshot = endingState.calculator.roll.map((value) =>
+      value.kind === "rational" ? `${value.value.num.toString()}/${value.value.den.toString()}` : "NaN",
+    );
     assert.equal(
       evaluateUnlockPredicate(fixture.predicate, endingState),
       true,

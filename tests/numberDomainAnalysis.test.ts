@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { analyzeNumberDomains } from "../src/domain/analysis.js";
+import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
+
+const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 
 const withState = (state: GameState, partial: Partial<GameState>): GameState => ({
   ...state,
@@ -92,7 +95,7 @@ export const runNumberDomainAnalysisTests = (): void => {
   const highPositiveOnlyIncrement = withState(base, {
     calculator: {
       ...base.calculator,
-      total: { num: 42n, den: 1n },
+      total: r(42n),
     },
   });
   const highPositiveReport = analyzeNumberDomains(highPositiveOnlyIncrement);
@@ -102,7 +105,7 @@ export const runNumberDomainAnalysisTests = (): void => {
   const currentOneOnlyIncrement = withState(base, {
     calculator: {
       ...base.calculator,
-      total: { num: 1n, den: 1n },
+      total: r(1n),
     },
   });
   const currentOneReport = analyzeNumberDomains(currentOneOnlyIncrement);
@@ -111,7 +114,7 @@ export const runNumberDomainAnalysisTests = (): void => {
   const nonIntegerNoReset = withState(base, {
     calculator: {
       ...base.calculator,
-      total: { num: 3n, den: 2n },
+      total: r(3n, 2n),
     },
   });
   const nonIntegerReport = analyzeNumberDomains(nonIntegerNoReset);
@@ -122,7 +125,7 @@ export const runNumberDomainAnalysisTests = (): void => {
     ...base,
     calculator: {
       ...base.calculator,
-      total: { num: 37n, den: 1n },
+      total: r(37n),
     },
     unlocks: {
       ...base.unlocks,

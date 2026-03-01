@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { buildClearedTotalSlotModel, buildTotalSlotModel, isClearedCalculatorState } from "../src/ui/render.js";
 import { initialState } from "../src/domain/state.js";
 
-const r = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
+  kind: "rational",
+  value: { num, den },
+});
 
 export const runTotalDisplayTests = (): void => {
   const baseline = buildTotalSlotModel(r(0n), 2);
@@ -60,13 +63,13 @@ export const runTotalDisplayTests = (): void => {
 
   const calculatedZero = {
     ...cleared,
-    roll: [{ num: 0n, den: 1n }],
+    roll: [r(0n)],
   };
   assert.equal(isClearedCalculatorState(calculatedZero), false, "calculated zero is not treated as cleared");
 
   const typedNonZero = {
     ...cleared,
-    total: { num: 5n, den: 1n },
+    total: r(5n),
   };
   assert.equal(isClearedCalculatorState(typedNonZero), false, "non-zero totals are not treated as cleared");
 

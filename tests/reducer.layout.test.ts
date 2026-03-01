@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
+
+const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
+const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 
 export const runReducerLayoutTests = (): void => {
   const keySnapshot = (state: ReturnType<typeof initialState>): { keypad: Array<string | null>; storage: Array<string | null> } => ({
@@ -76,9 +80,9 @@ export const runReducerLayoutTests = (): void => {
     ...baselineWithSpace,
     calculator: {
       ...baselineWithSpace.calculator,
-      total: { num: 7n, den: 1n },
-      roll: [{ num: 7n, den: 1n }],
-      euclidRemainders: [{ rollIndex: 0, value: { num: 1n, den: 1n } }],
+      total: r(7n),
+      roll: [r(7n)],
+      euclidRemainders: [{ rollIndex: 0, value: rv(1n) }],
       operationSlots: [{ operator: "+", operand: 3n }],
       draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
     },
@@ -114,7 +118,7 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.deepEqual(
     acrossSurfaceMoveTriggersCEStyle.calculator.total,
-    { num: 7n, den: 1n },
+    r(7n),
     "cross-surface move triggers CE-style clear entry and preserves total",
   );
   assert.equal(acrossSurfaceMoveTriggersCEStyle.calculator.roll.length, 0, "cross-surface move clears roll via CE-style clear entry");
@@ -303,7 +307,7 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.deepEqual(
     acrossSurfaceSwapTriggersCEStyle.calculator.total,
-    { num: 7n, den: 1n },
+    r(7n),
     "cross-surface swap triggers CE-style clear entry and preserves total",
   );
   assert.equal(acrossSurfaceSwapTriggersCEStyle.calculator.roll.length, 0, "cross-surface swap clears roll via CE-style clear entry");

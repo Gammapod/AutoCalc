@@ -4,6 +4,7 @@ import {
   type CapabilityId,
   type PredicateCapabilitySpec,
 } from "./predicateCapabilitySpec.js";
+import { isRationalCalculatorValue } from "./calculatorValue.js";
 import type { GameState, Key, LayoutCell, UnlockDefinition, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 
@@ -222,8 +223,9 @@ export const analyzeNumberDomains = (
   const { isAvailable, scopeLabel } = createAvailabilityReader(state, options);
   const caps = computeCapabilities(state, isAvailable);
 
-  const currentIsInteger = state.calculator.total.den === 1n;
-  const currentValue = currentIsInteger ? state.calculator.total.num : null;
+  const rationalTotal = isRationalCalculatorValue(state.calculator.total) ? state.calculator.total.value : null;
+  const currentIsInteger = rationalTotal !== null && rationalTotal.den === 1n;
+  const currentValue = currentIsInteger && rationalTotal ? rationalTotal.num : null;
   const plusStep = caps.stepPlusOne;
   const minusStep = caps.stepMinusOne;
   const canResetToZero = caps.resetToZero;

@@ -1,4 +1,5 @@
 import { equalsBigInt, gteBigInt, isInteger, lteBigInt } from "../infra/math/rationalEngine.js";
+import { isRationalCalculatorValue } from "./calculatorValue.js";
 import { getOperationSnapshot } from "./slotDrafting.js";
 import type {
   GameState,
@@ -32,7 +33,9 @@ const getProgressiveRollSequenceMatches = (roll: GameState["calculator"]["roll"]
   for (let candidate = maxCandidate; candidate >= 0; candidate -= 1) {
     const rollSuffix = roll.slice(roll.length - candidate);
     const requiredPrefix = required.slice(0, candidate);
-    const isMatch = rollSuffix.every((value, index) => isInteger(value) && value.num === requiredPrefix[index]);
+    const isMatch = rollSuffix.every(
+      (value, index) => isRationalCalculatorValue(value) && isInteger(value.value) && value.value.num === requiredPrefix[index],
+    );
     if (isMatch) {
       return candidate;
     }
@@ -41,7 +44,7 @@ const getProgressiveRollSequenceMatches = (roll: GameState["calculator"]["roll"]
 };
 
 const analyzeTotalEquals: PredicateAnalyzer<TotalEqualsPredicate> = (predicate, state) => {
-  const isMet = equalsBigInt(state.calculator.total, predicate.value);
+  const isMet = isRationalCalculatorValue(state.calculator.total) && equalsBigInt(state.calculator.total.value, predicate.value);
   return {
     isMet,
     criteria: [{ label: predicate.value.toString(), checked: isMet }],
@@ -49,7 +52,7 @@ const analyzeTotalEquals: PredicateAnalyzer<TotalEqualsPredicate> = (predicate, 
 };
 
 const analyzeTotalAtLeast: PredicateAnalyzer<TotalAtLeastPredicate> = (predicate, state) => {
-  const isMet = gteBigInt(state.calculator.total, predicate.value);
+  const isMet = isRationalCalculatorValue(state.calculator.total) && gteBigInt(state.calculator.total.value, predicate.value);
   return {
     isMet,
     criteria: [{ label: predicate.value.toString(), checked: isMet }],
@@ -57,7 +60,7 @@ const analyzeTotalAtLeast: PredicateAnalyzer<TotalAtLeastPredicate> = (predicate
 };
 
 const analyzeTotalAtMost: PredicateAnalyzer<TotalAtMostPredicate> = (predicate, state) => {
-  const isMet = lteBigInt(state.calculator.total, predicate.value);
+  const isMet = isRationalCalculatorValue(state.calculator.total) && lteBigInt(state.calculator.total.value, predicate.value);
   return {
     isMet,
     criteria: [{ label: predicate.value.toString(), checked: isMet }],
@@ -76,7 +79,9 @@ const analyzeRollEndsWithSequence: PredicateAnalyzer<RollEndsWithSequencePredica
 };
 
 const analyzeRollContainsValue: PredicateAnalyzer<RollContainsValuePredicate> = (predicate, state) => {
-  const isMet = state.calculator.roll.some((value) => isInteger(value) && value.num === predicate.value);
+  const isMet = state.calculator.roll.some(
+    (value) => isRationalCalculatorValue(value) && isInteger(value.value) && value.value.num === predicate.value,
+  );
   return {
     isMet,
     criteria: [{ label: predicate.value.toString(), checked: isMet }],
@@ -88,10 +93,14 @@ const readIntegerSuffix = (roll: GameState["calculator"]["roll"], length: number
     return null;
   }
   const suffix = roll.slice(-length);
-  if (!suffix.every(isInteger)) {
-    return null;
+  const numbers: bigint[] = [];
+  for (const value of suffix) {
+    if (!isRationalCalculatorValue(value) || !isInteger(value.value)) {
+      return null;
+    }
+    numbers.push(value.value.num);
   }
-  return suffix.map((value) => value.num);
+  return numbers;
 };
 
 const analyzeRollEndsWithEqualRun: PredicateAnalyzer<RollEndsWithEqualRunPredicate> = (predicate, state) => {

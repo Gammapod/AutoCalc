@@ -53,9 +53,28 @@ export type RationalValue = {
   den: bigint;
 };
 
+export type CalculatorValue =
+  | {
+      kind: "rational";
+      value: RationalValue;
+    }
+  | {
+      kind: "nan";
+    };
+
+export type ErrorCode = "x∉[-R,R] ∴ |x|=R×⌊x/R⌋" | "n/0, ∴ NaN" | "NaN, ∴ NaN";
+
+export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input";
+
 export type EuclidRemainderEntry = {
   rollIndex: number;
   value: RationalValue;
+};
+
+export type RollErrorEntry = {
+  rollIndex: number;
+  code: ErrorCode;
+  kind: ExecutionErrorKind;
 };
 
 export type DraftingSlot = {
@@ -65,10 +84,11 @@ export type DraftingSlot = {
 };
 
 export type CalculatorState = {
-  total: RationalValue;
+  total: CalculatorValue;
   pendingNegativeTotal: boolean;
   singleDigitInitialTotalEntry: boolean;
-  roll: RationalValue[];
+  roll: CalculatorValue[];
+  rollErrors: RollErrorEntry[];
   euclidRemainders: EuclidRemainderEntry[];
   operationSlots: Slot[];
   draftingSlot: DraftingSlot | null;

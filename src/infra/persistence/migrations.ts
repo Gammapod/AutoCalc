@@ -15,6 +15,8 @@ import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { resizeKeyLayout } from "../../domain/reducer.layout.js";
 import type {
   DraftingSlot,
+  ErrorCode,
+  ExecutionErrorKind,
   Key,
   KeyCell,
   KeypadCellRecord,
@@ -119,7 +121,31 @@ export type SerializableStateV6 = {
   completedUnlockIds: string[];
 };
 
+export type SerializableRollErrorEntry = {
+  rollIndex: number;
+  code: ErrorCode;
+  kind: ExecutionErrorKind;
+};
+
+export type SerializableStateV7 = {
+  calculator: {
+    total: string;
+    pendingNegativeTotal: boolean;
+    singleDigitInitialTotalEntry?: boolean;
+    roll: string[];
+    rollErrors: SerializableRollErrorEntry[];
+    euclidRemainders: Array<{ rollIndex: number; value: string }>;
+    operationSlots: SerializableSlot[];
+    draftingSlot: DraftingSlot | null;
+  };
+  ui: SerializableStateV5["ui"];
+  keyPressCounts: Partial<Record<Key, number>>;
+  unlocks: UnlockState;
+  completedUnlockIds: string[];
+};
+
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
+const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN)$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
@@ -131,6 +157,16 @@ const KEY_VALUES: readonly Key[] = [
   ...SLOT_OPERATOR_VALUES,
   ...UTILITY_KEY_VALUES,
   ...EXEC_KEY_VALUES,
+];
+const ERROR_CODE_VALUES: readonly ErrorCode[] = [
+  "x∉[-R,R] ∴ |x|=R×⌊x/R⌋",
+  "n/0, ∴ NaN",
+  "NaN, ∴ NaN",
+];
+const EXECUTION_ERROR_KIND_VALUES: readonly ExecutionErrorKind[] = [
+  "overflow",
+  "division_by_zero",
+  "nan_input",
 ];
 const MAX_SLOTS_MIN = 1;
 const MAX_SLOTS_MAX = 2;
@@ -144,6 +180,7 @@ const isBoolean = (value: unknown): value is boolean => typeof value === "boolea
 const isString = (value: unknown): value is string => typeof value === "string";
 const isInteger = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value);
 const isRationalString = (value: unknown): value is string => isString(value) && RATIONAL_RE.test(value);
+const isCalculatorValueString = (value: unknown): value is string => isString(value) && CALCULATOR_VALUE_RE.test(value);
 const isSlotOperator = (value: unknown): value is Slot["operator"] =>
   isString(value) && SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
 const isKnownKey = (value: unknown): value is Key => isString(value) && KEY_VALUES.includes(value as Key);
@@ -471,7 +508,18 @@ export const migrateV5ToV6 = (input: SerializableStateV5, resetForLegacy: boolea
   };
 };
 
-const toSerializableInitialV6 = (): SerializableStateV6 => {
+export const migrateV6ToV7 = (input: SerializableStateV6): SerializableStateV7 => ({
+  calculator: {
+    ...input.calculator,
+    rollErrors: [],
+  },
+  ui: input.ui,
+  keyPressCounts: input.keyPressCounts,
+  unlocks: input.unlocks,
+  completedUnlockIds: input.completedUnlockIds,
+});
+
+const toSerializableInitialV7 = (): SerializableStateV7 => {
   const defaults = initialState();
   return {
     calculator: {
@@ -479,6 +527,7 @@ const toSerializableInitialV6 = (): SerializableStateV6 => {
       pendingNegativeTotal: false,
       singleDigitInitialTotalEntry: false,
       roll: [],
+      rollErrors: [],
       euclidRemainders: [],
       operationSlots: [],
       draftingSlot: null,
@@ -497,8 +546,8 @@ const toSerializableInitialV6 = (): SerializableStateV6 => {
   };
 };
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 =>
-  version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6;
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 =>
+  version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6 || version === 7;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -677,12 +726,64 @@ export const validateSerializableStateV6 = (state: unknown): state is Serializab
   );
 };
 
-export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV6 | null => {
+const isRollErrorEntry = (value: unknown): value is SerializableRollErrorEntry =>
+  isObject(value) &&
+  isInteger(value.rollIndex) &&
+  value.rollIndex >= 0 &&
+  isString(value.code) &&
+  ERROR_CODE_VALUES.includes(value.code as ErrorCode) &&
+  isString(value.kind) &&
+  EXECUTION_ERROR_KIND_VALUES.includes(value.kind as ExecutionErrorKind);
+
+export const validateSerializableStateV7 = (state: unknown): state is SerializableStateV7 => {
+  if (!isObject(state) || !isObject(state.calculator) || !isObject(state.ui) || !isObject(state.unlocks)) {
+    return false;
+  }
+
+  const calculator = state.calculator;
+  if (
+    !isCalculatorValueString(calculator.total) ||
+    !isBoolean(calculator.pendingNegativeTotal) ||
+    !Array.isArray(calculator.roll) ||
+    !calculator.roll.every(isCalculatorValueString) ||
+    !Array.isArray(calculator.rollErrors) ||
+    !calculator.rollErrors.every(isRollErrorEntry) ||
+    !Array.isArray(calculator.euclidRemainders) ||
+    !calculator.euclidRemainders.every(
+      (entry) => isObject(entry) && isInteger(entry.rollIndex) && isRationalString(entry.value),
+    ) ||
+    !Array.isArray(calculator.operationSlots) ||
+    !calculator.operationSlots.every(isSerializableSlot) ||
+    !(calculator.draftingSlot === null || isDraftingSlot(calculator.draftingSlot))
+  ) {
+    return false;
+  }
+
+  const asV7 = state as SerializableStateV7;
+  const shadowV6: SerializableStateV6 = {
+    calculator: {
+      total: "0",
+      pendingNegativeTotal: asV7.calculator.pendingNegativeTotal,
+      singleDigitInitialTotalEntry: asV7.calculator.singleDigitInitialTotalEntry,
+      roll: [],
+      euclidRemainders: asV7.calculator.euclidRemainders,
+      operationSlots: asV7.calculator.operationSlots,
+      draftingSlot: asV7.calculator.draftingSlot,
+    },
+    ui: asV7.ui,
+    keyPressCounts: asV7.keyPressCounts,
+    unlocks: asV7.unlocks,
+    completedUnlockIds: asV7.completedUnlockIds,
+  };
+  return validateSerializableStateV6(shadowV6);
+};
+
+export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV7 | null => {
   if (!isValidSchemaVersion(schemaVersion)) {
     return null;
   }
   if (schemaVersion < 6) {
-    return toSerializableInitialV6();
+    return toSerializableInitialV7();
   }
   if (!isObject(state)) {
     return null;
@@ -709,7 +810,37 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           )
         : {},
     };
-    return validateSerializableStateV6(normalizedV6) ? normalizedV6 : null;
+    if (!validateSerializableStateV6(normalizedV6)) {
+      return null;
+    }
+    return migrateV6ToV7(normalizedV6);
+  }
+  if (schemaVersion === 7) {
+    const asV7 = state as SerializableStateV7;
+    const normalizedV7: SerializableStateV7 = {
+      ...asV7,
+      calculator: {
+        ...asV7.calculator,
+        rollErrors: Array.isArray(asV7.calculator?.rollErrors) ? asV7.calculator.rollErrors.filter(isRollErrorEntry) : [],
+      },
+      ui: {
+        ...asV7.ui,
+        keyLayout: hasOnlyKnownLayoutCells(asV7.ui?.keyLayout)
+          ? asV7.ui.keyLayout
+          : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+        storageLayout: normalizeStorageSlots(asV7.ui?.storageLayout ?? defaultStorageLayout()),
+        buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV7.ui?.buttonFlags)),
+      },
+      unlocks: normalizeUnlocks(asV7.unlocks),
+      keyPressCounts: isObject(asV7.keyPressCounts)
+        ? Object.fromEntries(
+            Object.entries(asV7.keyPressCounts).filter(
+              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
+            ),
+          )
+        : {},
+    };
+    return validateSerializableStateV7(normalizedV7) ? normalizedV7 : null;
   }
   return null;
 };
