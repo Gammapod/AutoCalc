@@ -28,7 +28,7 @@ export const runUnlockGraphTests = (): void => {
   const analysis = analyzeUnlockGraph(unlockCatalog, startingKeys);
   assert.ok(
     analysis.unlockedKeysReached.includes("="),
-    "analysis should reach the = key via total_equals progression",
+    "analysis should reach the = key via overflow progression",
   );
   assert.ok(
     analysis.unreachableKeys.includes("2"),

@@ -13,6 +13,7 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "roll_ends_with_equal_run",
   "roll_ends_with_incrementing_run",
   "key_press_count_at_least",
+  "overflow_error_seen",
 ];
 
 export type CapabilityId =
@@ -134,6 +135,19 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "key_press_count_by_pressing_key",
         allOf: ["press_target_key"],
         rationale: "Pressing the key increments the tracked count.",
+      },
+    ],
+  },
+  overflow_error_seen: {
+    predicateType: "overflow_error_seen",
+    necessary: [
+      { capability: "step_plus_one", reason: "Need a growth path that can exceed finite digit range and overflow." },
+    ],
+    sufficientSets: [
+      {
+        id: "overflow_error_seen_via_increment_overflow",
+        allOf: ["step_plus_one"],
+        rationale: "Repeated +1 reaches the boundary and then triggers overflow on the next step.",
       },
     ],
   },

@@ -169,6 +169,14 @@ const proofFixtures: ProofFixture[] = [
     buildInitialState: () => buildStateWithUnlockedKeys(["+"]),
     script: ["+"],
   },
+  {
+    id: "proof_overflow_error_seen_via_increment_overflow",
+    predicateType: "overflow_error_seen",
+    sufficientSetId: "overflow_error_seen_via_increment_overflow",
+    predicate: { type: "overflow_error_seen" },
+    buildInitialState: () => initialState(),
+    script: Array.from({ length: 10 }, () => "++"),
+  },
 ];
 
 export const runPredicateCapabilitySpecTests = (): void => {

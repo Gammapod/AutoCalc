@@ -1,8 +1,10 @@
 import { equalsBigInt, gteBigInt, isInteger, lteBigInt } from "../infra/math/rationalEngine.js";
 import { isRationalCalculatorValue } from "./calculatorValue.js";
 import { getOperationSnapshot } from "./slotDrafting.js";
+import { OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import type {
   GameState,
+  OverflowErrorSeenPredicate,
   KeyPressCountAtLeastPredicate,
   OperationEqualsPredicate,
   RollContainsValuePredicate,
@@ -133,6 +135,16 @@ const analyzeKeyPressCountAtLeast: PredicateAnalyzer<KeyPressCountAtLeastPredica
   };
 };
 
+const analyzeOverflowErrorSeen: PredicateAnalyzer<OverflowErrorSeenPredicate> = (_predicate, state) => {
+  const isMet =
+    state.completedUnlockIds.includes(OVERFLOW_ERROR_SEEN_ID)
+    || state.calculator.rollErrors.some((entry) => entry.kind === "overflow");
+  return {
+    isMet,
+    criteria: [{ label: "overflow error observed", checked: isMet }],
+  };
+};
+
 const analyzeOperationEquals: PredicateAnalyzer<OperationEqualsPredicate> = (predicate, state) => {
   const slots = getOperationSnapshot(state.calculator, predicate.includeDrafting ?? true);
   const isMet =
@@ -172,6 +184,7 @@ const analyzers = {
   roll_ends_with_equal_run: analyzeRollEndsWithEqualRun,
   roll_ends_with_incrementing_run: analyzeRollEndsWithIncrementingRun,
   key_press_count_at_least: analyzeKeyPressCountAtLeast,
+  overflow_error_seen: analyzeOverflowErrorSeen,
 } as const;
 
 export const analyzeUnlockPredicate = (predicate: UnlockPredicate, state: GameState): UnlockPredicateAnalysis =>

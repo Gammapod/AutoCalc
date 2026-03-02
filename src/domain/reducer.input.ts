@@ -13,7 +13,7 @@ import {
 } from "./calculatorValue.js";
 import { executeSlots } from "./engine.js";
 import { clearOperationEntry, createResetCalculatorState, resetRunState } from "./reducer.stateBuilders.js";
-import { CHECKLIST_UNLOCK_ID } from "./state.js";
+import { CHECKLIST_UNLOCK_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import { getOperationSnapshot, toCommittedDraftingSlot } from "./slotDrafting.js";
 import type { Digit, ExecutionErrorKind, GameState, Key, RationalValue, Slot, SlotOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
@@ -282,6 +282,16 @@ const applyOverflowPolicy = (value: RationalValue, maxDigits: number): Evaluated
   };
 };
 
+const markOverflowErrorSeen = (state: GameState): GameState => {
+  if (state.completedUnlockIds.includes(OVERFLOW_ERROR_SEEN_ID)) {
+    return state;
+  }
+  return {
+    ...state,
+    completedUnlockIds: [...state.completedUnlockIds, OVERFLOW_ERROR_SEEN_ID],
+  };
+};
+
 const evaluateExecutionOutcome = (state: GameState, execKey: "=" | "++"): EvaluatedExecution => {
   const currentTotal = state.calculator.total;
   if (!isRationalCalculatorValue(currentTotal)) {
@@ -355,7 +365,8 @@ const applyEquals = (state: GameState): GameState => {
     },
   };
 
-  return applyUnlocks(withRoll, unlockCatalog);
+  const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
+  return applyUnlocks(withOverflowMarker, unlockCatalog);
 };
 
 const applyIncrement = (state: GameState): GameState => {
@@ -373,7 +384,9 @@ const applyIncrement = (state: GameState): GameState => {
     },
   };
 
-  return applyUnlocks(withIncrementedTotal, unlockCatalog);
+  const withOverflowMarker =
+    evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withIncrementedTotal) : withIncrementedTotal;
+  return applyUnlocks(withOverflowMarker, unlockCatalog);
 };
 
 const applyC = (state: GameState): GameState => {

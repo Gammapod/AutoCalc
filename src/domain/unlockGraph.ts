@@ -172,6 +172,9 @@ const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition): string[] => {
   if (unlock.predicate.type === "key_press_count_at_least") {
     return [pressFunctionId(unlock.predicate.key)];
   }
+  if (unlock.predicate.type === "overflow_error_seen") {
+    return ["fn.step_plus_one"];
+  }
   return [];
 };
 

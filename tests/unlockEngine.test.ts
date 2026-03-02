@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { analyzeUnlockPredicate } from "../src/domain/unlockEngine.js";
-import { initialState } from "../src/domain/state.js";
+import { initialState, OVERFLOW_ERROR_SEEN_ID } from "../src/domain/state.js";
 import type { GameState, UnlockPredicate } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
@@ -120,4 +120,15 @@ export const runUnlockEngineTests = (): void => {
     "operation_equals met",
   );
   assertCriteriaConsistency(operationEquals, base, "operation_equals unmet");
+
+  const overflowSeen: UnlockPredicate = { type: "overflow_error_seen" };
+  assertCriteriaConsistency(
+    overflowSeen,
+    {
+      ...base,
+      completedUnlockIds: [OVERFLOW_ERROR_SEEN_ID],
+    },
+    "overflow_error_seen met",
+  );
+  assertCriteriaConsistency(overflowSeen, base, "overflow_error_seen unmet");
 };

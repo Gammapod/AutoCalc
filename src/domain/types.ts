@@ -177,6 +177,10 @@ export type KeyPressCountAtLeastPredicate = {
   count: number;
 };
 
+export type OverflowErrorSeenPredicate = {
+  type: "overflow_error_seen";
+};
+
 export type UnlockPredicate =
   | RollLengthAtLeastPredicate
   | TotalEqualsPredicate
@@ -187,7 +191,8 @@ export type UnlockPredicate =
   | RollContainsValuePredicate
   | RollEndsWithEqualRunPredicate
   | RollEndsWithIncrementingRunPredicate
-  | KeyPressCountAtLeastPredicate;
+  | KeyPressCountAtLeastPredicate
+  | OverflowErrorSeenPredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";

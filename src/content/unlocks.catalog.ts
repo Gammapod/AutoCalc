@@ -3,8 +3,8 @@
 export const unlockCatalog: UnlockDefinition[] = [
   {
     id: "unlock_storage_on_total_11",
-    description: "Reveal storage when total first reaches 11.",
-    predicate: { type: "total_equals", value: 11n },
+    description: "Reveal storage when the first overflow error happens.",
+    predicate: { type: "overflow_error_seen" },
     effect: { type: "unlock_storage_drawer" },
     once: true,
     domainNodeId: "NN",
@@ -13,8 +13,8 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_equals_on_total_11",
-    description: "Unlock = when total first reaches 11.",
-    predicate: { type: "total_equals", value: 11n },
+    description: "Unlock = when the first overflow error happens.",
+    predicate: { type: "overflow_error_seen" },
     effect: { type: "unlock_execution", key: "=" },
     once: true,
     domainNodeId: "NN",

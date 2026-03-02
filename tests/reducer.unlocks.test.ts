@@ -54,18 +54,38 @@ export const runReducerUnlockTests = (): void => {
   );
   assert.equal(zeroRollUnlocked.unlocks.valueExpression["0"], true, "0 unlocks when roll contains 0");
 
+  let oneDigitOverflowState = initialState();
+  for (let i = 0; i < 9; i += 1) {
+    oneDigitOverflowState = press(oneDigitOverflowState, "++");
+  }
+  assert.deepEqual(oneDigitOverflowState.calculator.total, r(9n), "increment reaches 9 at one-digit cap");
+  oneDigitOverflowState = press(oneDigitOverflowState, "++");
+  assert.deepEqual(oneDigitOverflowState.calculator.total, r(9n), "overflow increment clamps to 9");
+  assert.equal(oneDigitOverflowState.unlocks.execution["="], true, "equals unlocks on first overflow error at one-digit cap");
+  assert.equal(oneDigitOverflowState.unlocks.uiUnlocks.storageVisible, true, "storage unlocks on first overflow error at one-digit cap");
+
   let state = withTwoDigitRange(initialState());
 
   assert.equal(state.unlocks.valueExpression["1"], false, "digit 1 starts locked");
-  assert.equal(state.unlocks.execution["="], false, "equals starts locked");
+  assert.equal(state.unlocks.execution["="], false, "equals starts locked before overflow in two-digit run");
   assert.equal(state.unlocks.uiUnlocks.storageVisible, false, "storage starts hidden");
 
   for (let i = 0; i < 11; i += 1) {
     state = press(state, "++");
   }
   assert.deepEqual(state.calculator.total, r(11n), "increment reaches 11");
-  assert.equal(state.unlocks.execution["="], true, "equals unlocks at total 11");
-  assert.equal(state.unlocks.uiUnlocks.storageVisible, true, "storage unlocks at total 11");
+  assert.equal(state.unlocks.uiUnlocks.storageVisible, false, "storage stays locked before overflow in two-digit run");
+
+  state = {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      total: r(99n),
+    },
+  };
+  state = press(state, "++");
+  assert.equal(state.unlocks.execution["="], true, "equals unlocks on first overflow error (via ++)");
+  assert.equal(state.unlocks.uiUnlocks.storageVisible, true, "storage unlocks on first overflow error (via ++)");
 
   state = press(state, "=");
   state = press(state, "=");
