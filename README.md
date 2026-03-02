@@ -30,11 +30,61 @@ npm run dev:serve
 
 Then open: `http://localhost:4173/index.html`
 
+### UI Shell Modes (v1 + v2 shell)
+
+The app now supports a feature-flagged v2 mobile shell in parallel with the existing UI.
+
+- Default behavior: uses v2 shell.
+- Shell mode resolution order:
+  1. Query param override (`?ui=v1` or `?ui=v2shell`)
+  2. Build/runtime env flag `USE_NEW_UI_SHELL`
+  3. Default fallback (`v2`)
+- Env override:
+  - `USE_NEW_UI_SHELL=false` forces v1 UI
+  - `USE_NEW_UI_SHELL=true` forces v2 shell
+- Query param overrides (recommended for local testing):
+  - v2 shell: `http://localhost:4173/index.html?ui=v2shell`
+  - force v1 UI: `http://localhost:4173/index.html?ui=v1`
+
+In browser devtools, verify active shell via body attribute:
+
+- `data-ui-shell="v2"` for v2 shell
+- `data-ui-shell="v1"` for legacy UI
+
+### v2 Shell Manual Test Checklist
+
+With `?ui=v2shell`:
+
+1. Confirm default snap is middle (display + keypad).
+2. Toggle `GRAPH` on and verify top snap becomes available.
+3. Unlock/show storage and verify bottom snap becomes available.
+4. Swipe vertically and confirm snaps only move to adjacent valid views.
+5. In storage view, scroll drawer content and confirm it scrolls first; snap handoff occurs at top/bottom boundaries.
+6. Open right menu with right-edge swipe and close via right swipe, `Menu` button, and `Esc`.
+7. Switch menu modules (`Allocator`, `Checklist`) and verify calculator state is unchanged.
+8. Use fallback `Up/Down/Menu` controls and verify disabled states at boundaries.
+
 ## Test
 
 ```bash
 npm test
 ```
+
+Includes dedicated shell tests:
+
+- `ui-shell/snap-availability`
+- `ui-shell/snap-selection`
+- `ui-shell/gesture-arbitration`
+- `ui-shell/right-menu`
+- `ui-shell/fallback-controls`
+
+## Next Steps
+
+1. Add integration-style DOM tests for pointer gesture edge cases (right-edge open zone, storage boundary handoff).
+2. Add a small in-app dev indicator for active snap id to accelerate manual QA.
+3. Harden desktop/tablet CSS tuning for wider viewports while keeping current interaction model.
+4. Start v2 slice for mobile-first key-management redesign (replace drag-heavy interactions).
+5. After QA stabilization, flip default to v2 shell and keep `?ui=v1` rollback during soak period.
 
 ## Windows Portable EXE
 

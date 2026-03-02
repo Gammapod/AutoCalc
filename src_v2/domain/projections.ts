@@ -5,8 +5,7 @@ import {
   buildRollViewModel,
   buildUnlockRows,
   isGraphVisible,
-} from "../../src/ui/render.js";
-import { unlockCatalog } from "../../src/content/unlocks.catalog.js";
+} from "../ui/shared/readModelHelpers.js";
 import type { GameState } from "../../src/domain/types.js";
 
 export type DomainReadModel = {
@@ -22,7 +21,7 @@ export const buildReadModel = (state: GameState): DomainReadModel => ({
   totalDisplay: state.calculator.total.kind === "nan" ? "NaN" : toDisplayString(state.calculator.total.value),
   rollView: buildRollViewModel(state.calculator.roll, state.calculator.euclidRemainders, state.calculator.rollErrors),
   slotView: buildOperationSlotDisplay(state),
-  unlockRows: buildUnlockRows(state, unlockCatalog),
+  unlockRows: buildUnlockRows(state),
   graphPoints: buildGraphPoints(state.calculator.roll, state.calculator.rollErrors),
   graphVisible: isGraphVisible(state.calculator.roll),
 });

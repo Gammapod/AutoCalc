@@ -27,6 +27,20 @@ import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
 import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.js";
 import { runUnlockGraphTests } from "./unlockGraph.test.js";
 import { runKeyBehaviorContractTests } from "./keyBehavior.contract.test.js";
+import { runUiShellSnapAvailabilityTests } from "./uiShell.snapAvailability.test.js";
+import { runUiShellSnapSelectionTests } from "./uiShell.snapSelection.test.js";
+import { runUiShellGestureArbitrationTests } from "./uiShell.gestureArbitration.test.js";
+import { runUiShellRightMenuTests } from "./uiShell.rightMenu.test.js";
+import { runUiShellModeResolverTests } from "./uiShell.modeResolver.test.js";
+import { runUiShellFallbackControlsTests } from "./uiShell.fallbackControls.test.js";
+import { runUiShellTouchRearrangeLongPressTests } from "./uiShell.touchRearrange.longPress.test.js";
+import { runUiShellTouchRearrangeDropResolutionTests } from "./uiShell.touchRearrange.dropResolution.test.js";
+import { runUiShellTouchRearrangeCancelTests } from "./uiShell.touchRearrange.cancel.test.js";
+import { runUiShellTouchRearrangeGestureLockTests } from "./uiShell.touchRearrange.gestureLock.test.js";
+import { runUiShellTouchRearrangeBottomSnapGateTests } from "./uiShell.touchRearrange.bottomSnapGate.test.js";
+import { runUiModuleChecklistV2Tests } from "./uiModule.checklist.v2.test.js";
+import { runUiModuleAllocatorV2Tests } from "./uiModule.allocator.v2.test.js";
+import { runUiModuleGrapherV2Tests } from "./uiModule.grapher.v2.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -58,6 +72,20 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["content/unlock-domain-resolver", runUnlockDomainResolverTests],
   ["browser/import-safety", runBrowserImportSafetyTests],
   ["reducer/flags", runReducerFlagsTests],
+  ["ui-shell/snap-availability", runUiShellSnapAvailabilityTests],
+  ["ui-shell/snap-selection", runUiShellSnapSelectionTests],
+  ["ui-shell/gesture-arbitration", runUiShellGestureArbitrationTests],
+  ["ui-shell/right-menu", runUiShellRightMenuTests],
+  ["ui-shell/mode-resolver", runUiShellModeResolverTests],
+  ["ui-shell/fallback-controls", runUiShellFallbackControlsTests],
+  ["ui-shell/touch-rearrange-long-press", runUiShellTouchRearrangeLongPressTests],
+  ["ui-shell/touch-rearrange-drop-resolution", runUiShellTouchRearrangeDropResolutionTests],
+  ["ui-shell/touch-rearrange-cancel", runUiShellTouchRearrangeCancelTests],
+  ["ui-shell/touch-rearrange-gesture-lock", runUiShellTouchRearrangeGestureLockTests],
+  ["ui-shell/touch-rearrange-bottom-snap-gate", runUiShellTouchRearrangeBottomSnapGateTests],
+  ["ui-module/checklist-v2", runUiModuleChecklistV2Tests],
+  ["ui-module/allocator-v2", runUiModuleAllocatorV2Tests],
+  ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
 ];
 
 let passed = 0;

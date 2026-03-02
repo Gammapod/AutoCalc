@@ -2,6 +2,8 @@ import { createStore } from "./store.js";
 import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
 import { render } from "../ui/render.js";
+import { createShellRenderer } from "../../src_v2/ui/renderAdapter.js";
+import { resolveUiShellMode } from "./uiShellMode.js";
 import {
   AUTO_EQUALS_POINT_BONUS,
   createAutoEqualsScheduler,
@@ -125,8 +127,27 @@ const bootState =
 const store = createStore(bootState);
 const autoEqualsScheduler = createAutoEqualsScheduler(store);
 
+const importMetaEnv = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env;
+const processEnv = (globalThis as { process?: { env?: Record<string, unknown> } }).process?.env;
+const uiShellMode = resolveUiShellMode(window.location, {
+  ...processEnv,
+  ...importMetaEnv,
+});
+
+const useV2ShellRenderer = uiShellMode === "v2";
+const shellRenderer = useV2ShellRenderer ? createShellRenderer(root) : null;
+document.body.setAttribute("data-ui-shell", uiShellMode);
+
+const renderApp = (state: GameState): void => {
+  if (shellRenderer) {
+    shellRenderer.render(state, store.dispatch);
+    return;
+  }
+  render(root, state, store.dispatch);
+};
+
 const redraw = (): void => {
-  render(root, store.getState(), store.dispatch);
+  renderApp(store.getState());
 };
 
 const syncDebugUiState = (): void => {
@@ -202,7 +223,7 @@ autoEqualsScheduler.startIfNeeded();
 const unsubscribe = store.subscribe((state) => {
   autoEqualsScheduler.sync(state);
   const latest = store.getState();
-  render(root, latest, store.dispatch);
+  renderApp(latest);
   syncKeypadDimensionInputs();
   syncAllocatorDeviceInputs();
   storageRepo.save(latest);
@@ -210,6 +231,7 @@ const unsubscribe = store.subscribe((state) => {
 
 window.__autoCalcBootstrapCleanup__ = () => {
   unsubscribe();
+  shellRenderer?.dispose();
   autoEqualsScheduler.dispose();
 };
 

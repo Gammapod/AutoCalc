@@ -3,8 +3,17 @@ import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../do
 import { CHECKLIST_UNLOCK_ID, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { isStorageLayoutValid } from "../domain/reducer.layout.js";
-import { buildUnlockCriteria } from "../domain/unlockEngine.js";
-import { analyzeUnlockSpecRows } from "../domain/analysis.js";
+import {
+  buildOperationSlotDisplay as buildOperationSlotDisplayShared,
+  buildRollLines as buildRollLinesShared,
+  buildRollRows as buildRollRowsShared,
+  buildRollViewModel as buildRollViewModelShared,
+  buildUnlockRows as buildUnlockRowsShared,
+  formatKeyLabel as formatKeyLabelShared,
+  formatOperatorForDisplay as formatOperatorForDisplayShared,
+  getKeyVisualGroup as getKeyVisualGroupShared,
+  type KeyVisualGroup,
+} from "./shared/renderReadModel.js";
 import type {
   Action,
   CalculatorValue,
@@ -17,8 +26,6 @@ import type {
   LayoutSurface,
   RollErrorEntry,
   SlotOperator,
-  UnlockDefinition,
-  UnlockEffect,
 } from "../domain/types.js";
 import { toDisplayString } from "../infra/math/rationalEngine.js";
 import { toPreferredFractionString } from "../infra/math/euclideanEngine.js";
@@ -163,8 +170,6 @@ export type UnlockRowVm = {
   criteria: UnlockCriterionVm[];
 };
 
-export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "execution";
-
 type Occupancy = "key" | "empty" | "invalid";
 type DropAction = "move" | "swap";
 type DragTarget = {
@@ -201,31 +206,13 @@ const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
 };
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
-  operator === "*" ? "\u00D7" : operator === "/" ? "\u00F7" : operator;
+  formatOperatorForDisplayShared(operator);
 
 const formatOperatorForOperationSlotDisplay = (operator: SlotOperator): string =>
-  operator === "\u27E1" ? "\u2662" : formatOperatorForDisplay(operator);
+  operator === "\u27E1" ? "\u2662" : formatOperatorForDisplayShared(operator);
 
 export const formatKeyLabel = (key: Key): string => {
-  if (key === "NEG") {
-    return "-\u{1D465}";
-  }
-  if (key === "UNDO") {
-    return "\u21BA";
-  }
-  if (key === "\u23EF") {
-    return "\u23F5\uFE0E";
-  }
-  if (key === "#") {
-    return "#/\u27E1";
-  }
-  if (key === "\u27E1") {
-    return "\u27E1";
-  }
-  if (key === "*" || key === "/") {
-    return formatOperatorForDisplay(key);
-  }
-  return key;
+  return formatKeyLabelShared(key);
 };
 
 const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
@@ -369,7 +356,7 @@ export const isClearedCalculatorState = (calculator: CalculatorState): boolean =
   calculator.draftingSlot === null;
 
 export const buildRollLines = (roll: CalculatorValue[]): string[] => {
-  return roll.map((value) => (isRationalCalculatorValue(value) ? toPreferredFractionString(value.value) : "NaN"));
+  return buildRollLinesShared(roll);
 };
 
 export const buildRollRows = (
@@ -377,21 +364,7 @@ export const buildRollRows = (
   euclidRemainders: EuclidRemainderEntry[] = [],
   rollErrors: RollErrorEntry[] = [],
 ): RollRow[] => {
-  const remainderByRollIndex = new Map<number, string>();
-  for (const remainder of euclidRemainders) {
-    remainderByRollIndex.set(remainder.rollIndex, toPreferredFractionString(remainder.value));
-  }
-  const errorByRollIndex = new Map<number, string>();
-  for (const error of rollErrors) {
-    errorByRollIndex.set(error.rollIndex, error.code);
-  }
-
-  return rollLines.map((value, index) => ({
-    prefix: index === 0 ? "X =" : "  =",
-    value,
-    remainder: errorByRollIndex.has(index) ? undefined : remainderByRollIndex.get(index),
-    errorCode: errorByRollIndex.get(index),
-  }));
+  return buildRollRowsShared(rollLines, euclidRemainders, rollErrors);
 };
 
 export const buildRollViewModel = (
@@ -399,22 +372,7 @@ export const buildRollViewModel = (
   euclidRemainders: EuclidRemainderEntry[] = [],
   rollErrors: RollErrorEntry[] = [],
 ): RollViewModel => {
-  const lines = buildRollLines(roll);
-  const rows = buildRollRows(lines, euclidRemainders, rollErrors);
-  const valueColumnChars = rows.reduce((max, row) => {
-    const suffixLength = row.errorCode
-      ? `Err: ${row.errorCode}`.length
-      : row.remainder
-        ? `⟡= ${row.remainder}`.length
-        : 0;
-    return Math.max(max, row.value.length, suffixLength);
-  }, 0);
-  return {
-    rows,
-    isVisible: rows.length > 0,
-    lineCount: rows.length,
-    valueColumnChars,
-  };
+  return buildRollViewModelShared(roll, euclidRemainders, rollErrors);
 };
 
 export const getRollLineClassName = (row: RollRow): string =>
@@ -440,92 +398,9 @@ export const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorE
 export const isGraphVisible = (roll: CalculatorValue[]): boolean => roll.length > 0;
 
 export const buildOperationSlotDisplay = (state: GameState): string => {
-  const visibleSlots = state.unlocks.maxSlots;
-  if (visibleSlots <= 0) {
-    return "(no operation slots)";
-  }
-
-  const filledTokens = state.calculator.operationSlots.map(
-    (slot) => `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${slot.operand.toString()} ]`,
-  );
-  if (state.calculator.draftingSlot) {
-    const operand = state.calculator.draftingSlot.operandInput
-      ? `${state.calculator.draftingSlot.isNegative ? "-" : ""}${state.calculator.draftingSlot.operandInput}`
-      : state.calculator.draftingSlot.isNegative
-        ? "-_"
-        : "_";
-    filledTokens.push(`[ ${formatOperatorForOperationSlotDisplay(state.calculator.draftingSlot.operator)} ${operand} ]`);
-  }
-
-  const tokens = filledTokens.slice(0, visibleSlots);
-  while (tokens.length < visibleSlots) {
-    tokens.push("[ _ _ ]");
-  }
-
-  return tokens.join(" -> ");
+  return buildOperationSlotDisplayShared(state);
 };
-
-const getUnlockName = (effect: UnlockEffect): string => {
-  if (effect.type === "unlock_digit") {
-    return effect.key;
-  }
-  if (effect.type === "unlock_slot_operator") {
-    return formatOperatorForDisplay(effect.key);
-  }
-  if (effect.type === "unlock_execution") {
-    return effect.key;
-  }
-  if (effect.type === "unlock_utility") {
-    return effect.key;
-  }
-  if (effect.type === "increase_max_total_digits") {
-    return "maxTotalDigits";
-  }
-  if (effect.type === "unlock_storage_drawer") {
-    return "storage";
-  }
-  if (effect.type === "upgrade_keypad_column") {
-    return "keypadCols";
-  }
-  if (effect.type === "upgrade_keypad_row") {
-    return "keypadRows";
-  }
-  if (effect.type === "move_key_to_coord") {
-    return `${formatKeyLabel(effect.key)}->R${effect.row.toString()}C${effect.col.toString()}`;
-  }
-  return "unknown";
-};
-
-const isUnlockImpossible = (_unlock: UnlockDefinition, _state: GameState): boolean => false;
-const isReachableOrUnknownStatus = (status: "satisfied" | "possible" | "blocked" | "unknown" | "todo"): boolean =>
-  status === "satisfied" || status === "possible" || status === "unknown" || status === "todo";
-
-export const buildUnlockRows = (
-  state: GameState,
-  catalog: UnlockDefinition[],
-  impossibleCheck: (unlock: UnlockDefinition, state: GameState) => boolean = isUnlockImpossible,
-): UnlockRowVm[] => {
-  const specRowsById = new Map(analyzeUnlockSpecRows(state, { useAllUnlockedKeys: false }, catalog).map((row) => [row.unlockId, row]));
-  const rows = catalog.map<UnlockRowVm>((unlock) => {
-    const completed = state.completedUnlockIds.includes(unlock.id);
-    const impossible = impossibleCheck(unlock, state);
-    const specRow = specRowsById.get(unlock.id);
-    const specVisible = completed || !specRow || isReachableOrUnknownStatus(specRow.status);
-    const rowState: UnlockRowState = impossible || !specVisible ? "impossible" : completed ? "completed" : "not_completed";
-    const criteria = buildUnlockCriteria(unlock.predicate, state);
-    return {
-      id: unlock.id,
-      name: getUnlockName(unlock.effect),
-      state: rowState,
-      criteria: completed ? criteria.map((criterion) => ({ ...criterion, checked: true })) : criteria,
-    };
-  });
-
-  const visible = rows.filter((row) => row.state !== "impossible");
-  const pending = visible.filter((row) => row.state === "not_completed");
-  const completed = visible.filter((row) => row.state === "completed");
-  return [...pending, ...completed];
-};
+export const buildUnlockRows = (...args: Parameters<typeof buildUnlockRowsShared>): UnlockRowVm[] => buildUnlockRowsShared(...args);
 
 export const isChecklistUnlocked = (state: GameState): boolean =>
   state.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID);
@@ -668,6 +543,14 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   totalEl.appendChild(frame);
 };
 
+export const renderChecklistModule = (root: Element, state: GameState): void => {
+  const unlockEl = root.querySelector("[data-unlocks]");
+  if (!unlockEl) {
+    throw new Error("Checklist mount point is missing.");
+  }
+  renderUnlockChecklist(unlockEl, state);
+};
+
 const getGraphBounds = (points: GraphPoint[]): { min: number; max: number } => {
   const values = points.map((point) => point.y);
   const min = Math.min(...values);
@@ -772,6 +655,10 @@ const destroyGraphChart = (): void => {
   graphCanvas = null;
 };
 
+export const clearGraphModule = (): void => {
+  destroyGraphChart();
+};
+
 const renderGraphDisplay = (root: Element, roll: CalculatorValue[], rollErrors: RollErrorEntry[]): void => {
   const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
   if (!canvas) {
@@ -829,6 +716,19 @@ const renderGraphDisplay = (root: Element, roll: CalculatorValue[], rollErrors: 
   graphChart.update("none");
 };
 
+export const renderGraphModule = (root: Element, state: GameState): void => {
+  const grapherDeviceEl = root.querySelector<HTMLElement>("[data-grapher-device]");
+  const graphVisible = getButtonFlag(state, GRAPH_VISIBLE_FLAG);
+  if (grapherDeviceEl) {
+    grapherDeviceEl.hidden = !graphVisible;
+  }
+  if (graphVisible) {
+    renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors);
+  } else {
+    destroyGraphChart();
+  }
+};
+
 const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (/^\d$/.test(key) || key === "NEG") {
     return state.unlocks.valueExpression[key as keyof GameState["unlocks"]["valueExpression"]];
@@ -846,16 +746,7 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
 };
 
 export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
-  if (/^\d$/.test(key) || key === "NEG") {
-    return "value_expression";
-  }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
-    return "slot_operator";
-  }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
-    return "utility";
-  }
-  return "execution";
+  return getKeyVisualGroupShared(key);
 };
 
 const isExecutionKey = (key: Key): boolean => key === "=" || key === "++";
@@ -1404,7 +1295,17 @@ const getNewlyUnlockedKeys = (state: GameState): Set<Key> => {
   return newlyUnlocked;
 };
 
-export const render = (root: Element, state: GameState, dispatch: (action: Action) => unknown): void => {
+export type RenderOptions = {
+  skipGraph?: boolean;
+  skipChecklist?: boolean;
+};
+
+export const render = (
+  root: Element,
+  state: GameState,
+  dispatch: (action: Action) => unknown,
+  options: RenderOptions = {},
+): void => {
   const totalEl = root.querySelector("[data-total]");
   const slotEl = root.querySelector("[data-slot]");
   const rollEl = root.querySelector("[data-roll]");
@@ -1419,14 +1320,16 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
 
   const newlyUnlockedKeys = getNewlyUnlockedKeys(state);
 
-  const isGraphVisible = getButtonFlag(state, GRAPH_VISIBLE_FLAG);
-  if (grapherDeviceEl) {
-    grapherDeviceEl.hidden = !isGraphVisible;
-  }
-  if (isGraphVisible) {
-    renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors);
-  } else {
-    destroyGraphChart();
+  if (!options.skipGraph) {
+    const isGraphVisible = getButtonFlag(state, GRAPH_VISIBLE_FLAG);
+    if (grapherDeviceEl) {
+      grapherDeviceEl.hidden = !isGraphVisible;
+    }
+    if (isGraphVisible) {
+      renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors);
+    } else {
+      destroyGraphChart();
+    }
   }
 
   renderTotalDisplay(totalEl, state);
@@ -1469,7 +1372,9 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     rollEl.appendChild(line);
   }
 
-  renderUnlockChecklist(unlockEl, state);
+  if (!options.skipChecklist) {
+    renderUnlockChecklist(unlockEl, state);
+  }
 
   const hadPreviousKeypadDimensions = previousKeypadColumns !== null && previousKeypadRows !== null;
   const keypadDimensionsChanged =
