@@ -57,7 +57,7 @@ export const formatKeyLabel = (key: Key): string => {
     return "\u21BA";
   }
   if (key === "\u23EF") {
-    return "\u23F5\uFE0E";
+    return "\u25BA";
   }
   if (key === "#") {
     return "#/\u27E1";

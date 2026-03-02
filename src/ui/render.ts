@@ -160,6 +160,10 @@ const KEYPAD_SLOT_ENTER_ANIMATION_NAME = "keypad-slot-enter";
 const STORAGE_MIN_VISUAL_COLUMNS = 1;
 const STORAGE_MIN_KEY_WIDTH_PX = 56;
 const STORAGE_FALLBACK_GAP_PX = 8;
+const KEY_LABEL_INLINE_GUTTER_PX = 6;
+const KEY_LABEL_SQUISH_THRESHOLD_PX = 2;
+
+let keyLabelResizeBound = false;
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -244,7 +248,7 @@ export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => 
 
 export const formatKeyCellLabel = (state: GameState, cell: KeyCell): string => {
   if (cell.key === "\u23EF") {
-    return isToggleFlagActive(state, cell) ? "\u23F8\uFE0E" : "\u23F5\uFE0E";
+    return isToggleFlagActive(state, cell) ? "\u275A\u275A" : "\u25BA";
   }
   return formatKeyLabel(cell.key);
 };
@@ -271,6 +275,60 @@ const readToggleAnimation = (cell: KeyCell): "on" | "off" | null => {
     return null;
   }
   return pendingToggleAnimationByFlag[behavior.flag] ?? null;
+};
+
+const setKeyButtonLabel = (button: HTMLButtonElement, label: string): void => {
+  button.textContent = "";
+  const labelEl = document.createElement("span");
+  labelEl.className = "key__label";
+  labelEl.textContent = label;
+  button.appendChild(labelEl);
+};
+
+const fitKeyButtonLabel = (button: HTMLButtonElement): void => {
+  const labelEl = button.querySelector<HTMLElement>(".key__label");
+  if (!labelEl) {
+    return;
+  }
+  labelEl.style.transform = "scaleX(1)";
+  const computed = window.getComputedStyle(button);
+  const paddingLeft = Number.parseFloat(computed.paddingLeft) || 0;
+  const paddingRight = Number.parseFloat(computed.paddingRight) || 0;
+  const contentWidth = button.clientWidth - paddingLeft - paddingRight;
+  const availableWidth = Math.max(1, contentWidth - KEY_LABEL_INLINE_GUTTER_PX * 2);
+  const measuredWidth = labelEl.getBoundingClientRect().width;
+  const naturalWidth = Math.max(1, Math.ceil(measuredWidth || labelEl.scrollWidth));
+  if (naturalWidth <= availableWidth + KEY_LABEL_SQUISH_THRESHOLD_PX) {
+    return;
+  }
+  const scale = Math.max(0.01, availableWidth / naturalWidth);
+  labelEl.style.transform = `scaleX(${scale.toFixed(4)})`;
+};
+
+const fitKeyLabelsInContainer = (container: ParentNode): void => {
+  const buttons = container.querySelectorAll<HTMLButtonElement>(".key");
+  buttons.forEach((button) => fitKeyButtonLabel(button));
+};
+
+const refitAllVisibleKeyLabels = (): void => {
+  const keypad = document.querySelector<HTMLElement>("[data-keys]");
+  if (keypad) {
+    fitKeyLabelsInContainer(keypad);
+  }
+  const storage = document.querySelector<HTMLElement>("[data-storage-keys]");
+  if (storage) {
+    fitKeyLabelsInContainer(storage);
+  }
+};
+
+const ensureKeyLabelResizeListener = (): void => {
+  if (keyLabelResizeBound) {
+    return;
+  }
+  keyLabelResizeBound = true;
+  window.addEventListener("resize", () => {
+    refitAllVisibleKeyLabels();
+  });
 };
 
 const clampUnlockedDigits = (value: number): number =>
@@ -1370,6 +1428,7 @@ export const render = (
   dispatch: (action: Action) => unknown,
   options: RenderOptions = {},
 ): void => {
+  ensureKeyLabelResizeListener();
   const totalEl = root.querySelector("[data-total]");
   const slotEl = root.querySelector("[data-slot]");
   const rollEl = root.querySelector("[data-roll]");
@@ -1509,7 +1568,7 @@ export const render = (
       button.classList.add("key--unlock-animate");
       bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);
     }
-    button.textContent = formatKeyCellLabel(state, cell);
+    setKeyButtonLabel(button, formatKeyCellLabel(state, cell));
     const keypadToggleActive = isToggleFlagActive(state, cell);
     button.classList.toggle("key--toggle-active", keypadToggleActive);
     const keypadToggleAnimation = readToggleAnimation(cell);
@@ -1532,6 +1591,7 @@ export const render = (
     });
     keysEl.appendChild(button);
   }
+  fitKeyLabelsInContainer(keysEl);
 
   if (keypadDimensionsChanged) {
     playKeypadFlip(keysEl, keypadBeforeRects);
@@ -1583,7 +1643,7 @@ export const render = (
         button.classList.add("key--unlock-animate");
         bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);
       }
-      button.textContent = formatKeyCellLabel(state, cell);
+      setKeyButtonLabel(button, formatKeyCellLabel(state, cell));
       const storageToggleActive = isToggleFlagActive(state, cell);
       button.classList.toggle("key--toggle-active", storageToggleActive);
       const storageToggleAnimation = readToggleAnimation(cell);
@@ -1598,6 +1658,7 @@ export const render = (
       appendDebugSlotLabel(button, slotLabel);
       storageEl.appendChild(button);
     }
+    fitKeyLabelsInContainer(storageEl);
   }
 
   pendingToggleAnimationByFlag = {};

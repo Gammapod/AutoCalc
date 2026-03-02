@@ -6,10 +6,10 @@ import type { GameState, KeyCell } from "../src/domain/types.js";
 export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel("*"), "\u00D7", "mul key label renders as \u00D7");
   assert.equal(formatKeyLabel("/"), "\u00F7", "div key label renders as \u00F7");
-  assert.equal(formatKeyLabel("#"), "#/⟡", "euclidean division key label renders as #/⟡");
-  assert.equal(formatKeyLabel("⟡"), "⟡", "modulo key label renders as ⟡");
+  assert.equal(formatKeyLabel("#"), "#/\u27E1", "euclidean division key label renders as #/\u27E1");
+  assert.equal(formatKeyLabel("\u27E1"), "\u27E1", "modulo key label renders as \u27E1");
   assert.equal(formatKeyLabel("UNDO"), "\u21BA", "undo key label renders as \u238C");
-  assert.equal(formatKeyLabel("\u23EF"), "⏵︎", "play/pause key defaults to play icon");
+  assert.equal(formatKeyLabel("\u23EF"), "\u25BA", "play/pause key defaults to play icon");
   assert.equal(formatKeyLabel("+"), "+", "plus key label remains +");
   assert.equal(formatKeyLabel("NEG"), "-\u{1D465}", "NEG key label uses stylized indicator");
 
@@ -19,7 +19,7 @@ export const runKeyLabelDisplayTests = (): void => {
     key: "\u23EF",
     behavior: { type: "toggle_flag", flag: "execution.pause" },
   };
-  assert.equal(formatKeyCellLabel(base, pauseToggleCell), "⏵︎", "untoggled play/pause key renders play icon");
+  assert.equal(formatKeyCellLabel(base, pauseToggleCell), "\u25BA", "untoggled play/pause key renders play icon");
 
   const toggled: GameState = {
     ...base,
@@ -31,6 +31,5 @@ export const runKeyLabelDisplayTests = (): void => {
       },
     },
   };
-  assert.equal(formatKeyCellLabel(toggled, pauseToggleCell), "⏸︎", "toggled play/pause key renders pause icon");
+  assert.equal(formatKeyCellLabel(toggled, pauseToggleCell), "\u275A\u275A", "toggled play/pause key renders pause icon");
 };
-
