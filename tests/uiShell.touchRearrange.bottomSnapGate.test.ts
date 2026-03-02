@@ -6,13 +6,13 @@ export const runUiShellTouchRearrangeBottomSnapGateTests = (): void => {
   const state = initialState();
   assert.equal(
     canStartTouchRearrange(state, "touch", false, "top"),
-    false,
-    "touch rearrange is disabled in top snap",
+    true,
+    "touch rearrange is enabled in top snap",
   );
   assert.equal(
     canStartTouchRearrange(state, "touch", false, "middle"),
-    false,
-    "touch rearrange is disabled in middle snap",
+    true,
+    "touch rearrange is enabled in middle snap",
   );
   assert.equal(
     canStartTouchRearrange(state, "touch", false, "bottom"),
@@ -30,4 +30,3 @@ export const runUiShellTouchRearrangeBottomSnapGateTests = (): void => {
     "touch rearrange is disabled while right menu is open",
   );
 };
-

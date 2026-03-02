@@ -93,7 +93,12 @@ const resolveTouchSourceFromEvent = (
   state: GameState,
   eventTarget: EventTarget | null,
 ): { source: TouchRearrangeSource; element: HTMLElement } | null => {
-  const targetElement = eventTarget instanceof HTMLElement ? eventTarget : null;
+  const targetElement =
+    eventTarget instanceof HTMLElement
+      ? eventTarget
+      : eventTarget instanceof Node
+        ? eventTarget.parentElement
+        : null;
   const sourceElement = targetElement?.closest<HTMLElement>("[data-layout-surface][data-layout-index][data-layout-occupied='key']") ?? null;
   if (!sourceElement) {
     return null;
@@ -136,7 +141,7 @@ export const canStartTouchRearrange = (
   _state: GameState,
   pointerType: string,
   menuOpen: boolean,
-  activeSnapId: SnapId,
+  _activeSnapId: SnapId,
 ): boolean => {
   if (pointerType !== "touch") {
     return false;
@@ -144,7 +149,7 @@ export const canStartTouchRearrange = (
   if (menuOpen) {
     return false;
   }
-  return activeSnapId === "bottom";
+  return true;
 };
 
 export const getMenuA11yState = (menuOpen: boolean): MenuA11yState => ({
@@ -509,6 +514,22 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       },
       true,
     );
+
+    listen(refs.viewport, "selectstart", (event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest(".key")) {
+        return;
+      }
+      event.preventDefault();
+    });
+
+    listen(refs.viewport, "contextmenu", (event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest(".key")) {
+        return;
+      }
+      event.preventDefault();
+    });
 
     listen(refs.menu, "pointerdown", (event) => {
       const pointerEvent = event as PointerEvent;
