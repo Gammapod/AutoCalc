@@ -201,12 +201,12 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(swapAcross.ui.keyLayout[emptyKeypadIndex]?.key, "C", "swap across surfaces places storage key into keypad");
 
   const executionKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex(
-    (cell) => cell.kind === "key" && (cell.key === "=" || cell.key === "++" || cell.key === "\u23EF"),
+    (cell) => cell.kind === "key" && (cell.key === "=" || cell.key === "++"),
   );
   const firstStorageEmptyIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell === null);
   const firstStorageExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "=");
   const firstStorageNonExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex(
-    (cell) => !!cell && cell.key !== "=" && cell.key !== "++" && cell.key !== "\u23EF",
+    (cell) => !!cell && cell.key !== "=" && cell.key !== "++",
   );
   const firstEmptyKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
   assert.ok(executionKeypadIndex >= 0, "baseline keypad includes an execution key");

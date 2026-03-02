@@ -280,7 +280,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "undo_c_fallback_when_empty") {
+  if (kind === "undo_noop_when_roll_empty") {
     const state = unlockKey(
       {
         ...initialState(),
@@ -288,8 +288,8 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
           ...initialState().calculator,
           total: r(7n),
           roll: [],
-          operationSlots: [],
-          draftingSlot: null,
+          operationSlots: [{ operator: "+", operand: 9n }],
+          draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
         },
         unlocks: {
           ...initialState().unlocks,
@@ -303,8 +303,8 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       "UNDO",
     );
     const next = applyKeyAction(state, "UNDO");
-    assert.deepEqual(next.calculator.total, r(0n), "UNDO fallback should reset total when no roll/slots exist");
-    assert.equal(next.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID), true, "UNDO C-fallback should record checklist unlock");
+    assert.deepEqual(next.calculator, state.calculator, "UNDO should be a no-op when roll is empty");
+    assert.equal(next.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID), false, "UNDO should not perform C-style checklist unlock when roll is empty");
     return;
   }
 

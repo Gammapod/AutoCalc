@@ -67,8 +67,11 @@ const createMockStore = (seed: GameState): Store & { actions: Action[] } => {
   };
 };
 
-const countEqualsPresses = (actions: Action[]): number =>
-  actions.filter((action) => action.type === "PRESS_KEY" && action.key === "=").length;
+const countExecutorPresses = (actions: Action[]): number =>
+  actions.filter((action) => action.type === "PRESS_KEY" && (action.key === "=" || action.key === "++")).length;
+
+const countExecutorPressesForKey = (actions: Action[], key: "=" | "++"): number =>
+  actions.filter((action) => action.type === "PRESS_KEY" && action.key === key).length;
 
 export const runAutoEqualsSchedulerTests = (): void => {
   const timers = createFakeTimerApi();
@@ -76,34 +79,30 @@ export const runAutoEqualsSchedulerTests = (): void => {
   const scheduler = createAutoEqualsScheduler(store, { timers: timers.timers });
 
   scheduler.startIfNeeded();
-  assert.equal(countEqualsPresses(store.actions), 0, "startIfNeeded is idle when auto-equals flag is off");
+  assert.equal(countExecutorPresses(store.actions), 0, "startIfNeeded is idle when auto-equals flag is off");
   assert.equal(timers.activeCount(), 0, "no interval is created while off");
 
   store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   scheduler.sync(store.getState());
-  assert.equal(countEqualsPresses(store.actions), 1, "toggling on dispatches immediate equals once");
+  assert.equal(countExecutorPresses(store.actions), 1, "toggling on dispatches immediate executor press once");
+  assert.equal(countExecutorPressesForKey(store.actions, "++"), 1, "default keypad executor is ++");
+  assert.equal(countExecutorPressesForKey(store.actions, "="), 0, "default scheduler path should not press =");
   assert.equal(timers.setCalls, 1, "toggling on creates one interval");
   assert.equal(timers.activeCount(), 1, "interval remains active while on");
-  assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle stays on after first failed attempt");
+  assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle remains on after successful ++ attempt");
 
   timers.tick();
-  assert.equal(countEqualsPresses(store.actions), 2, "each interval tick dispatches equals");
-  assert.equal(
-    Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]),
-    false,
-    "toggle auto-turns off after second failed equals attempt",
-  );
-  assert.equal(timers.activeCount(), 0, "auto-turn-off clears the running interval");
-  assert.ok(
-    store.actions.some((action) => action.type === "TOGGLE_FLAG" && action.flag === AUTO_EQUALS_FLAG),
-    "scheduler dispatches TOGGLE_FLAG to untoggle itself",
-  );
-
-  timers.tick();
-  assert.equal(countEqualsPresses(store.actions), 2, "ticks after off do not dispatch equals");
+  assert.equal(countExecutorPresses(store.actions), 2, "each interval tick dispatches executor");
+  assert.equal(countExecutorPressesForKey(store.actions, "++"), 2, "tick continues pressing ++");
+  assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "successful ++ execution keeps toggle on");
+  assert.equal(timers.activeCount(), 1, "successful ++ execution keeps interval active");
 
   const stateWithValidEquation: GameState = {
     ...initialState(),
+    ui: {
+      ...initialState().ui,
+      keyLayout: [{ kind: "key", key: "=" }],
+    },
     calculator: {
       ...initialState().calculator,
       operationSlots: [{ operator: "+", operand: 1n }],
@@ -122,34 +121,100 @@ export const runAutoEqualsSchedulerTests = (): void => {
   validStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   validScheduler.sync(validStore.getState());
   assert.equal(
-    countEqualsPresses(validStore.actions),
+    countExecutorPressesForKey(validStore.actions, "="),
     1,
     "valid equations still trigger immediate equals when toggled on",
   );
   validTimers.tick();
   validTimers.tick();
   assert.equal(
-    countEqualsPresses(validStore.actions),
+    countExecutorPressesForKey(validStore.actions, "="),
     3,
     "valid equations keep auto-equals running past the second attempt",
   );
+  assert.equal(
+    countExecutorPressesForKey(validStore.actions, "++"),
+    0,
+    "when = is the installed keypad executor, scheduler should not dispatch ++",
+  );
   assert.equal(Boolean(validStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle remains on while equation is valid");
 
-  store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
-  scheduler.sync(store.getState());
-  assert.equal(countEqualsPresses(store.actions), 3, "turning on again dispatches immediate equals again");
-  assert.equal(timers.setCalls, 2, "turning on again creates a fresh interval");
-  assert.equal(timers.activeCount(), 1, "exactly one interval stays active");
+  const stateWithInvalidEqualsExecutor: GameState = {
+    ...initialState(),
+    ui: {
+      ...initialState().ui,
+      keyLayout: [{ kind: "key", key: "=" }],
+    },
+    unlocks: {
+      ...initialState().unlocks,
+      execution: {
+        ...initialState().unlocks.execution,
+        "=": false,
+      },
+    },
+  };
+  const invalidStore = createMockStore(stateWithInvalidEqualsExecutor);
+  const invalidTimers = createFakeTimerApi();
+  const invalidScheduler = createAutoEqualsScheduler(invalidStore, { timers: invalidTimers.timers });
+  invalidStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+  invalidScheduler.sync(invalidStore.getState());
+  assert.equal(
+    countExecutorPressesForKey(invalidStore.actions, "="),
+    1,
+    "invalid equals path still attempts immediate = press once",
+  );
+  assert.equal(
+    Boolean(invalidStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]),
+    true,
+    "first invalid equals attempt keeps auto toggle on",
+  );
+  invalidTimers.tick();
+  assert.equal(
+    countExecutorPressesForKey(invalidStore.actions, "="),
+    2,
+    "invalid equals path performs second attempt on first interval tick",
+  );
+  assert.equal(
+    Boolean(invalidStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]),
+    false,
+    "invalid equals path auto-turns off after second failed attempt",
+  );
+  assert.equal(invalidTimers.activeCount(), 0, "invalid equals auto-turn-off clears active interval");
+  assert.ok(
+    invalidStore.actions.some((action) => action.type === "TOGGLE_FLAG" && action.flag === AUTO_EQUALS_FLAG),
+    "invalid equals path dispatches TOGGLE_FLAG to untoggle itself",
+  );
 
-  timers.tick();
-  assert.equal(countEqualsPresses(store.actions), 4, "restart cycle still performs second attempt before auto-turn-off");
-  assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), false, "restart cycle auto-turns off again on second failure");
-  assert.equal(timers.activeCount(), 0, "restart cycle clears interval again after auto-turn-off");
+  const stateWithNoExecutorOnKeypad: GameState = {
+    ...initialState(),
+    ui: {
+      ...initialState().ui,
+      keyLayout: [{ kind: "placeholder", area: "empty" }],
+    },
+  };
+  const noExecutorStore = createMockStore(stateWithNoExecutorOnKeypad);
+  const noExecutorTimers = createFakeTimerApi();
+  const noExecutorScheduler = createAutoEqualsScheduler(noExecutorStore, { timers: noExecutorTimers.timers });
+  noExecutorStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+  noExecutorScheduler.sync(noExecutorStore.getState());
+  assert.equal(
+    countExecutorPresses(noExecutorStore.actions),
+    0,
+    "when no executor is installed on keypad, scheduler dispatches no executor press",
+  );
+  assert.equal(
+    Boolean(noExecutorStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]),
+    false,
+    "no installed keypad executor auto-turns toggle off immediately",
+  );
+  assert.equal(noExecutorTimers.activeCount(), 0, "no installed keypad executor stops interval immediately");
 
   scheduler.dispose();
-  assert.equal(timers.clearCalls, 2, "dispose is safe even when interval is already cleared");
+  assert.equal(timers.clearCalls, 1, "dispose clears running ++ scheduler interval once");
   assert.equal(timers.activeCount(), 0, "dispose leaves no timers active");
   validScheduler.dispose();
+  invalidScheduler.dispose();
+  noExecutorScheduler.dispose();
 
   const loadedWithAuto: GameState = {
     ...initialState(),

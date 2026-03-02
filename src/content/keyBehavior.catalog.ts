@@ -21,7 +21,7 @@ export type KeyEdgeExpectationKind =
   | "neg_toggles_drafting_sign"
   | "c_checklist_recorded_once"
   | "ce_preserves_total_when_clearing"
-  | "undo_c_fallback_when_empty"
+  | "undo_noop_when_roll_empty"
   | "graph_does_not_mutate_calculator_state"
   | "equals_division_by_zero_sets_nan"
   | "increment_clears_pending_negative"
@@ -94,7 +94,7 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     lockModel: "unlockable",
     unlockPathPolicy: "catalog",
     primaryExpectation: "undo_pops_roll",
-    edgeCaseExpectation: "undo_c_fallback_when_empty",
+    edgeCaseExpectation: "undo_noop_when_roll_empty",
   },
   {
     key: "GRAPH",

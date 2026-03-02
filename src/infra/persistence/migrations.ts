@@ -49,7 +49,7 @@ export type SerializableStateV1 = {
     digits?: Partial<Record<Exclude<ValueExpressionKey, "NEG">, boolean>>;
     valueExpression?: Partial<UnlockState["valueExpression"]>;
     slotOperators?: Partial<UnlockState["slotOperators"]>;
-    utilities?: Partial<Record<"C" | "CE" | "UNDO" | "GRAPH" | "NEG", boolean>>;
+    utilities?: Partial<Record<"C" | "CE" | "UNDO" | "GRAPH" | "\u23EF" | "NEG", boolean>>;
     execution?: Partial<UnlockState["execution"]>;
   };
   completedUnlockIds?: string[];
@@ -173,8 +173,8 @@ const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
-const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "GRAPH"] as const;
-const EXEC_KEY_VALUES = ["=", "++", "\u23EF"] as const;
+const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "GRAPH", "\u23EF"] as const;
+const EXEC_KEY_VALUES = ["=", "++"] as const;
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
   ...SLOT_OPERATOR_VALUES,

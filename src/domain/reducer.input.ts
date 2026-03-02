@@ -36,10 +36,10 @@ const isKeyUnlockedForInput = (state: GameState, key: Key): boolean => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return state.unlocks.slotOperators[key];
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
     return state.unlocks.utilities[key];
   }
-  if (key === "=" || key === "++" || key === "\u23EF") {
+  if (key === "=" || key === "++") {
     return state.unlocks.execution[key];
   }
   return false;
@@ -403,9 +403,6 @@ const applyCE = (state: GameState): GameState => {
   return applyCECore(state);
 };
 
-const hasActiveOperatorSlot = (state: GameState): boolean =>
-  state.calculator.operationSlots.length > 0 || state.calculator.draftingSlot !== null;
-
 const applyUndo = (state: GameState): GameState => {
   if (!state.unlocks.utilities.UNDO) {
     return state;
@@ -427,21 +424,7 @@ const applyUndo = (state: GameState): GameState => {
       },
     };
   }
-
-  if (hasActiveOperatorSlot(state)) {
-    return applyCECore(state);
-  }
-
-  const resetState: GameState = { ...state, calculator: createResetCalculatorState() };
-
-  if (resetState.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID)) {
-    return resetState;
-  }
-
-  return {
-    ...resetState,
-    completedUnlockIds: [...resetState.completedUnlockIds, CHECKLIST_UNLOCK_ID],
-  };
+  return state;
 };
 
 const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
@@ -503,4 +486,3 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   }
   return keyed;
 };
-

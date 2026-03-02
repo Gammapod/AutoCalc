@@ -47,7 +47,7 @@ const unlockKey = (state: GameState, key: Key): GameState => {
       },
     };
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
     return {
       ...state,
       unlocks: {

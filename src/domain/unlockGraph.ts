@@ -61,9 +61,9 @@ const staticFunctionRules: FunctionRule[] = [
   {
     id: "fn.execute_activation",
     label: "execute_activation",
-    contributorKeys: ["=", "\u23EF"],
-    rule: "= is unlocked",
-    isSatisfied: (keys) => keys.has("="),
+    contributorKeys: ["=", "++", "\u23EF"],
+    rule: "= or ++ is unlocked",
+    isSatisfied: (keys) => keys.has("=") || keys.has("++"),
   },
   {
     id: "fn.step_plus_one",

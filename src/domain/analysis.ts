@@ -54,10 +54,10 @@ const isUnlocked = (state: GameState, key: Key): boolean => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return state.unlocks.slotOperators[key];
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
     return state.unlocks.utilities[key];
   }
-  if (key === "=" || key === "++" || key === "\u23EF") {
+  if (key === "=" || key === "++") {
     return state.unlocks.execution[key];
   }
   return false;
@@ -77,9 +77,10 @@ const createAvailabilityReader = (
 
 const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolean): CapabilityContext => {
   const hasEqualsKey = isAvailable("=");
+  const hasIncrementKey = isAvailable("++");
   const hasPauseKey = isAvailable("\u23EF");
-  const hasEqualsUnlocked = isUnlocked(state, "=");
-  const executeActivation = hasEqualsKey || (hasPauseKey && hasEqualsUnlocked);
+  const hasAnyExecutorUnlocked = isUnlocked(state, "=") || isUnlocked(state, "++");
+  const executeActivation = hasEqualsKey || hasIncrementKey || (hasPauseKey && hasAnyExecutorUnlocked);
   const hasPlus = isAvailable("+");
   const hasMinus = isAvailable("-");
   const hasNeg = isAvailable("NEG");

@@ -7,6 +7,17 @@ import { analyzeNumberDomains } from "../domain/analysis.js";
 import { formatNumberDomainReport } from "./analysisReport.js";
 import type { AllocatorAllocationField, GameState } from "../domain/types.js";
 
+declare global {
+  interface Window {
+    __autoCalcBootstrapCleanup__?: () => void;
+  }
+}
+
+if (window.__autoCalcBootstrapCleanup__) {
+  window.__autoCalcBootstrapCleanup__();
+  delete window.__autoCalcBootstrapCleanup__;
+}
+
 const root = document.querySelector("#app");
 if (!root) {
   throw new Error("#app root not found.");
@@ -171,13 +182,19 @@ const syncAllocatorDeviceInputs = (): void => {
 
 redraw();
 autoEqualsScheduler.startIfNeeded();
-store.subscribe((state) => {
+const unsubscribe = store.subscribe((state) => {
   autoEqualsScheduler.sync(state);
-  render(root, state, store.dispatch);
+  const latest = store.getState();
+  render(root, latest, store.dispatch);
   syncKeypadDimensionInputs();
   syncAllocatorDeviceInputs();
-  storageRepo.save(state);
+  storageRepo.save(latest);
 });
+
+window.__autoCalcBootstrapCleanup__ = () => {
+  unsubscribe();
+  autoEqualsScheduler.dispose();
+};
 
 debugToggle.addEventListener("change", () => {
   syncDebugUiState();

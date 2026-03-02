@@ -143,11 +143,11 @@ export const initialState = (): GameState => {
         CE: false,
         UNDO: false,
         GRAPH: false,
+        "\u23EF": false,
       },
       execution: {
         "=": false,
         "++": true,
-        "\u23EF": false,
       },
       uiUnlocks: {
         storageVisible: false,

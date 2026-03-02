@@ -829,10 +829,10 @@ const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return state.unlocks.slotOperators[key];
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
     return state.unlocks.utilities[key];
   }
-  if (key === "=" || key === "++" || key === "\u23EF") {
+  if (key === "=" || key === "++") {
     return state.unlocks.execution[key];
   }
   return false;
@@ -845,13 +845,13 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return "slot_operator";
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
     return "utility";
   }
   return "execution";
 };
 
-const isExecutionKey = (key: Key): boolean => key === "=" || key === "++" || key === "\u23EF";
+const isExecutionKey = (key: Key): boolean => key === "=" || key === "++";
 
 const buildKeypadSlotLabels = (
   layout: GameState["ui"]["keyLayout"],

@@ -1,6 +1,6 @@
 import { AUTO_EQUALS_FLAG } from "../domain/state.js";
 import { getOperationSnapshot } from "../domain/slotDrafting.js";
-import type { GameState, Store } from "../domain/types.js";
+import type { ExecKey, GameState, Key, Store } from "../domain/types.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
 
@@ -23,6 +23,18 @@ const defaultTimers: TimerApi = {
 
 const isAutoEqualsEnabled = (state: GameState): boolean => Boolean(state.ui.buttonFlags[AUTO_EQUALS_FLAG]);
 const hasValidEquation = (state: GameState): boolean => getOperationSnapshot(state.calculator).length > 0;
+const EXECUTOR_KEYS: readonly ExecKey[] = ["=", "++"];
+
+const isExecutorKey = (key: Key): key is ExecKey => EXECUTOR_KEYS.includes(key as ExecKey);
+
+const getInstalledExecutorKey = (state: GameState): ExecKey | null => {
+  for (const cell of state.ui.keyLayout) {
+    if (cell.kind === "key" && isExecutorKey(cell.key)) {
+      return cell.key;
+    }
+  }
+  return null;
+};
 
 export const clearAutoEqualsFlagForRuntime = (state: GameState): GameState => {
   if (!Object.prototype.hasOwnProperty.call(state.ui.buttonFlags, AUTO_EQUALS_FLAG)) {
@@ -64,8 +76,22 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
 
   const dispatchAutoEqualsAttempt = (): void => {
     const beforeAttempt = store.getState();
-    const validEquation = hasValidEquation(beforeAttempt);
-    store.dispatch({ type: "PRESS_KEY", key: "=" });
+    const executorKey = getInstalledExecutorKey(beforeAttempt);
+    if (!executorKey) {
+      if (isAutoEqualsEnabled(beforeAttempt)) {
+        store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+      }
+      stop();
+      return;
+    }
+
+    const validEquation = executorKey === "=" ? hasValidEquation(beforeAttempt) : true;
+    store.dispatch({ type: "PRESS_KEY", key: executorKey });
+    const afterAttempt = store.getState();
+    if (afterAttempt !== beforeAttempt) {
+      resetInvalidAttempts();
+      return;
+    }
 
     if (validEquation) {
       resetInvalidAttempts();
@@ -77,7 +103,6 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
       return;
     }
 
-    const afterAttempt = store.getState();
     if (!isAutoEqualsEnabled(afterAttempt)) {
       stop();
       return;

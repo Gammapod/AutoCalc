@@ -3,3 +3,4 @@ legacy/
 node_modules/
 release/
 node_modules/.package-lock.json
+AutoCalc.zip
