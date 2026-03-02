@@ -142,6 +142,8 @@ let previousKeypadRows: number | null = null;
 let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 let dragSession: DragSession | null = null;
+let storageGridResizeObserver: ResizeObserver | null = null;
+let observedStorageGrid: HTMLElement | null = null;
 let suppressClicksUntil = 0;
 let inputAnimationLockCount = 0;
 const GRAPH_WINDOW_SIZE = 25;
@@ -155,6 +157,9 @@ const KEYPAD_GROW_MAX_DURATION_MS = 880;
 const CALC_GROW_MAX_DURATION_MS = 980;
 const UNLOCK_ANIMATION_NAME = "key-unlock-pulse";
 const KEYPAD_SLOT_ENTER_ANIMATION_NAME = "keypad-slot-enter";
+const STORAGE_MIN_VISUAL_COLUMNS = 1;
+const STORAGE_MIN_KEY_WIDTH_PX = 56;
+const STORAGE_FALLBACK_GAP_PX = 8;
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -768,12 +773,71 @@ export const getStorageRowCount = (buttonCount: number, columns: number = STORAG
   return Math.max(1, Math.ceil(buttonCount / columns));
 };
 
-const buildStorageSlotLabels = (layout: GameState["ui"]["storageLayout"]): string[] =>
+const buildStorageSlotLabels = (layout: GameState["ui"]["storageLayout"], columns: number): string[] =>
   layout.map((_cell, index) => {
-    const row = Math.floor(index / STORAGE_COLUMNS) + 1;
-    const column = (index % STORAGE_COLUMNS) + 1;
+    const row = Math.floor(index / columns) + 1;
+    const column = (index % columns) + 1;
     return `S${row}C${column} #${index}`;
   });
+
+const parsePixelValue = (value: string | null | undefined, fallback: number): number => {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getStorageVisualColumns = (storageEl: HTMLElement): number => {
+  if (typeof window === "undefined") {
+    return STORAGE_COLUMNS;
+  }
+  const computed = window.getComputedStyle(storageEl);
+  const gap = parsePixelValue(computed.columnGap || computed.gap, STORAGE_FALLBACK_GAP_PX);
+  const paddingLeft = parsePixelValue(computed.paddingLeft, 0);
+  const paddingRight = parsePixelValue(computed.paddingRight, 0);
+  const contentWidth = Math.max(0, storageEl.clientWidth - paddingLeft - paddingRight);
+  if (contentWidth <= 0) {
+    return STORAGE_COLUMNS;
+  }
+  const columns = Math.floor((contentWidth + gap) / (STORAGE_MIN_KEY_WIDTH_PX + gap));
+  return Math.max(STORAGE_MIN_VISUAL_COLUMNS, Math.min(STORAGE_COLUMNS, columns));
+};
+
+const syncStorageGridMetrics = (storageEl: HTMLElement): number => {
+  const columns = getStorageVisualColumns(storageEl);
+  storageEl.style.setProperty("--storage-columns", columns.toString());
+  storageEl.setAttribute("data-storage-columns", columns.toString());
+  const slotCount = Number.parseInt(storageEl.dataset.storageSlotCount ?? "0", 10);
+  const rowCount = getStorageRowCount(slotCount, columns);
+  storageEl.setAttribute("data-storage-rows", rowCount.toString());
+  storageEl.style.setProperty("--storage-rows", rowCount.toString());
+  return columns;
+};
+
+const ensureStorageGridObserver = (storageEl: HTMLElement): void => {
+  if (typeof ResizeObserver === "undefined") {
+    return;
+  }
+  if (!storageGridResizeObserver) {
+    storageGridResizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const target = entry.target;
+        if (target instanceof HTMLElement) {
+          syncStorageGridMetrics(target);
+        }
+      }
+    });
+  }
+  if (observedStorageGrid === storageEl) {
+    return;
+  }
+  if (observedStorageGrid) {
+    storageGridResizeObserver.unobserve(observedStorageGrid);
+  }
+  observedStorageGrid = storageEl;
+  storageGridResizeObserver.observe(storageEl);
+};
 
 const shouldReduceMotion = (): boolean => {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -1482,12 +1546,12 @@ export const render = (
   } else {
     storageEl.setAttribute("aria-hidden", "false");
     storageEl.setAttribute("data-storage-visible", "true");
-    const storageLabels = buildStorageSlotLabels(state.ui.storageLayout);
-    const storageRowCount = getStorageRowCount(state.ui.storageLayout.length);
-    storageEl.setAttribute("data-storage-rows", storageRowCount.toString());
     if (storageEl instanceof HTMLElement) {
-      storageEl.style.setProperty("--storage-rows", storageRowCount.toString());
+      storageEl.dataset.storageSlotCount = state.ui.storageLayout.length.toString();
+      ensureStorageGridObserver(storageEl);
     }
+    const storageColumns = storageEl instanceof HTMLElement ? syncStorageGridMetrics(storageEl) : STORAGE_COLUMNS;
+    const storageLabels = buildStorageSlotLabels(state.ui.storageLayout, storageColumns);
     const storageRenderOrder = buildStorageRenderOrder(state);
     for (const index of storageRenderOrder) {
       const cell = state.ui.storageLayout[index];

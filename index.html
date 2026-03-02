@@ -621,9 +621,10 @@
       }
 
       [data-storage-keys] {
+        --storage-columns: 8;
         min-height: 48px;
         display: grid;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
+        grid-template-columns: repeat(var(--storage-columns), minmax(0, 1fr));
         grid-auto-rows: minmax(48px, 1fr);
         gap: var(--gap);
         border: 1px solid rgba(91, 62, 33, 0.6);
