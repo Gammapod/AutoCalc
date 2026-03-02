@@ -2,7 +2,7 @@
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 7;
+export const SAVE_SCHEMA_VERSION = 9;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const AUTO_EQUALS_FLAG = "execution.pause";
 export const GRAPH_VISIBLE_FLAG = "graph.visible";
@@ -10,6 +10,8 @@ export const KEYPAD_DEFAULT_COLUMNS = 1;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
+export const TOTAL_DIGITS_MIN = 1;
+export const TOTAL_DIGITS_MAX = 12;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
@@ -94,6 +96,15 @@ export const initialState = (): GameState => {
       operationSlots: [],
       draftingSlot: null,
     },
+    allocator: {
+      maxPoints: 1,
+      allocations: {
+        width: 0,
+        height: 0,
+        range: 0,
+        speed: 0,
+      },
+    },
     ui: {
       keyLayout,
       keypadCells: fromKeyLayoutArray(keyLayout, KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
@@ -142,7 +153,7 @@ export const initialState = (): GameState => {
         storageVisible: false,
       },
       maxSlots: 1,
-      maxTotalDigits: 2,
+      maxTotalDigits: 1,
     },
     completedUnlockIds: [],
   };

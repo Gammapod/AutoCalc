@@ -80,6 +80,10 @@ export const runReducerInputTests = (): void => {
 
   const overflowSource: GameState = {
     ...fullyUnlocked,
+    unlocks: {
+      ...fullyUnlocked.unlocks,
+      maxTotalDigits: 2,
+    },
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(99n),

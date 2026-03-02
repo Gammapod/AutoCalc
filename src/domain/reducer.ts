@@ -1,4 +1,4 @@
-import { initialState } from "./state.js";
+import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN, TOTAL_DIGITS_MAX, TOTAL_DIGITS_MIN } from "./state.js";
 import { applyKeyAction } from "./reducer.input.js";
 import {
   applyMoveKeySlot,
@@ -12,7 +12,7 @@ import {
 import { applyLifecycleAction } from "./reducer.lifecycle.js";
 import { applyToggleFlag } from "./reducer.flags.js";
 import { clearOperationEntry } from "./reducer.stateBuilders.js";
-import type { Action, GameState } from "./types.js";
+import type { Action, AllocatorAllocationField, AllocatorBudgetSnapshot, AllocatorState, GameState } from "./types.js";
 import { reduceActionWithV2 } from "../../src_v2/compat/legacyReducerAdapter.js";
 import { compareParity } from "../../src_v2/compat/parityHarness.js";
 
@@ -20,6 +20,90 @@ import { compareParity } from "../../src_v2/compat/parityHarness.js";
 const readFlag = (name: "USE_V2_ENGINE" | "V2_PARITY_ASSERT"): boolean => {
   const processEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
   return processEnv?.[name] === "true";
+};
+
+const ALLOCATOR_TRIM_ORDER: readonly AllocatorAllocationField[] = ["speed", "range", "height", "width"];
+
+const clampNonNegativeInteger = (value: number, fallback: number): number => {
+  if (!Number.isInteger(value)) {
+    return fallback;
+  }
+  return Math.max(0, value);
+};
+
+const clampToRange = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+
+const getSpentTotal = (allocator: AllocatorState): number =>
+  allocator.allocations.width + allocator.allocations.height + allocator.allocations.range + allocator.allocations.speed;
+
+const getUnusedPoints = (allocator: AllocatorState): number => allocator.maxPoints - getSpentTotal(allocator);
+
+const getAllocatorBudgetSnapshot = (allocator: AllocatorState): AllocatorBudgetSnapshot => ({
+  spentTotal: getSpentTotal(allocator),
+  unusedPoints: getUnusedPoints(allocator),
+});
+
+const trimAllocationsToBudget = (allocator: AllocatorState): AllocatorState => {
+  const nextAllocations = { ...allocator.allocations };
+  let overspend = getSpentTotal(allocator) - allocator.maxPoints;
+  if (overspend <= 0) {
+    return allocator;
+  }
+  for (const field of ALLOCATOR_TRIM_ORDER) {
+    if (overspend <= 0) {
+      break;
+    }
+    const reduction = Math.min(nextAllocations[field], overspend);
+    nextAllocations[field] -= reduction;
+    overspend -= reduction;
+  }
+  return {
+    ...allocator,
+    allocations: nextAllocations,
+  };
+};
+
+const applyMaxPointsSetWithTrim = (allocator: AllocatorState, rawValue: number): AllocatorState => {
+  const maxPoints = clampNonNegativeInteger(rawValue, allocator.maxPoints);
+  const base: AllocatorState = maxPoints === allocator.maxPoints ? allocator : { ...allocator, maxPoints };
+  return trimAllocationsToBudget(base);
+};
+
+const applyAllocationDelta = (allocator: AllocatorState, field: AllocatorAllocationField, delta: 1 | -1): AllocatorState => {
+  const budget = getAllocatorBudgetSnapshot(allocator);
+  const current = allocator.allocations[field];
+  if (delta === 1 && budget.unusedPoints <= 0) {
+    return allocator;
+  }
+  if (delta === -1 && current <= 0) {
+    return allocator;
+  }
+  const nextValue = current + delta;
+  return {
+    ...allocator,
+    allocations: {
+      ...allocator.allocations,
+      [field]: nextValue,
+    },
+  };
+};
+
+const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorState): GameState => {
+  const withAllocator = allocator === state.allocator ? state : { ...state, allocator };
+  const columns = clampToRange(1 + withAllocator.allocator.allocations.width, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
+  const rows = clampToRange(1 + withAllocator.allocator.allocations.height, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
+  const maxDigits = clampToRange(1 + withAllocator.allocator.allocations.range, TOTAL_DIGITS_MIN, TOTAL_DIGITS_MAX);
+  const resized = applySetKeypadDimensions(withAllocator, columns, rows);
+  if (resized.unlocks.maxTotalDigits === maxDigits) {
+    return resized;
+  }
+  return {
+    ...resized,
+    unlocks: {
+      ...resized.unlocks,
+      maxTotalDigits: maxDigits,
+    },
+  };
 };
 
 const reduceLegacy = (state: GameState, action: Action): GameState => {
@@ -63,6 +147,43 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
   }
   if (action.type === "TOGGLE_FLAG") {
     return applyToggleFlag(state, action.flag);
+  }
+  if (action.type === "ALLOCATOR_ADJUST") {
+    const nextAllocator = applyAllocationDelta(state.allocator, action.field, action.delta);
+    if (nextAllocator === state.allocator) {
+      return state;
+    }
+    return applyAllocatorRuntimeProjection(state, nextAllocator);
+  }
+  if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
+    const nextAllocator = applyMaxPointsSetWithTrim(state.allocator, action.value);
+    if (nextAllocator === state.allocator) {
+      return state;
+    }
+    return applyAllocatorRuntimeProjection(state, nextAllocator);
+  }
+  if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
+    const amount = clampNonNegativeInteger(action.amount, 0);
+    if (amount <= 0) {
+      return state;
+    }
+    const nextAllocator = {
+      ...state.allocator,
+      maxPoints: state.allocator.maxPoints + amount,
+    };
+    return applyAllocatorRuntimeProjection(state, nextAllocator);
+  }
+  if (action.type === "RESET_ALLOCATOR_DEVICE") {
+    const nextAllocator: AllocatorState = {
+      ...state.allocator,
+      allocations: {
+        width: 0,
+        height: 0,
+        range: 0,
+        speed: 0,
+      },
+    };
+    return applyAllocatorRuntimeProjection(state, nextAllocator);
   }
   return state;
 };

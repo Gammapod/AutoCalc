@@ -144,6 +144,29 @@ export type SerializableStateV7 = {
   completedUnlockIds: string[];
 };
 
+export type SerializableAllocatorStateV8 = {
+  points: number;
+  speed: number;
+};
+
+export type SerializableStateV8 = SerializableStateV7 & {
+  allocator: SerializableAllocatorStateV8;
+};
+
+export type SerializableAllocatorStateV9 = {
+  maxPoints: number;
+  allocations: {
+    width: number;
+    height: number;
+    range: number;
+    speed: number;
+  };
+};
+
+export type SerializableStateV9 = SerializableStateV7 & {
+  allocator: SerializableAllocatorStateV9;
+};
+
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN)$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
@@ -172,6 +195,7 @@ const MAX_SLOTS_MIN = 1;
 const MAX_SLOTS_MAX = 2;
 const MAX_TOTAL_DIGITS_MIN = 1;
 const MAX_TOTAL_DIGITS_MAX = 12;
+const ALLOCATOR_MIN = 0;
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -508,6 +532,67 @@ export const migrateV5ToV6 = (input: SerializableStateV5, resetForLegacy: boolea
   };
 };
 
+const normalizeAllocatorV8 = (source: unknown): SerializableAllocatorStateV8 => {
+  const defaults = { points: 1, speed: 1 };
+  if (!isObject(source)) {
+    return defaults;
+  }
+  const points = isInteger(source.points) && source.points >= ALLOCATOR_MIN ? source.points : defaults.points;
+  const speed = isInteger(source.speed) && source.speed >= ALLOCATOR_MIN ? source.speed : defaults.speed;
+  return { points, speed };
+};
+
+const trimAllocationsToBudget = (allocator: SerializableAllocatorStateV9): SerializableAllocatorStateV9 => {
+  const allocations = { ...allocator.allocations };
+  let overspend =
+    allocations.width + allocations.height + allocations.range + allocations.speed - allocator.maxPoints;
+  if (overspend <= 0) {
+    return allocator;
+  }
+  for (const field of ["speed", "range", "height", "width"] as const) {
+    if (overspend <= 0) {
+      break;
+    }
+    const reduction = Math.min(allocations[field], overspend);
+    allocations[field] -= reduction;
+    overspend -= reduction;
+  }
+  return {
+    ...allocator,
+    allocations,
+  };
+};
+
+const normalizeAllocatorV9 = (source: unknown): SerializableAllocatorStateV9 => {
+  const defaults = initialState().allocator;
+  if (!isObject(source)) {
+    return defaults;
+  }
+  const allocationsSource = isObject(source.allocations) ? source.allocations : {};
+  const normalized: SerializableAllocatorStateV9 = {
+    maxPoints: isInteger(source.maxPoints) && source.maxPoints >= ALLOCATOR_MIN ? source.maxPoints : defaults.maxPoints,
+    allocations: {
+      width:
+        isInteger(allocationsSource.width) && allocationsSource.width >= ALLOCATOR_MIN
+          ? allocationsSource.width
+          : defaults.allocations.width,
+      height:
+        isInteger(allocationsSource.height) && allocationsSource.height >= ALLOCATOR_MIN
+          ? allocationsSource.height
+          : defaults.allocations.height,
+      range:
+        isInteger(allocationsSource.range) && allocationsSource.range >= ALLOCATOR_MIN
+          ? allocationsSource.range
+          : defaults.allocations.range,
+      speed:
+        isInteger(allocationsSource.speed) && allocationsSource.speed >= ALLOCATOR_MIN
+          ? allocationsSource.speed
+          : defaults.allocations.speed,
+    },
+  };
+  return trimAllocationsToBudget(normalized);
+};
+
 export const migrateV6ToV7 = (input: SerializableStateV6): SerializableStateV7 => ({
   calculator: {
     ...input.calculator,
@@ -519,7 +604,33 @@ export const migrateV6ToV7 = (input: SerializableStateV6): SerializableStateV7 =
   completedUnlockIds: input.completedUnlockIds,
 });
 
-const toSerializableInitialV7 = (): SerializableStateV7 => {
+export const migrateV7ToV8 = (input: SerializableStateV7): SerializableStateV8 => ({
+  ...input,
+  allocator: normalizeAllocatorV8(undefined),
+});
+
+export const migrateV8ToV9 = (input: SerializableStateV8): SerializableStateV9 => {
+  const widthAlloc = Math.max(ALLOCATOR_MIN, input.ui.keypadColumns - 1);
+  const heightAlloc = Math.max(ALLOCATOR_MIN, input.ui.keypadRows - 1);
+  const rangeAlloc = Math.max(ALLOCATOR_MIN, input.unlocks.maxTotalDigits - 1);
+  const speedAlloc = Math.max(ALLOCATOR_MIN, input.allocator.speed - 1);
+  const unusedPoints = Math.max(ALLOCATOR_MIN, input.allocator.points);
+  const maxPoints = unusedPoints + widthAlloc + heightAlloc + rangeAlloc + speedAlloc;
+  return {
+    ...input,
+    allocator: normalizeAllocatorV9({
+      maxPoints,
+      allocations: {
+        width: widthAlloc,
+        height: heightAlloc,
+        range: rangeAlloc,
+        speed: speedAlloc,
+      },
+    }),
+  };
+};
+
+const toSerializableInitialV9 = (): SerializableStateV9 => {
   const defaults = initialState();
   return {
     calculator: {
@@ -543,11 +654,20 @@ const toSerializableInitialV7 = (): SerializableStateV7 => {
     keyPressCounts: {},
     unlocks: defaults.unlocks,
     completedUnlockIds: [],
+    allocator: defaults.allocator,
   };
 };
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 =>
-  version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6 || version === 7;
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 =>
+  version === 1 ||
+  version === 2 ||
+  version === 3 ||
+  version === 4 ||
+  version === 5 ||
+  version === 6 ||
+  version === 7 ||
+  version === 8 ||
+  version === 9;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -778,12 +898,56 @@ export const validateSerializableStateV7 = (state: unknown): state is Serializab
   return validateSerializableStateV6(shadowV6);
 };
 
-export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV7 | null => {
+export const validateSerializableStateV8 = (state: unknown): state is SerializableStateV8 => {
+  if (!isObject(state) || !validateSerializableStateV7(state)) {
+    return false;
+  }
+  const allocator = (state as SerializableStateV8).allocator;
+  return (
+    isObject(allocator) &&
+    isInteger(allocator.points) &&
+    allocator.points >= ALLOCATOR_MIN &&
+    isInteger(allocator.speed) &&
+    allocator.speed >= ALLOCATOR_MIN
+  );
+};
+
+export const validateSerializableStateV9 = (state: unknown): state is SerializableStateV9 => {
+  if (!isObject(state) || !validateSerializableStateV7(state)) {
+    return false;
+  }
+  const allocator = (state as SerializableStateV9).allocator;
+  if (
+    !isObject(allocator) ||
+    !isInteger(allocator.maxPoints) ||
+    allocator.maxPoints < ALLOCATOR_MIN ||
+    !isObject(allocator.allocations)
+  ) {
+    return false;
+  }
+  const allocations = allocator.allocations;
+  if (
+    !isInteger(allocations.width) ||
+    allocations.width < ALLOCATOR_MIN ||
+    !isInteger(allocations.height) ||
+    allocations.height < ALLOCATOR_MIN ||
+    !isInteger(allocations.range) ||
+    allocations.range < ALLOCATOR_MIN ||
+    !isInteger(allocations.speed) ||
+    allocations.speed < ALLOCATOR_MIN
+  ) {
+    return false;
+  }
+  const spent = allocations.width + allocations.height + allocations.range + allocations.speed;
+  return spent <= allocator.maxPoints;
+};
+
+export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV9 | null => {
   if (!isValidSchemaVersion(schemaVersion)) {
     return null;
   }
   if (schemaVersion < 6) {
-    return toSerializableInitialV7();
+    return toSerializableInitialV9();
   }
   if (!isObject(state)) {
     return null;
@@ -813,7 +977,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     if (!validateSerializableStateV6(normalizedV6)) {
       return null;
     }
-    return migrateV6ToV7(normalizedV6);
+    return migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(normalizedV6)));
   }
   if (schemaVersion === 7) {
     const asV7 = state as SerializableStateV7;
@@ -840,7 +1004,63 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           )
         : {},
     };
-    return validateSerializableStateV7(normalizedV7) ? normalizedV7 : null;
+    return validateSerializableStateV7(normalizedV7) ? migrateV8ToV9(migrateV7ToV8(normalizedV7)) : null;
+  }
+  if (schemaVersion === 8) {
+    const asV8 = state as SerializableStateV8;
+    const normalizedV8: SerializableStateV8 = {
+      ...asV8,
+      calculator: {
+        ...asV8.calculator,
+        rollErrors: Array.isArray(asV8.calculator?.rollErrors) ? asV8.calculator.rollErrors.filter(isRollErrorEntry) : [],
+      },
+      ui: {
+        ...asV8.ui,
+        keyLayout: hasOnlyKnownLayoutCells(asV8.ui?.keyLayout)
+          ? asV8.ui.keyLayout
+          : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+        storageLayout: normalizeStorageSlots(asV8.ui?.storageLayout ?? defaultStorageLayout()),
+        buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV8.ui?.buttonFlags)),
+      },
+      unlocks: normalizeUnlocks(asV8.unlocks),
+      keyPressCounts: isObject(asV8.keyPressCounts)
+        ? Object.fromEntries(
+            Object.entries(asV8.keyPressCounts).filter(
+              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
+            ),
+          )
+        : {},
+      allocator: normalizeAllocatorV8(asV8.allocator),
+    };
+    return validateSerializableStateV8(normalizedV8) ? migrateV8ToV9(normalizedV8) : null;
+  }
+  if (schemaVersion === 9) {
+    const asV9 = state as SerializableStateV9;
+    const normalizedV9: SerializableStateV9 = {
+      ...asV9,
+      calculator: {
+        ...asV9.calculator,
+        rollErrors: Array.isArray(asV9.calculator?.rollErrors) ? asV9.calculator.rollErrors.filter(isRollErrorEntry) : [],
+      },
+      ui: {
+        ...asV9.ui,
+        keyLayout: hasOnlyKnownLayoutCells(asV9.ui?.keyLayout)
+          ? asV9.ui.keyLayout
+          : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+        storageLayout: normalizeStorageSlots(asV9.ui?.storageLayout ?? defaultStorageLayout()),
+        buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV9.ui?.buttonFlags)),
+      },
+      unlocks: normalizeUnlocks(asV9.unlocks),
+      keyPressCounts: isObject(asV9.keyPressCounts)
+        ? Object.fromEntries(
+            Object.entries(asV9.keyPressCounts).filter(
+              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
+            ),
+          )
+        : {},
+      allocator: normalizeAllocatorV9(asV9.allocator),
+    };
+    return validateSerializableStateV9(normalizedV9) ? normalizedV9 : null;
   }
   return null;
 };

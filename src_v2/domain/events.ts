@@ -18,7 +18,11 @@ export type DomainEvent =
   | { type: "KeypadDimensionsSet"; columns: number; rows: number }
   | { type: "KeypadRowUpgraded" }
   | { type: "KeypadColumnUpgraded" }
-  | { type: "FlagToggled"; flag: string };
+  | { type: "FlagToggled"; flag: string }
+  | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed"; delta: 1 | -1 }
+  | { type: "AllocatorMaxPointsSet"; value: number }
+  | { type: "AllocatorMaxPointsAdded"; amount: number }
+  | { type: "AllocatorDeviceResetRequested" };
 
 export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "PRESS_KEY") {
@@ -69,6 +73,18 @@ export const eventFromAction = (action: Action): DomainEvent => {
   }
   if (action.type === "UPGRADE_KEYPAD_COLUMN") {
     return { type: "KeypadColumnUpgraded" };
+  }
+  if (action.type === "ALLOCATOR_ADJUST") {
+    return { type: "AllocatorAdjusted", field: action.field, delta: action.delta };
+  }
+  if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
+    return { type: "AllocatorMaxPointsSet", value: action.value };
+  }
+  if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
+    return { type: "AllocatorMaxPointsAdded", amount: action.amount };
+  }
+  if (action.type === "RESET_ALLOCATOR_DEVICE") {
+    return { type: "AllocatorDeviceResetRequested" };
   }
   return { type: "FlagToggled", flag: action.flag };
 };
@@ -122,6 +138,18 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   }
   if (event.type === "KeypadColumnUpgraded") {
     return { type: "UPGRADE_KEYPAD_COLUMN" };
+  }
+  if (event.type === "AllocatorAdjusted") {
+    return { type: "ALLOCATOR_ADJUST", field: event.field, delta: event.delta };
+  }
+  if (event.type === "AllocatorMaxPointsSet") {
+    return { type: "ALLOCATOR_SET_MAX_POINTS", value: event.value };
+  }
+  if (event.type === "AllocatorMaxPointsAdded") {
+    return { type: "ALLOCATOR_ADD_MAX_POINTS", amount: event.amount };
+  }
+  if (event.type === "AllocatorDeviceResetRequested") {
+    return { type: "RESET_ALLOCATOR_DEVICE" };
   }
   return { type: "TOGGLE_FLAG", flag: event.flag };
 };

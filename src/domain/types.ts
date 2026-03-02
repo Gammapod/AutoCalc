@@ -106,6 +106,23 @@ export type UnlockState = {
   maxTotalDigits: number;
 };
 
+export type AllocatorState = {
+  maxPoints: number;
+  allocations: {
+    width: number;
+    height: number;
+    range: number;
+    speed: number;
+  };
+};
+
+export type AllocatorAllocationField = keyof AllocatorState["allocations"];
+
+export type AllocatorBudgetSnapshot = {
+  spentTotal: number;
+  unusedPoints: number;
+};
+
 export type RollLengthAtLeastPredicate = {
   type: "roll_length_at_least";
   length: number;
@@ -247,6 +264,7 @@ export type UnlockDefinition = {
 
 export type GameState = {
   calculator: CalculatorState;
+  allocator: AllocatorState;
   ui: {
     keyLayout: LayoutCell[];
     keypadCells: KeypadCellRecord[];
@@ -327,6 +345,26 @@ export type ToggleFlagAction = {
   flag: string;
 };
 
+export type AllocatorAdjustAction = {
+  type: "ALLOCATOR_ADJUST";
+  field: AllocatorAllocationField;
+  delta: 1 | -1;
+};
+
+export type AllocatorSetMaxPointsAction = {
+  type: "ALLOCATOR_SET_MAX_POINTS";
+  value: number;
+};
+
+export type AllocatorAddMaxPointsAction = {
+  type: "ALLOCATOR_ADD_MAX_POINTS";
+  amount: number;
+};
+
+export type ResetAllocatorDeviceAction = {
+  type: "RESET_ALLOCATOR_DEVICE";
+};
+
 export type Action =
   | PressKeyAction
   | ResetRunAction
@@ -339,7 +377,11 @@ export type Action =
   | SetKeypadDimensionsAction
   | UpgradeKeypadRowAction
   | UpgradeKeypadColumnAction
-  | ToggleFlagAction;
+  | ToggleFlagAction
+  | AllocatorAdjustAction
+  | AllocatorSetMaxPointsAction
+  | AllocatorAddMaxPointsAction
+  | ResetAllocatorDeviceAction;
 
 export type Store = {
   getState: () => GameState;

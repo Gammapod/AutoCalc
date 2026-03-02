@@ -82,7 +82,7 @@
 
       .device-row {
         display: grid;
-        grid-template-columns: var(--device-width) var(--device-width);
+        grid-template-columns: var(--device-width) var(--device-width) var(--device-width);
         align-items: start;
         gap: 16px;
       }
@@ -106,6 +106,119 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.42),
           inset 0 -5px 10px rgba(0, 0, 0, 0.2),
           0 10px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      .device--allocator {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border-radius: 24px;
+        padding: 14px;
+        border: 1px solid var(--body-stroke);
+        background: linear-gradient(180deg, var(--body-top), var(--body-bottom));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.42),
+          inset 0 -5px 10px rgba(0, 0, 0, 0.2),
+          0 10px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      .allocator-title {
+        margin: 0;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        font-size: 0.76rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #d8efe4;
+      }
+
+      .allocator-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+      }
+
+      .allocator-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .allocator-label {
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: 0.72rem;
+        color: #b4f1d3;
+      }
+
+      .allocator-unused {
+        border: 1px solid #515c6a;
+        border-radius: 7px;
+        padding: 8px 10px;
+        background: linear-gradient(180deg, var(--panel-mid), var(--panel-dark));
+        color: #b4f1d3;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: 0.82rem;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .allocator-stepper {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .allocator-step {
+        min-width: 30px;
+        border: 1px solid #515c6a;
+        border-radius: 7px;
+        padding: 4px 0;
+        background: linear-gradient(180deg, #9ea7b4, #7f8998);
+        color: #12151a;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .allocator-step:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .allocator-value {
+        min-width: 2ch;
+        text-align: center;
+        color: #b4f1d3;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: 0.78rem;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .allocator-effective {
+        color: #b4f1d3;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: 0.7rem;
+        opacity: 0.82;
+      }
+
+      .allocator-reset {
+        border: 1px solid var(--key-utility-stroke);
+        border-radius: 10px;
+        padding: 9px 10px;
+        background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+      }
+
+      .allocator-reset:hover {
+        filter: brightness(1.04);
       }
 
       .grapher-screen {
@@ -1039,8 +1152,11 @@
           <input id="debug-width" type="number" min="1" max="8" data-debug-keypad-width />
           <label for="debug-height">Height</label>
           <input id="debug-height" type="number" min="1" max="8" data-debug-keypad-height />
+          <label for="debug-max-points">maxPoints</label>
+          <input id="debug-max-points" type="number" min="0" step="1" data-debug-max-points />
         </div>
         <button type="button" class="debug-action" data-debug-apply-keypad-size>Apply Keypad Size</button>
+        <button type="button" class="debug-action" data-debug-apply-max-points>Apply maxPoints</button>
         <button type="button" class="debug-action" data-debug-upgrade-keypad-row>Upgrade Row</button>
         <button type="button" class="debug-action" data-debug-upgrade-keypad-column>Upgrade Column</button>
         <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
@@ -1057,6 +1173,53 @@
       <main id="app" class="app-layout" aria-label="AutoCalc">
         <section class="play-area">
           <div class="device-row">
+            <section class="device device--allocator" data-allocator-device aria-label="Allocator">
+              <h2 class="allocator-title">Allocator</h2>
+              <div class="allocator-grid">
+                <div class="allocator-row">
+                  <span class="allocator-label">unused points</span>
+                  <span class="allocator-unused" data-allocator-unused>0</span>
+                  <span class="allocator-effective" data-allocator-max-points>max: 0</span>
+                </div>
+                <div class="allocator-row">
+                  <span class="allocator-label">width</span>
+                  <span class="allocator-stepper">
+                    <button type="button" class="allocator-step" data-allocator-dec-width>-</button>
+                    <span class="allocator-value" data-allocator-width>0</span>
+                    <button type="button" class="allocator-step" data-allocator-inc-width>+</button>
+                  </span>
+                  <span class="allocator-effective" data-allocator-effective-width>eff: 1</span>
+                </div>
+                <div class="allocator-row">
+                  <span class="allocator-label">height</span>
+                  <span class="allocator-stepper">
+                    <button type="button" class="allocator-step" data-allocator-dec-height>-</button>
+                    <span class="allocator-value" data-allocator-height>0</span>
+                    <button type="button" class="allocator-step" data-allocator-inc-height>+</button>
+                  </span>
+                  <span class="allocator-effective" data-allocator-effective-height>eff: 1</span>
+                </div>
+                <div class="allocator-row">
+                  <span class="allocator-label">range</span>
+                  <span class="allocator-stepper">
+                    <button type="button" class="allocator-step" data-allocator-dec-range>-</button>
+                    <span class="allocator-value" data-allocator-range>0</span>
+                    <button type="button" class="allocator-step" data-allocator-inc-range>+</button>
+                  </span>
+                  <span class="allocator-effective" data-allocator-effective-range>eff: 1</span>
+                </div>
+                <div class="allocator-row">
+                  <span class="allocator-label">speed</span>
+                  <span class="allocator-stepper">
+                    <button type="button" class="allocator-step" data-allocator-dec-speed>-</button>
+                    <span class="allocator-value" data-allocator-speed>0</span>
+                    <button type="button" class="allocator-step" data-allocator-inc-speed>+</button>
+                  </span>
+                  <span class="allocator-effective" data-allocator-effective-speed>eff: 1</span>
+                </div>
+              </div>
+              <button type="button" class="allocator-reset" data-allocator-reset>Reset</button>
+            </section>
             <section class="device device--grapher" data-grapher-device aria-label="Grapher">
               <div class="grapher-screen">
                 <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>

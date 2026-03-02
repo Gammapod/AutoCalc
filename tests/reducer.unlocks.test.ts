@@ -9,12 +9,18 @@ import type { GameState, Key } from "../src/domain/types.js";
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const press = (state: GameState, key: Key): GameState => reducer(state, { type: "PRESS_KEY", key });
+const withTwoDigitRange = (state: GameState): GameState =>
+  reducer(reducer(state, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 1 }), {
+    type: "ALLOCATOR_ADJUST",
+    field: "range",
+    delta: 1,
+  });
 
 const findKeypadIndex = (state: GameState, key: Key): number =>
   state.ui.keyLayout.findIndex((cell) => cell.kind === "key" && cell.key === key);
 
 export const runReducerUnlockTests = (): void => {
-  let totalGateState = initialState();
+  let totalGateState = withTwoDigitRange(initialState());
   for (let i = 0; i < 39; i += 1) {
     totalGateState = press(totalGateState, "++");
   }
@@ -28,7 +34,7 @@ export const runReducerUnlockTests = (): void => {
   const undoBeforePress = press(initialState(), "UNDO");
   assert.equal(undoBeforePress.unlocks.slotOperators["-"], false, "- remains locked before UNDO is unlocked");
 
-  let undoGateState = initialState();
+  let undoGateState = withTwoDigitRange(initialState());
   for (let i = 0; i < 20; i += 1) {
     undoGateState = press(undoGateState, "++");
   }
@@ -48,7 +54,7 @@ export const runReducerUnlockTests = (): void => {
   );
   assert.equal(zeroRollUnlocked.unlocks.valueExpression["0"], true, "0 unlocks when roll contains 0");
 
-  let state = initialState();
+  let state = withTwoDigitRange(initialState());
 
   assert.equal(state.unlocks.valueExpression["1"], false, "digit 1 starts locked");
   assert.equal(state.unlocks.execution["="], false, "equals starts locked");

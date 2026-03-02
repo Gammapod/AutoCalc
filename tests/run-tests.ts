@@ -19,6 +19,7 @@ import { runV2PersistenceParityTests } from "./v2PersistenceParity.test.js";
 import { runStorageDisplayTests } from "./storageDisplay.test.js";
 import { runDragDropBehaviorTests } from "./dragDropBehavior.test.js";
 import { runReducerFlagsTests } from "./reducer.flags.test.js";
+import { runReducerAllocatorDeviceTests } from "./reducer.allocator-device.test.js";
 import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
 import { runAutoEqualsSchedulerTests } from "./autoEqualsScheduler.test.js";
 import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
@@ -31,6 +32,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
   ["reducer/input", runReducerInputTests],
   ["reducer/layout", runReducerLayoutTests],
+  ["reducer/allocator-device", runReducerAllocatorDeviceTests],
   ["reducer/lifecycle", runReducerLifecycleTests],
   ["reducer/unlocks", runReducerUnlockTests],
   ["persistence", runPersistenceTests],

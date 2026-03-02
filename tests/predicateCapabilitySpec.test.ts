@@ -77,13 +77,20 @@ const buildStateWithUnlockedKeys = (keys: Key[]): GameState =>
 const runScript = (state: GameState, script: Key[]): GameState =>
   script.reduce((nextState, key) => reducer(nextState, { type: "PRESS_KEY", key }), state);
 
+const withTwoDigitRange = (state: GameState): GameState =>
+  reducer(reducer(state, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 1 }), {
+    type: "ALLOCATOR_ADJUST",
+    field: "range",
+    delta: 1,
+  });
+
 const proofFixtures: ProofFixture[] = [
   {
     id: "proof_total_equals_11_via_increment",
     predicateType: "total_equals",
     sufficientSetId: "total_equals_via_increment",
     predicate: { type: "total_equals", value: 11n },
-    buildInitialState: () => initialState(),
+    buildInitialState: () => withTwoDigitRange(initialState()),
     script: Array.from({ length: 11 }, () => "++"),
   },
   {
@@ -91,7 +98,7 @@ const proofFixtures: ProofFixture[] = [
     predicateType: "total_at_least",
     sufficientSetId: "total_at_least_via_increment",
     predicate: { type: "total_at_least", value: 20n },
-    buildInitialState: () => initialState(),
+    buildInitialState: () => withTwoDigitRange(initialState()),
     script: Array.from({ length: 20 }, () => "++"),
   },
   {

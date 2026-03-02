@@ -36,6 +36,12 @@ export const runV2ParityTests = (): void => {
     { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 4 },
     { type: "UPGRADE_KEYPAD_ROW" },
     { type: "UPGRADE_KEYPAD_COLUMN" },
+    { type: "ALLOCATOR_SET_MAX_POINTS", value: 12 },
+    { type: "ALLOCATOR_ADJUST", field: "width", delta: 1 },
+    { type: "ALLOCATOR_ADJUST", field: "height", delta: 1 },
+    { type: "ALLOCATOR_ADJUST", field: "range", delta: 1 },
+    { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 2 },
+    { type: "ALLOCATOR_ADJUST", field: "speed", delta: 1 },
     { type: "UNLOCK_ALL" },
   ];
 

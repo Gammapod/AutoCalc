@@ -46,6 +46,15 @@ export const runPersistenceTests = (): void => {
       roll: [r(11n), r(12n)],
     },
     keyPressCounts: { "+": 3, "=": 2 },
+    allocator: {
+      maxPoints: 9,
+      allocations: {
+        width: 2,
+        height: 1,
+        range: 3,
+        speed: 1,
+      },
+    },
     unlocks: {
       ...base.unlocks,
       uiUnlocks: { storageVisible: true },
@@ -64,6 +73,11 @@ export const runPersistenceTests = (): void => {
   assert.ok(loaded, "saved payload hydrates");
   assert.deepEqual(loaded?.calculator.total, r(12n), "round-trip total");
   assert.deepEqual(loaded?.keyPressCounts, { "+": 3, "=": 2 }, "round-trip key press counters");
+  assert.deepEqual(
+    loaded?.allocator,
+    { maxPoints: 9, allocations: { width: 2, height: 1, range: 3, speed: 1 } },
+    "round-trip allocator fields",
+  );
   assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
 
   const legacyV1 = loadFromRawSave(
@@ -115,6 +129,82 @@ export const runPersistenceTests = (): void => {
   assert.ok(legacyV5.state, "v5 payload hydrates");
   assert.deepEqual(legacyV5.state, initialState(), "v5 payload is hard-reset to current initial state");
 
+  const legacyV7 = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 7,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "11",
+          pendingNegativeTotal: false,
+          singleDigitInitialTotalEntry: false,
+          roll: ["11"],
+          rollErrors: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 1,
+          keypadRows: 1,
+          buttonFlags: {},
+        },
+        keyPressCounts: {},
+        unlocks: { ...initialState().unlocks, maxTotalDigits: 2 },
+        completedUnlockIds: [],
+      },
+    }),
+  );
+  assert.ok(legacyV7.state, "v7 payload hydrates");
+  assert.deepEqual(
+    legacyV7.state?.allocator,
+    { maxPoints: 2, allocations: { width: 0, height: 0, range: 1, speed: 0 } },
+    "v7 migration preserves effective runtime in v9 allocator model",
+  );
+
+  const legacyV8 = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 8,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "11",
+          pendingNegativeTotal: false,
+          singleDigitInitialTotalEntry: false,
+          roll: ["11"],
+          rollErrors: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 3,
+          keypadRows: 2,
+          buttonFlags: {},
+        },
+        keyPressCounts: {},
+        unlocks: { ...initialState().unlocks, maxTotalDigits: 5 },
+        completedUnlockIds: [],
+        allocator: {
+          points: 7,
+          speed: 4,
+        },
+      },
+    }),
+  );
+  assert.ok(legacyV8.state, "v8 payload hydrates");
+  assert.deepEqual(
+    legacyV8.state?.allocator,
+    { maxPoints: 17, allocations: { width: 2, height: 1, range: 4, speed: 3 } },
+    "v8 migration preserves effective runtime and converts to budget model",
+  );
+
   const badJson = loadFromRawSave("{");
   assert.equal(badJson.state, null, "invalid JSON fails safely");
   assert.equal(badJson.reason, LoadFailureReason.InvalidJson, "invalid JSON reason is reported");
@@ -144,6 +234,10 @@ export const runPersistenceTests = (): void => {
         keyPressCounts: { "+": "bad" },
         unlocks: initialState().unlocks,
         completedUnlockIds: [],
+        allocator: {
+          maxPoints: 4,
+          allocations: { width: 1, height: 1, range: 1, speed: 1 },
+        },
       },
     }),
   );
@@ -164,4 +258,43 @@ export const runPersistenceTests = (): void => {
   assert.ok(loadedNan, "NaN payload hydrates");
   assert.deepEqual(loadedNan?.calculator.total, toNanCalculatorValue(), "NaN total round-trips");
   assert.equal(loadedNan?.calculator.roll[1]?.kind, "nan", "NaN roll entries round-trip");
+
+  const overspentV9 = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 9,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          rollErrors: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 1,
+          keypadRows: 1,
+          buttonFlags: {},
+        },
+        keyPressCounts: {},
+        unlocks: initialState().unlocks,
+        completedUnlockIds: [],
+        allocator: {
+          maxPoints: 2,
+          allocations: { width: 2, height: 2, range: 0, speed: 0 },
+        },
+      },
+    }),
+  );
+  assert.ok(overspentV9.state, "overspent v9 payload hydrates");
+  assert.deepEqual(
+    overspentV9.state?.allocator,
+    { maxPoints: 2, allocations: { width: 2, height: 0, range: 0, speed: 0 } },
+    "overspent allocator payload is trimmed by priority",
+  );
 };
