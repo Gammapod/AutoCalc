@@ -53,6 +53,7 @@ export const runPersistenceTests = (): void => {
         height: 1,
         range: 3,
         speed: 1,
+        slots: 2,
       },
     },
     unlocks: {
@@ -75,7 +76,7 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loaded?.keyPressCounts, { "+": 3, "=": 2 }, "round-trip key press counters");
   assert.deepEqual(
     loaded?.allocator,
-    { maxPoints: 9, allocations: { width: 2, height: 1, range: 3, speed: 1 } },
+    { maxPoints: 9, allocations: { width: 2, height: 1, range: 3, speed: 1, slots: 2 } },
     "round-trip allocator fields",
   );
   assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
@@ -153,7 +154,7 @@ export const runPersistenceTests = (): void => {
           buttonFlags: {},
         },
         keyPressCounts: {},
-        unlocks: { ...initialState().unlocks, maxTotalDigits: 2 },
+        unlocks: { ...initialState().unlocks, maxTotalDigits: 2, maxSlots: 2 },
         completedUnlockIds: [],
       },
     }),
@@ -161,7 +162,7 @@ export const runPersistenceTests = (): void => {
   assert.ok(legacyV7.state, "v7 payload hydrates");
   assert.deepEqual(
     legacyV7.state?.allocator,
-    { maxPoints: 2, allocations: { width: 0, height: 0, range: 1, speed: 0 } },
+    { maxPoints: 3, allocations: { width: 0, height: 0, range: 1, speed: 0, slots: 1 } },
     "v7 migration preserves effective runtime in v9 allocator model",
   );
 
@@ -201,7 +202,7 @@ export const runPersistenceTests = (): void => {
   assert.ok(legacyV8.state, "v8 payload hydrates");
   assert.deepEqual(
     legacyV8.state?.allocator,
-    { maxPoints: 17, allocations: { width: 2, height: 1, range: 4, speed: 3 } },
+    { maxPoints: 17, allocations: { width: 2, height: 1, range: 4, speed: 3, slots: 0 } },
     "v8 migration preserves effective runtime and converts to budget model",
   );
 
@@ -236,7 +237,7 @@ export const runPersistenceTests = (): void => {
         completedUnlockIds: [],
         allocator: {
           maxPoints: 4,
-          allocations: { width: 1, height: 1, range: 1, speed: 1 },
+          allocations: { width: 1, height: 1, range: 1, speed: 1, slots: 1 },
         },
       },
     }),
@@ -286,7 +287,7 @@ export const runPersistenceTests = (): void => {
         completedUnlockIds: [],
         allocator: {
           maxPoints: 2,
-          allocations: { width: 2, height: 2, range: 0, speed: 0 },
+          allocations: { width: 2, height: 2, range: 0, speed: 0, slots: 2 },
         },
       },
     }),
@@ -294,7 +295,7 @@ export const runPersistenceTests = (): void => {
   assert.ok(overspentV9.state, "overspent v9 payload hydrates");
   assert.deepEqual(
     overspentV9.state?.allocator,
-    { maxPoints: 2, allocations: { width: 2, height: 0, range: 0, speed: 0 } },
+    { maxPoints: 2, allocations: { width: 2, height: 0, range: 0, speed: 0, slots: 0 } },
     "overspent allocator payload is trimmed by priority",
   );
 };

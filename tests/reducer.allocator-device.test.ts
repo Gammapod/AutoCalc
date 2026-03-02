@@ -9,14 +9,14 @@ const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, d
 
 const getSpent = (state: GameState): number => {
   const a = state.allocator.allocations;
-  return a.width + a.height + a.range + a.speed;
+  return a.width + a.height + a.range + a.speed + a.slots;
 };
 
 const getUnused = (state: GameState): number => state.allocator.maxPoints - getSpent(state);
 
 const assertAllocatorInvariant = (state: GameState): void => {
   const a = state.allocator.allocations;
-  assert.ok(a.width >= 0 && a.height >= 0 && a.range >= 0 && a.speed >= 0, "allocations stay non-negative");
+  assert.ok(a.width >= 0 && a.height >= 0 && a.range >= 0 && a.speed >= 0 && a.slots >= 0, "allocations stay non-negative");
   const spent = getSpent(state);
   const unused = getUnused(state);
   assert.ok(unused >= 0, "unused stays non-negative");
@@ -44,6 +44,11 @@ export const runReducerAllocatorDeviceTests = (): void => {
   assert.equal(maxRaised.allocator.maxPoints, 6, "add max points increases budget");
   assertAllocatorInvariant(maxRaised);
 
+  const withSlots = reducer(maxRaised, { type: "ALLOCATOR_ADJUST", field: "slots", delta: 1 });
+  assert.equal(withSlots.allocator.allocations.slots, 1, "slots allocation increments");
+  assert.equal(withSlots.unlocks.maxSlots, 2, "slots allocation updates effective max slots (1 + alloc)");
+  assertAllocatorInvariant(withSlots);
+
   const withRange = reducer(maxRaised, { type: "ALLOCATOR_ADJUST", field: "range", delta: 1 });
   assert.equal(withRange.allocator.allocations.range, 1, "range allocation increments");
   assert.equal(withRange.unlocks.maxTotalDigits, 2, "range allocation updates effective max digits (1 + alloc)");
@@ -55,9 +60,10 @@ export const runReducerAllocatorDeviceTests = (): void => {
   assert.equal(withHeightActual.ui.keypadRows, 3, "height allocation updates effective keypad height");
   assertAllocatorInvariant(withHeightActual);
 
-  let trimFixture = withHeightActual;
+  let trimFixture = reducer(withHeightActual, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 1 });
   trimFixture = reducer(trimFixture, { type: "ALLOCATOR_ADJUST", field: "speed", delta: 1 });
   trimFixture = reducer(trimFixture, { type: "ALLOCATOR_ADJUST", field: "speed", delta: 1 });
+  trimFixture = reducer(trimFixture, { type: "ALLOCATOR_ADJUST", field: "slots", delta: 1 });
   trimFixture = reducer(trimFixture, { type: "ALLOCATOR_ADJUST", field: "width", delta: 1 });
   assertAllocatorInvariant(trimFixture);
 
@@ -65,7 +71,8 @@ export const runReducerAllocatorDeviceTests = (): void => {
   assert.equal(trimmed.allocator.maxPoints, 2, "set max points applies new value");
   assert.equal(trimmed.allocator.allocations.speed, 0, "trim priority removes speed first");
   assert.equal(trimmed.allocator.allocations.range, 0, "trim priority removes range second");
-  assert.equal(trimmed.allocator.allocations.height, 1, "trim priority removes height third (including partial trim)");
+  assert.equal(trimmed.allocator.allocations.slots, 0, "trim priority removes slots third");
+  assert.equal(trimmed.allocator.allocations.height, 1, "trim priority removes height fourth (including partial trim)");
   assert.equal(trimmed.allocator.allocations.width, 1, "width is trimmed last");
   assertAllocatorInvariant(trimmed);
 
@@ -82,13 +89,14 @@ export const runReducerAllocatorDeviceTests = (): void => {
   const reset = reducer(configured, { type: "RESET_ALLOCATOR_DEVICE" });
   assert.deepEqual(
     reset.allocator.allocations,
-    { width: 0, height: 0, range: 0, speed: 0 },
+    { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
     "allocator reset zeroes all spends",
   );
   assert.equal(reset.allocator.maxPoints, configured.allocator.maxPoints, "allocator reset preserves maxPoints");
   assert.equal(reset.ui.keypadColumns, 1, "reset projection restores effective width baseline");
   assert.equal(reset.ui.keypadRows, 1, "reset projection restores effective height baseline");
   assert.equal(reset.unlocks.maxTotalDigits, 1, "reset projection restores effective range baseline");
+  assert.equal(reset.unlocks.maxSlots, 1, "reset projection restores effective slots baseline");
   assert.deepEqual(reset.calculator, configured.calculator, "allocator reset does not alter calculator run state");
   assertAllocatorInvariant(reset);
 };

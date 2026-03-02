@@ -2,7 +2,7 @@
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 9;
+export const SAVE_SCHEMA_VERSION = 10;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const AUTO_EQUALS_FLAG = "execution.pause";
 export const GRAPH_VISIBLE_FLAG = "graph.visible";
@@ -12,6 +12,8 @@ export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
 export const TOTAL_DIGITS_MIN = 1;
 export const TOTAL_DIGITS_MAX = 12;
+export const OPERATION_SLOTS_MIN = 1;
+export const OPERATION_SLOTS_MAX = 4;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
@@ -103,6 +105,7 @@ export const initialState = (): GameState => {
         height: 0,
         range: 0,
         speed: 0,
+        slots: 0,
       },
     },
     ui: {

@@ -19,7 +19,7 @@ export type DomainEvent =
   | { type: "KeypadRowUpgraded" }
   | { type: "KeypadColumnUpgraded" }
   | { type: "FlagToggled"; flag: string }
-  | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed"; delta: 1 | -1 }
+  | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed" | "slots"; delta: 1 | -1 }
   | { type: "AllocatorMaxPointsSet"; value: number }
   | { type: "AllocatorMaxPointsAdded"; amount: number }
   | { type: "AllocatorDeviceResetRequested" };

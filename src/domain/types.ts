@@ -113,6 +113,7 @@ export type AllocatorState = {
     height: number;
     range: number;
     speed: number;
+    slots: number;
   };
 };
 

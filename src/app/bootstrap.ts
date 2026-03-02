@@ -44,10 +44,12 @@ const allocatorWidthValueEl = document.querySelector<HTMLElement>("[data-allocat
 const allocatorHeightValueEl = document.querySelector<HTMLElement>("[data-allocator-height]");
 const allocatorRangeValueEl = document.querySelector<HTMLElement>("[data-allocator-range]");
 const allocatorSpeedValueEl = document.querySelector<HTMLElement>("[data-allocator-speed]");
+const allocatorSlotsValueEl = document.querySelector<HTMLElement>("[data-allocator-slots]");
 const allocatorEffectiveWidthEl = document.querySelector<HTMLElement>("[data-allocator-effective-width]");
 const allocatorEffectiveHeightEl = document.querySelector<HTMLElement>("[data-allocator-effective-height]");
 const allocatorEffectiveRangeEl = document.querySelector<HTMLElement>("[data-allocator-effective-range]");
 const allocatorEffectiveSpeedEl = document.querySelector<HTMLElement>("[data-allocator-effective-speed]");
+const allocatorEffectiveSlotsEl = document.querySelector<HTMLElement>("[data-allocator-effective-slots]");
 const allocatorDecWidthButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-width]");
 const allocatorIncWidthButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-width]");
 const allocatorDecHeightButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-height]");
@@ -56,6 +58,8 @@ const allocatorDecRangeButton = document.querySelector<HTMLButtonElement>("[data
 const allocatorIncRangeButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-range]");
 const allocatorDecSpeedButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-speed]");
 const allocatorIncSpeedButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-speed]");
+const allocatorDecSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-slots]");
+const allocatorIncSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-slots]");
 const allocatorResetButton = document.querySelector<HTMLButtonElement>("[data-allocator-reset]");
 if (
   !debugToggle ||
@@ -78,10 +82,12 @@ if (
   !allocatorHeightValueEl ||
   !allocatorRangeValueEl ||
   !allocatorSpeedValueEl ||
+  !allocatorSlotsValueEl ||
   !allocatorEffectiveWidthEl ||
   !allocatorEffectiveHeightEl ||
   !allocatorEffectiveRangeEl ||
   !allocatorEffectiveSpeedEl ||
+  !allocatorEffectiveSlotsEl ||
   !allocatorDecWidthButton ||
   !allocatorIncWidthButton ||
   !allocatorDecHeightButton ||
@@ -90,6 +96,8 @@ if (
   !allocatorIncRangeButton ||
   !allocatorDecSpeedButton ||
   !allocatorIncSpeedButton ||
+  !allocatorDecSlotsButton ||
+  !allocatorIncSlotsButton ||
   !allocatorResetButton
 ) {
   throw new Error("Required UI controls are missing.");
@@ -139,7 +147,7 @@ const clampNonNegativeInteger = (value: number, fallback: number): number => {
 
 const getUnusedPoints = (state: GameState): number => {
   const allocations = state.allocator.allocations;
-  const spent = allocations.width + allocations.height + allocations.range + allocations.speed;
+  const spent = allocations.width + allocations.height + allocations.range + allocations.speed + allocations.slots;
   return state.allocator.maxPoints - spent;
 };
 
@@ -161,21 +169,25 @@ const syncAllocatorDeviceInputs = (): void => {
   allocatorHeightValueEl.textContent = allocations.height.toString();
   allocatorRangeValueEl.textContent = allocations.range.toString();
   allocatorSpeedValueEl.textContent = allocations.speed.toString();
+  allocatorSlotsValueEl.textContent = allocations.slots.toString();
 
   allocatorEffectiveWidthEl.textContent = `eff: ${(1 + allocations.width).toString()}`;
   allocatorEffectiveHeightEl.textContent = `eff: ${(1 + allocations.height).toString()}`;
   allocatorEffectiveRangeEl.textContent = `eff: ${(1 + allocations.range).toString()}`;
   allocatorEffectiveSpeedEl.textContent = `eff: ${(1 + allocations.speed).toString()}`;
+  allocatorEffectiveSlotsEl.textContent = `eff: ${state.unlocks.maxSlots.toString()}`;
 
   allocatorIncWidthButton.disabled = unused <= 0;
   allocatorIncHeightButton.disabled = unused <= 0;
   allocatorIncRangeButton.disabled = unused <= 0;
   allocatorIncSpeedButton.disabled = unused <= 0;
+  allocatorIncSlotsButton.disabled = unused <= 0;
 
   allocatorDecWidthButton.disabled = allocations.width <= 0;
   allocatorDecHeightButton.disabled = allocations.height <= 0;
   allocatorDecRangeButton.disabled = allocations.range <= 0;
   allocatorDecSpeedButton.disabled = allocations.speed <= 0;
+  allocatorDecSlotsButton.disabled = allocations.slots <= 0;
 
   debugMaxPointsInput.value = state.allocator.maxPoints.toString();
 };
@@ -262,6 +274,8 @@ bindAllocatorStep(allocatorDecRangeButton, "range", -1);
 bindAllocatorStep(allocatorIncRangeButton, "range", 1);
 bindAllocatorStep(allocatorDecSpeedButton, "speed", -1);
 bindAllocatorStep(allocatorIncSpeedButton, "speed", 1);
+bindAllocatorStep(allocatorDecSlotsButton, "slots", -1);
+bindAllocatorStep(allocatorIncSlotsButton, "slots", 1);
 
 allocatorResetButton.addEventListener("click", () => {
   store.dispatch({ type: "RESET_ALLOCATOR_DEVICE" });

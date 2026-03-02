@@ -168,13 +168,8 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
     };
   }
   if (effect.type === "unlock_second_slot") {
-    return {
-      ...state,
-      unlocks: {
-        ...state.unlocks,
-        maxSlots: Math.max(state.unlocks.maxSlots, 2),
-      },
-    };
+    // Slot capacity is allocator-projected; keep this effect as a backward-compatible no-op.
+    return state;
   }
   if (effect.type === "unlock_storage_drawer") {
     return {

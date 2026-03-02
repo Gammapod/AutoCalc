@@ -167,6 +167,21 @@ export type SerializableStateV9 = SerializableStateV7 & {
   allocator: SerializableAllocatorStateV9;
 };
 
+export type SerializableAllocatorStateV10 = {
+  maxPoints: number;
+  allocations: {
+    width: number;
+    height: number;
+    range: number;
+    speed: number;
+    slots: number;
+  };
+};
+
+export type SerializableStateV10 = SerializableStateV7 & {
+  allocator: SerializableAllocatorStateV10;
+};
+
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN)$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
@@ -192,7 +207,7 @@ const EXECUTION_ERROR_KIND_VALUES: readonly ExecutionErrorKind[] = [
   "nan_input",
 ];
 const MAX_SLOTS_MIN = 1;
-const MAX_SLOTS_MAX = 2;
+const MAX_SLOTS_MAX = 4;
 const MAX_TOTAL_DIGITS_MIN = 1;
 const MAX_TOTAL_DIGITS_MAX = 12;
 const ALLOCATOR_MIN = 0;
@@ -563,6 +578,27 @@ const trimAllocationsToBudget = (allocator: SerializableAllocatorStateV9): Seria
   };
 };
 
+const trimAllocationsToBudgetV10 = (allocator: SerializableAllocatorStateV10): SerializableAllocatorStateV10 => {
+  const allocations = { ...allocator.allocations };
+  let overspend =
+    allocations.width + allocations.height + allocations.range + allocations.speed + allocations.slots - allocator.maxPoints;
+  if (overspend <= 0) {
+    return allocator;
+  }
+  for (const field of ["speed", "range", "slots", "height", "width"] as const) {
+    if (overspend <= 0) {
+      break;
+    }
+    const reduction = Math.min(allocations[field], overspend);
+    allocations[field] -= reduction;
+    overspend -= reduction;
+  }
+  return {
+    ...allocator,
+    allocations,
+  };
+};
+
 const normalizeAllocatorV9 = (source: unknown): SerializableAllocatorStateV9 => {
   const defaults = initialState().allocator;
   if (!isObject(source)) {
@@ -591,6 +627,40 @@ const normalizeAllocatorV9 = (source: unknown): SerializableAllocatorStateV9 => 
     },
   };
   return trimAllocationsToBudget(normalized);
+};
+
+const normalizeAllocatorV10 = (source: unknown): SerializableAllocatorStateV10 => {
+  const defaults = initialState().allocator;
+  if (!isObject(source)) {
+    return defaults;
+  }
+  const allocationsSource = isObject(source.allocations) ? source.allocations : {};
+  const normalized: SerializableAllocatorStateV10 = {
+    maxPoints: isInteger(source.maxPoints) && source.maxPoints >= ALLOCATOR_MIN ? source.maxPoints : defaults.maxPoints,
+    allocations: {
+      width:
+        isInteger(allocationsSource.width) && allocationsSource.width >= ALLOCATOR_MIN
+          ? allocationsSource.width
+          : defaults.allocations.width,
+      height:
+        isInteger(allocationsSource.height) && allocationsSource.height >= ALLOCATOR_MIN
+          ? allocationsSource.height
+          : defaults.allocations.height,
+      range:
+        isInteger(allocationsSource.range) && allocationsSource.range >= ALLOCATOR_MIN
+          ? allocationsSource.range
+          : defaults.allocations.range,
+      speed:
+        isInteger(allocationsSource.speed) && allocationsSource.speed >= ALLOCATOR_MIN
+          ? allocationsSource.speed
+          : defaults.allocations.speed,
+      slots:
+        isInteger(allocationsSource.slots) && allocationsSource.slots >= ALLOCATOR_MIN
+          ? allocationsSource.slots
+          : defaults.allocations.slots,
+    },
+  };
+  return trimAllocationsToBudgetV10(normalized);
 };
 
 export const migrateV6ToV7 = (input: SerializableStateV6): SerializableStateV7 => ({
@@ -630,7 +700,26 @@ export const migrateV8ToV9 = (input: SerializableStateV8): SerializableStateV9 =
   };
 };
 
-const toSerializableInitialV9 = (): SerializableStateV9 => {
+export const migrateV9ToV10 = (input: SerializableStateV9): SerializableStateV10 => {
+  const existingExtra = Math.max(0, input.unlocks.maxSlots - 1);
+  const slotsAllocation = Math.min(existingExtra, 3);
+  return {
+    ...input,
+    allocator: normalizeAllocatorV10({
+      maxPoints: input.allocator.maxPoints + slotsAllocation,
+      allocations: {
+        ...input.allocator.allocations,
+        slots: slotsAllocation,
+      },
+    }),
+    unlocks: {
+      ...input.unlocks,
+      maxSlots: Math.max(1, Math.min(4, 1 + slotsAllocation)),
+    },
+  };
+};
+
+const toSerializableInitialV10 = (): SerializableStateV10 => {
   const defaults = initialState();
   return {
     calculator: {
@@ -658,7 +747,7 @@ const toSerializableInitialV9 = (): SerializableStateV9 => {
   };
 };
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 =>
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 =>
   version === 1 ||
   version === 2 ||
   version === 3 ||
@@ -667,7 +756,8 @@ export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4
   version === 6 ||
   version === 7 ||
   version === 8 ||
-  version === 9;
+  version === 9 ||
+  version === 10;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -942,12 +1032,44 @@ export const validateSerializableStateV9 = (state: unknown): state is Serializab
   return spent <= allocator.maxPoints;
 };
 
-export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV9 | null => {
+export const validateSerializableStateV10 = (state: unknown): state is SerializableStateV10 => {
+  if (!isObject(state) || !validateSerializableStateV7(state)) {
+    return false;
+  }
+  const allocator = (state as SerializableStateV10).allocator;
+  if (
+    !isObject(allocator) ||
+    !isInteger(allocator.maxPoints) ||
+    allocator.maxPoints < ALLOCATOR_MIN ||
+    !isObject(allocator.allocations)
+  ) {
+    return false;
+  }
+  const allocations = allocator.allocations;
+  if (
+    !isInteger(allocations.width) ||
+    allocations.width < ALLOCATOR_MIN ||
+    !isInteger(allocations.height) ||
+    allocations.height < ALLOCATOR_MIN ||
+    !isInteger(allocations.range) ||
+    allocations.range < ALLOCATOR_MIN ||
+    !isInteger(allocations.speed) ||
+    allocations.speed < ALLOCATOR_MIN ||
+    !isInteger(allocations.slots) ||
+    allocations.slots < ALLOCATOR_MIN
+  ) {
+    return false;
+  }
+  const spent = allocations.width + allocations.height + allocations.range + allocations.speed + allocations.slots;
+  return spent <= allocator.maxPoints;
+};
+
+export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV10 | null => {
   if (!isValidSchemaVersion(schemaVersion)) {
     return null;
   }
   if (schemaVersion < 6) {
-    return toSerializableInitialV9();
+    return toSerializableInitialV10();
   }
   if (!isObject(state)) {
     return null;
@@ -977,7 +1099,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     if (!validateSerializableStateV6(normalizedV6)) {
       return null;
     }
-    return migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(normalizedV6)));
+    return migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(normalizedV6))));
   }
   if (schemaVersion === 7) {
     const asV7 = state as SerializableStateV7;
@@ -1004,7 +1126,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           )
         : {},
     };
-    return validateSerializableStateV7(normalizedV7) ? migrateV8ToV9(migrateV7ToV8(normalizedV7)) : null;
+    return validateSerializableStateV7(normalizedV7) ? migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(normalizedV7))) : null;
   }
   if (schemaVersion === 8) {
     const asV8 = state as SerializableStateV8;
@@ -1032,7 +1154,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         : {},
       allocator: normalizeAllocatorV8(asV8.allocator),
     };
-    return validateSerializableStateV8(normalizedV8) ? migrateV8ToV9(normalizedV8) : null;
+    return validateSerializableStateV8(normalizedV8) ? migrateV9ToV10(migrateV8ToV9(normalizedV8)) : null;
   }
   if (schemaVersion === 9) {
     const asV9 = state as SerializableStateV9;
@@ -1060,7 +1182,35 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         : {},
       allocator: normalizeAllocatorV9(asV9.allocator),
     };
-    return validateSerializableStateV9(normalizedV9) ? normalizedV9 : null;
+    return validateSerializableStateV9(normalizedV9) ? migrateV9ToV10(normalizedV9) : null;
+  }
+  if (schemaVersion === 10) {
+    const asV10 = state as SerializableStateV10;
+    const normalizedV10: SerializableStateV10 = {
+      ...asV10,
+      calculator: {
+        ...asV10.calculator,
+        rollErrors: Array.isArray(asV10.calculator?.rollErrors) ? asV10.calculator.rollErrors.filter(isRollErrorEntry) : [],
+      },
+      ui: {
+        ...asV10.ui,
+        keyLayout: hasOnlyKnownLayoutCells(asV10.ui?.keyLayout)
+          ? asV10.ui.keyLayout
+          : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+        storageLayout: normalizeStorageSlots(asV10.ui?.storageLayout ?? defaultStorageLayout()),
+        buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV10.ui?.buttonFlags)),
+      },
+      unlocks: normalizeUnlocks(asV10.unlocks),
+      keyPressCounts: isObject(asV10.keyPressCounts)
+        ? Object.fromEntries(
+            Object.entries(asV10.keyPressCounts).filter(
+              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
+            ),
+          )
+        : {},
+      allocator: normalizeAllocatorV10(asV10.allocator),
+    };
+    return validateSerializableStateV10(normalizedV10) ? normalizedV10 : null;
   }
   return null;
 };

@@ -42,6 +42,7 @@ export const runV2ParityTests = (): void => {
     { type: "ALLOCATOR_ADJUST", field: "range", delta: 1 },
     { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 2 },
     { type: "ALLOCATOR_ADJUST", field: "speed", delta: 1 },
+    { type: "ALLOCATOR_ADJUST", field: "slots", delta: 1 },
     { type: "UNLOCK_ALL" },
   ];
 

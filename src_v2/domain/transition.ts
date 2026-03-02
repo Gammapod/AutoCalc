@@ -2,6 +2,8 @@ import {
   initialState,
   KEYPAD_DIM_MAX,
   KEYPAD_DIM_MIN,
+  OPERATION_SLOTS_MAX,
+  OPERATION_SLOTS_MIN,
   TOTAL_DIGITS_MAX,
   TOTAL_DIGITS_MIN,
 } from "../../src/domain/state.js";
@@ -21,7 +23,7 @@ import { clearOperationEntry } from "../../src/domain/reducer.stateBuilders.js";
 import type { AllocatorAllocationField, AllocatorBudgetSnapshot, AllocatorState, GameState } from "../../src/domain/types.js";
 import { actionFromEvent, type DomainEvent } from "./events.js";
 
-const ALLOCATOR_TRIM_ORDER: readonly AllocatorAllocationField[] = ["speed", "range", "height", "width"];
+const ALLOCATOR_TRIM_ORDER: readonly AllocatorAllocationField[] = ["speed", "range", "slots", "height", "width"];
 
 const clampNonNegativeInteger = (value: number, fallback: number): number => {
   if (!Number.isInteger(value)) {
@@ -33,7 +35,11 @@ const clampNonNegativeInteger = (value: number, fallback: number): number => {
 const clampToRange = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
 const getSpentTotal = (allocator: AllocatorState): number =>
-  allocator.allocations.width + allocator.allocations.height + allocator.allocations.range + allocator.allocations.speed;
+  allocator.allocations.width +
+  allocator.allocations.height +
+  allocator.allocations.range +
+  allocator.allocations.speed +
+  allocator.allocations.slots;
 
 const getUnusedPoints = (allocator: AllocatorState): number => allocator.maxPoints - getSpentTotal(allocator);
 
@@ -92,8 +98,9 @@ const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorS
   const columns = clampToRange(1 + withAllocator.allocator.allocations.width, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
   const rows = clampToRange(1 + withAllocator.allocator.allocations.height, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
   const maxDigits = clampToRange(1 + withAllocator.allocator.allocations.range, TOTAL_DIGITS_MIN, TOTAL_DIGITS_MAX);
+  const maxSlots = clampToRange(1 + withAllocator.allocator.allocations.slots, OPERATION_SLOTS_MIN, OPERATION_SLOTS_MAX);
   const resized = applySetKeypadDimensions(withAllocator, columns, rows);
-  if (resized.unlocks.maxTotalDigits === maxDigits) {
+  if (resized.unlocks.maxTotalDigits === maxDigits && resized.unlocks.maxSlots === maxSlots) {
     return resized;
   }
   return {
@@ -101,6 +108,7 @@ const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorS
     unlocks: {
       ...resized.unlocks,
       maxTotalDigits: maxDigits,
+      maxSlots,
     },
   };
 };
@@ -181,6 +189,7 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
         height: 0,
         range: 0,
         speed: 0,
+        slots: 0,
       },
     };
     return applyAllocatorRuntimeProjection(state, nextAllocator);

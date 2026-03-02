@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
+import { reducer } from "../src/domain/reducer.js";
 import { buildOperationSlotDisplay } from "../src/ui/render.js";
 import type { GameState } from "../src/domain/types.js";
 
@@ -122,6 +123,29 @@ export const runOperationSlotDisplayTests = (): void => {
     },
   };
   assert.equal(buildOperationSlotDisplay(overflowState), "[ + 1 ]", "overflow state truncates display to max slot capacity");
+
+  const projectedCapacity = reducer(
+    reducer(
+      reducer(
+        reducer(base, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 3 }),
+        { type: "ALLOCATOR_ADJUST", field: "slots", delta: 1 },
+      ),
+      { type: "ALLOCATOR_ADJUST", field: "slots", delta: 1 },
+    ),
+    { type: "ALLOCATOR_ADJUST", field: "slots", delta: 1 },
+  );
+  const projectedDisplay: GameState = {
+    ...projectedCapacity,
+    calculator: {
+      ...projectedCapacity.calculator,
+      operationSlots: [{ operator: "+", operand: 1n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(projectedDisplay),
+    "[ + 1 ] -> [ _ _ ] -> [ _ _ ] -> [ _ _ ]",
+    "display capacity follows allocator-projected max slot count",
+  );
 
   const committedMultiply: GameState = {
     ...base,

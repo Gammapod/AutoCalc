@@ -7,34 +7,49 @@ import type { Action, GameState } from "./types.js";
 // Non-key lifecycle transitions: reset/hydrate/debug unlock-all.
 const applyUnlockAll = (state: GameState): GameState => {
   const withCatalogEffects = unlockCatalog.reduce((next, unlock) => applyEffect(unlock.effect, next), state);
-  const withSecondSlotUnlocked = applyEffect({ type: "unlock_second_slot" }, withCatalogEffects);
+  const targetSlotAllocation = 3;
+  const spentWithoutSlots =
+    withCatalogEffects.allocator.allocations.width +
+    withCatalogEffects.allocator.allocations.height +
+    withCatalogEffects.allocator.allocations.range +
+    withCatalogEffects.allocator.allocations.speed;
+  const minMaxPoints = spentWithoutSlots + targetSlotAllocation;
   return {
-    ...withSecondSlotUnlocked,
+    ...withCatalogEffects,
     calculator: {
-      ...withSecondSlotUnlocked.calculator,
+      ...withCatalogEffects.calculator,
       singleDigitInitialTotalEntry: true,
     },
-    unlocks: {
-      ...withSecondSlotUnlocked.unlocks,
-      valueExpression: Object.fromEntries(
-        Object.keys(withSecondSlotUnlocked.unlocks.valueExpression).map((key) => [key, true]),
-      ) as GameState["unlocks"]["valueExpression"],
-      slotOperators: Object.fromEntries(
-        Object.keys(withSecondSlotUnlocked.unlocks.slotOperators).map((operator) => [operator, true]),
-      ) as GameState["unlocks"]["slotOperators"],
-      utilities: Object.fromEntries(
-        Object.keys(withSecondSlotUnlocked.unlocks.utilities).map((utility) => [utility, true]),
-      ) as GameState["unlocks"]["utilities"],
-      execution: Object.fromEntries(
-        Object.keys(withSecondSlotUnlocked.unlocks.execution).map((executionKey) => [executionKey, true]),
-      ) as GameState["unlocks"]["execution"],
-      uiUnlocks: {
-        ...withSecondSlotUnlocked.unlocks.uiUnlocks,
-        storageVisible: true,
+    allocator: {
+      ...withCatalogEffects.allocator,
+      maxPoints: Math.max(withCatalogEffects.allocator.maxPoints, minMaxPoints),
+      allocations: {
+        ...withCatalogEffects.allocator.allocations,
+        slots: targetSlotAllocation,
       },
     },
+    unlocks: {
+      ...withCatalogEffects.unlocks,
+      valueExpression: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.valueExpression).map((key) => [key, true]),
+      ) as GameState["unlocks"]["valueExpression"],
+      slotOperators: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.slotOperators).map((operator) => [operator, true]),
+      ) as GameState["unlocks"]["slotOperators"],
+      utilities: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.utilities).map((utility) => [utility, true]),
+      ) as GameState["unlocks"]["utilities"],
+      execution: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.execution).map((executionKey) => [executionKey, true]),
+      ) as GameState["unlocks"]["execution"],
+      uiUnlocks: {
+        ...withCatalogEffects.unlocks.uiUnlocks,
+        storageVisible: true,
+      },
+      maxSlots: 4,
+    },
     completedUnlockIds: [
-      ...new Set([...withSecondSlotUnlocked.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)]),
+      ...new Set([...withCatalogEffects.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)]),
     ],
   };
 };
