@@ -3,6 +3,7 @@ import { getOperationSnapshot } from "../domain/slotDrafting.js";
 import type { ExecKey, GameState, Key, Store } from "../domain/types.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
+export const AUTO_EQUALS_POINT_BONUS = 0.01;
 
 type TimerHandle = ReturnType<typeof setInterval>;
 
@@ -24,6 +25,14 @@ const defaultTimers: TimerApi = {
 const isAutoEqualsEnabled = (state: GameState): boolean => Boolean(state.ui.buttonFlags[AUTO_EQUALS_FLAG]);
 const hasValidEquation = (state: GameState): boolean => getOperationSnapshot(state.calculator).length > 0;
 const EXECUTOR_KEYS: readonly ExecKey[] = ["=", "++"];
+
+const getAutoEqualsRateMultiplier = (state: GameState): number => {
+  const speedPoints = Math.max(0, state.allocator.allocations.speed);
+  return 1 + speedPoints * AUTO_EQUALS_POINT_BONUS;
+};
+
+const getAutoEqualsIntervalMs = (state: GameState, baseIntervalMs: number): number =>
+  baseIntervalMs / getAutoEqualsRateMultiplier(state);
 
 const isExecutorKey = (key: Key): key is ExecKey => EXECUTOR_KEYS.includes(key as ExecKey);
 
@@ -56,9 +65,10 @@ export const normalizeLoadedStateForRuntime = (loaded: GameState | null): GameSt
   loaded ? clearAutoEqualsFlagForRuntime(loaded) : loaded;
 
 export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSchedulerOptions = {}) => {
-  const intervalMs = options.intervalMs ?? AUTO_EQUALS_INTERVAL_MS;
+  const baseIntervalMs = options.intervalMs ?? AUTO_EQUALS_INTERVAL_MS;
   const timers = options.timers ?? defaultTimers;
   let intervalHandle: TimerHandle | null = null;
+  let activeIntervalMs: number | null = null;
   let starting = false;
   let consecutiveInvalidAttempts = 0;
 
@@ -70,6 +80,7 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
     if (intervalHandle !== null) {
       timers.clearInterval(intervalHandle);
       intervalHandle = null;
+      activeIntervalMs = null;
     }
     resetInvalidAttempts();
   };
@@ -117,17 +128,30 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
       stop();
       return;
     }
-    if (intervalHandle !== null || starting) {
+    if (starting) {
       return;
     }
 
+    const nextIntervalMs = getAutoEqualsIntervalMs(state, baseIntervalMs);
+    if (intervalHandle !== null && activeIntervalMs === nextIntervalMs) {
+      return;
+    }
+
+    const wasRunning = intervalHandle !== null;
     starting = true;
     try {
+      if (intervalHandle !== null) {
+        timers.clearInterval(intervalHandle);
+        intervalHandle = null;
+      }
       // Install interval before any re-entrant subscriber activity can re-check scheduler state.
       intervalHandle = timers.setInterval(() => {
         dispatchAutoEqualsAttempt();
-      }, intervalMs);
-      dispatchAutoEqualsAttempt();
+      }, nextIntervalMs);
+      activeIntervalMs = nextIntervalMs;
+      if (!wasRunning) {
+        dispatchAutoEqualsAttempt();
+      }
     } finally {
       starting = false;
     }

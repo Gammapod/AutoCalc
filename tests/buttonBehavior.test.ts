@@ -1,9 +1,17 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { buildKeyButtonAction, isToggleFlagActive } from "../src/ui/render.js";
+import {
+  beginInputAnimationLock,
+  buildKeyButtonAction,
+  isToggleFlagActive,
+  resetInputLockStateForTests,
+  setSuppressClicksUntilForTests,
+  shouldSuppressClickForTests,
+} from "../src/ui/render.js";
 import type { GameState, KeyCell } from "../src/domain/types.js";
 
 export const runButtonBehaviorTests = (): void => {
+  resetInputLockStateForTests();
   const base = initialState();
   const pressCell: KeyCell = { kind: "key", key: "+" };
   assert.deepEqual(
@@ -36,4 +44,30 @@ export const runButtonBehaviorTests = (): void => {
     },
   };
   assert.equal(isToggleFlagActive(withToggleFlag, toggleCell), true, "toggle is active when its flag is set");
+
+  const now = Date.now();
+  setSuppressClicksUntilForTests(now + 500);
+  assert.equal(shouldSuppressClickForTests(), true, "click suppression is true while drag suppression is active");
+
+  setSuppressClicksUntilForTests(now - 1);
+  assert.equal(shouldSuppressClickForTests(), false, "click suppression is false when no suppression window is active");
+
+  const releaseLock = beginInputAnimationLock(0);
+  assert.equal(shouldSuppressClickForTests(), true, "click suppression is true while animation lock is active");
+
+  releaseLock();
+  assert.equal(shouldSuppressClickForTests(), false, "click suppression clears after animation lock release");
+
+  releaseLock();
+  assert.equal(shouldSuppressClickForTests(), false, "animation lock release is idempotent");
+
+  const releaseA = beginInputAnimationLock(0);
+  const releaseB = beginInputAnimationLock(0);
+  assert.equal(shouldSuppressClickForTests(), true, "multiple animation locks keep suppression active");
+  releaseA();
+  assert.equal(shouldSuppressClickForTests(), true, "suppression remains until all animation locks are released");
+  releaseB();
+  assert.equal(shouldSuppressClickForTests(), false, "suppression clears after the final animation lock release");
+
+  resetInputLockStateForTests();
 };

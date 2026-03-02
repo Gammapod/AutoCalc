@@ -14,6 +14,7 @@ type FakeTimerApi = {
   tick: () => void;
   setCalls: number;
   clearCalls: number;
+  setMsHistory: number[];
   activeCount: () => number;
 };
 
@@ -22,13 +23,15 @@ const createFakeTimerApi = (): FakeTimerApi => {
   const callbacks = new Map<number, () => void>();
   let setCalls = 0;
   let clearCalls = 0;
+  const setMsHistory: number[] = [];
 
   return {
     timers: {
-      setInterval: (callback: () => void): TimerHandle => {
+      setInterval: (callback: () => void, ms: number): TimerHandle => {
         const id = nextId++;
         callbacks.set(id, callback);
         setCalls += 1;
+        setMsHistory.push(ms);
         return id as unknown as TimerHandle;
       },
       clearInterval: (handle: TimerHandle): void => {
@@ -47,6 +50,9 @@ const createFakeTimerApi = (): FakeTimerApi => {
     },
     get clearCalls() {
       return clearCalls;
+    },
+    get setMsHistory() {
+      return setMsHistory;
     },
     activeCount: () => callbacks.size,
   };
@@ -88,8 +94,19 @@ export const runAutoEqualsSchedulerTests = (): void => {
   assert.equal(countExecutorPressesForKey(store.actions, "++"), 1, "default keypad executor is ++");
   assert.equal(countExecutorPressesForKey(store.actions, "="), 0, "default scheduler path should not press =");
   assert.equal(timers.setCalls, 1, "toggling on creates one interval");
+  assert.equal(timers.setMsHistory[0], 1000, "default speed starts at one executor press per second");
   assert.equal(timers.activeCount(), 1, "interval remains active while on");
   assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle remains on after successful ++ attempt");
+
+  store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", value: 200 });
+  for (let index = 0; index < 100; index += 1) {
+    store.dispatch({ type: "ALLOCATOR_ADJUST", field: "speed", delta: 1 });
+  }
+  scheduler.sync(store.getState());
+  assert.equal(timers.setCalls, 2, "speed changes while running should retime the interval");
+  assert.equal(timers.clearCalls, 1, "retiming clears the previous interval");
+  assert.equal(timers.setMsHistory[1], 500, "100 speed points doubles executor rate to twice per second");
+  assert.equal(countExecutorPresses(store.actions), 1, "retiming should not dispatch an extra immediate executor press");
 
   timers.tick();
   assert.equal(countExecutorPresses(store.actions), 2, "each interval tick dispatches executor");
@@ -210,7 +227,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   assert.equal(noExecutorTimers.activeCount(), 0, "no installed keypad executor stops interval immediately");
 
   scheduler.dispose();
-  assert.equal(timers.clearCalls, 1, "dispose clears running ++ scheduler interval once");
+  assert.equal(timers.clearCalls, 2, "dispose clears the current ++ scheduler interval once");
   assert.equal(timers.activeCount(), 0, "dispose leaves no timers active");
   validScheduler.dispose();
   invalidScheduler.dispose();

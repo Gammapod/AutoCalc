@@ -136,11 +136,18 @@ let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 let dragSession: DragSession | null = null;
 let suppressClicksUntil = 0;
+let inputAnimationLockCount = 0;
 const GRAPH_WINDOW_SIZE = 25;
 const GRAPH_MIN_Y_RANGE = 15;
 const DRAG_START_THRESHOLD_PX = 6;
 const DRAG_CLICK_SUPPRESS_MS = 220;
-const KEYPAD_FLIP_DURATION_MS = 760;
+const INPUT_LOCK_FALLBACK_BUFFER_MS = 80;
+const UNLOCK_ANIMATION_DURATION_MS = 1200;
+const KEYPAD_SLOT_ENTER_DURATION_MS = 760;
+const KEYPAD_GROW_MAX_DURATION_MS = 880;
+const CALC_GROW_MAX_DURATION_MS = 980;
+const UNLOCK_ANIMATION_NAME = "key-unlock-pulse";
+const KEYPAD_SLOT_ENTER_ANIMATION_NAME = "keypad-slot-enter";
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -884,6 +891,90 @@ const shouldReduceMotion = (): boolean => {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 };
 
+export const isInputAnimationLocked = (): boolean => inputAnimationLockCount > 0;
+
+export const beginInputAnimationLock = (fallbackMs: number): (() => void) => {
+  inputAnimationLockCount += 1;
+  let released = false;
+  const release = (): void => {
+    if (released) {
+      return;
+    }
+    released = true;
+    if (timerId !== null) {
+      window.clearTimeout(timerId);
+    }
+    inputAnimationLockCount = Math.max(0, inputAnimationLockCount - 1);
+  };
+  const timerId =
+    typeof window !== "undefined" && fallbackMs > 0 ? window.setTimeout(release, fallbackMs) : null;
+  return release;
+};
+
+const bindAnimationLock = (
+  element: HTMLElement,
+  matchesAnimationName: (animationName: string) => boolean,
+  fallbackMs: number,
+): void => {
+  let releaseLock: (() => void) | null = null;
+  const controller = new AbortController();
+  const releaseAndCleanup = (): void => {
+    if (!releaseLock) {
+      return;
+    }
+    const release = releaseLock;
+    releaseLock = null;
+    release();
+    controller.abort();
+  };
+
+  element.addEventListener(
+    "animationstart",
+    (event: Event) => {
+      const animationEvent = event as AnimationEvent;
+      if (!matchesAnimationName(animationEvent.animationName) || releaseLock) {
+        return;
+      }
+      releaseLock = beginInputAnimationLock(fallbackMs + INPUT_LOCK_FALLBACK_BUFFER_MS);
+    },
+    { signal: controller.signal },
+  );
+  element.addEventListener(
+    "animationend",
+    (event: Event) => {
+      const animationEvent = event as AnimationEvent;
+      if (!matchesAnimationName(animationEvent.animationName)) {
+        return;
+      }
+      releaseAndCleanup();
+    },
+    { signal: controller.signal },
+  );
+  element.addEventListener(
+    "animationcancel",
+    (event: Event) => {
+      const animationEvent = event as AnimationEvent;
+      if (!matchesAnimationName(animationEvent.animationName)) {
+        return;
+      }
+      releaseAndCleanup();
+    },
+    { signal: controller.signal },
+  );
+};
+
+const bindExactAnimationLock = (element: HTMLElement, animationName: string, fallbackMs: number): void => {
+  bindAnimationLock(element, (activeAnimationName) => activeAnimationName === animationName, fallbackMs);
+};
+
+const bindPrefixedAnimationLock = (element: HTMLElement, animationPrefix: string, fallbackMs: number): void => {
+  bindAnimationLock(
+    element,
+    (activeAnimationName) => activeAnimationName.startsWith(animationPrefix),
+    fallbackMs,
+  );
+};
+
 const collectKeypadCellRects = (container: Element): Map<string, DOMRect> => {
   const rects = new Map<string, DOMRect>();
   for (const element of Array.from(container.children)) {
@@ -914,6 +1005,7 @@ const playKeypadFlip = (container: Element, beforeRects: Map<string, DOMRect>): 
       continue;
     }
     if (!beforeRects.has(cellId)) {
+      bindExactAnimationLock(element, KEYPAD_SLOT_ENTER_ANIMATION_NAME, KEYPAD_SLOT_ENTER_DURATION_MS);
       element.classList.add("keypad-slot-enter");
       animatedElements.push(element);
     }
@@ -926,7 +1018,7 @@ const playKeypadFlip = (container: Element, beforeRects: Map<string, DOMRect>): 
   for (const element of animatedElements) {
     window.setTimeout(() => {
       element.classList.remove("keypad-slot-enter");
-    }, KEYPAD_FLIP_DURATION_MS + 20);
+    }, KEYPAD_SLOT_ENTER_DURATION_MS + 20);
   }
 };
 
@@ -1258,7 +1350,15 @@ const bindDropTargetCell = (element: HTMLElement, surface: LayoutSurface, index:
   element.dataset.layoutIndex = index.toString();
 };
 
-const shouldSuppressClick = (): boolean => Date.now() < suppressClicksUntil;
+const shouldSuppressClick = (): boolean => Date.now() < suppressClicksUntil || isInputAnimationLocked();
+export const shouldSuppressClickForTests = (): boolean => shouldSuppressClick();
+export const setSuppressClicksUntilForTests = (timestampMs: number): void => {
+  suppressClicksUntil = timestampMs;
+};
+export const resetInputLockStateForTests = (): void => {
+  suppressClicksUntil = 0;
+  inputAnimationLockCount = 0;
+};
 
 const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => {
   const slotLabel = document.createElement("span");
@@ -1393,8 +1493,10 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       const growDirection = grewRows && grewColumns ? "both" : grewRows ? "row" : grewColumns ? "column" : "";
       if (growDirection) {
         keysEl.dataset.keypadGrow = growDirection;
+        bindPrefixedAnimationLock(keysEl, "keypad-grow-", KEYPAD_GROW_MAX_DURATION_MS);
         if (calcBodyEl) {
           calcBodyEl.dataset.keypadGrow = growDirection;
+          bindPrefixedAnimationLock(calcBodyEl, "calc-grow-", CALC_GROW_MAX_DURATION_MS);
         }
       } else {
         delete keysEl.dataset.keypadGrow;
@@ -1436,6 +1538,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
     if (newlyUnlockedKeys.has(cell.key)) {
       button.classList.add("key--unlock-animate");
+      bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);
     }
     button.textContent = formatKeyCellLabel(state, cell);
     const keypadToggleActive = isToggleFlagActive(state, cell);
@@ -1509,6 +1612,7 @@ export const render = (root: Element, state: GameState, dispatch: (action: Actio
       button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
       if (newlyUnlockedKeys.has(cell.key)) {
         button.classList.add("key--unlock-animate");
+        bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);
       }
       button.textContent = formatKeyCellLabel(state, cell);
       const storageToggleActive = isToggleFlagActive(state, cell);

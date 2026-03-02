@@ -2,7 +2,11 @@ import { createStore } from "./store.js";
 import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
 import { render } from "../ui/render.js";
-import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "./autoEqualsScheduler.js";
+import {
+  AUTO_EQUALS_POINT_BONUS,
+  createAutoEqualsScheduler,
+  normalizeLoadedStateForRuntime,
+} from "./autoEqualsScheduler.js";
 import { analyzeNumberDomains } from "../domain/analysis.js";
 import { formatNumberDomainReport } from "./analysisReport.js";
 import type { AllocatorAllocationField, GameState } from "../domain/types.js";
@@ -174,7 +178,8 @@ const syncAllocatorDeviceInputs = (): void => {
   allocatorEffectiveWidthEl.textContent = `eff: ${(1 + allocations.width).toString()}`;
   allocatorEffectiveHeightEl.textContent = `eff: ${(1 + allocations.height).toString()}`;
   allocatorEffectiveRangeEl.textContent = `eff: ${(1 + allocations.range).toString()}`;
-  allocatorEffectiveSpeedEl.textContent = `eff: ${(1 + allocations.speed).toString()}`;
+  const speedMultiplier = 1 + allocations.speed * AUTO_EQUALS_POINT_BONUS;
+  allocatorEffectiveSpeedEl.textContent = `eff: ${speedMultiplier.toFixed(2)}x`;
   allocatorEffectiveSlotsEl.textContent = `eff: ${state.unlocks.maxSlots.toString()}`;
 
   allocatorIncWidthButton.disabled = unused <= 0;
