@@ -155,6 +155,7 @@ const UNLOCK_ANIMATION_DURATION_MS = 1200;
 const KEYPAD_SLOT_ENTER_DURATION_MS = 760;
 const KEYPAD_GROW_MAX_DURATION_MS = 880;
 const CALC_GROW_MAX_DURATION_MS = 980;
+const QUICK_TAP_PRESS_MIN_VISIBLE_MS = 55;
 const UNLOCK_ANIMATION_NAME = "key-unlock-pulse";
 const KEYPAD_SLOT_ENTER_ANIMATION_NAME = "keypad-slot-enter";
 const STORAGE_MIN_VISUAL_COLUMNS = 1;
@@ -1358,6 +1359,87 @@ const bindDraggableCell = (
   });
 };
 
+const bindQuickTapPressFeedback = (element: HTMLButtonElement): void => {
+  let pressStartedAt = 0;
+  let isPressedVisualActive = false;
+  let releaseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const setPressedVisualActive = (active: boolean): void => {
+    if (isPressedVisualActive === active) {
+      return;
+    }
+    isPressedVisualActive = active;
+    element.classList.toggle("key--quick-press", active);
+  };
+
+  const clearReleaseTimer = (): void => {
+    if (releaseTimer === null) {
+      return;
+    }
+    clearTimeout(releaseTimer);
+    releaseTimer = null;
+  };
+
+  const beginPressVisual = (): void => {
+    if (element.disabled) {
+      return;
+    }
+    clearReleaseTimer();
+    pressStartedAt = performance.now();
+    setPressedVisualActive(true);
+  };
+
+  const endPressVisual = (): void => {
+    if (!isPressedVisualActive) {
+      return;
+    }
+    const elapsedMs = performance.now() - pressStartedAt;
+    const remainingMs = Math.max(0, QUICK_TAP_PRESS_MIN_VISIBLE_MS - elapsedMs);
+    if (remainingMs <= 0) {
+      setPressedVisualActive(false);
+      return;
+    }
+    clearReleaseTimer();
+    releaseTimer = setTimeout(() => {
+      releaseTimer = null;
+      setPressedVisualActive(false);
+    }, remainingMs);
+  };
+
+  element.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) {
+      return;
+    }
+    beginPressVisual();
+    const onPointerUp = (): void => {
+      window.removeEventListener("pointerup", onPointerUp, true);
+      window.removeEventListener("pointercancel", onPointerUp, true);
+      endPressVisual();
+    };
+    window.addEventListener("pointerup", onPointerUp, true);
+    window.addEventListener("pointercancel", onPointerUp, true);
+  });
+
+  element.addEventListener("keydown", (event) => {
+    if (event.repeat) {
+      return;
+    }
+    if (event.key === " " || event.key === "Enter") {
+      beginPressVisual();
+    }
+  });
+
+  element.addEventListener("keyup", (event) => {
+    if (event.key === " " || event.key === "Enter") {
+      endPressVisual();
+    }
+  });
+
+  element.addEventListener("blur", () => {
+    endPressVisual();
+  });
+};
+
 const bindDropTargetCell = (element: HTMLElement, surface: LayoutSurface, index: number): void => {
   element.dataset.layoutSurface = surface;
   element.dataset.layoutIndex = index.toString();
@@ -1580,6 +1662,7 @@ export const render = (
     button.setAttribute("aria-pressed", keypadToggleActive ? "true" : "false");
     button.disabled = false;
     button.dataset.keypadCellId = slotId;
+    bindQuickTapPressFeedback(button);
     bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {

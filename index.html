@@ -38,6 +38,9 @@
         --key-latch-depth: 2px;
         --key-overpress-depth: 3px;
         --key-release-depth: 1px;
+        --key-press-in-duration: 0ms;
+        --key-release-duration: 95ms;
+        --key-release-delay: 40ms;
         --placeholder: #798291;
         --roll-row-height: 1.19rem;
         --roll-pad-top: 10px;
@@ -654,7 +657,11 @@
         font-size: 1.15rem;
         font-weight: 600;
         cursor: pointer;
-        transition: transform 95ms ease, box-shadow 95ms ease, background 110ms ease, filter 120ms ease;
+        transition:
+          transform var(--key-release-duration) ease var(--key-release-delay),
+          box-shadow var(--key-release-duration) ease var(--key-release-delay),
+          background 110ms ease,
+          filter 120ms ease;
       }
 
       .key__label {
@@ -672,7 +679,13 @@
         filter: brightness(1.04);
       }
 
-      .key:active:not(:disabled) {
+      .key:active:not(:disabled),
+      .key.key--quick-press:not(:disabled) {
+        transition:
+          transform var(--key-press-in-duration) linear 0ms,
+          box-shadow var(--key-press-in-duration) linear 0ms,
+          background 110ms ease,
+          filter 120ms ease;
         transform: translateY(var(--key-press-depth));
         box-shadow:
           inset 0 1px 2px rgba(255, 255, 255, 0.35),
