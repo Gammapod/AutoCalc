@@ -42,6 +42,21 @@ const nextStorageWithTrailingEmptyRow = (storageLayout: Array<KeyCell | null>): 
   return [...nextStorage, ...Array.from({ length: STORAGE_COLUMNS }, () => null)];
 };
 
+const appendKeyToStorage = (
+  storageLayout: Array<KeyCell | null>,
+  keyCell: KeyCell,
+): Array<KeyCell | null> => {
+  const next = [...storageLayout];
+  const emptyIndex = next.findIndex((cell) => cell === null);
+  if (emptyIndex >= 0) {
+    next[emptyIndex] = keyCell;
+    return nextStorageWithTrailingEmptyRow(next);
+  }
+  const expanded = [...next, ...Array.from({ length: STORAGE_COLUMNS }, () => null)];
+  expanded[next.length] = keyCell;
+  return nextStorageWithTrailingEmptyRow(expanded);
+};
+
 const emptyCell = (): LayoutCell => ({ kind: "placeholder", area: "empty" });
 
 const getCurrentKeypadCells = (state: GameState): KeypadCellRecord[] => {
@@ -423,16 +438,36 @@ export const applySetKeypadDimensions = (state: GameState, columns: number, rows
   if (state.ui.keypadColumns === clampedColumns && state.ui.keypadRows === clampedRows) {
     return state;
   }
-  const keyLayout = resizeKeyLayout(state.ui.keyLayout, currentColumns, currentRows, clampedColumns, clampedRows);
+  const currentKeypadCells = getCurrentKeypadCells(state);
+  const removedKeyCells: KeyCell[] = currentKeypadCells
+    .filter(
+      (record) =>
+        (record.row > clampedRows || record.col > clampedColumns) &&
+        record.cell.kind === "key",
+    )
+    .map((record) => record.cell as KeyCell);
+
+  let nextState = state;
+  for (const removedCell of removedKeyCells) {
+    nextState = clearToggleFlagWhenLeavingKeypad(nextState, removedCell, "keypad", "storage");
+  }
+
+  const keyLayout = resizeKeyLayout(nextState.ui.keyLayout, currentColumns, currentRows, clampedColumns, clampedRows);
   const keypadCells = fromKeyLayoutArray(keyLayout, clampedColumns, clampedRows);
+  let nextStorageLayout = nextState.ui.storageLayout;
+  for (const removedCell of removedKeyCells) {
+    nextStorageLayout = appendKeyToStorage(nextStorageLayout, removedCell);
+  }
+
   return {
-    ...state,
+    ...nextState,
     ui: {
-      ...state.ui,
+      ...nextState.ui,
       keyLayout,
       keypadCells,
       keypadColumns: clampedColumns,
       keypadRows: clampedRows,
+      storageLayout: nextStorageLayout,
     },
   };
 };

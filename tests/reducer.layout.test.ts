@@ -466,6 +466,41 @@ export const runReducerLayoutTests = (): void => {
   assert.ok(resizedSmaller.ui.keyLayout.slice(0, 5).every((cell) => cell.kind === "placeholder"), "shrink drops top/left first");
   assert.equal(resizedSmaller.ui.keyLayout[5]?.kind === "key" ? resizedSmaller.ui.keyLayout[5].key : null, "++", "++ remains bottom-right anchored after shrink");
 
+  const shrinkWithOccupiedRemovedSlotSource = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 1 });
+  const shrinkRemovedSlotOccupied = reducer(shrinkWithOccupiedRemovedSlotSource, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "storage",
+    fromIndex: 0,
+    toSurface: "keypad",
+    toIndex: 0,
+  });
+  assert.equal(
+    shrinkRemovedSlotOccupied.ui.keyLayout[0]?.kind === "key" ? shrinkRemovedSlotOccupied.ui.keyLayout[0].key : null,
+    "CE",
+    "setup: removable slot is occupied before shrink",
+  );
+  const shrinkEvacuated = reducer(shrinkRemovedSlotOccupied, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 1 });
+  assert.equal(
+    shrinkEvacuated.ui.keyLayout[0]?.kind,
+    "placeholder",
+    "shrinking clears removed keypad slot from keypad surface",
+  );
+  assert.equal(shrinkEvacuated.ui.storageLayout[0]?.key, "CE", "key from removed slot is moved into storage");
+
+  const fullStorageBeforeShrink: GameState = {
+    ...shrinkRemovedSlotOccupied,
+    ui: {
+      ...shrinkRemovedSlotOccupied.ui,
+      storageLayout: Array.from({ length: 8 }, () => ({ kind: "key" as const, key: "1" as const })),
+    },
+  };
+  const shrinkWithFullStorage = reducer(fullStorageBeforeShrink, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 1 });
+  assert.equal(shrinkWithFullStorage.ui.storageLayout.length, 16, "shrink evacuation expands storage when no empty slot exists");
+  assert.ok(
+    shrinkWithFullStorage.ui.storageLayout.some((cell) => cell?.key === "CE"),
+    "shrink evacuation preserves removed key even when storage was full",
+  );
+
   const clampedResize = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 99, rows: -4 });
   assert.equal(clampedResize.ui.keypadColumns, 8, "columns clamp to max bound");
   assert.equal(clampedResize.ui.keypadRows, 1, "rows clamp to min bound");
