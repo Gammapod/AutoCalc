@@ -14,8 +14,18 @@ import { formatNumberDomainReport } from "./analysisReport.js";
 import type { AllocatorAllocationField, GameState } from "../domain/types.js";
 
 declare global {
+  type KatexRenderOptions = {
+    displayMode?: boolean;
+    throwOnError?: boolean;
+  };
+
+  type KatexApi = {
+    render: (expression: string, element: HTMLElement, options?: KatexRenderOptions) => void;
+  };
+
   interface Window {
     __autoCalcBootstrapCleanup__?: () => void;
+    katex?: KatexApi;
   }
 }
 
@@ -45,7 +55,6 @@ const analysisAllUnlockedCheckbox = document.querySelector<HTMLInputElement>("[d
 const analysisReportEl = document.querySelector<HTMLElement>("[data-debug-analysis-report]");
 
 const allocatorUnusedEl = document.querySelector<HTMLElement>("[data-allocator-unused]");
-const allocatorMaxPointsEl = document.querySelector<HTMLElement>("[data-allocator-max-points]");
 const allocatorWidthValueEl = document.querySelector<HTMLElement>("[data-allocator-width]");
 const allocatorHeightValueEl = document.querySelector<HTMLElement>("[data-allocator-height]");
 const allocatorRangeValueEl = document.querySelector<HTMLElement>("[data-allocator-range]");
@@ -56,17 +65,13 @@ const allocatorEffectiveHeightEl = document.querySelector<HTMLElement>("[data-al
 const allocatorEffectiveRangeEl = document.querySelector<HTMLElement>("[data-allocator-effective-range]");
 const allocatorEffectiveSpeedEl = document.querySelector<HTMLElement>("[data-allocator-effective-speed]");
 const allocatorEffectiveSlotsEl = document.querySelector<HTMLElement>("[data-allocator-effective-slots]");
-const allocatorDecWidthButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-width]");
 const allocatorIncWidthButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-width]");
-const allocatorDecHeightButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-height]");
 const allocatorIncHeightButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-height]");
-const allocatorDecRangeButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-range]");
 const allocatorIncRangeButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-range]");
-const allocatorDecSpeedButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-speed]");
 const allocatorIncSpeedButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-speed]");
-const allocatorDecSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-slots]");
 const allocatorIncSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-slots]");
 const allocatorResetButton = document.querySelector<HTMLButtonElement>("[data-allocator-reset]");
+const allocatorSpeedLabelEl = document.querySelector<HTMLElement>("[data-allocator-speed-label]");
 if (
   !debugToggle ||
   !debugMenu ||
@@ -83,7 +88,6 @@ if (
   !analysisAllUnlockedCheckbox ||
   !analysisReportEl ||
   !allocatorUnusedEl ||
-  !allocatorMaxPointsEl ||
   !allocatorWidthValueEl ||
   !allocatorHeightValueEl ||
   !allocatorRangeValueEl ||
@@ -94,20 +98,71 @@ if (
   !allocatorEffectiveRangeEl ||
   !allocatorEffectiveSpeedEl ||
   !allocatorEffectiveSlotsEl ||
-  !allocatorDecWidthButton ||
   !allocatorIncWidthButton ||
-  !allocatorDecHeightButton ||
   !allocatorIncHeightButton ||
-  !allocatorDecRangeButton ||
   !allocatorIncRangeButton ||
-  !allocatorDecSpeedButton ||
   !allocatorIncSpeedButton ||
-  !allocatorDecSlotsButton ||
   !allocatorIncSlotsButton ||
-  !allocatorResetButton
+  !allocatorResetButton ||
+  !allocatorSpeedLabelEl
 ) {
   throw new Error("Required UI controls are missing.");
 }
+
+const renderAllocatorSpeedLabel = (): void => {
+  const katexApi = window.katex;
+  if (!katexApi) {
+    allocatorSpeedLabelEl.textContent = "\u0394T/1.05\u1d57, t=";
+    return;
+  }
+  try {
+    katexApi.render(String.raw`\Delta T / 1.05^{t},\ t=`, allocatorSpeedLabelEl, {
+      displayMode: false,
+      throwOnError: false,
+    });
+    allocatorSpeedLabelEl.setAttribute("aria-label", "delta t over 1.05 to the t, t equals");
+  } catch {
+    allocatorSpeedLabelEl.textContent = "\u0394T/1.05\u1d57, t=";
+  }
+};
+
+const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
+type SegmentName = (typeof SEGMENT_NAMES)[number];
+
+const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
+  "0": ["a", "b", "c", "d", "e", "f"],
+  "1": ["b", "c"],
+  "2": ["a", "b", "d", "e", "g"],
+  "3": ["a", "b", "c", "d", "g"],
+  "4": ["b", "c", "f", "g"],
+  "5": ["a", "c", "d", "f", "g"],
+  "6": ["a", "c", "d", "e", "f", "g"],
+  "7": ["a", "b", "c"],
+  "8": ["a", "b", "c", "d", "e", "f", "g"],
+  "9": ["a", "b", "c", "d", "f", "g"],
+};
+
+const renderAllocatorDisplay = (target: HTMLElement, value: number): void => {
+  const text = Math.max(0, Math.trunc(value)).toString();
+  target.innerHTML = "";
+  const frame = document.createElement("div");
+  frame.className = "allocator-seg-frame";
+  for (const char of text) {
+    const digit = document.createElement("div");
+    digit.className = "seg-digit allocator-seg-digit";
+    const activeSegments = DIGIT_SEGMENTS[char] ?? [];
+    for (const segmentName of SEGMENT_NAMES) {
+      const segment = document.createElement("div");
+      segment.className = `seg allocator-seg seg-${segmentName}`;
+      if (activeSegments.includes(segmentName)) {
+        segment.classList.add("seg--on", "allocator-seg--on");
+      }
+      digit.appendChild(segment);
+    }
+    frame.appendChild(digit);
+  }
+  target.appendChild(frame);
+};
 
 const storageRepo = createLocalStorageRepo(window.localStorage);
 const loaded = storageRepo.load();
@@ -186,22 +241,18 @@ const syncAllocatorDeviceInputs = (): void => {
   const state = store.getState();
   const allocations = state.allocator.allocations;
   const unused = getUnusedPoints(state);
+  const effectiveWidth = 1 + allocations.width;
+  const effectiveHeight = 1 + allocations.height;
+  const effectiveRange = 1 + allocations.range;
+  const effectiveSlots = state.unlocks.maxSlots;
 
-  allocatorUnusedEl.textContent = unused.toString();
-  allocatorMaxPointsEl.textContent = `max: ${state.allocator.maxPoints.toString()}`;
+  renderAllocatorDisplay(allocatorUnusedEl, unused);
 
-  allocatorWidthValueEl.textContent = allocations.width.toString();
-  allocatorHeightValueEl.textContent = allocations.height.toString();
-  allocatorRangeValueEl.textContent = allocations.range.toString();
-  allocatorSpeedValueEl.textContent = allocations.speed.toString();
-  allocatorSlotsValueEl.textContent = allocations.slots.toString();
-
-  allocatorEffectiveWidthEl.textContent = `eff: ${(1 + allocations.width).toString()}`;
-  allocatorEffectiveHeightEl.textContent = `eff: ${(1 + allocations.height).toString()}`;
-  allocatorEffectiveRangeEl.textContent = `eff: ${(1 + allocations.range).toString()}`;
-  const speedMultiplier = 1 + allocations.speed * AUTO_EQUALS_POINT_BONUS;
-  allocatorEffectiveSpeedEl.textContent = `eff: ${speedMultiplier.toFixed(2)}x`;
-  allocatorEffectiveSlotsEl.textContent = `eff: ${state.unlocks.maxSlots.toString()}`;
+  renderAllocatorDisplay(allocatorWidthValueEl, effectiveWidth);
+  renderAllocatorDisplay(allocatorHeightValueEl, effectiveHeight);
+  renderAllocatorDisplay(allocatorRangeValueEl, effectiveRange);
+  renderAllocatorDisplay(allocatorSpeedValueEl, allocations.speed);
+  renderAllocatorDisplay(allocatorSlotsValueEl, effectiveSlots);
 
   allocatorIncWidthButton.disabled = unused <= 0;
   allocatorIncHeightButton.disabled = unused <= 0;
@@ -209,15 +260,10 @@ const syncAllocatorDeviceInputs = (): void => {
   allocatorIncSpeedButton.disabled = unused <= 0;
   allocatorIncSlotsButton.disabled = unused <= 0;
 
-  allocatorDecWidthButton.disabled = allocations.width <= 0;
-  allocatorDecHeightButton.disabled = allocations.height <= 0;
-  allocatorDecRangeButton.disabled = allocations.range <= 0;
-  allocatorDecSpeedButton.disabled = allocations.speed <= 0;
-  allocatorDecSlotsButton.disabled = allocations.slots <= 0;
-
   debugMaxPointsInput.value = state.allocator.maxPoints.toString();
 };
 
+renderAllocatorSpeedLabel();
 redraw();
 autoEqualsScheduler.startIfNeeded();
 const unsubscribe = store.subscribe((state) => {
@@ -293,15 +339,10 @@ const bindAllocatorStep = (button: HTMLButtonElement, field: AllocatorAllocation
   });
 };
 
-bindAllocatorStep(allocatorDecWidthButton, "width", -1);
 bindAllocatorStep(allocatorIncWidthButton, "width", 1);
-bindAllocatorStep(allocatorDecHeightButton, "height", -1);
 bindAllocatorStep(allocatorIncHeightButton, "height", 1);
-bindAllocatorStep(allocatorDecRangeButton, "range", -1);
 bindAllocatorStep(allocatorIncRangeButton, "range", 1);
-bindAllocatorStep(allocatorDecSpeedButton, "speed", -1);
 bindAllocatorStep(allocatorIncSpeedButton, "speed", 1);
-bindAllocatorStep(allocatorDecSlotsButton, "slots", -1);
 bindAllocatorStep(allocatorIncSlotsButton, "slots", 1);
 
 allocatorResetButton.addEventListener("click", () => {

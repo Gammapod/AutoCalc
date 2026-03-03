@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "algebrite": "^1.4.0",
-    "chart.js": "^4.4.3"
+    "chart.js": "^4.4.3",
+    "katex": "^0.16.33"
   },
   "build": {
     "appId": "com.autocalc.app",

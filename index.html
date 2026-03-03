@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AutoCalc v1 Slice</title>
+    <link rel="stylesheet" href="./node_modules/katex/dist/katex.min.css" />
     <style>
       :root {
         --bg-top: #cfd4dc;
@@ -154,16 +155,26 @@
         color: #b4f1d3;
       }
 
-      .allocator-unused {
+      .allocator-label--math .katex {
+        font-size: 0.9rem;
+        line-height: 1;
+        color: inherit;
+      }
+
+      .allocator-display {
         border: 1px solid #515c6a;
         border-radius: 7px;
-        padding: 8px 10px;
+        padding: 5px 8px;
         background: linear-gradient(180deg, var(--panel-mid), var(--panel-dark));
-        color: #b4f1d3;
-        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
-        font-size: 0.82rem;
-        line-height: 1;
-        font-variant-numeric: tabular-nums;
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+      }
+
+      [data-allocator-unused] {
+        grid-column: 3;
       }
 
       .allocator-stepper {
@@ -190,21 +201,23 @@
         cursor: not-allowed;
       }
 
-      .allocator-value {
-        min-width: 2ch;
-        text-align: center;
-        color: #b4f1d3;
-        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
-        font-size: 0.78rem;
-        line-height: 1;
-        font-variant-numeric: tabular-nums;
+      .allocator-seg-frame {
+        display: inline-flex;
+        gap: 4px;
       }
 
-      .allocator-effective {
-        color: #b4f1d3;
-        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
-        font-size: 0.7rem;
-        opacity: 0.82;
+      .allocator-display .allocator-seg-digit {
+        width: 12px;
+        height: 22px;
+      }
+
+      .allocator-display .allocator-seg {
+        opacity: 0.1;
+      }
+
+      .allocator-display .allocator-seg--on {
+        opacity: 1;
+        box-shadow: 0 0 4px rgba(188, 255, 214, 0.4);
       }
 
       .allocator-reset {
@@ -1408,57 +1421,46 @@
         <section class="play-area">
           <div class="device-row">
             <section class="device device--allocator" data-allocator-device aria-label="Allocator">
-              <h2 class="allocator-title">Allocator</h2>
+              <h2 class="allocator-title">EIGEN ALLOCATOR | ~,==,"&lt;</h2>
               <div class="allocator-grid">
                 <div class="allocator-row">
-                  <span class="allocator-label">unused points</span>
-                  <span class="allocator-unused" data-allocator-unused>0</span>
-                  <span class="allocator-effective" data-allocator-max-points>max: 0</span>
+                  <span class="allocator-label">λ=</span>
+                  <span class="allocator-display" data-allocator-unused>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">width</span>
+                  <span class="allocator-label">↔𝑚, 𝑚=</span>
                   <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-width>-</button>
-                    <span class="allocator-value" data-allocator-width>0</span>
                     <button type="button" class="allocator-step" data-allocator-inc-width>+</button>
                   </span>
-                  <span class="allocator-effective" data-allocator-effective-width>eff: 1</span>
+                  <span class="allocator-display" data-allocator-width data-allocator-effective-width>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">height</span>
+                  <span class="allocator-label">↕𝑛, 𝑛=</span>
                   <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-height>-</button>
-                    <span class="allocator-value" data-allocator-height>0</span>
                     <button type="button" class="allocator-step" data-allocator-inc-height>+</button>
                   </span>
-                  <span class="allocator-effective" data-allocator-effective-height>eff: 1</span>
+                  <span class="allocator-display" data-allocator-height data-allocator-effective-height>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">range</span>
+                  <span class="allocator-label">[-R,R], R=</span>
                   <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-range>-</button>
-                    <span class="allocator-value" data-allocator-range>0</span>
                     <button type="button" class="allocator-step" data-allocator-inc-range>+</button>
                   </span>
-                  <span class="allocator-effective" data-allocator-effective-range>eff: 1</span>
+                  <span class="allocator-display" data-allocator-range data-allocator-effective-range>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">speed</span>
+                  <span class="allocator-label allocator-label--math" data-allocator-speed-label>ΔT/1.05^t, t=</span>
                   <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-speed>-</button>
-                    <span class="allocator-value" data-allocator-speed>0</span>
                     <button type="button" class="allocator-step" data-allocator-inc-speed>+</button>
                   </span>
-                  <span class="allocator-effective" data-allocator-effective-speed>eff: 1</span>
+                  <span class="allocator-display" data-allocator-speed data-allocator-effective-speed>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">slots</span>
+                  <span class="allocator-label">[ _ _ ](𝑆), 𝑆=</span>
                   <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-slots>-</button>
-                    <span class="allocator-value" data-allocator-slots>0</span>
                     <button type="button" class="allocator-step" data-allocator-inc-slots>+</button>
                   </span>
-                  <span class="allocator-effective" data-allocator-effective-slots>eff: 1</span>
+                  <span class="allocator-display" data-allocator-slots data-allocator-effective-slots>0</span>
                 </div>
               </div>
               <button type="button" class="allocator-reset" data-allocator-reset>Reset</button>
@@ -1491,6 +1493,7 @@
         </aside>
       </main>
     </div>
+    <script src="./node_modules/katex/dist/katex.min.js"></script>
     <script src="./node_modules/chart.js/dist/chart.umd.min.js"></script>
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
