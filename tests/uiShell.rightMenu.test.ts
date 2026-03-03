@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { buildShellViewModel, createShellController, getMenuA11yState } from "../src_v2/ui/renderAdapter.js";
+import { buildShellViewModel, createShellController, getMenuA11yState, shouldCloseMenuFromSwipe } from "../src_v2/ui/renderAdapter.js";
 
 export const runUiShellRightMenuTests = (): void => {
   const state = initialState();
@@ -30,4 +30,8 @@ export const runUiShellRightMenuTests = (): void => {
     { ariaHidden: "false", inert: false },
     "open menu maps to aria-hidden=false and non-inert",
   );
+
+  assert.equal(shouldCloseMenuFromSwipe(96, 0), true, "long right swipe closes menu");
+  assert.equal(shouldCloseMenuFromSwipe(95, 0), false, "short right swipe does not close menu");
+  assert.equal(shouldCloseMenuFromSwipe(120, 140), false, "mostly-vertical swipe does not close menu");
 };

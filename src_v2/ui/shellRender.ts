@@ -53,6 +53,8 @@ type MenuA11yState = {
   inert: boolean;
 };
 
+const MENU_CLOSE_SWIPE_DISTANCE_PX = 96;
+
 const rendererCache = new WeakMap<Element, ShellRenderer>();
 const rendererRegistry = new Set<ShellRenderer>();
 
@@ -156,6 +158,13 @@ export const getMenuA11yState = (menuOpen: boolean): MenuA11yState => ({
   ariaHidden: menuOpen ? "false" : "true",
   inert: !menuOpen,
 });
+
+export const shouldCloseMenuFromSwipe = (deltaX: number, deltaY: number): boolean => {
+  if (deltaX < MENU_CLOSE_SWIPE_DISTANCE_PX) {
+    return false;
+  }
+  return Math.abs(deltaX) >= Math.abs(deltaY);
+};
 
 const createMenuModuleButton = (label: string): HTMLButtonElement => {
   const button = document.createElement("button");
@@ -362,6 +371,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
         return;
       }
       if (controller.runtime.menuOpen) {
+        closeMenu(false);
         return;
       }
       if (
@@ -424,6 +434,12 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       const dy = pointerEvent.clientY - pointerSession.startY;
       if (pointerSession.axisLock === "none" && (Math.abs(dx) >= 8 || Math.abs(dy) >= 8)) {
         pointerSession.axisLock = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      }
+
+      if (controller.runtime.menuOpen && pointerSession.axisLock === "x" && shouldCloseMenuFromSwipe(dx, dy)) {
+        closeMenu();
+        clearPointerSession(refs);
+        return;
       }
 
       if (pointerSession.axisLock === "x" && pointerSession.startedInRightEdgeZone && dx <= -28) {
@@ -567,7 +583,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       if (pointerSession.axisLock === "none" && (Math.abs(dx) >= 8 || Math.abs(dy) >= 8)) {
         pointerSession.axisLock = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
       }
-      if (pointerSession.axisLock === "x" && dx >= 28) {
+      if (pointerSession.axisLock === "x" && shouldCloseMenuFromSwipe(dx, dy)) {
         closeMenu();
         clearPointerSession(refs);
         return;

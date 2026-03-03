@@ -6,6 +6,7 @@ export {
   resetShellRuntimeForTests,
   canStartTouchRearrange,
   getMenuA11yState,
+  shouldCloseMenuFromSwipe,
 } from "./shellRender.js";
 export { buildShellViewModel } from "./shellModel.js";
 export { createShellController, resolveSnapFromDrag, clampSnapToAvailable, getAdjacentSnap } from "./shellController.js";
