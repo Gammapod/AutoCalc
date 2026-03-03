@@ -1,8 +1,8 @@
 import type { CalculatorValue, ErrorCode, RationalValue } from "./types.js";
 
-export const OVERFLOW_ERROR_CODE: ErrorCode = "x∉[-R,R] ∴ |x|=R×⌊x/R⌋";
-export const DIVISION_BY_ZERO_ERROR_CODE: ErrorCode = "n/0, ∴ NaN";
-export const NAN_INPUT_ERROR_CODE: ErrorCode = "NaN, ∴ NaN";
+export const OVERFLOW_ERROR_CODE: ErrorCode = "x∉[-R,R]";
+export const DIVISION_BY_ZERO_ERROR_CODE: ErrorCode = "n/0";
+export const NAN_INPUT_ERROR_CODE: ErrorCode = "NaN";
 
 export const toRationalCalculatorValue = (value: RationalValue): CalculatorValue => ({
   kind: "rational",

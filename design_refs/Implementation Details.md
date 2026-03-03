@@ -1,134 +1,136 @@
-# AutoCalc v1 Implementation Details (Current Runtime Contract)
+# AutoCalc Implementation Details (Current Runtime Contract)
 
-Last updated: 2026-02-27
-Scope: This document describes the behavior implemented in `src/` today.
+Last updated: 2026-03-03
+Scope: Runtime behavior implemented in `src/` and active shell rendering in `src_v2/`.
 
 ## Architecture Overview
 
-The app is split into:
+Primary layers:
 
-1. Domain (`src/domain`): pure state transitions and execution logic
-2. Content (`src/content`): unlock catalog data
-3. Infrastructure (`src/infra`): persistence and math helpers
-4. UI (`src/ui`): DOM rendering and interaction wiring
-5. App bootstrap/store (`src/app`)
+1. Domain (`src/domain`): reducer logic, execution semantics, unlock logic, layout movement rules.
+2. Content (`src/content`): unlock catalog and key behavior catalog.
+3. Infrastructure (`src/infra`): rational/euclidean math, persistence, migrations.
+4. UI v1 renderer (`src/ui`): DOM rendering for classic shell.
+5. UI v2 shell (`src_v2/ui`): stacked shell, touch rearrangement, modular rendering adapter.
+6. App bootstrap/store (`src/app`): mode resolution, store wiring, scheduler, debug controls.
 
-## Runtime Data Model
+## Runtime Key Types
 
-Core runtime types (simplified to current behavior):
+Current key families:
 
 ```ts
-type SlotOperator = "+" | "-" | "*" | "/" | "#";
-type UtilityKey = "C" | "CE" | "NEG";
-type ExecKey = "=";
-
-type RationalValue = { num: bigint; den: bigint };
-
-type Slot = {
-  operator: SlotOperator;
-  operand: bigint;
-};
-
-type EuclidRemainderEntry = {
-  rollIndex: number;
-  value: RationalValue;
-};
-
-type CalculatorState = {
-  total: RationalValue;
-  pendingNegativeTotal: boolean;
-  roll: RationalValue[];
-  euclidRemainders: EuclidRemainderEntry[];
-  operationSlots: Slot[];
-  draftingSlot: null | {
-    operator: SlotOperator;
-    operandInput: string;
-    isNegative: boolean;
-  };
-};
+type SlotOperator = "+" | "-" | "*" | "/" | "#" | "\u27E1";
+type ValueExpressionKey = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "NEG";
+type UtilityKey = "C" | "CE" | "UNDO" | "GRAPH" | "\u23EF";
+type ExecKey = "=" | "++";
 ```
+
+## Calculator State Model
+
+Key fields in current calculator state:
+
+- `total: CalculatorValue` where CalculatorValue is `rational` or `nan`.
+- `pendingNegativeTotal: boolean`.
+- `singleDigitInitialTotalEntry: boolean`.
+- `roll: CalculatorValue[]`.
+- `rollErrors: RollErrorEntry[]`.
+- `euclidRemainders: EuclidRemainderEntry[]`.
+- `operationSlots: Slot[]`.
+- `draftingSlot: DraftingSlot | null`.
 
 ## Execution Semantics
 
-`=` executes operation slots left-to-right:
+### `=` execution
 
-- `+`, `-`, `*`: integer operand applied to rational total
-- `/`: true rational division
-- `#`: Euclidean division
-  - quotient `q = floor(total / operand)`
-  - total becomes `q`
-  - remainder `r = total_before - operand * q`
-  - only the final `#` remainder in a single `=` run is recorded
+`=` finalizes drafting slot (if valid), then executes committed slots left-to-right.
 
-Roll behavior:
+Operator behavior:
 
-- no slots: append unchanged total
-- first operation-backed `=` when roll empty: append starting total and resulting total
-- later operation-backed `=`: append resulting total only
+- `+`, `-`, `*`: integer operand over rational total.
+- `/`: rational division; divisor `0` yields division-by-zero error result.
+- `#`: Euclidean division, writes quotient to total, records final remainder annotation.
+- `\u27E1`: Euclidean remainder operator, writes remainder to total.
 
-Zero divisors:
+Roll behavior for `=`:
 
-- if any `/` or `#` slot has operand `0`, `=` is a no-op (state unchanged).
+- If operation slots exist and roll is empty: append starting total and resulting total.
+- Otherwise append resulting total only.
+- Errors and Euclidean remainders are attached to the appended roll index.
+
+### `++` execution
+
+`++` increments total by `1` directly. It does not append to roll.
+
+### Overflow and error policy
+
+- Total magnitude is clamped to boundary derived from `maxTotalDigits`.
+- Overflow produces an overflow error code (and marks overflow-seen unlock marker).
+- Division by zero or NaN input paths produce NaN total with error codes.
 
 ## Utility Key Behavior
 
-- `CE`: clears roll section state for the current run (`roll`, `euclidRemainders`, `operationSlots`, `draftingSlot`), keeps total.
-- `C`: full run reset (`total = 0`, clear roll and remainder annotations, clear operation slots/drafting, clear pending-negative flag).
-- `NEG`: toggles sign for total/drafting operand under reducer gating rules.
+- `CE`: clears roll/drafting/slots/remainders/errors while preserving current total.
+- `C`: full calculator reset to zero rational total and clean run state.
+- `UNDO`: pops one roll entry when available and restores prior roll total.
+- `GRAPH`: utility key present in unlocks/layout; actual graph visibility is controlled via toggle behavior.
+- `\u23EF`: toggle-style utility tied to execution pause flag.
+- `NEG`: toggles sign for total or drafting operand under reducer gating rules.
 
-## Unlock System
+## Unlock and Layout Model
 
-Unlock definitions are data-driven in `src/content/unlocks.catalog.ts`.
+Unlock effects include:
 
-Current unlock categories:
+- key unlocks (digit, slot operator, utility, execution)
+- total digit cap increase
+- allocator max-point increase
+- storage drawer unlock
+- keypad row/column upgrades
+- directed key movement to keypad coordinates
 
-- digits
-- slot operators
-- utilities
-- execution (`=`)
-- capacity (`maxSlots`, `maxTotalDigits`)
+Layout model supports:
 
-`UNLOCK_ALL` exists and unlocks all keys represented in runtime state, including `#`.
+- separate keypad and storage surfaces
+- placeholder cells and key cells
+- drag/drop move and swap actions with execution-key constraints
 
-## Roll Rendering Contract
+## UI Shell Mode
 
-The roll view model is derived from:
+UI shell mode resolves to:
 
-- `calculator.roll`
-- `calculator.euclidRemainders`
+- `v1` when explicitly requested
+- `v2` by default
 
-Rendering rules:
-
-- total entries render in chronological order
-- remainder annotation is displayed on the same row as its target total as `⟡= <value>`
-- total and remainder columns are independently right-aligned by CSS
+v2 shell is currently the default rendering path unless overridden.
 
 ## Persistence Contract
 
-`src/infra/persistence/localStorageRepo.ts` persists:
-
-- rational `total`
-- rational `roll`
-- `euclidRemainders` (roll-index + rational value)
-- operation slots
-- unlock state
-- layout state
-
-Current schema version: `2`.
-
-Backward compatibility:
-
-- v1 payloads are accepted and normalized
-- legacy layout placeholders for `NEG`, `*`, `/`, and `euclid_divmod` are migrated to current keys where needed
+- Save key: `autocalc.v1.save`
+- Current schema version: `10`
+- Payload includes calculator, ui layout/storage/flags, unlocks, key press counts, allocator, completed unlocks
+- Schema handling:
+  - versions `< 6`: reset to normalized v10 baseline
+  - versions `6..10`: normalized and migrated to v10 with validation
 
 ## Testing Contract
 
-Test runner: `tests/run-tests.ts`
+Test suite under `tests/` covers:
 
-Key coverage includes:
+- reducer input/lifecycle/flags/layout behavior
+- engine/operator semantics and roll/remainder/error behavior
+- unlock graph and unlock domain analysis behavior
+- persistence/migration paths
+- v2 shell rendering and touch rearrangement flows
 
-- engine behavior (`/`, `#`, remainder capture, zero-divisor handling)
-- reducer unlock and key behavior
-- roll formatting/model behavior
-- persistence round-trip and legacy migration
-- browser import safety guard for Euclidean engine
+## Unlock Graph Contract
+
+Unlock graph function capability logic in `src/domain/unlockGraph.ts` is sufficiency-clause driven (OR-of-AND key sets).
+This metadata is the source of truth for:
+
+- function satisfiability checks
+- graph report generation (JSON + Mermaid)
+- condition reachability analysis
+
+Maintenance rule:
+
+- Update sufficiency clauses when function capability assumptions change.
+- Avoid ad-hoc manual predicates that bypass sufficiency metadata.

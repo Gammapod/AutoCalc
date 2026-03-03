@@ -197,9 +197,9 @@ const KEY_VALUES: readonly Key[] = [
   ...EXEC_KEY_VALUES,
 ];
 const ERROR_CODE_VALUES: readonly ErrorCode[] = [
-  "x∉[-R,R] ∴ |x|=R×⌊x/R⌋",
-  "n/0, ∴ NaN",
-  "NaN, ∴ NaN",
+  "x∉[-R,R]",
+  "n/0",
+  "NaN",
 ];
 const EXECUTION_ERROR_KIND_VALUES: readonly ExecutionErrorKind[] = [
   "overflow",

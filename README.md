@@ -21,6 +21,24 @@ Build also generates progression graph reports:
 - `dist/reports/unlock-graph-report.md`
 - `dist/reports/unlock-graph-report.json`
 - `dist/reports/unlock-graph-report.mmd`
+- `dist/reports/unlock-graph-report.incoming-unlock-keys.mmd`
+
+### Unlock Graph Sufficiency Contract
+
+Unlock graph function logic is modeled as sufficiency metadata in `src/domain/unlockGraph.ts`.
+
+- `necessary` edge: a key is part of a multi-key sufficient clause (key -> sufficient_set).
+- `sufficient` edge: a key or sufficient_set is enough to satisfy a function clause.
+- `requires` edge: a condition depends on a function.
+- `unlocks` edge: a condition unlocks a key.
+
+For multi-key clauses, the graph emits synthetic `sufficient_set` nodes (`set.{functionId}.{index}`).
+
+When adding or editing function unlock logic:
+
+1. Update the sufficiency clauses in `unlockGraph.ts` (source of truth).
+2. Rebuild reports and verify `unlock-graph-report.json` and `unlock-graph-report.mmd`.
+3. Run `npm test`.
 
 ## Play (Local)
 

@@ -251,7 +251,7 @@ export const runPersistenceTests = (): void => {
       ...base.calculator,
       total: toNanCalculatorValue(),
       roll: [r(5n), toNanCalculatorValue()],
-      rollErrors: [{ rollIndex: 1, code: "n/0, ∴ NaN" as const, kind: "division_by_zero" as const }],
+      rollErrors: [{ rollIndex: 1, code: "n/0" as const, kind: "division_by_zero" as const }],
     },
   };
   repo.save(nanRoundTrip);

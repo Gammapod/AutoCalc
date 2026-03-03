@@ -12,12 +12,21 @@ const [{ unlockCatalog }, { initialState }, unlockGraphModule] = await Promise.a
   import(pathToFileURL(resolve(rootDir, "dist/src/domain/unlockGraph.js")).href),
 ]);
 
-const { buildUnlockGraphReport, deriveUnlockedKeysFromState, formatUnlockGraphReport, formatUnlockGraphMermaid } = unlockGraphModule;
+const {
+  buildUnlockGraphReport,
+  deriveUnlockedKeysFromState,
+  filterUnlockGraphToIncomingUnlockKeys,
+  formatUnlockGraphReport,
+  formatUnlockGraphMermaid,
+} = unlockGraphModule;
 
 const report = buildUnlockGraphReport(unlockCatalog, deriveUnlockedKeysFromState(initialState()), new Date());
 const markdown = formatUnlockGraphReport(report);
 const json = `${JSON.stringify(report, null, 2)}\n`;
 const mermaid = formatUnlockGraphMermaid(report.graph);
+const incomingUnlockOnlyMermaid = formatUnlockGraphMermaid(
+  filterUnlockGraphToIncomingUnlockKeys(report.graph, ["++"]),
+);
 
 const outDir = resolve(rootDir, "dist/reports");
 await mkdir(outDir, { recursive: true });
@@ -25,9 +34,11 @@ await Promise.all([
   writeFile(resolve(outDir, "unlock-graph-report.md"), markdown, "utf8"),
   writeFile(resolve(outDir, "unlock-graph-report.json"), json, "utf8"),
   writeFile(resolve(outDir, "unlock-graph-report.mmd"), mermaid, "utf8"),
+  writeFile(resolve(outDir, "unlock-graph-report.incoming-unlock-keys.mmd"), incomingUnlockOnlyMermaid, "utf8"),
 ]);
 
 console.log("Generated unlock graph reports:");
 console.log("- dist/reports/unlock-graph-report.md");
 console.log("- dist/reports/unlock-graph-report.json");
 console.log("- dist/reports/unlock-graph-report.mmd");
+console.log("- dist/reports/unlock-graph-report.incoming-unlock-keys.mmd");

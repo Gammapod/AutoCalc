@@ -62,7 +62,7 @@ export type CalculatorValue =
       kind: "nan";
     };
 
-export type ErrorCode = "x∉[-R,R] ∴ |x|=R×⌊x/R⌋" | "n/0, ∴ NaN" | "NaN, ∴ NaN";
+export type ErrorCode = "x∉[-R,R]" | "n/0" | "NaN";
 
 export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input";
 

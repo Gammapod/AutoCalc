@@ -30,7 +30,7 @@ export const runGraphDisplayTests = (): void => {
     "bigint graph values convert to number and may lose precision beyond safe range",
   );
 
-  const mixedWithNaN = buildGraphPoints([r(7n), { kind: "nan" }, r(8n)], [{ rollIndex: 2, code: "x∉[-R,R] ∴ |x|=R×⌊x/R⌋", kind: "overflow" }]);
+  const mixedWithNaN = buildGraphPoints([r(7n), { kind: "nan" }, r(8n)], [{ rollIndex: 2, code: "x∉[-R,R]", kind: "overflow" }]);
   assert.deepEqual(
     mixedWithNaN,
     [

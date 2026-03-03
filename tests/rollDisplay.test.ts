@@ -71,13 +71,13 @@ export const runRollDisplayTests = (): void => {
   const rollWithErrorAndRemainder = buildRollRows(
     ["10", "1"],
     remainderRows,
-    [{ rollIndex: 1, code: "n/0, ∴ NaN", kind: "division_by_zero" }],
+    [{ rollIndex: 1, code: "n/0", kind: "division_by_zero" }],
   );
   assert.deepEqual(
     rollWithErrorAndRemainder,
     [
       { prefix: "X =", value: "10", remainder: undefined, errorCode: undefined },
-      { prefix: "  =", value: "1", remainder: undefined, errorCode: "n/0, ∴ NaN" },
+      { prefix: "  =", value: "1", remainder: undefined, errorCode: "n/0" },
     ],
     "error code takes precedence over displayed remainder on the same roll row",
   );

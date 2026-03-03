@@ -338,7 +338,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     };
     const next = applyKeyAction(state, "=");
     assert.deepEqual(next.calculator.total, toNanCalculatorValue(), "division by zero should set total to NaN");
-    assert.equal(next.calculator.rollErrors.at(-1)?.code, "n/0, ∴ NaN", "division by zero should record error code");
+    assert.equal(next.calculator.rollErrors.at(-1)?.code, "n/0", "division by zero should record error code");
     return;
   }
 

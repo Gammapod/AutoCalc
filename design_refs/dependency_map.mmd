@@ -1,68 +1,82 @@
 flowchart TD
 
-subgraph Inputs ["Value Expression"]
-    Ineg["0-n"]
-    Ifrac["a/b"]
-    Iroot["√"]
-    subgraph Constants ["Constants"]
-        Iim["i"]
-        Ireal["π, e"]
-        Idigits["0-9"]
-    end
-end
-    
-subgraph Utilities ["Utilities"]
-    Uc["C"]
-    Uce["CE"]
+subgraph KeyFamilies["Key Families"]
+    KValue["Value keys\n0..9, NEG"]
+    KOps["Slot operators\n+, -, *, /, #, u27E1"]
+    KUtil["Utilities\nC, CE, UNDO, GRAPH, u23EF"]
+    KExec["Execution\n=, ++"]
 end
 
-subgraph Operations ["Operations"]
-    Oinc["++"]
-    Oplus["\+"]
-    Ominus["−"]
-    Omul["×"]
-    Odiv["÷"]
-    Opow["^"]
-    Oeudiv["#/⟡"]
-    Omod["⟡"]
-    Olog["log(n)"]
-    Oroot["^(1/n)"]
-
-    Oinc -->|Iterate| Oplus
-
-    Oplus -->|Invert| Ominus
-    Oplus -->|Iterate| Omul
-
-    Omul -->|Decompose| Oeudiv
-    Omul -->|Iterate| Opow
-    
-    Oeudiv -->|Generalize| Odiv
-    Oeudiv -->|Remainder| Omod
-
-    Opow -->|Invert| Oroot
-    Opow -->|Invert| Olog
+subgraph FunctionRules["Unlock Function Rules (sufficiency)"]
+    FExec["fn.execute_activation\n= OR ++"]
+    FStepPlus["fn.step_plus_one\n++ OR (= AND +)"]
+    FStepMinus["fn.step_minus_one\n(= AND -) OR (= AND + AND NEG)"]
+    FReset["fn.reset_to_zero\nC OR UNDO"]
+    FForm["fn.form_operator_plus_operand\nany slot operator"]
+    FRollGrowth["fn.roll_growth\n(= AND any operator) OR (= AND ++)"]
+    FRollEq["fn.roll_equal_run\n= AND one of +,-,*,/"]
+    FRollInc["fn.roll_incrementing_run\n= AND +"]
 end
 
-subgraph Expressable ["Expressable Values"]
-    NN["ℕ (1)"]
-    NZ["ℤ (-1)"]
-    NQ["ℚ (1/2)"]
-    NA["𝔸 (√2)"]
-    NR["ℝ (π)"]
-    NC["ℂ (√-1)"]
-
-    NN --> NZ --> NQ --> NA --> NR --> NC
+subgraph PredicateFamilies["Predicate Families"]
+    PTotal["total_equals / total_at_least"]
+    PRollContains["roll_contains_value"]
+    PRollEqRun["roll_ends_with_equal_run"]
+    PRollIncRun["roll_ends_with_incrementing_run"]
+    PPress["key_press_count_at_least"]
+    POverflow["overflow_error_seen"]
 end
 
-    
-Idigits --> NN
+subgraph Effects["Unlock Effects"]
+    EKey["unlock key\n(digit/operator/utility/execution)"]
+    EStorage["unlock_storage_drawer"]
+    EMove["move_key_to_coord"]
+    EKeypad["upgrade_keypad_row/column"]
+    EDigits["increase_max_total_digits"]
+    EAlloc["increase_allocator_max_points"]
+end
 
-Ineg --> NZ
-Ominus --> Ineg
-Odiv --> Ifrac
-Oroot --> Iroot
+KExec --> FExec
+KExec --> FStepPlus
+KExec --> FStepMinus
+KUtil --> FReset
+KOps --> FForm
+KExec --> FRollGrowth
+KOps --> FRollGrowth
+KExec --> FRollEq
+KOps --> FRollEq
+KExec --> FRollInc
+KOps --> FRollInc
+KValue --> FStepMinus
 
-Ifrac --> NQ
-Iroot --> NA
-Ireal --> NR
-Iim --> NC
+FStepPlus --> PTotal
+FExec --> PRollContains
+FForm --> PRollContains
+FExec --> PRollEqRun
+FRollEq --> PRollEqRun
+FExec --> PRollIncRun
+FRollInc --> PRollIncRun
+FStepPlus --> POverflow
+
+PTotal --> EKey
+PRollContains --> EKey
+PRollEqRun --> EKey
+PRollIncRun --> EKey
+PPress --> EKey
+POverflow --> EStorage
+
+PTotal --> EMove
+PRollContains --> EMove
+PRollEqRun --> EMove
+PRollIncRun --> EMove
+PPress --> EMove
+
+PTotal --> EDigits
+PTotal --> EAlloc
+PRollEqRun --> EKeypad
+PPress --> EKeypad
+
+EKey --> KeyFamilies
+EStorage --> KeyFamilies
+EMove --> KeyFamilies
+EKeypad --> KeyFamilies

@@ -6,6 +6,7 @@ import {
   buildUnlockGraph,
   buildUnlockGraphReport,
   deriveUnlockedKeysFromState,
+  filterUnlockGraphToIncomingUnlockKeys,
   formatUnlockGraphMermaid,
   formatUnlockGraphReport,
 } from "../src/domain/unlockGraph.js";
@@ -17,6 +18,8 @@ export const runUnlockGraphTests = (): void => {
   const conditionNodes = graph.nodes.filter((node) => node.type === "condition");
   const unlockEdges = graph.edges.filter((edge) => edge.type === "unlocks");
   const requireEdges = graph.edges.filter((edge) => edge.type === "requires");
+  const sufficientEdges = graph.edges.filter((edge) => edge.type === "sufficient");
+  const necessaryEdges = graph.edges.filter((edge) => edge.type === "necessary");
 
   assert.equal(
     conditionNodes.length,
@@ -25,6 +28,8 @@ export const runUnlockGraphTests = (): void => {
   );
   assert.ok(unlockEdges.length > 0, "expected unlock edges from conditions to keys");
   assert.ok(requireEdges.length > 0, "expected requirement edges from conditions to functions");
+  assert.ok(sufficientEdges.length > 0, "expected sufficient edges from keys or sufficient-set nodes");
+  assert.ok(necessaryEdges.length > 0, "expected necessary edges for multi-key sufficient sets");
 
   const analysis = analyzeUnlockGraph(unlockCatalog, startingKeys);
   assert.ok(
@@ -32,8 +37,8 @@ export const runUnlockGraphTests = (): void => {
     "analysis should reach the = key via overflow progression",
   );
   assert.ok(
-    analysis.unreachableKeys.includes("2"),
-    "analysis should include keys with no unlock path as unreachable",
+    analysis.unreachableKeys.includes("#"),
+    "analysis should include keys with no unlock path as unreachable under current sufficiency rules",
   );
 
   const report = buildUnlockGraphReport(unlockCatalog, startingKeys, new Date("2026-03-01T00:00:00.000Z"));
@@ -41,20 +46,31 @@ export const runUnlockGraphTests = (): void => {
   assert.match(formatted, /Unlock Graph Report/);
   assert.match(formatted, /Generated: 2026-03-01T00:00:00.000Z/);
   assert.match(formatted, /Graph Summary/);
+  assert.match(formatted, /sufficient_set=/);
+  assert.match(formatted, /Edges: necessary=/);
 
   const filteredMermaid = formatUnlockGraphMermaid({
     nodes: [
       { id: "key.A", type: "key", label: "A" },
+      { id: "key.B", type: "key", label: "B" },
+      { id: "set.fn.mid.0", type: "sufficient_set", label: "A & B" },
       { id: "fn.mid", type: "function", label: "mid" },
       { id: "cond.Z", type: "condition", label: "Z" },
     ],
     edges: [
-      { from: "key.A", to: "fn.mid", type: "contributes" },
-      { from: "fn.mid", to: "cond.Z", type: "requires" },
+      { from: "key.A", to: "set.fn.mid.0", type: "necessary" },
+      { from: "set.fn.mid.0", to: "fn.mid", type: "sufficient" },
+      { from: "cond.Z", to: "fn.mid", type: "requires" },
       { from: "key.A", to: "cond.Z", type: "unlocks" },
+      { from: "cond.Z", to: "key.B", type: "unlocks" },
     ],
   });
-  assert.doesNotMatch(filteredMermaid, /function: mid/);
+  assert.match(filteredMermaid, /sufficient_set: A & B/);
+  assert.match(filteredMermaid, /subgraph Keys/);
+  assert.match(filteredMermaid, /subgraph Functions/);
+  assert.match(filteredMermaid, /subgraph Conditions/);
+  assert.match(filteredMermaid, /-->\|necessary\|/);
+  assert.match(filteredMermaid, /-->\|sufficient\|/);
   assert.match(filteredMermaid, /-->\|unlocks\|/);
 
   const requirementMermaid = formatUnlockGraphMermaid({
@@ -64,11 +80,41 @@ export const runUnlockGraphTests = (): void => {
       { id: "cond.Z", type: "condition", label: "Z" },
     ],
     edges: [
-      { from: "key.A", to: "fn.main", type: "contributes" },
+      { from: "key.A", to: "fn.main", type: "sufficient" },
       { from: "cond.Z", to: "fn.main", type: "requires" },
       { from: "cond.Z", to: "key.A", type: "unlocks" },
     ],
   });
   assert.match(requirementMermaid, /-->\|requires\|/);
   assert.match(requirementMermaid, /-->\|required_for\|/);
+  assert.ok(
+    requirementMermaid.indexOf('["key: A"]') < requirementMermaid.indexOf('["function: main"]'),
+    "node ordering should place upstream keys before downstream functions",
+  );
+
+  const functionNodes = graph.nodes.filter((node) => node.type === "function");
+  for (const functionNode of functionNodes) {
+    const incomingSufficient = graph.edges.some((edge) => edge.type === "sufficient" && edge.to === functionNode.id);
+    assert.equal(incomingSufficient, true, `function ${functionNode.id} should have at least one sufficient incoming edge`);
+  }
+
+  const filteredGraph = filterUnlockGraphToIncomingUnlockKeys({
+    nodes: [
+      { id: "key.++", type: "key", label: "++" },
+      { id: "key.A", type: "key", label: "A" },
+      { id: "key.X", type: "key", label: "X" },
+      { id: "fn.keep", type: "function", label: "keep" },
+      { id: "fn.drop", type: "function", label: "drop" },
+      { id: "cond.keep", type: "condition", label: "keep" },
+    ],
+    edges: [
+      { from: "cond.keep", to: "key.A", type: "unlocks" },
+      { from: "cond.keep", to: "fn.keep", type: "requires" },
+      { from: "key.A", to: "fn.keep", type: "sufficient" },
+      { from: "key.X", to: "fn.drop", type: "sufficient" },
+    ],
+  });
+  assert.equal(filteredGraph.nodes.some((node) => node.id === "key.++"), true, "++ should remain as an explicit keep key");
+  assert.equal(filteredGraph.nodes.some((node) => node.id === "key.X"), false, "keys with no incoming unlock should be removed");
+  assert.equal(filteredGraph.nodes.some((node) => node.id === "fn.drop"), false, "downstream dependencies of removed keys should be removed");
 };

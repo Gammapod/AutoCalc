@@ -1,7 +1,7 @@
 import type { GameState, Key, UnlockDefinition } from "./types.js";
 
-export type GraphNodeType = "key" | "function" | "condition";
-export type GraphEdgeType = "contributes" | "requires" | "unlocks";
+export type GraphNodeType = "key" | "function" | "condition" | "sufficient_set";
+export type GraphEdgeType = "necessary" | "sufficient" | "requires" | "unlocks";
 
 export type GraphNode = {
   id: string;
@@ -24,10 +24,13 @@ export type UnlockGraph = {
 type FunctionRule = {
   id: string;
   label: string;
-  contributorKeys: Key[];
   rule: string;
+  sufficiency: FunctionSufficiencySpec;
   isSatisfied: (keys: Set<Key>) => boolean;
 };
+
+type SufficientClause = readonly Key[];
+type FunctionSufficiencySpec = readonly SufficientClause[];
 
 export type ConditionStatus = {
   unlockId: string;
@@ -54,76 +57,99 @@ export type UnlockGraphReport = {
 };
 
 const DIGIT_KEYS: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-const VALUE_KEYS: Key[] = [...DIGIT_KEYS, "NEG"];
 const OPERATOR_KEYS: Key[] = ["+", "-", "*", "/", "#", "\u27E1"];
 
+const compareKeys = (a: Key, b: Key): number => a.localeCompare(b);
+
+const normalizeClause = (clause: readonly Key[]): Key[] => [...new Set(clause)].sort(compareKeys);
+
+const normalizeSufficiency = (sufficiency: FunctionSufficiencySpec): Key[][] =>
+  [...new Map(
+    sufficiency
+      .map((clause) => normalizeClause(clause))
+      .filter((clause) => clause.length > 0)
+      .map((clause) => [clause.join("|"), clause]),
+  ).values()];
+
+const evaluateSufficiency = (keys: Set<Key>, sufficiency: FunctionSufficiencySpec): boolean =>
+  sufficiency.some((clause) => clause.every((key) => keys.has(key)));
+
+const collectContributorKeys = (sufficiency: FunctionSufficiencySpec): Key[] => {
+  const keys = new Set<Key>();
+  for (const clause of sufficiency) {
+    for (const key of clause) {
+      keys.add(key);
+    }
+  }
+  return [...keys].sort(compareKeys);
+};
+
+const defineFunctionRule = (input: Omit<FunctionRule, "isSatisfied" | "sufficiency"> & { sufficiency: FunctionSufficiencySpec }): FunctionRule => {
+  const normalizedSufficiency = normalizeSufficiency(input.sufficiency);
+  if (normalizedSufficiency.length === 0) {
+    throw new Error(`Function rule ${input.id} must define at least one non-empty sufficient clause`);
+  }
+  return {
+    ...input,
+    sufficiency: normalizedSufficiency,
+    isSatisfied: (keys) => evaluateSufficiency(keys, normalizedSufficiency),
+  };
+};
+
+const operatorClauses = (): Key[][] => OPERATOR_KEYS.map((operator) => [operator]);
+
 const staticFunctionRules: FunctionRule[] = [
-  {
+  defineFunctionRule({
     id: "fn.execute_activation",
     label: "execute_activation",
-    contributorKeys: ["=", "++", "\u23EF"],
     rule: "= or ++ is unlocked",
-    isSatisfied: (keys) => keys.has("=") || keys.has("++"),
-  },
-  {
+    sufficiency: [["="], ["++"]],
+  }),
+  defineFunctionRule({
     id: "fn.step_plus_one",
     label: "step_plus_one",
-    contributorKeys: ["++", "=", "+", "1"],
     rule: "++ is unlocked OR (= and + and 1 are unlocked)",
-    isSatisfied: (keys) => keys.has("++") || (keys.has("=") && keys.has("+") && keys.has("1")),
-  },
-  {
+    sufficiency: [["++"], ["=", "+"]],
+  }),
+  defineFunctionRule({
     id: "fn.step_minus_one",
     label: "step_minus_one",
-    contributorKeys: ["=", "-", "+", "NEG", "1"],
     rule: "(= and - and 1) OR (= and + and NEG and 1)",
-    isSatisfied: (keys) => (keys.has("=") && keys.has("-") && keys.has("1")) || (keys.has("=") && keys.has("+") && keys.has("NEG") && keys.has("1")),
-  },
-  {
+    sufficiency: [["=", "-"], ["=", "+", "NEG"]],
+  }),
+  defineFunctionRule({
     id: "fn.reset_to_zero",
     label: "reset_to_zero",
-    contributorKeys: ["C", "UNDO"],
     rule: "C or UNDO is unlocked",
-    isSatisfied: (keys) => keys.has("C") || keys.has("UNDO"),
-  },
-  {
+    sufficiency: [["C"], ["UNDO"]],
+  }),
+  defineFunctionRule({
     id: "fn.form_operator_plus_operand",
     label: "form_operator_plus_operand",
-    contributorKeys: [...OPERATOR_KEYS, ...VALUE_KEYS],
     rule: "at least one operator key and at least one value key are unlocked",
-    isSatisfied: (keys) => OPERATOR_KEYS.some((key) => keys.has(key)) && VALUE_KEYS.some((key) => keys.has(key)),
-  },
-  {
+    sufficiency: operatorClauses(),
+  }),
+  defineFunctionRule({
     id: "fn.roll_growth",
     label: "roll_growth",
-    contributorKeys: ["=", "++", "+", "-", "NEG", "1", ...OPERATOR_KEYS, ...VALUE_KEYS],
     rule: "execute activation and at least one growth-producing operation",
-    isSatisfied: (keys) =>
-      keys.has("=") &&
-      (OPERATOR_KEYS.some((key) => keys.has(key)) && VALUE_KEYS.some((key) => keys.has(key))
-        || keys.has("++")
-        || (keys.has("-") && keys.has("1"))
-        || (keys.has("+") && keys.has("NEG") && keys.has("1"))),
-  },
-  {
+    sufficiency: [
+      ["=", "++"],
+      ...operatorClauses().map((clause) => ["=", ...clause] as Key[]),
+    ],
+  }),
+  defineFunctionRule({
     id: "fn.roll_equal_run",
     label: "roll_equal_run",
-    contributorKeys: ["=", "+", "-", "*", "/", "0", "1"],
     rule: "= and one of (+ and 0), (- and 0), (* and 1), (/ and 1)",
-    isSatisfied: (keys) =>
-      keys.has("=") &&
-      ((keys.has("+") && keys.has("0"))
-        || (keys.has("-") && keys.has("0"))
-        || (keys.has("*") && keys.has("1"))
-        || (keys.has("/") && keys.has("1"))),
-  },
-  {
+    sufficiency: [["=", "+"], ["=", "-"], ["=", "*"], ["=", "/"]],
+  }),
+  defineFunctionRule({
     id: "fn.roll_incrementing_run",
     label: "roll_incrementing_run",
-    contributorKeys: ["=", "+", "1"],
     rule: "= and + and 1 are unlocked",
-    isSatisfied: (keys) => keys.has("=") && keys.has("+") && keys.has("1"),
-  },
+    sufficiency: [["=", "+"]],
+  }),
 ];
 
 const pressFunctionId = (key: Key): string => `fn.press_target_key.${key}`;
@@ -142,7 +168,7 @@ const allKnownKeys = (catalog: UnlockDefinition[], startingKeys: Key[]): Key[] =
     }
   }
   for (const fn of staticFunctionRules) {
-    for (const key of fn.contributorKeys) {
+    for (const key of collectContributorKeys(fn.sufficiency)) {
       keys.add(key);
     }
   }
@@ -189,13 +215,12 @@ const buildFunctionRules = (catalog: UnlockDefinition[]): Map<string, FunctionRu
       continue;
     }
     const key = unlock.predicate.key;
-    map.set(id, {
+    map.set(id, defineFunctionRule({
       id,
       label: `press_target_key(${key})`,
-      contributorKeys: [key],
       rule: `${key} is unlocked`,
-      isSatisfied: (keys) => keys.has(key),
-    });
+      sufficiency: [[key]],
+    }));
   }
   return map;
 };
@@ -214,6 +239,7 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
     type: "function",
     label: rule.label,
   }));
+  const sufficientSetNodes: GraphNode[] = [];
   const conditionNodes: GraphNode[] = catalog.map((unlock) => ({
     id: `cond.${unlock.id}`,
     type: "condition",
@@ -222,11 +248,32 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
 
   const edges: GraphEdge[] = [];
   for (const rule of functionRules.values()) {
-    for (const key of rule.contributorKeys) {
+    for (const [index, clause] of rule.sufficiency.entries()) {
+      if (clause.length === 1) {
+        edges.push({
+          from: `key.${clause[0]}`,
+          to: rule.id,
+          type: "sufficient",
+        });
+        continue;
+      }
+      const setNodeId = `set.${rule.id}.${index}`;
+      sufficientSetNodes.push({
+        id: setNodeId,
+        type: "sufficient_set",
+        label: clause.join(" & "),
+      });
+      for (const key of clause) {
+        edges.push({
+          from: `key.${key}`,
+          to: setNodeId,
+          type: "necessary",
+        });
+      }
       edges.push({
-        from: `key.${key}`,
+        from: setNodeId,
         to: rule.id,
-        type: "contributes",
+        type: "sufficient",
       });
     }
   }
@@ -254,12 +301,10 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
   }
 
   return {
-    nodes: [...keyNodes, ...functionNodes, ...conditionNodes],
+    nodes: [...keyNodes, ...functionNodes, ...sufficientSetNodes, ...conditionNodes],
     edges,
   };
 };
-
-const compareKeys = (a: Key, b: Key): number => a.localeCompare(b);
 
 const findKeyCycles = (edges: Array<[Key, Key]>, keys: Key[]): Key[][] => {
   const adjacency = new Map<Key, Key[]>();
@@ -372,7 +417,7 @@ export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Ke
       continue;
     }
     for (const functionId of requiredFunctionIdsForUnlock(unlock)) {
-      const providers = functionRules.get(functionId)?.contributorKeys ?? [];
+      const providers = collectContributorKeys(functionRules.get(functionId)?.sufficiency ?? []);
       for (const providerKey of providers) {
         keyDependencyEdges.push([providerKey, targetKey]);
       }
@@ -408,14 +453,14 @@ export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
       acc[node.type] += 1;
       return acc;
     },
-    { key: 0, function: 0, condition: 0 },
+    { key: 0, function: 0, condition: 0, sufficient_set: 0 },
   );
   const edgeCounts = report.graph.edges.reduce(
     (acc, edge) => {
       acc[edge.type] += 1;
       return acc;
     },
-    { contributes: 0, requires: 0, unlocks: 0 },
+    { necessary: 0, sufficient: 0, requires: 0, unlocks: 0 },
   );
   const reachable = report.analysis.conditionStatuses.filter((status) => status.reachable);
   const blocked = report.analysis.conditionStatuses.filter((status) => !status.reachable);
@@ -429,8 +474,8 @@ export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
     `Generated: ${report.generatedAtIso}`,
     "",
     "Graph Summary",
-    `- Nodes: key=${nodeCounts.key}, function=${nodeCounts.function}, condition=${nodeCounts.condition}`,
-    `- Edges: contributes=${edgeCounts.contributes}, requires=${edgeCounts.requires}, unlocks=${edgeCounts.unlocks}`,
+    `- Nodes: key=${nodeCounts.key}, function=${nodeCounts.function}, condition=${nodeCounts.condition}, sufficient_set=${nodeCounts.sufficient_set}`,
+    `- Edges: necessary=${edgeCounts.necessary}, sufficient=${edgeCounts.sufficient}, requires=${edgeCounts.requires}, unlocks=${edgeCounts.unlocks}`,
     "",
     "Progression Summary",
     `- Starting keys: ${report.analysis.startingKeys.join(", ") || "(none)"}`,
@@ -453,6 +498,120 @@ export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
 
 const escapeMermaidLabel = (value: string): string => value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
+const buildMermaidNodeOrder = (graph: UnlockGraph): Map<string, number> => {
+  const nodeIds = graph.nodes.map((node) => node.id);
+  const adjacency = new Map<string, string[]>();
+  for (const nodeId of nodeIds) {
+    adjacency.set(nodeId, []);
+  }
+  for (const edge of graph.edges) {
+    if (adjacency.has(edge.from) && adjacency.has(edge.to)) {
+      adjacency.get(edge.from)?.push(edge.to);
+    }
+  }
+
+  let index = 0;
+  const stack: string[] = [];
+  const onStack = new Set<string>();
+  const indices = new Map<string, number>();
+  const lowlink = new Map<string, number>();
+  const components: string[][] = [];
+
+  const strongConnect = (nodeId: string): void => {
+    indices.set(nodeId, index);
+    lowlink.set(nodeId, index);
+    index += 1;
+    stack.push(nodeId);
+    onStack.add(nodeId);
+
+    for (const next of adjacency.get(nodeId) ?? []) {
+      if (!indices.has(next)) {
+        strongConnect(next);
+        lowlink.set(nodeId, Math.min(lowlink.get(nodeId) ?? Number.MAX_SAFE_INTEGER, lowlink.get(next) ?? Number.MAX_SAFE_INTEGER));
+      } else if (onStack.has(next)) {
+        lowlink.set(nodeId, Math.min(lowlink.get(nodeId) ?? Number.MAX_SAFE_INTEGER, indices.get(next) ?? Number.MAX_SAFE_INTEGER));
+      }
+    }
+
+    if ((lowlink.get(nodeId) ?? -1) !== (indices.get(nodeId) ?? -1)) {
+      return;
+    }
+
+    const component: string[] = [];
+    while (stack.length > 0) {
+      const top = stack.pop() as string;
+      onStack.delete(top);
+      component.push(top);
+      if (top === nodeId) {
+        break;
+      }
+    }
+    component.sort();
+    components.push(component);
+  };
+
+  for (const nodeId of [...nodeIds].sort()) {
+    if (!indices.has(nodeId)) {
+      strongConnect(nodeId);
+    }
+  }
+
+  const componentIndexByNode = new Map<string, number>();
+  components.forEach((component, componentIndex) => {
+    component.forEach((nodeId) => componentIndexByNode.set(nodeId, componentIndex));
+  });
+
+  const componentEdges = new Map<number, Set<number>>();
+  const componentIndegrees = new Map<number, number>();
+  components.forEach((_, componentIndex) => {
+    componentEdges.set(componentIndex, new Set<number>());
+    componentIndegrees.set(componentIndex, 0);
+  });
+  for (const edge of graph.edges) {
+    const fromComponent = componentIndexByNode.get(edge.from);
+    const toComponent = componentIndexByNode.get(edge.to);
+    if (fromComponent == null || toComponent == null || fromComponent === toComponent) {
+      continue;
+    }
+    const targets = componentEdges.get(fromComponent) as Set<number>;
+    if (!targets.has(toComponent)) {
+      targets.add(toComponent);
+      componentIndegrees.set(toComponent, (componentIndegrees.get(toComponent) ?? 0) + 1);
+    }
+  }
+
+  const componentQueue = [...components.keys()].filter((componentIndex) => (componentIndegrees.get(componentIndex) ?? 0) === 0).sort((a, b) => a - b);
+  const componentOrder: number[] = [];
+  while (componentQueue.length > 0) {
+    const current = componentQueue.shift() as number;
+    componentOrder.push(current);
+    const nextComponents = [...(componentEdges.get(current) ?? new Set<number>())].sort((a, b) => a - b);
+    for (const next of nextComponents) {
+      const nextIndegree = (componentIndegrees.get(next) ?? 0) - 1;
+      componentIndegrees.set(next, nextIndegree);
+      if (nextIndegree === 0) {
+        componentQueue.push(next);
+        componentQueue.sort((a, b) => a - b);
+      }
+    }
+  }
+  for (const componentIndex of components.keys()) {
+    if (!componentOrder.includes(componentIndex)) {
+      componentOrder.push(componentIndex);
+    }
+  }
+
+  const componentRank = new Map<number, number>();
+  componentOrder.forEach((componentIndex, orderIndex) => componentRank.set(componentIndex, orderIndex));
+  const rankByNode = new Map<string, number>();
+  for (const nodeId of nodeIds) {
+    const componentIndex = componentIndexByNode.get(nodeId) as number;
+    rankByNode.set(nodeId, componentRank.get(componentIndex) ?? 0);
+  }
+
+  return rankByNode;
+};
+
 export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
   const incomingCounts = new Map<string, number>();
   const outgoingCounts = new Map<string, number>();
@@ -466,24 +625,63 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
   }
 
   const includedNodes = graph.nodes.filter((node) => {
+    if (node.type === "sufficient_set") {
+      return true;
+    }
     const fromCount = outgoingCounts.get(node.id) ?? 0;
     const toCount = incomingCounts.get(node.id) ?? 0;
     return !(fromCount === 1 && toCount === 1);
   });
   const includedNodeIds = new Set(includedNodes.map((node) => node.id));
-  const nodeAliasById = new Map(includedNodes.map((node, index) => [node.id, `n${index}`]));
+  const nodeOrder = buildMermaidNodeOrder({
+    nodes: includedNodes,
+    edges: graph.edges.filter((edge) => includedNodeIds.has(edge.from) && includedNodeIds.has(edge.to)),
+  });
+
+  const sortNodes = (nodes: GraphNode[]): GraphNode[] =>
+    [...nodes].sort((a, b) =>
+      (nodeOrder.get(a.id) ?? 0) - (nodeOrder.get(b.id) ?? 0)
+      || a.label.localeCompare(b.label)
+      || a.id.localeCompare(b.id),
+    );
+
+  const orderedNodes = sortNodes(includedNodes);
+  const nodeAliasById = new Map(orderedNodes.map((node, index) => [node.id, `n${index}`]));
 
   const lines: string[] = ["graph TD"];
-  for (const node of includedNodes) {
-    const alias = nodeAliasById.get(node.id) as string;
-    const label = escapeMermaidLabel(`${node.type}: ${node.label}`);
-    lines.push(`  ${alias}["${label}"]`);
+  const keyNodes = sortNodes(orderedNodes.filter((node) => node.type === "key"));
+  const functionNodes = sortNodes(orderedNodes.filter((node) => node.type === "function"));
+  const conditionNodes = sortNodes(orderedNodes.filter((node) => node.type === "condition"));
+  const sufficientSetNodes = sortNodes(orderedNodes.filter((node) => node.type === "sufficient_set"));
+
+  const appendNodeSubgraph = (title: string, nodes: GraphNode[]): void => {
+    lines.push(`  subgraph ${title}`);
+    for (const node of nodes) {
+      const alias = nodeAliasById.get(node.id) as string;
+      const label = escapeMermaidLabel(`${node.type}: ${node.label}`);
+      lines.push(`    ${alias}["${label}"]`);
+    }
+    lines.push("  end");
+  };
+
+  appendNodeSubgraph("Keys", keyNodes);
+  appendNodeSubgraph("Functions", functionNodes);
+  appendNodeSubgraph("Conditions", conditionNodes);
+  if (sufficientSetNodes.length > 0) {
+    appendNodeSubgraph("SufficientSets", sufficientSetNodes);
   }
 
-  for (const edge of graph.edges) {
-    if (!includedNodeIds.has(edge.from) || !includedNodeIds.has(edge.to)) {
-      continue;
-    }
+  const orderedEdges = [...graph.edges]
+    .filter((edge) => includedNodeIds.has(edge.from) && includedNodeIds.has(edge.to))
+    .sort((a, b) =>
+      (nodeOrder.get(a.from) ?? 0) - (nodeOrder.get(b.from) ?? 0)
+      || (nodeOrder.get(a.to) ?? 0) - (nodeOrder.get(b.to) ?? 0)
+      || a.type.localeCompare(b.type)
+      || a.from.localeCompare(b.from)
+      || a.to.localeCompare(b.to),
+    );
+
+  for (const edge of orderedEdges) {
     const fromAlias = nodeAliasById.get(edge.from) as string;
     const toAlias = nodeAliasById.get(edge.to) as string;
     lines.push(`  ${fromAlias} -->|${edge.type}| ${toAlias}`);
@@ -491,11 +689,8 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
 
   // Mirror requirement links so the graph can be read from function -> condition as well.
   const mirroredRequirementLines = new Set<string>();
-  for (const edge of graph.edges) {
+  for (const edge of orderedEdges) {
     if (edge.type !== "requires") {
-      continue;
-    }
-    if (!includedNodeIds.has(edge.from) || !includedNodeIds.has(edge.to)) {
       continue;
     }
     const conditionAlias = nodeAliasById.get(edge.from) as string;
@@ -507,6 +702,65 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
   }
 
   return `${lines.join("\n")}\n`;
+};
+
+export const filterUnlockGraphToIncomingUnlockKeys = (
+  graph: UnlockGraph,
+  alwaysIncludeKeys: Key[] = ["++"],
+): UnlockGraph => {
+  const alwaysInclude = new Set(alwaysIncludeKeys);
+  const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const outgoingEdges = new Map<string, GraphEdge[]>();
+  for (const edge of graph.edges) {
+    const list = outgoingEdges.get(edge.from);
+    if (list) {
+      list.push(edge);
+    } else {
+      outgoingEdges.set(edge.from, [edge]);
+    }
+  }
+
+  const incomingUnlockKeyNodeIds = new Set(
+    graph.edges
+      .filter((edge) => edge.type === "unlocks")
+      .map((edge) => edge.to),
+  );
+
+  const seedNodeIds = new Set<string>();
+  for (const node of graph.nodes) {
+    if (node.type !== "key") {
+      continue;
+    }
+    if (alwaysInclude.has(node.label as Key) || incomingUnlockKeyNodeIds.has(node.id)) {
+      seedNodeIds.add(node.id);
+    }
+  }
+
+  for (const edge of graph.edges) {
+    if (edge.type === "unlocks" && seedNodeIds.has(edge.to)) {
+      seedNodeIds.add(edge.from);
+    }
+  }
+
+  const includedNodeIds = new Set<string>();
+  const queue = [...seedNodeIds];
+  while (queue.length > 0) {
+    const nodeId = queue.shift() as string;
+    if (includedNodeIds.has(nodeId) || !nodesById.has(nodeId)) {
+      continue;
+    }
+    includedNodeIds.add(nodeId);
+    for (const edge of outgoingEdges.get(nodeId) ?? []) {
+      if (!includedNodeIds.has(edge.to)) {
+        queue.push(edge.to);
+      }
+    }
+  }
+
+  return {
+    nodes: graph.nodes.filter((node) => includedNodeIds.has(node.id)),
+    edges: graph.edges.filter((edge) => includedNodeIds.has(edge.from) && includedNodeIds.has(edge.to)),
+  };
 };
 
 export const deriveUnlockedKeysFromState = (state: GameState): Key[] => {
