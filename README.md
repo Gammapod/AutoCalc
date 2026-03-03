@@ -20,6 +20,7 @@ Build also generates progression graph reports:
 
 - `dist/reports/unlock-graph-report.md`
 - `dist/reports/unlock-graph-report.json`
+- `dist/reports/unlock-graph-report.mmd`
 
 ## Play (Local)
 

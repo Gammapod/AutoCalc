@@ -451,6 +451,64 @@ export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
   return lines.join("\n");
 };
 
+const escapeMermaidLabel = (value: string): string => value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
+export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
+  const incomingCounts = new Map<string, number>();
+  const outgoingCounts = new Map<string, number>();
+  for (const node of graph.nodes) {
+    incomingCounts.set(node.id, 0);
+    outgoingCounts.set(node.id, 0);
+  }
+  for (const edge of graph.edges) {
+    outgoingCounts.set(edge.from, (outgoingCounts.get(edge.from) ?? 0) + 1);
+    incomingCounts.set(edge.to, (incomingCounts.get(edge.to) ?? 0) + 1);
+  }
+
+  const includedNodes = graph.nodes.filter((node) => {
+    const fromCount = outgoingCounts.get(node.id) ?? 0;
+    const toCount = incomingCounts.get(node.id) ?? 0;
+    return !(fromCount === 1 && toCount === 1);
+  });
+  const includedNodeIds = new Set(includedNodes.map((node) => node.id));
+  const nodeAliasById = new Map(includedNodes.map((node, index) => [node.id, `n${index}`]));
+
+  const lines: string[] = ["graph TD"];
+  for (const node of includedNodes) {
+    const alias = nodeAliasById.get(node.id) as string;
+    const label = escapeMermaidLabel(`${node.type}: ${node.label}`);
+    lines.push(`  ${alias}["${label}"]`);
+  }
+
+  for (const edge of graph.edges) {
+    if (!includedNodeIds.has(edge.from) || !includedNodeIds.has(edge.to)) {
+      continue;
+    }
+    const fromAlias = nodeAliasById.get(edge.from) as string;
+    const toAlias = nodeAliasById.get(edge.to) as string;
+    lines.push(`  ${fromAlias} -->|${edge.type}| ${toAlias}`);
+  }
+
+  // Mirror requirement links so the graph can be read from function -> condition as well.
+  const mirroredRequirementLines = new Set<string>();
+  for (const edge of graph.edges) {
+    if (edge.type !== "requires") {
+      continue;
+    }
+    if (!includedNodeIds.has(edge.from) || !includedNodeIds.has(edge.to)) {
+      continue;
+    }
+    const conditionAlias = nodeAliasById.get(edge.from) as string;
+    const functionAlias = nodeAliasById.get(edge.to) as string;
+    mirroredRequirementLines.add(`  ${functionAlias} -->|required_for| ${conditionAlias}`);
+  }
+  for (const line of mirroredRequirementLines) {
+    lines.push(line);
+  }
+
+  return `${lines.join("\n")}\n`;
+};
+
 export const deriveUnlockedKeysFromState = (state: GameState): Key[] => {
   const keys: Key[] = [];
   for (const [key, unlocked] of Object.entries(state.unlocks.valueExpression)) {

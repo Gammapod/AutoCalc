@@ -1234,6 +1234,8 @@
 
       .v2-middle-drawer-viewport,
       .v2-bottom-drawer-viewport {
+        --drawer-peek: 16px;
+        --drawer-gap: 8px;
         width: 100%;
         overflow: hidden;
         border-radius: 14px;
@@ -1241,17 +1243,18 @@
 
       .v2-middle-drawer-track,
       .v2-bottom-drawer-track {
-        width: 200%;
+        width: max-content;
         display: flex;
+        gap: var(--drawer-gap);
         align-items: stretch;
         will-change: transform;
       }
 
       .v2-middle-drawer-panel,
       .v2-bottom-drawer-panel {
-        width: 50%;
+        flex: 0 0 calc(100% - (var(--drawer-peek) * 2));
+        width: calc(100% - (var(--drawer-peek) * 2));
         min-width: 0;
-        padding-right: 4px;
       }
 
       .v2-middle-drawer-panel .device,

@@ -243,8 +243,26 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     refs.track.style.transform = `translate3d(0, ${translateY.toString()}px, 0)`;
   };
 
+  const getDrawerStride = (firstPanel: HTMLElement, secondPanel: HTMLElement): number => {
+    const firstRect = firstPanel.getBoundingClientRect();
+    const secondRect = secondPanel.getBoundingClientRect();
+    const measured = Math.abs(secondRect.left - firstRect.left);
+    if (measured > 0) {
+      return measured;
+    }
+    return Math.max(1, firstPanel.clientWidth);
+  };
+
+  const getDrawerLeadInset = (viewport: HTMLElement, panel: HTMLElement): number =>
+    Math.max(0, (viewport.clientWidth - panel.clientWidth) / 2);
+
   const getMiddleDrawerOffset = (refs: ShellRefs): number =>
-    controller.runtime.activeMiddlePanelId === "checklist" ? refs.middleDrawerViewport.clientWidth : 0;
+    (() => {
+      const activeIndex = controller.runtime.activeMiddlePanelId === "checklist" ? 1 : 0;
+      const stride = getDrawerStride(refs.middleDrawerPanelCalculator, refs.middleDrawerPanelChecklist);
+      const inset = getDrawerLeadInset(refs.middleDrawerViewport, refs.middleDrawerPanelCalculator);
+      return activeIndex * stride - inset;
+    })();
 
   const applyMiddleDrawerTransform = (refs: ShellRefs, includeTransition: boolean): void => {
     const activeDeltaX = drawerDragActive && drawerDragTarget === "middle" ? drawerDragDeltaX : 0;
@@ -263,7 +281,12 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   };
 
   const getBottomDrawerOffset = (refs: ShellRefs): number =>
-    controller.runtime.activeBottomPanelId === "allocator" ? refs.bottomDrawerViewport.clientWidth : 0;
+    (() => {
+      const activeIndex = controller.runtime.activeBottomPanelId === "allocator" ? 1 : 0;
+      const stride = getDrawerStride(refs.bottomDrawerPanelStorage, refs.bottomDrawerPanelAllocator);
+      const inset = getDrawerLeadInset(refs.bottomDrawerViewport, refs.bottomDrawerPanelStorage);
+      return activeIndex * stride - inset;
+    })();
 
   const applyBottomDrawerTransform = (refs: ShellRefs, includeTransition: boolean): void => {
     const activeDeltaX = drawerDragActive && drawerDragTarget === "bottom" ? drawerDragDeltaX : 0;
