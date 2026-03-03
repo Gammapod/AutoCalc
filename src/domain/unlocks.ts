@@ -131,6 +131,15 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
       },
     };
   }
+  if (effect.type === "increase_allocator_max_points") {
+    return {
+      ...state,
+      allocator: {
+        ...state.allocator,
+        maxPoints: state.allocator.maxPoints + effect.amount,
+      },
+    };
+  }
   if (effect.type === "unlock_slot_operator") {
     return {
       ...state,

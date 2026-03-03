@@ -204,6 +204,11 @@ export type IncreaseMaxTotalDigitsEffect = {
   amount: number;
 };
 
+export type IncreaseAllocatorMaxPointsEffect = {
+  type: "increase_allocator_max_points";
+  amount: number;
+};
+
 export type UnlockSlotOperatorEffect = {
   type: "unlock_slot_operator";
   key: SlotOperator;
@@ -246,6 +251,7 @@ export type MoveKeyToCoordEffect = {
 export type UnlockEffect =
   | UnlockUtilityEffect
   | IncreaseMaxTotalDigitsEffect
+  | IncreaseAllocatorMaxPointsEffect
   | UnlockSlotOperatorEffect
   | UnlockExecutionEffect
   | UnlockDigitEffect

@@ -75,11 +75,21 @@ export const runUnlocksDisplayTests = (): void => {
       targetNodeId: "Ut_max_total_digits_plus_1",
       targetLabel: "max total digits +1",
     },
+    {
+      id: "u_max_points",
+      description: "allocator points cap",
+      predicate: { type: "total_equals", value: 1n },
+      effect: { type: "increase_allocator_max_points", amount: 1 },
+      once: true,
+      domainNodeId: "NN",
+      targetNodeId: "Ualloc_max_points_plus_1",
+      targetLabel: "max points +1",
+    },
   ];
   const mappedRows = buildUnlockRows(base, effectMappingCatalog);
   assert.deepEqual(
     mappedRows.map((row) => row.name),
-    ["4", "+", "=", "×", "C", "maxTotalDigits"],
+    ["4", "+", "=", "×", "C", "maxTotalDigits", "maxPoints"],
     "row names map from unlock effect keys/variables",
   );
 

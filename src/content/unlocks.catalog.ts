@@ -81,6 +81,16 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetLabel: "UNDO",
   },
   {
+    id: "unlock_allocator_point_on_total_at_least_9",
+    description: "Increase max allocator points by 1 when total reaches at least 9.",
+    predicate: { type: "total_at_least", value: 9n },
+    effect: { type: "increase_allocator_max_points", amount: 1 },
+    once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Alloc_maxPoints_plus_1_on_total_9",
+    targetLabel: "λ++",
+  },
+  {
     id: "unlock_0_on_roll_contains_0",
     description: "Unlock 0 when the roll contains 0.",
     predicate: { type: "roll_contains_value", value: 0n },

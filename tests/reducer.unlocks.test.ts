@@ -31,6 +31,25 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(totalGateState.calculator.total.kind === "rational" ? totalGateState.calculator.total.value.num : null, 40n, "sanity check: total reaches 40");
   assert.equal(totalGateState.unlocks.valueExpression["4"], true, "digit 4 unlocks at total >= 40");
 
+  let allocatorPointGateState = initialState();
+  const allocatorPointsBefore = allocatorPointGateState.allocator.maxPoints;
+  for (let i = 0; i < 9; i += 1) {
+    allocatorPointGateState = press(allocatorPointGateState, "++");
+  }
+  assert.equal(
+    allocatorPointGateState.allocator.maxPoints,
+    allocatorPointsBefore + 1,
+    "maxPoints increases by 1 when total reaches at least 9",
+  );
+  for (let i = 0; i < 5; i += 1) {
+    allocatorPointGateState = press(allocatorPointGateState, "++");
+  }
+  assert.equal(
+    allocatorPointGateState.allocator.maxPoints,
+    allocatorPointsBefore + 1,
+    "allocator maxPoints unlock applies once",
+  );
+
   const undoBeforePress = press(initialState(), "UNDO");
   assert.equal(undoBeforePress.unlocks.slotOperators["-"], false, "- remains locked before UNDO is unlocked");
 

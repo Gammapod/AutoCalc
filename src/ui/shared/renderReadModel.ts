@@ -172,6 +172,9 @@ const getUnlockName = (effect: UnlockEffect): string => {
   if (effect.type === "increase_max_total_digits") {
     return "maxTotalDigits";
   }
+  if (effect.type === "increase_allocator_max_points") {
+    return "maxPoints";
+  }
   if (effect.type === "unlock_storage_drawer") {
     return "storage";
   }
