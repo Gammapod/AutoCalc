@@ -2,7 +2,7 @@ import { GRAPH_VISIBLE_FLAG } from "../../src/domain/state.js";
 import type { GameState } from "../../src/domain/types.js";
 
 export type SnapId = "top" | "middle" | "bottom";
-export type MenuModuleId = "allocator" | "checklist";
+export type MenuModuleId = "checklist";
 
 export type ShellViewModel = {
   availableSnaps: SnapId[];
@@ -29,7 +29,7 @@ export const buildShellViewModel = (state: GameState): ShellViewModel => {
   return {
     availableSnaps,
     defaultSnap: "middle",
-    menuModules: ["allocator", "checklist"],
+    menuModules: ["checklist"],
   };
 };
 

@@ -9,7 +9,14 @@ export {
   shouldCloseMenuFromSwipe,
 } from "./shellRender.js";
 export { buildShellViewModel } from "./shellModel.js";
-export { createShellController, resolveSnapFromDrag, clampSnapToAvailable, getAdjacentSnap } from "./shellController.js";
+export {
+  createShellController,
+  resolveSnapFromDrag,
+  resolveBottomPanelFromDrag,
+  resolveMiddlePanelFromDrag,
+  clampSnapToAvailable,
+  getAdjacentSnap,
+} from "./shellController.js";
 export { createTouchRearrangeController } from "./touchRearrangeController.js";
 export { renderChecklistV2Module } from "./modules/checklistRenderer.js";
 export { renderAllocatorV2Module } from "./modules/allocatorRenderer.js";

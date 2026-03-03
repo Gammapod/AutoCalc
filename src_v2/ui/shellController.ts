@@ -2,6 +2,8 @@ import { buildShellViewModel, isSnapAvailable, snapOrder, type MenuModuleId, typ
 import type { GameState } from "../../src/domain/types.js";
 
 type AxisLock = "none" | "x" | "y";
+export type BottomDrawerPanelId = "storage" | "allocator";
+export type MiddleDrawerPanelId = "calculator" | "checklist";
 
 export type GestureSession = {
   active: boolean;
@@ -17,6 +19,8 @@ export type ShellRuntimeState = {
   activeSnapId: SnapId;
   menuOpen: boolean;
   menuActiveModule: MenuModuleId;
+  activeMiddlePanelId: MiddleDrawerPanelId;
+  activeBottomPanelId: BottomDrawerPanelId;
   gesture: GestureSession;
 };
 
@@ -82,10 +86,54 @@ export const resolveSnapFromDrag = (
   return activeSnapId;
 };
 
+export const resolveBottomPanelFromDrag = (
+  activePanelId: BottomDrawerPanelId,
+  dragDeltaX: number,
+  velocityX: number,
+): BottomDrawerPanelId => {
+  const PANEL_DISTANCE_THRESHOLD_PX = 72;
+  const PANEL_VELOCITY_THRESHOLD_PX_PER_MS = 0.55;
+  const shouldMoveLeft =
+    dragDeltaX <= -PANEL_DISTANCE_THRESHOLD_PX || velocityX <= -PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
+  const shouldMoveRight =
+    dragDeltaX >= PANEL_DISTANCE_THRESHOLD_PX || velocityX >= PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
+
+  if (activePanelId === "storage" && shouldMoveLeft) {
+    return "allocator";
+  }
+  if (activePanelId === "allocator" && shouldMoveRight) {
+    return "storage";
+  }
+  return activePanelId;
+};
+
+export const resolveMiddlePanelFromDrag = (
+  activePanelId: MiddleDrawerPanelId,
+  dragDeltaX: number,
+  velocityX: number,
+): MiddleDrawerPanelId => {
+  const PANEL_DISTANCE_THRESHOLD_PX = 72;
+  const PANEL_VELOCITY_THRESHOLD_PX_PER_MS = 0.55;
+  const shouldMoveLeft =
+    dragDeltaX <= -PANEL_DISTANCE_THRESHOLD_PX || velocityX <= -PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
+  const shouldMoveRight =
+    dragDeltaX >= PANEL_DISTANCE_THRESHOLD_PX || velocityX >= PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
+
+  if (activePanelId === "calculator" && shouldMoveLeft) {
+    return "checklist";
+  }
+  if (activePanelId === "checklist" && shouldMoveRight) {
+    return "calculator";
+  }
+  return activePanelId;
+};
+
 export const createInitialShellRuntimeState = (): ShellRuntimeState => ({
   activeSnapId: "middle",
   menuOpen: false,
-  menuActiveModule: "allocator",
+  menuActiveModule: "checklist",
+  activeMiddlePanelId: "calculator",
+  activeBottomPanelId: "storage",
   gesture: {
     active: false,
     axisLock: "none",
@@ -104,7 +152,7 @@ export const createShellController = (initial: ShellRuntimeState = createInitial
     const model = buildShellViewModel(state);
     runtime.activeSnapId = clampSnapToAvailable(runtime.activeSnapId, model);
     if (!model.menuModules.includes(runtime.menuActiveModule)) {
-      runtime.menuActiveModule = model.menuModules[0] ?? "allocator";
+      runtime.menuActiveModule = model.menuModules[0] ?? "checklist";
     }
     return model;
   };
@@ -141,6 +189,26 @@ export const createShellController = (initial: ShellRuntimeState = createInitial
     return runtime.menuActiveModule;
   };
 
+  const setBottomPanel = (panelId: BottomDrawerPanelId): BottomDrawerPanelId => {
+    runtime.activeBottomPanelId = panelId;
+    return runtime.activeBottomPanelId;
+  };
+
+  const settleBottomPanelFromDrag = (dragDeltaX: number, velocityX: number): BottomDrawerPanelId => {
+    runtime.activeBottomPanelId = resolveBottomPanelFromDrag(runtime.activeBottomPanelId, dragDeltaX, velocityX);
+    return runtime.activeBottomPanelId;
+  };
+
+  const setMiddlePanel = (panelId: MiddleDrawerPanelId): MiddleDrawerPanelId => {
+    runtime.activeMiddlePanelId = panelId;
+    return runtime.activeMiddlePanelId;
+  };
+
+  const settleMiddlePanelFromDrag = (dragDeltaX: number, velocityX: number): MiddleDrawerPanelId => {
+    runtime.activeMiddlePanelId = resolveMiddlePanelFromDrag(runtime.activeMiddlePanelId, dragDeltaX, velocityX);
+    return runtime.activeMiddlePanelId;
+  };
+
   const canSnapUp = (model: ShellViewModel): boolean => getAdjacentSnap(runtime.activeSnapId, model, "up") !== null;
 
   const canSnapDown = (model: ShellViewModel): boolean => getAdjacentSnap(runtime.activeSnapId, model, "down") !== null;
@@ -156,6 +224,10 @@ export const createShellController = (initial: ShellRuntimeState = createInitial
     setMenuOpen,
     toggleMenu,
     setMenuModule,
+    setMiddlePanel,
+    settleMiddlePanelFromDrag,
+    setBottomPanel,
+    settleBottomPanelFromDrag,
     canSnapUp,
     canSnapDown,
     isSnapAvailableForCurrentState,

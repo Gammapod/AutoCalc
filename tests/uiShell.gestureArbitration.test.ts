@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { initialState, GRAPH_VISIBLE_FLAG } from "../src/domain/state.js";
-import { buildShellViewModel, createShellController, resolveSnapFromDrag } from "../src_v2/ui/renderAdapter.js";
+import {
+  buildShellViewModel,
+  createShellController,
+  resolveBottomPanelFromDrag,
+  resolveMiddlePanelFromDrag,
+  resolveSnapFromDrag,
+} from "../src_v2/ui/renderAdapter.js";
 import type { GameState } from "../src/domain/types.js";
 
 export const runUiShellGestureArbitrationTests = (): void => {
@@ -38,5 +44,19 @@ export const runUiShellGestureArbitrationTests = (): void => {
   assert.equal(controller.runtime.activeSnapId, "bottom", "repeated downward settle reaches bottom");
   controller.settleFromDrag(model, 200, 0);
   assert.equal(controller.runtime.activeSnapId, "bottom", "cannot move below bottom snap");
+
+  assert.equal(resolveBottomPanelFromDrag("storage", -100, 0), "allocator", "left swipe from storage reveals allocator panel");
+  assert.equal(resolveBottomPanelFromDrag("allocator", 100, 0), "storage", "right swipe from allocator returns to storage panel");
+  assert.equal(resolveBottomPanelFromDrag("storage", 30, 0), "storage", "short or opposite swipe keeps active storage panel");
+  assert.equal(
+    resolveMiddlePanelFromDrag("calculator", -100, 0),
+    "checklist",
+    "left swipe from calculator reveals checklist panel",
+  );
+  assert.equal(
+    resolveMiddlePanelFromDrag("checklist", 100, 0),
+    "calculator",
+    "right swipe from checklist returns to calculator panel",
+  );
 };
 

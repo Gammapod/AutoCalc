@@ -1,6 +1,6 @@
 import type { Action, GameState, Key, LayoutSurface } from "../../src/domain/types.js";
 import { createShellController } from "./shellController.js";
-import type { MenuModuleId, SnapId } from "./shellModel.js";
+import type { SnapId } from "./shellModel.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "./touchRearrangeController.js";
 import { renderChecklistV2Module } from "./modules/checklistRenderer.js";
 import { clearGrapherV2Module, renderGrapherV2Module } from "./modules/grapherRenderer.js";
@@ -21,13 +21,19 @@ type ShellRefs = {
   sectionGrapher: HTMLElement;
   sectionCalc: HTMLElement;
   sectionStorage: HTMLElement;
+  middleDrawerViewport: HTMLElement;
+  middleDrawerTrack: HTMLElement;
+  middleDrawerPanelCalculator: HTMLElement;
+  middleDrawerPanelChecklist: HTMLElement;
+  bottomDrawerViewport: HTMLElement;
+  bottomDrawerTrack: HTMLElement;
+  bottomDrawerPanelStorage: HTMLElement;
+  bottomDrawerPanelAllocator: HTMLElement;
   controlsUp: HTMLButtonElement;
   controlsDown: HTMLButtonElement;
   controlsMenu: HTMLButtonElement;
   menu: HTMLElement;
-  menuNavAllocator: HTMLButtonElement;
   menuNavChecklist: HTMLButtonElement;
-  menuPanelAllocator: HTMLElement;
   menuPanelChecklist: HTMLElement;
   grapherDevice: HTMLElement;
   calcDevice: HTMLElement;
@@ -45,6 +51,9 @@ type PointerSession = {
   axisLock: "none" | "x" | "y";
   startedInRightEdgeZone: boolean;
   startedInStorage: boolean;
+  startedInAllocator: boolean;
+  startedInChecklist: boolean;
+  preferredDrawerTarget: DrawerDragTarget;
   startedInMenu: boolean;
 };
 
@@ -54,6 +63,8 @@ type MenuA11yState = {
 };
 
 const MENU_CLOSE_SWIPE_DISTANCE_PX = 96;
+const MENU_OPEN_SWIPE_DISTANCE_PX = 28;
+type DrawerDragTarget = "middle" | "bottom";
 
 const rendererCache = new WeakMap<Element, ShellRenderer>();
 const rendererRegistry = new Set<ShellRenderer>();
@@ -181,6 +192,9 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   let refsCache: ShellRefs | null = null;
   let dragDeltaY = 0;
   let dragActive = false;
+  let drawerDragDeltaX = 0;
+  let drawerDragActive = false;
+  let drawerDragTarget: DrawerDragTarget | null = null;
   let latestState: GameState | null = null;
   let latestDispatch: ((action: Action) => unknown) | null = null;
   let pointerSession: PointerSession | null = null;
@@ -215,6 +229,11 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     pointerSession = null;
     dragActive = false;
     dragDeltaY = 0;
+    drawerDragActive = false;
+    drawerDragDeltaX = 0;
+    drawerDragTarget = null;
+    applyMiddleDrawerTransform(refs, true);
+    applyBottomDrawerTransform(refs, true);
   };
 
   const applyTrackTransform = (refs: ShellRefs, includeTransition: boolean): void => {
@@ -224,11 +243,47 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     refs.track.style.transform = `translate3d(0, ${translateY.toString()}px, 0)`;
   };
 
+  const getMiddleDrawerOffset = (refs: ShellRefs): number =>
+    controller.runtime.activeMiddlePanelId === "checklist" ? refs.middleDrawerViewport.clientWidth : 0;
+
+  const applyMiddleDrawerTransform = (refs: ShellRefs, includeTransition: boolean): void => {
+    const activeDeltaX = drawerDragActive && drawerDragTarget === "middle" ? drawerDragDeltaX : 0;
+    const baseOffset = getMiddleDrawerOffset(refs);
+    const translateX = -baseOffset + activeDeltaX;
+    refs.middleDrawerTrack.style.transition = includeTransition ? "transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1)" : "none";
+    refs.middleDrawerTrack.style.transform = `translate3d(${translateX.toString()}px, 0, 0)`;
+    refs.middleDrawerPanelCalculator.setAttribute(
+      "aria-hidden",
+      controller.runtime.activeMiddlePanelId === "calculator" ? "false" : "true",
+    );
+    refs.middleDrawerPanelChecklist.setAttribute(
+      "aria-hidden",
+      controller.runtime.activeMiddlePanelId === "checklist" ? "false" : "true",
+    );
+  };
+
+  const getBottomDrawerOffset = (refs: ShellRefs): number =>
+    controller.runtime.activeBottomPanelId === "allocator" ? refs.bottomDrawerViewport.clientWidth : 0;
+
+  const applyBottomDrawerTransform = (refs: ShellRefs, includeTransition: boolean): void => {
+    const activeDeltaX = drawerDragActive && drawerDragTarget === "bottom" ? drawerDragDeltaX : 0;
+    const baseOffset = getBottomDrawerOffset(refs);
+    const translateX = -baseOffset + activeDeltaX;
+    refs.bottomDrawerTrack.style.transition = includeTransition ? "transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1)" : "none";
+    refs.bottomDrawerTrack.style.transform = `translate3d(${translateX.toString()}px, 0, 0)`;
+    refs.bottomDrawerPanelStorage.setAttribute(
+      "aria-hidden",
+      controller.runtime.activeBottomPanelId === "storage" ? "false" : "true",
+    );
+    refs.bottomDrawerPanelAllocator.setAttribute(
+      "aria-hidden",
+      controller.runtime.activeBottomPanelId === "allocator" ? "false" : "true",
+    );
+  };
+
   const setMenuModuleClass = (refs: ShellRefs): void => {
     const active = controller.runtime.menuActiveModule;
-    refs.menuNavAllocator.setAttribute("aria-pressed", active === "allocator" ? "true" : "false");
     refs.menuNavChecklist.setAttribute("aria-pressed", active === "checklist" ? "true" : "false");
-    refs.menuPanelAllocator.hidden = active !== "allocator";
     refs.menuPanelChecklist.hidden = active !== "checklist";
   };
 
@@ -266,12 +321,12 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     applyMenuA11yState(refs);
     syncViewportTouchAction(refs);
     applyTrackTransform(refs, includeTransition);
+    applyMiddleDrawerTransform(refs, includeTransition);
+    applyBottomDrawerTransform(refs, includeTransition);
   };
 
   const focusMenuTarget = (refs: ShellRefs): void => {
-    const activeModule = controller.runtime.menuActiveModule;
-    const target = activeModule === "checklist" ? refs.menuNavChecklist : refs.menuNavAllocator;
-    target.focus();
+    refs.menuNavChecklist.focus();
   };
 
   const restoreFocus = (refs: ShellRefs): void => {
@@ -386,7 +441,9 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       }
       const rect = refs.viewport.getBoundingClientRect();
       const localX = pointerEvent.clientX - rect.left;
+      const localY = pointerEvent.clientY - rect.top;
       const startedInRightEdgeZone = localX >= rect.width - 24;
+      const preferredDrawerTarget: DrawerDragTarget = localY <= rect.height / 2 ? "middle" : "bottom";
       const target = pointerEvent.target as HTMLElement | null;
       pointerSession = {
         pointerId: pointerEvent.pointerId,
@@ -398,6 +455,9 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
         axisLock: "none",
         startedInRightEdgeZone,
         startedInStorage: !!target?.closest("[data-storage-keys]"),
+        startedInAllocator: !!target?.closest("[data-v2-drawer-panel='allocator']"),
+        startedInChecklist: !!target?.closest("[data-v2-drawer-panel='checklist']"),
+        preferredDrawerTarget,
         startedInMenu: false,
       };
       refs.viewport.setPointerCapture(pointerEvent.pointerId);
@@ -424,16 +484,23 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
         pointerEvent.preventDefault();
         return;
       }
-      if (touchRearrange.isPressing()) {
-        syncViewportTouchAction(refs);
-        pointerEvent.preventDefault();
-        return;
-      }
 
       const dx = pointerEvent.clientX - pointerSession.startX;
       const dy = pointerEvent.clientY - pointerSession.startY;
       if (pointerSession.axisLock === "none" && (Math.abs(dx) >= 8 || Math.abs(dy) >= 8)) {
         pointerSession.axisLock = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      }
+
+      if (touchRearrange.isPressing()) {
+        const canOverrideWithDrawerSwipe = pointerSession.axisLock === "x" && !pointerSession.startedInRightEdgeZone;
+        if (canOverrideWithDrawerSwipe) {
+          touchRearrange.cancel();
+          syncViewportTouchAction(refs);
+        } else {
+          syncViewportTouchAction(refs);
+          pointerEvent.preventDefault();
+          return;
+        }
       }
 
       if (controller.runtime.menuOpen && pointerSession.axisLock === "x" && shouldCloseMenuFromSwipe(dx, dy)) {
@@ -442,9 +509,22 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
         return;
       }
 
-      if (pointerSession.axisLock === "x" && pointerSession.startedInRightEdgeZone && dx <= -28) {
-        openMenu();
-        clearPointerSession(refs);
+      if (
+        pointerSession.axisLock === "x" &&
+        !pointerSession.startedInRightEdgeZone
+      ) {
+        drawerDragActive = true;
+        drawerDragDeltaX = dx;
+        drawerDragTarget = pointerSession.preferredDrawerTarget;
+        pointerSession.lastX = pointerEvent.clientX;
+        pointerSession.lastY = pointerEvent.clientY;
+        pointerSession.lastTimeMs = performance.now();
+        pointerEvent.preventDefault();
+        if (drawerDragTarget === "middle") {
+          applyMiddleDrawerTransform(refs, false);
+        } else {
+          applyBottomDrawerTransform(refs, false);
+        }
         return;
       }
 
@@ -492,10 +572,17 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       }
       const now = performance.now();
       const elapsed = Math.max(1, now - pointerSession.lastTimeMs);
+      const velocityX = (pointerEvent.clientX - pointerSession.lastX) / elapsed;
       const velocityY = (pointerEvent.clientY - pointerSession.lastY) / elapsed;
       if (dragActive) {
         const model = controller.sync(state);
         controller.settleFromDrag(model, dragDeltaY, velocityY);
+      }
+      if (drawerDragActive && drawerDragTarget === "middle") {
+        controller.settleMiddlePanelFromDrag(drawerDragDeltaX, velocityX);
+      }
+      if (drawerDragActive && drawerDragTarget === "bottom") {
+        controller.settleBottomPanelFromDrag(drawerDragDeltaX, velocityX);
       }
       clearPointerSession(refs);
       syncSnapAndUi(refs, state, true);
@@ -568,6 +655,9 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
         axisLock: "none",
         startedInRightEdgeZone: false,
         startedInStorage: false,
+        startedInAllocator: false,
+        startedInChecklist: false,
+        preferredDrawerTarget: "middle",
         startedInMenu: true,
       };
       refs.menu.setPointerCapture(pointerEvent.pointerId);
@@ -613,19 +703,19 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       if (touchRearrange.isGestureBlocked()) {
         return;
       }
-      if (controller.runtime.menuOpen) {
-        closeMenu();
+      const state = latestState;
+      if (!state) {
         return;
       }
-      openMenu(refs.controlsMenu);
-    });
-
-    listen(refs.menuNavAllocator, "click", () => {
-      controller.setMenuModule("allocator");
-      const state = latestState;
-      if (state) {
-        syncSnapAndUi(refs, state, false);
+      if (controller.runtime.activeSnapId === "middle") {
+        const next = controller.runtime.activeMiddlePanelId === "calculator" ? "checklist" : "calculator";
+        controller.setMiddlePanel(next);
+        syncSnapAndUi(refs, state, true);
+        return;
       }
+      const next = controller.runtime.activeBottomPanelId === "storage" ? "allocator" : "storage";
+      controller.setBottomPanel(next);
+      syncSnapAndUi(refs, state, true);
     });
 
     listen(refs.menuNavChecklist, "click", () => {
@@ -655,13 +745,19 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     const sectionGrapher = shell.querySelector<HTMLElement>("[data-v2-section='grapher']");
     const sectionCalc = shell.querySelector<HTMLElement>("[data-v2-section='calc']");
     const sectionStorage = shell.querySelector<HTMLElement>("[data-v2-section='storage']");
+    const middleDrawerViewport = shell.querySelector<HTMLElement>("[data-v2-middle-drawer-viewport='true']");
+    const middleDrawerTrack = shell.querySelector<HTMLElement>("[data-v2-middle-drawer-track='true']");
+    const middleDrawerPanelCalculator = shell.querySelector<HTMLElement>("[data-v2-middle-panel='calculator']");
+    const middleDrawerPanelChecklist = shell.querySelector<HTMLElement>("[data-v2-middle-panel='checklist']");
+    const bottomDrawerViewport = shell.querySelector<HTMLElement>("[data-v2-bottom-drawer-viewport='true']");
+    const bottomDrawerTrack = shell.querySelector<HTMLElement>("[data-v2-bottom-drawer-track='true']");
+    const bottomDrawerPanelStorage = shell.querySelector<HTMLElement>("[data-v2-drawer-panel='storage']");
+    const bottomDrawerPanelAllocator = shell.querySelector<HTMLElement>("[data-v2-drawer-panel='allocator']");
     const controlsUp = shell.querySelector<HTMLButtonElement>("[data-v2-control='up']");
     const controlsDown = shell.querySelector<HTMLButtonElement>("[data-v2-control='down']");
     const controlsMenu = shell.querySelector<HTMLButtonElement>("[data-v2-control='menu']");
     const menu = shell.querySelector<HTMLElement>("[data-v2-menu='true']");
-    const menuNavAllocator = shell.querySelector<HTMLButtonElement>("[data-v2-menu-button='allocator']");
     const menuNavChecklist = shell.querySelector<HTMLButtonElement>("[data-v2-menu-button='checklist']");
-    const menuPanelAllocator = shell.querySelector<HTMLElement>("[data-v2-menu-panel='allocator']");
     const menuPanelChecklist = shell.querySelector<HTMLElement>("[data-v2-menu-panel='checklist']");
     const grapherDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
     const calcDevice = root.querySelector<HTMLElement>("[data-calc-device]");
@@ -674,13 +770,19 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       !sectionGrapher ||
       !sectionCalc ||
       !sectionStorage ||
+      !middleDrawerViewport ||
+      !middleDrawerTrack ||
+      !middleDrawerPanelCalculator ||
+      !middleDrawerPanelChecklist ||
+      !bottomDrawerViewport ||
+      !bottomDrawerTrack ||
+      !bottomDrawerPanelStorage ||
+      !bottomDrawerPanelAllocator ||
       !controlsUp ||
       !controlsDown ||
       !controlsMenu ||
       !menu ||
-      !menuNavAllocator ||
       !menuNavChecklist ||
-      !menuPanelAllocator ||
       !menuPanelChecklist ||
       !grapherDevice ||
       !calcDevice ||
@@ -697,13 +799,19 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       sectionGrapher,
       sectionCalc,
       sectionStorage,
+      middleDrawerViewport,
+      middleDrawerTrack,
+      middleDrawerPanelCalculator,
+      middleDrawerPanelChecklist,
+      bottomDrawerViewport,
+      bottomDrawerTrack,
+      bottomDrawerPanelStorage,
+      bottomDrawerPanelAllocator,
       controlsUp,
       controlsDown,
       controlsMenu,
       menu,
-      menuNavAllocator,
       menuNavChecklist,
-      menuPanelAllocator,
       menuPanelChecklist,
       grapherDevice,
       calcDevice,
@@ -758,14 +866,46 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     const sectionCalc = document.createElement("section");
     sectionCalc.className = "v2-stack-section v2-stack-section--calc";
     sectionCalc.dataset.v2Section = "calc";
+    const middleDrawerViewport = document.createElement("div");
+    middleDrawerViewport.className = "v2-middle-drawer-viewport";
+    middleDrawerViewport.dataset.v2MiddleDrawerViewport = "true";
+    const middleDrawerTrack = document.createElement("div");
+    middleDrawerTrack.className = "v2-middle-drawer-track";
+    middleDrawerTrack.dataset.v2MiddleDrawerTrack = "true";
+    const middleDrawerPanelCalculator = document.createElement("section");
+    middleDrawerPanelCalculator.className = "v2-middle-drawer-panel";
+    middleDrawerPanelCalculator.dataset.v2MiddlePanel = "calculator";
+    const middleDrawerPanelChecklist = document.createElement("section");
+    middleDrawerPanelChecklist.className = "v2-middle-drawer-panel";
+    middleDrawerPanelChecklist.dataset.v2MiddlePanel = "checklist";
 
     const sectionStorage = document.createElement("section");
     sectionStorage.className = "v2-stack-section v2-stack-section--storage";
     sectionStorage.dataset.v2Section = "storage";
+    const bottomDrawerViewport = document.createElement("div");
+    bottomDrawerViewport.className = "v2-bottom-drawer-viewport";
+    bottomDrawerViewport.dataset.v2BottomDrawerViewport = "true";
+    const bottomDrawerTrack = document.createElement("div");
+    bottomDrawerTrack.className = "v2-bottom-drawer-track";
+    bottomDrawerTrack.dataset.v2BottomDrawerTrack = "true";
+    const bottomDrawerPanelStorage = document.createElement("section");
+    bottomDrawerPanelStorage.className = "v2-bottom-drawer-panel";
+    bottomDrawerPanelStorage.dataset.v2DrawerPanel = "storage";
+    const bottomDrawerPanelAllocator = document.createElement("section");
+    bottomDrawerPanelAllocator.className = "v2-bottom-drawer-panel";
+    bottomDrawerPanelAllocator.dataset.v2DrawerPanel = "allocator";
 
     sectionGrapher.appendChild(grapherDevice);
-    sectionCalc.appendChild(calcDevice);
-    sectionStorage.appendChild(storageSection);
+    middleDrawerPanelCalculator.appendChild(calcDevice);
+    middleDrawerPanelChecklist.appendChild(checklistShell);
+    middleDrawerTrack.append(middleDrawerPanelCalculator, middleDrawerPanelChecklist);
+    middleDrawerViewport.appendChild(middleDrawerTrack);
+    sectionCalc.appendChild(middleDrawerViewport);
+    bottomDrawerPanelStorage.appendChild(storageSection);
+    bottomDrawerPanelAllocator.appendChild(allocatorDevice);
+    bottomDrawerTrack.append(bottomDrawerPanelStorage, bottomDrawerPanelAllocator);
+    bottomDrawerViewport.appendChild(bottomDrawerTrack);
+    sectionStorage.appendChild(bottomDrawerViewport);
 
     track.append(sectionGrapher, sectionCalc, sectionStorage);
     viewport.appendChild(track);
@@ -789,7 +929,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     controlsMenu.type = "button";
     controlsMenu.className = "v2-shell-control";
     controlsMenu.dataset.v2Control = "menu";
-    controlsMenu.textContent = "Menu";
+    controlsMenu.textContent = "Swap";
 
     controls.append(controlsUp, controlsDown, controlsMenu);
     main.append(viewport, controls);
@@ -802,28 +942,19 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     const menuNav = document.createElement("div");
     menuNav.className = "v2-menu-nav";
 
-    const menuNavAllocator = createMenuModuleButton("Allocator");
-    menuNavAllocator.dataset.v2MenuButton = "allocator";
-
     const menuNavChecklist = createMenuModuleButton("Checklist");
     menuNavChecklist.dataset.v2MenuButton = "checklist";
 
-    menuNav.append(menuNavAllocator, menuNavChecklist);
+    menuNav.append(menuNavChecklist);
 
     const menuPanels = document.createElement("div");
     menuPanels.className = "v2-menu-panels";
-
-    const menuPanelAllocator = document.createElement("section");
-    menuPanelAllocator.className = "v2-menu-panel";
-    menuPanelAllocator.dataset.v2MenuPanel = "allocator";
 
     const menuPanelChecklist = document.createElement("section");
     menuPanelChecklist.className = "v2-menu-panel";
     menuPanelChecklist.dataset.v2MenuPanel = "checklist";
 
-    menuPanelAllocator.appendChild(allocatorDevice);
-    menuPanelChecklist.appendChild(checklistShell);
-    menuPanels.append(menuPanelAllocator, menuPanelChecklist);
+    menuPanels.append(menuPanelChecklist);
     menu.append(menuNav, menuPanels);
 
     shell.append(main, menu);
@@ -837,13 +968,19 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       sectionGrapher,
       sectionCalc,
       sectionStorage,
+      middleDrawerViewport,
+      middleDrawerTrack,
+      middleDrawerPanelCalculator,
+      middleDrawerPanelChecklist,
+      bottomDrawerViewport,
+      bottomDrawerTrack,
+      bottomDrawerPanelStorage,
+      bottomDrawerPanelAllocator,
       controlsUp,
       controlsDown,
       controlsMenu,
       menu,
-      menuNavAllocator,
       menuNavChecklist,
-      menuPanelAllocator,
       menuPanelChecklist,
       grapherDevice,
       calcDevice,
@@ -885,11 +1022,15 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   const resetForTests = (): void => {
     controller.runtime.activeSnapId = "middle";
     controller.runtime.menuOpen = false;
-    controller.runtime.menuActiveModule = "allocator";
+    controller.runtime.menuActiveModule = "checklist";
+    controller.runtime.activeMiddlePanelId = "calculator";
+    controller.runtime.activeBottomPanelId = "storage";
     touchRearrange.cancel();
     clearGrapherV2Module();
     dragActive = false;
     dragDeltaY = 0;
+    drawerDragActive = false;
+    drawerDragDeltaX = 0;
     pointerSession = null;
     returnFocusEl = null;
   };
