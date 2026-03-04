@@ -1,6 +1,7 @@
 import { createStore } from "./store.js";
 import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
+import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { render } from "../ui/render.js";
 import { createShellRenderer } from "../../src_v2/ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
@@ -191,6 +192,8 @@ type DispatchOptions = {
 };
 
 const UNLOCK_REVEAL_DURATION_MS = 1200;
+const ALLOCATOR_CUE_PRE_APPLY_MS = 480;
+const ALLOCATOR_CUE_POST_APPLY_MS = 420;
 
 const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}): Action => {
   if (!options.internal && interactionRuntime.shouldBlockAction(action)) {
@@ -232,6 +235,8 @@ const renderApp = (state: GameState): void => {
 
 const redraw = (): void => {
   renderApp(store.getState());
+  syncKeypadDimensionInputs();
+  syncAllocatorDeviceInputs();
 };
 
 const syncDebugUiState = (): void => {
@@ -260,6 +265,8 @@ const getUnusedPoints = (state: GameState): number => {
   return state.allocator.maxPoints - spent;
 };
 
+let allocatorUnusedDisplayOverride: number | null = null;
+
 const syncKeypadDimensionInputs = (): void => {
   const state = store.getState();
   keypadWidthInput.value = state.ui.keypadColumns.toString();
@@ -269,7 +276,7 @@ const syncKeypadDimensionInputs = (): void => {
 const syncAllocatorDeviceInputs = (): void => {
   const state = store.getState();
   const allocations = state.allocator.allocations;
-  const unused = getUnusedPoints(state);
+  const unused = allocatorUnusedDisplayOverride ?? getUnusedPoints(state);
   const allocatorLocked = interactionRuntime.getMode() === "calculator";
   const inputBlocked = interactionRuntime.isInputBlocked();
   const effectiveWidth = 1 + allocations.width;
@@ -415,6 +422,16 @@ const resetForModifyMode = (): void => {
 
 let modeTransitionInFlight = false;
 let unlockRevealInFlight = false;
+let allocatorIncreaseCueInFlight = false;
+
+const allocatorIncreaseByUnlockId = new Map(
+  unlockCatalog.flatMap((unlock) => {
+    if (unlock.effect.type !== "increase_allocator_max_points") {
+      return [];
+    }
+    return [[unlock.id, unlock.effect.amount] as const];
+  }),
+);
 
 const collectUnlockedKeys = (state: GameState): Set<Key> => {
   const unlocked = new Set<Key>();
@@ -479,6 +496,46 @@ const runUnlockRevealCue = async (stateAtUnlock: GameState): Promise<void> => {
   }
 };
 
+const runAllocatorIncreaseCue = async (previousUnused: number, nextUnused: number): Promise<void> => {
+  if (allocatorIncreaseCueInFlight || modeTransitionInFlight) {
+    return;
+  }
+  allocatorIncreaseCueInFlight = true;
+  interactionRuntime.setInputBlocked(true);
+  allocatorUnusedDisplayOverride = previousUnused;
+  allocatorUnusedEl.classList.add("allocator-display--cue", "allocator-display--cue-pending");
+  redraw();
+  try {
+    if (shellRenderer) {
+      await shellRenderer.playTransitionCue("allocator");
+      shellRenderer.forceActiveView({
+        bottomPanelId: "allocator",
+        includeTransition: true,
+      });
+    } else {
+      await sleep(520);
+    }
+    allocatorUnusedEl.classList.add("allocator-display--cue-focus");
+    await sleep(ALLOCATOR_CUE_PRE_APPLY_MS);
+    allocatorUnusedDisplayOverride = nextUnused;
+    allocatorUnusedEl.classList.remove("allocator-display--cue-pending");
+    allocatorUnusedEl.classList.add("allocator-display--cue-applied");
+    redraw();
+    await sleep(ALLOCATOR_CUE_POST_APPLY_MS);
+  } finally {
+    allocatorUnusedDisplayOverride = null;
+    allocatorUnusedEl.classList.remove(
+      "allocator-display--cue",
+      "allocator-display--cue-pending",
+      "allocator-display--cue-focus",
+      "allocator-display--cue-applied",
+    );
+    interactionRuntime.setInputBlocked(false);
+    allocatorIncreaseCueInFlight = false;
+    redraw();
+  }
+};
+
 const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<void> => {
   if (modeTransitionInFlight) {
     return;
@@ -521,15 +578,43 @@ const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<v
   }
 };
 
+let previousStateForCues = store.getState();
+let cueQueue: Promise<void> = Promise.resolve();
+const enqueueCue = (runner: () => Promise<void>): void => {
+  cueQueue = cueQueue.then(async () => {
+    await runner();
+  }).catch((error) => {
+    console.error("UI cue failed", error);
+  });
+};
+
 const unsubscribe = store.subscribe((state) => {
   autoEqualsScheduler.sync(state);
   const latest = store.getState();
+  const previous = previousStateForCues;
+  previousStateForCues = latest;
+
   const currentUnlockedKeys = collectUnlockedKeys(latest);
   const hasNewUnlock = [...currentUnlockedKeys].some((key) => !knownUnlockedKeys.has(key));
   knownUnlockedKeys = currentUnlockedKeys;
 
-  if (hasNewUnlock && !unlockRevealInFlight && !modeTransitionInFlight) {
-    void runUnlockRevealCue(latest);
+  const previousCompleted = new Set(previous.completedUnlockIds);
+  const newlyCompletedUnlockIds = latest.completedUnlockIds.filter((id) => !previousCompleted.has(id));
+  const maxPointIncreaseFromUnlocks = newlyCompletedUnlockIds.reduce((sum, unlockId) => {
+    return sum + (allocatorIncreaseByUnlockId.get(unlockId) ?? 0);
+  }, 0);
+
+  if (!modeTransitionInFlight && (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock)) {
+    if (maxPointIncreaseFromUnlocks > 0) {
+      enqueueCue(async () => {
+        await runAllocatorIncreaseCue(getUnusedPoints(previous), getUnusedPoints(latest));
+      });
+    }
+    if (hasNewUnlock) {
+      enqueueCue(async () => {
+        await runUnlockRevealCue(latest);
+      });
+    }
     return;
   }
 

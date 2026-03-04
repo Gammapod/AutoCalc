@@ -218,6 +218,38 @@
         box-shadow: 0 0 4px rgba(188, 255, 214, 0.4);
       }
 
+      .allocator-display--cue {
+        transition: box-shadow 160ms ease, border-color 160ms ease, filter 160ms ease;
+      }
+
+      .allocator-display--cue.allocator-display--cue-focus {
+        border-color: #8ee5b7;
+        box-shadow: 0 0 0 2px rgba(142, 229, 183, 0.48), inset 0 1px 4px rgba(0, 0, 0, 0.7);
+      }
+
+      .allocator-display--cue.allocator-display--cue-pending {
+        filter: saturate(0.82);
+      }
+
+      .allocator-display--cue.allocator-display--cue-applied {
+        animation: allocator-points-applied 360ms ease-out 1;
+      }
+
+      @keyframes allocator-points-applied {
+        0% {
+          transform: scale(1);
+          filter: brightness(1);
+        }
+        45% {
+          transform: scale(1.04);
+          filter: brightness(1.22);
+        }
+        100% {
+          transform: scale(1);
+          filter: brightness(1);
+        }
+      }
+
       .allocator-mode-action {
         border: 1px solid var(--key-utility-stroke);
         border-radius: 10px;
