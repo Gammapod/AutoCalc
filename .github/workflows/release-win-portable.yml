@@ -9,10 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  release-win-portable:
+  verify:
     runs-on: windows-latest
-    env:
-      CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
     steps:
       - name: Checkout
@@ -24,30 +22,130 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Preflight checks
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+            throw "Tag must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-prerelease. Got: $tag"
+          }
+
+          $dirty = git status --porcelain
+          if ($dirty) {
+            throw "Expected clean checkout before release workflow steps."
+          }
+
       - name: Install dependencies
         run: npm ci
 
       - name: Align package version to tag
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          if (-not $tag.StartsWith("v")) {
-            throw "Expected a tag like v1.2.3. Got: $tag"
-          }
-          $version = $tag.Substring(1)
+          $version = "${{ github.ref_name }}".Substring(1)
           npm version $version --no-git-tag-version --allow-same-version
 
       - name: Verify build and tests
         run: npm run ci:verify
 
+  release-win-portable:
+    runs-on: windows-latest
+    needs: verify
+    environment: release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Preflight checks
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+            throw "Tag must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-prerelease. Got: $tag"
+          }
+
+          $dirty = git status --porcelain
+          if ($dirty) {
+            throw "Expected clean checkout before release workflow steps."
+          }
+
+      - name: Validate signing secrets
+        shell: pwsh
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) {
+            throw "Missing release environment secret WIN_CSC_LINK."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)) {
+            throw "Missing release environment secret WIN_CSC_KEY_PASSWORD."
+          }
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Align package version to tag
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".Substring(1)
+          npm version $version --no-git-tag-version --allow-same-version
+
+      - name: Build and test
+        run: npm run ci:verify
+
       - name: Build portable executable
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          WIN_CSC_TSA_URL: ${{ secrets.WIN_CSC_TSA_URL }}
         run: npm run build:desktop
+
+      - name: Assert release artifact and version
+        shell: pwsh
+        run: |
+          $expectedVersion = "${{ github.ref_name }}".Substring(1)
+          $exe = @(Get-ChildItem -Path release -File -Filter *.exe)
+          if ($exe.Count -ne 1) {
+            throw "Expected exactly one .exe in release/, found $($exe.Count)."
+          }
+
+          $fileName = $exe[0].Name
+          if ($fileName -notmatch '^AutoCalc-(?<version>.+)-win-x64-portable\.exe$') {
+            throw "Artifact name does not match expected pattern: $fileName"
+          }
+
+          if ($Matches.version -ne $expectedVersion) {
+            throw "Artifact version '$($Matches.version)' does not match tag version '$expectedVersion'."
+          }
+
+          Write-Host "RELEASE_EXE_PATH $($exe[0].FullName)"
+
+      - name: Generate SHA256 checksum
+        shell: pwsh
+        run: |
+          $exe = @(Get-ChildItem -Path release -File -Filter *.exe)
+          if ($exe.Count -ne 1) {
+            throw "Expected exactly one .exe in release/ before checksum generation, found $($exe.Count)."
+          }
+          $hash = Get-FileHash -Path $exe[0].FullName -Algorithm SHA256
+          $checksumPath = "$($exe[0].FullName).sha256"
+          "$($hash.Hash.ToLowerInvariant()) *$($exe[0].Name)" | Set-Content -Path $checksumPath -NoNewline
+          Write-Host "RELEASE_SHA256_PATH $checksumPath"
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           name: AutoCalc ${{ github.ref_name }}
           generate_release_notes: true
-          files: release/*.exe
+          files: |
+            release/*.exe
+            release/*.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

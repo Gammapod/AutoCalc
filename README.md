@@ -121,5 +121,24 @@ npm run release:win:portable
 
 Tag-driven GitHub release pipeline:
 
-- Push a tag in `v*` format (for example `v0.1.1`)
-- GitHub Actions will run build/tests, package Windows `x64` portable `.exe`, and publish it to GitHub Releases
+- Push a tag in strict semver format: `vX.Y.Z` or `vX.Y.Z-prerelease` (example `v0.1.1` or `v0.1.1-rc.1`)
+- Workflow `release-win-portable.yml` runs preflight validation, tests, signing, packaging, artifact assertions, and release publishing
+- Canonical outputs:
+  - `release/AutoCalc-<version>-win-x64-portable.exe`
+  - `release/AutoCalc-<version>-win-x64-portable.exe.sha256`
+- Publishing is gated by the GitHub `release` Environment approval policy
+
+Release prerequisites (GitHub Environment `release` secrets):
+
+- `WIN_CSC_LINK` (Base64-encoded PFX or secure certificate link)
+- `WIN_CSC_KEY_PASSWORD`
+- Optional `WIN_CSC_TSA_URL`
+
+Release command sequence:
+
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+See `docs/release-windows.md` for full operational runbook and troubleshooting.

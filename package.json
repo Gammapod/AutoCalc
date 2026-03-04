@@ -44,7 +44,7 @@
     "asar": true,
     "artifactName": "AutoCalc-${version}-win-${arch}-portable.${ext}",
     "win": {
-      "signAndEditExecutable": false,
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "portable",
