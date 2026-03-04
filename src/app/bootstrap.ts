@@ -194,6 +194,8 @@ type DispatchOptions = {
 const UNLOCK_REVEAL_DURATION_MS = 1200;
 const ALLOCATOR_CUE_PRE_APPLY_MS = 480;
 const ALLOCATOR_CUE_POST_APPLY_MS = 420;
+const ALLOCATOR_RESET_HOLD_MS = 1500;
+const ALLOCATOR_RESET_INDICATOR_DELAY_MS = 250;
 
 const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}): Action => {
   if (!options.internal && interactionRuntime.shouldBlockAction(action)) {
@@ -625,12 +627,13 @@ const unsubscribe = store.subscribe((state) => {
 });
 
 window.__autoCalcBootstrapCleanup__ = () => {
+  stopAllocatorResetHold();
   unsubscribe();
   shellRenderer?.dispose();
   autoEqualsScheduler.dispose();
 };
 
-allocatorResetButton.addEventListener("click", async () => {
+const activateAllocatorReset = async (): Promise<void> => {
   if (interactionRuntime.isInputBlocked()) {
     return;
   }
@@ -641,6 +644,160 @@ allocatorResetButton.addEventListener("click", async () => {
   }
   dispatchWithRuntimeGate({ type: "ALLOCATOR_RETURN_PRESSED" });
   await runModeTransition("calculator");
+};
+
+let allocatorResetHoldTimer: number | null = null;
+let allocatorResetIndicatorTimer: number | null = null;
+let allocatorResetHoldRaf: number | null = null;
+let allocatorResetHolding = false;
+let allocatorResetTriggered = false;
+let allocatorResetHoldStartedAt = 0;
+let allocatorResetKeyboardHold = false;
+
+const clearAllocatorResetHoldVisuals = (): void => {
+  allocatorResetButton.classList.remove("allocator-mode-action--holding", "allocator-mode-action--hold-visible");
+  allocatorResetButton.style.setProperty("--hold-progress", "0");
+};
+
+const updateAllocatorResetHoldProgress = (): void => {
+  if (!allocatorResetHolding) {
+    return;
+  }
+  const elapsed = performance.now() - allocatorResetHoldStartedAt;
+  const progressWindowMs = ALLOCATOR_RESET_HOLD_MS - ALLOCATOR_RESET_INDICATOR_DELAY_MS;
+  const progressElapsed = Math.max(0, elapsed - ALLOCATOR_RESET_INDICATOR_DELAY_MS);
+  const progress = Math.max(0, Math.min(1, progressElapsed / progressWindowMs));
+  allocatorResetButton.style.setProperty("--hold-progress", progress.toFixed(4));
+  allocatorResetHoldRaf = window.requestAnimationFrame(updateAllocatorResetHoldProgress);
+};
+
+const clearAllocatorResetHoldTimers = (): void => {
+  if (allocatorResetHoldTimer !== null) {
+    window.clearTimeout(allocatorResetHoldTimer);
+    allocatorResetHoldTimer = null;
+  }
+  if (allocatorResetIndicatorTimer !== null) {
+    window.clearTimeout(allocatorResetIndicatorTimer);
+    allocatorResetIndicatorTimer = null;
+  }
+  if (allocatorResetHoldRaf !== null) {
+    window.cancelAnimationFrame(allocatorResetHoldRaf);
+    allocatorResetHoldRaf = null;
+  }
+};
+
+const stopAllocatorResetHold = (): void => {
+  clearAllocatorResetHoldTimers();
+  allocatorResetHolding = false;
+  allocatorResetKeyboardHold = false;
+  clearAllocatorResetHoldVisuals();
+};
+
+const triggerAllocatorResetHold = async (): Promise<void> => {
+  if (!allocatorResetHolding || allocatorResetTriggered) {
+    return;
+  }
+  allocatorResetTriggered = true;
+  allocatorResetButton.classList.add("allocator-mode-action--hold-visible");
+  allocatorResetButton.style.setProperty("--hold-progress", "1");
+  stopAllocatorResetHold();
+  await activateAllocatorReset();
+};
+
+const startAllocatorResetHold = (): void => {
+  if (allocatorResetHolding || allocatorResetButton.disabled || interactionRuntime.isInputBlocked()) {
+    return;
+  }
+  allocatorResetHolding = true;
+  allocatorResetTriggered = false;
+  allocatorResetHoldStartedAt = performance.now();
+  allocatorResetButton.classList.add("allocator-mode-action--holding");
+  allocatorResetButton.classList.remove("allocator-mode-action--hold-visible");
+  allocatorResetButton.style.setProperty("--hold-progress", "0");
+
+  allocatorResetIndicatorTimer = window.setTimeout(() => {
+    if (!allocatorResetHolding || allocatorResetTriggered) {
+      return;
+    }
+    allocatorResetButton.classList.add("allocator-mode-action--hold-visible");
+  }, ALLOCATOR_RESET_INDICATOR_DELAY_MS);
+
+  allocatorResetHoldTimer = window.setTimeout(() => {
+    void triggerAllocatorResetHold();
+  }, ALLOCATOR_RESET_HOLD_MS);
+
+  updateAllocatorResetHoldProgress();
+};
+
+const cancelAllocatorResetHold = (): void => {
+  if (!allocatorResetHolding || allocatorResetTriggered) {
+    return;
+  }
+  stopAllocatorResetHold();
+};
+
+allocatorResetButton.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0) {
+    return;
+  }
+  startAllocatorResetHold();
+});
+
+allocatorResetButton.addEventListener("pointerup", () => {
+  cancelAllocatorResetHold();
+});
+
+allocatorResetButton.addEventListener("pointercancel", () => {
+  cancelAllocatorResetHold();
+});
+
+window.addEventListener("pointerup", cancelAllocatorResetHold);
+window.addEventListener("pointercancel", cancelAllocatorResetHold);
+window.addEventListener("mouseup", cancelAllocatorResetHold);
+window.addEventListener("touchend", cancelAllocatorResetHold);
+window.addEventListener("touchcancel", cancelAllocatorResetHold);
+
+allocatorResetButton.addEventListener("keydown", (event) => {
+  if (event.repeat) {
+    return;
+  }
+  if (event.key !== " " && event.key !== "Enter") {
+    return;
+  }
+  event.preventDefault();
+  allocatorResetKeyboardHold = true;
+  startAllocatorResetHold();
+});
+
+allocatorResetButton.addEventListener("keyup", (event) => {
+  if (event.key !== " " && event.key !== "Enter") {
+    return;
+  }
+  event.preventDefault();
+  if (!allocatorResetKeyboardHold) {
+    return;
+  }
+  cancelAllocatorResetHold();
+});
+
+allocatorResetButton.addEventListener("blur", () => {
+  cancelAllocatorResetHold();
+});
+
+allocatorResetButton.addEventListener(
+  "click",
+  (event) => {
+    // Activation is handled by press-and-hold timing, not click.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  },
+  { capture: true },
+);
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") {
+    cancelAllocatorResetHold();
+  }
 });
 
 syncDebugUiState();

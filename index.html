@@ -251,6 +251,7 @@
       }
 
       .allocator-mode-action {
+        --hold-progress: 0;
         border: 1px solid var(--key-utility-stroke);
         border-radius: 10px;
         padding: 7px 10px;
@@ -262,6 +263,8 @@
         letter-spacing: 0.04em;
         cursor: pointer;
         white-space: nowrap;
+        position: relative;
+        overflow: hidden;
       }
 
       .allocator-mode-action:hover {
@@ -271,6 +274,35 @@
       .allocator-mode-action:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+
+      .allocator-mode-action::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 3px;
+        width: calc(var(--hold-progress) * 100%);
+        background: rgba(255, 255, 255, 0.88);
+        opacity: 0;
+        transition:
+          width 40ms linear,
+          opacity 140ms ease;
+        pointer-events: none;
+      }
+
+      .allocator-mode-action.allocator-mode-action--hold-visible::after {
+        opacity: 1;
+      }
+
+      .allocator-mode-action.allocator-mode-action--holding {
+        filter: brightness(0.95);
+      }
+
+      .calc .allocator-mode-action {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
       }
 
       .grapher-screen {
@@ -1760,7 +1792,6 @@
             <section class="device device--allocator" data-allocator-device aria-label="Allocator">
               <div class="allocator-header">
                 <h2 class="allocator-title">EIGEN ALLOCATOR | ~,==,"&lt;</h2>
-                <button type="button" class="allocator-mode-action" data-allocator-reset>Allocate 𝝀</button>
               </div>
               <div class="allocator-grid">
                 <div class="allocator-row">
@@ -1823,6 +1854,7 @@
                   <div class="display" data-slot></div>
                 </div>
                 <div data-keys></div>
+                <button type="button" class="allocator-mode-action" data-allocator-reset>Allocate 𝝀</button>
               </section>
             </section>
           </div>
