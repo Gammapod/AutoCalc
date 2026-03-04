@@ -229,6 +229,52 @@ export const formatKeyLabel = (key: Key): string => {
 const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
 const GRAPH_TOGGLE_BEHAVIOR: KeyButtonBehavior = { type: "toggle_flag", flag: GRAPH_VISIBLE_FLAG };
 const FEED_TOGGLE_BEHAVIOR: KeyButtonBehavior = { type: "toggle_flag", flag: FEED_VISIBLE_FLAG };
+const STORAGE_SORT_FLAG_BY_GROUP: Record<KeyVisualGroup, string> = {
+  execution: "storage.sort.execution",
+  value_expression: "storage.sort.value_expression",
+  slot_operator: "storage.sort.slot_operator",
+  utility: "storage.sort.utility",
+  visualizers: "storage.sort.visualizers",
+};
+const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: KeyVisualGroup; ariaLabel: string }> = [
+  { label: "=", group: "execution", ariaLabel: "Execution keys" },
+  { label: "\u{1D45B}", group: "value_expression", ariaLabel: "Value expression keys" },
+  { label: "\u2A02", group: "slot_operator", ariaLabel: "Operator keys" },
+  { label: "\u23CF", group: "utility", ariaLabel: "Utility keys" },
+  { label: "\u2191__", group: "visualizers", ariaLabel: "Visualizer keys" },
+];
+
+const getStorageSortFlag = (group: KeyVisualGroup): string => STORAGE_SORT_FLAG_BY_GROUP[group];
+
+export const getActiveStorageSortGroup = (state: GameState): KeyVisualGroup | null => {
+  for (const segment of STORAGE_SORT_SEGMENTS) {
+    if (Boolean(state.ui.buttonFlags[getStorageSortFlag(segment.group)])) {
+      return segment.group;
+    }
+  }
+  return null;
+};
+
+export const buildStorageSortToggleSequence = (
+  state: GameState,
+  targetGroup: KeyVisualGroup,
+): Action[] => {
+  const targetFlag = getStorageSortFlag(targetGroup);
+  const actions: Action[] = [];
+  if (!Boolean(state.ui.buttonFlags[targetFlag])) {
+    actions.push({ type: "TOGGLE_FLAG", flag: targetFlag });
+  }
+  for (const segment of STORAGE_SORT_SEGMENTS) {
+    const flag = getStorageSortFlag(segment.group);
+    if (flag === targetFlag) {
+      continue;
+    }
+    if (Boolean(state.ui.buttonFlags[flag])) {
+      actions.push({ type: "TOGGLE_FLAG", flag });
+    }
+  }
+  return actions;
+};
 
 const getButtonFlag = (state: GameState, flag: string): boolean => {
   if (flag === GRAPH_VISIBLE_FLAG) {
@@ -1055,9 +1101,11 @@ const playKeypadFlip = (container: Element, beforeRects: Map<string, DOMRect>): 
 };
 
 export const buildStorageRenderOrder = (state: GameState): number[] => {
-  const unlocked: number[] = [];
+  const selectedTypeUnlocked: number[] = [];
+  const otherUnlocked: number[] = [];
   const empty: number[] = [];
   const locked: number[] = [];
+  const activeSortGroup = getActiveStorageSortGroup(state);
 
   for (let index = 0; index < state.ui.storageLayout.length; index += 1) {
     const cell = state.ui.storageLayout[index];
@@ -1066,13 +1114,17 @@ export const buildStorageRenderOrder = (state: GameState): number[] => {
       continue;
     }
     if (isKeyUnlocked(state, cell.key)) {
-      unlocked.push(index);
+      if (activeSortGroup && getKeyVisualGroup(cell.key) === activeSortGroup) {
+        selectedTypeUnlocked.push(index);
+      } else {
+        otherUnlocked.push(index);
+      }
       continue;
     }
     locked.push(index);
   }
 
-  return [...unlocked, ...empty, ...locked];
+  return [...selectedTypeUnlocked, ...otherUnlocked, ...empty, ...locked];
 };
 
 export const shouldStartDragFromDelta = (
@@ -1539,6 +1591,7 @@ export const render = (
   const rollEl = root.querySelector("[data-roll]");
   const unlockEl = root.querySelector("[data-unlocks]");
   const keysEl = root.querySelector("[data-keys]");
+  const storageSortControlsEl = root.querySelector("[data-storage-sort-controls]");
   const storageEl = root.querySelector("[data-storage-keys]");
 
   if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl || !storageEl) {
@@ -1721,6 +1774,33 @@ export const render = (
   storageEl.innerHTML = "";
   storageEl.setAttribute("aria-hidden", "false");
   storageEl.setAttribute("data-storage-visible", "true");
+  if (storageSortControlsEl) {
+    const activeStorageSortGroup = getActiveStorageSortGroup(state);
+    storageSortControlsEl.innerHTML = "";
+    for (const segment of STORAGE_SORT_SEGMENTS) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "storage-sort-button";
+      const isActive = activeStorageSortGroup === segment.group;
+      button.textContent = segment.label;
+      button.dataset.storageSortGroup = segment.group;
+      button.setAttribute("aria-label", segment.ariaLabel);
+      button.setAttribute("aria-pressed", isActive ? "true" : "false");
+      if (isActive) {
+        button.classList.add("storage-sort-button--active");
+      }
+      button.disabled = inputBlocked;
+      button.addEventListener("click", () => {
+        if (inputBlocked || isActive) {
+          return;
+        }
+        for (const action of buildStorageSortToggleSequence(state, segment.group)) {
+          dispatch(action);
+        }
+      });
+      storageSortControlsEl.appendChild(button);
+    }
+  }
   if (storageEl instanceof HTMLElement) {
     storageEl.dataset.storageSlotCount = state.ui.storageLayout.length.toString();
     ensureStorageGridObserver(storageEl);

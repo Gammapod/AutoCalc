@@ -689,7 +689,7 @@
       }
 
       .storage-title {
-        margin: 0 0 8px;
+        margin: 0;
         font-family: "Trebuchet MS", "Segoe UI", sans-serif;
         font-size: 0.72rem;
         font-weight: 700;
@@ -697,6 +697,98 @@
         letter-spacing: 0.08em;
         color: #362312;
         opacity: 0.9;
+        white-space: nowrap;
+      }
+
+      .storage-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 0 0 8px;
+      }
+
+      [data-storage-sort-controls] {
+        display: flex;
+        flex: 0 0 clamp(150px, 46%, 220px);
+        border: 1px solid rgba(91, 62, 33, 0.7);
+        border-radius: 10px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #c8af8a, #a7885e);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.35),
+          inset 0 -2px 4px rgba(0, 0, 0, 0.18);
+      }
+
+      .storage-sort-button {
+        flex: 1 1 0;
+        width: 20%;
+        min-width: 0;
+        min-height: 30px;
+        border: none;
+        border-right: 1px solid rgba(91, 62, 33, 0.58);
+        color: #18202a;
+        font-size: 0.84rem;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .storage-sort-button:last-child {
+        border-right: none;
+      }
+
+      .storage-sort-button[data-storage-sort-group="execution"] {
+        background: linear-gradient(180deg, var(--key-execution-top), var(--key-execution-bottom));
+        color: #f4fff8;
+      }
+
+      .storage-sort-button[data-storage-sort-group="value_expression"] {
+        background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+        color: #1b2027;
+      }
+
+      .storage-sort-button[data-storage-sort-group="slot_operator"] {
+        background: linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
+        color: #f4f8ff;
+      }
+
+      .storage-sort-button[data-storage-sort-group="utility"] {
+        background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
+        color: #fff7f7;
+      }
+
+      .storage-sort-button[data-storage-sort-group="visualizers"] {
+        background: linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
+        color: #f6fbff;
+      }
+
+      .storage-sort-button:hover:not(:disabled) {
+        filter: brightness(1.07);
+      }
+
+      .storage-sort-button--active {
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+          inset 0 1px 3px rgba(0, 0, 0, 0.34);
+        filter: saturate(1.1);
+      }
+
+      .storage-sort-button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      @media (max-width: 700px) {
+        .storage-header {
+          flex-wrap: wrap;
+          justify-content: flex-start;
+          gap: 6px;
+        }
+
+        [data-storage-sort-controls] {
+          flex-basis: min(220px, 100%);
+        }
       }
 
       [data-storage-keys] {
@@ -1735,7 +1827,10 @@
             </section>
           </div>
           <section class="storage" aria-label="Button storage">
-            <h2 class="storage-title">Storage Drawer</h2>
+            <div class="storage-header">
+              <h2 class="storage-title">Storage Drawer</h2>
+              <div data-storage-sort-controls role="group" aria-label="Storage sort by key type"></div>
+            </div>
             <div data-storage-keys></div>
           </section>
         </section>
