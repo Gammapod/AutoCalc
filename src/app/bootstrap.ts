@@ -70,10 +70,15 @@ const allocatorEffectiveRangeEl = document.querySelector<HTMLElement>("[data-all
 const allocatorEffectiveSpeedEl = document.querySelector<HTMLElement>("[data-allocator-effective-speed]");
 const allocatorEffectiveSlotsEl = document.querySelector<HTMLElement>("[data-allocator-effective-slots]");
 const allocatorIncWidthButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-width]");
+const allocatorDecWidthButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-width]");
 const allocatorIncHeightButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-height]");
+const allocatorDecHeightButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-height]");
 const allocatorIncRangeButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-range]");
+const allocatorDecRangeButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-range]");
 const allocatorIncSpeedButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-speed]");
+const allocatorDecSpeedButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-speed]");
 const allocatorIncSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-slots]");
+const allocatorDecSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-slots]");
 const allocatorResetButton = document.querySelector<HTMLButtonElement>("[data-allocator-reset]");
 const allocatorSpeedLabelEl = document.querySelector<HTMLElement>("[data-allocator-speed-label]");
 if (
@@ -104,10 +109,15 @@ if (
   !allocatorEffectiveSpeedEl ||
   !allocatorEffectiveSlotsEl ||
   !allocatorIncWidthButton ||
+  !allocatorDecWidthButton ||
   !allocatorIncHeightButton ||
+  !allocatorDecHeightButton ||
   !allocatorIncRangeButton ||
+  !allocatorDecRangeButton ||
   !allocatorIncSpeedButton ||
+  !allocatorDecSpeedButton ||
   !allocatorIncSlotsButton ||
+  !allocatorDecSlotsButton ||
   !allocatorResetButton ||
   !allocatorSpeedLabelEl
 ) {
@@ -296,12 +306,17 @@ const syncAllocatorDeviceInputs = (): void => {
   renderAllocatorDisplay(allocatorSlotsValueEl, effectiveSlots);
 
   allocatorIncWidthButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorDecWidthButton.disabled = inputBlocked || allocatorLocked || allocations.width <= 0;
   allocatorIncHeightButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorDecHeightButton.disabled = inputBlocked || allocatorLocked || allocations.height <= 0;
   allocatorIncRangeButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorDecRangeButton.disabled = inputBlocked || allocatorLocked || allocations.range <= 0;
   allocatorIncSpeedButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorDecSpeedButton.disabled = inputBlocked || allocatorLocked || allocations.speed <= 0;
   allocatorIncSlotsButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorDecSlotsButton.disabled = inputBlocked || allocatorLocked || allocations.slots <= 0;
   allocatorResetButton.disabled = inputBlocked;
-  allocatorResetButton.textContent = interactionRuntime.getMode() === "calculator" ? "Allocate \uD835\uDF40" : "RETURN";
+  allocatorResetButton.textContent = interactionRuntime.getMode() === "calculator" ? "↓ Modify Calculator ↓" : "↑ RETURN ↑";
   allocatorDeviceEl.dataset.allocatorLocked = allocatorLocked ? "true" : "false";
 
   debugMaxPointsInput.value = state.allocator.maxPoints.toString();
@@ -370,10 +385,15 @@ const bindAllocatorStep = (button: HTMLButtonElement, field: AllocatorAllocation
   });
 };
 
+bindAllocatorStep(allocatorDecWidthButton, "width", -1);
 bindAllocatorStep(allocatorIncWidthButton, "width", 1);
+bindAllocatorStep(allocatorDecHeightButton, "height", -1);
 bindAllocatorStep(allocatorIncHeightButton, "height", 1);
+bindAllocatorStep(allocatorDecRangeButton, "range", -1);
 bindAllocatorStep(allocatorIncRangeButton, "range", 1);
+bindAllocatorStep(allocatorDecSpeedButton, "speed", -1);
 bindAllocatorStep(allocatorIncSpeedButton, "speed", 1);
+bindAllocatorStep(allocatorDecSlotsButton, "slots", -1);
 bindAllocatorStep(allocatorIncSlotsButton, "slots", 1);
 
 const sleep = (ms: number): Promise<void> =>
@@ -420,8 +440,6 @@ const resetForModifyMode = (): void => {
     },
     { internal: true },
   );
-  dispatchWithRuntimeGate({ type: "RESET_ALLOCATOR_DEVICE" }, { internal: true });
-  moveAllKeysToStorage();
 };
 
 let modeTransitionInFlight = false;
@@ -548,10 +566,10 @@ const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<v
   interactionRuntime.setInputBlocked(true);
   redraw();
   try {
-    if (shellRenderer) {
-      await shellRenderer.playTransitionCue(targetMode === "modify" ? "allocator" : "calculator");
-    } else {
+    if (!shellRenderer || targetMode === "modify") {
       await sleep(520);
+    } else {
+      await shellRenderer.playTransitionCue("calculator");
     }
     await sleep(500);
     if (targetMode === "modify") {
@@ -563,7 +581,6 @@ const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<v
       if (targetMode === "modify") {
         shellRenderer.forceActiveView({
           snapId: "bottom",
-          bottomPanelId: "allocator",
           includeTransition: true,
         });
       } else {
