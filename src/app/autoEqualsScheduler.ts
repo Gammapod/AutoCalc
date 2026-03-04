@@ -24,7 +24,7 @@ const defaultTimers: TimerApi = {
 
 const isAutoEqualsEnabled = (state: GameState): boolean => Boolean(state.ui.buttonFlags[AUTO_EQUALS_FLAG]);
 const hasValidEquation = (state: GameState): boolean => getOperationSnapshot(state.calculator).length > 0;
-const EXECUTOR_KEYS: readonly ExecKey[] = ["=", "++"];
+const EXECUTOR_KEYS: readonly ExecKey[] = ["=", "++", "--"];
 
 const getAutoEqualsRateMultiplier = (state: GameState): number => {
   const speedPoints = Math.max(0, state.allocator.allocations.speed);

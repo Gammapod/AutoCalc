@@ -820,7 +820,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   return getKeyVisualGroupShared(key);
 };
 
-const isExecutionKey = (key: Key): boolean => key === "=" || key === "++";
+const isExecutionKey = (key: Key): boolean => key === "=" || key === "++" || key === "--";
 
 const buildKeypadSlotLabels = (
   layout: GameState["ui"]["keyLayout"],

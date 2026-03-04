@@ -83,6 +83,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "3" },
   { kind: "key", key: "=" },
   { kind: "key", key: "0" },
+  { kind: "key", key: "--" },
   { kind: "key", key: "++" },
   { kind: "key", key: "NEG" },
   { kind: "key", key: "\u23EF", behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
@@ -158,6 +159,7 @@ export const initialState = (): GameState => {
       execution: {
         "=": false,
         "++": true,
+        "--": true,
       },
       uiUnlocks: {
         storageVisible: false,

@@ -101,4 +101,8 @@ export const runReducerInputTests = (): void => {
   const afterIncrement = applyKeyAction(incrementSource, "++");
   assert.deepEqual(afterIncrement.calculator.total, r(1n), "increment updates total");
   assert.deepEqual(afterIncrement.calculator.roll, [r(1n)], "increment appends new total to roll");
+  const decrementSource = initialState();
+  const afterDecrement = applyKeyAction(decrementSource, "--");
+  assert.deepEqual(afterDecrement.calculator.total, r(-1n), "decrement updates total");
+  assert.deepEqual(afterDecrement.calculator.roll, [r(-1n)], "decrement appends new total to roll");
 };

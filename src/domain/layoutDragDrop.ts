@@ -10,7 +10,7 @@ type DragTarget = {
   index: number;
 };
 
-const isExecutionKey = (key: Key): boolean => key === "=" || key === "++";
+const isExecutionKey = (key: Key): boolean => key === "=" || key === "++" || key === "--";
 
 const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
   if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {

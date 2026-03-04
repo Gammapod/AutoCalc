@@ -63,9 +63,10 @@ const createAvailabilityReader = (
 const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolean): CapabilityContext => {
   const hasEqualsKey = isAvailable("=");
   const hasIncrementKey = isAvailable("++");
+  const hasDecrementKey = isAvailable("--");
   const hasPauseKey = isAvailable("\u23EF");
-  const hasAnyExecutorUnlocked = isKeyUnlocked(state, "=") || isKeyUnlocked(state, "++");
-  const executeActivation = hasEqualsKey || hasIncrementKey || (hasPauseKey && hasAnyExecutorUnlocked);
+  const hasAnyExecutorUnlocked = isKeyUnlocked(state, "=") || isKeyUnlocked(state, "++") || isKeyUnlocked(state, "--");
+  const executeActivation = hasEqualsKey || hasIncrementKey || hasDecrementKey || (hasPauseKey && hasAnyExecutorUnlocked);
   const hasPlus = isAvailable("+");
   const hasMinus = isAvailable("-");
   const hasNeg = isAvailable("NEG");
@@ -75,7 +76,7 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
   const hasSomeOperator = ["+", "-", "*", "/", "#", "\u27E1"].some((key) => isAvailable(key as Key));
 
   const stepPlusOne = isAvailable("++") || (executeActivation && hasPlus && hasOne);
-  const stepMinusOne = (executeActivation && hasMinus && hasOne) || (executeActivation && hasPlus && hasNeg && hasOne);
+  const stepMinusOne = hasDecrementKey || (executeActivation && hasMinus && hasOne) || (executeActivation && hasPlus && hasNeg && hasOne);
   const resetToZero = isAvailable("C") || isAvailable("UNDO");
   const formOperatorPlusOperand = hasSomeOperator && hasSomeDigit;
   const rollGrowth = executeActivation && (formOperatorPlusOperand || stepPlusOne || stepMinusOne);

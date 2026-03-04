@@ -11,6 +11,7 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel("UNDO"), "\u21BA", "undo key label renders as \u238C");
   assert.equal(formatKeyLabel("\u23EF"), "\u25BA", "play/pause key defaults to play icon");
   assert.equal(formatKeyLabel("+"), "+", "plus key label remains +");
+  assert.equal(formatKeyLabel("--"), "\u2212\u2212", "decrement key label renders as unicode minus signs");
   assert.equal(formatKeyLabel("NEG"), "-\u{1D465}", "NEG key label uses stylized indicator");
   assert.equal(formatKeyLabel("FEED"), "FEED", "FEED key label remains FEED");
 

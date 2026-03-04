@@ -101,6 +101,7 @@ export const runUnlockGraphTests = (): void => {
   const filteredGraph = filterUnlockGraphToIncomingUnlockKeys({
     nodes: [
       { id: "key.++", type: "key", label: "++" },
+      { id: "key.--", type: "key", label: "--" },
       { id: "key.A", type: "key", label: "A" },
       { id: "key.X", type: "key", label: "X" },
       { id: "fn.keep", type: "function", label: "keep" },
@@ -115,6 +116,7 @@ export const runUnlockGraphTests = (): void => {
     ],
   });
   assert.equal(filteredGraph.nodes.some((node) => node.id === "key.++"), true, "++ should remain as an explicit keep key");
+  assert.equal(filteredGraph.nodes.some((node) => node.id === "key.--"), true, "-- should remain as an explicit keep key");
   assert.equal(filteredGraph.nodes.some((node) => node.id === "key.X"), false, "keys with no incoming unlock should be removed");
   assert.equal(filteredGraph.nodes.some((node) => node.id === "fn.drop"), false, "downstream dependencies of removed keys should be removed");
 };

@@ -16,7 +16,7 @@ import { isKeyUnlocked } from "./keyUnlocks.js";
 import { clearOperationEntry, createResetCalculatorState, resetRunState } from "./reducer.stateBuilders.js";
 import { CHECKLIST_UNLOCK_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import { getOperationSnapshot, toCommittedDraftingSlot } from "./slotDrafting.js";
-import type { Digit, ExecutionErrorKind, GameState, Key, RationalValue, Slot, SlotOperator } from "./types.js";
+import type { Digit, ExecKey, ExecutionErrorKind, GameState, Key, RationalValue, Slot, SlotOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
@@ -277,7 +277,7 @@ const markOverflowErrorSeen = (state: GameState): GameState => {
   };
 };
 
-const evaluateExecutionOutcome = (state: GameState, execKey: "=" | "++"): EvaluatedExecution => {
+const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): EvaluatedExecution => {
   const currentTotal = state.calculator.total;
   if (!isRationalCalculatorValue(currentTotal)) {
     return {
@@ -290,6 +290,10 @@ const evaluateExecutionOutcome = (state: GameState, execKey: "=" | "++"): Evalua
   if (execKey === "++") {
     const incremented = addInt(currentTotal.value, 1n);
     return applyOverflowPolicy(incremented, state.unlocks.maxTotalDigits);
+  }
+  if (execKey === "--") {
+    const decremented = addInt(currentTotal.value, -1n);
+    return applyOverflowPolicy(decremented, state.unlocks.maxTotalDigits);
   }
 
   const execution = executeSlots(currentTotal.value, state.calculator.operationSlots);
@@ -386,6 +390,38 @@ const applyIncrement = (state: GameState): GameState => {
   return applyUnlocks(withOverflowMarker, unlockCatalog);
 };
 
+const applyDecrement = (state: GameState): GameState => {
+  if (!state.unlocks.execution["--"]) {
+    return state;
+  }
+
+  const evaluation = evaluateExecutionOutcome(state, "--");
+  const appendedRollIndex = state.calculator.roll.length;
+  const nextRollErrors = [...state.calculator.rollErrors];
+  if (evaluation.errorCode && evaluation.errorKind) {
+    nextRollErrors.push({
+      rollIndex: appendedRollIndex,
+      code: evaluation.errorCode,
+      kind: evaluation.errorKind,
+    });
+  }
+
+  const withDecrementedTotal: GameState = {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      total: evaluation.nextTotal,
+      pendingNegativeTotal: false,
+      roll: [...state.calculator.roll, evaluation.nextTotal],
+      rollErrors: nextRollErrors,
+    },
+  };
+
+  const withOverflowMarker =
+    evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withDecrementedTotal) : withDecrementedTotal;
+  return applyUnlocks(withOverflowMarker, unlockCatalog);
+};
+
 const applyC = (state: GameState): GameState => {
   if (!state.unlocks.utilities.C) {
     return state;
@@ -478,6 +514,9 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   }
   if (key === "++") {
     return applyIncrement(keyed);
+  }
+  if (key === "--") {
+    return applyDecrement(keyed);
   }
   if (key === "C") {
     return applyC(keyed);

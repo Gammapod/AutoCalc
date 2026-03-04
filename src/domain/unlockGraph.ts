@@ -102,8 +102,8 @@ const staticFunctionRules: FunctionRule[] = [
   defineFunctionRule({
     id: "fn.execute_activation",
     label: "execute_activation",
-    rule: "= or ++ is unlocked",
-    sufficiency: [["="], ["++"]],
+    rule: "= or ++ or -- is unlocked",
+    sufficiency: [["="], ["++"], ["--"]],
   }),
   defineFunctionRule({
     id: "fn.step_plus_one",
@@ -114,8 +114,8 @@ const staticFunctionRules: FunctionRule[] = [
   defineFunctionRule({
     id: "fn.step_minus_one",
     label: "step_minus_one",
-    rule: "(= and - and 1) OR (= and + and NEG and 1)",
-    sufficiency: [["=", "-"], ["=", "+", "NEG"]],
+    rule: "-- is unlocked OR (= and - and 1) OR (= and + and NEG and 1)",
+    sufficiency: [["--"], ["=", "-"], ["=", "+", "NEG"]],
   }),
   defineFunctionRule({
     id: "fn.reset_to_zero",
@@ -135,6 +135,7 @@ const staticFunctionRules: FunctionRule[] = [
     rule: "execute activation and at least one growth-producing operation",
     sufficiency: [
       ["=", "++"],
+      ["=", "--"],
       ...operatorClauses().map((clause) => ["=", ...clause] as Key[]),
     ],
   }),
@@ -706,7 +707,7 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
 
 export const filterUnlockGraphToIncomingUnlockKeys = (
   graph: UnlockGraph,
-  alwaysIncludeKeys: Key[] = ["++"],
+  alwaysIncludeKeys: Key[] = ["++", "--"],
 ): UnlockGraph => {
   const alwaysInclude = new Set(alwaysIncludeKeys);
   const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));

@@ -24,7 +24,7 @@ const isKeyCell = (cell: LayoutCell | KeyCell | null): cell is KeyCell =>
 
 const isKeypadEmptyCell = (cell: LayoutCell): boolean => cell.kind === "placeholder";
 const isStorageEmptyCell = (cell: KeyCell | null): boolean => cell === null;
-const isExecutionKey = (key: KeyCell["key"]): boolean => key === "=" || key === "++";
+const isExecutionKey = (key: KeyCell["key"]): boolean => key === "=" || key === "++" || key === "--";
 
 export const isStorageLayoutValid = (storageLayout: Array<KeyCell | null>): boolean => {
   return storageLayout.length > 0 && storageLayout.length % STORAGE_COLUMNS === 0;

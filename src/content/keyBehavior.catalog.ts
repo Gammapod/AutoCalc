@@ -13,6 +13,7 @@ export type KeyPrimaryExpectationKind =
   | "graph_counts_only"
   | "equals_executes_drafted_plus_one"
   | "increment_increases_total"
+  | "decrement_decreases_total"
   | "pause_counts_only";
 
 export type KeyEdgeExpectationKind =
@@ -25,6 +26,7 @@ export type KeyEdgeExpectationKind =
   | "graph_does_not_mutate_calculator_state"
   | "equals_division_by_zero_sets_nan"
   | "increment_clears_pending_negative"
+  | "decrement_clears_pending_negative"
   | "pause_does_not_mutate_calculator_state";
 
 export type KeyBehaviorSpec = {
@@ -122,6 +124,12 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     lockModel: "always_unlocked",
     primaryExpectation: "increment_increases_total",
     edgeCaseExpectation: "increment_clears_pending_negative",
+  },
+  {
+    key: "--",
+    lockModel: "always_unlocked",
+    primaryExpectation: "decrement_decreases_total",
+    edgeCaseExpectation: "decrement_clears_pending_negative",
   },
   {
     key: "\u23EF",

@@ -208,6 +208,14 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
+  if (kind === "decrement_decreases_total") {
+    const state = initialState();
+    const next = applyKeyAction(state, "--");
+    assert.deepEqual(next.calculator.total, r(-1n), "-- should decrement total by one");
+    assert.deepEqual(next.calculator.roll, [r(-1n)], "-- should append decremented total to roll");
+    return;
+  }
+
   if (kind === "pause_counts_only") {
     const state = unlockKey(initialState(), "\u23EF");
     const next = applyKeyAction(state, "\u23EF");
@@ -366,6 +374,19 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     };
     const next = applyKeyAction(state, "++");
     assert.equal(next.calculator.pendingNegativeTotal, false, "++ should clear pending negative sign");
+    return;
+  }
+
+  if (kind === "decrement_clears_pending_negative") {
+    const state = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        pendingNegativeTotal: true,
+      },
+    };
+    const next = applyKeyAction(state, "--");
+    assert.equal(next.calculator.pendingNegativeTotal, false, "-- should clear pending negative sign");
     return;
   }
 

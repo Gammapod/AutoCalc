@@ -65,6 +65,12 @@ export const formatKeyLabel = (key: Key): string => {
   if (key === "\u27E1") {
     return "\u27E1";
   }
+  if (key === "++") {
+    return "+ +";
+  }
+  if (key === "--") {
+    return "\u2212 \u2212";
+  }
   if (key === "*" || key === "/") {
     return formatOperatorForDisplay(key);
   }

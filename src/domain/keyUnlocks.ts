@@ -16,7 +16,7 @@ export const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (key === "FEED") {
     return state.unlocks.visualizers.FEED;
   }
-  if (key === "=" || key === "++") {
+  if (key === "=" || key === "++" || key === "--") {
     return state.unlocks.execution[key];
   }
   return false;
