@@ -195,7 +195,8 @@ const UNLOCK_REVEAL_DURATION_MS = 1200;
 const ALLOCATOR_CUE_PRE_APPLY_MS = 480;
 const ALLOCATOR_CUE_POST_APPLY_MS = 420;
 const ALLOCATOR_RESET_HOLD_MS = 1500;
-const ALLOCATOR_RESET_INDICATOR_DELAY_MS = 250;
+const ALLOCATOR_RESET_INDICATOR_DELAY_MS = 80;
+const ALLOCATOR_RESET_PROGRESS_EXPONENT = 8;
 
 const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}): Action => {
   if (!options.internal && interactionRuntime.shouldBlockAction(action)) {
@@ -666,8 +667,14 @@ const updateAllocatorResetHoldProgress = (): void => {
   const elapsed = performance.now() - allocatorResetHoldStartedAt;
   const progressWindowMs = ALLOCATOR_RESET_HOLD_MS - ALLOCATOR_RESET_INDICATOR_DELAY_MS;
   const progressElapsed = Math.max(0, elapsed - ALLOCATOR_RESET_INDICATOR_DELAY_MS);
-  const progress = Math.max(0, Math.min(1, progressElapsed / progressWindowMs));
-  allocatorResetButton.style.setProperty("--hold-progress", progress.toFixed(4));
+  const linearProgress = Math.max(0, Math.min(1, progressElapsed / progressWindowMs));
+  const easedProgress =
+    linearProgress <= 0
+      ? 0
+      : linearProgress >= 1
+        ? 1
+        : Math.pow(2, ALLOCATOR_RESET_PROGRESS_EXPONENT * (linearProgress - 1));
+  allocatorResetButton.style.setProperty("--hold-progress", easedProgress.toFixed(4));
   allocatorResetHoldRaf = window.requestAnimationFrame(updateAllocatorResetHoldProgress);
 };
 
