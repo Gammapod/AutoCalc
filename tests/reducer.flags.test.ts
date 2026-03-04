@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
-import { initialState } from "../src/domain/state.js";
+import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
 
 export const runReducerFlagsTests = (): void => {
   const base = initialState();
@@ -18,4 +18,18 @@ export const runReducerFlagsTests = (): void => {
 
   const blankNoop = reducer(base, { type: "TOGGLE_FLAG", flag: "   " });
   assert.equal(blankNoop, base, "blank flag names are ignored");
+
+  const graphOn = reducer(base, { type: "TOGGLE_FLAG", flag: GRAPH_VISIBLE_FLAG });
+  assert.equal(graphOn.ui.buttonFlags[GRAPH_VISIBLE_FLAG], true, "GRAPH toggles on");
+
+  const feedOn = reducer(graphOn, { type: "TOGGLE_FLAG", flag: FEED_VISIBLE_FLAG });
+  assert.equal(feedOn.ui.buttonFlags[FEED_VISIBLE_FLAG], true, "FEED toggles on");
+  assert.equal(
+    Boolean(feedOn.ui.buttonFlags[GRAPH_VISIBLE_FLAG]),
+    false,
+    "turning FEED on clears GRAPH",
+  );
+
+  const feedOff = reducer(feedOn, { type: "TOGGLE_FLAG", flag: FEED_VISIBLE_FLAG });
+  assert.equal(Boolean(feedOff.ui.buttonFlags[FEED_VISIBLE_FLAG]), false, "FEED toggles off when active");
 };

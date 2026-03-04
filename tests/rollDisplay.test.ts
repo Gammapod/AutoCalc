@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { buildRollLines, buildRollRows, buildRollViewModel, getRollLineClassName } from "../src/ui/render.js";
+import { buildRollLines, buildRollRows, buildRollViewModel, getRollLineClassName, isFeedRollVisible } from "../src/ui/render.js";
+import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
 import type { EuclidRemainderEntry } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
@@ -91,5 +92,38 @@ export const runRollDisplayTests = (): void => {
     getRollLineClassName({ prefix: "  =", value: "10", remainder: "1/2" }),
     "roll-line roll-line--with-remainder",
     "rows with remainders use the remainder line class",
+  );
+
+  const base = initialState();
+  assert.equal(isFeedRollVisible(base, true), false, "roll stays hidden when FEED is off even if roll has rows");
+  assert.equal(isFeedRollVisible(base, false), false, "roll stays hidden when FEED is off and roll is empty");
+
+  const withFeedOn = {
+    ...base,
+    ui: {
+      ...base.ui,
+      buttonFlags: {
+        ...base.ui.buttonFlags,
+        [FEED_VISIBLE_FLAG]: true,
+      },
+    },
+  };
+  assert.equal(isFeedRollVisible(withFeedOn, false), true, "FEED on shows feed panel even when roll is empty");
+  assert.equal(isFeedRollVisible(withFeedOn, true), true, "FEED on shows non-empty roll");
+
+  const withFeedAndGraphOn = {
+    ...withFeedOn,
+    ui: {
+      ...withFeedOn.ui,
+      buttonFlags: {
+        ...withFeedOn.ui.buttonFlags,
+        [GRAPH_VISIBLE_FLAG]: true,
+      },
+    },
+  };
+  assert.equal(
+    isFeedRollVisible(withFeedAndGraphOn, true),
+    false,
+    "graph visible hides roll even when FEED is on and roll has rows",
   );
 };

@@ -7,6 +7,7 @@ export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const AUTO_EQUALS_FLAG = "execution.pause";
 export const GRAPH_VISIBLE_FLAG = "graph.visible";
+export const FEED_VISIBLE_FLAG = "feed.visible";
 export const KEYPAD_DEFAULT_COLUMNS = 1;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
@@ -63,6 +64,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "CE" },
   { kind: "key", key: "UNDO" },
   { kind: "key", key: "C" },
+  { kind: "key", key: "FEED", behavior: { type: "toggle_flag", flag: FEED_VISIBLE_FLAG } },
   { kind: "key", key: "GRAPH", behavior: { type: "toggle_flag", flag: GRAPH_VISIBLE_FLAG } },
   { kind: "key", key: "/" },
   { kind: "key", key: "\u27E1" },
@@ -117,6 +119,7 @@ export const initialState = (): GameState => {
       keypadRows: KEYPAD_DEFAULT_ROWS,
       buttonFlags: {
         [GRAPH_VISIBLE_FLAG]: false,
+        [FEED_VISIBLE_FLAG]: false,
       },
     },
     keyPressCounts: {},
@@ -146,8 +149,11 @@ export const initialState = (): GameState => {
         C: false,
         CE: false,
         UNDO: false,
-        GRAPH: false,
         "\u23EF": false,
+      },
+      visualizers: {
+        GRAPH: false,
+        FEED: false,
       },
       execution: {
         "=": false,

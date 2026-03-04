@@ -1,7 +1,6 @@
-import { GRAPH_VISIBLE_FLAG } from "../../src/domain/state.js";
 import type { GameState } from "../../src/domain/types.js";
 
-export type SnapId = "top" | "middle" | "bottom";
+export type SnapId = "middle" | "bottom";
 export type MenuModuleId = "checklist";
 
 export type ShellViewModel = {
@@ -10,17 +9,13 @@ export type ShellViewModel = {
   menuModules: MenuModuleId[];
 };
 
-const SNAP_ORDER: SnapId[] = ["top", "middle", "bottom"];
+const SNAP_ORDER: SnapId[] = ["middle", "bottom"];
 
 export const snapOrder = (): readonly SnapId[] => SNAP_ORDER;
 
 export const buildShellViewModel = (state: GameState): ShellViewModel => {
   const availableSnaps: SnapId[] = [];
-  const graphVisible = Boolean(state.ui.buttonFlags[GRAPH_VISIBLE_FLAG]);
   const storageVisible = state.unlocks.uiUnlocks.storageVisible;
-  if (graphVisible) {
-    availableSnaps.push("top");
-  }
   availableSnaps.push("middle");
   if (storageVisible) {
     availableSnaps.push("bottom");

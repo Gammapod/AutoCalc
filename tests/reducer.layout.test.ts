@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
-import { GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
+import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
@@ -352,6 +352,30 @@ export const runReducerLayoutTests = (): void => {
     Boolean(graphSwappedOut.ui.buttonFlags[GRAPH_VISIBLE_FLAG]),
     false,
     "swapping toggled GRAPH off keypad clears its toggle flag",
+  );
+
+  const feedStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "FEED");
+  assert.ok(feedStorageIndex >= 0, "baseline storage includes FEED key");
+  const feedMovedToKeypad = reducer(baselineWithSpace, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "storage",
+    fromIndex: feedStorageIndex,
+    toSurface: "keypad",
+    toIndex: emptyKeypadIndex,
+  });
+  const feedToggledOn = reducer(feedMovedToKeypad, { type: "TOGGLE_FLAG", flag: FEED_VISIBLE_FLAG });
+  assert.equal(Boolean(feedToggledOn.ui.buttonFlags[FEED_VISIBLE_FLAG]), true, "FEED toggle can be enabled on keypad");
+  const feedMoveBackToStorage = reducer(feedToggledOn, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad",
+    fromIndex: emptyKeypadIndex,
+    toSurface: "storage",
+    toIndex: feedStorageIndex,
+  });
+  assert.equal(
+    Boolean(feedMoveBackToStorage.ui.buttonFlags[FEED_VISIBLE_FLAG]),
+    false,
+    "moving toggled FEED off keypad clears its toggle flag",
   );
 
   const allowedFormerBottomRightSwap = reducer(toKeypadMove, {

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildGraphPoints, buildGraphXWindow, isGraphVisible } from "../src/ui/render.js";
+import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphVisible } from "../src/ui/render.js";
 
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
   kind: "rational",
@@ -45,4 +45,8 @@ export const runGraphDisplayTests = (): void => {
   assert.deepEqual(buildGraphXWindow(25), { min: 0, max: 24 }, "window snaps to last 25 indices at threshold");
   assert.deepEqual(buildGraphXWindow(26), { min: 1, max: 25 }, "window slides to latest 25 indices");
   assert.deepEqual(buildGraphXWindow(100), { min: 75, max: 99 }, "window tracks only the latest 25 indices");
+
+  assert.deepEqual(buildGraphYWindow(1), { min: -9, max: 9 }, "one unlocked total digit sets y-axis to -9..9");
+  assert.deepEqual(buildGraphYWindow(2), { min: -99, max: 99 }, "two unlocked total digits sets y-axis to -99..99");
+  assert.deepEqual(buildGraphYWindow(0), { min: -9, max: 9 }, "y-axis helper clamps minimum digit count to one");
 };

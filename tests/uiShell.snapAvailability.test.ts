@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { initialState, GRAPH_VISIBLE_FLAG } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
 import { buildShellViewModel } from "../src_v2/ui/renderAdapter.js";
 import type { GameState } from "../src/domain/types.js";
 
@@ -21,22 +21,11 @@ export const runUiShellSnapAvailabilityTests = (): void => {
   const withStorageModel = buildShellViewModel(withStorage);
   assert.deepEqual(withStorageModel.availableSnaps, ["middle", "bottom"], "storage unlock adds bottom snap");
 
-  const withGraphAndStorage: GameState = {
-    ...withStorage,
-    ui: {
-      ...withStorage.ui,
-      buttonFlags: {
-        ...withStorage.ui.buttonFlags,
-        [GRAPH_VISIBLE_FLAG]: true,
-      },
-    },
-  };
-  const fullModel = buildShellViewModel(withGraphAndStorage);
   assert.deepEqual(
-    fullModel.availableSnaps,
-    ["top", "middle", "bottom"],
-    "graph toggle with storage unlock exposes full three-snap stack",
+    withStorageModel.availableSnaps,
+    ["middle", "bottom"],
+    "v2 shell uses a two-snap stack even when visualizers are active",
   );
-  assert.equal(fullModel.defaultSnap, "middle", "default snap remains middle");
+  assert.equal(withStorageModel.defaultSnap, "middle", "default snap remains middle");
 };
 

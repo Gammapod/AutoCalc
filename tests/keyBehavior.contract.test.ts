@@ -15,6 +15,7 @@ const runtimeKeysFromInitialUnlocks = (): Key[] => {
     ...(Object.keys(state.unlocks.valueExpression) as Key[]),
     ...(Object.keys(state.unlocks.slotOperators) as Key[]),
     ...(Object.keys(state.unlocks.utilities) as Key[]),
+    ...(Object.keys(state.unlocks.visualizers) as Key[]),
     ...(Object.keys(state.unlocks.execution) as Key[]),
   ].sort((a, b) => a.localeCompare(b));
 };
@@ -51,6 +52,18 @@ const unlockKey = (state: GameState, key: Key): GameState => {
         ...state.unlocks,
         utilities: {
           ...state.unlocks.utilities,
+          [key]: true,
+        },
+      },
+    };
+  }
+  if (key in state.unlocks.visualizers) {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        visualizers: {
+          ...state.unlocks.visualizers,
           [key]: true,
         },
       },
@@ -169,10 +182,10 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "graph_counts_only") {
-    const state = unlockKey(initialState(), "GRAPH");
-    const next = applyKeyAction(state, "GRAPH");
-    assert.equal(next.keyPressCounts.GRAPH ?? 0, 1, "GRAPH should count key press when unlocked");
-    assert.deepEqual(next.calculator, state.calculator, "GRAPH should not mutate calculator state");
+    const state = unlockKey(initialState(), key);
+    const next = applyKeyAction(state, key);
+    assert.equal(next.keyPressCounts[key] ?? 0, 1, `${key} should count key press when unlocked`);
+    assert.deepEqual(next.calculator, state.calculator, `${key} should not mutate calculator state`);
     return;
   }
 
@@ -191,6 +204,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     const state = initialState();
     const next = applyKeyAction(state, "++");
     assert.deepEqual(next.calculator.total, r(1n), "++ should increment total by one");
+    assert.deepEqual(next.calculator.roll, [r(1n)], "++ should append incremented total to roll");
     return;
   }
 
@@ -319,10 +333,10 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
           draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
         },
       },
-      "GRAPH",
+      key,
     );
-    const next = applyKeyAction(state, "GRAPH");
-    assert.deepEqual(next.calculator, state.calculator, "GRAPH should not mutate calculator state");
+    const next = applyKeyAction(state, key);
+    assert.deepEqual(next.calculator, state.calculator, `${key} should not mutate calculator state`);
     return;
   }
 

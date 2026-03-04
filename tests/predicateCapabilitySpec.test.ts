@@ -47,13 +47,25 @@ const unlockKey = (state: GameState, key: Key): GameState => {
       },
     };
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "\u23EF") {
     return {
       ...state,
       unlocks: {
         ...state.unlocks,
         utilities: {
           ...state.unlocks.utilities,
+          [key]: true,
+        },
+      },
+    };
+  }
+  if (key === "GRAPH" || key === "FEED") {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        visualizers: {
+          ...state.unlocks.visualizers,
           [key]: true,
         },
       },

@@ -29,7 +29,8 @@ type GraphScale = {
     callback?: (value: string | number) => string | number;
   };
   grid?: {
-    color?: string;
+    color?: string | ((context: { tick?: { value?: number | string } }) => string);
+    lineWidth?: number | ((context: { tick?: { value?: number | string } }) => number);
     display?: boolean;
   };
   border?: {
@@ -73,7 +74,7 @@ let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 
 const GRAPH_WINDOW_SIZE = 25;
-const GRAPH_MIN_Y_RANGE = 15;
+const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 
 const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorEntry[] = []): GraphPoint[] => {
   const errorByRollIndex = new Set(rollErrors.map((entry) => entry.rollIndex));
@@ -92,21 +93,10 @@ const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorEntry[] 
   return points;
 };
 
-const getGraphBounds = (points: GraphPoint[]): { min: number; max: number } => {
-  const values = points.map((point) => point.y);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const spread = max - min;
-  const padding = Math.max(spread * 0.12, 0.1);
-  let lower = min - padding;
-  let upper = max + padding;
-  const range = upper - lower;
-  if (range < GRAPH_MIN_Y_RANGE) {
-    const deficit = GRAPH_MIN_Y_RANGE - range;
-    lower -= deficit / 2;
-    upper += deficit / 2;
-  }
-  return { min: lower, max: upper };
+const buildGraphYWindow = (unlockedTotalDigits: number): { min: number; max: number } => {
+  const clampedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
+  const maxMagnitude = Math.pow(10, clampedDigits) - 1;
+  return { min: -maxMagnitude, max: maxMagnitude };
 };
 
 const buildGraphXWindow = (rollLength: number): { min: number; max: number } => {
@@ -116,8 +106,8 @@ const buildGraphXWindow = (rollLength: number): { min: number; max: number } => 
   return { min: rollLength - GRAPH_WINDOW_SIZE, max: rollLength - 1 };
 };
 
-const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[]): GraphOptions => {
-  const bounds = hasPoints ? getGraphBounds(points) : { min: 0, max: 1 };
+const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTotalDigits: number): GraphOptions => {
+  const bounds = buildGraphYWindow(unlockedTotalDigits);
   const xWindow = buildGraphXWindow(points.length);
   const makeTickLabelCallback =
     (axisMax: number) =>
@@ -157,14 +147,28 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[]): GraphOptio
       y: {
         min: bounds.min,
         max: bounds.max,
-        display: hasPoints,
+        display: true,
         ticks: {
           color: "#bcffd6",
           autoSkip: true,
           callback: makeTickLabelCallback(bounds.max),
         },
-        grid: { color: "rgba(188, 255, 214, 0.2)", display: hasPoints },
-        border: { color: "rgba(188, 255, 214, 0.45)", display: hasPoints },
+        grid: {
+          color: (context: { tick?: { value?: number | string } }) => {
+            const value = context.tick?.value;
+            const numeric = typeof value === "number" ? value : Number(value);
+            return Number.isFinite(numeric) && Math.abs(numeric) < 1e-9
+              ? "rgba(188, 255, 214, 0.75)"
+              : "rgba(188, 255, 214, 0.2)";
+          },
+          lineWidth: (context: { tick?: { value?: number | string } }) => {
+            const value = context.tick?.value;
+            const numeric = typeof value === "number" ? value : Number(value);
+            return Number.isFinite(numeric) && Math.abs(numeric) < 1e-9 ? 2 : 1;
+          },
+          display: true,
+        },
+        border: { color: "rgba(188, 255, 214, 0.45)", display: true },
       },
     },
   };
@@ -177,11 +181,7 @@ export const clearGrapherV2Module = (): void => {
 };
 
 export const renderGrapherV2Module = (root: Element, state: GameState): void => {
-  const grapherDeviceEl = root.querySelector<HTMLElement>("[data-grapher-device]");
   const graphVisible = Boolean(state.ui.buttonFlags[GRAPH_VISIBLE_FLAG]);
-  if (grapherDeviceEl) {
-    grapherDeviceEl.hidden = !graphVisible;
-  }
   if (!graphVisible) {
     clearGrapherV2Module();
     return;
@@ -208,7 +208,7 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
 
   const points = buildGraphPoints(state.calculator.roll, state.calculator.rollErrors);
   const hasPoints = points.length > 0;
-  const options = buildGraphOptions(hasPoints, points);
+  const options = buildGraphOptions(hasPoints, points, state.unlocks.maxTotalDigits);
   const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
   const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));
 

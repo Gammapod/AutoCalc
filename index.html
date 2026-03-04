@@ -32,6 +32,9 @@
         --key-utility-top: #d55f5f;
         --key-utility-bottom: #a84040;
         --key-utility-stroke: #6e2424;
+        --key-visualizers-top: #5d8fdf;
+        --key-visualizers-bottom: #3f67ad;
+        --key-visualizers-stroke: #264272;
         --key-execution-top: #4f8f67;
         --key-execution-bottom: #2f6c4a;
         --key-execution-stroke: #1f4a33;
@@ -48,6 +51,8 @@
         --roll-pad-bottom: 8px;
         --gap: 10px;
         --device-width: clamp(300px, 38vw, 420px);
+        --v2-storage-peek: clamp(120px, 18dvh, 180px);
+        --v2-feed-visible-rows: 8;
       }
 
       * {
@@ -86,7 +91,7 @@
 
       .device-row {
         display: grid;
-        grid-template-columns: var(--device-width) var(--device-width) var(--device-width);
+        grid-template-columns: var(--device-width) var(--device-width);
         align-items: start;
         gap: 16px;
       }
@@ -96,20 +101,6 @@
         min-width: 0;
         position: relative;
         gap: 0;
-      }
-
-      .device--grapher {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        border-radius: 24px;
-        padding: 14px;
-        border: 1px solid var(--body-stroke);
-        background: linear-gradient(180deg, var(--body-top), var(--body-bottom));
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.42),
-          inset 0 -5px 10px rgba(0, 0, 0, 0.2),
-          0 10px 20px rgba(0, 0, 0, 0.25);
       }
 
       .device--allocator {
@@ -238,15 +229,39 @@
       }
 
       .grapher-screen {
-        flex: 0 0 auto;
         width: 100%;
-        aspect-ratio: 4 / 3;
-        min-height: 0;
         border: 1px solid #515c6a;
         border-radius: 10px;
         padding: 10px;
         background: linear-gradient(180deg, rgba(18, 22, 28, 0.98), rgba(15, 19, 24, 0.98));
         box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+      }
+
+      .calc-grapher {
+        max-height: 0;
+        min-height: 0;
+        overflow: hidden;
+        transform: translateY(16px);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          max-height 230ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          transform 230ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          opacity 160ms ease-out,
+          margin-bottom 230ms cubic-bezier(0.2, 0.72, 0.2, 1);
+      }
+
+      [data-display-window][data-graph-visible="true"] .calc-grapher {
+        max-height: 280px;
+        transform: translateY(0);
+        opacity: 1;
+        margin-bottom: 8px;
+        pointer-events: auto;
+      }
+
+      .calc-grapher .grapher-screen {
+        width: 100%;
+        aspect-ratio: 4 / 3;
       }
 
       .grapher-canvas {
@@ -255,28 +270,10 @@
         display: block;
       }
 
-      .grapher-slot {
-        height: 30px;
-        min-height: 30px;
-        width: 100%;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
-        font-size: 0.76rem;
-        line-height: 1;
-        color: #b4f1d3;
-        white-space: nowrap;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scrollbar-gutter: stable both-edges;
-        font-variant-numeric: tabular-nums;
-      }
-
       .roll {
         position: absolute;
         left: 50%;
-        bottom: 100%;
+        bottom: calc(100% - 10px);
         z-index: 1;
         transform: translateX(-50%);
         width: calc(100% - 56px);
@@ -295,11 +292,17 @@
         overflow: hidden;
         pointer-events: none;
         scrollbar-width: none;
-        padding: var(--roll-pad-top) 12px var(--roll-pad-bottom);
+        padding: 0 12px;
         font-family: "Courier Prime", "Special Elite", "American Typewriter", "Lucida Typewriter", "Courier New", monospace;
         font-size: 0.85rem;
         color: var(--paper-ink);
-        transition: height 160ms ease-out, border-width 120ms ease-out, box-shadow 120ms ease-out;
+        opacity: 0;
+        transition:
+          height 160ms ease-out,
+          border-width 120ms ease-out,
+          box-shadow 120ms ease-out,
+          padding 120ms ease-out,
+          opacity 120ms ease-out;
       }
 
       .roll::-webkit-scrollbar {
@@ -310,6 +313,8 @@
         height: calc(var(--roll-line-count, 0) * var(--roll-row-height) + var(--roll-pad-top) + var(--roll-pad-bottom));
         border-width: 1px;
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
+        padding: var(--roll-pad-top) 12px var(--roll-pad-bottom);
+        opacity: 1;
       }
 
       .roll-line {
@@ -425,6 +430,19 @@
       .display-stack {
         display: grid;
         gap: 8px;
+      }
+
+      .display--shared {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .v2-visualizer-host {
+        display: none;
+      }
+
+      .v2-feed-panel {
+        display: none;
       }
 
       .display {
@@ -803,6 +821,12 @@
         color: #ffffff;
       }
 
+      .key--group-visualizers {
+        border-color: var(--key-visualizers-stroke);
+        background: linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
+        color: #ffffff;
+      }
+
       .key--group-execution {
         border-color: var(--key-execution-stroke);
         background: linear-gradient(180deg, var(--key-execution-top), var(--key-execution-bottom));
@@ -821,7 +845,7 @@
         filter: none;
       }
 
-      .key.key--toggle-active:not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-execution):not(:disabled) {
+      .key.key--toggle-active:not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
         background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
       }
 
@@ -831,6 +855,10 @@
 
       .key.key--toggle-active.key--group-utility:not(:disabled) {
         background: linear-gradient(180deg, var(--key-utility-bottom), var(--key-utility-top));
+      }
+
+      .key.key--toggle-active.key--group-visualizers:not(:disabled) {
+        background: linear-gradient(180deg, var(--key-visualizers-bottom), var(--key-visualizers-top));
       }
 
       .key.key--toggle-active.key--group-execution:not(:disabled) {
@@ -1159,12 +1187,19 @@
       }
 
       body[data-ui-shell="v2"] {
-        padding: 10px;
-        place-items: center;
+        padding: 0;
+        margin: 0;
+        min-height: 100vh;
+        height: 100dvh;
+        place-items: stretch;
+        overflow: hidden;
       }
 
       body[data-ui-shell="v2"] .app-shell {
-        width: min(100vw - 12px, 520px);
+        width: min(100vw, 520px);
+        max-width: 520px;
+        height: 100%;
+        margin: 0 auto;
       }
 
       body[data-ui-shell="v2"] #app.app-layout {
@@ -1182,6 +1217,7 @@
       .v2-shell {
         position: relative;
         width: 100%;
+        height: 100%;
         border-radius: 18px;
         overflow: clip;
       }
@@ -1189,14 +1225,16 @@
       .v2-main {
         position: relative;
         width: 100%;
+        height: 100%;
       }
 
       .v2-stack-viewport {
         position: relative;
         width: 100%;
-        height: calc(100vh - 28px);
-        min-height: 520px;
-        max-height: 920px;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        max-height: none;
         overflow: hidden;
         border-radius: 16px;
         border: 1px solid rgba(38, 44, 53, 0.38);
@@ -1210,16 +1248,22 @@
         top: 0;
         left: 0;
         width: 100%;
+        height: 100%;
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        padding: 8px;
+        gap: 0;
+        padding: 0;
         will-change: transform;
       }
 
       .v2-stack-section {
         width: 100%;
         min-width: 0;
+      }
+
+      .v2-stack-section--calc {
+        height: calc(100dvh - var(--v2-storage-peek));
+        min-height: calc(100dvh - var(--v2-storage-peek));
       }
 
       .v2-stack-section .device,
@@ -1237,13 +1281,15 @@
         --drawer-peek: 16px;
         --drawer-gap: 8px;
         width: 100%;
+        height: 100%;
         overflow: hidden;
         border-radius: 14px;
       }
 
       .v2-middle-drawer-track,
       .v2-bottom-drawer-track {
-        width: max-content;
+        width: 100%;
+        height: 100%;
         display: flex;
         gap: var(--drawer-gap);
         align-items: stretch;
@@ -1254,6 +1300,7 @@
       .v2-bottom-drawer-panel {
         flex: 0 0 calc(100% - (var(--drawer-peek) * 2));
         width: calc(100% - (var(--drawer-peek) * 2));
+        height: 100%;
         min-width: 0;
       }
 
@@ -1267,6 +1314,91 @@
 
       .v2-middle-drawer-panel .checklist-shell {
         margin: 0;
+      }
+
+      body[data-ui-shell="v2"] .device--calc {
+        height: 100%;
+      }
+
+      body[data-ui-shell="v2"] .calc {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      body[data-ui-shell="v2"] .slot {
+        flex: 0 0 auto;
+      }
+
+      body[data-ui-shell="v2"] .display-stack {
+        flex: 0 0 auto;
+      }
+
+      body[data-ui-shell="v2"] [data-keys] {
+        margin-top: 12px;
+        flex: 1 1 auto;
+        min-height: 0;
+        align-content: stretch;
+        grid-auto-rows: minmax(44px, 1fr);
+      }
+
+      body[data-ui-shell="v2"] [data-keys] > .key,
+      body[data-ui-shell="v2"] [data-keys] > .placeholder {
+        height: 100%;
+      }
+
+      body[data-ui-shell="v2"] .roll {
+        display: none;
+      }
+
+      body[data-ui-shell="v2"] .v2-visualizer-host {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      body[data-ui-shell="v2"] .v2-visualizer-host[data-v2-visualizer-panel="none"] {
+        display: none;
+      }
+
+      body[data-ui-shell="v2"] [data-v2-visualizer-host] .calc-grapher {
+        margin-bottom: 0;
+      }
+
+      body[data-ui-shell="v2"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
+        max-height: 280px;
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="v2"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher {
+        max-height: 0;
+        transform: translateY(16px);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      body[data-ui-shell="v2"] .v2-feed-panel {
+        display: none;
+        height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
+        overflow: hidden;
+        padding: 8px 10px;
+        border: 1px solid rgba(88, 99, 114, 0.8);
+        border-radius: 8px;
+        background: linear-gradient(180deg, rgba(16, 20, 26, 0.94), rgba(11, 15, 20, 0.94));
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: 0.76rem;
+        color: #b4f1d3;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+
+      body[data-ui-shell="v2"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
+        display: flex;
+      }
+
+      body[data-ui-shell="v2"] .v2-feed-panel .roll-line {
+        grid-template-columns: 3ch minmax(0, 1fr) auto;
       }
 
       body[data-ui-shell="v2"] [data-storage-keys] {
@@ -1418,8 +1550,9 @@
         }
 
         body[data-ui-shell="v2"] .v2-stack-viewport {
-          height: calc(100vh - 24px);
-          min-height: 460px;
+          height: 100vh;
+          height: 100dvh;
+          min-height: 0;
         }
       }
     </style>
@@ -1502,18 +1635,22 @@
               </div>
               <button type="button" class="allocator-reset" data-allocator-reset>Reset</button>
             </section>
-            <section class="device device--grapher" data-grapher-device aria-label="Grapher">
-              <div class="grapher-screen">
-                <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
-              </div>
-              <div class="display grapher-slot" data-grapher-slot aria-live="polite" aria-label="Grapher operation display"></div>
-            </section>
             <section class="device device--calc" data-calc-device>
               <section class="roll" data-roll aria-label="Calculator roll"></section>
               <section class="calc">
                 <div class="slot" aria-hidden="true"></div>
                 <div class="display-stack">
-                  <div class="display" data-total aria-live="polite"></div>
+                  <div class="display display--shared" data-display-window data-graph-visible="false">
+                    <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="none" aria-hidden="true">
+                      <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                        <div class="grapher-screen">
+                          <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                        </div>
+                      </section>
+                      <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                    </section>
+                    <div data-total aria-live="polite"></div>
+                  </div>
                   <div class="display" data-slot></div>
                 </div>
                 <div data-keys></div>

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { initialState, GRAPH_VISIBLE_FLAG } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
 import { buildShellViewModel, createShellController } from "../src_v2/ui/renderAdapter.js";
 import type { GameState } from "../src/domain/types.js";
 
@@ -30,21 +30,7 @@ export const runUiShellFallbackControlsTests = (): void => {
   assert.equal(controller.canSnapDown(modelWithStorage), false, "down control disabled at bottom boundary");
   assert.equal(controller.canSnapUp(modelWithStorage), true, "up control enabled at bottom boundary");
 
-  const withTopAndBottom: GameState = {
-    ...withStorage,
-    ui: {
-      ...withStorage.ui,
-      buttonFlags: {
-        ...withStorage.ui.buttonFlags,
-        [GRAPH_VISIBLE_FLAG]: true,
-      },
-    },
-  };
-  const modelFull = buildShellViewModel(withTopAndBottom);
-  controller.sync(withTopAndBottom);
-  controller.setSnap(modelFull, "middle");
-  assert.equal(controller.canSnapUp(modelFull), true, "up control enabled when top snap is available");
-  controller.moveSnap(modelFull, "up");
-  assert.equal(controller.runtime.activeSnapId, "top", "up control action moves to top");
+  controller.setSnap(modelWithStorage, "middle");
+  assert.equal(controller.canSnapUp(modelWithStorage), false, "up control disabled at middle in two-snap mode");
 };
 

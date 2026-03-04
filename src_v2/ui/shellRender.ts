@@ -3,9 +3,9 @@ import { createShellController } from "./shellController.js";
 import type { SnapId } from "./shellModel.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "./touchRearrangeController.js";
 import { renderChecklistV2Module } from "./modules/checklistRenderer.js";
-import { clearGrapherV2Module, renderGrapherV2Module } from "./modules/grapherRenderer.js";
 import { renderAllocatorV2Module } from "./modules/allocatorRenderer.js";
 import { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
+import { clearVisualizerHost, renderVisualizerHost } from "./modules/visualizerHost.js";
 
 export type ShellRenderer = {
   render: (state: GameState, dispatch: (action: Action) => unknown) => void;
@@ -18,7 +18,6 @@ type ShellRefs = {
   main: HTMLElement;
   viewport: HTMLElement;
   track: HTMLElement;
-  sectionGrapher: HTMLElement;
   sectionCalc: HTMLElement;
   sectionStorage: HTMLElement;
   middleDrawerViewport: HTMLElement;
@@ -35,7 +34,6 @@ type ShellRefs = {
   menu: HTMLElement;
   menuNavChecklist: HTMLButtonElement;
   menuPanelChecklist: HTMLElement;
-  grapherDevice: HTMLElement;
   calcDevice: HTMLElement;
   keys: HTMLElement;
   storageKeys: HTMLElement;
@@ -141,9 +139,6 @@ const getOffsetInTrack = (target: HTMLElement, track: HTMLElement): number => {
 };
 
 const getSnapOffset = (snapId: SnapId, refs: ShellRefs): number => {
-  if (snapId === "top") {
-    return getOffsetInTrack(refs.sectionGrapher, refs.track);
-  }
   if (snapId === "middle") {
     return getOffsetInTrack(refs.sectionCalc, refs.track);
   }
@@ -765,7 +760,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     const main = shell.querySelector<HTMLElement>("[data-v2-main='true']");
     const viewport = shell.querySelector<HTMLElement>("[data-v2-viewport='true']");
     const track = shell.querySelector<HTMLElement>("[data-v2-track='true']");
-    const sectionGrapher = shell.querySelector<HTMLElement>("[data-v2-section='grapher']");
     const sectionCalc = shell.querySelector<HTMLElement>("[data-v2-section='calc']");
     const sectionStorage = shell.querySelector<HTMLElement>("[data-v2-section='storage']");
     const middleDrawerViewport = shell.querySelector<HTMLElement>("[data-v2-middle-drawer-viewport='true']");
@@ -782,7 +776,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     const menu = shell.querySelector<HTMLElement>("[data-v2-menu='true']");
     const menuNavChecklist = shell.querySelector<HTMLButtonElement>("[data-v2-menu-button='checklist']");
     const menuPanelChecklist = shell.querySelector<HTMLElement>("[data-v2-menu-panel='checklist']");
-    const grapherDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
     const calcDevice = root.querySelector<HTMLElement>("[data-calc-device]");
     const keys = root.querySelector<HTMLElement>("[data-keys]");
     const storageKeys = root.querySelector<HTMLElement>("[data-storage-keys]");
@@ -790,7 +783,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       !main ||
       !viewport ||
       !track ||
-      !sectionGrapher ||
       !sectionCalc ||
       !sectionStorage ||
       !middleDrawerViewport ||
@@ -807,7 +799,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       !menu ||
       !menuNavChecklist ||
       !menuPanelChecklist ||
-      !grapherDevice ||
       !calcDevice ||
       !keys ||
       !storageKeys
@@ -819,7 +810,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       main,
       viewport,
       track,
-      sectionGrapher,
       sectionCalc,
       sectionStorage,
       middleDrawerViewport,
@@ -836,7 +826,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       menu,
       menuNavChecklist,
       menuPanelChecklist,
-      grapherDevice,
       calcDevice,
       keys,
       storageKeys,
@@ -855,14 +844,13 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       return existing;
     }
 
-    const grapherDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
     const allocatorDevice = root.querySelector<HTMLElement>("[data-allocator-device]");
     const calcDevice = root.querySelector<HTMLElement>("[data-calc-device]");
     const storageSection = root.querySelector<HTMLElement>(".storage");
     const checklistShell = root.querySelector<HTMLElement>(".checklist-shell");
     const keys = root.querySelector<HTMLElement>("[data-keys]");
     const storageKeys = root.querySelector<HTMLElement>("[data-storage-keys]");
-    if (!grapherDevice || !allocatorDevice || !calcDevice || !storageSection || !checklistShell || !keys || !storageKeys) {
+    if (!allocatorDevice || !calcDevice || !storageSection || !checklistShell || !keys || !storageKeys) {
       throw new Error("V2 shell could not find required modules.");
     }
 
@@ -881,10 +869,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     const track = document.createElement("div");
     track.className = "v2-stack-track";
     track.dataset.v2Track = "true";
-
-    const sectionGrapher = document.createElement("section");
-    sectionGrapher.className = "v2-stack-section v2-stack-section--grapher";
-    sectionGrapher.dataset.v2Section = "grapher";
 
     const sectionCalc = document.createElement("section");
     sectionCalc.className = "v2-stack-section v2-stack-section--calc";
@@ -918,7 +902,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     bottomDrawerPanelAllocator.className = "v2-bottom-drawer-panel";
     bottomDrawerPanelAllocator.dataset.v2DrawerPanel = "allocator";
 
-    sectionGrapher.appendChild(grapherDevice);
     middleDrawerPanelCalculator.appendChild(calcDevice);
     middleDrawerPanelChecklist.appendChild(checklistShell);
     middleDrawerTrack.append(middleDrawerPanelCalculator, middleDrawerPanelChecklist);
@@ -930,7 +913,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     bottomDrawerViewport.appendChild(bottomDrawerTrack);
     sectionStorage.appendChild(bottomDrawerViewport);
 
-    track.append(sectionGrapher, sectionCalc, sectionStorage);
+    track.append(sectionCalc, sectionStorage);
     viewport.appendChild(track);
 
     const controls = document.createElement("div");
@@ -988,7 +971,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       main,
       viewport,
       track,
-      sectionGrapher,
       sectionCalc,
       sectionStorage,
       middleDrawerViewport,
@@ -1005,7 +987,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       menu,
       menuNavChecklist,
       menuPanelChecklist,
-      grapherDevice,
       calcDevice,
       keys,
       storageKeys,
@@ -1021,7 +1002,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     touchRearrange.syncContext(state, dispatch);
     const refs = ensureShellRefs();
     renderCalculatorStorageV2Module(root, state, dispatch);
-    renderGrapherV2Module(root, state);
+    renderVisualizerHost(root, state);
     renderChecklistV2Module(root, state);
     renderAllocatorV2Module(root, state, dispatch);
     syncSnapAndUi(refs, state, false);
@@ -1029,7 +1010,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
 
   const dispose = (): void => {
     touchRearrange.cancel();
-    clearGrapherV2Module();
+    clearVisualizerHost(root);
     for (const cleanup of cleanupListeners.splice(0)) {
       cleanup();
     }
@@ -1049,7 +1030,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     controller.runtime.activeMiddlePanelId = "calculator";
     controller.runtime.activeBottomPanelId = "storage";
     touchRearrange.cancel();
-    clearGrapherV2Module();
+    clearVisualizerHost(root);
     dragActive = false;
     dragDeltaY = 0;
     drawerDragActive = false;
@@ -1089,5 +1070,4 @@ export const resetShellRuntimeForTests = (): void => {
   for (const renderer of rendererRegistry) {
     renderer.resetForTests();
   }
-  clearGrapherV2Module();
 };

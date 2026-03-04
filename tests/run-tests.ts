@@ -41,6 +41,8 @@ import { runUiShellTouchRearrangeBottomSnapGateTests } from "./uiShell.touchRear
 import { runUiModuleChecklistV2Tests } from "./uiModule.checklist.v2.test.js";
 import { runUiModuleAllocatorV2Tests } from "./uiModule.allocator.v2.test.js";
 import { runUiModuleGrapherV2Tests } from "./uiModule.grapher.v2.test.js";
+import { runUiModuleVisualizerHostV2Tests } from "./uiModule.visualizerHost.v2.test.js";
+import { runKeyUnlocksTests } from "./keyUnlocks.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -62,6 +64,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/predicate-capability-spec", runPredicateCapabilitySpecTests],
   ["domain/unlock-graph", runUnlockGraphTests],
   ["domain/key-behavior-contract", runKeyBehaviorContractTests],
+  ["domain/key-unlocks", runKeyUnlocksTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],
@@ -86,6 +89,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/checklist-v2", runUiModuleChecklistV2Tests],
   ["ui-module/allocator-v2", runUiModuleAllocatorV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
+  ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
 ];
 
 let passed = 0;

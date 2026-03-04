@@ -1,6 +1,7 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../domain/calculatorValue.js";
-import { CHECKLIST_UNLOCK_ID, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
+import { isKeyUnlocked } from "../domain/keyUnlocks.js";
+import { CHECKLIST_UNLOCK_ID, FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { isStorageLayoutValid } from "../domain/reducer.layout.js";
 import {
@@ -82,7 +83,8 @@ type GraphScale = {
     callback?: (value: string | number, index?: number, ticks?: Array<{ value: number }>) => string | number;
   };
   grid?: {
-    color?: string;
+    color?: string | ((context: { tick?: { value?: number | string } }) => string);
+    lineWidth?: number | ((context: { tick?: { value?: number | string } }) => number);
     display?: boolean;
   };
   border?: {
@@ -147,7 +149,6 @@ let observedStorageGrid: HTMLElement | null = null;
 let suppressClicksUntil = 0;
 let inputAnimationLockCount = 0;
 const GRAPH_WINDOW_SIZE = 25;
-const GRAPH_MIN_Y_RANGE = 15;
 const DRAG_START_THRESHOLD_PX = 6;
 const DRAG_CLICK_SUPPRESS_MS = 220;
 const INPUT_LOCK_FALLBACK_BUFFER_MS = 80;
@@ -227,6 +228,7 @@ export const formatKeyLabel = (key: Key): string => {
 
 const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
 const GRAPH_TOGGLE_BEHAVIOR: KeyButtonBehavior = { type: "toggle_flag", flag: GRAPH_VISIBLE_FLAG };
+const FEED_TOGGLE_BEHAVIOR: KeyButtonBehavior = { type: "toggle_flag", flag: FEED_VISIBLE_FLAG };
 
 const getButtonFlag = (state: GameState, flag: string): boolean => {
   if (flag === GRAPH_VISIBLE_FLAG) {
@@ -238,6 +240,9 @@ const getButtonFlag = (state: GameState, flag: string): boolean => {
 export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => {
   if (cell.key === "GRAPH") {
     return cell.behavior ?? GRAPH_TOGGLE_BEHAVIOR;
+  }
+  if (cell.key === "FEED") {
+    return cell.behavior ?? FEED_TOGGLE_BEHAVIOR;
   }
   return cell.behavior ?? PRESS_KEY_BEHAVIOR;
 };
@@ -615,23 +620,10 @@ export const renderChecklistModule = (root: Element, state: GameState): void => 
   renderUnlockChecklist(unlockEl, state);
 };
 
-const getGraphBounds = (points: GraphPoint[]): { min: number; max: number } => {
-  const values = points.map((point) => point.y);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const spread = max - min;
-  const padding = Math.max(spread * 0.12, 0.1);
-  let lower = min - padding;
-  let upper = max + padding;
-
-  const range = upper - lower;
-  if (range < GRAPH_MIN_Y_RANGE) {
-    const deficit = GRAPH_MIN_Y_RANGE - range;
-    lower -= deficit / 2;
-    upper += deficit / 2;
-  }
-
-  return { min: lower, max: upper };
+export const buildGraphYWindow = (unlockedTotalDigits: number): { min: number; max: number } => {
+  const clampedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
+  const maxMagnitude = Math.pow(10, clampedDigits) - 1;
+  return { min: -maxMagnitude, max: maxMagnitude };
 };
 
 export const buildGraphXWindow = (
@@ -644,8 +636,8 @@ export const buildGraphXWindow = (
   return { min: rollLength - windowSize, max: rollLength - 1 };
 };
 
-const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[]): GraphOptions => {
-  const bounds = hasPoints ? getGraphBounds(points) : { min: 0, max: 1 };
+const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTotalDigits: number): GraphOptions => {
+  const bounds = buildGraphYWindow(unlockedTotalDigits);
   const xWindow = buildGraphXWindow(points.length);
   const makeTickLabelCallback =
     (axisMax: number) =>
@@ -694,19 +686,30 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[]): GraphOptio
       y: {
         min: bounds.min,
         max: bounds.max,
-        display: hasPoints,
+        display: true,
         ticks: {
           color: "#bcffd6",
           autoSkip: true,
           callback: makeTickLabelCallback(bounds.max),
         },
         grid: {
-          color: "rgba(188, 255, 214, 0.2)",
-          display: hasPoints,
+          color: (context: { tick?: { value?: number | string } }) => {
+            const value = context.tick?.value;
+            const numeric = typeof value === "number" ? value : Number(value);
+            return Number.isFinite(numeric) && Math.abs(numeric) < 1e-9
+              ? "rgba(188, 255, 214, 0.75)"
+              : "rgba(188, 255, 214, 0.2)";
+          },
+          lineWidth: (context: { tick?: { value?: number | string } }) => {
+            const value = context.tick?.value;
+            const numeric = typeof value === "number" ? value : Number(value);
+            return Number.isFinite(numeric) && Math.abs(numeric) < 1e-9 ? 2 : 1;
+          },
+          display: true,
         },
         border: {
           color: "rgba(188, 255, 214, 0.45)",
-          display: hasPoints,
+          display: true,
         },
       },
     },
@@ -723,7 +726,27 @@ export const clearGraphModule = (): void => {
   destroyGraphChart();
 };
 
-const renderGraphDisplay = (root: Element, roll: CalculatorValue[], rollErrors: RollErrorEntry[]): void => {
+const syncGraphVisibilityUi = (root: Element, graphVisible: boolean): void => {
+  const grapherDeviceEl = root.querySelector<HTMLElement>("[data-grapher-device]");
+  const displayWindowEl = root.querySelector<HTMLElement>("[data-display-window]");
+  const calcRootEl = root.querySelector<HTMLElement>(".calc");
+  if (displayWindowEl) {
+    displayWindowEl.setAttribute("data-graph-visible", graphVisible ? "true" : "false");
+  }
+  if (calcRootEl) {
+    calcRootEl.setAttribute("data-graph-visible", graphVisible ? "true" : "false");
+  }
+  if (grapherDeviceEl) {
+    grapherDeviceEl.setAttribute("aria-hidden", graphVisible ? "false" : "true");
+  }
+};
+
+const renderGraphDisplay = (
+  root: Element,
+  roll: CalculatorValue[],
+  rollErrors: RollErrorEntry[],
+  unlockedTotalDigits: number,
+): void => {
   const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
   if (!canvas) {
     destroyGraphChart();
@@ -747,7 +770,7 @@ const renderGraphDisplay = (root: Element, roll: CalculatorValue[], rollErrors: 
 
   const points = buildGraphPoints(roll, rollErrors);
   const hasPoints = isGraphVisible(roll);
-  const options = buildGraphOptions(hasPoints, points);
+  const options = buildGraphOptions(hasPoints, points, unlockedTotalDigits);
   const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
   const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));
 
@@ -781,33 +804,17 @@ const renderGraphDisplay = (root: Element, roll: CalculatorValue[], rollErrors: 
 };
 
 export const renderGraphModule = (root: Element, state: GameState): void => {
-  const grapherDeviceEl = root.querySelector<HTMLElement>("[data-grapher-device]");
   const graphVisible = getButtonFlag(state, GRAPH_VISIBLE_FLAG);
-  if (grapherDeviceEl) {
-    grapherDeviceEl.hidden = !graphVisible;
-  }
+  syncGraphVisibilityUi(root, graphVisible);
   if (graphVisible) {
-    renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors);
+    renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors, state.unlocks.maxTotalDigits);
   } else {
     destroyGraphChart();
   }
 };
 
-const isKeyUnlocked = (state: GameState, key: Key): boolean => {
-  if (/^\d$/.test(key) || key === "NEG") {
-    return state.unlocks.valueExpression[key as keyof GameState["unlocks"]["valueExpression"]];
-  }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
-    return state.unlocks.slotOperators[key];
-  }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
-    return state.unlocks.utilities[key];
-  }
-  if (key === "=" || key === "++") {
-    return state.unlocks.execution[key];
-  }
-  return false;
-};
+export const isFeedRollVisible = (state: GameState, _rollHasRows: boolean): boolean =>
+  getButtonFlag(state, FEED_VISIBLE_FLAG) && !getButtonFlag(state, GRAPH_VISIBLE_FLAG);
 
 export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   return getKeyVisualGroupShared(key);
@@ -1475,6 +1482,9 @@ const buildUnlockSnapshot = (state: GameState): Record<Key, boolean> => {
   for (const [key, unlocked] of Object.entries(state.unlocks.utilities)) {
     snapshot[key as Key] = unlocked;
   }
+  for (const [key, unlocked] of Object.entries(state.unlocks.visualizers)) {
+    snapshot[key as Key] = unlocked;
+  }
   for (const [key, unlocked] of Object.entries(state.unlocks.execution)) {
     snapshot[key as Key] = unlocked;
   }
@@ -1517,7 +1527,6 @@ export const render = (
   const unlockEl = root.querySelector("[data-unlocks]");
   const keysEl = root.querySelector("[data-keys]");
   const storageEl = root.querySelector("[data-storage-keys]");
-  const grapherDeviceEl = root.querySelector<HTMLElement>("[data-grapher-device]");
 
   if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl || !storageEl) {
     throw new Error("UI mount points are missing.");
@@ -1527,11 +1536,9 @@ export const render = (
 
   if (!options.skipGraph) {
     const isGraphVisible = getButtonFlag(state, GRAPH_VISIBLE_FLAG);
-    if (grapherDeviceEl) {
-      grapherDeviceEl.hidden = !isGraphVisible;
-    }
+    syncGraphVisibilityUi(root, isGraphVisible);
     if (isGraphVisible) {
-      renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors);
+      renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors, state.unlocks.maxTotalDigits);
     } else {
       destroyGraphChart();
     }
@@ -1541,10 +1548,11 @@ export const render = (
   slotEl.textContent = buildOperationSlotDisplay(state);
 
   const rollView = buildRollViewModel(state.calculator.roll, state.calculator.euclidRemainders, state.calculator.rollErrors);
+  const rollVisible = isFeedRollVisible(state, rollView.isVisible);
   rollEl.innerHTML = "";
-  rollEl.setAttribute("data-roll-visible", rollView.isVisible ? "true" : "false");
-  rollEl.setAttribute("aria-hidden", rollView.isVisible ? "false" : "true");
-  rollEl.setAttribute("aria-label", rollView.isVisible ? "Calculator roll" : "Calculator roll hidden");
+  rollEl.setAttribute("data-roll-visible", rollVisible ? "true" : "false");
+  rollEl.setAttribute("aria-hidden", rollVisible ? "false" : "true");
+  rollEl.setAttribute("aria-label", rollVisible ? "Calculator roll" : "Calculator roll hidden");
   if (rollEl instanceof HTMLElement) {
     rollEl.style.setProperty("--roll-line-count", rollView.lineCount.toString());
   }

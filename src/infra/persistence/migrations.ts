@@ -2,6 +2,7 @@ import {
   defaultDrawerKeyLayout,
   defaultKeyLayout,
   defaultStorageLayout,
+  FEED_VISIBLE_FLAG,
   GRAPH_VISIBLE_FLAG,
   initialState,
   KEYPAD_DEFAULT_COLUMNS,
@@ -50,6 +51,7 @@ export type SerializableStateV1 = {
     valueExpression?: Partial<UnlockState["valueExpression"]>;
     slotOperators?: Partial<UnlockState["slotOperators"]>;
     utilities?: Partial<Record<"C" | "CE" | "UNDO" | "GRAPH" | "\u23EF" | "NEG", boolean>>;
+    visualizers?: Partial<UnlockState["visualizers"]>;
     execution?: Partial<UnlockState["execution"]>;
   };
   completedUnlockIds?: string[];
@@ -188,12 +190,14 @@ const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
-const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "GRAPH", "\u23EF"] as const;
+const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u23EF"] as const;
+const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED"] as const;
 const EXEC_KEY_VALUES = ["=", "++"] as const;
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
   ...SLOT_OPERATOR_VALUES,
   ...UTILITY_KEY_VALUES,
+  ...VISUALIZER_KEY_VALUES,
   ...EXEC_KEY_VALUES,
 ];
 const ERROR_CODE_VALUES: readonly ErrorCode[] = [
@@ -241,6 +245,7 @@ const normalizeButtonFlags = (value: unknown): Record<string, boolean> => {
 
 const withDefaultButtonFlags = (flags: Record<string, boolean>): Record<string, boolean> => ({
   [GRAPH_VISIBLE_FLAG]: false,
+  [FEED_VISIBLE_FLAG]: false,
   ...flags,
 });
 
@@ -416,6 +421,11 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
     },
     slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
     utilities: { ...defaults.utilities, ...(source?.utilities ?? {}) },
+    visualizers: {
+      ...defaults.visualizers,
+      ...(source?.visualizers ?? {}),
+      ...(typeof source?.utilities?.GRAPH === "boolean" ? { GRAPH: source.utilities.GRAPH } : {}),
+    },
     execution: { ...defaults.execution, ...(source?.execution ?? {}) },
     uiUnlocks: { ...defaults.uiUnlocks, ...(source?.uiUnlocks ?? {}) },
     maxSlots: normalizeUnlockCap(source?.maxSlots, defaults.maxSlots, MAX_SLOTS_MIN, MAX_SLOTS_MAX),
@@ -800,6 +810,7 @@ export const validateSerializableStateV3 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
     !hasValidBooleans(Object.keys(defaults.uiUnlocks), unlocks.uiUnlocks) ||
     !isInteger(unlocks.maxSlots) ||
@@ -851,6 +862,7 @@ export const validateSerializableStateV4 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
     !hasValidBooleans(Object.keys(defaults.uiUnlocks), unlocks.uiUnlocks) ||
     !isInteger(unlocks.maxSlots) ||
@@ -909,6 +921,7 @@ export const validateSerializableStateV5 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
     !hasValidBooleans(Object.keys(defaults.uiUnlocks), unlocks.uiUnlocks) ||
     !isInteger(unlocks.maxSlots) ||

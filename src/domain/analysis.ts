@@ -5,6 +5,7 @@ import {
   type PredicateCapabilitySpec,
 } from "./predicateCapabilitySpec.js";
 import { isRationalCalculatorValue } from "./calculatorValue.js";
+import { isKeyUnlocked } from "./keyUnlocks.js";
 import type { GameState, Key, LayoutCell, UnlockDefinition, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 
@@ -47,22 +48,6 @@ const formatPredicate = (name: string, value: boolean): string => `${name}=${val
 
 const isKeyCell = (cell: LayoutCell): cell is { kind: "key"; key: Key } => cell.kind === "key";
 
-const isUnlocked = (state: GameState, key: Key): boolean => {
-  if (/^\d$/.test(key) || key === "NEG") {
-    return state.unlocks.valueExpression[key as keyof GameState["unlocks"]["valueExpression"]];
-  }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
-    return state.unlocks.slotOperators[key];
-  }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
-    return state.unlocks.utilities[key];
-  }
-  if (key === "=" || key === "++") {
-    return state.unlocks.execution[key];
-  }
-  return false;
-};
-
 const createAvailabilityReader = (
   state: GameState,
   options: NumberDomainAnalysisOptions,
@@ -70,7 +55,7 @@ const createAvailabilityReader = (
   const useAllUnlockedKeys = options.useAllUnlockedKeys ?? false;
   const keypadKeys = new Set(state.ui.keyLayout.filter(isKeyCell).map((cell) => cell.key));
   return {
-    isAvailable: (key: Key): boolean => isUnlocked(state, key) && (useAllUnlockedKeys || keypadKeys.has(key)),
+    isAvailable: (key: Key): boolean => isKeyUnlocked(state, key) && (useAllUnlockedKeys || keypadKeys.has(key)),
     scopeLabel: useAllUnlockedKeys ? "all_unlocked" : "present_on_keypad",
   };
 };
@@ -79,7 +64,7 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
   const hasEqualsKey = isAvailable("=");
   const hasIncrementKey = isAvailable("++");
   const hasPauseKey = isAvailable("\u23EF");
-  const hasAnyExecutorUnlocked = isUnlocked(state, "=") || isUnlocked(state, "++");
+  const hasAnyExecutorUnlocked = isKeyUnlocked(state, "=") || isKeyUnlocked(state, "++");
   const executeActivation = hasEqualsKey || hasIncrementKey || (hasPauseKey && hasAnyExecutorUnlocked);
   const hasPlus = isAvailable("+");
   const hasMinus = isAvailable("-");

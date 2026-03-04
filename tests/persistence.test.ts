@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import {
+  FEED_VISIBLE_FLAG,
   SAVE_KEY,
   SAVE_SCHEMA_VERSION,
   initialState,
@@ -59,7 +60,15 @@ export const runPersistenceTests = (): void => {
     unlocks: {
       ...base.unlocks,
       uiUnlocks: { storageVisible: true },
+      visualizers: { ...base.unlocks.visualizers, FEED: true },
       execution: { ...base.unlocks.execution, "=": true },
+    },
+    ui: {
+      ...base.ui,
+      buttonFlags: {
+        ...base.ui.buttonFlags,
+        [FEED_VISIBLE_FLAG]: true,
+      },
     },
     completedUnlockIds: ["unlock_storage_on_total_11", "unlock_equals_on_total_11"],
   };
@@ -80,6 +89,8 @@ export const runPersistenceTests = (): void => {
     "round-trip allocator fields",
   );
   assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
+  assert.equal(loaded?.unlocks.visualizers.FEED, true, "round-trip FEED visualizer unlock");
+  assert.equal(Boolean(loaded?.ui.buttonFlags[FEED_VISIBLE_FLAG]), true, "round-trip FEED visibility flag");
 
   const legacyV1 = loadFromRawSave(
     JSON.stringify({

@@ -13,7 +13,7 @@ import type {
   UnlockEffect,
 } from "../../domain/types.js";
 
-export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "execution";
+export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "visualizers" | "execution";
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -78,8 +78,11 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return "slot_operator";
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "\u23EF") {
     return "utility";
+  }
+  if (key === "GRAPH" || key === "FEED") {
+    return "visualizers";
   }
   return "execution";
 };

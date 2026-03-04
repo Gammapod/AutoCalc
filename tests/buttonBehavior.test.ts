@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { initialState } from "../src/domain/state.js";
+import { FEED_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
 import {
   beginInputAnimationLock,
   buildKeyButtonAction,
@@ -44,6 +44,13 @@ export const runButtonBehaviorTests = (): void => {
     },
   };
   assert.equal(isToggleFlagActive(withToggleFlag, toggleCell), true, "toggle is active when its flag is set");
+
+  const feedToggleCell: KeyCell = { kind: "key", key: "FEED" };
+  assert.deepEqual(
+    buildKeyButtonAction(base, feedToggleCell),
+    { type: "TOGGLE_FLAG", flag: FEED_VISIBLE_FLAG },
+    "FEED key defaults to toggle behavior and dispatches TOGGLE_FLAG",
+  );
 
   const now = Date.now();
   setSuppressClicksUntilForTests(now + 500);

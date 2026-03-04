@@ -12,6 +12,7 @@ import {
   toRationalCalculatorValue,
 } from "./calculatorValue.js";
 import { executeSlots } from "./engine.js";
+import { isKeyUnlocked } from "./keyUnlocks.js";
 import { clearOperationEntry, createResetCalculatorState, resetRunState } from "./reducer.stateBuilders.js";
 import { CHECKLIST_UNLOCK_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import { getOperationSnapshot, toCommittedDraftingSlot } from "./slotDrafting.js";
@@ -28,22 +29,6 @@ const incrementKeyPressCount = (state: GameState, key: Key): GameState => ({
     [key]: (state.keyPressCounts[key] ?? 0) + 1,
   },
 });
-
-const isKeyUnlockedForInput = (state: GameState, key: Key): boolean => {
-  if (DIGITS.includes(key as Digit) || key === "NEG") {
-    return state.unlocks.valueExpression[key as keyof GameState["unlocks"]["valueExpression"]];
-  }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
-    return state.unlocks.slotOperators[key];
-  }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
-    return state.unlocks.utilities[key];
-  }
-  if (key === "=" || key === "++") {
-    return state.unlocks.execution[key];
-  }
-  return false;
-};
 
 const withDigit = (source: string, digit: Digit): string => {
   if (source === "0") {
@@ -375,12 +360,24 @@ const applyIncrement = (state: GameState): GameState => {
   }
 
   const evaluation = evaluateExecutionOutcome(state, "++");
+  const appendedRollIndex = state.calculator.roll.length;
+  const nextRollErrors = [...state.calculator.rollErrors];
+  if (evaluation.errorCode && evaluation.errorKind) {
+    nextRollErrors.push({
+      rollIndex: appendedRollIndex,
+      code: evaluation.errorCode,
+      kind: evaluation.errorKind,
+    });
+  }
+
   const withIncrementedTotal: GameState = {
     ...state,
     calculator: {
       ...state.calculator,
       total: evaluation.nextTotal,
       pendingNegativeTotal: false,
+      roll: [...state.calculator.roll, evaluation.nextTotal],
+      rollErrors: nextRollErrors,
     },
   };
 
@@ -468,7 +465,7 @@ const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
 
 export const applyKeyAction = (state: GameState, key: Key): GameState => {
   const preprocessed = preprocessForActiveRoll(state, key);
-  const keyed = isKeyUnlockedForInput(preprocessed, key) ? incrementKeyPressCount(preprocessed, key) : preprocessed;
+  const keyed = isKeyUnlocked(preprocessed, key) ? incrementKeyPressCount(preprocessed, key) : preprocessed;
 
   if (isDigit(key)) {
     return applyDigit(keyed, key);

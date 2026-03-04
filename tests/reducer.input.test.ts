@@ -97,4 +97,8 @@ export const runReducerInputTests = (): void => {
     "x∉[-R,R]",
     "overflow records overflow error code",
   );
+  const incrementSource = initialState();
+  const afterIncrement = applyKeyAction(incrementSource, "++");
+  assert.deepEqual(afterIncrement.calculator.total, r(1n), "increment updates total");
+  assert.deepEqual(afterIncrement.calculator.roll, [r(1n)], "increment appends new total to roll");
 };

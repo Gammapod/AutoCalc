@@ -22,3 +22,4 @@ export { renderChecklistV2Module } from "./modules/checklistRenderer.js";
 export { renderAllocatorV2Module } from "./modules/allocatorRenderer.js";
 export { renderGrapherV2Module } from "./modules/grapherRenderer.js";
 export { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
+export { clearVisualizerHost, resolveActiveVisualizerPanel, renderVisualizerHost } from "./modules/visualizerHost.js";

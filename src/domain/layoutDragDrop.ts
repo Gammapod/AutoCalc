@@ -1,4 +1,5 @@
 import { isStorageLayoutValid } from "./reducer.layout.js";
+import { isKeyUnlocked } from "./keyUnlocks.js";
 import type { GameState, Key, LayoutSurface } from "./types.js";
 
 type Occupancy = "key" | "empty" | "invalid";
@@ -10,22 +11,6 @@ type DragTarget = {
 };
 
 const isExecutionKey = (key: Key): boolean => key === "=" || key === "++";
-
-const isKeyUnlocked = (state: GameState, key: Key): boolean => {
-  if (/^\d$/.test(key) || key === "NEG") {
-    return state.unlocks.valueExpression[key as keyof GameState["unlocks"]["valueExpression"]];
-  }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
-    return state.unlocks.slotOperators[key];
-  }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "GRAPH" || key === "\u23EF") {
-    return state.unlocks.utilities[key];
-  }
-  if (key === "=" || key === "++") {
-    return state.unlocks.execution[key];
-  }
-  return false;
-};
 
 const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
   if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {

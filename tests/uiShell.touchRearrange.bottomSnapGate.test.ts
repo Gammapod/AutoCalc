@@ -5,11 +5,6 @@ import { canStartTouchRearrange } from "../src_v2/ui/renderAdapter.js";
 export const runUiShellTouchRearrangeBottomSnapGateTests = (): void => {
   const state = initialState();
   assert.equal(
-    canStartTouchRearrange(state, "touch", false, "top"),
-    true,
-    "touch rearrange is enabled in top snap",
-  );
-  assert.equal(
     canStartTouchRearrange(state, "touch", false, "middle"),
     true,
     "touch rearrange is enabled in middle snap",
