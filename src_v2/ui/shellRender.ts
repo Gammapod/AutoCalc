@@ -1,4 +1,5 @@
 import type { Action, GameState, Key, LayoutSurface } from "../../src/domain/types.js";
+import type { InteractionMode } from "../../src/app/interactionRuntime.js";
 import { createShellController } from "./shellController.js";
 import type { SnapId } from "./shellModel.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "./touchRearrangeController.js";
@@ -8,9 +9,21 @@ import { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRend
 import { clearVisualizerHost, renderVisualizerHost } from "./modules/visualizerHost.js";
 
 export type ShellRenderer = {
-  render: (state: GameState, dispatch: (action: Action) => unknown) => void;
+  render: (state: GameState, dispatch: (action: Action) => unknown, options?: ShellRenderOptions) => void;
+  forceActiveView: (options: {
+    snapId: SnapId;
+    middlePanelId?: "calculator" | "checklist";
+    bottomPanelId?: "storage" | "allocator";
+    includeTransition?: boolean;
+  }) => void;
+  playTransitionCue: (target: "calculator" | "allocator") => Promise<void>;
   dispose: () => void;
   resetForTests: () => void;
+};
+
+export type ShellRenderOptions = {
+  interactionMode?: InteractionMode;
+  inputBlocked?: boolean;
 };
 
 type ShellRefs = {
@@ -149,12 +162,16 @@ export const canStartTouchRearrange = (
   _state: GameState,
   pointerType: string,
   menuOpen: boolean,
+  inputBlocked: boolean,
   _activeSnapId: SnapId,
 ): boolean => {
   if (pointerType !== "touch") {
     return false;
   }
   if (menuOpen) {
+    return false;
+  }
+  if (inputBlocked) {
     return false;
   }
   return true;
@@ -192,6 +209,8 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   let drawerDragTarget: DrawerDragTarget | null = null;
   let latestState: GameState | null = null;
   let latestDispatch: ((action: Action) => unknown) | null = null;
+  let latestInteractionMode: InteractionMode = "calculator";
+  let latestInputBlocked = false;
   let pointerSession: PointerSession | null = null;
   let returnFocusEl: HTMLElement | null = null;
   const cleanupListeners: Array<() => void> = [];
@@ -319,21 +338,23 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   };
 
   const syncControlDisabledState = (refs: ShellRefs, state: GameState): void => {
-    const model = controller.sync(state);
-    const gesturesBlocked = touchRearrange.isGestureBlocked();
+    const model = controller.sync(state, latestInteractionMode);
+    const gesturesBlocked = touchRearrange.isGestureBlocked() || latestInputBlocked;
     refs.controlsUp.disabled = gesturesBlocked || !controller.canSnapUp(model);
     refs.controlsDown.disabled = gesturesBlocked || !controller.canSnapDown(model);
     refs.controlsMenu.disabled = gesturesBlocked;
   };
 
   const syncViewportTouchAction = (refs: ShellRefs): void => {
-    const lock = touchRearrange.isCarrying() || touchRearrange.isPressing();
+    const lock = latestInputBlocked || touchRearrange.isCarrying() || touchRearrange.isPressing();
     refs.viewport.style.touchAction = lock ? "none" : "pan-y";
     refs.keys.style.touchAction = lock ? "none" : "manipulation";
     refs.storageKeys.style.touchAction = lock ? "none" : "pan-y";
   };
 
   const syncSnapAndUi = (refs: ShellRefs, state: GameState, includeTransition: boolean): void => {
+    refs.shell.dataset.v2InteractionMode = latestInteractionMode;
+    refs.shell.dataset.v2InputBlocked = latestInputBlocked ? "true" : "false";
     syncControlDisabledState(refs, state);
     setMenuModuleClass(refs);
     applyMenuA11yState(refs);
@@ -367,7 +388,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   };
 
   const openMenu = (triggerEl?: HTMLElement | null): void => {
-    if (touchRearrange.isGestureBlocked()) {
+    if (latestInputBlocked || touchRearrange.isGestureBlocked()) {
       return;
     }
     const refs = refsCache;
@@ -382,7 +403,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   };
 
   const snapUp = (): void => {
-    if (touchRearrange.isGestureBlocked()) {
+    if (latestInputBlocked || touchRearrange.isGestureBlocked()) {
       return;
     }
     const refs = refsCache;
@@ -390,13 +411,13 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     if (!refs || !state) {
       return;
     }
-    const model = controller.sync(state);
+    const model = controller.sync(state, latestInteractionMode);
     controller.moveSnap(model, "up");
     syncSnapAndUi(refs, state, true);
   };
 
   const snapDown = (): void => {
-    if (touchRearrange.isGestureBlocked()) {
+    if (latestInputBlocked || touchRearrange.isGestureBlocked()) {
       return;
     }
     const refs = refsCache;
@@ -404,7 +425,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     if (!refs || !state) {
       return;
     }
-    const model = controller.sync(state);
+    const model = controller.sync(state, latestInteractionMode);
     controller.moveSnap(model, "down");
     syncSnapAndUi(refs, state, true);
   };
@@ -436,6 +457,9 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     listen(refs.storageKeys, "touchmove", preventNativeTouchScrollWhenRearranging, { passive: false });
 
     listen(refs.viewport, "pointerdown", (event) => {
+      if (latestInputBlocked) {
+        return;
+      }
       const pointerEvent = event as PointerEvent;
       if (pointerEvent.pointerType === "mouse" && pointerEvent.button !== 0) {
         return;
@@ -449,10 +473,19 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       }
       if (
         latestState &&
-        canStartTouchRearrange(latestState, pointerEvent.pointerType, controller.runtime.menuOpen, controller.runtime.activeSnapId)
+        canStartTouchRearrange(
+          latestState,
+          pointerEvent.pointerType,
+          controller.runtime.menuOpen,
+          latestInputBlocked,
+          controller.runtime.activeSnapId,
+        )
       ) {
         const resolved = resolveTouchSourceFromEvent(latestState, pointerEvent.target);
         if (resolved) {
+          if (latestInteractionMode === "calculator" && resolved.source.surface === "storage") {
+            return;
+          }
           touchRearrange.startPress(pointerEvent.pointerId, pointerEvent.clientX, pointerEvent.clientY, resolved.source, resolved.element);
           syncViewportTouchAction(refs);
         }
@@ -486,8 +519,12 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       if (!pointerSession || pointerEvent.pointerId !== pointerSession.pointerId) {
         return;
       }
+      if (latestInputBlocked) {
+        clearPointerSession(refs);
+        return;
+      }
       if (latestState && latestDispatch) {
-        touchRearrange.syncContext(latestState, latestDispatch);
+        touchRearrange.syncContext(latestState, latestDispatch, latestInteractionMode);
       }
       touchRearrange.move(pointerEvent.pointerId, pointerEvent.clientX, pointerEvent.clientY, (x, y) => {
         const hovered = document.elementFromPoint(x, y) as HTMLElement | null;
@@ -593,7 +630,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       const velocityX = (pointerEvent.clientX - pointerSession.lastX) / elapsed;
       const velocityY = (pointerEvent.clientY - pointerSession.lastY) / elapsed;
       if (dragActive) {
-        const model = controller.sync(state);
+        const model = controller.sync(state, latestInteractionMode);
         controller.settleFromDrag(model, dragDeltaY, velocityY);
       }
       if (drawerDragActive && drawerDragTarget === "middle") {
@@ -653,6 +690,9 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     });
 
     listen(refs.menu, "pointerdown", (event) => {
+      if (latestInputBlocked) {
+        return;
+      }
       const pointerEvent = event as PointerEvent;
       if (pointerEvent.pointerType === "mouse" && pointerEvent.button !== 0) {
         return;
@@ -718,7 +758,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     });
 
     listen(refs.controlsMenu, "click", () => {
-      if (touchRearrange.isGestureBlocked()) {
+      if (latestInputBlocked || touchRearrange.isGestureBlocked()) {
         return;
       }
       const state = latestState;
@@ -996,16 +1036,54 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     return refsCache;
   };
 
-  const renderShell = (state: GameState, dispatch: (action: Action) => unknown): void => {
+  const renderShellWithOptions = (
+    state: GameState,
+    dispatch: (action: Action) => unknown,
+    options: ShellRenderOptions = {},
+  ): void => {
+    latestInteractionMode = options.interactionMode ?? "calculator";
+    latestInputBlocked = options.inputBlocked ?? false;
     latestState = state;
     latestDispatch = dispatch;
-    touchRearrange.syncContext(state, dispatch);
+    touchRearrange.syncContext(state, dispatch, latestInteractionMode);
     const refs = ensureShellRefs();
-    renderCalculatorStorageV2Module(root, state, dispatch);
+    renderCalculatorStorageV2Module(root, state, dispatch, {
+      interactionMode: latestInteractionMode,
+      inputBlocked: latestInputBlocked,
+    });
     renderVisualizerHost(root, state);
     renderChecklistV2Module(root, state);
     renderAllocatorV2Module(root, state, dispatch);
     syncSnapAndUi(refs, state, false);
+  };
+
+  const forceActiveView: ShellRenderer["forceActiveView"] = (options) => {
+    const refs = refsCache;
+    const state = latestState;
+    if (!refs || !state) {
+      return;
+    }
+    if (options.middlePanelId) {
+      controller.setMiddlePanel(options.middlePanelId);
+    }
+    if (options.bottomPanelId) {
+      controller.setBottomPanel(options.bottomPanelId);
+    }
+    const model = controller.sync(state, latestInteractionMode);
+    controller.setSnap(model, options.snapId);
+    syncSnapAndUi(refs, state, options.includeTransition ?? true);
+  };
+
+  const playTransitionCue: ShellRenderer["playTransitionCue"] = async (target) => {
+    const refs = ensureShellRefs();
+    const element = target === "allocator" ? refs.bottomDrawerPanelAllocator : refs.middleDrawerPanelCalculator;
+    element.classList.remove("v2-transition-cue");
+    void element.offsetWidth;
+    element.classList.add("v2-transition-cue");
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 520);
+    });
+    element.classList.remove("v2-transition-cue");
   };
 
   const dispose = (): void => {
@@ -1020,6 +1098,8 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     refsCache = null;
     latestState = null;
     latestDispatch = null;
+    latestInteractionMode = "calculator";
+    latestInputBlocked = false;
     returnFocusEl = null;
   };
 
@@ -1035,12 +1115,16 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     dragDeltaY = 0;
     drawerDragActive = false;
     drawerDragDeltaX = 0;
+    latestInteractionMode = "calculator";
+    latestInputBlocked = false;
     pointerSession = null;
     returnFocusEl = null;
   };
 
   return {
-    render: renderShell,
+    render: renderShellWithOptions,
+    forceActiveView,
+    playTransitionCue,
     dispose,
     resetForTests,
   };

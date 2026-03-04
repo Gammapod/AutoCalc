@@ -1,4 +1,5 @@
 import type { GameState } from "../../src/domain/types.js";
+import type { InteractionMode } from "../../src/app/interactionRuntime.js";
 
 export type SnapId = "middle" | "bottom";
 export type MenuModuleId = "checklist";
@@ -13,11 +14,11 @@ const SNAP_ORDER: SnapId[] = ["middle", "bottom"];
 
 export const snapOrder = (): readonly SnapId[] => SNAP_ORDER;
 
-export const buildShellViewModel = (state: GameState): ShellViewModel => {
+export const buildShellViewModel = (state: GameState, interactionMode: InteractionMode = "calculator"): ShellViewModel => {
   const availableSnaps: SnapId[] = [];
   const storageVisible = state.unlocks.uiUnlocks.storageVisible;
   availableSnaps.push("middle");
-  if (storageVisible) {
+  if (storageVisible && interactionMode === "modify") {
     availableSnaps.push("bottom");
   }
 

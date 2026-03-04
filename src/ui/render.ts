@@ -1523,6 +1523,8 @@ const getNewlyUnlockedKeys = (state: GameState): Set<Key> => {
 export type RenderOptions = {
   skipGraph?: boolean;
   skipChecklist?: boolean;
+  interactionMode?: "calculator" | "modify";
+  inputBlocked?: boolean;
 };
 
 export const render = (
@@ -1541,6 +1543,18 @@ export const render = (
 
   if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl || !storageEl) {
     throw new Error("UI mount points are missing.");
+  }
+
+  const interactionMode = options.interactionMode ?? "calculator";
+  const inputBlocked = options.inputBlocked ?? false;
+  const calculatorKeysLocked = inputBlocked || interactionMode === "modify";
+  const storageLocked = inputBlocked || interactionMode === "calculator";
+  if (root instanceof HTMLElement) {
+    root.dataset.interactionMode = interactionMode;
+    root.dataset.inputBlocked = inputBlocked ? "true" : "false";
+  }
+  if (storageEl instanceof HTMLElement) {
+    storageEl.dataset.storageLocked = storageLocked ? "true" : "false";
   }
 
   const newlyUnlockedKeys = getNewlyUnlockedKeys(state);
@@ -1679,12 +1693,15 @@ export const render = (
       button.classList.add("key--toggle-animate-off");
     }
     button.setAttribute("aria-pressed", keypadToggleActive ? "true" : "false");
-    button.disabled = false;
+    button.disabled = calculatorKeysLocked;
     button.dataset.keypadCellId = slotId;
     bindQuickTapPressFeedback(button);
     bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {
+      if (button.disabled) {
+        return;
+      }
       if (shouldSuppressClick()) {
         return;
       }
@@ -1755,7 +1772,7 @@ export const render = (
         button.classList.add("key--toggle-animate-off");
       }
       button.setAttribute("aria-pressed", storageToggleActive ? "true" : "false");
-      button.disabled = false;
+      button.disabled = storageLocked;
       bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
       appendDebugSlotLabel(button, slotLabel);
       storageEl.appendChild(button);

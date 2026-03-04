@@ -15,6 +15,7 @@ type TimerApi = {
 export type AutoEqualsSchedulerOptions = {
   intervalMs?: number;
   timers?: TimerApi;
+  dispatchAction?: (action: { type: "PRESS_KEY"; key: ExecKey } | { type: "TOGGLE_FLAG"; flag: string }) => void;
 };
 
 const defaultTimers: TimerApi = {
@@ -67,6 +68,9 @@ export const normalizeLoadedStateForRuntime = (loaded: GameState | null): GameSt
 export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSchedulerOptions = {}) => {
   const baseIntervalMs = options.intervalMs ?? AUTO_EQUALS_INTERVAL_MS;
   const timers = options.timers ?? defaultTimers;
+  const dispatchAction = options.dispatchAction ?? ((action) => {
+    store.dispatch(action);
+  });
   let intervalHandle: TimerHandle | null = null;
   let activeIntervalMs: number | null = null;
   let starting = false;
@@ -90,14 +94,14 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
     const executorKey = getInstalledExecutorKey(beforeAttempt);
     if (!executorKey) {
       if (isAutoEqualsEnabled(beforeAttempt)) {
-        store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+        dispatchAction({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
       }
       stop();
       return;
     }
 
     const validEquation = executorKey === "=" ? hasValidEquation(beforeAttempt) : true;
-    store.dispatch({ type: "PRESS_KEY", key: executorKey });
+    dispatchAction({ type: "PRESS_KEY", key: executorKey });
     const afterAttempt = store.getState();
     if (afterAttempt !== beforeAttempt) {
       resetInvalidAttempts();
@@ -119,7 +123,7 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
       return;
     }
 
-    store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+    dispatchAction({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
     stop();
   };
 

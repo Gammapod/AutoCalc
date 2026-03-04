@@ -1,5 +1,6 @@
 import { buildShellViewModel, isSnapAvailable, snapOrder, type MenuModuleId, type ShellViewModel, type SnapId } from "./shellModel.js";
 import type { GameState } from "../../src/domain/types.js";
+import type { InteractionMode } from "../../src/app/interactionRuntime.js";
 
 type AxisLock = "none" | "x" | "y";
 export type BottomDrawerPanelId = "storage" | "allocator";
@@ -148,8 +149,8 @@ export const createInitialShellRuntimeState = (): ShellRuntimeState => ({
 export const createShellController = (initial: ShellRuntimeState = createInitialShellRuntimeState()) => {
   const runtime: ShellRuntimeState = initial;
 
-  const sync = (state: GameState): ShellViewModel => {
-    const model = buildShellViewModel(state);
+  const sync = (state: GameState, interactionMode: InteractionMode = "calculator"): ShellViewModel => {
+    const model = buildShellViewModel(state, interactionMode);
     runtime.activeSnapId = clampSnapToAvailable(runtime.activeSnapId, model);
     if (!model.menuModules.includes(runtime.menuActiveModule)) {
       runtime.menuActiveModule = model.menuModules[0] ?? "checklist";

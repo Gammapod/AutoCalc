@@ -24,7 +24,7 @@ export const runUiShellSnapSelectionTests = (): void => {
       },
     },
   };
-  const twoSnapModel = buildShellViewModel(withStorage);
+  const twoSnapModel = buildShellViewModel(withStorage, "modify");
   assert.equal(getAdjacentSnap("middle", twoSnapModel, "down"), "bottom", "middle can move down to bottom");
   assert.equal(getAdjacentSnap("middle", twoSnapModel, "up"), null, "middle has no upward snap in two-snap mode");
   assert.equal(resolveSnapFromDrag("middle", twoSnapModel, 140, 0), "bottom", "positive drag transitions to bottom");

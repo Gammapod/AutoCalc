@@ -127,6 +127,13 @@
         color: #d8efe4;
       }
 
+      .allocator-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
       .allocator-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
@@ -211,21 +218,27 @@
         box-shadow: 0 0 4px rgba(188, 255, 214, 0.4);
       }
 
-      .allocator-reset {
+      .allocator-mode-action {
         border: 1px solid var(--key-utility-stroke);
         border-radius: 10px;
-        padding: 9px 10px;
+        padding: 7px 10px;
         background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
         color: #fff;
-        font-size: 0.8rem;
+        font-size: 0.72rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         cursor: pointer;
+        white-space: nowrap;
       }
 
-      .allocator-reset:hover {
+      .allocator-mode-action:hover {
         filter: brightness(1.04);
+      }
+
+      .allocator-mode-action:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       .grapher-screen {
@@ -708,6 +721,12 @@
 
       .key:hover:not(:disabled) {
         filter: brightness(1.04);
+      }
+
+      .key:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        filter: grayscale(0.35);
       }
 
       .key:active:not(:disabled),
@@ -1408,6 +1427,30 @@
         -webkit-overflow-scrolling: touch;
       }
 
+      [data-storage-keys][data-storage-locked="true"] {
+        opacity: 0.62;
+      }
+
+      .device--allocator[data-allocator-locked="true"] .allocator-grid {
+        opacity: 0.62;
+      }
+
+      .v2-transition-cue {
+        animation: v2-transition-cue-blink 220ms ease-in-out 2;
+      }
+
+      @keyframes v2-transition-cue-blink {
+        0%,
+        100% {
+          box-shadow: none;
+          filter: brightness(1);
+        }
+        50% {
+          box-shadow: 0 0 0 2px rgba(188, 255, 214, 0.95), 0 0 18px rgba(188, 255, 214, 0.55);
+          filter: brightness(1.12);
+        }
+      }
+
       .v2-shell-controls {
         position: absolute;
         right: 10px;
@@ -1591,7 +1634,10 @@
         <section class="play-area">
           <div class="device-row">
             <section class="device device--allocator" data-allocator-device aria-label="Allocator">
-              <h2 class="allocator-title">EIGEN ALLOCATOR | ~,==,"&lt;</h2>
+              <div class="allocator-header">
+                <h2 class="allocator-title">EIGEN ALLOCATOR | ~,==,"&lt;</h2>
+                <button type="button" class="allocator-mode-action" data-allocator-reset>Allocate 𝝀</button>
+              </div>
               <div class="allocator-grid">
                 <div class="allocator-row">
                   <span class="allocator-label">λ=</span>
@@ -1633,7 +1679,6 @@
                   <span class="allocator-display" data-allocator-slots data-allocator-effective-slots>0</span>
                 </div>
               </div>
-              <button type="button" class="allocator-reset" data-allocator-reset>Reset</button>
             </section>
             <section class="device device--calc" data-calc-device>
               <section class="roll" data-roll aria-label="Calculator roll"></section>

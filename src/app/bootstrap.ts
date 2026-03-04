@@ -4,6 +4,8 @@ import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js
 import { render } from "../ui/render.js";
 import { createShellRenderer } from "../../src_v2/ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
+import { createResetCalculatorState } from "../domain/reducer.stateBuilders.js";
+import { createInteractionRuntime } from "./interactionRuntime.js";
 import {
   AUTO_EQUALS_POINT_BONUS,
   createAutoEqualsScheduler,
@@ -11,7 +13,7 @@ import {
 } from "./autoEqualsScheduler.js";
 import { analyzeNumberDomains } from "../domain/analysis.js";
 import { formatNumberDomainReport } from "./analysisReport.js";
-import type { AllocatorAllocationField, GameState } from "../domain/types.js";
+import type { Action, AllocatorAllocationField, GameState } from "../domain/types.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -53,6 +55,7 @@ const applyMaxPointsButton = document.querySelector<HTMLButtonElement>("[data-de
 const runAnalysisButton = document.querySelector<HTMLButtonElement>("[data-debug-run-analysis]");
 const analysisAllUnlockedCheckbox = document.querySelector<HTMLInputElement>("[data-debug-analysis-all-unlocked]");
 const analysisReportEl = document.querySelector<HTMLElement>("[data-debug-analysis-report]");
+const allocatorDeviceEl = document.querySelector<HTMLElement>("[data-allocator-device]");
 
 const allocatorUnusedEl = document.querySelector<HTMLElement>("[data-allocator-unused]");
 const allocatorWidthValueEl = document.querySelector<HTMLElement>("[data-allocator-width]");
@@ -87,6 +90,7 @@ if (
   !runAnalysisButton ||
   !analysisAllUnlockedCheckbox ||
   !analysisReportEl ||
+  !allocatorDeviceEl ||
   !allocatorUnusedEl ||
   !allocatorWidthValueEl ||
   !allocatorHeightValueEl ||
@@ -180,7 +184,24 @@ const bootState =
     };
   })();
 const store = createStore(bootState);
-const autoEqualsScheduler = createAutoEqualsScheduler(store);
+const interactionRuntime = createInteractionRuntime("calculator");
+
+type DispatchOptions = {
+  internal?: boolean;
+};
+
+const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}): Action => {
+  if (!options.internal && interactionRuntime.shouldBlockAction(action)) {
+    return action;
+  }
+  return store.dispatch(action);
+};
+
+const autoEqualsScheduler = createAutoEqualsScheduler(store, {
+  dispatchAction: (action) => {
+    dispatchWithRuntimeGate(action);
+  },
+});
 
 const importMetaEnv = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env;
 const processEnv = (globalThis as { process?: { env?: Record<string, unknown> } }).process?.env;
@@ -195,10 +216,16 @@ document.body.setAttribute("data-ui-shell", uiShellMode);
 
 const renderApp = (state: GameState): void => {
   if (shellRenderer) {
-    shellRenderer.render(state, store.dispatch);
+    shellRenderer.render(state, dispatchWithRuntimeGate, {
+      interactionMode: interactionRuntime.getMode(),
+      inputBlocked: interactionRuntime.isInputBlocked(),
+    });
     return;
   }
-  render(root, state, store.dispatch);
+  render(root, state, dispatchWithRuntimeGate, {
+    interactionMode: interactionRuntime.getMode(),
+    inputBlocked: interactionRuntime.isInputBlocked(),
+  });
 };
 
 const redraw = (): void => {
@@ -241,6 +268,8 @@ const syncAllocatorDeviceInputs = (): void => {
   const state = store.getState();
   const allocations = state.allocator.allocations;
   const unused = getUnusedPoints(state);
+  const allocatorLocked = interactionRuntime.getMode() === "calculator";
+  const inputBlocked = interactionRuntime.isInputBlocked();
   const effectiveWidth = 1 + allocations.width;
   const effectiveHeight = 1 + allocations.height;
   const effectiveRange = 1 + allocations.range;
@@ -254,11 +283,14 @@ const syncAllocatorDeviceInputs = (): void => {
   renderAllocatorDisplay(allocatorSpeedValueEl, allocations.speed);
   renderAllocatorDisplay(allocatorSlotsValueEl, effectiveSlots);
 
-  allocatorIncWidthButton.disabled = unused <= 0;
-  allocatorIncHeightButton.disabled = unused <= 0;
-  allocatorIncRangeButton.disabled = unused <= 0;
-  allocatorIncSpeedButton.disabled = unused <= 0;
-  allocatorIncSlotsButton.disabled = unused <= 0;
+  allocatorIncWidthButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorIncHeightButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorIncRangeButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorIncSpeedButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorIncSlotsButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
+  allocatorResetButton.disabled = inputBlocked;
+  allocatorResetButton.textContent = interactionRuntime.getMode() === "calculator" ? "Allocate \uD835\uDF40" : "RETURN";
+  allocatorDeviceEl.dataset.allocatorLocked = allocatorLocked ? "true" : "false";
 
   debugMaxPointsInput.value = state.allocator.maxPoints.toString();
 };
@@ -335,7 +367,7 @@ runAnalysisButton.addEventListener("click", () => {
 
 const bindAllocatorStep = (button: HTMLButtonElement, field: AllocatorAllocationField, delta: 1 | -1): void => {
   button.addEventListener("click", () => {
-    store.dispatch({ type: "ALLOCATOR_ADJUST", field, delta });
+    dispatchWithRuntimeGate({ type: "ALLOCATOR_ADJUST", field, delta });
   });
 };
 
@@ -345,8 +377,107 @@ bindAllocatorStep(allocatorIncRangeButton, "range", 1);
 bindAllocatorStep(allocatorIncSpeedButton, "speed", 1);
 bindAllocatorStep(allocatorIncSlotsButton, "slots", 1);
 
-allocatorResetButton.addEventListener("click", () => {
-  store.dispatch({ type: "RESET_ALLOCATOR_DEVICE" });
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+
+const moveAllKeysToStorage = (): void => {
+  const MAX_RELOCATIONS = 256;
+  let relocations = 0;
+  while (relocations < MAX_RELOCATIONS) {
+    const state = store.getState();
+    const keypadIndex = state.ui.keyLayout.findIndex((cell) => cell.kind === "key");
+    if (keypadIndex < 0) {
+      return;
+    }
+    const storageIndex = state.ui.storageLayout.findIndex((cell) => cell === null);
+    if (storageIndex < 0) {
+      return;
+    }
+    dispatchWithRuntimeGate(
+      {
+        type: "MOVE_LAYOUT_CELL",
+        fromSurface: "keypad",
+        fromIndex: keypadIndex,
+        toSurface: "storage",
+        toIndex: storageIndex,
+      },
+      { internal: true },
+    );
+    relocations += 1;
+  }
+};
+
+const resetForModifyMode = (): void => {
+  const state = store.getState();
+  dispatchWithRuntimeGate(
+    {
+      type: "HYDRATE_SAVE",
+      state: {
+        ...state,
+        calculator: createResetCalculatorState(),
+      },
+    },
+    { internal: true },
+  );
+  dispatchWithRuntimeGate({ type: "RESET_ALLOCATOR_DEVICE" }, { internal: true });
+  moveAllKeysToStorage();
+};
+
+let modeTransitionInFlight = false;
+
+const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<void> => {
+  if (modeTransitionInFlight) {
+    return;
+  }
+  modeTransitionInFlight = true;
+  interactionRuntime.setInputBlocked(true);
+  redraw();
+  try {
+    if (shellRenderer) {
+      await shellRenderer.playTransitionCue(targetMode === "modify" ? "allocator" : "calculator");
+    } else {
+      await sleep(520);
+    }
+    await sleep(500);
+    if (targetMode === "modify") {
+      resetForModifyMode();
+    }
+    interactionRuntime.setMode(targetMode);
+    redraw();
+    if (shellRenderer) {
+      if (targetMode === "modify") {
+        shellRenderer.forceActiveView({
+          snapId: "bottom",
+          bottomPanelId: "allocator",
+          includeTransition: true,
+        });
+      } else {
+        shellRenderer.forceActiveView({
+          snapId: "middle",
+          middlePanelId: "calculator",
+          includeTransition: true,
+        });
+      }
+    }
+    await sleep(240);
+  } finally {
+    interactionRuntime.setInputBlocked(false);
+    modeTransitionInFlight = false;
+    redraw();
+  }
+};
+
+allocatorResetButton.addEventListener("click", async () => {
+  if (interactionRuntime.isInputBlocked()) {
+    return;
+  }
+  if (interactionRuntime.getMode() === "calculator") {
+    await runModeTransition("modify");
+    return;
+  }
+  await runModeTransition("calculator");
 });
 
 syncDebugUiState();

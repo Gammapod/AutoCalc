@@ -52,7 +52,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
   moveController.syncContext(moveState, (action) => {
     moveActions.push(action);
     return action;
-  });
+  }, "modify");
   moveController.startPress(1, 30, 40, { surface: "storage", index: 0, key: "CE" }, null);
   moveController.forceActivateCarryForTests();
   moveController.move(1, 60, 70, () => ({
@@ -84,7 +84,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
   swapController.syncContext(swapState, (action) => {
     swapActions.push(action);
     return action;
-  });
+  }, "modify");
   swapController.startPress(2, 30, 40, { surface: "storage", index: 0, key: "CE" }, null);
   swapController.forceActivateCarryForTests();
   swapController.move(2, 60, 70, () => ({

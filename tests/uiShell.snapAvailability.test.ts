@@ -19,13 +19,16 @@ export const runUiShellSnapAvailabilityTests = (): void => {
     },
   };
   const withStorageModel = buildShellViewModel(withStorage);
-  assert.deepEqual(withStorageModel.availableSnaps, ["middle", "bottom"], "storage unlock adds bottom snap");
+  assert.deepEqual(withStorageModel.availableSnaps, ["middle"], "calculator mode keeps bottom snap blocked");
+
+  const withStorageModifyModel = buildShellViewModel(withStorage, "modify");
+  assert.deepEqual(withStorageModifyModel.availableSnaps, ["middle", "bottom"], "storage unlock adds bottom snap");
 
   assert.deepEqual(
-    withStorageModel.availableSnaps,
+    withStorageModifyModel.availableSnaps,
     ["middle", "bottom"],
     "v2 shell uses a two-snap stack even when visualizers are active",
   );
-  assert.equal(withStorageModel.defaultSnap, "middle", "default snap remains middle");
+  assert.equal(withStorageModifyModel.defaultSnap, "middle", "default snap remains middle");
 };
 

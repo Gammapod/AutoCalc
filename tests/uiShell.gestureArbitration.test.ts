@@ -21,9 +21,9 @@ export const runUiShellGestureArbitrationTests = (): void => {
       },
     },
   };
-  const model = buildShellViewModel(stateWithStorage);
+  const model = buildShellViewModel(stateWithStorage, "modify");
   const controller = createShellController();
-  controller.sync(stateWithStorage);
+  controller.sync(stateWithStorage, "modify");
 
   assert.equal(resolveSnapFromDrag("middle", model, -30, 0), "middle", "small drags do not switch snaps");
   assert.equal(resolveSnapFromDrag("middle", model, -100, 0), "middle", "large upward drags keep middle in two-snap mode");

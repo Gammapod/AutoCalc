@@ -69,7 +69,7 @@ export const formatKeyLabel = (key: Key): string => {
     return "+ +";
   }
   if (key === "--") {
-    return "\u2212 \u2212";
+    return "\u2212\u2212";
   }
   if (key === "*" || key === "/") {
     return formatOperatorForDisplay(key);

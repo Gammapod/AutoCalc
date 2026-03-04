@@ -138,7 +138,15 @@ export const classifyDropAction = (
   state: GameState,
   source: DragTarget,
   destination: DragTarget,
+  options: { interactionMode?: "calculator" | "modify" } = {},
 ): DropAction | null => {
+  const interactionMode = options.interactionMode ?? "calculator";
+  if (
+    interactionMode === "calculator" &&
+    (source.surface === "storage" || destination.surface === "storage")
+  ) {
+    return null;
+  }
   if (source.surface === destination.surface && source.index === destination.index) {
     return null;
   }
