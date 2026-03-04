@@ -1,6 +1,6 @@
 import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
-import { analyzeUnlockSpecRows } from "../../domain/analysis.js";
+import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../domain/analysis.js";
 import { buildUnlockCriteria } from "../../domain/unlockEngine.js";
 import type {
   CalculatorValue,
@@ -27,6 +27,18 @@ export type UnlockRowVm = {
   name: string;
   state: UnlockRowState;
   criteria: UnlockCriterionVm[];
+};
+
+export type ChecklistVisibilityPolicy = {
+  showCompletedAlways: boolean;
+  showUnknown: boolean;
+  showTodo: boolean;
+  hideBlocked: boolean;
+};
+
+export type ChecklistVisibleRowVm = UnlockRowVm & {
+  analysisStatus?: UnlockSpecStatus;
+  visibilityReason?: string;
 };
 
 export type RollRow = {
@@ -212,29 +224,130 @@ const getUnlockName = (effect: UnlockEffect): string => {
 };
 
 const isUnlockImpossible = (_unlock: UnlockDefinition, _state: GameState): boolean => false;
-const isReachableOrUnknownStatus = (status: "satisfied" | "possible" | "blocked" | "unknown" | "todo"): boolean =>
-  status === "satisfied" || status === "possible" || status === "unknown" || status === "todo";
+
+const DEFAULT_CHECKLIST_VISIBILITY_POLICY: ChecklistVisibilityPolicy = {
+  showCompletedAlways: true,
+  showUnknown: true,
+  showTodo: true,
+  hideBlocked: true,
+};
+
+type BaseChecklistRowVm = {
+  row: UnlockRowVm;
+  completed: boolean;
+};
+
+const buildBaseChecklistRows = (
+  state: GameState,
+  catalog: UnlockDefinition[],
+): BaseChecklistRowVm[] =>
+  catalog.map((unlock) => {
+    const completed = state.completedUnlockIds.includes(unlock.id);
+    const criteria = buildUnlockCriteria(unlock.predicate, state);
+    return {
+      completed,
+      row: {
+        id: unlock.id,
+        name: getUnlockName(unlock.effect),
+        state: completed ? "completed" : "not_completed",
+        criteria: completed ? criteria.map((criterion) => ({ ...criterion, checked: true })) : criteria,
+      },
+    };
+  });
+
+const getChecklistVisibilityDecision = (
+  status: UnlockSpecStatus | null,
+  completed: boolean,
+  policy: ChecklistVisibilityPolicy,
+): { visible: boolean; reason: string } => {
+  if (completed && policy.showCompletedAlways) {
+    return { visible: true, reason: "completed_row_always_visible" };
+  }
+  if (status === "satisfied" || status === "possible") {
+    return { visible: true, reason: "status_attemptable" };
+  }
+  if (status === "unknown" && policy.showUnknown) {
+    return { visible: true, reason: "status_unknown_visible_by_policy" };
+  }
+  if (status === "todo" && policy.showTodo) {
+    return { visible: true, reason: "status_todo_visible_by_policy" };
+  }
+  if (status === "blocked" && policy.hideBlocked) {
+    return { visible: false, reason: "status_blocked_hidden_by_policy" };
+  }
+  if (status === null) {
+    return { visible: true, reason: "missing_analysis_row_fails_open" };
+  }
+  return { visible: true, reason: "default_visible_fallback" };
+};
+
+export type BuildVisibleChecklistRowsOptions = {
+  catalog?: UnlockDefinition[];
+  visibilityPolicy?: Partial<ChecklistVisibilityPolicy>;
+  includeDebugMeta?: boolean;
+};
+
+export const buildVisibleChecklistRows = (
+  state: GameState,
+  options: BuildVisibleChecklistRowsOptions = {},
+): ChecklistVisibleRowVm[] => {
+  const catalog = options.catalog ?? unlockCatalog;
+  const visibilityPolicy: ChecklistVisibilityPolicy = {
+    ...DEFAULT_CHECKLIST_VISIBILITY_POLICY,
+    ...(options.visibilityPolicy ?? {}),
+  };
+  const includeDebugMeta = options.includeDebugMeta ?? false;
+
+  const specRowsById = new Map(
+    analyzeUnlockSpecRows(state, { capabilityScope: "present_on_keypad" }, catalog).map((row) => [row.unlockId, row]),
+  );
+  const baseRows = buildBaseChecklistRows(state, catalog);
+
+  const visibleRows: ChecklistVisibleRowVm[] = [];
+  for (const base of baseRows) {
+    const specRow = specRowsById.get(base.row.id);
+    const status = specRow?.status ?? null;
+    const decision = getChecklistVisibilityDecision(status, base.completed, visibilityPolicy);
+    if (!decision.visible) {
+      continue;
+    }
+    if (includeDebugMeta) {
+      visibleRows.push({
+        ...base.row,
+        analysisStatus: status ?? undefined,
+        visibilityReason: decision.reason,
+      });
+    } else {
+      visibleRows.push(base.row);
+    }
+  }
+
+  const pending = visibleRows.filter((row) => row.state === "not_completed");
+  const completed = visibleRows.filter((row) => row.state === "completed");
+  return [...pending, ...completed];
+};
 
 export const buildUnlockRows = (
   state: GameState,
   catalog: UnlockDefinition[] = unlockCatalog,
   impossibleCheck: (unlock: UnlockDefinition, state: GameState) => boolean = isUnlockImpossible,
 ): UnlockRowVm[] => {
-  const specRowsById = new Map(analyzeUnlockSpecRows(state, { useAllUnlockedKeys: false }, catalog).map((row) => [row.unlockId, row]));
-  const rows = catalog.map((unlock) => {
-    const completed = state.completedUnlockIds.includes(unlock.id);
+  const visibleRowsById = new Map(buildVisibleChecklistRows(state, { catalog }).map((row) => [row.id, row]));
+  const rows: UnlockRowVm[] = [];
+  for (const unlock of catalog) {
     const impossible = impossibleCheck(unlock, state);
-    const specRow = specRowsById.get(unlock.id);
-    const specVisible = completed || !specRow || isReachableOrUnknownStatus(specRow.status);
-    const rowState: UnlockRowState = impossible || !specVisible ? "impossible" : completed ? "completed" : "not_completed";
-    const criteria = buildUnlockCriteria(unlock.predicate, state);
-    return {
-      id: unlock.id,
-      name: getUnlockName(unlock.effect),
-      state: rowState,
-      criteria: completed ? criteria.map((criterion) => ({ ...criterion, checked: true })) : criteria,
-    };
-  });
+    const visibleRow = visibleRowsById.get(unlock.id);
+    if (impossible || !visibleRow) {
+      rows.push({
+        id: unlock.id,
+        name: getUnlockName(unlock.effect),
+        state: "impossible",
+        criteria: [],
+      });
+      continue;
+    }
+    rows.push(visibleRow);
+  }
   const visible = rows.filter((row) => row.state !== "impossible");
   const pending = visible.filter((row) => row.state === "not_completed");
   const completed = visible.filter((row) => row.state === "completed");

@@ -1244,7 +1244,7 @@
       .unlock-header,
       .unlock-row {
         display: grid;
-        grid-template-columns: minmax(56px, 72px) 1fr;
+        grid-template-columns: 1fr minmax(56px, 84px);
         column-gap: 6px;
         align-items: center;
         min-height: 24px;
@@ -1267,7 +1267,6 @@
       }
 
       .unlock-row--completed {
-        text-decoration: line-through;
         opacity: 0.72;
       }
 
@@ -1279,6 +1278,12 @@
 
       .unlock-criterion {
         white-space: nowrap;
+      }
+
+      .unlock-empty-state {
+        padding: 10px 6px 8px;
+        font-style: italic;
+        opacity: 0.78;
       }
 
       .debug-shell {
@@ -1482,12 +1487,17 @@
       .v2-middle-drawer-panel .device,
       .v2-middle-drawer-panel .checklist-shell,
       .v2-bottom-drawer-panel .storage,
-      .v2-bottom-drawer-panel .device {
+      .v2-bottom-drawer-panel .device,
+      .v2-bottom-drawer-panel .checklist-shell {
         width: 100%;
         max-width: none;
       }
 
       .v2-middle-drawer-panel .checklist-shell {
+        margin: 0;
+      }
+
+      .v2-bottom-drawer-panel .checklist-shell {
         margin: 0;
       }
 
@@ -1728,6 +1738,11 @@
         .checklist-shell {
           width: min(92vw, 360px);
           justify-self: center;
+        }
+
+        body[data-ui-shell="v2"] .v2-bottom-drawer-panel .checklist-shell {
+          width: 100%;
+          justify-self: stretch;
         }
 
         .app-shell {

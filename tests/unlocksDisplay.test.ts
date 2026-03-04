@@ -1,22 +1,22 @@
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
-import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
 import type { GameState, UnlockDefinition } from "../src/domain/types.js";
-import { buildUnlockRows, isChecklistUnlocked } from "../src/ui/render.js";
+import { buildUnlockRows, buildVisibleChecklistRows, isChecklistUnlocked } from "../src/ui/render.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 
 export const runUnlocksDisplayTests = (): void => {
   const base = initialState();
-  assert.equal(isChecklistUnlocked(base), false, "checklist drawer is locked when unlock id is absent");
+  assert.equal(isChecklistUnlocked(base), true, "checklist drawer is visible by default");
 
   const checklistUnlockedState: GameState = {
     ...base,
-    completedUnlockIds: [CHECKLIST_UNLOCK_ID],
+    completedUnlockIds: ["unlock_checklist_on_first_c_press"],
   };
-  assert.equal(isChecklistUnlocked(checklistUnlockedState), true, "checklist drawer is unlocked when unlock id is present");
+  assert.equal(isChecklistUnlocked(checklistUnlockedState), true, "checklist drawer remains visible after checklist id is present");
 
   const effectMappingCatalog: UnlockDefinition[] = [
     {
@@ -129,6 +129,12 @@ export const runUnlocksDisplayTests = (): void => {
   assert.equal(totalCriteriaRows[1]?.criteria[0]?.label, "25", "total_at_least checkbox label is threshold value");
   assert.equal(totalCriteriaRows[2]?.criteria.length, 1, "total_at_most uses a single criterion checkbox");
   assert.equal(totalCriteriaRows[2]?.criteria[0]?.label, "-1", "total_at_most checkbox label is threshold value");
+  const totalCriteriaVisibleRows = buildVisibleChecklistRows(base, { catalog: totalCriteriaCatalog });
+  assert.equal(
+    totalCriteriaVisibleRows.some((row) => row.id === "u_total_at_most"),
+    true,
+    "TODO capability rows remain visible by checklist policy",
+  );
 
   const allocatorProgressState: GameState = {
     ...base,
@@ -177,5 +183,34 @@ export const runUnlocksDisplayTests = (): void => {
     rowsWhenDrawerUnlocked,
     rowsWhenDrawerLocked,
     "checklist row models are independent from checklist drawer visibility",
+  );
+
+  const blockedHiddenRows = buildVisibleChecklistRows(base, { catalog: unlockCatalog });
+  assert.equal(
+    blockedHiddenRows.some((row) => row.id === "unlock_c_on_increment_run_4"),
+    false,
+    "blocked rows are hidden by keypad-feasibility checklist policy",
+  );
+
+  const completedBlockedState: GameState = {
+    ...base,
+    completedUnlockIds: ["unlock_c_on_increment_run_4"],
+  };
+  const completedBlockedRows = buildVisibleChecklistRows(completedBlockedState, { catalog: unlockCatalog });
+  const completedBlockedRow = completedBlockedRows.find((row) => row.id === "unlock_c_on_increment_run_4");
+  assert.equal(
+    completedBlockedRow?.state,
+    "completed",
+    "completed rows remain visible even when currently blocked",
+  );
+
+  const debugRows = buildVisibleChecklistRows(base, {
+    catalog: unlockCatalog,
+    includeDebugMeta: true,
+  });
+  assert.equal(
+    typeof debugRows[0]?.analysisStatus === "string" && typeof debugRows[0]?.visibilityReason === "string",
+    true,
+    "debug mode includes analysis status and visibility reason metadata",
   );
 };

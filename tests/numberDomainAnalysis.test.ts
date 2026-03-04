@@ -160,6 +160,16 @@ export const runNumberDomainAnalysisTests = (): void => {
     "all-unlocked reasoning reports unlocked scope",
   );
 
+  const reportWithScopeOverride = analyzeNumberDomains(withResetAndMinus, new Date(), {
+    useAllUnlockedKeys: true,
+    capabilityScope: "present_on_keypad",
+  });
+  assert.equal(
+    reportWithScopeOverride.reasoning[0],
+    "scope=present_on_keypad",
+    "capabilityScope overrides legacy useAllUnlockedKeys when both are provided",
+  );
+
   assert.equal(
     highPositiveReport.reasoning.some((line) => line.includes("canReachOne")),
     true,

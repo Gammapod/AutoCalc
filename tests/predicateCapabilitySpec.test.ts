@@ -223,6 +223,11 @@ export const runPredicateCapabilitySpecTests = (): void => {
   for (const predicateType of catalogPredicateTypes) {
     const spec = getPredicateCapabilitySpec(predicateType);
     assert.ok(spec, `missing capability spec for catalog predicate type: ${predicateType}`);
+    assert.equal(
+      Boolean(spec.notes?.startsWith("TODO:")),
+      false,
+      `catalog predicate type ${predicateType} must not use TODO capability notes`,
+    );
     assert.ok(spec.necessary.length > 0, `catalog predicate type ${predicateType} must declare necessary capabilities`);
     assert.ok(
       spec.sufficientSets.length > 0,
@@ -251,6 +256,7 @@ export const runPredicateCapabilitySpecTests = (): void => {
     }
     const derivedEntry = derivedByType.get(predicateType);
     assert.ok(derivedEntry?.usedInCatalog, `derived catalog list should include used predicate type ${predicateType}`);
+    assert.equal(derivedEntry?.todo, false, `used predicate type ${predicateType} must not be marked TODO in derived report`);
   }
 
   for (const fixture of proofFixtures) {

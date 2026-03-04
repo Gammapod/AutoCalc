@@ -3,8 +3,8 @@ import type { GameState } from "../../src/domain/types.js";
 import type { InteractionMode } from "../../src/app/interactionRuntime.js";
 
 type AxisLock = "none" | "x" | "y";
-export type BottomDrawerPanelId = "storage" | "allocator";
-export type MiddleDrawerPanelId = "calculator" | "checklist";
+export type BottomDrawerPanelId = "storage" | "allocator" | "checklist";
+export type MiddleDrawerPanelId = "calculator";
 
 export type GestureSession = {
   active: boolean;
@@ -99,33 +99,30 @@ export const resolveBottomPanelFromDrag = (
   const shouldMoveRight =
     dragDeltaX >= PANEL_DISTANCE_THRESHOLD_PX || velocityX >= PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
 
-  if (activePanelId === "storage" && shouldMoveLeft) {
-    return "allocator";
+  if (shouldMoveLeft) {
+    if (activePanelId === "storage") {
+      return "allocator";
+    }
+    if (activePanelId === "allocator") {
+      return "checklist";
+    }
   }
-  if (activePanelId === "allocator" && shouldMoveRight) {
-    return "storage";
+  if (shouldMoveRight) {
+    if (activePanelId === "checklist") {
+      return "allocator";
+    }
+    if (activePanelId === "allocator") {
+      return "storage";
+    }
   }
   return activePanelId;
 };
 
 export const resolveMiddlePanelFromDrag = (
   activePanelId: MiddleDrawerPanelId,
-  dragDeltaX: number,
-  velocityX: number,
+  _dragDeltaX: number,
+  _velocityX: number,
 ): MiddleDrawerPanelId => {
-  const PANEL_DISTANCE_THRESHOLD_PX = 72;
-  const PANEL_VELOCITY_THRESHOLD_PX_PER_MS = 0.55;
-  const shouldMoveLeft =
-    dragDeltaX <= -PANEL_DISTANCE_THRESHOLD_PX || velocityX <= -PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
-  const shouldMoveRight =
-    dragDeltaX >= PANEL_DISTANCE_THRESHOLD_PX || velocityX >= PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
-
-  if (activePanelId === "calculator" && shouldMoveLeft) {
-    return "checklist";
-  }
-  if (activePanelId === "checklist" && shouldMoveRight) {
-    return "calculator";
-  }
   return activePanelId;
 };
 

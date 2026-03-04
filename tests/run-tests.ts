@@ -22,6 +22,7 @@ import { runReducerFlagsTests } from "./reducer.flags.test.js";
 import { runReducerAllocatorDeviceTests } from "./reducer.allocator-device.test.js";
 import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
 import { runAutoEqualsSchedulerTests } from "./autoEqualsScheduler.test.js";
+import { runAnalysisReportTests } from "./analysisReport.test.js";
 import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
 import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
 import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.js";
@@ -59,6 +60,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/drag-drop-behavior", runDragDropBehaviorTests],
   ["ui/button-behavior", runButtonBehaviorTests],
   ["app/auto-equals-scheduler", runAutoEqualsSchedulerTests],
+  ["app/analysis-report", runAnalysisReportTests],
   ["domain/keypad-layout-model", runKeypadLayoutModelTests],
   ["domain/number-domain-analysis", runNumberDomainAnalysisTests],
   ["domain/predicate-capability-spec", runPredicateCapabilitySpecTests],

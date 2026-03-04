@@ -2,6 +2,7 @@ import type { CalculatorValue, RollErrorEntry } from "../../../src/domain/types.
 export {
   buildOperationSlotDisplay,
   buildRollViewModel,
+  buildVisibleChecklistRows,
   buildUnlockRows,
   formatKeyLabel,
   formatOperatorForDisplay,

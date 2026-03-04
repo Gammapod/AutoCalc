@@ -10,10 +10,12 @@ import type { GameState, Key, LayoutCell, UnlockDefinition, UnlockPredicate } fr
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 
 export type NumberDomainAnalysisOptions = {
+  capabilityScope?: CapabilityScope;
   useAllUnlockedKeys?: boolean;
 };
 
 export type UnlockSpecStatus = "satisfied" | "possible" | "blocked" | "unknown" | "todo";
+export type CapabilityScope = "present_on_keypad" | "all_unlocked";
 
 export type UnlockSpecAnalysisRow = {
   unlockId: string;
@@ -50,15 +52,23 @@ const formatPredicate = (name: string, value: boolean): string => `${name}=${val
 
 const isKeyCell = (cell: LayoutCell): cell is { kind: "key"; key: Key } => cell.kind === "key";
 
+const resolveCapabilityScope = (options: NumberDomainAnalysisOptions): CapabilityScope => {
+  if (options.capabilityScope) {
+    return options.capabilityScope;
+  }
+  return options.useAllUnlockedKeys ? "all_unlocked" : "present_on_keypad";
+};
+
 const createAvailabilityReader = (
   state: GameState,
   options: NumberDomainAnalysisOptions,
-): { isAvailable: (key: Key) => boolean; scopeLabel: string } => {
-  const useAllUnlockedKeys = options.useAllUnlockedKeys ?? false;
+): { isAvailable: (key: Key) => boolean; scopeLabel: CapabilityScope } => {
+  const capabilityScope = resolveCapabilityScope(options);
+  const useAllUnlockedKeys = capabilityScope === "all_unlocked";
   const keypadKeys = new Set(state.ui.keyLayout.filter(isKeyCell).map((cell) => cell.key));
   return {
     isAvailable: (key: Key): boolean => isKeyUnlocked(state, key) && (useAllUnlockedKeys || keypadKeys.has(key)),
-    scopeLabel: useAllUnlockedKeys ? "all_unlocked" : "present_on_keypad",
+    scopeLabel: capabilityScope,
   };
 };
 

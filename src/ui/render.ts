@@ -1,7 +1,7 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../domain/calculatorValue.js";
 import { isKeyUnlocked } from "../domain/keyUnlocks.js";
-import { CHECKLIST_UNLOCK_ID, FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
+import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { isStorageLayoutValid } from "../domain/reducer.layout.js";
 import {
@@ -9,6 +9,7 @@ import {
   buildRollLines as buildRollLinesShared,
   buildRollRows as buildRollRowsShared,
   buildRollViewModel as buildRollViewModelShared,
+  buildVisibleChecklistRows as buildVisibleChecklistRowsShared,
   buildUnlockRows as buildUnlockRowsShared,
   formatKeyLabel as formatKeyLabelShared,
   formatOperatorForDisplay as formatOperatorForDisplayShared,
@@ -136,7 +137,6 @@ declare global {
   }
 }
 
-let previousChecklistUnlocked: boolean | null = null;
 let previousUnlockSnapshot: Record<Key, boolean> | null = null;
 let pendingToggleAnimationByFlag: Record<string, "on" | "off"> = {};
 let previousKeypadColumns: number | null = null;
@@ -527,24 +527,14 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   return buildOperationSlotDisplayShared(state);
 };
 export const buildUnlockRows = (...args: Parameters<typeof buildUnlockRowsShared>): UnlockRowVm[] => buildUnlockRowsShared(...args);
+export const buildVisibleChecklistRows = (...args: Parameters<typeof buildVisibleChecklistRowsShared>) =>
+  buildVisibleChecklistRowsShared(...args);
 
-export const isChecklistUnlocked = (state: GameState): boolean =>
-  state.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID);
+export const isChecklistUnlocked = (_state: GameState): boolean => true;
 
 const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
-  const checklistUnlocked = isChecklistUnlocked(state);
-  const shouldAnimateOpen = previousChecklistUnlocked === false && checklistUnlocked;
-  previousChecklistUnlocked = checklistUnlocked;
-
-  unlockEl.setAttribute("data-checklist-state", checklistUnlocked ? "open" : "locked");
-  unlockEl.setAttribute("data-checklist-animate", shouldAnimateOpen ? "true" : "false");
-
-  if (!checklistUnlocked) {
-    unlockEl.innerHTML = "";
-    unlockEl.setAttribute("aria-hidden", "true");
-    return;
-  }
-
+  unlockEl.setAttribute("data-checklist-state", "open");
+  unlockEl.setAttribute("data-checklist-animate", "false");
   unlockEl.setAttribute("aria-hidden", "false");
   unlockEl.innerHTML = "";
 
@@ -555,25 +545,28 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
 
   const header = document.createElement("div");
   header.className = "unlock-header";
-  const nameHeader = document.createElement("span");
-  nameHeader.textContent = "Name |";
-  const criteriaHeader = document.createElement("span");
-  criteriaHeader.textContent = "Criteria";
-  header.append(nameHeader, criteriaHeader);
+  const challengeHeader = document.createElement("span");
+  challengeHeader.textContent = "Challenge";
+  const rewardHeader = document.createElement("span");
+  rewardHeader.textContent = "Reward";
+  header.append(challengeHeader, rewardHeader);
   unlockEl.appendChild(header);
 
-  const rows = buildUnlockRows(state, unlockCatalog);
+  const rows = buildVisibleChecklistRows(state, { catalog: unlockCatalog });
+  if (rows.length === 0) {
+    const emptyStateEl = document.createElement("div");
+    emptyStateEl.className = "unlock-empty-state";
+    emptyStateEl.textContent = "No currently attemptable unlocks from active keypad layout.";
+    unlockEl.appendChild(emptyStateEl);
+    return;
+  }
+
   for (const row of rows) {
     const rowEl = document.createElement("div");
     rowEl.className = "unlock-row";
     if (row.state === "completed") {
       rowEl.classList.add("unlock-row--completed");
     }
-
-    const nameEl = document.createElement("span");
-    nameEl.className = "unlock-name";
-    nameEl.textContent = row.name;
-    rowEl.appendChild(nameEl);
 
     const criteriaEl = document.createElement("span");
     criteriaEl.className = "unlock-criteria";
@@ -584,6 +577,11 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
       criteriaEl.appendChild(criterionEl);
     }
     rowEl.appendChild(criteriaEl);
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "unlock-name";
+    nameEl.textContent = row.name;
+    rowEl.appendChild(nameEl);
 
     unlockEl.appendChild(rowEl);
   }

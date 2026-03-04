@@ -37,17 +37,14 @@ export const runUiShellGestureArbitrationTests = (): void => {
   assert.equal(controller.runtime.activeSnapId, "bottom", "cannot move below bottom snap");
 
   assert.equal(resolveBottomPanelFromDrag("storage", -100, 0), "allocator", "left swipe from storage reveals allocator panel");
+  assert.equal(resolveBottomPanelFromDrag("allocator", -100, 0), "checklist", "left swipe from allocator reveals checklist panel");
+  assert.equal(resolveBottomPanelFromDrag("checklist", 100, 0), "allocator", "right swipe from checklist returns to allocator panel");
   assert.equal(resolveBottomPanelFromDrag("allocator", 100, 0), "storage", "right swipe from allocator returns to storage panel");
   assert.equal(resolveBottomPanelFromDrag("storage", 30, 0), "storage", "short or opposite swipe keeps active storage panel");
   assert.equal(
     resolveMiddlePanelFromDrag("calculator", -100, 0),
-    "checklist",
-    "left swipe from calculator reveals checklist panel",
-  );
-  assert.equal(
-    resolveMiddlePanelFromDrag("checklist", 100, 0),
     "calculator",
-    "right swipe from checklist returns to calculator panel",
+    "middle drawer stays on calculator after checklist moved to bottom allocator view",
   );
 };
 

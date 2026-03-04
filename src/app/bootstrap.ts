@@ -357,10 +357,11 @@ applyMaxPointsButton.addEventListener("click", () => {
 });
 
 runAnalysisButton.addEventListener("click", () => {
-  const report = analyzeNumberDomains(store.getState(), new Date(), {
+  const state = store.getState();
+  const report = analyzeNumberDomains(state, new Date(), {
     useAllUnlockedKeys: analysisAllUnlockedCheckbox.checked,
   });
-  analysisReportEl.textContent = formatNumberDomainReport(report);
+  analysisReportEl.textContent = formatNumberDomainReport(report, state);
 });
 
 const bindAllocatorStep = (button: HTMLButtonElement, field: AllocatorAllocationField, delta: 1 | -1): void => {
