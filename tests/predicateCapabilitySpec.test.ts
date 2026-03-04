@@ -182,6 +182,48 @@ const proofFixtures: ProofFixture[] = [
     script: [],
   },
   {
+    id: "proof_alternating_sign_abs_run_7",
+    predicateType: "roll_ends_with_alternating_sign_constant_abs_run",
+    sufficientSetId: "alternating_sign_constant_abs_via_repeatable_negation",
+    predicate: { type: "roll_ends_with_alternating_sign_constant_abs_run", length: 7 },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["=", "+", "NEG", "5"]),
+      calculator: {
+        ...initialState().calculator,
+        roll: [r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)],
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_constant_step_run_len_7_min2",
+    predicateType: "roll_ends_with_constant_step_run",
+    sufficientSetId: "constant_step_run_via_repeatable_arithmetic",
+    predicate: { type: "roll_ends_with_constant_step_run", length: 7, minAbsStep: 2n },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["=", "+", "7"]),
+      calculator: {
+        ...initialState().calculator,
+        roll: [r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)],
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_exact_sequence_suffix_47_to_5_by_7",
+    predicateType: "roll_ends_with_sequence",
+    sufficientSetId: "sequence_suffix_via_roll_growth",
+    predicate: { type: "roll_ends_with_sequence", sequence: [47n, 40n, 33n, 26n, 19n, 12n, 5n] },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["=", "-", "7"]),
+      calculator: {
+        ...initialState().calculator,
+        roll: [r(47n), r(40n), r(33n), r(26n), r(19n), r(12n), r(5n)],
+      },
+    }),
+    script: [],
+  },
+  {
     id: "proof_key_press_count_plus_once",
     predicateType: "key_press_count_at_least",
     sufficientSetId: "key_press_count_by_pressing_key",
@@ -196,6 +238,20 @@ const proofFixtures: ProofFixture[] = [
     predicate: { type: "overflow_error_seen" },
     buildInitialState: () => initialState(),
     script: Array.from({ length: 10 }, () => "++"),
+  },
+  {
+    id: "proof_division_by_zero_error_seen",
+    predicateType: "division_by_zero_error_seen",
+    sufficientSetId: "division_by_zero_seen_via_exec_div_zero",
+    predicate: { type: "division_by_zero_error_seen" },
+    buildInitialState: () => ({
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
+      },
+    }),
+    script: [],
   },
   {
     id: "proof_allocator_return_press_count_once",

@@ -70,6 +70,78 @@ export const runReducerUnlockTests = (): void => {
   );
   assert.equal(zeroRollUnlocked.unlocks.valueExpression["0"], true, "0 unlocks when roll contains 0");
 
+  const negRollUnlocked = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        roll: [r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)],
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(negRollUnlocked.unlocks.valueExpression.NEG, true, "NEG unlocks on alternating-sign constant-abs run of 7");
+  const negRollUnlockedTwice = applyUnlocks(negRollUnlocked, unlockCatalog);
+  assert.equal(
+    negRollUnlockedTwice.completedUnlockIds.filter((id) => id === "unlock_neg_on_alt_sign_abs_run_7").length,
+    1,
+    "NEG unlock id records once",
+  );
+
+  const multiplyRunUnlocked = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        roll: [r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)],
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(multiplyRunUnlocked.unlocks.slotOperators["*"], true, "* unlocks on constant-step run with abs(step) > 1");
+  const multiplyRunUnlockedTwice = applyUnlocks(multiplyRunUnlocked, unlockCatalog);
+  assert.equal(
+    multiplyRunUnlockedTwice.completedUnlockIds.filter((id) => id === "unlock_mul_on_constant_step_gt1_run_7").length,
+    1,
+    "* unlock id records once",
+  );
+
+  const ceOnDivByZero = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(ceOnDivByZero.unlocks.utilities.CE, true, "CE unlocks on first divide-by-zero error");
+  const ceOnDivByZeroTwice = applyUnlocks(ceOnDivByZero, unlockCatalog);
+  assert.equal(
+    ceOnDivByZeroTwice.completedUnlockIds.filter((id) => id === "unlock_ce_on_first_division_by_zero").length,
+    1,
+    "CE unlock id records once",
+  );
+
+  const hashSequenceUnlocked = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        roll: [r(47n), r(40n), r(33n), r(26n), r(19n), r(12n), r(5n)],
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(hashSequenceUnlocked.unlocks.slotOperators["#"], true, "# unlocks on exact sequence 47..5 step -7");
+  const hashSequenceUnlockedTwice = applyUnlocks(hashSequenceUnlocked, unlockCatalog);
+  assert.equal(
+    hashSequenceUnlockedTwice.completedUnlockIds.filter((id) => id === "unlock_hash_on_exact_run_47_to_5_by_7").length,
+    1,
+    "# unlock id records once",
+  );
+
   let state = withTwoDigitRange(initialState());
   for (let i = 0; i < 7; i += 1) {
     state = press(state, "++");

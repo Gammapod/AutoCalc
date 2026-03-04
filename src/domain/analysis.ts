@@ -46,6 +46,9 @@ type CapabilityContext = {
   rollGrowth: boolean;
   rollEqualRun: boolean;
   rollIncrementingRun: boolean;
+  rollAlternatingSignConstantAbs: boolean;
+  rollConstantStepRun: boolean;
+  divisionByZeroError: boolean;
 };
 
 const formatPredicate = (name: string, value: boolean): string => `${name}=${value ? "true" : "false"}`;
@@ -98,6 +101,9 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
     executeActivation &&
     (hasIncrementKey || (hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable("*") && hasOne) || (isAvailable("/") && hasOne));
   const rollIncrementingRun = stepPlusOne;
+  const rollAlternatingSignConstantAbs = executeActivation && hasPlus && hasNeg && hasSomeDigit;
+  const rollConstantStepRun = executeActivation && formOperatorPlusOperand;
+  const divisionByZeroError = executeActivation && isAvailable("/") && hasZero;
 
   return {
     executeActivation,
@@ -110,6 +116,9 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
     rollGrowth,
     rollEqualRun,
     rollIncrementingRun,
+    rollAlternatingSignConstantAbs,
+    rollConstantStepRun,
+    divisionByZeroError,
   };
 };
 
@@ -142,6 +151,15 @@ const resolveCapability = (
   }
   if (capability === "roll_incrementing_run") {
     return caps.rollIncrementingRun;
+  }
+  if (capability === "roll_alternating_sign_constant_abs") {
+    return caps.rollAlternatingSignConstantAbs;
+  }
+  if (capability === "roll_constant_step_run") {
+    return caps.rollConstantStepRun;
+  }
+  if (capability === "division_by_zero_error") {
+    return caps.divisionByZeroError;
   }
   if (capability === "press_target_key") {
     if (predicate.type !== "key_press_count_at_least") {

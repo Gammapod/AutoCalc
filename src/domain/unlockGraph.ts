@@ -177,6 +177,24 @@ const staticFunctionRules: FunctionRule[] = [
     rule: "++ is unlocked OR (= and + are unlocked)",
     sufficiency: [["++"], ["=", "+"]],
   }),
+  defineFunctionRule({
+    id: "fn.roll_alternating_sign_constant_abs",
+    label: "roll_alternating_sign_constant_abs",
+    rule: "= and + and NEG and at least one value key are unlocked",
+    sufficiency: [["=", "+", "NEG"]],
+  }),
+  defineFunctionRule({
+    id: "fn.roll_constant_step_run",
+    label: "roll_constant_step_run",
+    rule: "execute activation and at least one operator are unlocked",
+    sufficiency: [["=", "+"], ["=", "-"], ["=", "*"], ["=", "/"], ["=", "#"], ["=", "\u27E1"], ["++"], ["--"]],
+  }),
+  defineFunctionRule({
+    id: "fn.division_by_zero_error",
+    label: "division_by_zero_error",
+    rule: "= and / and 0 are unlocked",
+    sufficiency: [["=", "/", "0"]],
+  }),
 ];
 
 const pressFunctionId = (key: Key): string => `fn.press_target_key.${key}`;
@@ -220,17 +238,29 @@ const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition): string[] => {
   if (unlock.predicate.type === "roll_contains_value") {
     return ["fn.execute_activation", "fn.form_operator_plus_operand"];
   }
+  if (unlock.predicate.type === "roll_ends_with_sequence") {
+    return ["fn.execute_activation", "fn.roll_growth"];
+  }
   if (unlock.predicate.type === "roll_ends_with_equal_run") {
     return ["fn.execute_activation", "fn.roll_equal_run"];
   }
   if (unlock.predicate.type === "roll_ends_with_incrementing_run") {
     return ["fn.execute_activation", "fn.roll_incrementing_run"];
   }
+  if (unlock.predicate.type === "roll_ends_with_alternating_sign_constant_abs_run") {
+    return ["fn.execute_activation", "fn.roll_alternating_sign_constant_abs"];
+  }
+  if (unlock.predicate.type === "roll_ends_with_constant_step_run") {
+    return ["fn.execute_activation", "fn.roll_constant_step_run"];
+  }
   if (unlock.predicate.type === "key_press_count_at_least") {
     return [pressFunctionId(unlock.predicate.key)];
   }
   if (unlock.predicate.type === "overflow_error_seen") {
     return ["fn.step_plus_one"];
+  }
+  if (unlock.predicate.type === "division_by_zero_error_seen") {
+    return ["fn.execute_activation", "fn.division_by_zero_error"];
   }
   if (unlock.predicate.type === "allocator_return_press_count_at_least") {
     return ["fn.allocator_return_press"];

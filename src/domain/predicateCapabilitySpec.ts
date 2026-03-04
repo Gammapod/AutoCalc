@@ -13,8 +13,11 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "roll_contains_value",
   "roll_ends_with_equal_run",
   "roll_ends_with_incrementing_run",
+  "roll_ends_with_alternating_sign_constant_abs_run",
+  "roll_ends_with_constant_step_run",
   "key_press_count_at_least",
   "overflow_error_seen",
+  "division_by_zero_error_seen",
   "allocator_return_press_count_at_least",
   "allocator_allocate_press_count_at_least",
 ];
@@ -30,7 +33,10 @@ export type CapabilityId =
   | "allocator_allocate_press"
   | "roll_growth"
   | "roll_equal_run"
-  | "roll_incrementing_run";
+  | "roll_incrementing_run"
+  | "roll_alternating_sign_constant_abs"
+  | "roll_constant_step_run"
+  | "division_by_zero_error";
 
 export type NecessaryCapability = {
   capability: CapabilityId;
@@ -143,6 +149,34 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
       },
     ],
   },
+  roll_ends_with_alternating_sign_constant_abs_run: {
+    predicateType: "roll_ends_with_alternating_sign_constant_abs_run",
+    necessary: [
+      { capability: "execute_activation", reason: "Run suffixes require repeated executions." },
+      { capability: "roll_alternating_sign_constant_abs", reason: "Need repeated alternating-sign values at equal magnitude." },
+    ],
+    sufficientSets: [
+      {
+        id: "alternating_sign_constant_abs_via_repeatable_negation",
+        allOf: ["execute_activation", "roll_alternating_sign_constant_abs"],
+        rationale: "Alternating equal-magnitude values can be produced by repeated sign inversion patterns.",
+      },
+    ],
+  },
+  roll_ends_with_constant_step_run: {
+    predicateType: "roll_ends_with_constant_step_run",
+    necessary: [
+      { capability: "execute_activation", reason: "Run suffixes require repeated executions." },
+      { capability: "roll_constant_step_run", reason: "Need a repeatable arithmetic-step operation pattern." },
+    ],
+    sufficientSets: [
+      {
+        id: "constant_step_run_via_repeatable_arithmetic",
+        allOf: ["execute_activation", "roll_constant_step_run"],
+        rationale: "A fixed operation pattern can produce a constant-difference suffix.",
+      },
+    ],
+  },
   key_press_count_at_least: {
     predicateType: "key_press_count_at_least",
     necessary: [
@@ -195,6 +229,20 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
       },
     ],
   },
+  division_by_zero_error_seen: {
+    predicateType: "division_by_zero_error_seen",
+    necessary: [
+      { capability: "execute_activation", reason: "Execution must occur for division by zero to be evaluated." },
+      { capability: "division_by_zero_error", reason: "Need a path that can produce a division-by-zero execution error." },
+    ],
+    sufficientSets: [
+      {
+        id: "division_by_zero_seen_via_exec_div_zero",
+        allOf: ["execute_activation", "division_by_zero_error"],
+        rationale: "Executing with a zero divisor records a division-by-zero error.",
+      },
+    ],
+  },
   total_at_most: {
     predicateType: "total_at_most",
     necessary: [],
@@ -209,9 +257,17 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
   },
   roll_ends_with_sequence: {
     predicateType: "roll_ends_with_sequence",
-    necessary: [],
-    sufficientSets: [],
-    notes: TODO_NOTES,
+    necessary: [
+      { capability: "execute_activation", reason: "Sequence suffixes only grow when execution appends roll entries." },
+      { capability: "roll_growth", reason: "Need any execution-driven roll progression to pursue a target suffix." },
+    ],
+    sufficientSets: [
+      {
+        id: "sequence_suffix_via_roll_growth",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "With execution and roll growth available, a designed path can realize exact suffix targets.",
+      },
+    ],
   },
   roll_length_at_least: {
     predicateType: "roll_length_at_least",

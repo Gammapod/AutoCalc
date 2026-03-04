@@ -6,9 +6,12 @@ import type {
   GameState,
   AllocatorReturnPressCountAtLeastPredicate,
   AllocatorAllocatePressCountAtLeastPredicate,
+  DivisionByZeroErrorSeenPredicate,
   OverflowErrorSeenPredicate,
   KeyPressCountAtLeastPredicate,
   OperationEqualsPredicate,
+  RollEndsWithAlternatingSignConstantAbsRunPredicate,
+  RollEndsWithConstantStepRunPredicate,
   RollContainsValuePredicate,
   RollEndsWithEqualRunPredicate,
   RollEndsWithIncrementingRunPredicate,
@@ -148,6 +151,51 @@ const analyzeRollEndsWithIncrementingRun: PredicateAnalyzer<RollEndsWithIncremen
   };
 };
 
+const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);
+
+const analyzeRollEndsWithAlternatingSignConstantAbsRun: PredicateAnalyzer<RollEndsWithAlternatingSignConstantAbsRunPredicate> = (
+  predicate,
+  state,
+) => {
+  const suffix = readIntegerSuffix(state.calculator.roll, predicate.length);
+  const isMet =
+    !!suffix &&
+    suffix.length > 0 &&
+    suffix[0] !== 0n &&
+    suffix.every((value, index) =>
+      value !== 0n
+      && absBigInt(value) === absBigInt(suffix[0])
+      && (index === 0 || (value > 0n) !== (suffix[index - 1] > 0n)),
+    );
+  return {
+    isMet,
+    criteria: [{ label: `alt ±|x| run x${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
+const analyzeRollEndsWithConstantStepRun: PredicateAnalyzer<RollEndsWithConstantStepRunPredicate> = (predicate, state) => {
+  const suffix = readIntegerSuffix(state.calculator.roll, predicate.length);
+  let isMet = Boolean(suffix && suffix.length >= 2);
+  let step = 0n;
+  if (suffix && suffix.length >= 2) {
+    step = suffix[1] - suffix[0];
+    isMet = suffix.every((value, index) => index === 0 || value - suffix[index - 1] === step);
+    if (isMet && predicate.minAbsStep != null) {
+      isMet = absBigInt(step) >= predicate.minAbsStep;
+    }
+    if (isMet && predicate.requirePositiveStep) {
+      isMet = step > 0n;
+    }
+    if (isMet && predicate.requireNegativeStep) {
+      isMet = step < 0n;
+    }
+  }
+  return {
+    isMet,
+    criteria: [{ label: `const step run x${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
 const analyzeKeyPressCountAtLeast: PredicateAnalyzer<KeyPressCountAtLeastPredicate> = (predicate, state) => {
   const currentCount = state.keyPressCounts[predicate.key] ?? 0;
   const isMet = currentCount >= predicate.count;
@@ -164,6 +212,14 @@ const analyzeOverflowErrorSeen: PredicateAnalyzer<OverflowErrorSeenPredicate> = 
   return {
     isMet,
     criteria: [{ label: "overflow error observed", checked: isMet }],
+  };
+};
+
+const analyzeDivisionByZeroErrorSeen: PredicateAnalyzer<DivisionByZeroErrorSeenPredicate> = (_predicate, state) => {
+  const isMet = state.calculator.rollErrors.some((entry) => entry.kind === "division_by_zero");
+  return {
+    isMet,
+    criteria: [{ label: "division by zero observed", checked: isMet }],
   };
 };
 
@@ -230,8 +286,11 @@ const analyzers = {
   roll_length_at_least: analyzeRollLengthAtLeast,
   roll_ends_with_equal_run: analyzeRollEndsWithEqualRun,
   roll_ends_with_incrementing_run: analyzeRollEndsWithIncrementingRun,
+  roll_ends_with_alternating_sign_constant_abs_run: analyzeRollEndsWithAlternatingSignConstantAbsRun,
+  roll_ends_with_constant_step_run: analyzeRollEndsWithConstantStepRun,
   key_press_count_at_least: analyzeKeyPressCountAtLeast,
   overflow_error_seen: analyzeOverflowErrorSeen,
+  division_by_zero_error_seen: analyzeDivisionByZeroErrorSeen,
   allocator_return_press_count_at_least: analyzeAllocatorReturnPressCountAtLeast,
   allocator_allocate_press_count_at_least: analyzeAllocatorAllocatePressCountAtLeast,
 } as const;

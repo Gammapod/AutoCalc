@@ -37,7 +37,7 @@ export const runUnlockGraphTests = (): void => {
     "analysis should reach the = key via overflow progression",
   );
   assert.ok(
-    analysis.unreachableKeys.includes("#"),
+    analysis.unreachableKeys.includes("NEG"),
     "analysis should include keys with no unlock path as unreachable under current sufficiency rules",
   );
 

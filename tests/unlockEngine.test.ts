@@ -115,6 +115,65 @@ export const runUnlockEngineTests = (): void => {
     "roll_contains_value unmet",
   );
 
+  const alternatingAbsRun: UnlockPredicate = {
+    type: "roll_ends_with_alternating_sign_constant_abs_run",
+    length: 7,
+  };
+  assertCriteriaConsistency(
+    alternatingAbsRun,
+    {
+      ...base,
+      calculator: { ...base.calculator, roll: [r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)] },
+    },
+    "roll_ends_with_alternating_sign_constant_abs_run met",
+  );
+  assertCriteriaConsistency(
+    alternatingAbsRun,
+    {
+      ...base,
+      calculator: { ...base.calculator, roll: [r(5n), r(-5n), r(5n), r(0n), r(5n), r(-5n), r(5n)] },
+    },
+    "roll_ends_with_alternating_sign_constant_abs_run unmet on zero",
+  );
+  assertCriteriaConsistency(
+    alternatingAbsRun,
+    {
+      ...base,
+      calculator: { ...base.calculator, roll: [r(5n), r(-5n), r(5n), r(-6n), r(5n), r(-5n), r(5n)] },
+    },
+    "roll_ends_with_alternating_sign_constant_abs_run unmet on abs mismatch",
+  );
+
+  const constantStepRun: UnlockPredicate = {
+    type: "roll_ends_with_constant_step_run",
+    length: 7,
+    minAbsStep: 2n,
+  };
+  assertCriteriaConsistency(
+    constantStepRun,
+    {
+      ...base,
+      calculator: { ...base.calculator, roll: [r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)] },
+    },
+    "roll_ends_with_constant_step_run met",
+  );
+  assertCriteriaConsistency(
+    constantStepRun,
+    {
+      ...base,
+      calculator: { ...base.calculator, roll: [r(5n), r(6n), r(7n), r(8n), r(9n), r(10n), r(11n)] },
+    },
+    "roll_ends_with_constant_step_run unmet on step 1",
+  );
+  assertCriteriaConsistency(
+    constantStepRun,
+    {
+      ...base,
+      calculator: { ...base.calculator, roll: [r(5n), r(12n), r(19n), r(26n), r(32n), r(40n), r(47n)] },
+    },
+    "roll_ends_with_constant_step_run unmet on non-constant step",
+  );
+
   const operationEquals: UnlockPredicate = {
     type: "operation_equals",
     slots: [{ operator: "+", operand: 1n }],
@@ -142,6 +201,20 @@ export const runUnlockEngineTests = (): void => {
     "overflow_error_seen met",
   );
   assertCriteriaConsistency(overflowSeen, base, "overflow_error_seen unmet");
+
+  const divByZeroSeen: UnlockPredicate = { type: "division_by_zero_error_seen" };
+  assertCriteriaConsistency(
+    divByZeroSeen,
+    {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
+      },
+    },
+    "division_by_zero_error_seen met",
+  );
+  assertCriteriaConsistency(divByZeroSeen, base, "division_by_zero_error_seen unmet");
 
   const allocatorReturnSeen: UnlockPredicate = { type: "allocator_return_press_count_at_least", count: 1 };
   assertCriteriaConsistency(

@@ -178,6 +178,19 @@ export type RollEndsWithIncrementingRunPredicate = {
   step?: bigint;
 };
 
+export type RollEndsWithAlternatingSignConstantAbsRunPredicate = {
+  type: "roll_ends_with_alternating_sign_constant_abs_run";
+  length: number;
+};
+
+export type RollEndsWithConstantStepRunPredicate = {
+  type: "roll_ends_with_constant_step_run";
+  length: number;
+  minAbsStep?: bigint;
+  requirePositiveStep?: boolean;
+  requireNegativeStep?: boolean;
+};
+
 export type KeyPressCountAtLeastPredicate = {
   type: "key_press_count_at_least";
   key: Key;
@@ -186,6 +199,10 @@ export type KeyPressCountAtLeastPredicate = {
 
 export type OverflowErrorSeenPredicate = {
   type: "overflow_error_seen";
+};
+
+export type DivisionByZeroErrorSeenPredicate = {
+  type: "division_by_zero_error_seen";
 };
 
 export type AllocatorReturnPressCountAtLeastPredicate = {
@@ -209,8 +226,11 @@ export type UnlockPredicate =
   | RollContainsValuePredicate
   | RollEndsWithEqualRunPredicate
   | RollEndsWithIncrementingRunPredicate
+  | RollEndsWithAlternatingSignConstantAbsRunPredicate
+  | RollEndsWithConstantStepRunPredicate
   | KeyPressCountAtLeastPredicate
   | OverflowErrorSeenPredicate
+  | DivisionByZeroErrorSeenPredicate
   | AllocatorReturnPressCountAtLeastPredicate
   | AllocatorAllocatePressCountAtLeastPredicate;
 
@@ -241,7 +261,7 @@ export type UnlockExecutionEffect = {
 
 export type UnlockDigitEffect = {
   type: "unlock_digit";
-  key: Digit;
+  key: ValueExpressionKey;
 };
 
 export type UnlockSecondSlotEffect = {
