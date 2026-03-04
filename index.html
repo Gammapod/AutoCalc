@@ -32,6 +32,9 @@
         --key-utility-top: #d55f5f;
         --key-utility-bottom: #a84040;
         --key-utility-stroke: #6e2424;
+        --key-step-top: #e0a93e;
+        --key-step-bottom: #b87619;
+        --key-step-stroke: #6f420b;
         --key-visualizers-top: #5d8fdf;
         --key-visualizers-bottom: #3f67ad;
         --key-visualizers-stroke: #264272;
@@ -665,6 +668,7 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
         grid-template-rows: repeat(3, minmax(48px, 1fr));
         gap: var(--gap);
+        position: relative;
         transform-origin: bottom right;
       }
 
@@ -788,6 +792,11 @@
       .storage-sort-button[data-storage-sort-group="utility"] {
         background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
         color: #fff7f7;
+      }
+
+      .storage-sort-button[data-storage-sort-group="step"] {
+        background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
+        color: #ffffff;
       }
 
       .storage-sort-button[data-storage-sort-group="visualizers"] {
@@ -996,6 +1005,12 @@
         color: #ffffff;
       }
 
+      .key--group-step {
+        border-color: var(--key-step-stroke);
+        background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
+        color: #ffffff;
+      }
+
       .key--group-visualizers {
         border-color: var(--key-visualizers-stroke);
         background: linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
@@ -1020,7 +1035,7 @@
         filter: none;
       }
 
-      .key.key--toggle-active:not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
+      .key.key--toggle-active:not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
         background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
       }
 
@@ -1030,6 +1045,10 @@
 
       .key.key--toggle-active.key--group-utility:not(:disabled) {
         background: linear-gradient(180deg, var(--key-utility-bottom), var(--key-utility-top));
+      }
+
+      .key.key--toggle-active.key--group-step:not(:disabled) {
+        background: linear-gradient(180deg, var(--key-step-bottom), var(--key-step-top));
       }
 
       .key.key--toggle-active.key--group-visualizers:not(:disabled) {
@@ -1100,6 +1119,24 @@
 
       .placeholder--drop-slot {
         border-style: dashed;
+      }
+
+      .keypad-step-body-highlight {
+        pointer-events: none;
+        position: absolute;
+        z-index: 0;
+        border-radius: 12px;
+        opacity: 0.52;
+        background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
+        box-shadow:
+          inset 0 0 0 2px var(--key-step-top),
+          0 0 0 1px var(--key-step-bottom);
+      }
+
+      [data-keys] > .key,
+      [data-keys] > .placeholder {
+        position: relative;
+        z-index: 1;
       }
 
       .placeholder--storage-empty {

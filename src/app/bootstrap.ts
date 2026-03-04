@@ -2,7 +2,7 @@ import { createStore } from "./store.js";
 import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { render } from "../ui/render.js";
+import { playProgrammaticKeyPressFeedback, render } from "../ui/render.js";
 import { createShellRenderer } from "../../src_v2/ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
 import { createResetCalculatorState } from "../domain/reducer.stateBuilders.js";
@@ -218,6 +218,14 @@ const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}):
 const autoEqualsScheduler = createAutoEqualsScheduler(store, {
   dispatchAction: (action) => {
     dispatchWithRuntimeGate(action);
+  },
+  onAutoKeyActivated: (key) => {
+    if (!root) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      playProgrammaticKeyPressFeedback(root, key);
+    });
   },
 });
 

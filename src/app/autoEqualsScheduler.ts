@@ -1,6 +1,6 @@
-import { AUTO_EQUALS_FLAG } from "../domain/state.js";
+import { AUTO_EQUALS_FLAG, FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG } from "../domain/state.js";
 import { getOperationSnapshot } from "../domain/slotDrafting.js";
-import type { ExecKey, GameState, Key, Store } from "../domain/types.js";
+import type { ExecKey, GameState, Key, KeyCell, Store } from "../domain/types.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
 export const AUTO_EQUALS_POINT_BONUS = 0.01;
@@ -15,7 +15,8 @@ type TimerApi = {
 export type AutoEqualsSchedulerOptions = {
   intervalMs?: number;
   timers?: TimerApi;
-  dispatchAction?: (action: { type: "PRESS_KEY"; key: ExecKey } | { type: "TOGGLE_FLAG"; flag: string }) => void;
+  dispatchAction?: (action: { type: "PRESS_KEY"; key: Key } | { type: "TOGGLE_FLAG"; flag: string }) => void;
+  onAutoKeyActivated?: (key: Key) => void;
 };
 
 const defaultTimers: TimerApi = {
@@ -26,6 +27,7 @@ const defaultTimers: TimerApi = {
 const isAutoEqualsEnabled = (state: GameState): boolean => Boolean(state.ui.buttonFlags[AUTO_EQUALS_FLAG]);
 const hasValidEquation = (state: GameState): boolean => getOperationSnapshot(state.calculator).length > 0;
 const EXECUTOR_KEYS: readonly ExecKey[] = ["=", "++", "--"];
+const PLAY_PAUSE_KEY = "\u23EF";
 
 const getAutoEqualsRateMultiplier = (state: GameState): number => {
   const speedPoints = Math.max(0, state.allocator.allocations.speed);
@@ -44,6 +46,50 @@ const getInstalledExecutorKey = (state: GameState): ExecKey | null => {
     }
   }
   return null;
+};
+
+const getKeyCellDefaultToggleFlag = (cell: KeyCell): string | null => {
+  if (cell.key === "GRAPH") {
+    return GRAPH_VISIBLE_FLAG;
+  }
+  if (cell.key === "FEED") {
+    return FEED_VISIBLE_FLAG;
+  }
+  return null;
+};
+
+const resolveCellAction = (
+  cell: KeyCell,
+): { type: "PRESS_KEY"; key: Key } | { type: "TOGGLE_FLAG"; flag: string } => {
+  if (cell.behavior?.type === "toggle_flag") {
+    return { type: "TOGGLE_FLAG", flag: cell.behavior.flag };
+  }
+  const defaultToggleFlag = getKeyCellDefaultToggleFlag(cell);
+  if (defaultToggleFlag) {
+    return { type: "TOGGLE_FLAG", flag: defaultToggleFlag };
+  }
+  return { type: "PRESS_KEY", key: cell.key };
+};
+
+type AutoActionPlan = {
+  action: { type: "PRESS_KEY"; key: Key } | { type: "TOGGLE_FLAG"; flag: string };
+  key: Key;
+};
+
+const getAutoActionPlan = (state: GameState): AutoActionPlan | null => {
+  const columns = Math.max(1, state.ui.keypadColumns || 1);
+  const playPauseIndex = state.ui.keyLayout.findIndex((cell) => cell.kind === "key" && cell.key === PLAY_PAUSE_KEY);
+  if (playPauseIndex >= 0) {
+    const belowIndex = playPauseIndex + columns;
+    if (belowIndex >= 0 && belowIndex < state.ui.keyLayout.length) {
+      const belowCell = state.ui.keyLayout[belowIndex];
+      if (belowCell.kind === "key") {
+        return { action: resolveCellAction(belowCell), key: belowCell.key };
+      }
+    }
+  }
+  const fallbackExecutorKey = getInstalledExecutorKey(state);
+  return fallbackExecutorKey ? { action: { type: "PRESS_KEY", key: fallbackExecutorKey }, key: fallbackExecutorKey } : null;
 };
 
 export const clearAutoEqualsFlagForRuntime = (state: GameState): GameState => {
@@ -71,6 +117,7 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
   const dispatchAction = options.dispatchAction ?? ((action) => {
     store.dispatch(action);
   });
+  const onAutoKeyActivated = options.onAutoKeyActivated ?? (() => undefined);
   let intervalHandle: TimerHandle | null = null;
   let activeIntervalMs: number | null = null;
   let starting = false;
@@ -91,8 +138,8 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
 
   const dispatchAutoEqualsAttempt = (): void => {
     const beforeAttempt = store.getState();
-    const executorKey = getInstalledExecutorKey(beforeAttempt);
-    if (!executorKey) {
+    const autoPlan = getAutoActionPlan(beforeAttempt);
+    if (!autoPlan) {
       if (isAutoEqualsEnabled(beforeAttempt)) {
         dispatchAction({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
       }
@@ -100,8 +147,10 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
       return;
     }
 
-    const validEquation = executorKey === "=" ? hasValidEquation(beforeAttempt) : true;
-    dispatchAction({ type: "PRESS_KEY", key: executorKey });
+    const autoAction = autoPlan.action;
+    const validEquation = autoAction.type === "PRESS_KEY" && autoAction.key === "=" ? hasValidEquation(beforeAttempt) : true;
+    dispatchAction(autoAction);
+    onAutoKeyActivated(autoPlan.key);
     const afterAttempt = store.getState();
     if (afterAttempt !== beforeAttempt) {
       resetInvalidAttempts();

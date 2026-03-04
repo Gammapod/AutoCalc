@@ -233,7 +233,7 @@ export const runReducerLayoutTests = (): void => {
     "moving execution key out of keypad places it into storage",
   );
 
-  const invalidSecondExecutionMove = reducer(baselineWithSpace, {
+  const additionalExecutionMove = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
     fromIndex: firstStorageExecutionIndex,
@@ -241,9 +241,16 @@ export const runReducerLayoutTests = (): void => {
     toIndex: firstEmptyKeypadIndex,
   });
   assert.equal(
-    invalidSecondExecutionMove,
-    baselineWithSpace,
-    "moving a second execution key onto keypad is rejected",
+    additionalExecutionMove.ui.keyLayout[firstEmptyKeypadIndex]?.kind,
+    "key",
+    "moving an additional execution key onto keypad is allowed",
+  );
+  assert.equal(
+    additionalExecutionMove.ui.keyLayout[firstEmptyKeypadIndex]?.kind === "key"
+      ? additionalExecutionMove.ui.keyLayout[firstEmptyKeypadIndex].key
+      : null,
+    "=",
+    "moving an additional execution key onto keypad places it in destination slot",
   );
 
   const validExecutionSwap = reducer(baselineWithSpace, {
@@ -261,7 +268,7 @@ export const runReducerLayoutTests = (): void => {
     "swapping execution key with execution key is allowed because keypad execution count stays at one",
   );
 
-  const invalidSecondExecutionSwap = reducer(toKeypadMove, {
+  const additionalExecutionSwap = reducer(toKeypadMove, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "storage",
     fromIndex: firstStorageExecutionIndex,
@@ -269,9 +276,16 @@ export const runReducerLayoutTests = (): void => {
     toIndex: emptyKeypadIndex,
   });
   assert.equal(
-    invalidSecondExecutionSwap,
-    toKeypadMove,
-    "swapping execution key into keypad is rejected when it would create two execution keys on keypad",
+    additionalExecutionSwap.ui.keyLayout[emptyKeypadIndex]?.kind === "key"
+      ? additionalExecutionSwap.ui.keyLayout[emptyKeypadIndex].key
+      : null,
+    "=",
+    "swapping execution key into keypad is allowed even when another execution key remains on keypad",
+  );
+  assert.equal(
+    additionalExecutionSwap.ui.storageLayout[firstStorageExecutionIndex]?.key,
+    "CE",
+    "execution swap keeps storage consistent",
   );
 
   const allowedNonExecutionSwapIntoExecutionSlot = reducer(baselineWithSpace, {
@@ -284,20 +298,7 @@ export const runReducerLayoutTests = (): void => {
   assert.notEqual(
     allowedNonExecutionSwapIntoExecutionSlot,
     baselineWithSpace,
-    "swapping non-execution key onto keypad execution slot is allowed when keypad still has only one execution key",
-  );
-
-  const invalidSecondExecutionSwapOnKeypad = reducer(allowedNonExecutionSwapIntoExecutionSlot, {
-    type: "SWAP_LAYOUT_CELLS",
-    fromSurface: "storage",
-    fromIndex: firstStorageExecutionIndex,
-    toSurface: "keypad",
-    toIndex: firstEmptyKeypadIndex,
-  });
-  assert.equal(
-    invalidSecondExecutionSwapOnKeypad,
-    allowedNonExecutionSwapIntoExecutionSlot,
-    "swapping in an additional execution key is rejected once keypad already has one execution key elsewhere",
+    "swapping non-execution key onto keypad execution slot is allowed",
   );
 
   const acrossSurfaceSwapTriggersCEStyle = reducer(ceLockedWithEntryState, {
@@ -389,6 +390,60 @@ export const runReducerLayoutTests = (): void => {
     allowedFormerBottomRightSwap,
     toKeypadMove,
     "swapping non-execution into former bottom-right is now allowed",
+  );
+
+  const stepRuleState = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 2 });
+  const stepStorageIndex = stepRuleState.ui.storageLayout.findIndex((cell) => cell?.key === "\u23EF");
+  const bottomRowStart = (stepRuleState.ui.keypadRows - 1) * stepRuleState.ui.keypadColumns;
+  const bottomRowStepBlockedIndex = stepRuleState.ui.keyLayout.findIndex(
+    (cell, index) => index >= bottomRowStart && cell.kind === "placeholder",
+  );
+  const topRowStepAllowedIndex = stepRuleState.ui.keyLayout.findIndex(
+    (cell, index) => index < bottomRowStart && cell.kind === "placeholder",
+  );
+  assert.ok(stepStorageIndex >= 0, "baseline storage includes step key");
+  assert.ok(bottomRowStepBlockedIndex >= 0, "step rule test has an empty bottom-row keypad slot");
+  assert.ok(topRowStepAllowedIndex >= 0, "step rule test has an empty non-bottom keypad slot");
+
+  const bottomRowStepBlocked = reducer(stepRuleState, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "storage",
+    fromIndex: stepStorageIndex,
+    toSurface: "keypad",
+    toIndex: bottomRowStepBlockedIndex,
+  });
+  assert.equal(bottomRowStepBlocked, stepRuleState, "step key cannot be moved into keypad bottom row");
+
+  const topRowStepAllowed = reducer(stepRuleState, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "storage",
+    fromIndex: stepStorageIndex,
+    toSurface: "keypad",
+    toIndex: topRowStepAllowedIndex,
+  });
+  assert.equal(
+    topRowStepAllowed.ui.keyLayout[topRowStepAllowedIndex]?.kind === "key"
+      ? topRowStepAllowed.ui.keyLayout[topRowStepAllowedIndex].key
+      : null,
+    "\u23EF",
+    "step key can be moved into a non-bottom keypad row",
+  );
+
+  const bottomRowKeyIndex = topRowStepAllowed.ui.keyLayout.findIndex(
+    (cell, index) => index >= bottomRowStart && cell.kind === "key",
+  );
+  assert.ok(bottomRowKeyIndex >= 0, "step rule test has a bottom-row keypad key for swap");
+  const blockedStepSwapToBottomRow = reducer(topRowStepAllowed, {
+    type: "SWAP_LAYOUT_CELLS",
+    fromSurface: "keypad",
+    fromIndex: topRowStepAllowedIndex,
+    toSurface: "keypad",
+    toIndex: bottomRowKeyIndex,
+  });
+  assert.equal(
+    blockedStepSwapToBottomRow,
+    topRowStepAllowed,
+    "step key cannot be swapped into keypad bottom row",
   );
 
   const filledStorage = {

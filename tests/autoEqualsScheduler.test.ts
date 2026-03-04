@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "../src/app/autoEqualsScheduler.js";
-import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
+import { AUTO_EQUALS_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
-import type { Action, GameState, Store } from "../src/domain/types.js";
+import type { Action, GameState, Key, Store } from "../src/domain/types.js";
 
 type TimerHandle = ReturnType<typeof setInterval>;
 
@@ -73,16 +73,38 @@ const createMockStore = (seed: GameState): Store & { actions: Action[] } => {
   };
 };
 
-const countExecutorPresses = (actions: Action[]): number =>
-  actions.filter((action) => action.type === "PRESS_KEY" && (action.key === "=" || action.key === "++")).length;
+const withPlayPauseAbove = (state: GameState, keyBelow: Key): GameState => ({
+  ...state,
+  ui: {
+    ...state.ui,
+    keypadColumns: 1,
+    keypadRows: 2,
+    keyLayout: [
+      { kind: "key", key: "\u23EF", behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
+      { kind: "key", key: keyBelow },
+    ],
+  },
+});
 
-const countExecutorPressesForKey = (actions: Action[], key: "=" | "++"): number =>
+const countExecutorPresses = (actions: Action[]): number =>
+  actions.filter((action) => action.type === "PRESS_KEY").length;
+
+const countExecutorPressesForKey = (actions: Action[], key: Key): number =>
   actions.filter((action) => action.type === "PRESS_KEY" && action.key === key).length;
+
+const countToggleActionsForFlag = (actions: Action[], flag: string): number =>
+  actions.filter((action) => action.type === "TOGGLE_FLAG" && action.flag === flag).length;
 
 export const runAutoEqualsSchedulerTests = (): void => {
   const timers = createFakeTimerApi();
   const store = createMockStore(initialState());
-  const scheduler = createAutoEqualsScheduler(store, { timers: timers.timers });
+  const autoActivatedKeys: Key[] = [];
+  const scheduler = createAutoEqualsScheduler(store, {
+    timers: timers.timers,
+    onAutoKeyActivated: (key) => {
+      autoActivatedKeys.push(key);
+    },
+  });
 
   scheduler.startIfNeeded();
   assert.equal(countExecutorPresses(store.actions), 0, "startIfNeeded is idle when auto-equals flag is off");
@@ -91,7 +113,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   scheduler.sync(store.getState());
   assert.equal(countExecutorPresses(store.actions), 1, "toggling on dispatches immediate executor press once");
-  assert.equal(countExecutorPressesForKey(store.actions, "++"), 1, "default keypad executor is ++");
+  assert.equal(countExecutorPressesForKey(store.actions, "++"), 1, "fallback path presses first installed execution key");
   assert.equal(countExecutorPressesForKey(store.actions, "="), 0, "default scheduler path should not press =");
   assert.equal(timers.setCalls, 1, "toggling on creates one interval");
   assert.equal(timers.setMsHistory[0], 1000, "default speed starts at one executor press per second");
@@ -111,15 +133,12 @@ export const runAutoEqualsSchedulerTests = (): void => {
   timers.tick();
   assert.equal(countExecutorPresses(store.actions), 2, "each interval tick dispatches executor");
   assert.equal(countExecutorPressesForKey(store.actions, "++"), 2, "tick continues pressing ++");
+  assert.deepEqual(autoActivatedKeys, ["++", "++"], "scheduler reports activated keys for press animation hooks");
   assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "successful ++ execution keeps toggle on");
   assert.equal(timers.activeCount(), 1, "successful ++ execution keeps interval active");
 
   const stateWithValidEquation: GameState = {
-    ...initialState(),
-    ui: {
-      ...initialState().ui,
-      keyLayout: [{ kind: "key", key: "=" }],
-    },
+    ...withPlayPauseAbove(initialState(), "="),
     calculator: {
       ...initialState().calculator,
       operationSlots: [{ operator: "+", operand: 1n }],
@@ -152,16 +171,12 @@ export const runAutoEqualsSchedulerTests = (): void => {
   assert.equal(
     countExecutorPressesForKey(validStore.actions, "++"),
     0,
-    "when = is the installed keypad executor, scheduler should not dispatch ++",
+    "when = is below play/pause, scheduler should not dispatch ++",
   );
   assert.equal(Boolean(validStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle remains on while equation is valid");
 
   const stateWithInvalidEqualsExecutor: GameState = {
-    ...initialState(),
-    ui: {
-      ...initialState().ui,
-      keyLayout: [{ kind: "key", key: "=" }],
-    },
+    ...withPlayPauseAbove(initialState(), "="),
     unlocks: {
       ...initialState().unlocks,
       execution: {
@@ -226,12 +241,63 @@ export const runAutoEqualsSchedulerTests = (): void => {
   );
   assert.equal(noExecutorTimers.activeCount(), 0, "no installed keypad executor stops interval immediately");
 
+  const stateWithNonExecutionBelowPlay = withPlayPauseAbove(initialState(), "C");
+  const nonExecutionStore = createMockStore(stateWithNonExecutionBelowPlay);
+  const nonExecutionTimers = createFakeTimerApi();
+  const nonExecutionScheduler = createAutoEqualsScheduler(nonExecutionStore, { timers: nonExecutionTimers.timers });
+  nonExecutionStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+  nonExecutionScheduler.sync(nonExecutionStore.getState());
+  assert.equal(
+    countExecutorPressesForKey(nonExecutionStore.actions, "C"),
+    1,
+    "play/pause presses non-execution keys when they are directly below it",
+  );
+  assert.equal(
+    Boolean(nonExecutionStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]),
+    true,
+    "non-execution below play/pause keeps auto toggle active after successful press",
+  );
+
+  const graphToggleState: GameState = {
+    ...withPlayPauseAbove(initialState(), "GRAPH"),
+    unlocks: {
+      ...initialState().unlocks,
+      visualizers: {
+        ...initialState().unlocks.visualizers,
+        GRAPH: true,
+      },
+    },
+  };
+  const graphToggleStore = createMockStore(graphToggleState);
+  const graphToggleTimers = createFakeTimerApi();
+  const graphToggleScheduler = createAutoEqualsScheduler(graphToggleStore, { timers: graphToggleTimers.timers });
+  graphToggleStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+  graphToggleScheduler.sync(graphToggleStore.getState());
+  assert.equal(
+    Boolean(graphToggleStore.getState().ui.buttonFlags[GRAPH_VISIBLE_FLAG]),
+    true,
+    "toggle key below play/pause is toggled on by immediate attempt",
+  );
+  graphToggleTimers.tick();
+  assert.equal(
+    Boolean(graphToggleStore.getState().ui.buttonFlags[GRAPH_VISIBLE_FLAG]),
+    false,
+    "toggle key below play/pause is toggled off on the next tick",
+  );
+  assert.equal(
+    countToggleActionsForFlag(graphToggleStore.actions, GRAPH_VISIBLE_FLAG),
+    2,
+    "toggle key below play/pause dispatches toggle action each attempt",
+  );
+
   scheduler.dispose();
   assert.equal(timers.clearCalls, 2, "dispose clears the current ++ scheduler interval once");
   assert.equal(timers.activeCount(), 0, "dispose leaves no timers active");
   validScheduler.dispose();
   invalidScheduler.dispose();
   noExecutorScheduler.dispose();
+  nonExecutionScheduler.dispose();
+  graphToggleScheduler.dispose();
 
   const loadedWithAuto: GameState = {
     ...initialState(),

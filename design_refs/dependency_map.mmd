@@ -1,12 +1,13 @@
 flowchart TD
 
 subgraph Inputs ["Value Expression"]
-    Ineg["0-n"]
+    Ineg["±"]
     Ifrac["a/b"]
     Iroot["√"]
     subgraph Constants ["Constants"]
         Iim["i"]
-        Ireal["π, e"]
+        Ipi["π"]
+        Ie["e"]
         Idigits["0-9"]
     end
 end
@@ -64,5 +65,6 @@ Oroot --> Iroot
 
 Ifrac --> NQ
 Iroot --> NA
-Ireal --> NR
+Ipi --> NR
+Ie --> NR
 Iim --> NC

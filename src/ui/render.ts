@@ -157,8 +157,10 @@ const KEYPAD_SLOT_ENTER_DURATION_MS = 760;
 const KEYPAD_GROW_MAX_DURATION_MS = 880;
 const CALC_GROW_MAX_DURATION_MS = 980;
 const QUICK_TAP_PRESS_MIN_VISIBLE_MS = 55;
+const PROGRAMMATIC_PRESS_MIN_VISIBLE_MS = 140;
 const UNLOCK_ANIMATION_NAME = "key-unlock-pulse";
 const KEYPAD_SLOT_ENTER_ANIMATION_NAME = "keypad-slot-enter";
+const STEP_BODY_HIGHLIGHT_CLASS = "keypad-step-body-highlight";
 const STORAGE_MIN_VISUAL_COLUMNS = 1;
 const STORAGE_MIN_KEY_WIDTH_PX = 56;
 const STORAGE_FALLBACK_GAP_PX = 8;
@@ -236,6 +238,7 @@ const STORAGE_SORT_FLAG_BY_GROUP: Record<KeyVisualGroup, string> = {
   value_expression: "storage.sort.value_expression",
   slot_operator: "storage.sort.slot_operator",
   utility: "storage.sort.utility",
+  step: "storage.sort.step",
   visualizers: "storage.sort.visualizers",
 };
 const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: KeyVisualGroup; ariaLabel: string }> = [
@@ -243,6 +246,7 @@ const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: KeyVisualGroup; ariaL
   { label: "\u{1D45B}", group: "value_expression", ariaLabel: "Value expression keys" },
   { label: "\u2A02", group: "slot_operator", ariaLabel: "Operator keys" },
   { label: "\u23CF", group: "utility", ariaLabel: "Utility keys" },
+  { label: "\u25B6", group: "step", ariaLabel: "Step keys" },
   { label: "\u2191__", group: "visualizers", ariaLabel: "Visualizer keys" },
 ];
 
@@ -880,8 +884,6 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   return getKeyVisualGroupShared(key);
 };
 
-const isExecutionKey = (key: Key): boolean => key === "=" || key === "++" || key === "--";
-
 const buildKeypadSlotLabels = (
   layout: GameState["ui"]["keyLayout"],
   columns: number,
@@ -891,6 +893,28 @@ const buildKeypadSlotLabels = (
     const coord = toCoordFromIndex(index, columns, rows);
     return `R${coord.row}C${coord.col} #${index}`;
   });
+
+type StepBodyHighlightRegion = {
+  topIndex: number;
+  bottomIndex: number;
+};
+
+const buildStepBodyHighlightRegions = (state: GameState): StepBodyHighlightRegion[] => {
+  const regions: StepBodyHighlightRegion[] = [];
+  const columns = Math.max(1, state.ui.keypadColumns || 1);
+  for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
+    const cell = state.ui.keyLayout[index];
+    if (cell.kind !== "key" || cell.key !== "\u23EF") {
+      continue;
+    }
+    const belowIndex = index + columns;
+    regions.push({
+      topIndex: index,
+      bottomIndex: belowIndex < state.ui.keyLayout.length ? belowIndex : index,
+    });
+  }
+  return regions;
+};
 
 export const getStorageRowCount = (buttonCount: number, columns: number = STORAGE_COLUMNS): number => {
   if (columns <= 0) {
@@ -1189,13 +1213,16 @@ const getKeyAtTarget = (state: GameState, target: DragTarget): Key | null => {
   return slot?.key ?? null;
 };
 
-const countKeypadExecutionKeys = (state: GameState): number =>
-  state.ui.keyLayout.reduce(
-    (count, cell) => (cell.kind === "key" && isExecutionKey(cell.key) ? count + 1 : count),
-    0,
-  );
+const isStepKey = (key: Key): boolean => key === "\u23EF";
 
-const violatesExecutionCountRule = (
+const isBottomRowKeypadIndex = (state: GameState, index: number): boolean => {
+  const columns = Math.max(1, state.ui.keypadColumns || 1);
+  const rows = Math.max(1, state.ui.keypadRows || 1);
+  const bottomRowStart = (rows - 1) * columns;
+  return index >= bottomRowStart && index < bottomRowStart + columns;
+};
+
+const violatesStepBottomRowRule = (
   state: GameState,
   source: DragTarget,
   destination: DragTarget,
@@ -1205,32 +1232,17 @@ const violatesExecutionCountRule = (
   if (!sourceKey) {
     return true;
   }
-
-  let nextExecutionCount = countKeypadExecutionKeys(state);
-  const sourceIsExecution = isExecutionKey(sourceKey);
-
-  if (sourceIsExecution && source.surface === "keypad") {
-    nextExecutionCount -= 1;
+  if (destination.surface === "keypad" && isStepKey(sourceKey) && isBottomRowKeypadIndex(state, destination.index)) {
+    return true;
   }
-  if (sourceIsExecution && destination.surface === "keypad") {
-    nextExecutionCount += 1;
+  if (action !== "swap") {
+    return false;
   }
-
-  if (action === "swap") {
-    const destinationKey = getKeyAtTarget(state, destination);
-    if (!destinationKey) {
-      return true;
-    }
-    const destinationIsExecution = isExecutionKey(destinationKey);
-    if (destinationIsExecution && destination.surface === "keypad") {
-      nextExecutionCount -= 1;
-    }
-    if (destinationIsExecution && source.surface === "keypad") {
-      nextExecutionCount += 1;
-    }
+  const destinationKey = getKeyAtTarget(state, destination);
+  if (!destinationKey) {
+    return true;
   }
-
-  return nextExecutionCount >= 2;
+  return source.surface === "keypad" && isStepKey(destinationKey) && isBottomRowKeypadIndex(state, source.index);
 };
 
 const isStorageDropGeometryValid = (
@@ -1286,7 +1298,7 @@ export const classifyDropAction = (
     return null;
   }
   const action: DropAction = destinationOccupancy === "key" ? "swap" : "move";
-  if (violatesExecutionCountRule(state, source, destination, action)) {
+  if (violatesStepBottomRowRule(state, source, destination, action)) {
     return null;
   }
   return isStorageDropGeometryValid(state, source, destination, action) ? action : null;
@@ -1513,6 +1525,35 @@ const bindQuickTapPressFeedback = (element: HTMLButtonElement): void => {
   });
 };
 
+const programmaticPressReleaseTimers = new WeakMap<HTMLButtonElement, ReturnType<typeof setTimeout>>();
+
+const beginProgrammaticPressVisual = (button: HTMLButtonElement): void => {
+  const existingTimer = programmaticPressReleaseTimers.get(button);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    programmaticPressReleaseTimers.delete(button);
+  }
+  button.classList.remove("key--quick-press");
+  // Force reflow so repeated programmatic presses retrigger the visual transition.
+  void button.offsetWidth;
+  button.classList.add("key--quick-press");
+  const releaseTimer = setTimeout(() => {
+    programmaticPressReleaseTimers.delete(button);
+    button.classList.remove("key--quick-press");
+  }, PROGRAMMATIC_PRESS_MIN_VISIBLE_MS);
+  programmaticPressReleaseTimers.set(button, releaseTimer);
+};
+
+export const playProgrammaticKeyPressFeedback = (root: ParentNode, key: Key): void => {
+  const candidates = Array.from(root.querySelectorAll<HTMLButtonElement>(".key[data-key]"));
+  const matching = candidates.filter((button) => button.dataset.key === key && !button.disabled);
+  if (matching.length === 0) {
+    return;
+  }
+  const keypadButton = matching.find((button) => button.dataset.layoutSurface === "keypad");
+  beginProgrammaticPressVisual(keypadButton ?? matching[0]);
+};
+
 const bindDropTargetCell = (element: HTMLElement, surface: LayoutSurface, index: number): void => {
   element.dataset.layoutSurface = surface;
   element.dataset.layoutIndex = index.toString();
@@ -1706,6 +1747,7 @@ export const render = (
     }
   }
   const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout, state.ui.keypadColumns, state.ui.keypadRows);
+  const stepBodyHighlights = buildStepBodyHighlightRegions(state);
   for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
     const cell = state.ui.keyLayout[index];
     const slotLabel = slotLabels[index] ?? `#${index}`;
@@ -1751,6 +1793,7 @@ export const render = (
     button.setAttribute("aria-pressed", keypadToggleActive ? "true" : "false");
     button.disabled = calculatorKeysLocked;
     button.dataset.keypadCellId = slotId;
+    button.dataset.key = cell.key;
     bindQuickTapPressFeedback(button);
     bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
@@ -1765,6 +1808,33 @@ export const render = (
       dispatch(buildKeyButtonAction(state, cell));
     });
     keysEl.appendChild(button);
+  }
+  const keysRect = keysEl.getBoundingClientRect();
+  for (const region of stepBodyHighlights) {
+    const topSlot = keysEl.querySelector<HTMLElement>(
+      `[data-layout-surface="keypad"][data-layout-index="${region.topIndex.toString()}"]`,
+    );
+    const bottomSlot = keysEl.querySelector<HTMLElement>(
+      `[data-layout-surface="keypad"][data-layout-index="${region.bottomIndex.toString()}"]`,
+    );
+    if (!topSlot || !bottomSlot) {
+      continue;
+    }
+    const topRect = topSlot.getBoundingClientRect();
+    const bottomRect = bottomSlot.getBoundingClientRect();
+    const left = topRect.left - keysRect.left;
+    const right = topRect.right - keysRect.left;
+    const top = Math.min(topRect.top, bottomRect.top) - keysRect.top;
+    const bottom = Math.max(topRect.bottom, bottomRect.bottom) - keysRect.top;
+
+    const highlight = document.createElement("div");
+    highlight.className = STEP_BODY_HIGHLIGHT_CLASS;
+    highlight.setAttribute("aria-hidden", "true");
+    highlight.style.left = `${left.toFixed(2)}px`;
+    highlight.style.top = `${top.toFixed(2)}px`;
+    highlight.style.width = `${Math.max(0, right - left).toFixed(2)}px`;
+    highlight.style.height = `${Math.max(0, bottom - top).toFixed(2)}px`;
+    keysEl.appendChild(highlight);
   }
   fitKeyLabelsInContainer(keysEl);
 
@@ -1852,6 +1922,7 @@ export const render = (
     }
     button.setAttribute("aria-pressed", storageToggleActive ? "true" : "false");
     button.disabled = storageLocked;
+    button.dataset.key = cell.key;
     bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     storageEl.appendChild(button);

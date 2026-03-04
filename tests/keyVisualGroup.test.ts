@@ -12,6 +12,6 @@ export const runKeyVisualGroupTests = (): void => {
   assert.equal(getKeyVisualGroup("GRAPH"), "visualizers", "GRAPH uses visualizers group");
   assert.equal(getKeyVisualGroup("FEED"), "visualizers", "FEED uses visualizers group");
   assert.equal(getKeyVisualGroup("="), "execution", "equals uses execution group");
-  assert.equal(getKeyVisualGroup("\u23EF"), "utility", "play/pause uses utility group");
+  assert.equal(getKeyVisualGroup("\u23EF"), "step", "play/pause uses step group");
 };
 

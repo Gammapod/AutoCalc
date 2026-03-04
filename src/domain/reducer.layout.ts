@@ -24,7 +24,7 @@ const isKeyCell = (cell: LayoutCell | KeyCell | null): cell is KeyCell =>
 
 const isKeypadEmptyCell = (cell: LayoutCell): boolean => cell.kind === "placeholder";
 const isStorageEmptyCell = (cell: KeyCell | null): boolean => cell === null;
-const isExecutionKey = (key: KeyCell["key"]): boolean => key === "=" || key === "++" || key === "--";
+const isStepKey = (key: KeyCell["key"]): boolean => key === "\u23EF";
 
 export const isStorageLayoutValid = (storageLayout: Array<KeyCell | null>): boolean => {
   return storageLayout.length > 0 && storageLayout.length % STORAGE_COLUMNS === 0;
@@ -135,6 +135,13 @@ const isEmptyCell = (surface: LayoutSurface, cell: LayoutCell | KeyCell | null):
 const hasValidSurfaceIndex = (state: GameState, surface: LayoutSurface, index: number): boolean =>
   isValidLayoutIndex(getSurfaceLength(state, surface), index);
 
+const isBottomRowKeypadIndex = (state: GameState, index: number): boolean => {
+  const columns = Math.max(1, state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS);
+  const rows = Math.max(1, state.ui.keypadRows || KEYPAD_DEFAULT_ROWS);
+  const bottomRowStart = (rows - 1) * columns;
+  return index >= bottomRowStart && index < bottomRowStart + columns;
+};
+
 const keySignature = (cell: LayoutCell | KeyCell | null): string | null => {
   if (!cell || cell.kind !== "key") {
     return null;
@@ -214,12 +221,6 @@ const isStorageOutcomeValid = (
   return isStorageLayoutValid(nextStorage);
 };
 
-const countKeypadExecutionKeys = (state: GameState): number =>
-  state.ui.keyLayout.reduce(
-    (count, cell) => (cell.kind === "key" && isExecutionKey(cell.key) ? count + 1 : count),
-    0,
-  );
-
 const clearButtonFlag = (state: GameState, flag: string): GameState => {
   const trimmed = flag.trim();
   if (trimmed.length === 0 || !state.ui.buttonFlags[trimmed]) {
@@ -249,38 +250,6 @@ const clearToggleFlagWhenLeavingKeypad = (
     return state;
   }
   return clearButtonFlag(state, keyCell.behavior.flag);
-};
-
-const violatesExecutionCountRule = (
-  state: GameState,
-  fromSurface: LayoutSurface,
-  fromIndex: number,
-  sourceKey: KeyCell["key"],
-  toSurface: LayoutSurface,
-  toIndex: number,
-  destinationKey?: KeyCell["key"],
-): boolean => {
-  let nextExecutionCount = countKeypadExecutionKeys(state);
-  const sourceIsExecution = isExecutionKey(sourceKey);
-  const destinationIsExecution = destinationKey ? isExecutionKey(destinationKey) : false;
-
-  if (sourceIsExecution && fromSurface === "keypad") {
-    nextExecutionCount -= 1;
-  }
-  if (sourceIsExecution && toSurface === "keypad") {
-    nextExecutionCount += 1;
-  }
-
-  if (destinationKey) {
-    if (destinationIsExecution && toSurface === "keypad") {
-      nextExecutionCount -= 1;
-    }
-    if (destinationIsExecution && fromSurface === "keypad") {
-      nextExecutionCount += 1;
-    }
-  }
-
-  return nextExecutionCount >= 2;
 };
 
 export const applyMoveKeySlot = (state: GameState, fromIndex: number, toIndex: number): GameState => {
@@ -340,16 +309,7 @@ export const applyMoveLayoutCell = (
   if (!isKeyCell(sourceCell) || !isEmptyCell(toSurface, destinationCell)) {
     return state;
   }
-  if (
-    violatesExecutionCountRule(
-      state,
-      fromSurface,
-      fromIndex,
-      sourceCell.key,
-      toSurface,
-      toIndex,
-    )
-  ) {
+  if (toSurface === "keypad" && isStepKey(sourceCell.key) && isBottomRowKeypadIndex(state, toIndex)) {
     return state;
   }
   if (
@@ -400,15 +360,8 @@ export const applySwapLayoutCells = (
     return state;
   }
   if (
-    violatesExecutionCountRule(
-      state,
-      fromSurface,
-      fromIndex,
-      sourceCell.key,
-      toSurface,
-      toIndex,
-      destinationCell.key,
-    )
+    (toSurface === "keypad" && isStepKey(sourceCell.key) && isBottomRowKeypadIndex(state, toIndex))
+    || (fromSurface === "keypad" && isStepKey(destinationCell.key) && isBottomRowKeypadIndex(state, fromIndex))
   ) {
     return state;
   }
