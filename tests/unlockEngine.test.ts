@@ -191,6 +191,58 @@ export const runUnlockEngineTests = (): void => {
   );
   assertCriteriaConsistency(operationEquals, base, "operation_equals unmet");
 
+  const euclidEquivalentModulo: UnlockPredicate = {
+    type: "operation_first_euclid_equivalent_modulo",
+  };
+  assertCriteriaConsistency(
+    euclidEquivalentModulo,
+    {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        total: r(10n),
+        operationSlots: [{ operator: "#", operand: 4n }],
+      },
+    },
+    "operation_first_euclid_equivalent_modulo met",
+  );
+  assertCriteriaConsistency(
+    euclidEquivalentModulo,
+    {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        total: r(10n),
+        operationSlots: [{ operator: "+", operand: 4n }],
+      },
+    },
+    "operation_first_euclid_equivalent_modulo unmet when first op is not #",
+  );
+  assertCriteriaConsistency(
+    euclidEquivalentModulo,
+    {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        total: r(10n),
+        operationSlots: [{ operator: "#", operand: 4n }, { operator: "+", operand: 1n }],
+      },
+    },
+    "operation_first_euclid_equivalent_modulo unmet when combined differs from modulo baseline",
+  );
+  assertCriteriaConsistency(
+    euclidEquivalentModulo,
+    {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        total: r(10n),
+        operationSlots: [{ operator: "#", operand: 0n }],
+      },
+    },
+    "operation_first_euclid_equivalent_modulo unmet on division by zero",
+  );
+
   const overflowSeen: UnlockPredicate = { type: "overflow_error_seen" };
   assertCriteriaConsistency(
     overflowSeen,

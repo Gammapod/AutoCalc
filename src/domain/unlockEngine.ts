@@ -1,5 +1,6 @@
 import { equalsBigInt, gteBigInt, isInteger, lteBigInt } from "../infra/math/rationalEngine.js";
 import { isRationalCalculatorValue } from "./calculatorValue.js";
+import { executeSlots } from "./engine.js";
 import { getOperationSnapshot } from "./slotDrafting.js";
 import { OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import type {
@@ -9,6 +10,7 @@ import type {
   DivisionByZeroErrorSeenPredicate,
   OverflowErrorSeenPredicate,
   KeyPressCountAtLeastPredicate,
+  OperationFirstEuclidEquivalentModuloPredicate,
   OperationEqualsPredicate,
   RollEndsWithAlternatingSignConstantAbsRunPredicate,
   RollEndsWithConstantStepRunPredicate,
@@ -267,6 +269,37 @@ const analyzeOperationEquals: PredicateAnalyzer<OperationEqualsPredicate> = (pre
   };
 };
 
+const analyzeOperationFirstEuclidEquivalentModulo: PredicateAnalyzer<OperationFirstEuclidEquivalentModuloPredicate> = (
+  _predicate,
+  state,
+) => {
+  const slots = getOperationSnapshot(state.calculator, false);
+  const firstSlot = slots[0] ?? null;
+  const firstIsEuclid = firstSlot?.operator === "#";
+
+  let evaluationsSucceeded = false;
+  let resultMatchesModuloBaseline = false;
+  if (firstIsEuclid && isRationalCalculatorValue(state.calculator.total)) {
+    const combined = executeSlots(state.calculator.total.value, slots);
+    const baseline = executeSlots(state.calculator.total.value, [{ operator: "\u27E1", operand: firstSlot.operand }]);
+    evaluationsSucceeded = combined.ok && baseline.ok;
+    if (combined.ok && baseline.ok) {
+      resultMatchesModuloBaseline =
+        combined.total.num === baseline.total.num
+        && combined.total.den === baseline.total.den;
+    }
+  }
+
+  return {
+    isMet: firstIsEuclid && evaluationsSucceeded && resultMatchesModuloBaseline,
+    criteria: [
+      { label: "first op is #", checked: firstIsEuclid },
+      { label: "equivalence evaluated", checked: evaluationsSucceeded },
+      { label: "combined equals a\u27E1b", checked: resultMatchesModuloBaseline },
+    ],
+  };
+};
+
 const analyzeRollLengthAtLeast: PredicateAnalyzer<RollLengthAtLeastPredicate> = (predicate, state) => {
   const isMet = state.calculator.roll.length >= predicate.length;
   return {
@@ -283,6 +316,7 @@ const analyzers = {
   roll_ends_with_sequence: analyzeRollEndsWithSequence,
   roll_contains_value: analyzeRollContainsValue,
   operation_equals: analyzeOperationEquals,
+  operation_first_euclid_equivalent_modulo: analyzeOperationFirstEuclidEquivalentModulo,
   roll_length_at_least: analyzeRollLengthAtLeast,
   roll_ends_with_equal_run: analyzeRollEndsWithEqualRun,
   roll_ends_with_incrementing_run: analyzeRollEndsWithIncrementingRun,

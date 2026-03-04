@@ -179,6 +179,8 @@ export type UnlockRowVm = {
   name: string;
   state: UnlockRowState;
   criteria: UnlockCriterionVm[];
+  difficulty?: "difficult";
+  difficultyLabel?: "Difficult";
 };
 
 type Occupancy = "key" | "empty" | "invalid";
@@ -571,7 +573,14 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
 
     const hintEl = document.createElement("span");
     hintEl.className = "unlock-hint";
-    hintEl.textContent = hintByUnlockId.get(row.id) ?? "";
+    if (row.difficulty === "difficult") {
+      const difficultyLabel = document.createElement("span");
+      difficultyLabel.className = "unlock-difficulty";
+      difficultyLabel.textContent = row.difficultyLabel ?? "Difficult";
+      hintEl.appendChild(difficultyLabel);
+      hintEl.appendChild(document.createTextNode(" "));
+    }
+    hintEl.appendChild(document.createTextNode(hintByUnlockId.get(row.id) ?? ""));
     rowEl.appendChild(hintEl);
 
     const nameEl = document.createElement("span");

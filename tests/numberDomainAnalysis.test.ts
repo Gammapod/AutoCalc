@@ -24,8 +24,8 @@ export const runNumberDomainAnalysisTests = (): void => {
     unlockCatalog.length,
     "spec analysis reports one row per unlock in catalog",
   );
-  const initialTotal11 = initialReport.unlockSpecAnalysis.find((row) => row.unlockId === "unlock_storage_on_total_11");
-  assert.equal(initialTotal11?.status, "possible", "overflow unlock is possible from initial config via spec capabilities");
+  const initialEqualsUnlock = initialReport.unlockSpecAnalysis.find((row) => row.unlockId === "unlock_equals_on_total_11");
+  assert.equal(initialEqualsUnlock?.status, "possible", "equal-run unlock is possible from initial config via spec capabilities");
 
   const withResetAndMinus: GameState = {
     ...base,

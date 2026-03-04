@@ -248,18 +248,6 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
     // Slot capacity is allocator-projected; keep this effect as a backward-compatible no-op.
     return state;
   }
-  if (effect.type === "unlock_storage_drawer") {
-    return {
-      ...state,
-      unlocks: {
-        ...state.unlocks,
-        uiUnlocks: {
-          ...state.unlocks.uiUnlocks,
-          storageVisible: true,
-        },
-      },
-    };
-  }
   if (effect.type === "upgrade_keypad_column") {
     return applyUpgradeKeypadColumn(state);
   }

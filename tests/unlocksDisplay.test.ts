@@ -136,6 +136,62 @@ export const runUnlocksDisplayTests = (): void => {
     "TODO capability rows remain visible by checklist policy",
   );
 
+  const difficultScopeCatalog: UnlockDefinition[] = [
+    {
+      id: "u_normal_scope",
+      description: "normal scope row",
+      predicate: { type: "total_at_least", value: 2n },
+      effect: { type: "unlock_digit", key: "4" },
+      once: true,
+      difficulty: "normal",
+      domainNodeId: "NN",
+      targetNodeId: "Idigits",
+    },
+    {
+      id: "u_difficult_scope",
+      description: "difficult scope row",
+      predicate: { type: "total_at_least", value: 2n },
+      effect: { type: "unlock_slot_operator", key: "\u27E1" },
+      once: true,
+      difficulty: "difficult",
+      domainNodeId: "NZ",
+      targetNodeId: "Omod_difficult",
+    },
+  ];
+  const allUnlockedOnlyState: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      execution: {
+        ...base.unlocks.execution,
+        "++": false,
+        "=": true,
+      },
+      slotOperators: {
+        ...base.unlocks.slotOperators,
+        "+": true,
+      },
+      valueExpression: {
+        ...base.unlocks.valueExpression,
+        "1": true,
+      },
+    },
+  };
+  const difficultRows = buildVisibleChecklistRows(allUnlockedOnlyState, { catalog: difficultScopeCatalog });
+  assert.equal(
+    difficultRows.some((row) => row.id === "u_normal_scope"),
+    false,
+    "normal rows continue using present_on_keypad scope and stay hidden when blocked there",
+  );
+  const difficultRow = difficultRows.find((row) => row.id === "u_difficult_scope");
+  assert.equal(
+    Boolean(difficultRow),
+    true,
+    "difficult rows use all_unlocked scope and appear when unlocked-key capabilities satisfy policy",
+  );
+  assert.equal(difficultRow?.difficulty, "difficult", "difficult rows include difficulty metadata");
+  assert.equal(difficultRow?.difficultyLabel, "Difficult", "difficult rows include a difficult label");
+
   const allocatorProgressState: GameState = {
     ...base,
     allocatorAllocatePressCount: 1,

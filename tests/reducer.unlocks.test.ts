@@ -142,6 +142,31 @@ export const runReducerUnlockTests = (): void => {
     "# unlock id records once",
   );
 
+  const moduloByEuclidEquivalenceUnlocked = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: r(10n),
+        operationSlots: [{ operator: "#", operand: 4n }],
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(
+    moduloByEuclidEquivalenceUnlocked.unlocks.slotOperators["\u27E1"],
+    true,
+    "⟡ unlocks when first # operation evaluates equivalent to modulo baseline",
+  );
+  const moduloByEuclidEquivalenceUnlockedTwice = applyUnlocks(moduloByEuclidEquivalenceUnlocked, unlockCatalog);
+  assert.equal(
+    moduloByEuclidEquivalenceUnlockedTwice.completedUnlockIds.filter(
+      (id) => id === "unlock_mod_on_difficult_first_euclid_equivalence",
+    ).length,
+    1,
+    "⟡ difficult unlock id records once",
+  );
+
   let state = withTwoDigitRange(initialState());
   for (let i = 0; i < 7; i += 1) {
     state = press(state, "++");
@@ -162,7 +187,7 @@ export const runReducerUnlockTests = (): void => {
   overflowState = press(overflowState, "++");
   assert.equal(eqBeforeOverflow, false, "equals remains locked before overflow equal-run");
   assert.equal(overflowState.unlocks.execution["="], true, "equals unlocks on first equal run of 2 values");
-  assert.equal(overflowState.unlocks.uiUnlocks.storageVisible, true, "storage still unlocks on first overflow");
+  assert.equal(overflowState.unlocks.uiUnlocks.storageVisible, true, "storage is visible by default");
 
   const afterLockedMinus = press(overflowState, "--");
   assert.deepEqual(afterLockedMinus, overflowState, "locked -- remains a no-op");

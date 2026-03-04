@@ -210,6 +210,21 @@ const proofFixtures: ProofFixture[] = [
     script: [],
   },
   {
+    id: "proof_first_euclid_equivalent_modulo",
+    predicateType: "operation_first_euclid_equivalent_modulo",
+    sufficientSetId: "euclid_equivalent_modulo_via_operation_eval",
+    predicate: { type: "operation_first_euclid_equivalent_modulo" },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["=", "#"]),
+      calculator: {
+        ...initialState().calculator,
+        total: r(10n),
+        operationSlots: [{ operator: "#", operand: 4n }],
+      },
+    }),
+    script: [],
+  },
+  {
     id: "proof_exact_sequence_suffix_47_to_5_by_7",
     predicateType: "roll_ends_with_sequence",
     sufficientSetId: "sequence_suffix_via_roll_growth",

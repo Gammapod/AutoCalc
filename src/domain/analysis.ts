@@ -49,6 +49,7 @@ type CapabilityContext = {
   rollAlternatingSignConstantAbs: boolean;
   rollConstantStepRun: boolean;
   divisionByZeroError: boolean;
+  euclidDivisionOperator: boolean;
 };
 
 const formatPredicate = (name: string, value: boolean): string => `${name}=${value ? "true" : "false"}`;
@@ -104,6 +105,7 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
   const rollAlternatingSignConstantAbs = executeActivation && hasPlus && hasNeg && hasSomeDigit;
   const rollConstantStepRun = executeActivation && formOperatorPlusOperand;
   const divisionByZeroError = executeActivation && isAvailable("/") && hasZero;
+  const euclidDivisionOperator = isAvailable("#");
 
   return {
     executeActivation,
@@ -119,6 +121,7 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
     rollAlternatingSignConstantAbs,
     rollConstantStepRun,
     divisionByZeroError,
+    euclidDivisionOperator,
   };
 };
 
@@ -160,6 +163,9 @@ const resolveCapability = (
   }
   if (capability === "division_by_zero_error") {
     return caps.divisionByZeroError;
+  }
+  if (capability === "euclid_division_operator") {
+    return caps.euclidDivisionOperator;
   }
   if (capability === "press_target_key") {
     if (predicate.type !== "key_press_count_at_least") {

@@ -164,7 +164,7 @@ export const initialState = (): GameState => {
         "--": false,
       },
       uiUnlocks: {
-        storageVisible: false,
+        storageVisible: true,
       },
       maxSlots: 1,
       maxTotalDigits: 1,

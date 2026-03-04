@@ -9,6 +9,7 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "total_at_most",
   "total_magnitude_at_least",
   "operation_equals",
+  "operation_first_euclid_equivalent_modulo",
   "roll_ends_with_sequence",
   "roll_contains_value",
   "roll_ends_with_equal_run",
@@ -36,7 +37,8 @@ export type CapabilityId =
   | "roll_incrementing_run"
   | "roll_alternating_sign_constant_abs"
   | "roll_constant_step_run"
-  | "division_by_zero_error";
+  | "division_by_zero_error"
+  | "euclid_division_operator";
 
 export type NecessaryCapability = {
   capability: CapabilityId;
@@ -174,6 +176,21 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "constant_step_run_via_repeatable_arithmetic",
         allOf: ["execute_activation", "roll_constant_step_run"],
         rationale: "A fixed operation pattern can produce a constant-difference suffix.",
+      },
+    ],
+  },
+  operation_first_euclid_equivalent_modulo: {
+    predicateType: "operation_first_euclid_equivalent_modulo",
+    necessary: [
+      { capability: "execute_activation", reason: "Need execution semantics for evaluating operation outcomes." },
+      { capability: "euclid_division_operator", reason: "First committed slot must use #." },
+      { capability: "form_operator_plus_operand", reason: "Need to form operand-bearing operations to compare outcomes." },
+    ],
+    sufficientSets: [
+      {
+        id: "euclid_equivalent_modulo_via_operation_eval",
+        allOf: ["execute_activation", "euclid_division_operator", "form_operator_plus_operand"],
+        rationale: "With # and execution available, operation outcomes can be compared to the modulo baseline.",
       },
     ],
   },

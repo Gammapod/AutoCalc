@@ -10,9 +10,9 @@ export const runUnlockDomainResolverTests = (): void => {
   assert.ok(plusUnlock, "plus unlock exists in catalog");
   assert.equal(resolveUnlockDomainNodeId(plusUnlock), "NN", "resolver returns domain metadata");
 
-  const storageUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_storage_on_total_11");
-  assert.ok(storageUnlock, "storage unlock exists in catalog");
-  assert.equal(resolveUnlockDomainNodeId(storageUnlock), "NN", "resolver returns domain metadata");
+  const multiplyUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_mul_on_constant_step_gt1_run_7");
+  assert.ok(multiplyUnlock, "multiply unlock exists in catalog");
+  assert.equal(resolveUnlockDomainNodeId(multiplyUnlock), "NZ", "resolver returns domain metadata");
 
   const digitOneUnlock = unlockCatalog.find((unlock) => unlock.id === "unlock_1_on_plus_press_first");
   assert.ok(digitOneUnlock, "digit 1 unlock exists in catalog");

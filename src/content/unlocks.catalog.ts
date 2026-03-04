@@ -91,16 +91,6 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetLabel: "4",
   },
   {
-    id: "unlock_storage_on_total_11",
-    description: "Keep extra keys nearby.",
-    predicate: { type: "overflow_error_seen" },
-    effect: { type: "unlock_storage_drawer" },
-    once: true,
-    domainNodeId: "NN",
-    targetNodeId: "Ustorage_unlock",
-    targetLabel: "storage",
-  },
-  {
     id: "unlock_c_on_increment_run_4",
     description: "Reset and regroup.",
     predicate: { type: "allocator_allocate_press_count_at_least", count: 1 },
@@ -149,5 +139,16 @@ export const unlockCatalog: UnlockDefinition[] = [
     domainNodeId: "NZ",
     targetNodeId: "Ohash_unlock_sequence",
     targetLabel: "#",
+  },
+  {
+    id: "unlock_mod_on_difficult_first_euclid_equivalence",
+    description: "Difficult: make # collapse to modulo.",
+    predicate: { type: "operation_first_euclid_equivalent_modulo" },
+    effect: { type: "unlock_slot_operator", key: "\u27E1" },
+    once: true,
+    difficulty: "difficult",
+    domainNodeId: "NZ",
+    targetNodeId: "Omod_unlock_difficult",
+    targetLabel: "\u27E1",
   },
 ];

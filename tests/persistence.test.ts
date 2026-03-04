@@ -72,7 +72,7 @@ export const runPersistenceTests = (): void => {
         [FEED_VISIBLE_FLAG]: true,
       },
     },
-    completedUnlockIds: ["unlock_storage_on_total_11", "unlock_equals_on_total_11"],
+    completedUnlockIds: ["unlock_equals_on_total_11"],
   };
   repo.save(persisted);
 
@@ -138,7 +138,7 @@ export const runPersistenceTests = (): void => {
           buttonFlags: {},
         },
         unlocks: initialState().unlocks,
-        completedUnlockIds: ["unlock_storage_on_total_11"],
+        completedUnlockIds: [],
       },
     }),
   );

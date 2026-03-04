@@ -157,6 +157,10 @@ export type OperationEqualsPredicate = {
   includeDrafting?: boolean;
 };
 
+export type OperationFirstEuclidEquivalentModuloPredicate = {
+  type: "operation_first_euclid_equivalent_modulo";
+};
+
 export type RollEndsWithSequencePredicate = {
   type: "roll_ends_with_sequence";
   sequence: bigint[];
@@ -222,6 +226,7 @@ export type UnlockPredicate =
   | TotalAtMostPredicate
   | TotalMagnitudeAtLeastPredicate
   | OperationEqualsPredicate
+  | OperationFirstEuclidEquivalentModuloPredicate
   | RollEndsWithSequencePredicate
   | RollContainsValuePredicate
   | RollEndsWithEqualRunPredicate
@@ -268,10 +273,6 @@ export type UnlockSecondSlotEffect = {
   type: "unlock_second_slot";
 };
 
-export type UnlockStorageDrawerEffect = {
-  type: "unlock_storage_drawer";
-};
-
 export type UpgradeKeypadColumnEffect = {
   type: "upgrade_keypad_column";
 };
@@ -296,7 +297,6 @@ export type UnlockEffect =
   | UnlockExecutionEffect
   | UnlockDigitEffect
   | UnlockSecondSlotEffect
-  | UnlockStorageDrawerEffect
   | UpgradeKeypadColumnEffect
   | UpgradeKeypadRowEffect
   | MoveKeyToCoordEffect;
@@ -309,6 +309,7 @@ export type UnlockDefinition = {
   predicate: UnlockPredicate;
   effect: UnlockEffect;
   once: boolean;
+  difficulty?: "normal" | "difficult";
   domainNodeId: NumberDomainNodeId;
   targetNodeId: string;
   targetLabel?: string;

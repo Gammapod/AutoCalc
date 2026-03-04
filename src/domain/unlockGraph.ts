@@ -195,6 +195,12 @@ const staticFunctionRules: FunctionRule[] = [
     rule: "= and / and 0 are unlocked",
     sufficiency: [["=", "/", "0"]],
   }),
+  defineFunctionRule({
+    id: "fn.euclid_division_operator",
+    label: "euclid_division_operator",
+    rule: "# is unlocked",
+    sufficiency: [["#"]],
+  }),
 ];
 
 const pressFunctionId = (key: Key): string => `fn.press_target_key.${key}`;
@@ -252,6 +258,9 @@ const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition): string[] => {
   }
   if (unlock.predicate.type === "roll_ends_with_constant_step_run") {
     return ["fn.execute_activation", "fn.roll_constant_step_run"];
+  }
+  if (unlock.predicate.type === "operation_first_euclid_equivalent_modulo") {
+    return ["fn.execute_activation", "fn.euclid_division_operator", "fn.form_operator_plus_operand"];
   }
   if (unlock.predicate.type === "key_press_count_at_least") {
     return [pressFunctionId(unlock.predicate.key)];
