@@ -46,6 +46,17 @@ export const runUnlockEngineTests = (): void => {
   );
   assertCriteriaConsistency(totalAtLeast, base, "total_at_least unmet");
 
+  const totalMagnitudeAtLeast: UnlockPredicate = { type: "total_magnitude_at_least", value: 10n };
+  assertCriteriaConsistency(
+    totalMagnitudeAtLeast,
+    {
+      ...base,
+      calculator: { ...base.calculator, total: r(-10n) },
+    },
+    "total_magnitude_at_least met",
+  );
+  assertCriteriaConsistency(totalMagnitudeAtLeast, base, "total_magnitude_at_least unmet");
+
   const totalAtMost: UnlockPredicate = { type: "total_at_most", value: -1n };
   assertCriteriaConsistency(
     totalAtMost,
@@ -142,4 +153,15 @@ export const runUnlockEngineTests = (): void => {
     "allocator_return_press_count_at_least met",
   );
   assertCriteriaConsistency(allocatorReturnSeen, base, "allocator_return_press_count_at_least unmet");
+
+  const allocatorAllocateSeen: UnlockPredicate = { type: "allocator_allocate_press_count_at_least", count: 1 };
+  assertCriteriaConsistency(
+    allocatorAllocateSeen,
+    {
+      ...base,
+      allocatorAllocatePressCount: 1,
+    },
+    "allocator_allocate_press_count_at_least met",
+  );
+  assertCriteriaConsistency(allocatorAllocateSeen, base, "allocator_allocate_press_count_at_least unmet");
 };

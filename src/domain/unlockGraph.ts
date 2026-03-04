@@ -144,6 +144,12 @@ const staticFunctionRules: FunctionRule[] = [
     sufficiency: [["++"]],
   }),
   defineFunctionRule({
+    id: "fn.allocator_allocate_press",
+    label: "allocator_allocate_press",
+    rule: "allocator Allocate action is available",
+    sufficiency: [["++"]],
+  }),
+  defineFunctionRule({
     id: "fn.form_operator_plus_operand",
     label: "form_operator_plus_operand",
     rule: "at least one operator key and at least one value key are unlocked",
@@ -204,7 +210,11 @@ const unlockedKeyFromEffect = (unlock: UnlockDefinition): Key | null => {
 };
 
 const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition): string[] => {
-  if (unlock.predicate.type === "total_equals" || unlock.predicate.type === "total_at_least") {
+  if (
+    unlock.predicate.type === "total_equals"
+    || unlock.predicate.type === "total_at_least"
+    || unlock.predicate.type === "total_magnitude_at_least"
+  ) {
     return ["fn.step_plus_one"];
   }
   if (unlock.predicate.type === "roll_contains_value") {
@@ -224,6 +234,9 @@ const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition): string[] => {
   }
   if (unlock.predicate.type === "allocator_return_press_count_at_least") {
     return ["fn.allocator_return_press"];
+  }
+  if (unlock.predicate.type === "allocator_allocate_press_count_at_least") {
+    return ["fn.allocator_allocate_press"];
   }
   return [];
 };

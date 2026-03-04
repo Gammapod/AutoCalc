@@ -7,6 +7,7 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "total_equals",
   "total_at_least",
   "total_at_most",
+  "total_magnitude_at_least",
   "operation_equals",
   "roll_ends_with_sequence",
   "roll_contains_value",
@@ -15,6 +16,7 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "key_press_count_at_least",
   "overflow_error_seen",
   "allocator_return_press_count_at_least",
+  "allocator_allocate_press_count_at_least",
 ];
 
 export type CapabilityId =
@@ -25,6 +27,7 @@ export type CapabilityId =
   | "form_operator_plus_operand"
   | "press_target_key"
   | "allocator_return_press"
+  | "allocator_allocate_press"
   | "roll_growth"
   | "roll_equal_run"
   | "roll_incrementing_run";
@@ -82,6 +85,19 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "total_at_least_via_increment",
         allOf: ["step_plus_one"],
         rationale: "Repeated +1 can exceed the threshold.",
+      },
+    ],
+  },
+  total_magnitude_at_least: {
+    predicateType: "total_magnitude_at_least",
+    necessary: [
+      { capability: "step_plus_one", reason: "Need absolute growth from zero to reach a two-digit magnitude." },
+    ],
+    sufficientSets: [
+      {
+        id: "total_magnitude_at_least_via_increment",
+        allOf: ["step_plus_one"],
+        rationale: "Repeated +1 reaches magnitude thresholds such as 10.",
       },
     ],
   },
@@ -150,6 +166,19 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "allocator_return_press_count_by_return_click",
         allOf: ["allocator_return_press"],
         rationale: "Pressing RETURN increments the tracked allocator-return counter.",
+      },
+    ],
+  },
+  allocator_allocate_press_count_at_least: {
+    predicateType: "allocator_allocate_press_count_at_least",
+    necessary: [
+      { capability: "allocator_allocate_press", reason: "Predicate counts allocator Allocate button presses." },
+    ],
+    sufficientSets: [
+      {
+        id: "allocator_allocate_press_count_by_allocate_click",
+        allOf: ["allocator_allocate_press"],
+        rationale: "Pressing Allocate increments the tracked allocator-allocate counter.",
       },
     ],
   },

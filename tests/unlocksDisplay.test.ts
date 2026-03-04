@@ -130,25 +130,22 @@ export const runUnlocksDisplayTests = (): void => {
   assert.equal(totalCriteriaRows[2]?.criteria.length, 1, "total_at_most uses a single criterion checkbox");
   assert.equal(totalCriteriaRows[2]?.criteria[0]?.label, "-1", "total_at_most checkbox label is threshold value");
 
-  const rollProgressState: GameState = {
+  const allocatorProgressState: GameState = {
     ...base,
-    calculator: {
-      ...base.calculator,
-      roll: [r(10n), r(11n), r(12n), r(13n)],
-    },
+    allocatorAllocatePressCount: 1,
   };
-  const rollRow = buildUnlockRows(rollProgressState, unlockCatalog).find(
+  const rollRow = buildUnlockRows(allocatorProgressState, unlockCatalog).find(
     (row) => row.id === "unlock_c_on_increment_run_4",
   );
-  assert.equal(rollRow?.criteria.length, 1, "dynamic run predicates render a single criterion row");
+  assert.equal(rollRow?.criteria.length, 1, "allocator press predicates render a single criterion row");
   assert.deepEqual(
     rollRow?.criteria.map((criterion) => criterion.checked),
     [true],
-    "incrementing run criterion checks true for [10,11,12,13] suffix",
+    "allocator Allocate press criterion checks true when counter reaches threshold",
   );
 
   const completedState: GameState = {
-    ...rollProgressState,
+    ...allocatorProgressState,
     completedUnlockIds: ["unlock_equals_on_total_11"],
   };
   const orderedRows = buildUnlockRows(completedState, unlockCatalog);

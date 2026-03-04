@@ -635,6 +635,7 @@ allocatorResetButton.addEventListener("click", async () => {
     return;
   }
   if (interactionRuntime.getMode() === "calculator") {
+    dispatchWithRuntimeGate({ type: "ALLOCATOR_ALLOCATE_PRESSED" });
     await runModeTransition("modify");
     return;
   }

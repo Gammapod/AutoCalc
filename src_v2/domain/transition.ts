@@ -203,6 +203,13 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
     };
     return applyUnlocks(withCount, unlockCatalog);
   }
+  if (action.type === "ALLOCATOR_ALLOCATE_PRESSED") {
+    const withCount: GameState = {
+      ...state,
+      allocatorAllocatePressCount: (state.allocatorAllocatePressCount ?? 0) + 1,
+    };
+    return applyUnlocks(withCount, unlockCatalog);
+  }
   return state;
 };
 

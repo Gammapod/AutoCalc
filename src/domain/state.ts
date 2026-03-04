@@ -125,6 +125,7 @@ export const initialState = (): GameState => {
     },
     keyPressCounts: {},
     allocatorReturnPressCount: 0,
+    allocatorAllocatePressCount: 0,
     unlocks: {
       valueExpression: {
         "0": false,

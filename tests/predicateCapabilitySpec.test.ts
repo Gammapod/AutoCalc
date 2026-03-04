@@ -114,6 +114,14 @@ const proofFixtures: ProofFixture[] = [
     script: Array.from({ length: 20 }, () => "++"),
   },
   {
+    id: "proof_total_magnitude_at_least_10_via_increment",
+    predicateType: "total_magnitude_at_least",
+    sufficientSetId: "total_magnitude_at_least_via_increment",
+    predicate: { type: "total_magnitude_at_least", value: 10n },
+    buildInitialState: () => withTwoDigitRange(initialState()),
+    script: Array.from({ length: 10 }, () => "++"),
+  },
+  {
     id: "proof_roll_contains_0_via_plus0_equals",
     predicateType: "roll_contains_value",
     sufficientSetId: "roll_contains_value_via_equal_execution",
@@ -195,6 +203,14 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "allocator_return_press_count_by_return_click",
     predicate: { type: "allocator_return_press_count_at_least", count: 1 },
     buildInitialState: () => ({ ...initialState(), allocatorReturnPressCount: 1 }),
+    script: [],
+  },
+  {
+    id: "proof_allocator_allocate_press_count_once",
+    predicateType: "allocator_allocate_press_count_at_least",
+    sufficientSetId: "allocator_allocate_press_count_by_allocate_click",
+    predicate: { type: "allocator_allocate_press_count_at_least", count: 1 },
+    buildInitialState: () => ({ ...initialState(), allocatorAllocatePressCount: 1 }),
     script: [],
   },
 ];

@@ -70,42 +70,36 @@ export const runReducerUnlockTests = (): void => {
   );
   assert.equal(zeroRollUnlocked.unlocks.valueExpression["0"], true, "0 unlocks when roll contains 0");
 
-  let state = initialState();
+  let state = withTwoDigitRange(initialState());
   for (let i = 0; i < 7; i += 1) {
     state = press(state, "++");
   }
   assert.equal(state.unlocks.slotOperators["+"], true, "plus unlocks on incrementing run of 7");
   assert.equal(findKeypadIndex(state, "+"), -1, "plus remains off-keypad without automatic column upgrades");
 
-  while (state.calculator.total.kind === "rational" && state.calculator.total.value.num < 9n) {
+  while (state.calculator.total.kind === "rational" && state.calculator.total.value.num < 10n) {
     state = press(state, "++");
   }
-  assert.equal(state.unlocks.valueExpression["1"], true, "digit 1 unlocks when total reaches at least 9");
+  assert.equal(state.unlocks.valueExpression["1"], true, "digit 1 unlocks when first two-digit total is produced");
 
-  const eqBeforeOverflow = state.unlocks.execution["="];
-  state = press(state, "++");
+  let overflowState = initialState();
+  for (let i = 0; i < 9; i += 1) {
+    overflowState = press(overflowState, "++");
+  }
+  const eqBeforeOverflow = overflowState.unlocks.execution["="];
+  overflowState = press(overflowState, "++");
   assert.equal(eqBeforeOverflow, false, "equals remains locked before overflow equal-run");
-  assert.equal(state.unlocks.execution["="], true, "equals unlocks on first equal run of 2 values");
-  assert.equal(state.unlocks.uiUnlocks.storageVisible, true, "storage still unlocks on first overflow");
+  assert.equal(overflowState.unlocks.execution["="], true, "equals unlocks on first equal run of 2 values");
+  assert.equal(overflowState.unlocks.uiUnlocks.storageVisible, true, "storage still unlocks on first overflow");
 
-  const afterLockedMinus = press(state, "--");
-  assert.deepEqual(afterLockedMinus, state, "locked -- remains a no-op");
+  const afterLockedMinus = press(overflowState, "--");
+  assert.deepEqual(afterLockedMinus, overflowState, "locked -- remains a no-op");
   assert.equal(afterLockedMinus.unlocks.execution["--"], false, "-- remains locked without decrementing run");
   assert.equal(afterLockedMinus.unlocks.slotOperators["-"], false, "- remains locked without decrementing run");
 
-  const withIncrementingSuffix = applyUnlocks(
-    {
-      ...state,
-      calculator: {
-        ...state.calculator,
-        roll: [r(11n), r(12n), r(13n), r(14n)],
-      },
-    },
-    unlockCatalog,
-  );
-  assert.equal(withIncrementingSuffix.unlocks.utilities.C, true, "C unlocks on incrementing run of 4");
-  assert.equal(findKeypadIndex(withIncrementingSuffix, "C"), -1, "C remains off-keypad without automatic row upgrades");
-  state = withIncrementingSuffix;
+  state = reducer(state, { type: "ALLOCATOR_ALLOCATE_PRESSED" });
+  assert.equal(state.unlocks.utilities.C, true, "C unlocks on first allocator Allocate press");
+  assert.equal(findKeypadIndex(state, "C"), -1, "C remains off-keypad without automatic row upgrades");
 
   const beforeC = state.completedUnlockIds.length;
   state = press(state, "C");

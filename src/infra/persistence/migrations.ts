@@ -183,6 +183,7 @@ export type SerializableAllocatorStateV10 = {
 export type SerializableStateV10 = SerializableStateV7 & {
   allocator: SerializableAllocatorStateV10;
   allocatorReturnPressCount?: number;
+  allocatorAllocatePressCount?: number;
 };
 
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
@@ -717,6 +718,7 @@ export const migrateV9ToV10 = (input: SerializableStateV9): SerializableStateV10
   return {
     ...input,
     allocatorReturnPressCount: 0,
+    allocatorAllocatePressCount: 0,
     allocator: normalizeAllocatorV10({
       maxPoints: input.allocator.maxPoints + slotsAllocation,
       allocations: {
@@ -754,6 +756,7 @@ const toSerializableInitialV10 = (): SerializableStateV10 => {
     },
     keyPressCounts: {},
     allocatorReturnPressCount: 0,
+    allocatorAllocatePressCount: 0,
     unlocks: defaults.unlocks,
     completedUnlockIds: [],
     allocator: defaults.allocator,
@@ -1053,9 +1056,16 @@ export const validateSerializableStateV10 = (state: unknown): state is Serializa
     return false;
   }
   const allocatorReturnPressCount = (state as SerializableStateV10).allocatorReturnPressCount;
+  const allocatorAllocatePressCount = (state as SerializableStateV10).allocatorAllocatePressCount;
   if (
     allocatorReturnPressCount !== undefined
     && (!isInteger(allocatorReturnPressCount) || allocatorReturnPressCount < 0)
+  ) {
+    return false;
+  }
+  if (
+    allocatorAllocatePressCount !== undefined
+    && (!isInteger(allocatorAllocatePressCount) || allocatorAllocatePressCount < 0)
   ) {
     return false;
   }
@@ -1234,6 +1244,10 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       allocatorReturnPressCount:
         isInteger(asV10.allocatorReturnPressCount) && asV10.allocatorReturnPressCount >= 0
           ? asV10.allocatorReturnPressCount
+          : 0,
+      allocatorAllocatePressCount:
+        isInteger(asV10.allocatorAllocatePressCount) && asV10.allocatorAllocatePressCount >= 0
+          ? asV10.allocatorAllocatePressCount
           : 0,
       allocator: normalizeAllocatorV10(asV10.allocator),
     };

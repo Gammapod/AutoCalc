@@ -1719,66 +1719,61 @@ export const render = (
   previousKeypadRows = state.ui.keypadRows;
 
   storageEl.innerHTML = "";
-  if (!state.unlocks.uiUnlocks.storageVisible) {
-    storageEl.setAttribute("aria-hidden", "true");
-    storageEl.setAttribute("data-storage-visible", "false");
-  } else {
-    storageEl.setAttribute("aria-hidden", "false");
-    storageEl.setAttribute("data-storage-visible", "true");
-    if (storageEl instanceof HTMLElement) {
-      storageEl.dataset.storageSlotCount = state.ui.storageLayout.length.toString();
-      ensureStorageGridObserver(storageEl);
-    }
-    const storageColumns = storageEl instanceof HTMLElement ? syncStorageGridMetrics(storageEl) : STORAGE_COLUMNS;
-    const storageLabels = buildStorageSlotLabels(state.ui.storageLayout, storageColumns);
-    const storageRenderOrder = buildStorageRenderOrder(state);
-    for (const index of storageRenderOrder) {
-      const cell = state.ui.storageLayout[index];
-      const slotLabel = storageLabels[index] ?? `S#${index}`;
-      if (!cell) {
-        const empty = document.createElement("div");
-        empty.className = "placeholder placeholder--drop-slot placeholder--storage-empty";
-        empty.setAttribute("aria-hidden", "true");
-        bindDropTargetCell(empty, "storage", index);
-        empty.dataset.layoutOccupied = "empty";
-        appendDebugSlotLabel(empty, slotLabel);
-        storageEl.appendChild(empty);
-        continue;
-      }
-      if (!isKeyUnlocked(state, cell.key)) {
-        const hidden = document.createElement("div");
-        hidden.className = "placeholder placeholder--drop-slot placeholder--storage-empty placeholder--locked-hidden";
-        hidden.setAttribute("aria-hidden", "true");
-        appendDebugSlotLabel(hidden, slotLabel);
-        storageEl.appendChild(hidden);
-        continue;
-      }
-
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "key key--storage key--storage-unlocked key--draggable";
-      button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-      if (newlyUnlockedKeys.has(cell.key)) {
-        button.classList.add("key--unlock-animate");
-        bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);
-      }
-      setKeyButtonLabel(button, formatKeyCellLabel(state, cell));
-      const storageToggleActive = isToggleFlagActive(state, cell);
-      button.classList.toggle("key--toggle-active", storageToggleActive);
-      const storageToggleAnimation = readToggleAnimation(cell);
-      if (storageToggleAnimation === "on") {
-        button.classList.add("key--toggle-animate-on");
-      } else if (storageToggleAnimation === "off") {
-        button.classList.add("key--toggle-animate-off");
-      }
-      button.setAttribute("aria-pressed", storageToggleActive ? "true" : "false");
-      button.disabled = storageLocked;
-      bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
-      appendDebugSlotLabel(button, slotLabel);
-      storageEl.appendChild(button);
-    }
-    fitKeyLabelsInContainer(storageEl);
+  storageEl.setAttribute("aria-hidden", "false");
+  storageEl.setAttribute("data-storage-visible", "true");
+  if (storageEl instanceof HTMLElement) {
+    storageEl.dataset.storageSlotCount = state.ui.storageLayout.length.toString();
+    ensureStorageGridObserver(storageEl);
   }
+  const storageColumns = storageEl instanceof HTMLElement ? syncStorageGridMetrics(storageEl) : STORAGE_COLUMNS;
+  const storageLabels = buildStorageSlotLabels(state.ui.storageLayout, storageColumns);
+  const storageRenderOrder = buildStorageRenderOrder(state);
+  for (const index of storageRenderOrder) {
+    const cell = state.ui.storageLayout[index];
+    const slotLabel = storageLabels[index] ?? `S#${index}`;
+    if (!cell) {
+      const empty = document.createElement("div");
+      empty.className = "placeholder placeholder--drop-slot placeholder--storage-empty";
+      empty.setAttribute("aria-hidden", "true");
+      bindDropTargetCell(empty, "storage", index);
+      empty.dataset.layoutOccupied = "empty";
+      appendDebugSlotLabel(empty, slotLabel);
+      storageEl.appendChild(empty);
+      continue;
+    }
+    if (!isKeyUnlocked(state, cell.key)) {
+      const hidden = document.createElement("div");
+      hidden.className = "placeholder placeholder--drop-slot placeholder--storage-empty placeholder--locked-hidden";
+      hidden.setAttribute("aria-hidden", "true");
+      appendDebugSlotLabel(hidden, slotLabel);
+      storageEl.appendChild(hidden);
+      continue;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "key key--storage key--storage-unlocked key--draggable";
+    button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
+    if (newlyUnlockedKeys.has(cell.key)) {
+      button.classList.add("key--unlock-animate");
+      bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);
+    }
+    setKeyButtonLabel(button, formatKeyCellLabel(state, cell));
+    const storageToggleActive = isToggleFlagActive(state, cell);
+    button.classList.toggle("key--toggle-active", storageToggleActive);
+    const storageToggleAnimation = readToggleAnimation(cell);
+    if (storageToggleAnimation === "on") {
+      button.classList.add("key--toggle-animate-on");
+    } else if (storageToggleAnimation === "off") {
+      button.classList.add("key--toggle-animate-off");
+    }
+    button.setAttribute("aria-pressed", storageToggleActive ? "true" : "false");
+    button.disabled = storageLocked;
+    bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
+    appendDebugSlotLabel(button, slotLabel);
+    storageEl.appendChild(button);
+  }
+  fitKeyLabelsInContainer(storageEl);
 
   pendingToggleAnimationByFlag = {};
 

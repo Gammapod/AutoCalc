@@ -5,6 +5,7 @@ import { OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import type {
   GameState,
   AllocatorReturnPressCountAtLeastPredicate,
+  AllocatorAllocatePressCountAtLeastPredicate,
   OverflowErrorSeenPredicate,
   KeyPressCountAtLeastPredicate,
   OperationEqualsPredicate,
@@ -15,6 +16,7 @@ import type {
   RollLengthAtLeastPredicate,
   TotalAtLeastPredicate,
   TotalAtMostPredicate,
+  TotalMagnitudeAtLeastPredicate,
   TotalEqualsPredicate,
   UnlockPredicate,
 } from "./types.js";
@@ -67,6 +69,25 @@ const analyzeTotalAtMost: PredicateAnalyzer<TotalAtMostPredicate> = (predicate, 
   return {
     isMet,
     criteria: [{ label: predicate.value.toString(), checked: isMet }],
+  };
+};
+
+const analyzeTotalMagnitudeAtLeast: PredicateAnalyzer<TotalMagnitudeAtLeastPredicate> = (predicate, state) => {
+  const isMet =
+    isRationalCalculatorValue(state.calculator.total) &&
+    gteBigInt(
+      {
+        num:
+          state.calculator.total.value.num < 0n
+            ? -state.calculator.total.value.num
+            : state.calculator.total.value.num,
+        den: state.calculator.total.value.den,
+      },
+      predicate.value,
+    );
+  return {
+    isMet,
+    criteria: [{ label: `|x| >= ${predicate.value.toString()}`, checked: isMet }],
   };
 };
 
@@ -158,6 +179,18 @@ const analyzeAllocatorReturnPressCountAtLeast: PredicateAnalyzer<AllocatorReturn
   };
 };
 
+const analyzeAllocatorAllocatePressCountAtLeast: PredicateAnalyzer<AllocatorAllocatePressCountAtLeastPredicate> = (
+  predicate,
+  state,
+) => {
+  const currentCount = state.allocatorAllocatePressCount ?? 0;
+  const isMet = currentCount >= predicate.count;
+  return {
+    isMet,
+    criteria: [{ label: `ALLOCATE >= ${predicate.count.toString()}`, checked: isMet }],
+  };
+};
+
 const analyzeOperationEquals: PredicateAnalyzer<OperationEqualsPredicate> = (predicate, state) => {
   const slots = getOperationSnapshot(state.calculator, predicate.includeDrafting ?? true);
   const isMet =
@@ -190,6 +223,7 @@ const analyzers = {
   total_equals: analyzeTotalEquals,
   total_at_least: analyzeTotalAtLeast,
   total_at_most: analyzeTotalAtMost,
+  total_magnitude_at_least: analyzeTotalMagnitudeAtLeast,
   roll_ends_with_sequence: analyzeRollEndsWithSequence,
   roll_contains_value: analyzeRollContainsValue,
   operation_equals: analyzeOperationEquals,
@@ -199,6 +233,7 @@ const analyzers = {
   key_press_count_at_least: analyzeKeyPressCountAtLeast,
   overflow_error_seen: analyzeOverflowErrorSeen,
   allocator_return_press_count_at_least: analyzeAllocatorReturnPressCountAtLeast,
+  allocator_allocate_press_count_at_least: analyzeAllocatorAllocatePressCountAtLeast,
 } as const;
 
 export const analyzeUnlockPredicate = (predicate: UnlockPredicate, state: GameState): UnlockPredicateAnalysis =>

@@ -146,6 +146,11 @@ export type TotalAtMostPredicate = {
   value: bigint;
 };
 
+export type TotalMagnitudeAtLeastPredicate = {
+  type: "total_magnitude_at_least";
+  value: bigint;
+};
+
 export type OperationEqualsPredicate = {
   type: "operation_equals";
   slots: Slot[];
@@ -188,11 +193,17 @@ export type AllocatorReturnPressCountAtLeastPredicate = {
   count: number;
 };
 
+export type AllocatorAllocatePressCountAtLeastPredicate = {
+  type: "allocator_allocate_press_count_at_least";
+  count: number;
+};
+
 export type UnlockPredicate =
   | RollLengthAtLeastPredicate
   | TotalEqualsPredicate
   | TotalAtLeastPredicate
   | TotalAtMostPredicate
+  | TotalMagnitudeAtLeastPredicate
   | OperationEqualsPredicate
   | RollEndsWithSequencePredicate
   | RollContainsValuePredicate
@@ -200,7 +211,8 @@ export type UnlockPredicate =
   | RollEndsWithIncrementingRunPredicate
   | KeyPressCountAtLeastPredicate
   | OverflowErrorSeenPredicate
-  | AllocatorReturnPressCountAtLeastPredicate;
+  | AllocatorReturnPressCountAtLeastPredicate
+  | AllocatorAllocatePressCountAtLeastPredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";
@@ -295,6 +307,7 @@ export type GameState = {
   };
   keyPressCounts: Partial<Record<Key, number>>;
   allocatorReturnPressCount?: number;
+  allocatorAllocatePressCount?: number;
   unlocks: UnlockState;
   completedUnlockIds: string[];
 };
@@ -390,6 +403,10 @@ export type AllocatorReturnPressedAction = {
   type: "ALLOCATOR_RETURN_PRESSED";
 };
 
+export type AllocatorAllocatePressedAction = {
+  type: "ALLOCATOR_ALLOCATE_PRESSED";
+};
+
 export type Action =
   | PressKeyAction
   | ResetRunAction
@@ -407,7 +424,8 @@ export type Action =
   | AllocatorSetMaxPointsAction
   | AllocatorAddMaxPointsAction
   | ResetAllocatorDeviceAction
-  | AllocatorReturnPressedAction;
+  | AllocatorReturnPressedAction
+  | AllocatorAllocatePressedAction;
 
 export type Store = {
   getState: () => GameState;

@@ -39,6 +39,7 @@ type CapabilityContext = {
   stepMinusOne: boolean;
   resetToZero: boolean;
   allocatorReturnPress: boolean;
+  allocatorAllocatePress: boolean;
   formOperatorPlusOperand: boolean;
   rollGrowth: boolean;
   rollEqualRun: boolean;
@@ -76,6 +77,7 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
   const hasSomeDigit = Object.keys(state.unlocks.valueExpression).some((key) => isAvailable(key as Key));
   const hasSomeOperator = ["+", "-", "*", "/", "#", "\u27E1"].some((key) => isAvailable(key as Key));
   const allocatorReturnPress = (state.allocatorReturnPressCount ?? 0) >= 1;
+  const allocatorAllocatePress = (state.allocatorAllocatePressCount ?? 0) >= 1;
 
   const stepPlusOne = isAvailable("++") || (executeActivation && hasPlus && hasOne);
   const stepMinusOne = hasDecrementKey || (executeActivation && hasMinus && hasOne) || (executeActivation && hasPlus && hasNeg && hasOne);
@@ -93,6 +95,7 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
     stepMinusOne,
     resetToZero,
     allocatorReturnPress,
+    allocatorAllocatePress,
     formOperatorPlusOperand,
     rollGrowth,
     rollEqualRun,
@@ -138,6 +141,9 @@ const resolveCapability = (
   }
   if (capability === "allocator_return_press") {
     return caps.allocatorReturnPress;
+  }
+  if (capability === "allocator_allocate_press") {
+    return caps.allocatorAllocatePress;
   }
   return false;
 };

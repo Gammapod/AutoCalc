@@ -48,6 +48,7 @@ export const runPersistenceTests = (): void => {
     },
     keyPressCounts: { "+": 3, "=": 2 },
     allocatorReturnPressCount: 2,
+    allocatorAllocatePressCount: 3,
     allocator: {
       maxPoints: 9,
       allocations: {
@@ -85,6 +86,7 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loaded?.calculator.total, r(12n), "round-trip total");
   assert.deepEqual(loaded?.keyPressCounts, { "+": 3, "=": 2 }, "round-trip key press counters");
   assert.equal(loaded?.allocatorReturnPressCount, 2, "round-trip allocator RETURN press counter");
+  assert.equal(loaded?.allocatorAllocatePressCount, 3, "round-trip allocator Allocate press counter");
   assert.deepEqual(
     loaded?.allocator,
     { maxPoints: 9, allocations: { width: 2, height: 1, range: 3, speed: 1, slots: 2 } },
