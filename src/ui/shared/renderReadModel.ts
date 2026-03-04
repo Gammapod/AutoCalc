@@ -135,12 +135,24 @@ export const buildRollRows = (
   for (const error of rollErrors) {
     errorByRollIndex.set(error.rollIndex, error.code);
   }
-  return rollLines.map((value, index) => ({
-    prefix: index === 0 ? "X =" : "  =",
-    value,
-    remainder: errorByRollIndex.has(index) ? undefined : remainderByRollIndex.get(index),
-    errorCode: errorByRollIndex.get(index),
-  }));
+  const seenErrorCodes = new Set<string>();
+  const rows: RollRow[] = [];
+  for (let index = 0; index < rollLines.length; index += 1) {
+    const errorCode = errorByRollIndex.get(index);
+    if (errorCode && seenErrorCodes.has(errorCode)) {
+      continue;
+    }
+    if (errorCode) {
+      seenErrorCodes.add(errorCode);
+    }
+    rows.push({
+      prefix: rows.length === 0 ? "X =" : "  =",
+      value: errorCode ? "" : rollLines[index],
+      remainder: errorCode ? undefined : remainderByRollIndex.get(index),
+      errorCode,
+    });
+  }
+  return rows;
 };
 
 export const buildRollViewModel = (

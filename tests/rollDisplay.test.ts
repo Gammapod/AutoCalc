@@ -78,9 +78,27 @@ export const runRollDisplayTests = (): void => {
     rollWithErrorAndRemainder,
     [
       { prefix: "X =", value: "10", remainder: undefined, errorCode: undefined },
-      { prefix: "  =", value: "1", remainder: undefined, errorCode: "n/0" },
+      { prefix: "  =", value: "", remainder: undefined, errorCode: "n/0" },
     ],
     "error code takes precedence over displayed remainder on the same roll row",
+  );
+
+  const rollWithDuplicateErrorCodes = buildRollRows(
+    ["10", "1", "2", "99"],
+    [],
+    [
+      { rollIndex: 1, code: "n/0", kind: "division_by_zero" },
+      { rollIndex: 2, code: "n/0", kind: "division_by_zero" },
+    ],
+  );
+  assert.deepEqual(
+    rollWithDuplicateErrorCodes,
+    [
+      { prefix: "X =", value: "10", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "", remainder: undefined, errorCode: "n/0" },
+      { prefix: "  =", value: "99", remainder: undefined, errorCode: undefined },
+    ],
+    "duplicate error codes suppress later matching error rows in the roll",
   );
 
   assert.equal(

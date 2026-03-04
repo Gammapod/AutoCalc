@@ -40,6 +40,23 @@ export const runGraphDisplayTests = (): void => {
     "graph skips NaN roll rows and marks error-associated points",
   );
 
+  const withDuplicateErrorCodes = buildGraphPoints(
+    [r(1n), r(2n), r(3n), r(4n)],
+    [
+      { rollIndex: 1, code: "x\u2209[-R,R]", kind: "overflow" },
+      { rollIndex: 2, code: "x\u2209[-R,R]", kind: "overflow" },
+    ],
+  );
+  assert.deepEqual(
+    withDuplicateErrorCodes,
+    [
+      { x: 0, y: 1, hasError: false },
+      { x: 1, y: 2, hasError: true },
+      { x: 2, y: 4, hasError: false },
+    ],
+    "graph suppresses plotting rows where an error code is repeated later in the same roll",
+  );
+
   assert.deepEqual(buildGraphXWindow(0), { min: 0, max: 25 }, "empty roll uses default 0..25 x window");
   assert.deepEqual(buildGraphXWindow(10), { min: 0, max: 25 }, "short roll keeps default 0..25 x window");
   assert.deepEqual(buildGraphXWindow(25), { min: 0, max: 24 }, "window snaps to last 25 indices at threshold");

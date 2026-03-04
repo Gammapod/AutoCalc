@@ -15,9 +15,20 @@ export type GraphPoint = {
 };
 
 export const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorEntry[] = []): GraphPoint[] => {
-  const errorByRollIndex = new Set(rollErrors.map((entry) => entry.rollIndex));
+  const errorByRollIndex = new Map<number, string>();
+  for (const entry of rollErrors) {
+    errorByRollIndex.set(entry.rollIndex, entry.code);
+  }
+  const seenErrorCodes = new Set<string>();
   const points: GraphPoint[] = [];
   for (let index = 0; index < roll.length; index += 1) {
+    const errorCode = errorByRollIndex.get(index);
+    if (errorCode && seenErrorCodes.has(errorCode)) {
+      continue;
+    }
+    if (errorCode) {
+      seenErrorCodes.add(errorCode);
+    }
     const value = roll[index];
     if (value.kind !== "rational") {
       continue;
@@ -25,7 +36,7 @@ export const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorE
     points.push({
       x: points.length,
       y: Number(value.value.num) / Number(value.value.den),
-      hasError: errorByRollIndex.has(index),
+      hasError: Boolean(errorCode),
     });
   }
   return points;
