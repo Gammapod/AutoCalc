@@ -11,12 +11,12 @@ import { clearVisualizerHost, renderVisualizerHost } from "./modules/visualizerH
 export type ShellRenderer = {
   render: (state: GameState, dispatch: (action: Action) => unknown, options?: ShellRenderOptions) => void;
   forceActiveView: (options: {
-    snapId: SnapId;
+    snapId?: SnapId;
     middlePanelId?: "calculator" | "checklist";
     bottomPanelId?: "storage" | "allocator";
     includeTransition?: boolean;
   }) => void;
-  playTransitionCue: (target: "calculator" | "allocator") => Promise<void>;
+  playTransitionCue: (target: "calculator" | "allocator" | "storage") => Promise<void>;
   dispose: () => void;
   resetForTests: () => void;
 };
@@ -1070,13 +1070,20 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       controller.setBottomPanel(options.bottomPanelId);
     }
     const model = controller.sync(state, latestInteractionMode);
-    controller.setSnap(model, options.snapId);
+    if (options.snapId) {
+      controller.setSnap(model, options.snapId);
+    }
     syncSnapAndUi(refs, state, options.includeTransition ?? true);
   };
 
   const playTransitionCue: ShellRenderer["playTransitionCue"] = async (target) => {
     const refs = ensureShellRefs();
-    const element = target === "allocator" ? refs.bottomDrawerPanelAllocator : refs.middleDrawerPanelCalculator;
+    const element =
+      target === "allocator"
+        ? refs.bottomDrawerPanelAllocator
+        : target === "storage"
+          ? refs.bottomDrawerPanelStorage
+          : refs.middleDrawerPanelCalculator;
     element.classList.remove("v2-transition-cue");
     void element.offsetWidth;
     element.classList.add("v2-transition-cue");

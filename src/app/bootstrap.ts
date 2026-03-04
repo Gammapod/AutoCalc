@@ -13,7 +13,7 @@ import {
 } from "./autoEqualsScheduler.js";
 import { analyzeNumberDomains } from "../domain/analysis.js";
 import { formatNumberDomainReport } from "./analysisReport.js";
-import type { Action, AllocatorAllocationField, GameState } from "../domain/types.js";
+import type { Action, AllocatorAllocationField, GameState, Key } from "../domain/types.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -190,6 +190,8 @@ type DispatchOptions = {
   internal?: boolean;
 };
 
+const UNLOCK_REVEAL_DURATION_MS = 1200;
+
 const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}): Action => {
   if (!options.internal && interactionRuntime.shouldBlockAction(action)) {
     return action;
@@ -298,20 +300,6 @@ const syncAllocatorDeviceInputs = (): void => {
 renderAllocatorSpeedLabel();
 redraw();
 autoEqualsScheduler.startIfNeeded();
-const unsubscribe = store.subscribe((state) => {
-  autoEqualsScheduler.sync(state);
-  const latest = store.getState();
-  renderApp(latest);
-  syncKeypadDimensionInputs();
-  syncAllocatorDeviceInputs();
-  storageRepo.save(latest);
-});
-
-window.__autoCalcBootstrapCleanup__ = () => {
-  unsubscribe();
-  shellRenderer?.dispose();
-  autoEqualsScheduler.dispose();
-};
 
 debugToggle.addEventListener("change", () => {
   syncDebugUiState();
@@ -426,6 +414,70 @@ const resetForModifyMode = (): void => {
 };
 
 let modeTransitionInFlight = false;
+let unlockRevealInFlight = false;
+
+const collectUnlockedKeys = (state: GameState): Set<Key> => {
+  const unlocked = new Set<Key>();
+  for (const [key, isUnlocked] of Object.entries(state.unlocks.valueExpression)) {
+    if (isUnlocked) {
+      unlocked.add(key as Key);
+    }
+  }
+  for (const [key, isUnlocked] of Object.entries(state.unlocks.slotOperators)) {
+    if (isUnlocked) {
+      unlocked.add(key as Key);
+    }
+  }
+  for (const [key, isUnlocked] of Object.entries(state.unlocks.utilities)) {
+    if (isUnlocked) {
+      unlocked.add(key as Key);
+    }
+  }
+  for (const [key, isUnlocked] of Object.entries(state.unlocks.visualizers)) {
+    if (isUnlocked) {
+      unlocked.add(key as Key);
+    }
+  }
+  for (const [key, isUnlocked] of Object.entries(state.unlocks.execution)) {
+    if (isUnlocked) {
+      unlocked.add(key as Key);
+    }
+  }
+  return unlocked;
+};
+
+let knownUnlockedKeys = collectUnlockedKeys(store.getState());
+
+const runUnlockRevealCue = async (stateAtUnlock: GameState): Promise<void> => {
+  if (unlockRevealInFlight || modeTransitionInFlight) {
+    return;
+  }
+  unlockRevealInFlight = true;
+  interactionRuntime.setInputBlocked(true);
+  redraw();
+  try {
+    if (shellRenderer) {
+      await shellRenderer.playTransitionCue("storage");
+      shellRenderer.forceActiveView({
+        bottomPanelId: "storage",
+        includeTransition: true,
+      });
+    } else {
+      await sleep(520);
+    }
+
+    renderApp(stateAtUnlock);
+    syncKeypadDimensionInputs();
+    syncAllocatorDeviceInputs();
+    storageRepo.save(stateAtUnlock);
+
+    await sleep(UNLOCK_REVEAL_DURATION_MS + 100);
+  } finally {
+    interactionRuntime.setInputBlocked(false);
+    unlockRevealInFlight = false;
+    redraw();
+  }
+};
 
 const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<void> => {
   if (modeTransitionInFlight) {
@@ -467,6 +519,30 @@ const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<v
     modeTransitionInFlight = false;
     redraw();
   }
+};
+
+const unsubscribe = store.subscribe((state) => {
+  autoEqualsScheduler.sync(state);
+  const latest = store.getState();
+  const currentUnlockedKeys = collectUnlockedKeys(latest);
+  const hasNewUnlock = [...currentUnlockedKeys].some((key) => !knownUnlockedKeys.has(key));
+  knownUnlockedKeys = currentUnlockedKeys;
+
+  if (hasNewUnlock && !unlockRevealInFlight && !modeTransitionInFlight) {
+    void runUnlockRevealCue(latest);
+    return;
+  }
+
+  renderApp(latest);
+  syncKeypadDimensionInputs();
+  syncAllocatorDeviceInputs();
+  storageRepo.save(latest);
+});
+
+window.__autoCalcBootstrapCleanup__ = () => {
+  unsubscribe();
+  shellRenderer?.dispose();
+  autoEqualsScheduler.dispose();
 };
 
 allocatorResetButton.addEventListener("click", async () => {

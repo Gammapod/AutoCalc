@@ -109,6 +109,74 @@ const moveKeyToCoord = (state: GameState, effect: Extract<UnlockEffect, { type: 
   return nextState;
 };
 
+const isUnlockKeyEffect = (
+  effect: UnlockEffect,
+): effect is
+  | Extract<UnlockEffect, { type: "unlock_digit" }>
+  | Extract<UnlockEffect, { type: "unlock_slot_operator" }>
+  | Extract<UnlockEffect, { type: "unlock_execution" }>
+  | Extract<UnlockEffect, { type: "unlock_utility" }> =>
+  effect.type === "unlock_digit" ||
+  effect.type === "unlock_slot_operator" ||
+  effect.type === "unlock_execution" ||
+  effect.type === "unlock_utility";
+
+const keyFromUnlockEffect = (
+  effect: Extract<
+    UnlockEffect,
+    { type: "unlock_digit" } | { type: "unlock_slot_operator" } | { type: "unlock_execution" } | { type: "unlock_utility" }
+  >,
+): Key => effect.key;
+
+const toStorageWithLeadingUnlockedKey = (
+  storage: Array<GameState["ui"]["storageLayout"][number]>,
+  keyCell: NonNullable<GameState["ui"]["storageLayout"][number]>,
+): Array<GameState["ui"]["storageLayout"][number]> => {
+  const packed = [keyCell, ...storage.flatMap((cell) => (cell && cell.key !== keyCell.key ? [cell] : []))];
+  const requiredRows = Math.max(1, Math.ceil((packed.length + 1) / STORAGE_COLUMNS));
+  const targetLength = requiredRows * STORAGE_COLUMNS;
+  const nextStorage: Array<GameState["ui"]["storageLayout"][number]> = [...packed];
+  while (nextStorage.length < targetLength) {
+    nextStorage.push(null);
+  }
+  return nextStorage;
+};
+
+const moveUnlockedKeyToStorageFront = (state: GameState, key: Key): GameState => {
+  const source = findKey(state, key);
+  if (!source) {
+    return state;
+  }
+
+  const sourceCell =
+    source.surface === "keypad"
+      ? state.ui.keyLayout[source.index]
+      : state.ui.storageLayout[source.index];
+  if (!sourceCell || sourceCell.kind !== "key") {
+    return state;
+  }
+
+  let baseState = state;
+  if (source.surface === "keypad") {
+    const nextKeyLayout = [...state.ui.keyLayout];
+    nextKeyLayout[source.index] = { kind: "placeholder", area: "empty" };
+    baseState = withKeyLayout(state, nextKeyLayout);
+  }
+
+  const nextStorage = toStorageWithLeadingUnlockedKey(baseState.ui.storageLayout, sourceCell);
+  let nextState: GameState = {
+    ...baseState,
+    ui: {
+      ...baseState.ui,
+      storageLayout: nextStorage,
+    },
+  };
+  if (source.surface === "keypad") {
+    nextState = clearOperationEntry(nextState);
+  }
+  return nextState;
+};
+
 export const applyEffect = (effect: UnlockEffect, state: GameState): GameState => {
   if (effect.type === "unlock_utility") {
     return {
@@ -206,6 +274,7 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
 
 export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): GameState => {
   let nextState = state;
+  const newlyUnlockedKeys = new Set<Key>();
 
   for (const unlock of catalog) {
     const isAlreadyCompleted = nextState.completedUnlockIds.includes(unlock.id);
@@ -219,12 +288,22 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
     }
 
     nextState = applyEffect(unlock.effect, nextState);
+    if (isUnlockKeyEffect(unlock.effect)) {
+      const unlockedKey = keyFromUnlockEffect(unlock.effect);
+      if (!isAlreadyCompleted) {
+        newlyUnlockedKeys.add(unlockedKey);
+      }
+    }
     if (!isAlreadyCompleted) {
       nextState = {
         ...nextState,
         completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
       };
     }
+  }
+
+  for (const key of newlyUnlockedKeys) {
+    nextState = moveUnlockedKeyToStorageFront(nextState, key);
   }
 
   return nextState;
