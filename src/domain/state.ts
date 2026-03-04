@@ -152,6 +152,8 @@ export const initialState = (): GameState => {
         C: false,
         CE: false,
         UNDO: false,
+      },
+      steps: {
         "\u23EF": false,
       },
       visualizers: {

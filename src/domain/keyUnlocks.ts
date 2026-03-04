@@ -7,8 +7,11 @@ export const isKeyUnlocked = (state: GameState, key: Key): boolean => {
   if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
     return state.unlocks.slotOperators[key];
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "\u23EF") {
+  if (key === "C" || key === "CE" || key === "UNDO") {
     return state.unlocks.utilities[key];
+  }
+  if (key === "\u23EF") {
+    return state.unlocks.steps[key];
   }
   if (key === "GRAPH") {
     return state.unlocks.visualizers.GRAPH;

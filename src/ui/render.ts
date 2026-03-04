@@ -3,7 +3,11 @@ import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../do
 import { isKeyUnlocked } from "../domain/keyUnlocks.js";
 import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
-import { isStorageLayoutValid } from "../domain/reducer.layout.js";
+import { evaluateLayoutDrop } from "../domain/layoutRules.js";
+import {
+  buildStepBodyHighlightRegions,
+  resolveStepBodyHighlightRects,
+} from "./stepHighlight.js";
 import {
   buildOperationSlotDisplay as buildOperationSlotDisplayShared,
   buildRollLines as buildRollLinesShared,
@@ -185,7 +189,6 @@ export type UnlockRowVm = {
   difficultyLabel?: "Difficult";
 };
 
-type Occupancy = "key" | "empty" | "invalid";
 type DropAction = "move" | "swap";
 type DragTarget = {
   surface: LayoutSurface;
@@ -894,28 +897,6 @@ const buildKeypadSlotLabels = (
     return `R${coord.row}C${coord.col} #${index}`;
   });
 
-type StepBodyHighlightRegion = {
-  topIndex: number;
-  bottomIndex: number;
-};
-
-const buildStepBodyHighlightRegions = (state: GameState): StepBodyHighlightRegion[] => {
-  const regions: StepBodyHighlightRegion[] = [];
-  const columns = Math.max(1, state.ui.keypadColumns || 1);
-  for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
-    const cell = state.ui.keyLayout[index];
-    if (cell.kind !== "key" || cell.key !== "\u23EF") {
-      continue;
-    }
-    const belowIndex = index + columns;
-    regions.push({
-      topIndex: index,
-      bottomIndex: belowIndex < state.ui.keyLayout.length ? belowIndex : index,
-    });
-  }
-  return regions;
-};
-
 export const getStorageRowCount = (buttonCount: number, columns: number = STORAGE_COLUMNS): number => {
   if (columns <= 0) {
     return 1;
@@ -1174,134 +1155,13 @@ const parseDragTarget = (value: unknown): DragTarget | null => {
   return { surface: target.surface, index: target.index };
 };
 
-const getCellOccupancy = (state: GameState, target: DragTarget): Occupancy => {
-  if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {
-    return "invalid";
-  }
-  if (target.surface === "keypad") {
-    const cell = state.ui.keyLayout[target.index];
-    if (!cell) {
-      return "invalid";
-    }
-    if (cell.kind !== "key") {
-      return "empty";
-    }
-    return isKeyUnlocked(state, cell.key) ? "key" : "invalid";
-  }
-  const slot = state.ui.storageLayout[target.index];
-  if (typeof slot === "undefined") {
-    return "invalid";
-  }
-  if (!slot) {
-    return "empty";
-  }
-  return isKeyUnlocked(state, slot.key) ? "key" : "invalid";
-};
-
-const getKeyAtTarget = (state: GameState, target: DragTarget): Key | null => {
-  if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {
-    return null;
-  }
-  if (target.surface === "keypad") {
-    const cell = state.ui.keyLayout[target.index];
-    if (!cell || cell.kind !== "key") {
-      return null;
-    }
-    return cell.key;
-  }
-  const slot = state.ui.storageLayout[target.index];
-  return slot?.key ?? null;
-};
-
-const isStepKey = (key: Key): boolean => key === "\u23EF";
-
-const isBottomRowKeypadIndex = (state: GameState, index: number): boolean => {
-  const columns = Math.max(1, state.ui.keypadColumns || 1);
-  const rows = Math.max(1, state.ui.keypadRows || 1);
-  const bottomRowStart = (rows - 1) * columns;
-  return index >= bottomRowStart && index < bottomRowStart + columns;
-};
-
-const violatesStepBottomRowRule = (
-  state: GameState,
-  source: DragTarget,
-  destination: DragTarget,
-  action: DropAction,
-): boolean => {
-  const sourceKey = getKeyAtTarget(state, source);
-  if (!sourceKey) {
-    return true;
-  }
-  if (destination.surface === "keypad" && isStepKey(sourceKey) && isBottomRowKeypadIndex(state, destination.index)) {
-    return true;
-  }
-  if (action !== "swap") {
-    return false;
-  }
-  const destinationKey = getKeyAtTarget(state, destination);
-  if (!destinationKey) {
-    return true;
-  }
-  return source.surface === "keypad" && isStepKey(destinationKey) && isBottomRowKeypadIndex(state, source.index);
-};
-
-const isStorageDropGeometryValid = (
-  state: GameState,
-  source: DragTarget,
-  destination: DragTarget,
-  action: DropAction,
-): boolean => {
-  if (source.surface !== "storage" && destination.surface !== "storage") {
-    return true;
-  }
-  const nextStorage = [...state.ui.storageLayout];
-  const sourceStorageCell = source.surface === "storage" ? nextStorage[source.index] : null;
-  const destinationStorageCell = destination.surface === "storage" ? nextStorage[destination.index] : null;
-  if (action === "move") {
-    if (source.surface === "storage") {
-      nextStorage[source.index] = null;
-    }
-    if (destination.surface === "storage") {
-      if (source.surface === "storage") {
-        nextStorage[destination.index] = sourceStorageCell;
-      } else {
-        const sourceKeypadCell = state.ui.keyLayout[source.index];
-        nextStorage[destination.index] = sourceKeypadCell?.kind === "key" ? sourceKeypadCell : null;
-      }
-    }
-  } else {
-    if (source.surface === "storage" && destination.surface === "storage") {
-      nextStorage[source.index] = destinationStorageCell;
-      nextStorage[destination.index] = sourceStorageCell;
-    } else if (source.surface === "storage" && destination.surface === "keypad") {
-      const destinationKeypadCell = state.ui.keyLayout[destination.index];
-      nextStorage[source.index] = destinationKeypadCell?.kind === "key" ? destinationKeypadCell : null;
-    } else if (source.surface === "keypad" && destination.surface === "storage") {
-      const sourceKeypadCell = state.ui.keyLayout[source.index];
-      nextStorage[destination.index] = sourceKeypadCell?.kind === "key" ? sourceKeypadCell : null;
-    }
-  }
-  return isStorageLayoutValid(nextStorage);
-};
-
 export const classifyDropAction = (
   state: GameState,
   source: DragTarget,
   destination: DragTarget,
 ): DropAction | null => {
-  if (source.surface === destination.surface && source.index === destination.index) {
-    return null;
-  }
-  const sourceOccupancy = getCellOccupancy(state, source);
-  const destinationOccupancy = getCellOccupancy(state, destination);
-  if (sourceOccupancy !== "key" || destinationOccupancy === "invalid") {
-    return null;
-  }
-  const action: DropAction = destinationOccupancy === "key" ? "swap" : "move";
-  if (violatesStepBottomRowRule(state, source, destination, action)) {
-    return null;
-  }
-  return isStorageDropGeometryValid(state, source, destination, action) ? action : null;
+  const decision = evaluateLayoutDrop(state, source, destination);
+  return decision.allowed ? decision.action : null;
 };
 
 const findDragTargetElement = (target: DragTarget): HTMLElement | null =>
@@ -1589,6 +1449,9 @@ const buildUnlockSnapshot = (state: GameState): Record<Key, boolean> => {
   for (const [key, unlocked] of Object.entries(state.unlocks.utilities)) {
     snapshot[key as Key] = unlocked;
   }
+  for (const [key, unlocked] of Object.entries(state.unlocks.steps)) {
+    snapshot[key as Key] = unlocked;
+  }
   for (const [key, unlocked] of Object.entries(state.unlocks.visualizers)) {
     snapshot[key as Key] = unlocked;
   }
@@ -1809,31 +1672,15 @@ export const render = (
     });
     keysEl.appendChild(button);
   }
-  const keysRect = keysEl.getBoundingClientRect();
-  for (const region of stepBodyHighlights) {
-    const topSlot = keysEl.querySelector<HTMLElement>(
-      `[data-layout-surface="keypad"][data-layout-index="${region.topIndex.toString()}"]`,
-    );
-    const bottomSlot = keysEl.querySelector<HTMLElement>(
-      `[data-layout-surface="keypad"][data-layout-index="${region.bottomIndex.toString()}"]`,
-    );
-    if (!topSlot || !bottomSlot) {
-      continue;
-    }
-    const topRect = topSlot.getBoundingClientRect();
-    const bottomRect = bottomSlot.getBoundingClientRect();
-    const left = topRect.left - keysRect.left;
-    const right = topRect.right - keysRect.left;
-    const top = Math.min(topRect.top, bottomRect.top) - keysRect.top;
-    const bottom = Math.max(topRect.bottom, bottomRect.bottom) - keysRect.top;
-
+  const stepHighlightRects = resolveStepBodyHighlightRects(keysEl, stepBodyHighlights);
+  for (const rect of stepHighlightRects) {
     const highlight = document.createElement("div");
     highlight.className = STEP_BODY_HIGHLIGHT_CLASS;
     highlight.setAttribute("aria-hidden", "true");
-    highlight.style.left = `${left.toFixed(2)}px`;
-    highlight.style.top = `${top.toFixed(2)}px`;
-    highlight.style.width = `${Math.max(0, right - left).toFixed(2)}px`;
-    highlight.style.height = `${Math.max(0, bottom - top).toFixed(2)}px`;
+    highlight.style.left = `${rect.left.toFixed(2)}px`;
+    highlight.style.top = `${rect.top.toFixed(2)}px`;
+    highlight.style.width = `${rect.width.toFixed(2)}px`;
+    highlight.style.height = `${rect.height.toFixed(2)}px`;
     keysEl.appendChild(highlight);
   }
   fitKeyLabelsInContainer(keysEl);

@@ -13,7 +13,12 @@ import {
   STORAGE_COLUMNS,
   STORAGE_INITIAL_SLOTS,
 } from "./state.js";
+import {
+  evaluateLayoutDrop,
+} from "./layoutRules.js";
 import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface } from "./types.js";
+
+export { isStorageLayoutValid } from "./layoutRules.js";
 
 // Layout-only reducer logic for key slot move/swap actions.
 const isValidLayoutIndex = (layoutLength: number, index: number): boolean =>
@@ -24,11 +29,6 @@ const isKeyCell = (cell: LayoutCell | KeyCell | null): cell is KeyCell =>
 
 const isKeypadEmptyCell = (cell: LayoutCell): boolean => cell.kind === "placeholder";
 const isStorageEmptyCell = (cell: KeyCell | null): boolean => cell === null;
-const isStepKey = (key: KeyCell["key"]): boolean => key === "\u23EF";
-
-export const isStorageLayoutValid = (storageLayout: Array<KeyCell | null>): boolean => {
-  return storageLayout.length > 0 && storageLayout.length % STORAGE_COLUMNS === 0;
-};
 
 const nextStorageWithTrailingEmptyRow = (storageLayout: Array<KeyCell | null>): Array<KeyCell | null> => {
   const nextStorage = [...storageLayout];
@@ -135,13 +135,6 @@ const isEmptyCell = (surface: LayoutSurface, cell: LayoutCell | KeyCell | null):
 const hasValidSurfaceIndex = (state: GameState, surface: LayoutSurface, index: number): boolean =>
   isValidLayoutIndex(getSurfaceLength(state, surface), index);
 
-const isBottomRowKeypadIndex = (state: GameState, index: number): boolean => {
-  const columns = Math.max(1, state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS);
-  const rows = Math.max(1, state.ui.keypadRows || KEYPAD_DEFAULT_ROWS);
-  const bottomRowStart = (rows - 1) * columns;
-  return index >= bottomRowStart && index < bottomRowStart + columns;
-};
-
 const keySignature = (cell: LayoutCell | KeyCell | null): string | null => {
   if (!cell || cell.kind !== "key") {
     return null;
@@ -200,25 +193,6 @@ export const resizeKeyLayout = (
 ): LayoutCell[] => {
   const sourceCells = fromKeyLayoutArray(layout, fromColumns, fromRows);
   return toKeyLayoutArray(resizeAnchored(sourceCells, toColumns, toRows), toColumns, toRows);
-};
-
-const isStorageOutcomeValid = (
-  state: GameState,
-  fromSurface: LayoutSurface,
-  fromIndex: number,
-  fromNextValue: LayoutCell | KeyCell | null,
-  toSurface: LayoutSurface,
-  toIndex: number,
-  toNextValue: LayoutCell | KeyCell | null,
-): boolean => {
-  const nextStorage = [...state.ui.storageLayout];
-  if (fromSurface === "storage") {
-    nextStorage[fromIndex] = fromNextValue as KeyCell | null;
-  }
-  if (toSurface === "storage") {
-    nextStorage[toIndex] = toNextValue as KeyCell | null;
-  }
-  return isStorageLayoutValid(nextStorage);
 };
 
 const clearButtonFlag = (state: GameState, flag: string): GameState => {
@@ -309,20 +283,13 @@ export const applyMoveLayoutCell = (
   if (!isKeyCell(sourceCell) || !isEmptyCell(toSurface, destinationCell)) {
     return state;
   }
-  if (toSurface === "keypad" && isStepKey(sourceCell.key) && isBottomRowKeypadIndex(state, toIndex)) {
-    return state;
-  }
-  if (
-    !isStorageOutcomeValid(
-      state,
-      fromSurface,
-      fromIndex,
-      sourceClearedCell(fromSurface),
-      toSurface,
-      toIndex,
-      sourceCell,
-    )
-  ) {
+  const moveDecision = evaluateLayoutDrop(
+    state,
+    { surface: fromSurface, index: fromIndex },
+    { surface: toSurface, index: toIndex },
+    { enforceUnlockedKeypadDestination: false },
+  );
+  if (!moveDecision.allowed || moveDecision.action !== "move") {
     return state;
   }
 
@@ -359,13 +326,13 @@ export const applySwapLayoutCells = (
   if (!isKeyCell(sourceCell) || !isKeyCell(destinationCell)) {
     return state;
   }
-  if (
-    (toSurface === "keypad" && isStepKey(sourceCell.key) && isBottomRowKeypadIndex(state, toIndex))
-    || (fromSurface === "keypad" && isStepKey(destinationCell.key) && isBottomRowKeypadIndex(state, fromIndex))
-  ) {
-    return state;
-  }
-  if (!isStorageOutcomeValid(state, fromSurface, fromIndex, destinationCell, toSurface, toIndex, sourceCell)) {
+  const swapDecision = evaluateLayoutDrop(
+    state,
+    { surface: fromSurface, index: fromIndex },
+    { surface: toSurface, index: toIndex },
+    { enforceUnlockedKeypadDestination: false },
+  );
+  if (!swapDecision.allowed || swapDecision.action !== "swap") {
     return state;
   }
 

@@ -173,8 +173,8 @@ export const runDragDropBehaviorTests = (): void => {
         ...base.unlocks.uiUnlocks,
         storageVisible: true,
       },
-      utilities: {
-        ...base.unlocks.utilities,
+      steps: {
+        ...base.unlocks.steps,
         "\u23EF": true,
       },
       valueExpression: {

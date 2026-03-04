@@ -15,6 +15,7 @@ const runtimeKeysFromInitialUnlocks = (): Key[] => {
     ...(Object.keys(state.unlocks.valueExpression) as Key[]),
     ...(Object.keys(state.unlocks.slotOperators) as Key[]),
     ...(Object.keys(state.unlocks.utilities) as Key[]),
+    ...(Object.keys(state.unlocks.steps) as Key[]),
     ...(Object.keys(state.unlocks.visualizers) as Key[]),
     ...(Object.keys(state.unlocks.execution) as Key[]),
   ].sort((a, b) => a.localeCompare(b));
@@ -52,6 +53,18 @@ const unlockKey = (state: GameState, key: Key): GameState => {
         ...state.unlocks,
         utilities: {
           ...state.unlocks.utilities,
+          [key]: true,
+        },
+      },
+    };
+  }
+  if (key in state.unlocks.steps) {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        steps: {
+          ...state.unlocks.steps,
           [key]: true,
         },
       },

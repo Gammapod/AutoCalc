@@ -871,6 +871,11 @@ export const deriveUnlockedKeysFromState = (state: GameState): Key[] => {
       keys.push(key as Key);
     }
   }
+  for (const [key, unlocked] of Object.entries(state.unlocks.steps)) {
+    if (unlocked) {
+      keys.push(key as Key);
+    }
+  }
   for (const [key, unlocked] of Object.entries(state.unlocks.visualizers)) {
     if (unlocked) {
       keys.push(key as Key);

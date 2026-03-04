@@ -192,13 +192,15 @@ const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
-const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u23EF"] as const;
+const UTILITY_KEY_VALUES = ["C", "CE", "UNDO"] as const;
+const STEP_KEY_VALUES = ["\u23EF"] as const;
 const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED"] as const;
 const EXEC_KEY_VALUES = ["=", "++", "--"] as const;
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
   ...SLOT_OPERATOR_VALUES,
   ...UTILITY_KEY_VALUES,
+  ...STEP_KEY_VALUES,
   ...VISUALIZER_KEY_VALUES,
   ...EXEC_KEY_VALUES,
 ];
@@ -423,6 +425,11 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
     },
     slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
     utilities: { ...defaults.utilities, ...(source?.utilities ?? {}) },
+    steps: {
+      ...defaults.steps,
+      ...(source?.steps ?? {}),
+      ...(typeof source?.utilities?.["\u23EF"] === "boolean" ? { "\u23EF": source.utilities["\u23EF"] } : {}),
+    },
     visualizers: {
       ...defaults.visualizers,
       ...(source?.visualizers ?? {}),
@@ -816,6 +823,7 @@ export const validateSerializableStateV3 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||
     !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
     !hasValidBooleans(Object.keys(defaults.uiUnlocks), unlocks.uiUnlocks) ||
@@ -868,6 +876,7 @@ export const validateSerializableStateV4 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||
     !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
     !hasValidBooleans(Object.keys(defaults.uiUnlocks), unlocks.uiUnlocks) ||
@@ -927,6 +936,7 @@ export const validateSerializableStateV5 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||
     !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
     !hasValidBooleans(Object.keys(defaults.uiUnlocks), unlocks.uiUnlocks) ||

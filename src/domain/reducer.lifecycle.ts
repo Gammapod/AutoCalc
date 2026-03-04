@@ -39,6 +39,9 @@ const applyUnlockAll = (state: GameState): GameState => {
       utilities: Object.fromEntries(
         Object.keys(withCatalogEffects.unlocks.utilities).map((utility) => [utility, true]),
       ) as GameState["unlocks"]["utilities"],
+      steps: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.steps).map((stepKey) => [stepKey, true]),
+      ) as GameState["unlocks"]["steps"],
       visualizers: Object.fromEntries(
         Object.keys(withCatalogEffects.unlocks.visualizers).map((visualizer) => [visualizer, true]),
       ) as GameState["unlocks"]["visualizers"],

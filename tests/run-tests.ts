@@ -44,6 +44,8 @@ import { runUiModuleAllocatorV2Tests } from "./uiModule.allocator.v2.test.js";
 import { runUiModuleGrapherV2Tests } from "./uiModule.grapher.v2.test.js";
 import { runUiModuleVisualizerHostV2Tests } from "./uiModule.visualizerHost.v2.test.js";
 import { runKeyUnlocksTests } from "./keyUnlocks.test.js";
+import { runLayoutRulesInvariantTests } from "./layoutRules.invariant.test.js";
+import { runLayoutRulesEquivalenceTests } from "./layoutRules.equivalence.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -67,6 +69,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/unlock-graph", runUnlockGraphTests],
   ["domain/key-behavior-contract", runKeyBehaviorContractTests],
   ["domain/key-unlocks", runKeyUnlocksTests],
+  ["domain/layout-rules-invariants", runLayoutRulesInvariantTests],
+  ["domain/layout-rules-equivalence", runLayoutRulesEquivalenceTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],
