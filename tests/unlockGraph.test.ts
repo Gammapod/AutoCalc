@@ -67,6 +67,7 @@ export const runUnlockGraphTests = (): void => {
   });
   assert.match(filteredMermaid, /sufficient_set: A & B/);
   assert.match(filteredMermaid, /subgraph Keys/);
+  assert.match(filteredMermaid, /subgraph SufficientSets/);
   assert.match(filteredMermaid, /subgraph Functions/);
   assert.match(filteredMermaid, /subgraph Conditions/);
   assert.match(filteredMermaid, /-->\|necessary\|/);
@@ -97,6 +98,33 @@ export const runUnlockGraphTests = (): void => {
     const incomingSufficient = graph.edges.some((edge) => edge.type === "sufficient" && edge.to === functionNode.id);
     assert.equal(incomingSufficient, true, `function ${functionNode.id} should have at least one sufficient incoming edge`);
   }
+  const edgeSignatures = new Set<string>();
+  for (const edge of graph.edges) {
+    const signature = `${edge.from}|${edge.to}|${edge.type}|${edge.label ?? ""}`;
+    assert.equal(edgeSignatures.has(signature), false, `duplicate edge emitted: ${signature}`);
+    edgeSignatures.add(signature);
+  }
+  const setNodesById = new Map(graph.nodes.filter((node) => node.type === "sufficient_set").map((node) => [node.id, node]));
+  const sufficientSetTargets = new Map<string, Set<string>>();
+  for (const edge of graph.edges) {
+    if (edge.type !== "sufficient") {
+      continue;
+    }
+    const sourceNode = setNodesById.get(edge.from);
+    if (!sourceNode) {
+      continue;
+    }
+    const targets = sufficientSetTargets.get(sourceNode.id);
+    if (targets) {
+      targets.add(edge.to);
+    } else {
+      sufficientSetTargets.set(sourceNode.id, new Set([edge.to]));
+    }
+  }
+  assert.ok(
+    [...sufficientSetTargets.values()].some((targets) => targets.size > 1),
+    "global sufficient-set dedupe should allow at least one sufficient_set node to feed multiple functions",
+  );
 
   const filteredGraph = filterUnlockGraphToIncomingUnlockKeys({
     nodes: [

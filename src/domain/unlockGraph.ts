@@ -96,6 +96,20 @@ const defineFunctionRule = (input: Omit<FunctionRule, "isSatisfied" | "sufficien
   };
 };
 
+const dedupeGraphEdges = (edges: GraphEdge[]): GraphEdge[] => {
+  const seen = new Set<string>();
+  const deduped: GraphEdge[] = [];
+  for (const edge of edges) {
+    const signature = `${edge.from}|${edge.to}|${edge.type}|${edge.label ?? ""}`;
+    if (seen.has(signature)) {
+      continue;
+    }
+    seen.add(signature);
+    deduped.push(edge);
+  }
+  return deduped;
+};
+
 const operatorClauses = (): Key[][] => OPERATOR_KEYS.map((operator) => [operator]);
 
 const staticFunctionRules: FunctionRule[] = [
@@ -257,8 +271,10 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
   }));
 
   const edges: GraphEdge[] = [];
+  const globalSetNodeByClause = new Map<string, string>();
+  let nextGlobalSetIndex = 0;
   for (const rule of functionRules.values()) {
-    for (const [index, clause] of rule.sufficiency.entries()) {
+    for (const clause of rule.sufficiency) {
       if (clause.length === 1) {
         edges.push({
           from: `key.${clause[0]}`,
@@ -267,12 +283,18 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
         });
         continue;
       }
-      const setNodeId = `set.${rule.id}.${index}`;
-      sufficientSetNodes.push({
-        id: setNodeId,
-        type: "sufficient_set",
-        label: clause.join(" & "),
-      });
+      const clauseKey = clause.join("|");
+      let setNodeId = globalSetNodeByClause.get(clauseKey);
+      if (!setNodeId) {
+        setNodeId = `set.global.${nextGlobalSetIndex}`;
+        nextGlobalSetIndex += 1;
+        globalSetNodeByClause.set(clauseKey, setNodeId);
+        sufficientSetNodes.push({
+          id: setNodeId,
+          type: "sufficient_set",
+          label: clause.join(" & "),
+        });
+      }
       for (const key of clause) {
         edges.push({
           from: `key.${key}`,
@@ -312,7 +334,7 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
 
   return {
     nodes: [...keyNodes, ...functionNodes, ...sufficientSetNodes, ...conditionNodes],
-    edges,
+    edges: dedupeGraphEdges(edges),
   };
 };
 
@@ -664,22 +686,29 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
   const conditionNodes = sortNodes(orderedNodes.filter((node) => node.type === "condition"));
   const sufficientSetNodes = sortNodes(orderedNodes.filter((node) => node.type === "sufficient_set"));
 
-  const appendNodeSubgraph = (title: string, nodes: GraphNode[]): void => {
-    lines.push(`  subgraph ${title}`);
+  const appendNodeSubgraph = (title: string, nodes: GraphNode[], indent = "  "): void => {
+    lines.push(`${indent}subgraph ${title}`);
     for (const node of nodes) {
       const alias = nodeAliasById.get(node.id) as string;
       const label = escapeMermaidLabel(`${node.type}: ${node.label}`);
-      lines.push(`    ${alias}["${label}"]`);
+      lines.push(`${indent}  ${alias}["${label}"]`);
     }
-    lines.push("  end");
+    lines.push(`${indent}end`);
   };
 
-  appendNodeSubgraph("Keys", keyNodes);
+  lines.push("  subgraph Keys");
+  for (const node of keyNodes) {
+    const alias = nodeAliasById.get(node.id) as string;
+    const label = escapeMermaidLabel(`${node.type}: ${node.label}`);
+    lines.push(`    ${alias}["${label}"]`);
+  }
+  if (sufficientSetNodes.length > 0) {
+    appendNodeSubgraph("SufficientSets", sufficientSetNodes, "    ");
+  }
+  lines.push("  end");
+
   appendNodeSubgraph("Functions", functionNodes);
   appendNodeSubgraph("Conditions", conditionNodes);
-  if (sufficientSetNodes.length > 0) {
-    appendNodeSubgraph("SufficientSets", sufficientSetNodes);
-  }
 
   const orderedEdges = [...graph.edges]
     .filter((edge) => includedNodeIds.has(edge.from) && includedNodeIds.has(edge.to))
