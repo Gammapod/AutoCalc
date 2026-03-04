@@ -2,18 +2,8 @@
 
 export const unlockCatalog: UnlockDefinition[] = [
   {
-    id: "unlock_storage_on_total_11",
-    description: "Reveal storage when the first overflow error happens.",
-    predicate: { type: "overflow_error_seen" },
-    effect: { type: "unlock_storage_drawer" },
-    once: true,
-    domainNodeId: "NN",
-    targetNodeId: "Ui_storage_drawer",
-    targetLabel: "storage drawer",
-  },
-  {
     id: "unlock_equals_on_total_11",
-    description: "Unlock = when roll ends with two equal values.",
+    description: "Make no change.",
     predicate: { type: "roll_ends_with_equal_run", length: 2 },
     effect: { type: "unlock_execution", key: "=" },
     once: true,
@@ -21,38 +11,18 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetNodeId: "Ut_exec_eq",
     targetLabel: "=",
   },
-  // {
-  //   id: "upgrade_column_on_equal_run_4",
-  //   description: "Upgrade columns when roll ends with 4 equal values.",
-  //   predicate: { type: "roll_ends_with_equal_run", length: 4 },
-  //   effect: { type: "upgrade_keypad_column" },
-  //   once: true,
-  //   domainNodeId: "NN",
-  //   targetNodeId: "Ui_keypad_col",
-  //   targetLabel: "keypad columns +1",
-  // },
   {
     id: "unlock_plus_on_equal_run_4",
-    description: "Unlock + when roll ends with 7 incrementing values.",
+    description: "Count for a bit.",
     predicate: { type: "roll_ends_with_incrementing_run", length: 7, step: 1n },
     effect: { type: "unlock_slot_operator", key: "+" },
     once: true,
     domainNodeId: "NN",
     targetNodeId: "Oplus",
   },
-  // {
-  //   id: "upgrade_column_on_plus_press_first",
-  //   description: "Upgrade columns when + is pressed the first time.",
-  //   predicate: { type: "key_press_count_at_least", key: "+", count: 1 },
-  //   effect: { type: "upgrade_keypad_column" },
-  //   once: true,
-  //   domainNodeId: "NN",
-  //   targetNodeId: "Ui_keypad_col2",
-  //   targetLabel: "keypad columns +1",
-  // },
   {
     id: "unlock_1_on_plus_press_first",
-    description: "Unlock 1 when a two-digit total is first produced.",
+    description: "Roll over.",
     predicate: { type: "total_magnitude_at_least", value: 10n },
     effect: { type: "unlock_digit", key: "1" },
     once: true,
@@ -62,7 +32,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_undo_on_total_at_least_20",
-    description: "Unlock UNDO when allocator RETURN is pressed the first time.",
+    description: "Restart.",
     predicate: { type: "allocator_return_press_count_at_least", count: 1 },
     effect: { type: "unlock_utility", key: "UNDO" },
     once: true,
@@ -72,7 +42,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_allocator_point_on_total_at_least_9",
-    description: "Increase max allocator points by 1 when total reaches at least 9.",
+    description: "What's the biggest number?",
     predicate: { type: "total_at_least", value: 9n },
     effect: { type: "increase_allocator_max_points", amount: 1 },
     once: true,
@@ -82,7 +52,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_0_on_roll_contains_0",
-    description: "Unlock 0 when the roll contains 0.",
+    description: "Return to nothing.",
     predicate: { type: "roll_contains_value", value: 0n },
     effect: { type: "unlock_digit", key: "0" },
     once: true,
@@ -92,7 +62,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_minus_on_first_undo_press",
-    description: "Unlock - on a run of 7 decrementing values.",
+    description: "Count backwards for a bit.",
     predicate: { type: "roll_ends_with_incrementing_run", length: 7, step: -1n },
     effect: { type: "unlock_slot_operator", key: "-" },
     once: true,
@@ -102,7 +72,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_decrement_on_decrement_run_2",
-    description: "Unlock -- on a run of 2 decrementing values.",
+    description: "Reverse direction.",
     predicate: { type: "roll_ends_with_incrementing_run", length: 2, step: -1n },
     effect: { type: "unlock_execution", key: "--" },
     once: true,
@@ -112,7 +82,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_4_on_total_at_least_40",
-    description: "Unlock 4 when total reaches at least 40.",
+    description: "4 tens.",
     predicate: { type: "total_at_least", value: 40n },
     effect: { type: "unlock_digit", key: "4" },
     once: true,
@@ -122,7 +92,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_c_on_increment_run_4",
-    description: "Unlock C when allocator Allocate is pressed the first time.",
+    description: "Reset and regroup.",
     predicate: { type: "allocator_allocate_press_count_at_least", count: 1 },
     effect: { type: "unlock_utility", key: "C" },
     once: true,

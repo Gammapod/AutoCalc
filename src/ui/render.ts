@@ -545,14 +545,15 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
 
   const header = document.createElement("div");
   header.className = "unlock-header";
-  const challengeHeader = document.createElement("span");
-  challengeHeader.textContent = "Challenge";
+  const hintHeader = document.createElement("span");
+  hintHeader.textContent = "Hint";
   const rewardHeader = document.createElement("span");
   rewardHeader.textContent = "Reward";
-  header.append(challengeHeader, rewardHeader);
+  header.append(hintHeader, rewardHeader);
   unlockEl.appendChild(header);
 
   const rows = buildVisibleChecklistRows(state, { catalog: unlockCatalog });
+  const hintByUnlockId = new Map(unlockCatalog.map((unlock) => [unlock.id, unlock.description]));
   if (rows.length === 0) {
     const emptyStateEl = document.createElement("div");
     emptyStateEl.className = "unlock-empty-state";
@@ -568,15 +569,10 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
       rowEl.classList.add("unlock-row--completed");
     }
 
-    const criteriaEl = document.createElement("span");
-    criteriaEl.className = "unlock-criteria";
-    for (const criterion of row.criteria) {
-      const criterionEl = document.createElement("span");
-      criterionEl.className = "unlock-criterion";
-      criterionEl.textContent = `[${criterion.checked ? "x" : " "}] ${criterion.label}`;
-      criteriaEl.appendChild(criterionEl);
-    }
-    rowEl.appendChild(criteriaEl);
+    const hintEl = document.createElement("span");
+    hintEl.className = "unlock-hint";
+    hintEl.textContent = hintByUnlockId.get(row.id) ?? "";
+    rowEl.appendChild(hintEl);
 
     const nameEl = document.createElement("span");
     nameEl.className = "unlock-name";
