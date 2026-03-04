@@ -176,8 +176,8 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       "UNDO",
     );
     const next = applyKeyAction(state, "UNDO");
-    assert.deepEqual(next.calculator.roll, [r(3n), r(5n)], "UNDO should remove latest roll entry");
-    assert.deepEqual(next.calculator.total, r(5n), "UNDO should restore previous total");
+    assert.deepEqual(next.calculator.roll, [r(3n), r(5n), r(9n), r(5n)], "UNDO should append previous roll total as a new roll entry");
+    assert.deepEqual(next.calculator.total, r(5n), "UNDO should set total to previous roll entry");
     return;
   }
 
@@ -209,7 +209,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "decrement_decreases_total") {
-    const state = initialState();
+    const state = unlockKey(initialState(), "--");
     const next = applyKeyAction(state, "--");
     assert.deepEqual(next.calculator.total, r(-1n), "-- should decrement total by one");
     assert.deepEqual(next.calculator.roll, [r(-1n)], "-- should append decremented total to roll");
@@ -378,13 +378,13 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "decrement_clears_pending_negative") {
-    const state = {
+    const state = unlockKey({
       ...initialState(),
       calculator: {
         ...initialState().calculator,
         pendingNegativeTotal: true,
       },
-    };
+    }, "--");
     const next = applyKeyAction(state, "--");
     assert.equal(next.calculator.pendingNegativeTotal, false, "-- should clear pending negative sign");
     return;

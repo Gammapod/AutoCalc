@@ -455,18 +455,16 @@ const applyUndo = (state: GameState): GameState => {
   }
 
   const rollLength = state.calculator.roll.length;
-  if (rollLength > 0) {
-    const removedEntry = state.calculator.roll[rollLength - 1];
-    const nextRoll = state.calculator.roll.slice(0, -1);
-    const previousTotal = nextRoll.length > 0 ? nextRoll[nextRoll.length - 1] : removedEntry;
+  if (rollLength >= 2) {
+    const previousTotal = state.calculator.roll[rollLength - 2];
+    const nextRoll = [...state.calculator.roll, previousTotal];
     return {
       ...state,
       calculator: {
         ...state.calculator,
         total: previousTotal,
         roll: nextRoll,
-        rollErrors: state.calculator.rollErrors.filter((entry) => entry.rollIndex < nextRoll.length),
-        euclidRemainders: state.calculator.euclidRemainders.filter((entry) => entry.rollIndex < nextRoll.length),
+        pendingNegativeTotal: false,
       },
     };
   }

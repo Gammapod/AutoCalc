@@ -183,6 +183,11 @@ export type OverflowErrorSeenPredicate = {
   type: "overflow_error_seen";
 };
 
+export type AllocatorReturnPressCountAtLeastPredicate = {
+  type: "allocator_return_press_count_at_least";
+  count: number;
+};
+
 export type UnlockPredicate =
   | RollLengthAtLeastPredicate
   | TotalEqualsPredicate
@@ -194,7 +199,8 @@ export type UnlockPredicate =
   | RollEndsWithEqualRunPredicate
   | RollEndsWithIncrementingRunPredicate
   | KeyPressCountAtLeastPredicate
-  | OverflowErrorSeenPredicate;
+  | OverflowErrorSeenPredicate
+  | AllocatorReturnPressCountAtLeastPredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";
@@ -288,6 +294,7 @@ export type GameState = {
     buttonFlags: Record<string, boolean>;
   };
   keyPressCounts: Partial<Record<Key, number>>;
+  allocatorReturnPressCount?: number;
   unlocks: UnlockState;
   completedUnlockIds: string[];
 };
@@ -379,6 +386,10 @@ export type ResetAllocatorDeviceAction = {
   type: "RESET_ALLOCATOR_DEVICE";
 };
 
+export type AllocatorReturnPressedAction = {
+  type: "ALLOCATOR_RETURN_PRESSED";
+};
+
 export type Action =
   | PressKeyAction
   | ResetRunAction
@@ -395,7 +406,8 @@ export type Action =
   | AllocatorAdjustAction
   | AllocatorSetMaxPointsAction
   | AllocatorAddMaxPointsAction
-  | ResetAllocatorDeviceAction;
+  | ResetAllocatorDeviceAction
+  | AllocatorReturnPressedAction;
 
 export type Store = {
   getState: () => GameState;

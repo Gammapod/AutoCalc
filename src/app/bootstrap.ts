@@ -638,6 +638,7 @@ allocatorResetButton.addEventListener("click", async () => {
     await runModeTransition("modify");
     return;
   }
+  dispatchWithRuntimeGate({ type: "ALLOCATOR_RETURN_PRESSED" });
   await runModeTransition("calculator");
 });
 

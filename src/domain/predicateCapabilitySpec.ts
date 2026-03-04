@@ -14,6 +14,7 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "roll_ends_with_incrementing_run",
   "key_press_count_at_least",
   "overflow_error_seen",
+  "allocator_return_press_count_at_least",
 ];
 
 export type CapabilityId =
@@ -23,6 +24,7 @@ export type CapabilityId =
   | "reset_to_zero"
   | "form_operator_plus_operand"
   | "press_target_key"
+  | "allocator_return_press"
   | "roll_growth"
   | "roll_equal_run"
   | "roll_incrementing_run";
@@ -135,6 +137,19 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "key_press_count_by_pressing_key",
         allOf: ["press_target_key"],
         rationale: "Pressing the key increments the tracked count.",
+      },
+    ],
+  },
+  allocator_return_press_count_at_least: {
+    predicateType: "allocator_return_press_count_at_least",
+    necessary: [
+      { capability: "allocator_return_press", reason: "Predicate counts allocator RETURN button presses." },
+    ],
+    sufficientSets: [
+      {
+        id: "allocator_return_press_count_by_return_click",
+        allOf: ["allocator_return_press"],
+        rationale: "Pressing RETURN increments the tracked allocator-return counter.",
       },
     ],
   },

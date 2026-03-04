@@ -182,6 +182,7 @@ export type SerializableAllocatorStateV10 = {
 
 export type SerializableStateV10 = SerializableStateV7 & {
   allocator: SerializableAllocatorStateV10;
+  allocatorReturnPressCount?: number;
 };
 
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
@@ -715,6 +716,7 @@ export const migrateV9ToV10 = (input: SerializableStateV9): SerializableStateV10
   const slotsAllocation = Math.min(existingExtra, 3);
   return {
     ...input,
+    allocatorReturnPressCount: 0,
     allocator: normalizeAllocatorV10({
       maxPoints: input.allocator.maxPoints + slotsAllocation,
       allocations: {
@@ -751,6 +753,7 @@ const toSerializableInitialV10 = (): SerializableStateV10 => {
       buttonFlags: defaults.ui.buttonFlags,
     },
     keyPressCounts: {},
+    allocatorReturnPressCount: 0,
     unlocks: defaults.unlocks,
     completedUnlockIds: [],
     allocator: defaults.allocator,
@@ -1049,6 +1052,13 @@ export const validateSerializableStateV10 = (state: unknown): state is Serializa
   if (!isObject(state) || !validateSerializableStateV7(state)) {
     return false;
   }
+  const allocatorReturnPressCount = (state as SerializableStateV10).allocatorReturnPressCount;
+  if (
+    allocatorReturnPressCount !== undefined
+    && (!isInteger(allocatorReturnPressCount) || allocatorReturnPressCount < 0)
+  ) {
+    return false;
+  }
   const allocator = (state as SerializableStateV10).allocator;
   if (
     !isObject(allocator) ||
@@ -1221,6 +1231,10 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
             ),
           )
         : {},
+      allocatorReturnPressCount:
+        isInteger(asV10.allocatorReturnPressCount) && asV10.allocatorReturnPressCount >= 0
+          ? asV10.allocatorReturnPressCount
+          : 0,
       allocator: normalizeAllocatorV10(asV10.allocator),
     };
     return validateSerializableStateV10(normalizedV10) ? normalizedV10 : null;

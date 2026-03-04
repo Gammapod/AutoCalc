@@ -20,6 +20,8 @@ import {
 import { applyLifecycleAction } from "../../src/domain/reducer.lifecycle.js";
 import { applyToggleFlag } from "../../src/domain/reducer.flags.js";
 import { clearOperationEntry } from "../../src/domain/reducer.stateBuilders.js";
+import { unlockCatalog } from "../../src/content/unlocks.catalog.js";
+import { applyUnlocks } from "../../src/domain/unlocks.js";
 import type { AllocatorAllocationField, AllocatorBudgetSnapshot, AllocatorState, GameState } from "../../src/domain/types.js";
 import { actionFromEvent, type DomainEvent } from "./events.js";
 
@@ -193,6 +195,13 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
       },
     };
     return applyAllocatorRuntimeProjection(state, nextAllocator);
+  }
+  if (action.type === "ALLOCATOR_RETURN_PRESSED") {
+    const withCount: GameState = {
+      ...state,
+      allocatorReturnPressCount: (state.allocatorReturnPressCount ?? 0) + 1,
+    };
+    return applyUnlocks(withCount, unlockCatalog);
   }
   return state;
 };

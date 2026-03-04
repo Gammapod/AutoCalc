@@ -22,7 +22,8 @@ export type DomainEvent =
   | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed" | "slots"; delta: 1 | -1 }
   | { type: "AllocatorMaxPointsSet"; value: number }
   | { type: "AllocatorMaxPointsAdded"; amount: number }
-  | { type: "AllocatorDeviceResetRequested" };
+  | { type: "AllocatorDeviceResetRequested" }
+  | { type: "AllocatorReturnPressed" };
 
 export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "PRESS_KEY") {
@@ -85,6 +86,9 @@ export const eventFromAction = (action: Action): DomainEvent => {
   }
   if (action.type === "RESET_ALLOCATOR_DEVICE") {
     return { type: "AllocatorDeviceResetRequested" };
+  }
+  if (action.type === "ALLOCATOR_RETURN_PRESSED") {
+    return { type: "AllocatorReturnPressed" };
   }
   return { type: "FlagToggled", flag: action.flag };
 };
@@ -150,6 +154,9 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   }
   if (event.type === "AllocatorDeviceResetRequested") {
     return { type: "RESET_ALLOCATOR_DEVICE" };
+  }
+  if (event.type === "AllocatorReturnPressed") {
+    return { type: "ALLOCATOR_RETURN_PRESSED" };
   }
   return { type: "TOGGLE_FLAG", flag: event.flag };
 };

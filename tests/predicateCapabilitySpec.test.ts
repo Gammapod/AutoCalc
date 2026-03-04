@@ -189,6 +189,14 @@ const proofFixtures: ProofFixture[] = [
     buildInitialState: () => initialState(),
     script: Array.from({ length: 10 }, () => "++"),
   },
+  {
+    id: "proof_allocator_return_press_count_once",
+    predicateType: "allocator_return_press_count_at_least",
+    sufficientSetId: "allocator_return_press_count_by_return_click",
+    predicate: { type: "allocator_return_press_count_at_least", count: 1 },
+    buildInitialState: () => ({ ...initialState(), allocatorReturnPressCount: 1 }),
+    script: [],
+  },
 ];
 
 export const runPredicateCapabilitySpecTests = (): void => {

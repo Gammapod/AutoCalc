@@ -124,6 +124,12 @@ const staticFunctionRules: FunctionRule[] = [
     sufficiency: [["C"], ["UNDO"]],
   }),
   defineFunctionRule({
+    id: "fn.allocator_return_press",
+    label: "allocator_return_press",
+    rule: "allocator RETURN action is available",
+    sufficiency: [["++"]],
+  }),
+  defineFunctionRule({
     id: "fn.form_operator_plus_operand",
     label: "form_operator_plus_operand",
     rule: "at least one operator key and at least one value key are unlocked",
@@ -142,14 +148,14 @@ const staticFunctionRules: FunctionRule[] = [
   defineFunctionRule({
     id: "fn.roll_equal_run",
     label: "roll_equal_run",
-    rule: "= and one of (+ and 0), (- and 0), (* and 1), (/ and 1)",
-    sufficiency: [["=", "+"], ["=", "-"], ["=", "*"], ["=", "/"]],
+    rule: "++ is unlocked OR (= and one of +,-,*,/ is unlocked)",
+    sufficiency: [["++"], ["=", "+"], ["=", "-"], ["=", "*"], ["=", "/"]],
   }),
   defineFunctionRule({
     id: "fn.roll_incrementing_run",
     label: "roll_incrementing_run",
-    rule: "= and + and 1 are unlocked",
-    sufficiency: [["=", "+"]],
+    rule: "++ is unlocked OR (= and + are unlocked)",
+    sufficiency: [["++"], ["=", "+"]],
   }),
 ];
 
@@ -201,6 +207,9 @@ const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition): string[] => {
   }
   if (unlock.predicate.type === "overflow_error_seen") {
     return ["fn.step_plus_one"];
+  }
+  if (unlock.predicate.type === "allocator_return_press_count_at_least") {
+    return ["fn.allocator_return_press"];
   }
   return [];
 };
@@ -707,7 +716,7 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
 
 export const filterUnlockGraphToIncomingUnlockKeys = (
   graph: UnlockGraph,
-  alwaysIncludeKeys: Key[] = ["++", "--"],
+  alwaysIncludeKeys: Key[] = ["++"],
 ): UnlockGraph => {
   const alwaysInclude = new Set(alwaysIncludeKeys);
   const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));

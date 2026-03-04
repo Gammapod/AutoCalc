@@ -26,6 +26,7 @@ const isRuntimeInteractiveAction = (action: Action): boolean =>
   action.type === "ALLOCATOR_SET_MAX_POINTS" ||
   action.type === "ALLOCATOR_ADD_MAX_POINTS" ||
   action.type === "RESET_ALLOCATOR_DEVICE" ||
+  action.type === "ALLOCATOR_RETURN_PRESSED" ||
   action.type === "SET_KEYPAD_DIMENSIONS" ||
   action.type === "UPGRADE_KEYPAD_ROW" ||
   action.type === "UPGRADE_KEYPAD_COLUMN";
@@ -79,4 +80,3 @@ export const createInteractionRuntime = (initialMode: InteractionMode = "calcula
     shouldBlockAction,
   };
 };
-

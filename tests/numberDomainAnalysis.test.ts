@@ -75,21 +75,21 @@ export const runNumberDomainAnalysisTests = (): void => {
     true,
     "all-unlocked scope enables non-natural integer proof",
   );
-  const plusPressPossibleAllUnlocked = reportWithResetAndMinusAllUnlocked.unlockSpecAnalysis.find(
+  const oneUnlockPossibleAllUnlocked = reportWithResetAndMinusAllUnlocked.unlockSpecAnalysis.find(
     (row) => row.unlockId === "unlock_1_on_plus_press_first",
   );
   assert.equal(
-    plusPressPossibleAllUnlocked?.status,
+    oneUnlockPossibleAllUnlocked?.status,
     "possible",
-    "all-unlocked scope marks plus-press unlock as possible when + is unlocked in config",
+    "all-unlocked scope marks total>=9 unlock as possible via increment path",
   );
-  const plusPressBlockedKeypadOnly = reportWithResetAndMinus.unlockSpecAnalysis.find(
+  const oneUnlockPossibleKeypadOnly = reportWithResetAndMinus.unlockSpecAnalysis.find(
     (row) => row.unlockId === "unlock_1_on_plus_press_first",
   );
   assert.equal(
-    plusPressBlockedKeypadOnly?.status,
-    "blocked",
-    "keypad-only scope blocks plus-press unlock when + is not present on keypad",
+    oneUnlockPossibleKeypadOnly?.status,
+    "possible",
+    "keypad-only scope marks total>=9 unlock as possible via ++ on keypad",
   );
 
   const highPositiveOnlyIncrement = withState(base, {

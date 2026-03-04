@@ -124,6 +124,7 @@ export const initialState = (): GameState => {
       },
     },
     keyPressCounts: {},
+    allocatorReturnPressCount: 0,
     unlocks: {
       valueExpression: {
         "0": false,
@@ -159,7 +160,7 @@ export const initialState = (): GameState => {
       execution: {
         "=": false,
         "++": true,
-        "--": true,
+        "--": false,
       },
       uiUnlocks: {
         storageVisible: false,

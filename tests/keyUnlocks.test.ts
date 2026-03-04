@@ -72,7 +72,7 @@ export const runKeyUnlocksTests = (): void => {
   assert.equal(isKeyUnlocked(base, "GRAPH"), false, "visualizer key starts locked");
   assert.equal(isKeyUnlocked(base, "="), false, "execution key starts locked");
   assert.equal(isKeyUnlocked(base, "++"), true, "default increment key remains unlocked");
-  assert.equal(isKeyUnlocked(base, "--"), true, "default decrement key remains unlocked");
+  assert.equal(isKeyUnlocked(base, "--"), false, "default decrement key starts locked");
 
   const valueUnlocked = withUnlock(base, "valueExpression", "1");
   assert.equal(isKeyUnlocked(valueUnlocked, "1"), true, "value-expression unlock is routed correctly");

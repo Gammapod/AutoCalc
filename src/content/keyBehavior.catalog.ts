@@ -127,7 +127,8 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   },
   {
     key: "--",
-    lockModel: "always_unlocked",
+    lockModel: "unlockable",
+    unlockPathPolicy: "catalog",
     primaryExpectation: "decrement_decreases_total",
     edgeCaseExpectation: "decrement_clears_pending_negative",
   },

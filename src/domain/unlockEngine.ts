@@ -4,6 +4,7 @@ import { getOperationSnapshot } from "./slotDrafting.js";
 import { OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import type {
   GameState,
+  AllocatorReturnPressCountAtLeastPredicate,
   OverflowErrorSeenPredicate,
   KeyPressCountAtLeastPredicate,
   OperationEqualsPredicate,
@@ -145,6 +146,18 @@ const analyzeOverflowErrorSeen: PredicateAnalyzer<OverflowErrorSeenPredicate> = 
   };
 };
 
+const analyzeAllocatorReturnPressCountAtLeast: PredicateAnalyzer<AllocatorReturnPressCountAtLeastPredicate> = (
+  predicate,
+  state,
+) => {
+  const currentCount = state.allocatorReturnPressCount ?? 0;
+  const isMet = currentCount >= predicate.count;
+  return {
+    isMet,
+    criteria: [{ label: `RETURN >= ${predicate.count.toString()}`, checked: isMet }],
+  };
+};
+
 const analyzeOperationEquals: PredicateAnalyzer<OperationEqualsPredicate> = (predicate, state) => {
   const slots = getOperationSnapshot(state.calculator, predicate.includeDrafting ?? true);
   const isMet =
@@ -185,6 +198,7 @@ const analyzers = {
   roll_ends_with_incrementing_run: analyzeRollEndsWithIncrementingRun,
   key_press_count_at_least: analyzeKeyPressCountAtLeast,
   overflow_error_seen: analyzeOverflowErrorSeen,
+  allocator_return_press_count_at_least: analyzeAllocatorReturnPressCountAtLeast,
 } as const;
 
 export const analyzeUnlockPredicate = (predicate: UnlockPredicate, state: GameState): UnlockPredicateAnalysis =>

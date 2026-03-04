@@ -131,4 +131,15 @@ export const runUnlockEngineTests = (): void => {
     "overflow_error_seen met",
   );
   assertCriteriaConsistency(overflowSeen, base, "overflow_error_seen unmet");
+
+  const allocatorReturnSeen: UnlockPredicate = { type: "allocator_return_press_count_at_least", count: 1 };
+  assertCriteriaConsistency(
+    allocatorReturnSeen,
+    {
+      ...base,
+      allocatorReturnPressCount: 1,
+    },
+    "allocator_return_press_count_at_least met",
+  );
+  assertCriteriaConsistency(allocatorReturnSeen, base, "allocator_return_press_count_at_least unmet");
 };

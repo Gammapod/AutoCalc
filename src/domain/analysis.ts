@@ -38,6 +38,7 @@ type CapabilityContext = {
   stepPlusOne: boolean;
   stepMinusOne: boolean;
   resetToZero: boolean;
+  allocatorReturnPress: boolean;
   formOperatorPlusOperand: boolean;
   rollGrowth: boolean;
   rollEqualRun: boolean;
@@ -74,6 +75,7 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
   const hasOne = isAvailable("1");
   const hasSomeDigit = Object.keys(state.unlocks.valueExpression).some((key) => isAvailable(key as Key));
   const hasSomeOperator = ["+", "-", "*", "/", "#", "\u27E1"].some((key) => isAvailable(key as Key));
+  const allocatorReturnPress = (state.allocatorReturnPressCount ?? 0) >= 1;
 
   const stepPlusOne = isAvailable("++") || (executeActivation && hasPlus && hasOne);
   const stepMinusOne = hasDecrementKey || (executeActivation && hasMinus && hasOne) || (executeActivation && hasPlus && hasNeg && hasOne);
@@ -82,14 +84,15 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
   const rollGrowth = executeActivation && (formOperatorPlusOperand || stepPlusOne || stepMinusOne);
   const rollEqualRun =
     executeActivation &&
-    ((hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable("*") && hasOne) || (isAvailable("/") && hasOne));
-  const rollIncrementingRun = executeActivation && hasPlus && hasOne;
+    (hasIncrementKey || (hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable("*") && hasOne) || (isAvailable("/") && hasOne));
+  const rollIncrementingRun = stepPlusOne;
 
   return {
     executeActivation,
     stepPlusOne,
     stepMinusOne,
     resetToZero,
+    allocatorReturnPress,
     formOperatorPlusOperand,
     rollGrowth,
     rollEqualRun,
@@ -132,6 +135,9 @@ const resolveCapability = (
       return false;
     }
     return isAvailable(predicate.key);
+  }
+  if (capability === "allocator_return_press") {
+    return caps.allocatorReturnPress;
   }
   return false;
 };
