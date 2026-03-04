@@ -16,9 +16,8 @@ export const snapOrder = (): readonly SnapId[] => SNAP_ORDER;
 
 export const buildShellViewModel = (state: GameState, interactionMode: InteractionMode = "calculator"): ShellViewModel => {
   const availableSnaps: SnapId[] = [];
-  const storageVisible = state.unlocks.uiUnlocks.storageVisible;
   availableSnaps.push("middle");
-  if (storageVisible && interactionMode === "modify") {
+  if (interactionMode === "modify") {
     availableSnaps.push("bottom");
   }
 

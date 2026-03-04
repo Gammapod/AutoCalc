@@ -7,6 +7,12 @@ export const runUiShellSnapAvailabilityTests = (): void => {
   const baseline = initialState();
   const baselineModel = buildShellViewModel(baseline);
   assert.deepEqual(baselineModel.availableSnaps, ["middle"], "default shell exposes middle snap only");
+  const baselineModifyModel = buildShellViewModel(baseline, "modify");
+  assert.deepEqual(
+    baselineModifyModel.availableSnaps,
+    ["middle", "bottom"],
+    "modify mode always exposes bottom snap for allocator/storage view",
+  );
 
   const withStorage: GameState = {
     ...baseline,
