@@ -4,14 +4,11 @@ subgraph Inputs ["Value Expression"]
     Ineg["±"]
     Ifrac["a/b"]
     Iroot["√"]
-    subgraph Constants ["Constants"]
-        Iim["i"]
-        Ipi["π"]
-        Ie["e"]
-        Idigits["0-9"]
-    end
+    Iim["i"]
+    Ipi["π"]
+    Ie["e"]
+    Idigits["0-9"]
 end
-    
 subgraph Utilities ["Utilities"]
     Uc["C"]
     Uce["CE"]
@@ -62,6 +59,7 @@ Ineg --> NZ
 Ominus --> Ineg
 Odiv --> Ifrac
 Oroot --> Iroot
+Omod --> Ipi
 
 Ifrac --> NQ
 Iroot --> NA
