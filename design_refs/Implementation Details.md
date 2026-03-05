@@ -108,14 +108,12 @@ mobile shell is currently the default rendering path unless overridden.
 Current rollback contract used for parity gates:
 
 1. Query param override has highest precedence:
-2. `?ui=legacy` (or alias `?ui=v1`) -> legacy path
-3. `?ui=mobile` (or alias `?ui=v2shell`) -> mobile path
+2. `?ui=legacy` -> legacy path
+3. `?ui=mobile` -> mobile path
 4. `?ui=desktop` -> desktop path
 4. Env fallback when query is absent:
 5. `UI_SHELL_TARGET=legacy|mobile|desktop` -> selected path
-6. Legacy env fallback: `USE_NEW_UI_SHELL=false` -> legacy path
-7. Legacy env fallback: `USE_NEW_UI_SHELL=true` -> mobile path
-8. Default fallback -> mobile path
+6. Default fallback -> mobile path
 
 Baseline parity checklist for Phase 1 is tracked in `docs/ui-parity-checklist-phase1.md`.
 

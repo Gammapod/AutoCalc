@@ -43,6 +43,7 @@ import { runUiModuleChecklistV2Tests } from "./uiModule.checklist.v2.test.js";
 import { runUiModuleAllocatorV2Tests } from "./uiModule.allocator.v2.test.js";
 import { runUiModuleGrapherV2Tests } from "./uiModule.grapher.v2.test.js";
 import { runUiModuleVisualizerHostV2Tests } from "./uiModule.visualizerHost.v2.test.js";
+import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
 import { runKeyUnlocksTests } from "./keyUnlocks.test.js";
 import { runLayoutRulesInvariantTests } from "./layoutRules.invariant.test.js";
 import { runLayoutRulesEquivalenceTests } from "./layoutRules.equivalence.test.js";
@@ -95,6 +96,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-shell/touch-rearrange-bottom-snap-gate", runUiShellTouchRearrangeBottomSnapGateTests],
   ["ui-module/checklist-v2", runUiModuleChecklistV2Tests],
   ["ui-module/allocator-v2", runUiModuleAllocatorV2Tests],
+  ["ui-module/calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
   ["v2/import-boundary", runV2ImportBoundaryTests],

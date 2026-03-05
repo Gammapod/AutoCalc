@@ -1491,6 +1491,15 @@ export type RenderOptions = {
   inputBlocked?: boolean;
 };
 
+export const resolveCalculatorKeysLocked = (
+  interactionMode: "calculator" | "modify",
+  inputBlocked: boolean,
+  uiShell: string | null,
+): boolean => {
+  const isDesktopShell = uiShell === "desktop";
+  return inputBlocked || (interactionMode === "modify" && !isDesktopShell);
+};
+
 export const render = (
   root: Element,
   state: GameState,
@@ -1512,8 +1521,11 @@ export const render = (
 
   const interactionMode = options.interactionMode ?? "calculator";
   const inputBlocked = options.inputBlocked ?? false;
-  const isDesktopShell = document.body.getAttribute("data-ui-shell") === "desktop";
-  const calculatorKeysLocked = inputBlocked || (interactionMode === "modify" && !isDesktopShell);
+  const calculatorKeysLocked = resolveCalculatorKeysLocked(
+    interactionMode,
+    inputBlocked,
+    document.body.getAttribute("data-ui-shell"),
+  );
   const storageLocked = inputBlocked || interactionMode === "calculator";
   if (root instanceof HTMLElement) {
     root.dataset.interactionMode = interactionMode;

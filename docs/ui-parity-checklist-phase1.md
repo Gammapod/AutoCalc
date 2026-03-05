@@ -7,8 +7,8 @@ Purpose: functional parity gate before and after removing `src_v2 -> src/ui` run
 1. Build: `npm run build:web`
 2. Serve: `npm run dev:serve`
 3. Test URLs:
-4. `http://localhost:4173/index.html?ui=v1`
-5. `http://localhost:4173/index.html?ui=v2shell`
+4. `http://localhost:4173/index.html?ui=legacy`
+5. `http://localhost:4173/index.html?ui=mobile`
 
 ## Pass/Fail Matrix
 

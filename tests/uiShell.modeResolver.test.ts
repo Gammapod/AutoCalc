@@ -33,29 +33,14 @@ export const runUiShellModeResolverTests = (): void => {
     "UI_SHELL_TARGET mobile is honored when query is absent",
   );
   assert.equal(
-    resolveUiShellMode("http://localhost/index.html?ui=v1", { UI_SHELL_TARGET: "desktop" }),
-    "legacy",
-    "v1 alias still maps to legacy mode",
+    resolveUiShellMode("http://localhost/index.html?ui=invalid", { UI_SHELL_TARGET: "desktop" }),
+    "desktop",
+    "invalid query values are ignored in favor of valid env target",
   );
   assert.equal(
-    resolveUiShellMode("http://localhost/index.html?ui=v2shell", { UI_SHELL_TARGET: "desktop" }),
+    resolveUiShellMode("http://localhost/index.html", { UI_SHELL_TARGET: "invalid" }),
     "mobile",
-    "v2shell alias still maps to mobile mode",
-  );
-  assert.equal(
-    resolveUiShellMode("http://localhost/index.html", { USE_NEW_UI_SHELL: "false" }),
-    "legacy",
-    "legacy boolean env fallback remains supported",
-  );
-  assert.equal(
-    resolveUiShellMode("http://localhost/index.html", { USE_NEW_UI_SHELL: "true" }),
-    "mobile",
-    "mobile boolean env fallback remains supported",
-  );
-  assert.equal(
-    resolveUiShellMode("http://localhost/index.html", { UI_SHELL_TARGET: "invalid", USE_NEW_UI_SHELL: "invalid" }),
-    "mobile",
-    "invalid env values fall back to mobile default",
+    "missing/invalid env and query falls back to mobile default",
   );
   assert.equal(
     resolveUiShellMode("http://localhost/index.html"),
