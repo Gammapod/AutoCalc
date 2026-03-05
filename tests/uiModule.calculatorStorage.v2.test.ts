@@ -13,11 +13,6 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
     "mobile modify mode keeps keypad buttons locked",
   );
   assert.equal(
-    resolveCalculatorKeysLocked("modify", false, "legacy"),
-    true,
-    "legacy shell keeps modify keypad locked",
-  );
-  assert.equal(
     resolveCalculatorKeysLocked("calculator", false, "desktop"),
     false,
     "calculator mode keeps keypad buttons available",

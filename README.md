@@ -49,39 +49,25 @@ npm run dev:serve
 
 Then open: `http://localhost:4173/index.html`
 
-### UI Shell Modes (legacy + mobile + desktop)
+### UI Shell Modes (mobile + desktop)
 
 The app now supports explicit shell targets in parallel:
 
 - Default behavior: uses mobile shell.
 - Shell mode resolution order:
-  1. Query param override (`?ui=legacy|mobile|desktop`)
+  1. Query param override (`?ui=mobile|desktop`)
   2. Build/runtime env target `UI_SHELL_TARGET`
   3. Default fallback (`mobile`)
 - Env override:
-  - `UI_SHELL_TARGET=legacy|mobile|desktop`
+  - `UI_SHELL_TARGET=mobile|desktop`
 - Query param overrides (recommended for local testing):
   - mobile shell: `http://localhost:4173/index.html?ui=mobile`
   - desktop shell: `http://localhost:4173/index.html?ui=desktop`
-  - legacy shell: `http://localhost:4173/index.html?ui=legacy`
 
 In browser devtools, verify active shell via body attribute:
 
 - `data-ui-shell="mobile"` for mobile shell
 - `data-ui-shell="desktop"` for desktop shell
-- `data-ui-shell="legacy"` for legacy shell
-
-### Baseline Rollback Contract (Phase 0)
-
-Current rollback contract before legacy extraction:
-
-1. mobile shell remains default.
-2. `?ui=legacy` forces legacy renderer path.
-3. `?ui=mobile` forces mobile shell path.
-4. `?ui=desktop` forces desktop shell path.
-5. `UI_SHELL_TARGET=legacy|mobile|desktop` selects shell target when query override is absent.
-
-Phase 1 parity checklist: `docs/ui-parity-checklist-phase1.md`
 
 ### Mobile Shell Manual Test Checklist
 
@@ -116,7 +102,7 @@ Includes dedicated shell tests:
 2. Add a small in-app dev indicator for active snap id to accelerate manual QA.
 3. Harden desktop/tablet CSS tuning for wider viewports while keeping current interaction model.
 4. Continue mobile-first key-management redesign (replace drag-heavy interactions).
-5. After desktop beta stabilization, remove legacy rollback route (`?ui=legacy`) from production routing.
+5. Continue desktop/mobile shell refinement while preserving behavior parity.
 
 ## Windows Portable EXE
 
@@ -125,6 +111,9 @@ Build a Windows portable executable (no installer):
 ```bash
 npm run build:desktop
 ```
+
+Portable `.exe` runtime defaults to desktop shell (`?ui=desktop` at Electron entrypoint).
+Browser-hosted play defaults to mobile shell unless `?ui=desktop` is explicitly provided.
 
 Release build (verify + package):
 

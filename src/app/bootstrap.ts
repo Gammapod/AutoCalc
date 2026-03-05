@@ -2,7 +2,7 @@ import { createStore } from "./store.js";
 import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { playProgrammaticKeyPressFeedback, render } from "../ui/render.js";
+import { playProgrammaticKeyPressFeedback } from "../../src_v2/ui/modules/calculatorStorageLegacyParity.js";
 import { createShellRenderer } from "../../src_v2/ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
 import { createResetCalculatorState } from "../domain/reducer.stateBuilders.js";
@@ -237,19 +237,11 @@ const uiShellMode = resolveUiShellMode(window.location, {
   ...importMetaEnv,
 });
 
-const shellRenderer =
-  uiShellMode === "mobile" || uiShellMode === "desktop" ? createShellRenderer(root, { mode: uiShellMode }) : null;
+const shellRenderer = createShellRenderer(root, { mode: uiShellMode });
 document.body.setAttribute("data-ui-shell", uiShellMode);
 
 const renderApp = (state: GameState): void => {
-  if (shellRenderer) {
-    shellRenderer.render(state, dispatchWithRuntimeGate, {
-      interactionMode: interactionRuntime.getMode(),
-      inputBlocked: interactionRuntime.isInputBlocked(),
-    });
-    return;
-  }
-  render(root, state, dispatchWithRuntimeGate, {
+  shellRenderer.render(state, dispatchWithRuntimeGate, {
     interactionMode: interactionRuntime.getMode(),
     inputBlocked: interactionRuntime.isInputBlocked(),
   });

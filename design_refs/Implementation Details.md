@@ -97,25 +97,24 @@ Layout model supports:
 
 UI shell mode resolves to:
 
-- `legacy` when explicitly requested
 - `mobile` by default
 - `desktop` when explicitly requested
 
 mobile shell is currently the default rendering path unless overridden.
 
-### Baseline rollback contract (pre-legacy-removal)
-
-Current rollback contract used for parity gates:
+Current contract:
 
 1. Query param override has highest precedence:
-2. `?ui=legacy` -> legacy path
-3. `?ui=mobile` -> mobile path
-4. `?ui=desktop` -> desktop path
+2. `?ui=mobile` -> mobile path
+3. `?ui=desktop` -> desktop path
 4. Env fallback when query is absent:
-5. `UI_SHELL_TARGET=legacy|mobile|desktop` -> selected path
+5. `UI_SHELL_TARGET=mobile|desktop` -> selected path
 6. Default fallback -> mobile path
 
-Baseline parity checklist for Phase 1 is tracked in `docs/ui-parity-checklist-phase1.md`.
+Packaging/runtime defaults:
+
+1. Browser-hosted usage defaults to mobile shell.
+2. Windows portable Electron entrypoint defaults to desktop shell.
 
 ## Persistence Contract
 

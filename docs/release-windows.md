@@ -7,6 +7,7 @@ This runbook covers signed Windows x64 portable releases published via GitHub Re
 - Artifact type: Windows portable `.exe`
 - Distribution channel: GitHub Releases
 - Workflow: `.github/workflows/release-win-portable.yml`
+- Runtime default shell inside `.exe`: desktop (`?ui=desktop` at Electron entrypoint)
 
 ## One-time setup
 

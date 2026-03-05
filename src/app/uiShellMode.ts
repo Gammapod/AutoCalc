@@ -1,9 +1,9 @@
-export type UiShellMode = "legacy" | "mobile" | "desktop";
+export type UiShellMode = "mobile" | "desktop";
 
 type LocationLike = { href: string } | URL | string;
 type EnvLike = Record<string, unknown> | undefined;
 
-const VALID_TARGETS = new Set<UiShellMode>(["legacy", "mobile", "desktop"]);
+const VALID_TARGETS = new Set<UiShellMode>(["mobile", "desktop"]);
 
 const toShellTarget = (value: unknown): UiShellMode | null => {
   if (typeof value !== "string") {

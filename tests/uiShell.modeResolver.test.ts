@@ -4,8 +4,8 @@ import { resolveUiShellMode } from "../src/app/uiShellMode.js";
 export const runUiShellModeResolverTests = (): void => {
   assert.equal(
     resolveUiShellMode("http://localhost/index.html?ui=legacy", { UI_SHELL_TARGET: "mobile" }),
-    "legacy",
-    "query override forces legacy even when env requests mobile",
+    "mobile",
+    "legacy query value is deprecated and falls back to mobile",
   );
   assert.equal(
     resolveUiShellMode("http://localhost/index.html?ui=mobile", { UI_SHELL_TARGET: "legacy" }),
@@ -19,8 +19,8 @@ export const runUiShellModeResolverTests = (): void => {
   );
   assert.equal(
     resolveUiShellMode("http://localhost/index.html", { UI_SHELL_TARGET: "legacy" }),
-    "legacy",
-    "UI_SHELL_TARGET legacy is honored when query is absent",
+    "mobile",
+    "legacy env target is deprecated and falls back to mobile",
   );
   assert.equal(
     resolveUiShellMode("http://localhost/index.html", { UI_SHELL_TARGET: "desktop" }),
