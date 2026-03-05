@@ -1,9 +1,8 @@
 import type { Action, GameState } from "../../../src/domain/types.js";
 import type { InteractionMode } from "../../../src/app/interactionRuntime.js";
-import { renderCalculatorV2Module } from "./calculatorRenderer.js";
-import { renderStorageV2Module } from "./storageRenderer.js";
+import { render as renderParity } from "./calculatorStorageLegacyParity.js";
 
-export const renderCalculatorStorageV2Module = (
+export const renderCalculatorV2Module = (
   root: Element,
   state: GameState,
   dispatch: (action: Action) => unknown,
@@ -12,10 +11,10 @@ export const renderCalculatorStorageV2Module = (
     inputBlocked: boolean;
   },
 ): void => {
-  renderCalculatorV2Module(root, state, dispatch, {
+  renderParity(root, state, dispatch, {
+    skipChecklist: true,
+    skipGraph: true,
     interactionMode: options.interactionMode,
     inputBlocked: options.inputBlocked,
   });
-  renderStorageV2Module(root, state, dispatch);
 };
-

@@ -10,6 +10,9 @@
   "scripts": {
     "build": "npm run build:web",
     "build:web": "tsc -p tsconfig.json && node ./scripts/generate-unlock-graph-report.mjs",
+    "build:mobile:webassets": "npm run build:web && node ./scripts/build-mobile-webassets.mjs",
+    "mobile:android:sync": "npm run build:mobile:webassets && node ./scripts/mobile-android-sync.mjs",
+    "build:android:apk": "npm run mobile:android:sync && node ./scripts/build-android-apk.mjs",
     "build:desktop": "npm run build:web && node ./scripts/build-desktop.mjs",
     "build:watch": "tsc -w -p tsconfig.json",
     "ci:verify": "npm run build:web && node ./dist/tests/run-tests.js",
@@ -18,12 +21,15 @@
     "test": "npm run ci:verify"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
     "@types/node": "^25.3.0",
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12",
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
     "algebrite": "^1.4.0",
     "chart.js": "^4.4.3",
     "katex": "^0.16.33"

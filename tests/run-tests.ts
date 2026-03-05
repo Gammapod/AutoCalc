@@ -46,6 +46,7 @@ import { runUiModuleVisualizerHostV2Tests } from "./uiModule.visualizerHost.v2.t
 import { runKeyUnlocksTests } from "./keyUnlocks.test.js";
 import { runLayoutRulesInvariantTests } from "./layoutRules.invariant.test.js";
 import { runLayoutRulesEquivalenceTests } from "./layoutRules.equivalence.test.js";
+import { runV2ImportBoundaryTests } from "./v2ImportBoundary.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -96,6 +97,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/allocator-v2", runUiModuleAllocatorV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
+  ["v2/import-boundary", runV2ImportBoundaryTests],
 ];
 
 let passed = 0;

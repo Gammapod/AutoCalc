@@ -97,10 +97,27 @@ Layout model supports:
 
 UI shell mode resolves to:
 
-- `v1` when explicitly requested
-- `v2` by default
+- `legacy` when explicitly requested
+- `mobile` by default
+- `desktop` when explicitly requested
 
-v2 shell is currently the default rendering path unless overridden.
+mobile shell is currently the default rendering path unless overridden.
+
+### Baseline rollback contract (pre-legacy-removal)
+
+Current rollback contract used for parity gates:
+
+1. Query param override has highest precedence:
+2. `?ui=legacy` (or alias `?ui=v1`) -> legacy path
+3. `?ui=mobile` (or alias `?ui=v2shell`) -> mobile path
+4. `?ui=desktop` -> desktop path
+4. Env fallback when query is absent:
+5. `UI_SHELL_TARGET=legacy|mobile|desktop` -> selected path
+6. Legacy env fallback: `USE_NEW_UI_SHELL=false` -> legacy path
+7. Legacy env fallback: `USE_NEW_UI_SHELL=true` -> mobile path
+8. Default fallback -> mobile path
+
+Baseline parity checklist for Phase 1 is tracked in `docs/ui-parity-checklist-phase1.md`.
 
 ## Persistence Contract
 

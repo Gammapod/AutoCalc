@@ -1399,7 +1399,7 @@
         color: #1b212b;
       }
 
-      body[data-ui-shell="v2"] {
+      body[data-ui-shell="mobile"] {
         padding: 0;
         margin: 0;
         min-height: 100vh;
@@ -1408,22 +1408,22 @@
         overflow: hidden;
       }
 
-      body[data-ui-shell="v2"] .app-shell {
+      body[data-ui-shell="mobile"] .app-shell {
         width: min(100vw, 520px);
         max-width: 520px;
         height: 100%;
         margin: 0 auto;
       }
 
-      body[data-ui-shell="v2"] #app.app-layout {
+      body[data-ui-shell="mobile"] #app.app-layout {
         display: block;
         width: 100%;
         max-width: none;
         min-width: 0;
       }
 
-      body[data-ui-shell="v2"] #app > .play-area,
-      body[data-ui-shell="v2"] #app > .checklist-shell {
+      body[data-ui-shell="mobile"] #app > .play-area,
+      body[data-ui-shell="mobile"] #app > .checklist-shell {
         display: none;
       }
 
@@ -1485,7 +1485,7 @@
         max-width: none;
       }
 
-      body[data-ui-shell="v2"] .storage {
+      body[data-ui-shell="mobile"] .storage {
         margin: 0;
       }
 
@@ -1534,25 +1534,25 @@
         margin: 0;
       }
 
-      body[data-ui-shell="v2"] .device--calc {
+      body[data-ui-shell="mobile"] .device--calc {
         height: 100%;
       }
 
-      body[data-ui-shell="v2"] .calc {
+      body[data-ui-shell="mobile"] .calc {
         height: 100%;
         display: flex;
         flex-direction: column;
       }
 
-      body[data-ui-shell="v2"] .slot {
+      body[data-ui-shell="mobile"] .slot {
         flex: 0 0 auto;
       }
 
-      body[data-ui-shell="v2"] .display-stack {
+      body[data-ui-shell="mobile"] .display-stack {
         flex: 0 0 auto;
       }
 
-      body[data-ui-shell="v2"] [data-keys] {
+      body[data-ui-shell="mobile"] [data-keys] {
         margin-top: 12px;
         flex: 1 1 auto;
         min-height: 0;
@@ -1560,43 +1560,43 @@
         grid-auto-rows: minmax(44px, 1fr);
       }
 
-      body[data-ui-shell="v2"] [data-keys] > .key,
-      body[data-ui-shell="v2"] [data-keys] > .placeholder {
+      body[data-ui-shell="mobile"] [data-keys] > .key,
+      body[data-ui-shell="mobile"] [data-keys] > .placeholder {
         height: 100%;
       }
 
-      body[data-ui-shell="v2"] .roll {
+      body[data-ui-shell="mobile"] .roll {
         display: none;
       }
 
-      body[data-ui-shell="v2"] .v2-visualizer-host {
+      body[data-ui-shell="mobile"] .v2-visualizer-host {
         display: block;
         margin-bottom: 8px;
       }
 
-      body[data-ui-shell="v2"] .v2-visualizer-host[data-v2-visualizer-panel="none"] {
+      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-panel="none"] {
         display: none;
       }
 
-      body[data-ui-shell="v2"] [data-v2-visualizer-host] .calc-grapher {
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher {
         margin-bottom: 0;
       }
 
-      body[data-ui-shell="v2"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
         max-height: 280px;
         transform: translateY(0);
         opacity: 1;
         pointer-events: auto;
       }
 
-      body[data-ui-shell="v2"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher {
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher {
         max-height: 0;
         transform: translateY(16px);
         opacity: 0;
         pointer-events: none;
       }
 
-      body[data-ui-shell="v2"] .v2-feed-panel {
+      body[data-ui-shell="mobile"] .v2-feed-panel {
         display: none;
         height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
         overflow: hidden;
@@ -1611,15 +1611,15 @@
         justify-content: flex-end;
       }
 
-      body[data-ui-shell="v2"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
         display: flex;
       }
 
-      body[data-ui-shell="v2"] .v2-feed-panel .roll-line {
+      body[data-ui-shell="mobile"] .v2-feed-panel .roll-line {
         grid-template-columns: 3ch minmax(0, 1fr) auto;
       }
 
-      body[data-ui-shell="v2"] [data-storage-keys] {
+      body[data-ui-shell="mobile"] [data-storage-keys] {
         max-height: min(52vh, 420px);
         overflow-y: auto;
         overscroll-behavior: contain;
@@ -1773,7 +1773,7 @@
           justify-self: center;
         }
 
-        body[data-ui-shell="v2"] .v2-bottom-drawer-panel .checklist-shell {
+        body[data-ui-shell="mobile"] .v2-bottom-drawer-panel .checklist-shell {
           width: 100%;
           justify-self: stretch;
         }
@@ -1796,7 +1796,7 @@
           --gap: 8px;
         }
 
-        body[data-ui-shell="v2"] .v2-stack-viewport {
+        body[data-ui-shell="mobile"] .v2-stack-viewport {
           height: 100vh;
           height: 100dvh;
           min-height: 0;
@@ -1929,3 +1929,4 @@
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>
+

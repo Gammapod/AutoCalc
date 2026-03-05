@@ -7,7 +7,7 @@ export {
   formatKeyLabel,
   formatOperatorForDisplay,
   getKeyVisualGroup,
-} from "../../../src/ui/shared/renderReadModel.js";
+} from "./readModel.js";
 
 export type GraphPoint = {
   x: number;

@@ -1,6 +1,6 @@
 import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG } from "../../../src/domain/state.js";
 import type { GameState } from "../../../src/domain/types.js";
-import { buildRollViewModel } from "../../../src/ui/shared/renderReadModel.js";
+import { buildRollViewModel } from "../shared/readModel.js";
 import { clearGrapherV2Module, renderGrapherV2Module } from "./grapherRenderer.js";
 
 export type VisualizerHostPanel = "none" | "graph" | "feed";

@@ -236,8 +236,8 @@ const uiShellMode = resolveUiShellMode(window.location, {
   ...importMetaEnv,
 });
 
-const useV2ShellRenderer = uiShellMode === "v2";
-const shellRenderer = useV2ShellRenderer ? createShellRenderer(root) : null;
+const shellRenderer =
+  uiShellMode === "mobile" || uiShellMode === "desktop" ? createShellRenderer(root, { mode: uiShellMode }) : null;
 document.body.setAttribute("data-ui-shell", uiShellMode);
 
 const renderApp = (state: GameState): void => {

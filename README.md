@@ -49,30 +49,47 @@ npm run dev:serve
 
 Then open: `http://localhost:4173/index.html`
 
-### UI Shell Modes (v1 + v2 shell)
+### UI Shell Modes (legacy + mobile + desktop)
 
-The app now supports a feature-flagged v2 mobile shell in parallel with the existing UI.
+The app now supports explicit shell targets in parallel:
 
-- Default behavior: uses v2 shell.
+- Default behavior: uses mobile shell.
 - Shell mode resolution order:
-  1. Query param override (`?ui=v1` or `?ui=v2shell`)
-  2. Build/runtime env flag `USE_NEW_UI_SHELL`
-  3. Default fallback (`v2`)
+  1. Query param override (`?ui=legacy|mobile|desktop`)
+  2. Build/runtime env target `UI_SHELL_TARGET`
+  3. Legacy env fallback `USE_NEW_UI_SHELL`
+  4. Default fallback (`mobile`)
 - Env override:
-  - `USE_NEW_UI_SHELL=false` forces v1 UI
-  - `USE_NEW_UI_SHELL=true` forces v2 shell
+  - `UI_SHELL_TARGET=legacy|mobile|desktop`
+  - Backward compatibility: `USE_NEW_UI_SHELL=false|true`
 - Query param overrides (recommended for local testing):
-  - v2 shell: `http://localhost:4173/index.html?ui=v2shell`
-  - force v1 UI: `http://localhost:4173/index.html?ui=v1`
+  - mobile shell: `http://localhost:4173/index.html?ui=mobile`
+  - desktop shell: `http://localhost:4173/index.html?ui=desktop`
+  - legacy shell: `http://localhost:4173/index.html?ui=legacy`
+  - Backward compatibility aliases: `?ui=v2shell` and `?ui=v1`
 
 In browser devtools, verify active shell via body attribute:
 
-- `data-ui-shell="v2"` for v2 shell
-- `data-ui-shell="v1"` for legacy UI
+- `data-ui-shell="mobile"` for mobile shell
+- `data-ui-shell="desktop"` for desktop shell
+- `data-ui-shell="legacy"` for legacy shell
 
-### v2 Shell Manual Test Checklist
+### Baseline Rollback Contract (Phase 0)
 
-With `?ui=v2shell`:
+Current rollback contract before legacy extraction:
+
+1. mobile shell remains default.
+2. `?ui=legacy` forces legacy renderer path.
+3. `?ui=mobile` forces mobile shell path.
+4. `?ui=desktop` forces desktop shell path.
+5. `UI_SHELL_TARGET=legacy|mobile|desktop` selects shell target when query override is absent.
+6. `USE_NEW_UI_SHELL=false|true` remains supported as legacy/mobile fallback.
+
+Phase 1 parity checklist: `docs/ui-parity-checklist-phase1.md`
+
+### Mobile Shell Manual Test Checklist
+
+With `?ui=mobile` (or alias `?ui=v2shell`):
 
 1. Confirm default snap is middle (display + keypad).
 2. Toggle `GRAPH` on and verify top snap becomes available.
@@ -102,8 +119,8 @@ Includes dedicated shell tests:
 1. Add integration-style DOM tests for pointer gesture edge cases (right-edge open zone, storage boundary handoff).
 2. Add a small in-app dev indicator for active snap id to accelerate manual QA.
 3. Harden desktop/tablet CSS tuning for wider viewports while keeping current interaction model.
-4. Start v2 slice for mobile-first key-management redesign (replace drag-heavy interactions).
-5. After QA stabilization, flip default to v2 shell and keep `?ui=v1` rollback during soak period.
+4. Continue mobile-first key-management redesign (replace drag-heavy interactions).
+5. After desktop beta stabilization, remove legacy rollback alias (`?ui=v1` / `?ui=legacy`) from production routing.
 
 ## Windows Portable EXE
 
@@ -142,3 +159,21 @@ git push origin vX.Y.Z
 ```
 
 See `docs/release-windows.md` for full operational runbook and troubleshooting.
+
+## Android APK (Sideload First)
+
+Build mobile web assets + sync Capacitor Android + assemble release APK:
+
+```bash
+npm run build:android:apk
+```
+
+Intermediate commands:
+
+```bash
+npm run build:mobile:webassets
+npm run mobile:android:sync
+```
+
+CI workflow: `.github/workflows/release-android-apk.yml`  
+Runbook: `docs/release-android.md`
