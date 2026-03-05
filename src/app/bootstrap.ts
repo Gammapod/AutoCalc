@@ -57,6 +57,7 @@ const applyMaxPointsButton = document.querySelector<HTMLButtonElement>("[data-de
 const runAnalysisButton = document.querySelector<HTMLButtonElement>("[data-debug-run-analysis]");
 const analysisAllUnlockedCheckbox = document.querySelector<HTMLInputElement>("[data-debug-analysis-all-unlocked]");
 const analysisReportEl = document.querySelector<HTMLElement>("[data-debug-analysis-report]");
+const toggleUiShellLink = document.querySelector<HTMLAnchorElement>("[data-debug-toggle-ui-shell]");
 const allocatorDeviceEl = document.querySelector<HTMLElement>("[data-allocator-device]");
 
 const allocatorUnusedEl = document.querySelector<HTMLElement>("[data-allocator-unused]");
@@ -99,6 +100,7 @@ if (
   !runAnalysisButton ||
   !analysisAllUnlockedCheckbox ||
   !analysisReportEl ||
+  !toggleUiShellLink ||
   !allocatorDeviceEl ||
   !allocatorUnusedEl ||
   !allocatorWidthValueEl ||
@@ -133,12 +135,12 @@ type AllocatorLabelKey = "lambda" | "width" | "height" | "range" | "speed" | "sl
 
 const renderAllocatorLabels = (): void => {
   const labelsByKey = new Map<AllocatorLabelKey, { latex: string; fallback: string; ariaLabel: string }>([
-    ["lambda", { latex: String.raw`= \lambda = m+n+R+t+S`, fallback: "= lambda", ariaLabel: "equals lambda" }],
-    ["width", {  latex: String.raw`= m                            (m\leftrightarrow\,,0,0,0,0)`, fallback: "= <-> m", ariaLabel: "equals left right arrow m" }],
-    ["height", { latex: String.raw`= n                            (0,n\updownarrow\,0,0,0)`, fallback: "= ^v n", ariaLabel: "equals up down arrow n" }],
-    ["range", {  latex: String.raw`= R                            (0,0,[-R,R],0,0)`, fallback: "= R", ariaLabel: "equals R" }],
-    ["speed", {  latex: String.raw`= t                            (0,0,0,\frac{ΔT}{1.05^t},0)`, fallback: "= t", ariaLabel: "equals t" }],
-    ["slots", {  latex: String.raw`= S                            (0,0,0,0,S[\ \_\ \_\ ])`, fallback: "= S", ariaLabel: "equals S" }],
+    ["lambda", { latex: String.raw`= \lambda - (m + n + R + t + S)`, fallback: "= lambda", ariaLabel: "equals lambda" }],
+    ["width", {  latex: String.raw`= m (m\leftrightarrow\,,0,0,0,0)`, fallback: "= <-> m", ariaLabel: "equals left right arrow m" }],
+    ["height", { latex: String.raw`= n (0,n\updownarrow\,0,0,0)`, fallback: "= ^v n", ariaLabel: "equals up down arrow n" }],
+    ["range", {  latex: String.raw`= R (0,0,[-R,R],0,0)`, fallback: "= R", ariaLabel: "equals R" }],
+    ["speed", {  latex: String.raw`= t (0,0,0,\frac{ΔT}{1.05^t},0)`, fallback: "= t", ariaLabel: "equals t" }],
+    ["slots", {  latex: String.raw`= S (0,0,0,0,S[\ \_\ \_\ ])`, fallback: "= S", ariaLabel: "equals S" }],
   ]);
   const katexApi = window.katex;
   for (const labelEl of allocatorLabelEls) {
@@ -261,8 +263,24 @@ const uiShellMode = resolveUiShellMode(window.location, {
   ...importMetaEnv,
 });
 
+const getOppositeUiShellMode = (mode: "mobile" | "desktop"): "mobile" | "desktop" =>
+  mode === "mobile" ? "desktop" : "mobile";
+
+const getUiShellToggleUrl = (mode: "mobile" | "desktop"): string => {
+  const url = new URL(window.location.href);
+  url.searchParams.set("ui", getOppositeUiShellMode(mode));
+  return url.toString();
+};
+
+const syncUiShellToggleLink = (): void => {
+  const targetMode = getOppositeUiShellMode(uiShellMode);
+  toggleUiShellLink.textContent = `Switch to ${targetMode === "desktop" ? "Desktop" : "Mobile"} UI`;
+  toggleUiShellLink.setAttribute("href", getUiShellToggleUrl(uiShellMode));
+};
+
 const shellRenderer = createShellRenderer(root, { mode: uiShellMode });
 document.body.setAttribute("data-ui-shell", uiShellMode);
+syncUiShellToggleLink();
 
 const renderApp = (state: GameState): void => {
   shellRenderer.render(state, dispatchWithRuntimeGate, {
@@ -402,6 +420,11 @@ runAnalysisButton.addEventListener("click", () => {
     useAllUnlockedKeys: analysisAllUnlockedCheckbox.checked,
   });
   analysisReportEl.textContent = formatNumberDomainReport(report, state);
+});
+
+toggleUiShellLink.addEventListener("click", (event) => {
+  event.preventDefault();
+  window.location.assign(getUiShellToggleUrl(uiShellMode));
 });
 
 const bindAllocatorStep = (button: HTMLButtonElement, field: AllocatorAllocationField, delta: 1 | -1): void => {
