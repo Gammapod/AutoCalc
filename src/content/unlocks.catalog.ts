@@ -92,7 +92,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_c_on_increment_run_4",
-    description: "Reset and regroup.",
+    description: "Reset.",
     predicate: { type: "allocator_allocate_press_count_at_least", count: 1 },
     effect: { type: "unlock_utility", key: "C" },
     once: true,
@@ -102,7 +102,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_neg_on_alt_sign_abs_run_7",
-    description: "Flip every step.",
+    description: "Flip the sign for a bit.",
     predicate: { type: "roll_ends_with_alternating_sign_constant_abs_run", length: 7 },
     effect: { type: "unlock_digit", key: "NEG" },
     once: true,
@@ -112,7 +112,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_mul_on_constant_step_gt1_run_7",
-    description: "Stride in equal jumps.",
+    description: "Add for a bit.",
     predicate: { type: "roll_ends_with_constant_step_run", length: 7, minAbsStep: 2n },
     effect: { type: "unlock_slot_operator", key: "*" },
     once: true,
@@ -122,7 +122,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_ce_on_first_division_by_zero",
-    description: "Recover from undefined.",
+    description: "NaN.",
     predicate: { type: "division_by_zero_error_seen" },
     effect: { type: "unlock_utility", key: "CE" },
     once: true,
@@ -132,7 +132,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_hash_on_exact_run_47_to_5_by_7",
-    description: "Follow this exact trail.",
+    description: "How many times does 7 go into 47?\nAnd what's left?",
     predicate: { type: "roll_ends_with_sequence", sequence: [47n, 40n, 33n, 26n, 19n, 12n, 5n] },
     effect: { type: "unlock_slot_operator", key: "#" },
     once: true,
@@ -142,7 +142,7 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_mod_on_difficult_first_euclid_equivalence",
-    description: "Difficult: make # collapse to modulo.",
+    description: "Difficult: Return the remainder.",
     predicate: { type: "operation_first_euclid_equivalent_modulo" },
     effect: { type: "unlock_slot_operator", key: "\u27E1" },
     once: true,

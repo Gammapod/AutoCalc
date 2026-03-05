@@ -211,7 +211,7 @@ const getUnlockName = (effect: UnlockEffect): string => {
     return "maxTotalDigits";
   }
   if (effect.type === "increase_allocator_max_points") {
-    return "maxPoints";
+    return "λ++";
   }
   if (effect.type === "upgrade_keypad_column") {
     return "keypadCols";

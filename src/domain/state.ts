@@ -103,7 +103,7 @@ export const initialState = (): GameState => {
       draftingSlot: null,
     },
     allocator: {
-      maxPoints: 1,
+      maxPoints: 0,
       allocations: {
         width: 0,
         height: 0,
