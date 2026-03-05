@@ -75,19 +75,6 @@ jobs:
             throw "Expected clean checkout before release workflow steps."
           }
 
-      - name: Validate signing secrets
-        shell: pwsh
-        env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) {
-            throw "Missing release environment secret WIN_CSC_LINK."
-          }
-          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)) {
-            throw "Missing release environment secret WIN_CSC_KEY_PASSWORD."
-          }
-
       - name: Install dependencies
         run: npm ci
 
