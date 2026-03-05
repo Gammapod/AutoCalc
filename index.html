@@ -57,6 +57,26 @@
         --v2-storage-peek: clamp(120px, 18dvh, 180px);
         --v2-feed-visible-rows: 7;
         --v2-visualizer-window-height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
+        --allocator-surface-top: #8e96a3;
+        --allocator-surface-bottom: #6a7281;
+        --allocator-surface-stroke: #4e5665;
+        --allocator-panel-top: #161c24;
+        --allocator-panel-bottom: #0f141c;
+        --allocator-display-stroke: #566173;
+        --allocator-display-glow: rgba(188, 255, 214, 0.3);
+        --allocator-title-ink: #d5e9de;
+        --allocator-label-ink: #acd8c2;
+        --allocator-step-top: #c5ccd6;
+        --allocator-step-bottom: #9fa8b6;
+        --allocator-step-stroke: #5c6778;
+        --allocator-mode-accent-top: #bf5a56;
+        --allocator-mode-accent-bottom: #973b39;
+        --allocator-mode-accent-stroke: #672827;
+        --allocator-display-col: 64px;
+        --allocator-stepper-col: 72px;
+        --allocator-peek-offset: clamp(122px, 16vw, 168px);
+        --allocator-reveal-extra: clamp(62px, 8vw, 92px);
+        --allocator-desktop-motion: 460ms cubic-bezier(0.18, 0.78, 0.18, 1.02);
       }
 
       * {
@@ -113,22 +133,22 @@
         gap: 10px;
         border-radius: 24px;
         padding: 14px;
-        border: 1px solid var(--body-stroke);
-        background: linear-gradient(180deg, var(--body-top), var(--body-bottom));
+        border: 1px solid var(--allocator-surface-stroke);
+        background: linear-gradient(180deg, var(--allocator-surface-top), var(--allocator-surface-bottom));
         box-shadow:
           inset 0 1px 0 rgba(255, 255, 255, 0.42),
-          inset 0 -5px 10px rgba(0, 0, 0, 0.2),
-          0 10px 20px rgba(0, 0, 0, 0.25);
+          inset 0 -6px 12px rgba(0, 0, 0, 0.22),
+          0 10px 20px rgba(0, 0, 0, 0.3);
       }
 
       .allocator-title {
         margin: 0;
-        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        font-family: "Franklin Gothic Medium", "Trebuchet MS", "Segoe UI", sans-serif;
         font-size: 0.76rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #d8efe4;
+        letter-spacing: 0.1em;
+        color: var(--allocator-title-ink);
       }
 
       .allocator-header {
@@ -146,15 +166,15 @@
 
       .allocator-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-columns: var(--allocator-display-col) minmax(0, 1fr) var(--allocator-stepper-col);
         align-items: center;
         gap: 10px;
       }
 
       .allocator-label {
-        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-family: "Times New Roman", "Cambria Math", "STIX Two Text", serif;
         font-size: 0.72rem;
-        color: #b4f1d3;
+        color: var(--allocator-label-ink);
       }
 
       .allocator-label--math .katex {
@@ -164,33 +184,35 @@
       }
 
       .allocator-display {
-        border: 1px solid #515c6a;
+        border: 1px solid var(--allocator-display-stroke);
         border-radius: 7px;
         padding: 5px 8px;
-        background: linear-gradient(180deg, var(--panel-mid), var(--panel-dark));
+        background: linear-gradient(180deg, var(--allocator-panel-top), var(--allocator-panel-bottom));
         min-height: 28px;
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
-      }
-
-      [data-allocator-unused] {
-        grid-column: 3;
+        box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.75);
       }
 
       .allocator-stepper {
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        justify-self: end;
+      }
+
+      .allocator-stepper-placeholder {
+        width: var(--allocator-stepper-col);
+        min-height: 1px;
       }
 
       .allocator-step {
         min-width: 30px;
-        border: 1px solid #515c6a;
+        border: 1px solid var(--allocator-step-stroke);
         border-radius: 7px;
         padding: 4px 0;
-        background: linear-gradient(180deg, #9ea7b4, #7f8998);
+        background: linear-gradient(180deg, var(--allocator-step-top), var(--allocator-step-bottom));
         color: #12151a;
         font-size: 1rem;
         font-weight: 700;
@@ -219,7 +241,7 @@
 
       .allocator-display .allocator-seg--on {
         opacity: 1;
-        box-shadow: 0 0 4px rgba(188, 255, 214, 0.4);
+        box-shadow: 0 0 5px var(--allocator-display-glow);
       }
 
       .allocator-display--cue {
@@ -256,10 +278,10 @@
 
       .allocator-mode-action {
         --hold-progress: 0;
-        border: 1px solid var(--key-utility-stroke);
+        border: 1px solid var(--allocator-mode-accent-stroke);
         border-radius: 10px;
         padding: 7px 10px;
-        background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
+        background: linear-gradient(180deg, var(--allocator-mode-accent-top), var(--allocator-mode-accent-bottom));
         color: #fff;
         font-size: 0.72rem;
         font-weight: 700;
@@ -307,6 +329,57 @@
         display: block;
         width: 100%;
         margin-top: 10px;
+      }
+
+      body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row {
+        position: relative;
+        display: block;
+        width: var(--device-width);
+        margin-left: calc(var(--allocator-peek-offset) + var(--allocator-reveal-extra));
+        overflow: visible;
+      }
+
+      body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row [data-desktop-panel="calculator"] {
+        position: relative;
+        z-index: 3;
+      }
+
+      body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row [data-desktop-panel="allocator"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 2;
+        width: var(--device-width);
+        transform: translate3d(calc(var(--allocator-peek-offset) * -1), 0, 0);
+        opacity: 0.98;
+        filter: saturate(0.85);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.35),
+          inset 0 -5px 10px rgba(0, 0, 0, 0.18),
+          0 10px 20px rgba(0, 0, 0, 0.24);
+        transition:
+          transform var(--allocator-desktop-motion),
+          box-shadow var(--allocator-desktop-motion),
+          filter var(--allocator-desktop-motion),
+          opacity 220ms ease;
+        pointer-events: none;
+      }
+
+      body[data-ui-shell="desktop"] [data-desktop-shell="true"][data-allocator-reveal="revealed"] .device-row [data-desktop-panel="allocator"] {
+        transform: translate3d(calc((var(--allocator-peek-offset) + var(--allocator-reveal-extra)) * -1), 0, 0);
+        filter: saturate(1);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.46),
+          inset 0 -6px 12px rgba(0, 0, 0, 0.24),
+          -8px 14px 24px rgba(0, 0, 0, 0.31);
+      }
+
+      body[data-ui-shell="desktop"] [data-desktop-shell="true"][data-allocator-reveal="peek"] .device-row [data-desktop-panel="allocator"] {
+        transform: translate3d(calc(var(--allocator-peek-offset) * -1), 0, 0);
+      }
+
+      body[data-ui-shell="desktop"] [data-desktop-shell="true"][data-allocator-reveal="revealed"] .device-row [data-desktop-panel="allocator"] {
+        pointer-events: auto;
       }
 
       .grapher-screen {
@@ -496,6 +569,14 @@
 
         .key--unlock-animate {
           animation: none;
+        }
+
+        body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row [data-desktop-panel="allocator"] {
+          transition:
+            transform 40ms linear,
+            box-shadow 80ms linear,
+            filter 80ms linear,
+            opacity 80ms linear;
         }
       }
 
@@ -1539,6 +1620,26 @@
         height: 100%;
       }
 
+      body[data-ui-shell="mobile"] .device--allocator {
+        --allocator-display-col: 56px;
+        --allocator-stepper-col: 74px;
+        border-radius: 18px;
+        padding: 12px;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.34),
+          inset 0 -4px 8px rgba(0, 0, 0, 0.16),
+          0 7px 14px rgba(0, 0, 0, 0.2);
+      }
+
+      body[data-ui-shell="mobile"] .allocator-row {
+        gap: 8px;
+      }
+
+      body[data-ui-shell="mobile"] .allocator-step {
+        min-width: 34px;
+        min-height: 32px;
+      }
+
       body[data-ui-shell="mobile"] .calc {
         height: 100%;
         display: flex;
@@ -1860,48 +1961,49 @@
               </div>
               <div class="allocator-grid">
                 <div class="allocator-row">
-                  <span class="allocator-label">λ=</span>
                   <span class="allocator-display" data-allocator-unused>0</span>
+                  <span class="allocator-label allocator-label--math" data-allocator-label="lambda">lambda=</span>
+                  <span class="allocator-stepper-placeholder" aria-hidden="true"></span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">↔𝑚, 𝑚=</span>
+                  <span class="allocator-display" data-allocator-width data-allocator-effective-width>0</span>
+                  <span class="allocator-label allocator-label--math" data-allocator-label="width">m=</span>
                   <span class="allocator-stepper">
                     <button type="button" class="allocator-step" data-allocator-dec-width>-</button>
                     <button type="button" class="allocator-step" data-allocator-inc-width>+</button>
                   </span>
-                  <span class="allocator-display" data-allocator-width data-allocator-effective-width>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">↕𝑛, 𝑛=</span>
+                  <span class="allocator-display" data-allocator-height data-allocator-effective-height>0</span>
+                  <span class="allocator-label allocator-label--math" data-allocator-label="height">n=</span>
                   <span class="allocator-stepper">
                     <button type="button" class="allocator-step" data-allocator-dec-height>-</button>
                     <button type="button" class="allocator-step" data-allocator-inc-height>+</button>
                   </span>
-                  <span class="allocator-display" data-allocator-height data-allocator-effective-height>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">[-R,R], R=</span>
+                  <span class="allocator-display" data-allocator-range data-allocator-effective-range>0</span>
+                  <span class="allocator-label allocator-label--math" data-allocator-label="range">R=</span>
                   <span class="allocator-stepper">
                     <button type="button" class="allocator-step" data-allocator-dec-range>-</button>
                     <button type="button" class="allocator-step" data-allocator-inc-range>+</button>
                   </span>
-                  <span class="allocator-display" data-allocator-range data-allocator-effective-range>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label allocator-label--math" data-allocator-speed-label>ΔT/1.05^t, t=</span>
+                  <span class="allocator-display" data-allocator-speed data-allocator-effective-speed>0</span>
+                  <span class="allocator-label allocator-label--math" data-allocator-label="speed">t=</span>
                   <span class="allocator-stepper">
                     <button type="button" class="allocator-step" data-allocator-dec-speed>-</button>
                     <button type="button" class="allocator-step" data-allocator-inc-speed>+</button>
                   </span>
-                  <span class="allocator-display" data-allocator-speed data-allocator-effective-speed>0</span>
                 </div>
                 <div class="allocator-row">
-                  <span class="allocator-label">[ _ _ ](𝑆), 𝑆=</span>
+                  <span class="allocator-display" data-allocator-slots data-allocator-effective-slots>0</span>
+                  <span class="allocator-label allocator-label--math" data-allocator-label="slots">S=</span>
                   <span class="allocator-stepper">
                     <button type="button" class="allocator-step" data-allocator-dec-slots>-</button>
                     <button type="button" class="allocator-step" data-allocator-inc-slots>+</button>
                   </span>
-                  <span class="allocator-display" data-allocator-slots data-allocator-effective-slots>0</span>
                 </div>
               </div>
             </section>
@@ -1946,4 +2048,7 @@
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>
+
+
+
 

@@ -34,6 +34,7 @@ import { runUiShellGestureArbitrationTests } from "./uiShell.gestureArbitration.
 import { runUiShellRightMenuTests } from "./uiShell.rightMenu.test.js";
 import { runUiShellModeResolverTests } from "./uiShell.modeResolver.test.js";
 import { runUiShellFallbackControlsTests } from "./uiShell.fallbackControls.test.js";
+import { runUiShellDesktopAllocatorRevealTests } from "./uiShell.desktopAllocatorReveal.test.js";
 import { runUiShellTouchRearrangeLongPressTests } from "./uiShell.touchRearrange.longPress.test.js";
 import { runUiShellTouchRearrangeDropResolutionTests } from "./uiShell.touchRearrange.dropResolution.test.js";
 import { runUiShellTouchRearrangeCancelTests } from "./uiShell.touchRearrange.cancel.test.js";
@@ -93,6 +94,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-shell/right-menu", runUiShellRightMenuTests],
   ["ui-shell/mode-resolver", runUiShellModeResolverTests],
   ["ui-shell/fallback-controls", runUiShellFallbackControlsTests],
+  ["ui-shell/desktop-allocator-reveal", runUiShellDesktopAllocatorRevealTests],
   ["ui-shell/touch-rearrange-long-press", runUiShellTouchRearrangeLongPressTests],
   ["ui-shell/touch-rearrange-drop-resolution", runUiShellTouchRearrangeDropResolutionTests],
   ["ui-shell/touch-rearrange-cancel", runUiShellTouchRearrangeCancelTests],

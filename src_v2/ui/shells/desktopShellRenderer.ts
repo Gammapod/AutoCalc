@@ -6,6 +6,7 @@ import { renderCalculatorStorageV2Module } from "../modules/calculatorStorageRen
 import type { ShellRenderer, ShellRenderOptions } from "../shellRender.js";
 
 const CUE_DURATION_MS = 520;
+const ALLOCATOR_REVEAL_DURATION_MS = 460;
 
 const findCueTarget = (root: Element, target: "calculator" | "allocator" | "storage"): HTMLElement | null => {
   if (target === "calculator") {
@@ -17,15 +18,17 @@ const findCueTarget = (root: Element, target: "calculator" | "allocator" | "stor
   return root.querySelector<HTMLElement>(".storage");
 };
 
-const applyDesktopA11yMarkers = (root: Element): void => {
+const applyDesktopA11yMarkers = (root: Element, interactionMode: ShellRenderOptions["interactionMode"]): void => {
   const playArea = root.querySelector<HTMLElement>(".play-area");
   const checklist = root.querySelector<HTMLElement>(".checklist-shell");
   const storage = root.querySelector<HTMLElement>(".storage");
   const calc = root.querySelector<HTMLElement>("[data-calc-device]");
   const allocator = root.querySelector<HTMLElement>("[data-allocator-device]");
+  const mode = interactionMode ?? "calculator";
 
   if (playArea) {
     playArea.setAttribute("data-desktop-shell", "true");
+    playArea.setAttribute("data-desktop-mode", mode);
   }
   if (checklist) {
     checklist.setAttribute("aria-label", "Unlock checklist panel");
@@ -46,6 +49,41 @@ export const createDesktopShellRenderer = (root: Element): ShellRenderer => {
   let latestState: GameState | null = null;
   let latestDispatch: ((action: Action) => unknown) | null = null;
   let latestOptions: ShellRenderOptions = {};
+  let allocatorRevealTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastInteractionMode: ShellRenderOptions["interactionMode"] | null = null;
+
+  const clearAllocatorRevealTimer = (): void => {
+    if (allocatorRevealTimer === null) {
+      return;
+    }
+    globalThis.clearTimeout(allocatorRevealTimer);
+    allocatorRevealTimer = null;
+  };
+
+  const applyAllocatorRevealState = (interactionMode: ShellRenderOptions["interactionMode"]): void => {
+    const playArea = root.querySelector<HTMLElement>(".play-area");
+    if (!playArea) {
+      return;
+    }
+    const mode = interactionMode ?? "calculator";
+    const revealState = mode === "modify" ? "revealed" : "peek";
+    if (lastInteractionMode === null) {
+      playArea.setAttribute("data-allocator-reveal", revealState);
+      lastInteractionMode = mode;
+      return;
+    }
+    if (lastInteractionMode === mode) {
+      playArea.setAttribute("data-allocator-reveal", revealState);
+      return;
+    }
+    playArea.setAttribute("data-allocator-reveal", "animating");
+    clearAllocatorRevealTimer();
+    allocatorRevealTimer = globalThis.setTimeout(() => {
+      playArea.setAttribute("data-allocator-reveal", revealState);
+      allocatorRevealTimer = null;
+    }, ALLOCATOR_REVEAL_DURATION_MS);
+    lastInteractionMode = mode;
+  };
 
   const render = (
     state: GameState,
@@ -55,9 +93,11 @@ export const createDesktopShellRenderer = (root: Element): ShellRenderer => {
     latestState = state;
     latestDispatch = dispatch;
     latestOptions = options;
-    applyDesktopA11yMarkers(root);
+    const interactionMode = options.interactionMode ?? "calculator";
+    applyDesktopA11yMarkers(root, interactionMode);
+    applyAllocatorRevealState(interactionMode);
     renderCalculatorStorageV2Module(root, state, dispatch, {
-      interactionMode: options.interactionMode ?? "calculator",
+      interactionMode,
       inputBlocked: options.inputBlocked ?? false,
     });
     renderVisualizerHost(root, state);
@@ -90,14 +130,18 @@ export const createDesktopShellRenderer = (root: Element): ShellRenderer => {
   };
 
   const dispose = (): void => {
+    clearAllocatorRevealTimer();
     clearVisualizerHost(root);
     latestState = null;
     latestDispatch = null;
     latestOptions = {};
+    lastInteractionMode = null;
   };
 
   const resetForTests = (): void => {
+    clearAllocatorRevealTimer();
     clearVisualizerHost(root);
+    lastInteractionMode = null;
   };
 
   return {

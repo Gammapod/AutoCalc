@@ -81,7 +81,9 @@ const allocatorDecSpeedButton = document.querySelector<HTMLButtonElement>("[data
 const allocatorIncSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-slots]");
 const allocatorDecSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-slots]");
 const allocatorResetButton = document.querySelector<HTMLButtonElement>("[data-allocator-reset]");
-const allocatorSpeedLabelEl = document.querySelector<HTMLElement>("[data-allocator-speed-label]");
+const allocatorLabelEls = Array.from(document.querySelectorAll<HTMLElement>("[data-allocator-label]"));
+const requiredAllocatorLabelKeys = new Set(["lambda", "width", "height", "range", "speed", "slots"]);
+const presentAllocatorLabelKeys = new Set(allocatorLabelEls.map((labelEl) => labelEl.dataset.allocatorLabel).filter(Boolean));
 if (
   !debugToggle ||
   !debugMenu ||
@@ -120,25 +122,47 @@ if (
   !allocatorIncSlotsButton ||
   !allocatorDecSlotsButton ||
   !allocatorResetButton ||
-  !allocatorSpeedLabelEl
+  allocatorLabelEls.length === 0 ||
+  requiredAllocatorLabelKeys.size !== presentAllocatorLabelKeys.size ||
+  [...requiredAllocatorLabelKeys].some((key) => !presentAllocatorLabelKeys.has(key))
 ) {
   throw new Error("Required UI controls are missing.");
 }
 
-const renderAllocatorSpeedLabel = (): void => {
+type AllocatorLabelKey = "lambda" | "width" | "height" | "range" | "speed" | "slots";
+
+const renderAllocatorLabels = (): void => {
+  const labelsByKey = new Map<AllocatorLabelKey, { latex: string; fallback: string; ariaLabel: string }>([
+    ["lambda", { latex: String.raw`= \lambda = m+n+R+t+S`, fallback: "= lambda", ariaLabel: "equals lambda" }],
+    ["width", {  latex: String.raw`= m                            (m\leftrightarrow\,,0,0,0,0)`, fallback: "= <-> m", ariaLabel: "equals left right arrow m" }],
+    ["height", { latex: String.raw`= n                            (0,n\updownarrow\,0,0,0)`, fallback: "= ^v n", ariaLabel: "equals up down arrow n" }],
+    ["range", {  latex: String.raw`= R                            (0,0,[-R,R],0,0)`, fallback: "= R", ariaLabel: "equals R" }],
+    ["speed", {  latex: String.raw`= t                            (0,0,0,\frac{ΔT}{1.05^t},0)`, fallback: "= t", ariaLabel: "equals t" }],
+    ["slots", {  latex: String.raw`= S                            (0,0,0,0,S[\ \_\ \_\ ])`, fallback: "= S", ariaLabel: "equals S" }],
+  ]);
   const katexApi = window.katex;
-  if (!katexApi) {
-    allocatorSpeedLabelEl.textContent = "\u0394T/1.05\u1d57, t=";
-    return;
-  }
-  try {
-    katexApi.render(String.raw`\Delta T / 1.05^{t},\ t=`, allocatorSpeedLabelEl, {
-      displayMode: false,
-      throwOnError: false,
-    });
-    allocatorSpeedLabelEl.setAttribute("aria-label", "delta t over 1.05 to the t, t equals");
-  } catch {
-    allocatorSpeedLabelEl.textContent = "\u0394T/1.05\u1d57, t=";
+  for (const labelEl of allocatorLabelEls) {
+    const keyRaw = labelEl.dataset.allocatorLabel;
+    const key = keyRaw === undefined ? null : (keyRaw as AllocatorLabelKey);
+    const config = key ? labelsByKey.get(key) : null;
+    if (!config) {
+      continue;
+    }
+    if (!katexApi) {
+      labelEl.textContent = config.fallback;
+      labelEl.setAttribute("aria-label", config.ariaLabel);
+      continue;
+    }
+    try {
+      katexApi.render(config.latex, labelEl, {
+        displayMode: false,
+        throwOnError: false,
+      });
+      labelEl.setAttribute("aria-label", config.ariaLabel);
+    } catch {
+      labelEl.textContent = config.fallback;
+      labelEl.setAttribute("aria-label", config.ariaLabel);
+    }
   }
 };
 
@@ -323,7 +347,7 @@ const syncAllocatorDeviceInputs = (): void => {
   debugMaxPointsInput.value = state.allocator.maxPoints.toString();
 };
 
-renderAllocatorSpeedLabel();
+renderAllocatorLabels();
 redraw();
 autoEqualsScheduler.startIfNeeded();
 
