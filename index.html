@@ -1425,6 +1425,38 @@
         gap: 10px;
       }
 
+      .debug-guide {
+        margin-top: 10px;
+        border: 1px solid rgba(45, 53, 63, 0.3);
+        border-radius: 8px;
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.56);
+        color: #1b212b;
+        font-size: 0.76rem;
+        line-height: 1.35;
+      }
+
+      .debug-guide-title {
+        margin: 0 0 6px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+      }
+
+      .debug-guide-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .debug-guide-list li + li {
+        margin-top: 4px;
+      }
+
+      .debug-guide-sublist {
+        margin: 4px 0 0;
+        padding-left: 16px;
+      }
+
       .debug-menu:not([hidden]) {
         display: grid;
       }
@@ -1928,6 +1960,23 @@
         <input type="checkbox" data-debug-toggle />
         <span>Debug Menu</span>
       </label>
+      <div class="debug-guide" aria-label="Feature overview">
+        <p class="debug-guide-title">Feature Overview</p>
+        <ol class="debug-guide-list">
+          <li>Make calculations to unlock more convenient calculator keys.</li>
+          <li>Hold down "MODIFY CALCULATOR" for 1.5 seconds to edit calculator.</li>
+          <li>Drag+Drop keys to rearrange and modify layout.</li>
+          <li>
+            Allocator can change:
+            <ul class="debug-guide-sublist">
+              <li>Size of calculator keypad</li>
+              <li>Range of total display</li>
+              <li>Number of operations per function</li>
+              <li>Speed of auto-clicker</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
       <div class="debug-menu" data-debug-menu hidden>
         <div class="debug-size">
           <label for="debug-width">Width</label>
