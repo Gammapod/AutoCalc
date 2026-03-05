@@ -87,7 +87,7 @@ export const runUnlocksDisplayTests = (): void => {
   const mappedRows = buildUnlockRows(base, effectMappingCatalog);
   assert.deepEqual(
     mappedRows.map((row) => row.name),
-    ["4", "+", "=", "×", "C", "maxTotalDigits", "maxPoints"],
+    ["4", "+", "=", "×", "C", "maxTotalDigits", "λ++"],
     "row names map from unlock effect keys/variables",
   );
 

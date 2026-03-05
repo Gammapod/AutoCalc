@@ -25,10 +25,14 @@ const assertAllocatorInvariant = (state: GameState): void => {
 
 export const runReducerAllocatorDeviceTests = (): void => {
   const base = initialState();
-  assert.equal(base.allocator.maxPoints, 1, "initial maxPoints defaults to 1");
+  assert.equal(base.allocator.maxPoints, 0, "initial maxPoints defaults to 0");
   assertAllocatorInvariant(base);
 
-  const widthPlus = reducer(base, { type: "ALLOCATOR_ADJUST", field: "width", delta: 1 });
+  const withOnePoint = reducer(base, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 1 });
+  assert.equal(withOnePoint.allocator.maxPoints, 1, "adding one point enables first allocation");
+  assertAllocatorInvariant(withOnePoint);
+
+  const widthPlus = reducer(withOnePoint, { type: "ALLOCATOR_ADJUST", field: "width", delta: 1 });
   assert.equal(widthPlus.allocator.allocations.width, 1, "+1 consumes one width allocation");
   assert.equal(getUnused(widthPlus), 0, "+1 consumes one unused point");
   assert.equal(widthPlus.ui.keypadColumns, 2, "width allocation updates effective keypad width (1 + alloc)");
@@ -40,7 +44,7 @@ export const runReducerAllocatorDeviceTests = (): void => {
   const noMinusBelowZero = reducer(base, { type: "ALLOCATOR_ADJUST", field: "speed", delta: -1 });
   assert.equal(noMinusBelowZero, base, "-1 no-ops when allocation is already zero");
 
-  const maxRaised = reducer(base, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 5 });
+  const maxRaised = reducer(withOnePoint, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 5 });
   assert.equal(maxRaised.allocator.maxPoints, 6, "add max points increases budget");
   assertAllocatorInvariant(maxRaised);
 
