@@ -7,6 +7,7 @@ import { createShellRenderer } from "../../src_v2/ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
 import { createResetCalculatorState } from "../domain/reducer.stateBuilders.js";
 import { createInteractionRuntime } from "./interactionRuntime.js";
+import { resolveAllocatorModeAction } from "./allocatorModeAction.js";
 import {
   AUTO_EQUALS_POINT_BONUS,
   createAutoEqualsScheduler,
@@ -670,11 +671,11 @@ const activateAllocatorReset = async (): Promise<void> => {
     return;
   }
   if (interactionRuntime.getMode() === "calculator") {
-    dispatchWithRuntimeGate({ type: "ALLOCATOR_ALLOCATE_PRESSED" });
+    dispatchWithRuntimeGate(resolveAllocatorModeAction("calculator"));
     await runModeTransition("modify");
     return;
   }
-  dispatchWithRuntimeGate({ type: "ALLOCATOR_RETURN_PRESSED" });
+  dispatchWithRuntimeGate(resolveAllocatorModeAction("modify"));
   await runModeTransition("calculator");
 };
 

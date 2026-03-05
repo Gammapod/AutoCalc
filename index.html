@@ -55,7 +55,8 @@
         --gap: 10px;
         --device-width: clamp(300px, 38vw, 420px);
         --v2-storage-peek: clamp(120px, 18dvh, 180px);
-        --v2-feed-visible-rows: 8;
+        --v2-feed-visible-rows: 7;
+        --v2-visualizer-window-height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
       }
 
       * {
@@ -1565,40 +1566,48 @@
         height: 100%;
       }
 
-      body[data-ui-shell="mobile"] .roll {
+      body[data-ui-shell="mobile"] .roll,
+      body[data-ui-shell="desktop"] .roll {
         display: none;
       }
 
-      body[data-ui-shell="mobile"] .v2-visualizer-host {
+      body[data-ui-shell="mobile"] .v2-visualizer-host,
+      body[data-ui-shell="desktop"] .v2-visualizer-host {
         display: block;
         margin-bottom: 8px;
       }
 
-      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-panel="none"] {
+      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-panel="none"],
+      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-panel="none"] {
         display: none;
       }
 
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher {
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher {
         margin-bottom: 0;
+        height: var(--v2-visualizer-window-height);
       }
 
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
-        max-height: 280px;
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
+        max-height: var(--v2-visualizer-window-height);
         transform: translateY(0);
         opacity: 1;
         pointer-events: auto;
       }
 
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher {
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher {
         max-height: 0;
         transform: translateY(16px);
         opacity: 0;
         pointer-events: none;
       }
 
-      body[data-ui-shell="mobile"] .v2-feed-panel {
+      body[data-ui-shell="mobile"] .v2-feed-panel,
+      body[data-ui-shell="desktop"] .v2-feed-panel {
         display: none;
-        height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
+        height: var(--v2-visualizer-window-height);
         overflow: hidden;
         padding: 8px 10px;
         border: 1px solid rgba(88, 99, 114, 0.8);
@@ -1611,12 +1620,20 @@
         justify-content: flex-end;
       }
 
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
         display: flex;
       }
 
-      body[data-ui-shell="mobile"] .v2-feed-panel .roll-line {
+      body[data-ui-shell="mobile"] .v2-feed-panel .roll-line,
+      body[data-ui-shell="desktop"] .v2-feed-panel .roll-line {
         grid-template-columns: 3ch minmax(0, 1fr) auto;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher .grapher-screen,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher .grapher-screen {
+        height: 100%;
+        aspect-ratio: auto;
       }
 
       body[data-ui-shell="mobile"] [data-storage-keys] {

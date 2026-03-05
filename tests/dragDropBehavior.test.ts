@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { classifyDropAction, shouldStartDragFromDelta } from "../src/ui/render.js";
+import { classifyDropAction, shouldStartDragFromDelta } from "../src/domain/layoutDragDrop.js";
 import type { GameState } from "../src/domain/types.js";
 
 export const runDragDropBehaviorTests = (): void => {

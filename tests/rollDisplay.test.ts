@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { buildRollLines, buildRollRows, buildRollViewModel, getRollLineClassName, isFeedRollVisible } from "../src/ui/render.js";
+import { buildRollLines, buildRollRows, buildRollViewModel } from "../src_v2/ui/shared/readModel.js";
+import { resolveActiveVisualizerPanel } from "../src_v2/ui/modules/visualizerHost.js";
 import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
 import type { EuclidRemainderEntry } from "../src/domain/types.js";
 
@@ -101,20 +102,8 @@ export const runRollDisplayTests = (): void => {
     "duplicate error codes suppress later matching error rows in the roll",
   );
 
-  assert.equal(
-    getRollLineClassName({ prefix: "  =", value: "10" }),
-    "roll-line",
-    "rows without remainders use the base line class",
-  );
-  assert.equal(
-    getRollLineClassName({ prefix: "  =", value: "10", remainder: "1/2" }),
-    "roll-line roll-line--with-remainder",
-    "rows with remainders use the remainder line class",
-  );
-
   const base = initialState();
-  assert.equal(isFeedRollVisible(base, true), false, "roll stays hidden when FEED is off even if roll has rows");
-  assert.equal(isFeedRollVisible(base, false), false, "roll stays hidden when FEED is off and roll is empty");
+  assert.equal(resolveActiveVisualizerPanel(base), "none", "no visualizer flags leaves visualizer host inactive");
 
   const withFeedOn = {
     ...base,
@@ -126,8 +115,7 @@ export const runRollDisplayTests = (): void => {
       },
     },
   };
-  assert.equal(isFeedRollVisible(withFeedOn, false), true, "FEED on shows feed panel even when roll is empty");
-  assert.equal(isFeedRollVisible(withFeedOn, true), true, "FEED on shows non-empty roll");
+  assert.equal(resolveActiveVisualizerPanel(withFeedOn), "feed", "FEED on activates feed panel");
 
   const withFeedAndGraphOn = {
     ...withFeedOn,
@@ -140,8 +128,8 @@ export const runRollDisplayTests = (): void => {
     },
   };
   assert.equal(
-    isFeedRollVisible(withFeedAndGraphOn, true),
-    false,
-    "graph visible hides roll even when FEED is on and roll has rows",
+    resolveActiveVisualizerPanel(withFeedAndGraphOn),
+    "graph",
+    "graph flag takes precedence over feed when both visualizers are toggled",
   );
 };

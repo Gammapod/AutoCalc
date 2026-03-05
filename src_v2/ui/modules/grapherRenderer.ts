@@ -1,12 +1,6 @@
 import { GRAPH_VISIBLE_FLAG } from "../../../src/domain/state.js";
-import { isRationalCalculatorValue } from "../../../src/domain/calculatorValue.js";
-import type { CalculatorValue, GameState, RollErrorEntry } from "../../../src/domain/types.js";
-
-type GraphPoint = {
-  x: number;
-  y: number;
-  hasError: boolean;
-};
+import type { GameState } from "../../../src/domain/types.js";
+import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
 
 type GraphDataset = {
   data: GraphPoint[];
@@ -73,53 +67,10 @@ type ChartCtor = new (ctx: CanvasRenderingContext2D, config: GraphChartConfig) =
 let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 
-const GRAPH_WINDOW_SIZE = 25;
-const MAX_UNLOCKED_TOTAL_DIGITS = 12;
-
-const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorEntry[] = []): GraphPoint[] => {
-  const errorByRollIndex = new Map<number, string>();
-  for (const entry of rollErrors) {
-    errorByRollIndex.set(entry.rollIndex, entry.code);
-  }
-  const seenErrorCodes = new Set<string>();
-  const points: GraphPoint[] = [];
-  for (let index = 0; index < roll.length; index += 1) {
-    const errorCode = errorByRollIndex.get(index);
-    if (errorCode && seenErrorCodes.has(errorCode)) {
-      continue;
-    }
-    if (errorCode) {
-      seenErrorCodes.add(errorCode);
-    }
-    const value = roll[index];
-    if (!isRationalCalculatorValue(value)) {
-      continue;
-    }
-    points.push({
-      x: points.length,
-      y: Number(value.value.num) / Number(value.value.den),
-      hasError: Boolean(errorCode),
-    });
-  }
-  return points;
-};
-
-const buildGraphYWindow = (unlockedTotalDigits: number): { min: number; max: number } => {
-  const clampedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
-  const maxMagnitude = Math.pow(10, clampedDigits) - 1;
-  return { min: -maxMagnitude, max: maxMagnitude };
-};
-
-const buildGraphXWindow = (rollLength: number): { min: number; max: number } => {
-  if (rollLength < GRAPH_WINDOW_SIZE) {
-    return { min: 0, max: GRAPH_WINDOW_SIZE };
-  }
-  return { min: rollLength - GRAPH_WINDOW_SIZE, max: rollLength - 1 };
-};
-
 const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTotalDigits: number): GraphOptions => {
   const bounds = buildGraphYWindow(unlockedTotalDigits);
   const xWindow = buildGraphXWindow(points.length);
+  const defaultWindowMax = buildGraphXWindow(0).max;
   const makeTickLabelCallback =
     (axisMax: number) =>
     (value: string | number): string => {
@@ -144,7 +95,7 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTot
     scales: {
       x: {
         min: hasPoints ? xWindow.min : 0,
-        max: hasPoints ? xWindow.max : GRAPH_WINDOW_SIZE,
+        max: hasPoints ? xWindow.max : defaultWindowMax,
         display: hasPoints,
         ticks: {
           color: "#bcffd6",
@@ -218,7 +169,7 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   }
 
   const points = buildGraphPoints(state.calculator.roll, state.calculator.rollErrors);
-  const hasPoints = points.length > 0;
+  const hasPoints = isGraphRenderable(state.calculator.roll, state.calculator.rollErrors);
   const options = buildGraphOptions(hasPoints, points, state.unlocks.maxTotalDigits);
   const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
   const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));

@@ -244,6 +244,27 @@ const STORAGE_SORT_FLAG_BY_GROUP: Record<KeyVisualGroup, string> = {
   step: "storage.sort.step",
   visualizers: "storage.sort.visualizers",
 };
+
+export const buildLayoutDropDispatchAction = (
+  source: { surface: LayoutSurface; index: number },
+  target: { surface: LayoutSurface; index: number },
+  action: DropAction,
+): Action =>
+  action === "move"
+    ? {
+        type: "MOVE_LAYOUT_CELL",
+        fromSurface: source.surface,
+        fromIndex: source.index,
+        toSurface: target.surface,
+        toIndex: target.index,
+      }
+    : {
+        type: "SWAP_LAYOUT_CELLS",
+        fromSurface: source.surface,
+        fromIndex: source.index,
+        toSurface: target.surface,
+        toIndex: target.index,
+      };
 const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: KeyVisualGroup; ariaLabel: string }> = [
   { label: "=", group: "execution", ariaLabel: "Execution keys" },
   { label: "\u{1D45B}", group: "value_expression", ariaLabel: "Value expression keys" },
@@ -1245,23 +1266,7 @@ const onDragUp = (): void => {
     return;
   }
   if (dragSession.active && dragSession.target && dragSession.targetAction) {
-    if (dragSession.targetAction === "move") {
-      dragSession.dispatch({
-        type: "MOVE_LAYOUT_CELL",
-        fromSurface: dragSession.source.surface,
-        fromIndex: dragSession.source.index,
-        toSurface: dragSession.target.surface,
-        toIndex: dragSession.target.index,
-      });
-    } else {
-      dragSession.dispatch({
-        type: "SWAP_LAYOUT_CELLS",
-        fromSurface: dragSession.source.surface,
-        fromIndex: dragSession.source.index,
-        toSurface: dragSession.target.surface,
-        toIndex: dragSession.target.index,
-      });
-    }
+    dragSession.dispatch(buildLayoutDropDispatchAction(dragSession.source, dragSession.target, dragSession.targetAction));
   }
   window.removeEventListener("mousemove", onDragMove);
   clearDragSession();

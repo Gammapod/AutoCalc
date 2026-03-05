@@ -48,6 +48,10 @@ import { runKeyUnlocksTests } from "./keyUnlocks.test.js";
 import { runLayoutRulesInvariantTests } from "./layoutRules.invariant.test.js";
 import { runLayoutRulesEquivalenceTests } from "./layoutRules.equivalence.test.js";
 import { runV2ImportBoundaryTests } from "./v2ImportBoundary.test.js";
+import { runContractsUiDomainTests } from "./contracts.uiDomain.test.js";
+import { runContractsParityLongTracesTests } from "./contracts.parityLongTraces.test.js";
+import { runContractsParitySeededFuzzTests } from "./contracts.paritySeededFuzz.test.js";
+import { runContractsUiActionEmissionTests } from "./contracts.uiActionEmission.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -100,6 +104,10 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
   ["v2/import-boundary", runV2ImportBoundaryTests],
+  ["contracts/ui-domain", runContractsUiDomainTests],
+  ["contracts/parity-long-traces", runContractsParityLongTracesTests],
+  ["contracts/parity-seeded-fuzz", runContractsParitySeededFuzzTests],
+  ["contracts/ui-action-emission", runContractsUiActionEmissionTests],
 ];
 
 let passed = 0;

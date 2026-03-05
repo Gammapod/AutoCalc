@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphVisible } from "../src/ui/render.js";
+import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable } from "../src_v2/ui/modules/visualizers/graphModel.js";
 
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
   kind: "rational",
@@ -8,7 +8,7 @@ const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: big
 
 export const runGraphDisplayTests = (): void => {
   assert.deepEqual(buildGraphPoints([]), [], "empty roll returns no graph points");
-  assert.equal(isGraphVisible([]), false, "empty roll hides graph plotting");
+  assert.equal(isGraphRenderable([]), false, "empty roll is not graph-renderable");
 
   assert.deepEqual(
     buildGraphPoints([r(5n), r(-2n), r(99n)]),
@@ -19,7 +19,7 @@ export const runGraphDisplayTests = (): void => {
     ],
     "graph points map index to x and roll value to y",
   );
-  assert.equal(isGraphVisible([r(5n)]), true, "non-empty roll shows graph plotting");
+  assert.equal(isGraphRenderable([r(5n)]), true, "non-empty rational roll is graph-renderable");
 
   const huge = 9007199254740993n;
   const hugePoint = buildGraphPoints([r(huge)])[0];

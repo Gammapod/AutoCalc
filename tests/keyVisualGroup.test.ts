@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getKeyVisualGroup } from "../src/ui/render.js";
+import { getKeyVisualGroup } from "../src_v2/ui/shared/readModel.js";
 
 export const runKeyVisualGroupTests = (): void => {
   assert.equal(getKeyVisualGroup("0"), "value_expression", "digit keys use value_expression group");

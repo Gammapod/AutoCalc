@@ -3,20 +3,18 @@ import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState, UnlockDefinition } from "../src/domain/types.js";
-import { buildUnlockRows, buildVisibleChecklistRows, isChecklistUnlocked } from "../src/ui/render.js";
+import { buildUnlockRows, buildVisibleChecklistRows } from "../src_v2/ui/shared/readModel.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 
 export const runUnlocksDisplayTests = (): void => {
   const base = initialState();
-  assert.equal(isChecklistUnlocked(base), true, "checklist drawer is visible by default");
 
   const checklistUnlockedState: GameState = {
     ...base,
     completedUnlockIds: ["unlock_checklist_on_first_c_press"],
   };
-  assert.equal(isChecklistUnlocked(checklistUnlockedState), true, "checklist drawer remains visible after checklist id is present");
 
   const effectMappingCatalog: UnlockDefinition[] = [
     {
@@ -235,11 +233,7 @@ export const runUnlocksDisplayTests = (): void => {
 
   const rowsWhenDrawerLocked = buildUnlockRows(base, unlockCatalog);
   const rowsWhenDrawerUnlocked = buildUnlockRows(checklistUnlockedState, unlockCatalog);
-  assert.deepEqual(
-    rowsWhenDrawerUnlocked,
-    rowsWhenDrawerLocked,
-    "checklist row models are independent from checklist drawer visibility",
-  );
+  assert.deepEqual(rowsWhenDrawerUnlocked, rowsWhenDrawerLocked, "row models are independent from checklist visibility");
 
   const blockedHiddenRows = buildVisibleChecklistRows(base, { catalog: unlockCatalog });
   assert.equal(

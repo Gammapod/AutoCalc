@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
 import { clearVisualizerHost, renderVisualizerHost, resolveActiveVisualizerPanel } from "../src_v2/ui/renderAdapter.js";
+import { VISUALIZER_REGISTRY } from "../src_v2/ui/modules/visualizers/registry.js";
 import type { GameState } from "../src/domain/types.js";
 
 type RootLike = {
@@ -34,6 +35,11 @@ const r = (num: bigint): { kind: "rational"; value: { num: bigint; den: bigint }
 export const runUiModuleVisualizerHostV2Tests = (): void => {
   const base = initialState();
   assert.equal(resolveActiveVisualizerPanel(base), "none", "no toggles keeps visualizer host hidden");
+  assert.deepEqual(
+    VISUALIZER_REGISTRY.map((module) => module.id),
+    ["graph", "feed"],
+    "visualizer registry preserves graph-first precedence order",
+  );
 
   const withGraphOn: GameState = {
     ...base,
@@ -87,6 +93,32 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     () => renderVisualizerHost(missingRoot as unknown as Element, withFeedOnRoll),
     "visualizer host renderer safely handles missing mount points",
   );
+
+  const renderHost = createFakeElement();
+  const renderGraphDevice = createFakeElement();
+  const renderFeedPanel = createFakeElement();
+  renderFeedPanel.innerHTML = "stale";
+  renderFeedPanel.attributes["aria-hidden"] = "false";
+  const renderRoot: RootLike = {
+    querySelector: (selector: string) => {
+      if (selector === "[data-v2-visualizer-host]") {
+        return renderHost as unknown as Element;
+      }
+      if (selector === "[data-grapher-device]") {
+        return renderGraphDevice as unknown as Element;
+      }
+      if (selector === "[data-v2-feed-panel]") {
+        return renderFeedPanel as unknown as Element;
+      }
+      return null;
+    },
+  };
+  renderVisualizerHost(renderRoot as unknown as Element, withGraphOn);
+  assert.equal(renderHost.dataset.v2VisualizerPanel, "graph", "host data state tracks active graph panel");
+  assert.equal(renderHost.attributes["aria-hidden"], "false", "active panel keeps visualizer host visible");
+  assert.equal(renderGraphDevice.attributes["aria-hidden"], "false", "graph panel is shown when graph is active");
+  assert.equal(renderFeedPanel.innerHTML, "", "inactive feed panel is cleared during graph render");
+  assert.equal(renderFeedPanel.attributes["aria-hidden"], "true", "inactive feed panel is hidden during graph render");
 
   const host = createFakeElement();
   const graphDevice = createFakeElement();

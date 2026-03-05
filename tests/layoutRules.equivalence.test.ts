@@ -3,7 +3,6 @@ import { classifyDropAction as classifyDomainDropAction } from "../src/domain/la
 import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
 import { applyMoveLayoutCell, applySwapLayoutCells } from "../src/domain/reducer.layout.js";
 import { initialState } from "../src/domain/state.js";
-import { classifyDropAction as classifyRenderDropAction } from "../src/ui/render.js";
 import type { GameState, LayoutSurface } from "../src/domain/types.js";
 
 type DragTarget = { surface: LayoutSurface; index: number };
@@ -47,12 +46,13 @@ const createScenarioState = (): GameState => {
 };
 
 const assertClassifierParity = (state: GameState, source: DragTarget, destination: DragTarget): void => {
-  const renderAction = classifyRenderDropAction(state, source, destination);
   const domainAction = classifyDomainDropAction(state, source, destination);
+  const evaluated = evaluateLayoutDrop(state, source, destination);
+  const evaluatedAction = evaluated.allowed ? evaluated.action : null;
   assert.equal(
-    renderAction,
+    evaluatedAction,
     domainAction,
-    `render/domain classify parity for ${source.surface}:${source.index} -> ${destination.surface}:${destination.index}`,
+    `shared/domain classify parity for ${source.surface}:${source.index} -> ${destination.surface}:${destination.index}`,
   );
 };
 
