@@ -332,53 +332,29 @@
       }
 
       body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row {
-        position: relative;
-        display: block;
-        width: var(--device-width);
-        margin-left: calc(var(--allocator-peek-offset) + var(--allocator-reveal-extra));
+        display: grid;
+        grid-template-columns: var(--device-width) var(--device-width);
+        align-items: start;
+        gap: 16px;
         overflow: visible;
       }
 
       body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row [data-desktop-panel="calculator"] {
         position: relative;
-        z-index: 3;
+        z-index: 2;
       }
 
       body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row [data-desktop-panel="allocator"] {
-        position: absolute;
-        left: 0;
-        top: 0;
-        z-index: 2;
+        position: relative;
+        z-index: 1;
         width: var(--device-width);
-        transform: translate3d(calc(var(--allocator-peek-offset) * -1), 0, 0);
-        opacity: 0.98;
-        filter: saturate(0.85);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.35),
-          inset 0 -5px 10px rgba(0, 0, 0, 0.18),
-          0 10px 20px rgba(0, 0, 0, 0.24);
-        transition:
-          transform var(--allocator-desktop-motion),
-          box-shadow var(--allocator-desktop-motion),
-          filter var(--allocator-desktop-motion),
-          opacity 220ms ease;
-        pointer-events: none;
-      }
-
-      body[data-ui-shell="desktop"] [data-desktop-shell="true"][data-allocator-reveal="revealed"] .device-row [data-desktop-panel="allocator"] {
-        transform: translate3d(calc((var(--allocator-peek-offset) + var(--allocator-reveal-extra)) * -1), 0, 0);
-        filter: saturate(1);
+        transform: none;
+        opacity: 1;
+        filter: none;
         box-shadow:
           inset 0 1px 0 rgba(255, 255, 255, 0.46),
           inset 0 -6px 12px rgba(0, 0, 0, 0.24),
-          -8px 14px 24px rgba(0, 0, 0, 0.31);
-      }
-
-      body[data-ui-shell="desktop"] [data-desktop-shell="true"][data-allocator-reveal="peek"] .device-row [data-desktop-panel="allocator"] {
-        transform: translate3d(calc(var(--allocator-peek-offset) * -1), 0, 0);
-      }
-
-      body[data-ui-shell="desktop"] [data-desktop-shell="true"][data-allocator-reveal="revealed"] .device-row [data-desktop-panel="allocator"] {
+          0 10px 20px rgba(0, 0, 0, 0.24);
         pointer-events: auto;
       }
 
@@ -572,11 +548,7 @@
         }
 
         body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row [data-desktop-panel="allocator"] {
-          transition:
-            transform 40ms linear,
-            box-shadow 80ms linear,
-            filter 80ms linear,
-            opacity 80ms linear;
+          transition: none;
         }
       }
 

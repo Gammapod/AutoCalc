@@ -49,19 +49,6 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
   const state = initialState();
   const renderer = createDesktopShellRenderer(root as unknown as Element);
   const dispatch = () => ({ type: "RESET_RUN" as const });
-  const originalSetTimeout = globalThis.setTimeout;
-  const originalClearTimeout = globalThis.clearTimeout;
-  const queuedTimers: Array<() => void> = [];
-
-  globalThis.setTimeout = (((callback: TimerHandler) => {
-    if (typeof callback === "function") {
-      queuedTimers.push(callback as () => void);
-    }
-    return queuedTimers.length as unknown as ReturnType<typeof setTimeout>;
-  }) as unknown) as typeof globalThis.setTimeout;
-  globalThis.clearTimeout = (((_timer: ReturnType<typeof setTimeout>) => {
-    // no-op in this deterministic timer harness
-  }) as unknown) as typeof globalThis.clearTimeout;
 
   try {
     try {
@@ -74,7 +61,7 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
     }
     assert.equal(getAttr(playArea, "data-desktop-shell"), "true", "desktop shell marker is applied");
     assert.equal(getAttr(playArea, "data-desktop-mode"), "calculator", "desktop mode is calculator on initial render");
-    assert.equal(getAttr(playArea, "data-allocator-reveal"), "peek", "allocator starts in peek state in calculator mode");
+    assert.equal(getAttr(playArea, "data-allocator-reveal"), null, "allocator reveal state is not used in static desktop layout");
 
     try {
       renderer.render(state, dispatch, {
@@ -85,13 +72,7 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
       // Renderer module mount contracts are validated by dedicated module tests.
     }
     assert.equal(getAttr(playArea, "data-desktop-mode"), "modify", "desktop mode reflects modify state");
-    assert.equal(
-      getAttr(playArea, "data-allocator-reveal"),
-      "animating",
-      "allocator reveal state enters animating during modify transition",
-    );
-    queuedTimers.shift()?.();
-    assert.equal(getAttr(playArea, "data-allocator-reveal"), "revealed", "allocator reveal settles to revealed");
+    assert.equal(getAttr(playArea, "data-allocator-reveal"), null, "allocator remains static in modify mode");
 
     try {
       renderer.render(state, dispatch, {
@@ -102,12 +83,8 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
       // Renderer module mount contracts are validated by dedicated module tests.
     }
     assert.equal(getAttr(playArea, "data-desktop-mode"), "calculator", "desktop mode reflects calculator state");
-    assert.equal(getAttr(playArea, "data-allocator-reveal"), "animating", "allocator enters hide animation state");
-    queuedTimers.shift()?.();
-    assert.equal(getAttr(playArea, "data-allocator-reveal"), "peek", "allocator settles back to peek");
+    assert.equal(getAttr(playArea, "data-allocator-reveal"), null, "allocator remains static in calculator mode");
   } finally {
-    globalThis.setTimeout = originalSetTimeout;
-    globalThis.clearTimeout = originalClearTimeout;
     renderer.dispose();
   }
 };
