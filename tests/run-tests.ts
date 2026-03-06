@@ -8,17 +8,14 @@ import { runOperationSlotDisplayTests } from "./operationSlotDisplay.test.js";
 import { runRollDisplayTests } from "./rollDisplay.test.js";
 import { runTotalDisplayTests } from "./totalDisplay.test.js";
 import { runUnlocksDisplayTests } from "./unlocksDisplay.test.js";
-import { runUnlockDomainResolverTests } from "./unlockDomainResolver.test.js";
 import { runGraphDisplayTests } from "./graphDisplay.test.js";
 import { runKeyLabelDisplayTests } from "./keyLabelDisplay.test.js";
-import { runKeyVisualGroupTests } from "./keyVisualGroup.test.js";
 import { runBrowserImportSafetyTests } from "./browserImportSafety.test.js";
 import { runUnlockEngineTests } from "./unlockEngine.test.js";
 import { runV2ParityTests } from "./v2Parity.test.js";
 import { runV2PersistenceParityTests } from "./v2PersistenceParity.test.js";
 import { runStorageDisplayTests } from "./storageDisplay.test.js";
 import { runDragDropBehaviorTests } from "./dragDropBehavior.test.js";
-import { runReducerFlagsTests } from "./reducer.flags.test.js";
 import { runReducerAllocatorDeviceTests } from "./reducer.allocator-device.test.js";
 import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
 import { runAutoEqualsSchedulerTests } from "./autoEqualsScheduler.test.js";
@@ -30,7 +27,6 @@ import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.
 import { runUnlockGraphTests } from "./unlockGraph.test.js";
 import { runKeyBehaviorContractTests } from "./keyBehavior.contract.test.js";
 import { runUiShellSnapAvailabilityTests } from "./uiShell.snapAvailability.test.js";
-import { runUiShellSnapSelectionTests } from "./uiShell.snapSelection.test.js";
 import { runUiShellGestureArbitrationTests } from "./uiShell.gestureArbitration.test.js";
 import { runUiShellRightMenuTests } from "./uiShell.rightMenu.test.js";
 import { runUiShellModeResolverTests } from "./uiShell.modeResolver.test.js";
@@ -50,10 +46,13 @@ import { runKeyUnlocksTests } from "./keyUnlocks.test.js";
 import { runLayoutRulesInvariantTests } from "./layoutRules.invariant.test.js";
 import { runLayoutRulesEquivalenceTests } from "./layoutRules.equivalence.test.js";
 import { runV2ImportBoundaryTests } from "./v2ImportBoundary.test.js";
-import { runContractsUiDomainTests } from "./contracts.uiDomain.test.js";
 import { runContractsParityLongTracesTests } from "./contracts.parityLongTraces.test.js";
 import { runContractsParitySeededFuzzTests } from "./contracts.paritySeededFuzz.test.js";
 import { runContractsUiActionEmissionTests } from "./contracts.uiActionEmission.test.js";
+import { runContractsActionEventRoundTripTests } from "./contracts.actionEventRoundTrip.test.js";
+import { runV2RulesAdaptersTests } from "./v2Rules.adapters.test.js";
+import { runUiIntegrationMobileShellTests } from "./uiIntegration.mobileShell.test.js";
+import { runUiIntegrationDesktopShellTests } from "./uiIntegration.desktopShell.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -81,17 +80,13 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/layout-rules-invariants", runLayoutRulesInvariantTests],
   ["domain/layout-rules-equivalence", runLayoutRulesEquivalenceTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
-  ["ui/key-visual-group", runKeyVisualGroupTests],
   ["ui/total-display", runTotalDisplayTests],
   ["ui/unlocks-display", runUnlocksDisplayTests],
   ["domain/unlock-engine", runUnlockEngineTests],
   ["v2/parity", runV2ParityTests],
   ["v2/persistence-parity", runV2PersistenceParityTests],
-  ["content/unlock-domain-resolver", runUnlockDomainResolverTests],
   ["browser/import-safety", runBrowserImportSafetyTests],
-  ["reducer/flags", runReducerFlagsTests],
   ["ui-shell/snap-availability", runUiShellSnapAvailabilityTests],
-  ["ui-shell/snap-selection", runUiShellSnapSelectionTests],
   ["ui-shell/gesture-arbitration", runUiShellGestureArbitrationTests],
   ["ui-shell/right-menu", runUiShellRightMenuTests],
   ["ui-shell/mode-resolver", runUiShellModeResolverTests],
@@ -107,11 +102,14 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
+  ["ui-integration/mobile-shell", runUiIntegrationMobileShellTests],
+  ["ui-integration/desktop-shell", runUiIntegrationDesktopShellTests],
   ["v2/import-boundary", runV2ImportBoundaryTests],
-  ["contracts/ui-domain", runContractsUiDomainTests],
   ["contracts/parity-long-traces", runContractsParityLongTracesTests],
   ["contracts/parity-seeded-fuzz", runContractsParitySeededFuzzTests],
   ["contracts/ui-action-emission", runContractsUiActionEmissionTests],
+  ["contracts/action-event-round-trip", runContractsActionEventRoundTripTests],
+  ["v2/rules-adapters", runV2RulesAdaptersTests],
 ];
 
 let passed = 0;
