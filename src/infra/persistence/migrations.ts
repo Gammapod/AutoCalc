@@ -193,6 +193,18 @@ export type SerializableStateV11 = SerializableStateV10 & {
 
 export type SerializableStateV12 = SerializableStateV11;
 
+export type SerializableRollEntryV13 = {
+  y: string;
+  remainder?: string;
+  error?: SerializableRollErrorEntry;
+};
+
+export type SerializableStateV13 = Omit<SerializableStateV12, "calculator"> & {
+  calculator: Omit<SerializableStateV12["calculator"], "roll" | "rollErrors" | "euclidRemainders"> & {
+    rollEntries: SerializableRollEntryV13[];
+  };
+};
+
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN)$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
@@ -791,6 +803,45 @@ export const migrateV11ToV12 = (input: SerializableStateV11): SerializableStateV
   },
 });
 
+export const migrateV12ToV13 = (input: SerializableStateV12): SerializableStateV13 => {
+  const remainderByRollIndex = new Map<number, string>();
+  for (const remainder of input.calculator.euclidRemainders) {
+    if (!Number.isInteger(remainder.rollIndex) || remainder.rollIndex < 0) {
+      continue;
+    }
+    remainderByRollIndex.set(remainder.rollIndex, remainder.value);
+  }
+  const errorByRollIndex = new Map<number, SerializableRollErrorEntry>();
+  for (const error of input.calculator.rollErrors) {
+    if (!Number.isInteger(error.rollIndex) || error.rollIndex < 0) {
+      continue;
+    }
+    errorByRollIndex.set(error.rollIndex, error);
+  }
+
+  const rollEntries: SerializableRollEntryV13[] = input.calculator.roll.map((value, index) => {
+    const remainder = remainderByRollIndex.get(index);
+    const error = errorByRollIndex.get(index);
+    return {
+      y: value,
+      ...(remainder ? { remainder } : {}),
+      ...(error ? { error } : {}),
+    };
+  });
+
+  return {
+    ...input,
+    calculator: {
+      total: input.calculator.total,
+      pendingNegativeTotal: input.calculator.pendingNegativeTotal,
+      singleDigitInitialTotalEntry: input.calculator.singleDigitInitialTotalEntry,
+      rollEntries,
+      operationSlots: input.calculator.operationSlots,
+      draftingSlot: input.calculator.draftingSlot,
+    },
+  };
+};
+
 const toSerializableInitialV10 = (): SerializableStateV10 => {
   const defaults = initialState();
   return {
@@ -833,8 +884,9 @@ const toSerializableInitialV11 = (): SerializableStateV11 => {
 };
 
 const toSerializableInitialV12 = (): SerializableStateV12 => migrateV11ToV12(toSerializableInitialV11());
+const toSerializableInitialV13 = (): SerializableStateV13 => migrateV12ToV13(toSerializableInitialV12());
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 =>
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 =>
   version === 1 ||
   version === 2 ||
   version === 3 ||
@@ -846,7 +898,8 @@ export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4
   version === 9 ||
   version === 10 ||
   version === 11 ||
-  version === 12;
+  version === 12 ||
+  version === 13;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -1040,6 +1093,12 @@ const isRollErrorEntry = (value: unknown): value is SerializableRollErrorEntry =
   isString(value.kind) &&
   EXECUTION_ERROR_KIND_VALUES.includes(value.kind as ExecutionErrorKind);
 
+const isSerializableRollEntryV13 = (value: unknown): value is SerializableRollEntryV13 =>
+  isObject(value) &&
+  isCalculatorValueString(value.y) &&
+  (value.remainder === undefined || isRationalString(value.remainder)) &&
+  (value.error === undefined || isRollErrorEntry({ ...value.error, rollIndex: 0 }));
+
 export const validateSerializableStateV7 = (state: unknown): state is SerializableStateV7 => {
   if (!isObject(state) || !isObject(state.calculator) || !isObject(state.ui) || !isObject(state.unlocks)) {
     return false;
@@ -1184,12 +1243,47 @@ export const validateSerializableStateV11 = (state: unknown): state is Serializa
 export const validateSerializableStateV12 = (state: unknown): state is SerializableStateV12 =>
   validateSerializableStateV11(state);
 
-export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV12 | null => {
+export const validateSerializableStateV13 = (state: unknown): state is SerializableStateV13 => {
+  if (!isObject(state) || !isObject(state.calculator)) {
+    return false;
+  }
+
+  const calculator = state.calculator;
+  if (
+    !isCalculatorValueString(calculator.total) ||
+    !isBoolean(calculator.pendingNegativeTotal) ||
+    (calculator.singleDigitInitialTotalEntry !== undefined && !isBoolean(calculator.singleDigitInitialTotalEntry)) ||
+    !Array.isArray(calculator.rollEntries) ||
+    !calculator.rollEntries.every(isSerializableRollEntryV13) ||
+    !Array.isArray(calculator.operationSlots) ||
+    !calculator.operationSlots.every(isSerializableSlot) ||
+    !(calculator.draftingSlot === null || isDraftingSlot(calculator.draftingSlot))
+  ) {
+    return false;
+  }
+
+  const shadowV12: SerializableStateV12 = {
+    ...(state as SerializableStateV13),
+    calculator: {
+      total: calculator.total,
+      pendingNegativeTotal: calculator.pendingNegativeTotal,
+      singleDigitInitialTotalEntry: calculator.singleDigitInitialTotalEntry,
+      roll: [],
+      rollErrors: [],
+      euclidRemainders: [],
+      operationSlots: calculator.operationSlots,
+      draftingSlot: calculator.draftingSlot,
+    },
+  };
+  return validateSerializableStateV12(shadowV12);
+};
+
+export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV13 | null => {
   if (!isValidSchemaVersion(schemaVersion)) {
     return null;
   }
   if (schemaVersion < 6) {
-    return toSerializableInitialV12();
+    return toSerializableInitialV13();
   }
   if (!isObject(state)) {
     return null;
@@ -1219,7 +1313,9 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     if (!validateSerializableStateV6(normalizedV6)) {
       return null;
     }
-    return migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(normalizedV6))))));
+    return migrateV12ToV13(
+      migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(normalizedV6)))))),
+    );
   }
   if (schemaVersion === 7) {
     const asV7 = state as SerializableStateV7;
@@ -1247,7 +1343,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         : {},
     };
     return validateSerializableStateV7(normalizedV7)
-      ? migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(normalizedV7)))))
+      ? migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(normalizedV7))))))
       : null;
   }
   if (schemaVersion === 8) {
@@ -1277,7 +1373,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       allocator: normalizeAllocatorV8(asV8.allocator),
     };
     return validateSerializableStateV8(normalizedV8)
-      ? migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(normalizedV8))))
+      ? migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(normalizedV8)))))
       : null;
   }
   if (schemaVersion === 9) {
@@ -1306,7 +1402,9 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         : {},
       allocator: normalizeAllocatorV9(asV9.allocator),
     };
-    return validateSerializableStateV9(normalizedV9) ? migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(normalizedV9))) : null;
+    return validateSerializableStateV9(normalizedV9)
+      ? migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(normalizedV9))))
+      : null;
   }
   if (schemaVersion === 10) {
     const asV10 = state as SerializableStateV10;
@@ -1342,7 +1440,9 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           : 0,
       allocator: normalizeAllocatorV10(asV10.allocator),
     };
-    return validateSerializableStateV10(normalizedV10) ? migrateV11ToV12(migrateV10ToV11(normalizedV10)) : null;
+    return validateSerializableStateV10(normalizedV10)
+      ? migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(normalizedV10)))
+      : null;
   }
   if (schemaVersion === 11) {
     const asV11 = state as SerializableStateV11;
@@ -1380,7 +1480,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           : 0,
       allocator: normalizeAllocatorV10(asV11.allocator),
     };
-    return validateSerializableStateV11(normalizedV11) ? migrateV11ToV12(normalizedV11) : null;
+    return validateSerializableStateV11(normalizedV11) ? migrateV12ToV13(migrateV11ToV12(normalizedV11)) : null;
   }
   if (schemaVersion === 12) {
     const asV12 = state as SerializableStateV12;
@@ -1418,7 +1518,47 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           : 0,
       allocator: normalizeAllocatorV10(asV12.allocator),
     };
-    return validateSerializableStateV12(normalizedV12) ? normalizedV12 : null;
+    return validateSerializableStateV12(normalizedV12) ? migrateV12ToV13(normalizedV12) : null;
+  }
+  if (schemaVersion === 13) {
+    const asV13 = state as SerializableStateV13;
+    const buttonFlags = withDefaultButtonFlags(normalizeButtonFlags(asV13.ui?.buttonFlags));
+    const normalizedV13: SerializableStateV13 = {
+      ...asV13,
+      calculator: {
+        ...asV13.calculator,
+        rollEntries: Array.isArray(asV13.calculator?.rollEntries)
+          ? asV13.calculator.rollEntries.filter(isSerializableRollEntryV13)
+          : [],
+      },
+      ui: {
+        ...asV13.ui,
+        keyLayout: hasOnlyKnownLayoutCells(asV13.ui?.keyLayout)
+          ? asV13.ui.keyLayout
+          : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+        storageLayout: normalizeStorageSlots(asV13.ui?.storageLayout ?? defaultStorageLayout()),
+        buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
+        activeVisualizer: normalizeActiveVisualizer(asV13.ui?.activeVisualizer, buttonFlags),
+      },
+      unlocks: normalizeUnlocks(asV13.unlocks),
+      keyPressCounts: isObject(asV13.keyPressCounts)
+        ? Object.fromEntries(
+            Object.entries(asV13.keyPressCounts).filter(
+              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
+            ),
+          )
+        : {},
+      allocatorReturnPressCount:
+        isInteger(asV13.allocatorReturnPressCount) && asV13.allocatorReturnPressCount >= 0
+          ? asV13.allocatorReturnPressCount
+          : 0,
+      allocatorAllocatePressCount:
+        isInteger(asV13.allocatorAllocatePressCount) && asV13.allocatorAllocatePressCount >= 0
+          ? asV13.allocatorAllocatePressCount
+          : 0,
+      allocator: normalizeAllocatorV10(asV13.allocator),
+    };
+    return validateSerializableStateV13(normalizedV13) ? normalizedV13 : null;
   }
   return null;
 };

@@ -3,11 +3,9 @@ import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../domain/analysis.js";
 import { buildUnlockCriteria } from "../../domain/unlockEngine.js";
 import type {
-  CalculatorValue,
-  EuclidRemainderEntry,
   GameState,
   Key,
-  RollErrorEntry,
+  RollEntry,
   SlotOperator,
   UnlockDefinition,
   UnlockEffect,
@@ -139,48 +137,37 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   return tokens.join(" -> ");
 };
 
-export const buildRollLines = (roll: CalculatorValue[]): string[] =>
-  roll.map((value) => (value.kind === "rational" ? toPreferredFractionString(value.value) : "NaN"));
+export const buildRollLines = (rollEntries: RollEntry[]): string[] =>
+  rollEntries.map((entry) => (entry.y.kind === "rational" ? toPreferredFractionString(entry.y.value) : "NaN"));
 
 export const buildRollRows = (
-  rollLines: string[],
-  euclidRemainders: EuclidRemainderEntry[] = [],
-  rollErrors: RollErrorEntry[] = [],
+  rollEntries: RollEntry[],
 ): RollRow[] => {
-  const remainderByRollIndex = new Map<number, string>();
-  for (const remainder of euclidRemainders) {
-    remainderByRollIndex.set(remainder.rollIndex, toPreferredFractionString(remainder.value));
-  }
-  const errorByRollIndex = new Map<number, string>();
-  for (const error of rollErrors) {
-    errorByRollIndex.set(error.rollIndex, error.code);
-  }
-  const seenErrorCodes = new Set<string>();
+  const rollLines = buildRollLines(rollEntries);
   const rows: RollRow[] = [];
-  for (let index = 0; index < rollLines.length; index += 1) {
-    const errorCode = errorByRollIndex.get(index);
-    if (errorCode && seenErrorCodes.has(errorCode)) {
+  let previousVisibleErrorCode: string | undefined;
+  for (let index = 0; index < rollEntries.length; index += 1) {
+    const entry = rollEntries[index];
+    const errorCode = entry.error?.code;
+    if (errorCode && errorCode === previousVisibleErrorCode) {
       continue;
     }
-    if (errorCode) {
-      seenErrorCodes.add(errorCode);
-    }
+    const remainder = entry.remainder ? toPreferredFractionString(entry.remainder) : undefined;
     rows.push({
       prefix: rows.length === 0 ? "X =" : "  =",
       value: errorCode ? "" : rollLines[index],
-      remainder: errorCode ? undefined : remainderByRollIndex.get(index),
+      remainder: errorCode ? undefined : remainder,
       errorCode,
     });
+    previousVisibleErrorCode = errorCode;
   }
   return rows;
 };
 
 export const buildRollViewModel = (
-  roll: CalculatorValue[],
-  euclidRemainders: EuclidRemainderEntry[] = [],
-  rollErrors: RollErrorEntry[] = [],
+  rollEntries: RollEntry[],
 ): RollViewModel => {
-  const rows = buildRollRows(buildRollLines(roll), euclidRemainders, rollErrors);
+  const rows = buildRollRows(rollEntries);
   const valueColumnChars = rows.reduce((max, row) => {
     const suffixLength = row.errorCode
       ? `Err: ${row.errorCode}`.length

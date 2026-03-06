@@ -70,15 +70,13 @@ export type ErrorCode = "x∉[-R,R]" | "n/0" | "NaN";
 
 export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input";
 
-export type EuclidRemainderEntry = {
-  rollIndex: number;
-  value: RationalValue;
-};
-
-export type RollErrorEntry = {
-  rollIndex: number;
-  code: ErrorCode;
-  kind: ExecutionErrorKind;
+export type RollEntry = {
+  y: CalculatorValue;
+  remainder?: RationalValue;
+  error?: {
+    code: ErrorCode;
+    kind: ExecutionErrorKind;
+  };
 };
 
 export type DraftingSlot = {
@@ -91,9 +89,7 @@ export type CalculatorState = {
   total: CalculatorValue;
   pendingNegativeTotal: boolean;
   singleDigitInitialTotalEntry: boolean;
-  roll: CalculatorValue[];
-  rollErrors: RollErrorEntry[];
-  euclidRemainders: EuclidRemainderEntry[];
+  rollEntries: RollEntry[];
   operationSlots: Slot[];
   draftingSlot: DraftingSlot | null;
 };

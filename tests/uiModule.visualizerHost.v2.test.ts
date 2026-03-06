@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { clearVisualizerHost, renderVisualizerHost, resolveActiveVisualizerPanel } from "../src_v2/ui/renderAdapter.js";
 import { VISUALIZER_REGISTRY } from "../src_v2/ui/modules/visualizers/registry.js";
-import type { GameState } from "../src/domain/types.js";
+import type { GameState, RollEntry } from "../src/domain/types.js";
 
 type RootLike = {
   querySelector: (selector: string) => Element | null;
@@ -59,6 +59,7 @@ const r = (num: bigint): { kind: "rational"; value: { num: bigint; den: bigint }
   kind: "rational",
   value: { num, den: 1n },
 });
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 export const runUiModuleVisualizerHostV2Tests = (): void => {
   const base = initialState();
@@ -90,8 +91,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const withFeedOnRoll: GameState = {
     ...withFeedOnEmptyRoll,
     calculator: {
-      ...withFeedOnEmptyRoll.calculator,
-      roll: [r(7n)],
+    ...withFeedOnEmptyRoll.calculator,
+      rollEntries: re(r(7n)),
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withFeedOnRoll), "feed", "feed shows with non-empty roll");

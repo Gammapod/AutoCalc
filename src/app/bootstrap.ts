@@ -13,9 +13,6 @@ import {
   createAutoEqualsScheduler,
   normalizeLoadedStateForRuntime,
 } from "./autoEqualsScheduler.js";
-import { analyzeNumberDomains } from "../domain/analysis.js";
-import { getCurrentTotalDomainSymbol } from "../domain/currentTotalDomain.js";
-import { formatNumberDomainReport } from "./analysisReport.js";
 import type { Action, AllocatorAllocationField, GameState, Key } from "../domain/types.js";
 
 declare global {
@@ -55,10 +52,7 @@ const upgradeKeypadRowButton = document.querySelector<HTMLButtonElement>("[data-
 const upgradeKeypadColumnButton = document.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-column]");
 const debugMaxPointsInput = document.querySelector<HTMLInputElement>("[data-debug-max-points]");
 const applyMaxPointsButton = document.querySelector<HTMLButtonElement>("[data-debug-apply-max-points]");
-const runAnalysisButton = document.querySelector<HTMLButtonElement>("[data-debug-run-analysis]");
-const analysisAllUnlockedCheckbox = document.querySelector<HTMLInputElement>("[data-debug-analysis-all-unlocked]");
-const analysisReportEl = document.querySelector<HTMLElement>("[data-debug-analysis-report]");
-const debugCurrentDomainSymbolEl = document.querySelector<HTMLElement>("[data-debug-current-domain-symbol]");
+const debugRollStateEl = document.querySelector<HTMLElement>("[data-debug-roll-state]");
 const toggleUiShellLink = document.querySelector<HTMLAnchorElement>("[data-debug-toggle-ui-shell]");
 const allocatorDeviceEl = document.querySelector<HTMLElement>("[data-allocator-device]");
 
@@ -99,10 +93,7 @@ if (
   !upgradeKeypadColumnButton ||
   !debugMaxPointsInput ||
   !applyMaxPointsButton ||
-  !runAnalysisButton ||
-  !analysisAllUnlockedCheckbox ||
-  !analysisReportEl ||
-  !debugCurrentDomainSymbolEl ||
+  !debugRollStateEl ||
   !toggleUiShellLink ||
   !allocatorDeviceEl ||
   !allocatorUnusedEl ||
@@ -296,7 +287,7 @@ const redraw = (): void => {
   renderApp(store.getState());
   syncKeypadDimensionInputs();
   syncAllocatorDeviceInputs();
-  syncDebugDomainIndicator();
+  syncDebugRollState();
 };
 
 const syncDebugUiState = (): void => {
@@ -369,9 +360,20 @@ const syncAllocatorDeviceInputs = (): void => {
   debugMaxPointsInput.value = state.allocator.maxPoints.toString();
 };
 
-const syncDebugDomainIndicator = (): void => {
+const serializeRationalForDebug = (value: { num: bigint; den: bigint }): { num: string; den: string } => ({
+  num: value.num.toString(),
+  den: value.den.toString(),
+});
+
+const syncDebugRollState = (): void => {
   const state = store.getState();
-  debugCurrentDomainSymbolEl.textContent = getCurrentTotalDomainSymbol(state);
+  const serializedRollState = state.calculator.rollEntries.map((entry, index) => ({
+    x: index,
+    y: entry.y.kind === "nan" ? { kind: "nan" as const } : { kind: "rational" as const, value: serializeRationalForDebug(entry.y.value) },
+    ...(entry.remainder ? { remainder: serializeRationalForDebug(entry.remainder) } : {}),
+    ...(entry.error ? { error: entry.error } : {}),
+  }));
+  debugRollStateEl.textContent = JSON.stringify(serializedRollState, null, 2);
 };
 
 renderAllocatorLabels();
@@ -421,14 +423,6 @@ applyMaxPointsButton.addEventListener("click", () => {
   const state = store.getState();
   const value = clampNonNegativeInteger(Number(debugMaxPointsInput.value), state.allocator.maxPoints);
   store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", value });
-});
-
-runAnalysisButton.addEventListener("click", () => {
-  const state = store.getState();
-  const report = analyzeNumberDomains(state, new Date(), {
-    useAllUnlockedKeys: analysisAllUnlockedCheckbox.checked,
-  });
-  analysisReportEl.textContent = formatNumberDomainReport(report, state);
 });
 
 toggleUiShellLink.addEventListener("click", (event) => {
@@ -570,7 +564,7 @@ const runUnlockRevealCue = async (stateAtUnlock: GameState): Promise<void> => {
     renderApp(stateAtUnlock);
     syncKeypadDimensionInputs();
     syncAllocatorDeviceInputs();
-    syncDebugDomainIndicator();
+    syncDebugRollState();
     storageRepo.save(stateAtUnlock);
 
     await sleep(UNLOCK_REVEAL_DURATION_MS + 100);
@@ -705,7 +699,7 @@ const unsubscribe = store.subscribe((state) => {
   renderApp(latest);
   syncKeypadDimensionInputs();
   syncAllocatorDeviceInputs();
-  syncDebugDomainIndicator();
+  syncDebugRollState();
   storageRepo.save(latest);
 });
 
@@ -892,4 +886,4 @@ document.addEventListener("visibilitychange", () => {
 syncDebugUiState();
 syncKeypadDimensionInputs();
 syncAllocatorDeviceInputs();
-syncDebugDomainIndicator();
+syncDebugRollState();

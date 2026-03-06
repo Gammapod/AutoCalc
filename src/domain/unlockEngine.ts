@@ -38,7 +38,10 @@ export type UnlockPredicateAnalysis = {
 
 type PredicateAnalyzer<T extends UnlockPredicate> = (predicate: T, state: GameState) => UnlockPredicateAnalysis;
 
-const getProgressiveRollSequenceMatches = (roll: GameState["calculator"]["roll"], required: bigint[]): number => {
+const getRollValues = (state: GameState): GameState["calculator"]["total"][] =>
+  state.calculator.rollEntries.map((entry) => entry.y);
+
+const getProgressiveRollSequenceMatches = (roll: GameState["calculator"]["total"][], required: bigint[]): number => {
   const maxCandidate = Math.min(roll.length, required.length);
   for (let candidate = maxCandidate; candidate >= 0; candidate -= 1) {
     const rollSuffix = roll.slice(roll.length - candidate);
@@ -97,7 +100,7 @@ const analyzeTotalMagnitudeAtLeast: PredicateAnalyzer<TotalMagnitudeAtLeastPredi
 };
 
 const analyzeRollEndsWithSequence: PredicateAnalyzer<RollEndsWithSequencePredicate> = (predicate, state) => {
-  const matchedCount = getProgressiveRollSequenceMatches(state.calculator.roll, predicate.sequence);
+  const matchedCount = getProgressiveRollSequenceMatches(getRollValues(state), predicate.sequence);
   return {
     isMet: matchedCount === predicate.sequence.length,
     criteria: predicate.sequence.map((value, index) => ({
@@ -108,7 +111,7 @@ const analyzeRollEndsWithSequence: PredicateAnalyzer<RollEndsWithSequencePredica
 };
 
 const analyzeRollContainsValue: PredicateAnalyzer<RollContainsValuePredicate> = (predicate, state) => {
-  const isMet = state.calculator.roll.some(
+  const isMet = getRollValues(state).some(
     (value) => isRationalCalculatorValue(value) && isInteger(value.value) && value.value.num === predicate.value,
   );
   return {
@@ -117,7 +120,7 @@ const analyzeRollContainsValue: PredicateAnalyzer<RollContainsValuePredicate> = 
   };
 };
 
-const readIntegerSuffix = (roll: GameState["calculator"]["roll"], length: number): bigint[] | null => {
+const readIntegerSuffix = (roll: GameState["calculator"]["total"][], length: number): bigint[] | null => {
   if (length <= 0 || roll.length < length) {
     return null;
   }
@@ -133,7 +136,7 @@ const readIntegerSuffix = (roll: GameState["calculator"]["roll"], length: number
 };
 
 const analyzeRollEndsWithEqualRun: PredicateAnalyzer<RollEndsWithEqualRunPredicate> = (predicate, state) => {
-  const suffix = readIntegerSuffix(state.calculator.roll, predicate.length);
+  const suffix = readIntegerSuffix(getRollValues(state), predicate.length);
   const isMet = !!suffix && suffix.every((value) => value === suffix[0]);
   return {
     isMet,
@@ -143,7 +146,7 @@ const analyzeRollEndsWithEqualRun: PredicateAnalyzer<RollEndsWithEqualRunPredica
 
 const analyzeRollEndsWithIncrementingRun: PredicateAnalyzer<RollEndsWithIncrementingRunPredicate> = (predicate, state) => {
   const step = predicate.step ?? 1n;
-  const suffix = readIntegerSuffix(state.calculator.roll, predicate.length);
+  const suffix = readIntegerSuffix(getRollValues(state), predicate.length);
   const isMet =
     !!suffix &&
     suffix.every((value, index) => index === 0 || value === suffix[index - 1] + step);
@@ -159,7 +162,7 @@ const analyzeRollEndsWithAlternatingSignConstantAbsRun: PredicateAnalyzer<RollEn
   predicate,
   state,
 ) => {
-  const suffix = readIntegerSuffix(state.calculator.roll, predicate.length);
+  const suffix = readIntegerSuffix(getRollValues(state), predicate.length);
   const isMet =
     !!suffix &&
     suffix.length > 0 &&
@@ -176,7 +179,7 @@ const analyzeRollEndsWithAlternatingSignConstantAbsRun: PredicateAnalyzer<RollEn
 };
 
 const analyzeRollEndsWithConstantStepRun: PredicateAnalyzer<RollEndsWithConstantStepRunPredicate> = (predicate, state) => {
-  const suffix = readIntegerSuffix(state.calculator.roll, predicate.length);
+  const suffix = readIntegerSuffix(getRollValues(state), predicate.length);
   let isMet = Boolean(suffix && suffix.length >= 2);
   let step = 0n;
   if (suffix && suffix.length >= 2) {
@@ -210,7 +213,7 @@ const analyzeKeyPressCountAtLeast: PredicateAnalyzer<KeyPressCountAtLeastPredica
 const analyzeOverflowErrorSeen: PredicateAnalyzer<OverflowErrorSeenPredicate> = (_predicate, state) => {
   const isMet =
     state.completedUnlockIds.includes(OVERFLOW_ERROR_SEEN_ID)
-    || state.calculator.rollErrors.some((entry) => entry.kind === "overflow");
+    || state.calculator.rollEntries.some((entry) => entry.error?.kind === "overflow");
   return {
     isMet,
     criteria: [{ label: "overflow error observed", checked: isMet }],
@@ -218,7 +221,7 @@ const analyzeOverflowErrorSeen: PredicateAnalyzer<OverflowErrorSeenPredicate> = 
 };
 
 const analyzeDivisionByZeroErrorSeen: PredicateAnalyzer<DivisionByZeroErrorSeenPredicate> = (_predicate, state) => {
-  const isMet = state.calculator.rollErrors.some((entry) => entry.kind === "division_by_zero");
+  const isMet = state.calculator.rollEntries.some((entry) => entry.error?.kind === "division_by_zero");
   return {
     isMet,
     criteria: [{ label: "division by zero observed", checked: isMet }],
@@ -301,7 +304,7 @@ const analyzeOperationFirstEuclidEquivalentModulo: PredicateAnalyzer<OperationFi
 };
 
 const analyzeRollLengthAtLeast: PredicateAnalyzer<RollLengthAtLeastPredicate> = (predicate, state) => {
-  const isMet = state.calculator.roll.length >= predicate.length;
+  const isMet = state.calculator.rollEntries.length >= predicate.length;
   return {
     isMet,
     criteria: [{ label: `len >= ${predicate.length.toString()}`, checked: isMet }],

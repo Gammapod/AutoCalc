@@ -18,10 +18,6 @@ export const collectInvariantViolations = (state: GameState): string[] => {
     }
   }
 
-  if (state.calculator.euclidRemainders.some((entry) => entry.rollIndex < 0)) {
-    violations.push("euclid remainder rollIndex must be non-negative");
-  }
-
   return violations;
 };
 

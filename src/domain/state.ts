@@ -2,7 +2,7 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 12;
+export const SAVE_SCHEMA_VERSION = 13;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const AUTO_EQUALS_FLAG = "execution.pause";
@@ -95,9 +95,7 @@ export const initialState = (): GameState => {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
       pendingNegativeTotal: false,
       singleDigitInitialTotalEntry: false,
-      roll: [],
-      rollErrors: [],
-      euclidRemainders: [],
+      rollEntries: [],
       operationSlots: [],
       draftingSlot: null,
     },

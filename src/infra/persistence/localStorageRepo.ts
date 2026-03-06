@@ -2,7 +2,7 @@ import { parseRational, toDisplayString } from "../math/rationalEngine.js";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
 import { isRationalCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue } from "../../domain/calculatorValue.js";
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
-import { isValidSchemaVersion, migrateToLatest, type SerializableStateV12, type SerializableSlot } from "./migrations.js";
+import { isValidSchemaVersion, migrateToLatest, type SerializableStateV13, type SerializableSlot } from "./migrations.js";
 import type { GameState } from "../../domain/types.js";
 
 type SavePayload = {
@@ -40,16 +40,15 @@ const serializeCalculatorValue = (value: GameState["calculator"]["total"]): stri
 const deserializeCalculatorValue = (value: string): GameState["calculator"]["total"] =>
   value.trim() === "NaN" ? toNanCalculatorValue() : toRationalCalculatorValue(parseRational(value));
 
-const toSerializableState = (state: GameState): SerializableStateV12 => ({
+const toSerializableState = (state: GameState): SerializableStateV13 => ({
   calculator: {
     total: serializeCalculatorValue(state.calculator.total),
     pendingNegativeTotal: state.calculator.pendingNegativeTotal,
     singleDigitInitialTotalEntry: state.calculator.singleDigitInitialTotalEntry,
-    roll: state.calculator.roll.map((value) => serializeCalculatorValue(value)),
-    rollErrors: state.calculator.rollErrors,
-    euclidRemainders: state.calculator.euclidRemainders.map((entry) => ({
-      rollIndex: entry.rollIndex,
-      value: toDisplayString(entry.value),
+    rollEntries: state.calculator.rollEntries.map((entry) => ({
+      y: serializeCalculatorValue(entry.y),
+      ...(entry.remainder ? { remainder: toDisplayString(entry.remainder) } : {}),
+      ...(entry.error ? { error: { ...entry.error, rollIndex: 0 } } : {}),
     })),
     operationSlots: state.calculator.operationSlots.map<SerializableSlot>((slot) => ({
       operator: slot.operator,
@@ -74,16 +73,15 @@ const toSerializableState = (state: GameState): SerializableStateV12 => ({
   allocator: state.allocator,
 });
 
-const fromSerializableStateV3 = (payloadState: SerializableStateV12): GameState => ({
+const fromSerializableStateV3 = (payloadState: SerializableStateV13): GameState => ({
   calculator: {
     total: deserializeCalculatorValue(payloadState.calculator.total),
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
     singleDigitInitialTotalEntry: payloadState.calculator.singleDigitInitialTotalEntry ?? false,
-    roll: payloadState.calculator.roll.map((value) => deserializeCalculatorValue(value)),
-    rollErrors: payloadState.calculator.rollErrors,
-    euclidRemainders: payloadState.calculator.euclidRemainders.map((entry) => ({
-      rollIndex: entry.rollIndex,
-      value: parseRational(entry.value),
+    rollEntries: payloadState.calculator.rollEntries.map((entry) => ({
+      y: deserializeCalculatorValue(entry.y),
+      ...(entry.remainder ? { remainder: parseRational(entry.remainder) } : {}),
+      ...(entry.error ? { error: { code: entry.error.code, kind: entry.error.kind } } : {}),
     })),
     operationSlots: payloadState.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,

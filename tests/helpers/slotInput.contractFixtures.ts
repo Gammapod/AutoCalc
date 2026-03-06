@@ -1,6 +1,6 @@
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../../src/domain/calculatorValue.js";
 import { initialState } from "../../src/domain/state.js";
-import type { GameState, Key } from "../../src/domain/types.js";
+import type { ErrorCode, ExecutionErrorKind, GameState, Key, RollEntry } from "../../src/domain/types.js";
 
 export type SlotInputScenarioTag = "legacy_contract" | "target_spec";
 
@@ -8,8 +8,8 @@ export type SlotInputStateProjection = {
   total?: GameState["calculator"]["total"];
   operationSlots?: GameState["calculator"]["operationSlots"];
   draftingSlot?: GameState["calculator"]["draftingSlot"];
-  roll?: GameState["calculator"]["roll"];
-  rollErrors?: GameState["calculator"]["rollErrors"];
+  roll?: GameState["calculator"]["total"][];
+  rollErrors?: Array<{ rollIndex: number; code: ErrorCode; kind: ExecutionErrorKind }>;
   keyPressCounts?: Partial<Record<Key, number>>;
 };
 
@@ -24,6 +24,7 @@ export type SlotInputScenario = {
 };
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const withUnlockedKeys = (state: GameState, keys: readonly Key[]): GameState => {
   let next = state;
@@ -295,7 +296,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(7n),
-          roll: [r(5n), r(7n)],
+          rollEntries: re(r(5n), r(7n)),
           operationSlots: [{ operator: "-", operand: 2n }],
           draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
         },
@@ -340,7 +341,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         { operator: "-", operand: 2n },
         { operator: "*", operand: 3n },
       ],
-      roll: [r(10n), r(24n)],
+      roll: [r(24n)],
       keyPressCounts: { "=": 1 },
     },
   },
@@ -362,8 +363,8 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["="],
     expectedProjection: {
       total: toNanCalculatorValue(),
-      roll: [r(10n), toNanCalculatorValue()],
-      rollErrors: [{ rollIndex: 1, code: "n/0", kind: "division_by_zero" }],
+      roll: [toNanCalculatorValue()],
+      rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
       keyPressCounts: { "=": 1 },
     },
   },
@@ -389,7 +390,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["="],
     expectedProjection: {
       total: r(99n),
-      rollErrors: [{ rollIndex: 1, code: "x∉[-R,R]", kind: "overflow" }],
+      rollErrors: [{ rollIndex: 0, code: "x∉[-R,R]", kind: "overflow" }],
       keyPressCounts: { "=": 1 },
     },
   },
@@ -403,7 +404,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(5n),
-          roll: [r(5n)],
+          rollEntries: re(r(5n)),
         },
       },
       ["1"],
@@ -427,7 +428,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(5n),
-          roll: [r(5n)],
+          rollEntries: re(r(5n)),
           operationSlots: [{ operator: "+", operand: 2n }],
         },
       },
@@ -467,3 +468,4 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
 
 export const getSlotInputScenariosByTag = (tag: SlotInputScenarioTag): SlotInputScenario[] =>
   slotInputScenarios.filter((scenario) => scenario.tags.includes(tag));
+

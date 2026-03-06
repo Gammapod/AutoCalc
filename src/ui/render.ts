@@ -24,13 +24,12 @@ import type {
   Action,
   CalculatorValue,
   CalculatorState,
-  EuclidRemainderEntry,
   GameState,
   KeyButtonBehavior,
   KeyCell,
   Key,
   LayoutSurface,
-  RollErrorEntry,
+  RollEntry,
   SlotOperator,
   VisualizerId,
 } from "../domain/types.js";
@@ -493,52 +492,41 @@ export const isClearedCalculatorState = (calculator: CalculatorState): boolean =
   calculator.total.value.num === 0n &&
   calculator.total.value.den === 1n &&
   !calculator.pendingNegativeTotal &&
-  calculator.roll.length === 0 &&
-  calculator.rollErrors.length === 0 &&
-  calculator.euclidRemainders.length === 0 &&
+  calculator.rollEntries.length === 0 &&
   calculator.operationSlots.length === 0 &&
   calculator.draftingSlot === null;
 
-export const buildRollLines = (roll: CalculatorValue[]): string[] => {
-  return buildRollLinesShared(roll);
+export const buildRollLines = (rollEntries: RollEntry[]): string[] => {
+  return buildRollLinesShared(rollEntries);
 };
 
 export const buildRollRows = (
-  rollLines: string[],
-  euclidRemainders: EuclidRemainderEntry[] = [],
-  rollErrors: RollErrorEntry[] = [],
+  rollEntries: RollEntry[],
 ): RollRow[] => {
-  return buildRollRowsShared(rollLines, euclidRemainders, rollErrors);
+  return buildRollRowsShared(rollEntries);
 };
 
 export const buildRollViewModel = (
-  roll: CalculatorValue[],
-  euclidRemainders: EuclidRemainderEntry[] = [],
-  rollErrors: RollErrorEntry[] = [],
+  rollEntries: RollEntry[],
 ): RollViewModel => {
-  return buildRollViewModelShared(roll, euclidRemainders, rollErrors);
+  return buildRollViewModelShared(rollEntries);
 };
 
 export const getRollLineClassName = (row: RollRow): string =>
   row.remainder || row.errorCode ? "roll-line roll-line--with-remainder" : "roll-line";
 
-export const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorEntry[] = []): GraphPoint[] => {
-  const errorByRollIndex = new Map<number, string>();
-  for (const entry of rollErrors) {
-    errorByRollIndex.set(entry.rollIndex, entry.code);
-  }
-  const seenErrorCodes = new Set<string>();
+export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
   const points: GraphPoint[] = [];
-  for (let index = 0; index < roll.length; index += 1) {
-    const errorCode = errorByRollIndex.get(index);
-    if (errorCode && seenErrorCodes.has(errorCode)) {
+  let previousVisibleErrorCode: string | undefined;
+  for (let index = 0; index < rollEntries.length; index += 1) {
+    const entry = rollEntries[index];
+    const errorCode = entry.error?.code;
+    if (errorCode && errorCode === previousVisibleErrorCode) {
       continue;
     }
-    if (errorCode) {
-      seenErrorCodes.add(errorCode);
-    }
-    const value = roll[index];
+    const value = entry.y;
     if (!isRationalCalculatorValue(value)) {
+      previousVisibleErrorCode = errorCode;
       continue;
     }
     points.push({
@@ -546,11 +534,12 @@ export const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorE
       y: Number(value.value.num) / Number(value.value.den),
       hasError: Boolean(errorCode),
     });
+    previousVisibleErrorCode = errorCode;
   }
   return points;
 };
 
-export const isGraphVisible = (roll: CalculatorValue[]): boolean => roll.length > 0;
+export const isGraphVisible = (rollEntries: RollEntry[]): boolean => rollEntries.length > 0;
 
 export const buildOperationSlotDisplay = (state: GameState): string => {
   return buildOperationSlotDisplayShared(state);
@@ -863,8 +852,7 @@ const syncGraphVisibilityUi = (root: Element, graphVisible: boolean): void => {
 
 const renderGraphDisplay = (
   root: Element,
-  roll: CalculatorValue[],
-  rollErrors: RollErrorEntry[],
+  rollEntries: RollEntry[],
   unlockedTotalDigits: number,
 ): void => {
   const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
@@ -888,8 +876,8 @@ const renderGraphDisplay = (
     return;
   }
 
-  const points = buildGraphPoints(roll, rollErrors);
-  const hasPoints = isGraphVisible(roll);
+  const points = buildGraphPoints(rollEntries);
+  const hasPoints = isGraphVisible(rollEntries);
   const options = buildGraphOptions(hasPoints, points, unlockedTotalDigits);
   const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
   const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));
@@ -927,7 +915,7 @@ export const renderGraphModule = (root: Element, state: GameState): void => {
   const graphVisible = state.ui.activeVisualizer === "graph";
   syncGraphVisibilityUi(root, graphVisible);
   if (graphVisible) {
-    renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors, state.unlocks.maxTotalDigits);
+    renderGraphDisplay(root, state.calculator.rollEntries, state.unlocks.maxTotalDigits);
   } else {
     destroyGraphChart();
   }
@@ -1576,7 +1564,7 @@ export const render = (
     const isGraphVisible = state.ui.activeVisualizer === "graph";
     syncGraphVisibilityUi(root, isGraphVisible);
     if (isGraphVisible) {
-      renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors, state.unlocks.maxTotalDigits);
+      renderGraphDisplay(root, state.calculator.rollEntries, state.unlocks.maxTotalDigits);
     } else {
       destroyGraphChart();
     }
@@ -1585,7 +1573,7 @@ export const render = (
   renderTotalDisplay(totalEl, state);
   slotEl.textContent = buildOperationSlotDisplay(state);
 
-  const rollView = buildRollViewModel(state.calculator.roll, state.calculator.euclidRemainders, state.calculator.rollErrors);
+  const rollView = buildRollViewModel(state.calculator.rollEntries);
   const rollVisible = isFeedRollVisible(state, rollView.isVisible);
   rollEl.innerHTML = "";
   rollEl.setAttribute("data-roll-visible", rollVisible ? "true" : "false");

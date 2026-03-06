@@ -4,12 +4,13 @@ import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
-import type { GameState, Key } from "../src/domain/types.js";
+import type { GameState, Key, RollEntry } from "../src/domain/types.js";
 import { getSlotInputScenariosByTag } from "./helpers/slotInput.contractFixtures.js";
 import { assertScenarioResult, runScenario, type SlotInputRuntimeAdapter } from "./helpers/slotInput.contractRunner.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const runtimeKeysFromInitialUnlocks = (): Key[] => {
   const state = initialState();
@@ -142,7 +143,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...initialState().calculator,
           total: r(7n),
-          roll: [r(7n), r(9n)],
+          rollEntries: re(r(7n), r(9n)),
           operationSlots: [{ operator: "+", operand: 1n }],
           draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
         },
@@ -151,7 +152,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     );
     const next = applyKeyAction(state, "C");
     assert.deepEqual(next.calculator.total, r(0n), "C should reset total");
-    assert.equal(next.calculator.roll.length, 0, "C should clear roll");
+    assert.equal(next.calculator.rollEntries.length, 0, "C should clear roll");
     assert.equal(next.calculator.operationSlots.length, 0, "C should clear slots");
     assert.equal(next.calculator.draftingSlot, null, "C should clear drafting slot");
     return;
@@ -164,7 +165,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...initialState().calculator,
           total: r(7n),
-          roll: [r(1n), r(2n)],
+          rollEntries: re(r(1n), r(2n)),
           operationSlots: [{ operator: "+", operand: 1n }],
           draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
         },
@@ -173,7 +174,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     );
     const next = applyKeyAction(state, "CE");
     assert.deepEqual(next.calculator.total, r(7n), "CE should preserve total");
-    assert.equal(next.calculator.roll.length, 0, "CE should clear roll");
+    assert.equal(next.calculator.rollEntries.length, 0, "CE should clear roll");
     assert.equal(next.calculator.operationSlots.length, 0, "CE should clear slots");
     assert.equal(next.calculator.draftingSlot, null, "CE should clear drafting slot");
     return;
@@ -186,13 +187,13 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...initialState().calculator,
           total: r(9n),
-          roll: [r(3n), r(5n), r(9n)],
+          rollEntries: re(r(3n), r(5n), r(9n)),
         },
       },
       "UNDO",
     );
     const next = applyKeyAction(state, "UNDO");
-    assert.deepEqual(next.calculator.roll, [r(3n), r(5n), r(9n), r(5n)], "UNDO should append previous roll total as a new roll entry");
+    assert.deepEqual(next.calculator.rollEntries, re(r(3n), r(5n)), "UNDO should pop one roll entry");
     assert.deepEqual(next.calculator.total, r(5n), "UNDO should set total to previous roll entry");
     return;
   }
@@ -220,7 +221,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     const state = initialState();
     const next = applyKeyAction(state, "++");
     assert.deepEqual(next.calculator.total, r(1n), "++ should increment total by one");
-    assert.deepEqual(next.calculator.roll, [r(1n)], "++ should append incremented total to roll");
+    assert.deepEqual(next.calculator.rollEntries, re(r(1n)), "++ should append incremented total to roll");
     return;
   }
 
@@ -228,7 +229,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     const state = unlockKey(initialState(), "--");
     const next = applyKeyAction(state, "--");
     assert.deepEqual(next.calculator.total, r(-1n), "-- should decrement total by one");
-    assert.deepEqual(next.calculator.roll, [r(-1n)], "-- should append decremented total to roll");
+    assert.deepEqual(next.calculator.rollEntries, re(r(-1n)), "-- should append decremented total to roll");
     return;
   }
 
@@ -306,7 +307,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...initialState().calculator,
           total: r(42n),
-          roll: [r(40n), r(42n)],
+          rollEntries: re(r(40n), r(42n)),
           operationSlots: [{ operator: "-", operand: 2n }],
         },
       },
@@ -314,7 +315,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     );
     const next = applyKeyAction(state, "CE");
     assert.deepEqual(next.calculator.total, r(42n), "CE should preserve total");
-    assert.equal(next.calculator.roll.length, 0, "CE should clear roll");
+    assert.equal(next.calculator.rollEntries.length, 0, "CE should clear roll");
     return;
   }
 
@@ -325,7 +326,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...initialState().calculator,
           total: r(7n),
-          roll: [],
+          rollEntries: [],
           operationSlots: [{ operator: "+", operand: 9n }],
           draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
         },
@@ -353,7 +354,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...initialState().calculator,
           total: r(11n),
-          roll: [r(11n)],
+          rollEntries: re(r(11n)),
           draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
         },
       },
@@ -376,7 +377,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     };
     const next = applyKeyAction(state, "=");
     assert.deepEqual(next.calculator.total, toNanCalculatorValue(), "division by zero should set total to NaN");
-    assert.equal(next.calculator.rollErrors.at(-1)?.code, "n/0", "division by zero should record error code");
+    assert.equal(next.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero should record error code");
     return;
   }
 
@@ -413,7 +414,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...initialState().calculator,
           total: r(5n),
-          roll: [r(5n)],
+          rollEntries: re(r(5n)),
         },
       },
       "\u23EF",

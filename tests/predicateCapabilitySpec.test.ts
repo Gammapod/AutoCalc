@@ -9,9 +9,10 @@ import {
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
 import { evaluateUnlockPredicate } from "../src/domain/unlockEngine.js";
-import type { GameState, Key, UnlockPredicate } from "../src/domain/types.js";
+import type { GameState, Key, RollEntry, UnlockPredicate } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 type ProofFixture = {
   id: string;
@@ -153,13 +154,13 @@ const proofFixtures: ProofFixture[] = [
         calculator: {
           ...unlocked.calculator,
           total: r(0n),
-          roll: [
+          rollEntries: re(
             r(0n),
             r(0n),
             r(0n),
             r(0n),
             r(0n),
-          ],
+          ),
           operationSlots: [{ operator: "+", operand: 0n }],
           draftingSlot: null,
         },
@@ -179,13 +180,13 @@ const proofFixtures: ProofFixture[] = [
         calculator: {
           ...unlocked.calculator,
           total: r(5n),
-          roll: [
+          rollEntries: re(
             r(1n),
             r(2n),
             r(3n),
             r(4n),
             r(5n),
-          ],
+          ),
           operationSlots: [{ operator: "+", operand: 1n }],
           draftingSlot: null,
         },
@@ -202,7 +203,7 @@ const proofFixtures: ProofFixture[] = [
       ...buildStateWithUnlockedKeys(["=", "+", "NEG", "5"]),
       calculator: {
         ...initialState().calculator,
-        roll: [r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)],
+        rollEntries: re(r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)),
       },
     }),
     script: [],
@@ -216,7 +217,7 @@ const proofFixtures: ProofFixture[] = [
       ...buildStateWithUnlockedKeys(["=", "+", "7"]),
       calculator: {
         ...initialState().calculator,
-        roll: [r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)],
+        rollEntries: re(r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)),
       },
     }),
     script: [],
@@ -245,7 +246,7 @@ const proofFixtures: ProofFixture[] = [
       ...buildStateWithUnlockedKeys(["=", "-", "7"]),
       calculator: {
         ...initialState().calculator,
-        roll: [r(47n), r(40n), r(33n), r(26n), r(19n), r(12n), r(5n)],
+        rollEntries: re(r(47n), r(40n), r(33n), r(26n), r(19n), r(12n), r(5n)),
       },
     }),
     script: [],
@@ -275,7 +276,7 @@ const proofFixtures: ProofFixture[] = [
       ...initialState(),
       calculator: {
         ...initialState().calculator,
-        rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
+        rollEntries: [{ y: { kind: "rational", value: { num: 0n, den: 1n } }, error: { code: "n/0", kind: "division_by_zero" } }],
       },
     }),
     script: [],
@@ -344,7 +345,7 @@ export const runPredicateCapabilitySpecTests = (): void => {
 
   for (const fixture of proofFixtures) {
     const endingState = runScript(fixture.buildInitialState(), fixture.script);
-    const rollSnapshot = endingState.calculator.roll.map((value) =>
+    const rollSnapshot = endingState.calculator.rollEntries.map((entry) => entry.y).map((value) =>
       value.kind === "rational" ? `${value.value.num.toString()}/${value.value.den.toString()}` : "NaN",
     );
     assert.equal(

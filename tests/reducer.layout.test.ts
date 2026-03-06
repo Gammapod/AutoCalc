@@ -81,8 +81,7 @@ export const runReducerLayoutTests = (): void => {
     calculator: {
       ...baselineWithSpace.calculator,
       total: r(7n),
-      roll: [r(7n)],
-      euclidRemainders: [{ rollIndex: 0, value: rv(1n) }],
+      rollEntries: [{ y: r(7n), remainder: rv(1n) }],
       operationSlots: [{ operator: "+", operand: 3n }],
       draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
     },
@@ -107,7 +106,7 @@ export const runReducerLayoutTests = (): void => {
     ceLockedWithEntryState.calculator.total,
     "keypad-only move does not trigger CE-style clear entry",
   );
-  assert.equal(sameSurfaceMoveNoCE.calculator.roll.length, 1, "keypad-only move preserves roll");
+  assert.equal(sameSurfaceMoveNoCE.calculator.rollEntries.length, 1, "keypad-only move preserves roll");
 
   const acrossSurfaceMoveTriggersCEStyle = reducer(ceLockedWithEntryState, {
     type: "MOVE_LAYOUT_CELL",
@@ -121,9 +120,9 @@ export const runReducerLayoutTests = (): void => {
     r(7n),
     "cross-surface move triggers CE-style clear entry and preserves total",
   );
-  assert.equal(acrossSurfaceMoveTriggersCEStyle.calculator.roll.length, 0, "cross-surface move clears roll via CE-style clear entry");
+  assert.equal(acrossSurfaceMoveTriggersCEStyle.calculator.rollEntries.length, 0, "cross-surface move clears roll via CE-style clear entry");
   assert.equal(
-    acrossSurfaceMoveTriggersCEStyle.calculator.euclidRemainders.length,
+    acrossSurfaceMoveTriggersCEStyle.calculator.rollEntries.length,
     0,
     "cross-surface move clears euclid remainders via CE-style clear entry",
   );
@@ -313,9 +312,9 @@ export const runReducerLayoutTests = (): void => {
     r(7n),
     "cross-surface swap triggers CE-style clear entry and preserves total",
   );
-  assert.equal(acrossSurfaceSwapTriggersCEStyle.calculator.roll.length, 0, "cross-surface swap clears roll via CE-style clear entry");
+  assert.equal(acrossSurfaceSwapTriggersCEStyle.calculator.rollEntries.length, 0, "cross-surface swap clears roll via CE-style clear entry");
   assert.equal(
-    acrossSurfaceSwapTriggersCEStyle.calculator.euclidRemainders.length,
+    acrossSurfaceSwapTriggersCEStyle.calculator.rollEntries.length,
     0,
     "cross-surface swap clears euclid remainders via CE-style clear entry",
   );

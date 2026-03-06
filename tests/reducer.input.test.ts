@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
-import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
-import type { GameState } from "../src/domain/types.js";
+import type { GameState, RollEntry } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 export const runReducerInputTests = (): void => {
   const base = initialState();
@@ -79,8 +80,8 @@ export const runReducerInputTests = (): void => {
   };
   const afterDivByZero = applyKeyAction(divByZeroSource, "=");
   assert.deepEqual(afterDivByZero.calculator.total, toNanCalculatorValue(), "division by zero sets total to NaN");
-  assert.equal(afterDivByZero.calculator.roll.at(-1)?.kind, "nan", "division by zero appends NaN roll row");
-  assert.equal(afterDivByZero.calculator.rollErrors.at(-1)?.code, "n/0", "division by zero records roll error code");
+  assert.equal(afterDivByZero.calculator.rollEntries.at(-1)?.y.kind, "nan", "division by zero appends NaN roll row");
+  assert.equal(afterDivByZero.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero records roll error code");
 
   const nanInputSource: GameState = {
     ...fullyUnlocked,
@@ -91,7 +92,7 @@ export const runReducerInputTests = (): void => {
   };
   const afterNanEquals = applyKeyAction(nanInputSource, "=");
   assert.deepEqual(afterNanEquals.calculator.total, toNanCalculatorValue(), "executing on NaN keeps NaN total");
-  assert.equal(afterNanEquals.calculator.rollErrors.at(-1)?.code, "NaN", "NaN execution records NaN error code");
+  assert.equal(afterNanEquals.calculator.rollEntries.at(-1)?.error?.code, "NaN", "NaN execution records NaN error code");
 
   const overflowSource: GameState = {
     ...fullyUnlocked,
@@ -108,14 +109,16 @@ export const runReducerInputTests = (): void => {
   const afterOverflow = applyKeyAction(overflowSource, "=");
   assert.deepEqual(afterOverflow.calculator.total, r(99n), "overflow clamps to boundary value");
   assert.equal(
-    afterOverflow.calculator.rollErrors.at(-1)?.code,
-    "x∉[-R,R]",
+    afterOverflow.calculator.rollEntries.at(-1)?.error?.code,
+    OVERFLOW_ERROR_CODE,
     "overflow records overflow error code",
   );
+
   const incrementSource = initialState();
   const afterIncrement = applyKeyAction(incrementSource, "++");
   assert.deepEqual(afterIncrement.calculator.total, r(1n), "increment updates total");
-  assert.deepEqual(afterIncrement.calculator.roll, [r(1n)], "increment appends new total to roll");
+  assert.deepEqual(afterIncrement.calculator.rollEntries, re(r(1n)), "increment appends new total to roll");
+
   const decrementSource: GameState = {
     ...initialState(),
     unlocks: {
@@ -128,16 +131,17 @@ export const runReducerInputTests = (): void => {
   };
   const afterDecrement = applyKeyAction(decrementSource, "--");
   assert.deepEqual(afterDecrement.calculator.total, r(-1n), "decrement updates total");
-  assert.deepEqual(afterDecrement.calculator.roll, [r(-1n)], "decrement appends new total to roll");
+  assert.deepEqual(afterDecrement.calculator.rollEntries, re(r(-1n)), "decrement appends new total to roll");
 
   const activeRollDigitNoOp: GameState = {
     ...fullyUnlocked,
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(5n),
-      roll: [r(5n)],
+      rollEntries: re(r(5n)),
     },
   };
   const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "1");
   assert.deepEqual(afterActiveRollDigit, activeRollDigitNoOp, "digit key is no-op while roll is active");
 };
+

@@ -4,10 +4,11 @@ import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
 import { applyUnlocks } from "../src/domain/unlocks.js";
-import type { GameState, Key } from "../src/domain/types.js";
+import type { GameState, Key, RollEntry } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 const press = (state: GameState, key: Key): GameState => reducer(state, { type: "PRESS_KEY", key });
 const withTwoDigitRange = (state: GameState): GameState =>
   reducer(reducer(state, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 1 }), {
@@ -63,7 +64,7 @@ export const runReducerUnlockTests = (): void => {
       ...initialState(),
       calculator: {
         ...initialState().calculator,
-        roll: [r(3n), r(0n), r(5n)],
+        rollEntries: re(r(3n), r(0n), r(5n)),
       },
     },
     unlockCatalog,
@@ -75,7 +76,7 @@ export const runReducerUnlockTests = (): void => {
       ...initialState(),
       calculator: {
         ...initialState().calculator,
-        roll: [r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)],
+        rollEntries: re(r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)),
       },
     },
     unlockCatalog,
@@ -93,7 +94,7 @@ export const runReducerUnlockTests = (): void => {
       ...initialState(),
       calculator: {
         ...initialState().calculator,
-        roll: [r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)],
+        rollEntries: re(r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)),
       },
     },
     unlockCatalog,
@@ -111,7 +112,7 @@ export const runReducerUnlockTests = (): void => {
       ...initialState(),
       calculator: {
         ...initialState().calculator,
-        rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
+        rollEntries: [{ y: r(0n), error: { code: "n/0", kind: "division_by_zero" } }],
       },
     },
     unlockCatalog,
@@ -129,7 +130,7 @@ export const runReducerUnlockTests = (): void => {
       ...initialState(),
       calculator: {
         ...initialState().calculator,
-        roll: [r(47n), r(40n), r(33n), r(26n), r(19n), r(12n), r(5n)],
+        rollEntries: re(r(47n), r(40n), r(33n), r(26n), r(19n), r(12n), r(5n)),
       },
     },
     unlockCatalog,

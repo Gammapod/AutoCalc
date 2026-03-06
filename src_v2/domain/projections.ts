@@ -19,9 +19,9 @@ export type DomainReadModel = {
 
 export const buildReadModel = (state: GameState): DomainReadModel => ({
   totalDisplay: state.calculator.total.kind === "nan" ? "NaN" : toDisplayString(state.calculator.total.value),
-  rollView: buildRollViewModel(state.calculator.roll, state.calculator.euclidRemainders, state.calculator.rollErrors),
+  rollView: buildRollViewModel(state.calculator.rollEntries),
   slotView: buildOperationSlotDisplay(state),
   unlockRows: buildUnlockRows(state),
-  graphPoints: buildGraphPoints(state.calculator.roll, state.calculator.rollErrors),
-  graphVisible: isGraphVisible(state.calculator.roll),
+  graphPoints: buildGraphPoints(state.calculator.rollEntries),
+  graphVisible: isGraphVisible(state.calculator.rollEntries),
 });

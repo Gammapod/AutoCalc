@@ -1,4 +1,4 @@
-import type { CalculatorValue, RollErrorEntry } from "../../../src/domain/types.js";
+import type { RollEntry } from "../../../src/domain/types.js";
 export {
   buildOperationSlotDisplay,
   buildRollViewModel,
@@ -15,23 +15,18 @@ export type GraphPoint = {
   hasError: boolean;
 };
 
-export const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorEntry[] = []): GraphPoint[] => {
-  const errorByRollIndex = new Map<number, string>();
-  for (const entry of rollErrors) {
-    errorByRollIndex.set(entry.rollIndex, entry.code);
-  }
-  const seenErrorCodes = new Set<string>();
+export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
   const points: GraphPoint[] = [];
-  for (let index = 0; index < roll.length; index += 1) {
-    const errorCode = errorByRollIndex.get(index);
-    if (errorCode && seenErrorCodes.has(errorCode)) {
+  let previousVisibleErrorCode: string | undefined;
+  for (let index = 0; index < rollEntries.length; index += 1) {
+    const entry = rollEntries[index];
+    const errorCode = entry.error?.code;
+    if (errorCode && errorCode === previousVisibleErrorCode) {
       continue;
     }
-    if (errorCode) {
-      seenErrorCodes.add(errorCode);
-    }
-    const value = roll[index];
+    const value = entry.y;
     if (value.kind !== "rational") {
+      previousVisibleErrorCode = errorCode;
       continue;
     }
     points.push({
@@ -39,8 +34,9 @@ export const buildGraphPoints = (roll: CalculatorValue[], rollErrors: RollErrorE
       y: Number(value.value.num) / Number(value.value.den),
       hasError: Boolean(errorCode),
     });
+    previousVisibleErrorCode = errorCode;
   }
   return points;
 };
 
-export const isGraphVisible = (roll: CalculatorValue[]): boolean => roll.length > 0;
+export const isGraphVisible = (rollEntries: RollEntry[]): boolean => rollEntries.length > 0;

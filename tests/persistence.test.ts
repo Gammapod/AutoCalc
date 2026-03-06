@@ -10,7 +10,7 @@ import {
   createLocalStorageRepo,
   loadFromRawSave,
 } from "../src/infra/persistence/localStorageRepo.js";
-import type { GameState } from "../src/domain/types.js";
+import type { GameState, RollEntry } from "../src/domain/types.js";
 
 type MemoryStorage = {
   getItem: (key: string) => string | null;
@@ -20,6 +20,7 @@ type MemoryStorage = {
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const createMemoryStorage = (): MemoryStorage => {
   const map = new Map<string, string>();
@@ -44,7 +45,7 @@ export const runPersistenceTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(12n),
-      roll: [r(11n), r(12n)],
+      rollEntries: re(r(11n), r(12n)),
     },
     keyPressCounts: { "+": 3, "=": 2 },
     allocatorReturnPressCount: 2,
@@ -397,15 +398,14 @@ export const runPersistenceTests = (): void => {
     calculator: {
       ...base.calculator,
       total: toNanCalculatorValue(),
-      roll: [r(5n), toNanCalculatorValue()],
-      rollErrors: [{ rollIndex: 1, code: "n/0" as const, kind: "division_by_zero" as const }],
+      rollEntries: [{ y: r(5n) }, { y: toNanCalculatorValue(), error: { code: "n/0" as const, kind: "division_by_zero" as const } }],
     },
   };
   repo.save(nanRoundTrip);
   const loadedNan = repo.load();
   assert.ok(loadedNan, "NaN payload hydrates");
   assert.deepEqual(loadedNan?.calculator.total, toNanCalculatorValue(), "NaN total round-trips");
-  assert.equal(loadedNan?.calculator.roll[1]?.kind, "nan", "NaN roll entries round-trip");
+  assert.equal(loadedNan?.calculator.rollEntries[1]?.y.kind, "nan", "NaN roll entries round-trip");
 
   const overspentV9 = loadFromRawSave(
     JSON.stringify({

@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
-import type { GameState } from "../src/domain/types.js";
+import type { GameState, RollEntry } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const getSpent = (state: GameState): number => {
   const a = state.allocator.allocations;
@@ -86,7 +87,7 @@ export const runReducerAllocatorDeviceTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(42n),
-      roll: [r(5n), r(42n)],
+      rollEntries: re(r(5n), r(42n)),
     },
   };
 

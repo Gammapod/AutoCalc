@@ -16,7 +16,7 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
     return;
   }
 
-  const view = buildRollViewModel(state.calculator.roll, state.calculator.euclidRemainders, state.calculator.rollErrors);
+  const view = buildRollViewModel(state.calculator.rollEntries);
   feedPanel.innerHTML = "";
   feedPanel.setAttribute("aria-hidden", "false");
   feedPanel.style.setProperty("--roll-line-count", view.lineCount.toString());

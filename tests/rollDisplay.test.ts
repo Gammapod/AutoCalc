@@ -2,24 +2,25 @@ import assert from "node:assert/strict";
 import { buildRollLines, buildRollRows, buildRollViewModel } from "../src_v2/ui/shared/readModel.js";
 import { resolveActiveVisualizerPanel } from "../src_v2/ui/modules/visualizerHost.js";
 import { initialState } from "../src/domain/state.js";
-import type { EuclidRemainderEntry, GameState } from "../src/domain/types.js";
+import type { GameState, RollEntry } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
   kind: "rational",
   value: { num, den },
 });
+const e = (y: RollEntry["y"], patch: Partial<RollEntry> = {}): RollEntry => ({ y, ...patch });
 
 export const runRollDisplayTests = (): void => {
   assert.deepEqual(
-    buildRollLines([r(3n), r(9n), r(15n)]),
+    buildRollLines([e(r(3n)), e(r(9n)), e(r(15n))]),
     ["3", "9", "15"],
     "roll lines render oldest-to-newest (top-to-bottom)",
   );
 
   assert.deepEqual(buildRollLines([]), [], "empty roll renders no lines");
   assert.deepEqual(
-    buildRollRows(["3", "9", "15"]),
+    buildRollRows([e(r(3n)), e(r(9n)), e(r(15n))]),
     [
       { prefix: "X =", value: "3", remainder: undefined, errorCode: undefined },
       { prefix: "  =", value: "9", remainder: undefined, errorCode: undefined },
@@ -34,7 +35,7 @@ export const runRollDisplayTests = (): void => {
   assert.equal(hiddenRoll.valueColumnChars, 0, "empty roll value column width is zero");
   assert.deepEqual(hiddenRoll.rows, [], "empty roll model returns no rows");
 
-  const visibleRoll = buildRollViewModel([r(3n), r(9n), r(15n)]);
+  const visibleRoll = buildRollViewModel([e(r(3n)), e(r(9n)), e(r(15n))]);
   assert.equal(visibleRoll.isVisible, true, "non-empty roll is visible");
   assert.equal(visibleRoll.lineCount, 3, "non-empty roll line count matches entry count");
   assert.equal(visibleRoll.valueColumnChars, 2, "value column width tracks longest rendered value");
@@ -48,11 +49,10 @@ export const runRollDisplayTests = (): void => {
     "roll model rows preserve chronological order and prefixes",
   );
 
-  assert.deepEqual(buildRollLines([r(3n, 2n)]), ["3/2"], "fraction roll values render as exact fractions");
+  assert.deepEqual(buildRollLines([e(r(3n, 2n))]), ["3/2"], "fraction roll values render as exact fractions");
 
-  const remainderRows: EuclidRemainderEntry[] = [{ rollIndex: 1, value: rv(1n, 2n) }];
   assert.deepEqual(
-    buildRollRows(["10", "1"], remainderRows),
+    buildRollRows([e(r(10n)), e(r(1n), { remainder: rv(1n, 2n) })]),
     [
       { prefix: "X =", value: "10", remainder: undefined, errorCode: undefined },
       { prefix: "  =", value: "1", remainder: "1/2", errorCode: undefined },
@@ -60,7 +60,7 @@ export const runRollDisplayTests = (): void => {
     "roll rows place euclidean remainders on the same line as their target roll entry",
   );
 
-  const rollWithRemainder = buildRollViewModel([r(10n), r(1n)], remainderRows);
+  const rollWithRemainder = buildRollViewModel([e(r(10n)), e(r(1n), { remainder: rv(1n, 2n) })]);
   assert.deepEqual(
     rollWithRemainder.rows,
     [
@@ -70,11 +70,10 @@ export const runRollDisplayTests = (): void => {
     "roll view model includes the same-line euclidean remainder",
   );
 
-  const rollWithErrorAndRemainder = buildRollRows(
-    ["10", "1"],
-    remainderRows,
-    [{ rollIndex: 1, code: "n/0", kind: "division_by_zero" }],
-  );
+  const rollWithErrorAndRemainder = buildRollRows([
+    e(r(10n)),
+    e(r(1n), { remainder: rv(1n, 2n), error: { code: "n/0", kind: "division_by_zero" } }),
+  ]);
   assert.deepEqual(
     rollWithErrorAndRemainder,
     [
@@ -84,14 +83,12 @@ export const runRollDisplayTests = (): void => {
     "error code takes precedence over displayed remainder on the same roll row",
   );
 
-  const rollWithDuplicateErrorCodes = buildRollRows(
-    ["10", "1", "2", "99"],
-    [],
-    [
-      { rollIndex: 1, code: "n/0", kind: "division_by_zero" },
-      { rollIndex: 2, code: "n/0", kind: "division_by_zero" },
-    ],
-  );
+  const rollWithDuplicateErrorCodes = buildRollRows([
+    e(r(10n)),
+    e(r(1n), { error: { code: "n/0", kind: "division_by_zero" } }),
+    e(r(2n), { error: { code: "n/0", kind: "division_by_zero" } }),
+    e(r(99n)),
+  ]);
   assert.deepEqual(
     rollWithDuplicateErrorCodes,
     [
@@ -99,7 +96,22 @@ export const runRollDisplayTests = (): void => {
       { prefix: "  =", value: "", remainder: undefined, errorCode: "n/0" },
       { prefix: "  =", value: "99", remainder: undefined, errorCode: undefined },
     ],
-    "duplicate error codes suppress later matching error rows in the roll",
+    "duplicate consecutive error codes suppress later matching error rows in the roll",
+  );
+
+  const nonConsecutiveDuplicateErrors = buildRollRows([
+    e(r(10n), { error: { code: "n/0", kind: "division_by_zero" } }),
+    e(r(11n)),
+    e(r(12n), { error: { code: "n/0", kind: "division_by_zero" } }),
+  ]);
+  assert.deepEqual(
+    nonConsecutiveDuplicateErrors,
+    [
+      { prefix: "X =", value: "", remainder: undefined, errorCode: "n/0" },
+      { prefix: "  =", value: "11", remainder: undefined, errorCode: undefined },
+      { prefix: "  =", value: "", remainder: undefined, errorCode: "n/0" },
+    ],
+    "non-consecutive duplicate errors are preserved",
   );
 
   const base = initialState();
@@ -127,4 +139,3 @@ export const runRollDisplayTests = (): void => {
     "graph active visualizer wins when selected",
   );
 };
-

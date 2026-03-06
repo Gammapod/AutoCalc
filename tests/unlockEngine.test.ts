@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { analyzeUnlockPredicate } from "../src/domain/unlockEngine.js";
 import { initialState, OVERFLOW_ERROR_SEEN_ID } from "../src/domain/state.js";
-import type { GameState, UnlockPredicate } from "../src/domain/types.js";
+import type { GameState, RollEntry, UnlockPredicate } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const assertCriteriaConsistency = (
   predicate: UnlockPredicate,
@@ -73,7 +74,7 @@ export const runUnlockEngineTests = (): void => {
     rollLength,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(1n), r(2n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(1n), r(2n)) },
     },
     "roll_length_at_least met",
   );
@@ -84,7 +85,7 @@ export const runUnlockEngineTests = (): void => {
     rollEndsWith,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(1n), r(2n), r(3n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(1n), r(2n), r(3n)) },
     },
     "roll_ends_with_sequence met",
   );
@@ -92,7 +93,7 @@ export const runUnlockEngineTests = (): void => {
     rollEndsWith,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(1n), r(2n), r(4n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(1n), r(2n), r(4n)) },
     },
     "roll_ends_with_sequence unmet",
   );
@@ -102,7 +103,7 @@ export const runUnlockEngineTests = (): void => {
     rollContains,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(3n), r(0n), r(5n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(3n), r(0n), r(5n)) },
     },
     "roll_contains_value met",
   );
@@ -110,7 +111,7 @@ export const runUnlockEngineTests = (): void => {
     rollContains,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(3n), r(4n), r(5n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(3n), r(4n), r(5n)) },
     },
     "roll_contains_value unmet",
   );
@@ -123,7 +124,7 @@ export const runUnlockEngineTests = (): void => {
     alternatingAbsRun,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)) },
     },
     "roll_ends_with_alternating_sign_constant_abs_run met",
   );
@@ -131,7 +132,7 @@ export const runUnlockEngineTests = (): void => {
     alternatingAbsRun,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(5n), r(-5n), r(5n), r(0n), r(5n), r(-5n), r(5n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(5n), r(-5n), r(5n), r(0n), r(5n), r(-5n), r(5n)) },
     },
     "roll_ends_with_alternating_sign_constant_abs_run unmet on zero",
   );
@@ -139,7 +140,7 @@ export const runUnlockEngineTests = (): void => {
     alternatingAbsRun,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(5n), r(-5n), r(5n), r(-6n), r(5n), r(-5n), r(5n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(5n), r(-5n), r(5n), r(-6n), r(5n), r(-5n), r(5n)) },
     },
     "roll_ends_with_alternating_sign_constant_abs_run unmet on abs mismatch",
   );
@@ -153,7 +154,7 @@ export const runUnlockEngineTests = (): void => {
     constantStepRun,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)) },
     },
     "roll_ends_with_constant_step_run met",
   );
@@ -161,7 +162,7 @@ export const runUnlockEngineTests = (): void => {
     constantStepRun,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(5n), r(6n), r(7n), r(8n), r(9n), r(10n), r(11n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(5n), r(6n), r(7n), r(8n), r(9n), r(10n), r(11n)) },
     },
     "roll_ends_with_constant_step_run unmet on step 1",
   );
@@ -169,7 +170,7 @@ export const runUnlockEngineTests = (): void => {
     constantStepRun,
     {
       ...base,
-      calculator: { ...base.calculator, roll: [r(5n), r(12n), r(19n), r(26n), r(32n), r(40n), r(47n)] },
+      calculator: { ...base.calculator, rollEntries: re(r(5n), r(12n), r(19n), r(26n), r(32n), r(40n), r(47n)) },
     },
     "roll_ends_with_constant_step_run unmet on non-constant step",
   );
@@ -261,7 +262,7 @@ export const runUnlockEngineTests = (): void => {
       ...base,
       calculator: {
         ...base.calculator,
-        rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
+        rollEntries: [{ y: r(0n), error: { code: "n/0", kind: "division_by_zero" } }],
       },
     },
     "division_by_zero_error_seen met",

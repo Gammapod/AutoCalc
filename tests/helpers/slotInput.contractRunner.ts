@@ -18,8 +18,9 @@ const projectState = (state: GameState): SlotInputStateProjection => ({
   total: state.calculator.total,
   operationSlots: state.calculator.operationSlots,
   draftingSlot: state.calculator.draftingSlot,
-  roll: state.calculator.roll,
-  rollErrors: state.calculator.rollErrors,
+  roll: state.calculator.rollEntries.map((entry) => entry.y),
+  rollErrors: state.calculator.rollEntries.flatMap((entry, rollIndex) =>
+    entry.error ? [{ rollIndex, code: entry.error.code, kind: entry.error.kind }] : []),
   keyPressCounts: state.keyPressCounts,
 });
 
@@ -78,4 +79,3 @@ export const assertScenarioResult = (
     );
   }
 };
-

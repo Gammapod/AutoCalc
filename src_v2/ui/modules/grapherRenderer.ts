@@ -167,8 +167,8 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     return;
   }
 
-  const points = buildGraphPoints(state.calculator.roll, state.calculator.rollErrors);
-  const hasPoints = isGraphRenderable(state.calculator.roll, state.calculator.rollErrors);
+  const points = buildGraphPoints(state.calculator.rollEntries);
+  const hasPoints = isGraphRenderable(state.calculator.rollEntries);
   const options = buildGraphOptions(hasPoints, points, state.unlocks.maxTotalDigits);
   const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
   const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));

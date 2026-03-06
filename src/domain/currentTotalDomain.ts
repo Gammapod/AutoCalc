@@ -10,9 +10,7 @@ const isClearedTotalDisplayState = (state: GameState): boolean => {
     calculator.total.value.num === 0n &&
     calculator.total.value.den === 1n &&
     !calculator.pendingNegativeTotal &&
-    calculator.roll.length === 0 &&
-    calculator.rollErrors.length === 0 &&
-    calculator.euclidRemainders.length === 0 &&
+    calculator.rollEntries.length === 0 &&
     calculator.operationSlots.length === 0 &&
     calculator.draftingSlot === null
   );

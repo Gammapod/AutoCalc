@@ -23,7 +23,7 @@ import {
 import { isKeyUnlocked } from "./keyUnlocks.js";
 import { clearOperationEntry, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import { CHECKLIST_UNLOCK_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
-import type { Digit, ExecKey, ExecutionErrorKind, GameState, Key, RationalValue, SlotOperator } from "./types.js";
+import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, GameState, Key, RationalValue, RollEntry, SlotOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
@@ -52,9 +52,7 @@ const getMagnitudeText = (total: GameState["calculator"]["total"]): string => {
 };
 
 const isSeedEntryContext = (state: GameState): boolean =>
-  state.calculator.roll.length === 0 &&
-  state.calculator.rollErrors.length === 0 &&
-  state.calculator.euclidRemainders.length === 0 &&
+  state.calculator.rollEntries.length === 0 &&
   state.calculator.operationSlots.length === 0 &&
   state.calculator.draftingSlot === null;
 
@@ -145,7 +143,7 @@ const applyNegate = (state: GameState): GameState => {
     return state;
   }
 
-  if (state.calculator.roll.length > 0) {
+  if (state.calculator.rollEntries.length > 0) {
     return state;
   }
 
@@ -210,7 +208,7 @@ const finalizeDraftingSlot = (state: GameState): GameState => {
 type EvaluatedExecution = {
   nextTotal: GameState["calculator"]["total"];
   euclidRemainder?: RationalValue;
-  errorCode?: GameState["calculator"]["rollErrors"][number]["code"];
+  errorCode?: ErrorCode;
   errorKind?: ExecutionErrorKind;
 };
 
@@ -271,35 +269,27 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
   };
 };
 
+const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => ({
+  y: evaluation.nextTotal,
+  ...(evaluation.euclidRemainder && !evaluation.errorCode ? { remainder: evaluation.euclidRemainder } : {}),
+  ...(evaluation.errorCode && evaluation.errorKind
+    ? {
+      error: {
+        code: evaluation.errorCode,
+        kind: evaluation.errorKind,
+      },
+    }
+    : {}),
+});
+
 const applyEquals = (state: GameState): GameState => {
   if (!state.unlocks.execution["="]) {
     return state;
   }
 
   const finalized = finalizeDraftingSlot(state);
-  const startingTotal = finalized.calculator.total;
-  const { operationSlots, roll } = finalized.calculator;
-  const rollWasEmpty = roll.length === 0;
-  const hasOperations = operationSlots.length > 0;
-
   const evaluation = evaluateExecutionOutcome(finalized, "=");
-  const appendedRoll = rollWasEmpty && hasOperations ? [startingTotal, evaluation.nextTotal] : [evaluation.nextTotal];
-  const appendedRollIndex = roll.length + appendedRoll.length - 1;
-  const nextRemainders = [...finalized.calculator.euclidRemainders];
-  if (evaluation.euclidRemainder && !evaluation.errorCode) {
-    nextRemainders.push({
-      rollIndex: appendedRollIndex,
-      value: evaluation.euclidRemainder,
-    });
-  }
-  const nextRollErrors = [...finalized.calculator.rollErrors];
-  if (evaluation.errorCode && evaluation.errorKind) {
-    nextRollErrors.push({
-      rollIndex: appendedRollIndex,
-      code: evaluation.errorCode,
-      kind: evaluation.errorKind,
-    });
-  }
+  const nextEntry = toRollEntry(evaluation);
 
   const withRoll: GameState = {
     ...finalized,
@@ -307,9 +297,7 @@ const applyEquals = (state: GameState): GameState => {
       ...finalized.calculator,
       total: evaluation.nextTotal,
       pendingNegativeTotal: false,
-      roll: [...roll, ...appendedRoll],
-      rollErrors: nextRollErrors,
-      euclidRemainders: nextRemainders,
+      rollEntries: [...finalized.calculator.rollEntries, nextEntry],
     },
   };
 
@@ -323,15 +311,7 @@ const applyIncrement = (state: GameState): GameState => {
   }
 
   const evaluation = evaluateExecutionOutcome(state, "++");
-  const appendedRollIndex = state.calculator.roll.length;
-  const nextRollErrors = [...state.calculator.rollErrors];
-  if (evaluation.errorCode && evaluation.errorKind) {
-    nextRollErrors.push({
-      rollIndex: appendedRollIndex,
-      code: evaluation.errorCode,
-      kind: evaluation.errorKind,
-    });
-  }
+  const nextEntry = toRollEntry(evaluation);
 
   const withIncrementedTotal: GameState = {
     ...state,
@@ -339,8 +319,7 @@ const applyIncrement = (state: GameState): GameState => {
       ...state.calculator,
       total: evaluation.nextTotal,
       pendingNegativeTotal: false,
-      roll: [...state.calculator.roll, evaluation.nextTotal],
-      rollErrors: nextRollErrors,
+      rollEntries: [...state.calculator.rollEntries, nextEntry],
     },
   };
 
@@ -355,15 +334,7 @@ const applyDecrement = (state: GameState): GameState => {
   }
 
   const evaluation = evaluateExecutionOutcome(state, "--");
-  const appendedRollIndex = state.calculator.roll.length;
-  const nextRollErrors = [...state.calculator.rollErrors];
-  if (evaluation.errorCode && evaluation.errorKind) {
-    nextRollErrors.push({
-      rollIndex: appendedRollIndex,
-      code: evaluation.errorCode,
-      kind: evaluation.errorKind,
-    });
-  }
+  const nextEntry = toRollEntry(evaluation);
 
   const withDecrementedTotal: GameState = {
     ...state,
@@ -371,8 +342,7 @@ const applyDecrement = (state: GameState): GameState => {
       ...state.calculator,
       total: evaluation.nextTotal,
       pendingNegativeTotal: false,
-      roll: [...state.calculator.roll, evaluation.nextTotal],
-      rollErrors: nextRollErrors,
+      rollEntries: [...state.calculator.rollEntries, nextEntry],
     },
   };
 
@@ -413,21 +383,22 @@ const applyUndo = (state: GameState): GameState => {
     return state;
   }
 
-  const rollLength = state.calculator.roll.length;
-  if (rollLength >= 2) {
-    const previousTotal = state.calculator.roll[rollLength - 2];
-    const nextRoll = [...state.calculator.roll, previousTotal];
-    return {
-      ...state,
-      calculator: {
-        ...state.calculator,
-        total: previousTotal,
-        roll: nextRoll,
-        pendingNegativeTotal: false,
-      },
-    };
+  if (state.calculator.rollEntries.length === 0) {
+    return state;
   }
-  return state;
+
+  const nextRollEntries = state.calculator.rollEntries.slice(0, -1);
+  const nextTotal = nextRollEntries[nextRollEntries.length - 1]?.y ?? createResetCalculatorState().total;
+  return {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      total: nextTotal,
+      rollEntries: nextRollEntries,
+      pendingNegativeTotal: false,
+      singleDigitInitialTotalEntry: nextRollEntries.length === 0,
+    },
+  };
 };
 
 const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
@@ -435,7 +406,7 @@ const isOperator = (key: Key): key is SlotOperator =>
   key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1";
 
 const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
-  if (state.calculator.roll.length === 0 || !isOperator(key)) {
+  if (state.calculator.rollEntries.length === 0 || !isOperator(key)) {
     return state;
   }
 
@@ -450,7 +421,7 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   // 1) active-roll digit keys are hard no-op
   // 2) active-roll operator keys clear current operation entry before handling
   // 3) normal key dispatch
-  if (state.calculator.roll.length > 0 && isDigit(key)) {
+  if (state.calculator.rollEntries.length > 0 && isDigit(key)) {
     return state;
   }
 

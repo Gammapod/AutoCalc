@@ -63,5 +63,5 @@ export const runV2ParityTests = (): void => {
     "drafting",
     "mode drafting with active drafting slot",
   );
-  assert.equal(getCalculatorMode(v2), v2.calculator.roll.length > 0 ? "rolled" : "idle", "rolled mode tracks roll presence");
+  assert.equal(getCalculatorMode(v2), v2.calculator.rollEntries.length > 0 ? "rolled" : "idle", "rolled mode tracks roll presence");
 };
