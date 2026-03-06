@@ -1,50 +1,76 @@
 import { isRationalCalculatorValue } from "../../../../src/domain/calculatorValue.js";
-import type { RollEntry } from "../../../../src/domain/types.js";
+import type { CalculatorValue, RollEntry } from "../../../../src/domain/types.js";
 
 export type GraphPoint = {
   x: number;
   y: number;
+  kind?: "seed" | "roll" | "remainder";
   hasError: boolean;
 };
 
 const GRAPH_WINDOW_SIZE = 25;
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 
-export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
+export const buildGraphPoints = (
+  rollEntries: RollEntry[],
+  seedSnapshot?: CalculatorValue,
+): GraphPoint[] => {
   const points: GraphPoint[] = [];
-  let previousVisibleErrorCode: string | undefined;
+  if (seedSnapshot && isRationalCalculatorValue(seedSnapshot)) {
+    points.push({
+      x: 0,
+      y: Number(seedSnapshot.value.num) / Number(seedSnapshot.value.den),
+      kind: "seed",
+      hasError: false,
+    });
+  }
   for (let index = 0; index < rollEntries.length; index += 1) {
     const entry = rollEntries[index];
-    const errorCode = entry.error?.code;
-    if (errorCode && errorCode === previousVisibleErrorCode) {
-      continue;
-    }
+    const x = index + 1;
     const value = entry.y;
     if (!isRationalCalculatorValue(value)) {
-      previousVisibleErrorCode = errorCode;
+      if (entry.remainder) {
+        points.push({
+          x,
+          y: Number(entry.remainder.num) / Number(entry.remainder.den),
+          kind: "remainder",
+          hasError: false,
+        });
+      }
       continue;
     }
     points.push({
-      x: points.length,
+      x,
       y: Number(value.value.num) / Number(value.value.den),
-      hasError: Boolean(errorCode),
+      kind: "roll",
+      hasError: Boolean(entry.error),
     });
-    previousVisibleErrorCode = errorCode;
+    if (entry.remainder) {
+      points.push({
+        x,
+        y: Number(entry.remainder.num) / Number(entry.remainder.den),
+        kind: "remainder",
+        hasError: false,
+      });
+    }
   }
   return points;
 };
 
-export const buildGraphYWindow = (unlockedTotalDigits: number): { min: number; max: number } => {
+export const buildGraphYWindow = (
+  unlockedTotalDigits: number,
+): { min: number; max: number } => {
   const clampedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
   const maxMagnitude = Math.pow(10, clampedDigits) - 1;
   return { min: -maxMagnitude, max: maxMagnitude };
 };
 
-export const buildGraphXWindow = (rollLength: number): { min: number; max: number } => {
-  if (rollLength < GRAPH_WINDOW_SIZE) {
+export const buildGraphXWindow = (maxXIndex: number): { min: number; max: number } => {
+  if (maxXIndex < GRAPH_WINDOW_SIZE) {
     return { min: 0, max: GRAPH_WINDOW_SIZE };
   }
-  return { min: rollLength - GRAPH_WINDOW_SIZE, max: rollLength - 1 };
+  return { min: maxXIndex - (GRAPH_WINDOW_SIZE - 1), max: maxXIndex };
 };
 
-export const isGraphRenderable = (rollEntries: RollEntry[]): boolean => buildGraphPoints(rollEntries).length > 0;
+export const isGraphRenderable = (rollEntries: RollEntry[], seedSnapshot?: CalculatorValue): boolean =>
+  buildGraphPoints(rollEntries, seedSnapshot).length > 0;

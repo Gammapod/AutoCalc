@@ -9,6 +9,7 @@ import { runRollDisplayTests } from "./rollDisplay.test.js";
 import { runTotalDisplayTests } from "./totalDisplay.test.js";
 import { runUnlocksDisplayTests } from "./unlocksDisplay.test.js";
 import { runGraphDisplayTests } from "./graphDisplay.test.js";
+import { runLegacyGraphRenderModelTests } from "./legacyGraphRenderModel.test.js";
 import { runKeyLabelDisplayTests } from "./keyLabelDisplay.test.js";
 import { runBrowserImportSafetyTests } from "./browserImportSafety.test.js";
 import { runUnlockEngineTests } from "./unlockEngine.test.js";
@@ -68,6 +69,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/operation-slot-display", runOperationSlotDisplayTests],
   ["ui/roll-display", runRollDisplayTests],
   ["ui/graph-display", runGraphDisplayTests],
+  ["ui/legacy-graph-render-model", runLegacyGraphRenderModelTests],
   ["ui/storage-display", runStorageDisplayTests],
   ["ui/drag-drop-behavior", runDragDropBehaviorTests],
   ["ui/button-behavior", runButtonBehaviorTests],

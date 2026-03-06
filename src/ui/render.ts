@@ -65,6 +65,7 @@ type RollViewModel = {
 export type GraphPoint = {
   x: number;
   y: number;
+  kind?: "seed" | "roll" | "remainder";
   hasError: boolean;
 };
 
@@ -135,12 +136,6 @@ type ChartHandle = {
 };
 
 type ChartCtor = new (ctx: CanvasRenderingContext2D, config: GraphChartConfig) => ChartHandle;
-
-declare global {
-  interface Window {
-    Chart?: ChartCtor;
-  }
-}
 
 let previousUnlockSnapshot: Record<Key, boolean> | null = null;
 let pendingToggleAnimationByFlag: Record<string, "on" | "off"> = {};
@@ -516,26 +511,48 @@ export const buildRollViewModel = (
 export const getRollLineClassName = (row: RollRow): string =>
   row.remainder || row.errorCode ? "roll-line roll-line--with-remainder" : "roll-line";
 
-export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
+export const buildGraphPoints = (
+  rollEntries: RollEntry[],
+  seedSnapshot?: CalculatorValue,
+): GraphPoint[] => {
   const points: GraphPoint[] = [];
-  let previousVisibleErrorCode: string | undefined;
+  if (seedSnapshot && isRationalCalculatorValue(seedSnapshot)) {
+    points.push({
+      x: 0,
+      y: Number(seedSnapshot.value.num) / Number(seedSnapshot.value.den),
+      kind: "seed",
+      hasError: false,
+    });
+  }
   for (let index = 0; index < rollEntries.length; index += 1) {
     const entry = rollEntries[index];
-    const errorCode = entry.error?.code;
-    if (errorCode && errorCode === previousVisibleErrorCode) {
-      continue;
-    }
+    const x = index + 1;
     const value = entry.y;
     if (!isRationalCalculatorValue(value)) {
-      previousVisibleErrorCode = errorCode;
+      if (entry.remainder) {
+        points.push({
+          x,
+          y: Number(entry.remainder.num) / Number(entry.remainder.den),
+          kind: "remainder",
+          hasError: false,
+        });
+      }
       continue;
     }
     points.push({
-      x: points.length,
+      x,
       y: Number(value.value.num) / Number(value.value.den),
-      hasError: Boolean(errorCode),
+      kind: "roll",
+      hasError: Boolean(entry.error),
     });
-    previousVisibleErrorCode = errorCode;
+    if (entry.remainder) {
+      points.push({
+        x,
+        y: Number(entry.remainder.num) / Number(entry.remainder.den),
+        kind: "remainder",
+        hasError: false,
+      });
+    }
   }
   return points;
 };
@@ -777,26 +794,28 @@ export const renderChecklistModule = (root: Element, state: GameState): void => 
   renderUnlockChecklist(unlockEl, state);
 };
 
-export const buildGraphYWindow = (unlockedTotalDigits: number): { min: number; max: number } => {
+export const buildGraphYWindow = (
+  unlockedTotalDigits: number,
+): { min: number; max: number } => {
   const clampedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
   const maxMagnitude = Math.pow(10, clampedDigits) - 1;
   return { min: -maxMagnitude, max: maxMagnitude };
 };
 
 export const buildGraphXWindow = (
-  rollLength: number,
+  maxXIndex: number,
   windowSize: number = GRAPH_WINDOW_SIZE,
 ): { min: number; max: number } => {
-  if (rollLength < windowSize) {
+  if (maxXIndex < windowSize) {
     return { min: 0, max: windowSize };
   }
-  return { min: rollLength - windowSize, max: rollLength - 1 };
+  return { min: maxXIndex - (windowSize - 1), max: maxXIndex };
 };
 
-const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTotalDigits: number): GraphOptions => {
+const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], maxXIndex: number, unlockedTotalDigits: number): GraphOptions => {
+  const xWindow = buildGraphXWindow(maxXIndex);
   const bounds = buildGraphYWindow(unlockedTotalDigits);
-  const xWindow = buildGraphXWindow(points.length);
-  const makeTickLabelCallback =
+  const makeXAxisTickLabelCallback =
     (axisMax: number) =>
     (value: string | number): string => {
       const numeric = typeof value === "number" ? value : Number(value);
@@ -812,6 +831,18 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTot
       }
       return nearestFive.toString();
     };
+  const makeYAxisTickLabelCallback =
+    (axisMin: number, axisMax: number) =>
+    (value: string | number): string => {
+      const numeric = typeof value === "number" ? value : Number(value);
+      if (!Number.isFinite(numeric)) {
+        return "";
+      }
+      if (Math.abs(numeric - axisMin) < 1e-9 || Math.abs(numeric) < 1e-9 || Math.abs(numeric - axisMax) < 1e-9) {
+        return Math.trunc(numeric).toString();
+      }
+      return "";
+    };
   return {
     animation: false,
     responsive: true,
@@ -824,20 +855,20 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTot
       x: {
         min: hasPoints ? xWindow.min : 0,
         max: hasPoints ? xWindow.max : GRAPH_WINDOW_SIZE,
-        display: hasPoints,
+        display: true,
         ticks: {
           color: "#bcffd6",
           precision: 0,
           autoSkip: true,
-          callback: makeTickLabelCallback(xWindow.max),
+          callback: makeXAxisTickLabelCallback(xWindow.max),
         },
         grid: {
           color: "rgba(188, 255, 214, 0.2)",
-          display: hasPoints,
+          display: true,
         },
         border: {
           color: "rgba(188, 255, 214, 0.45)",
-          display: hasPoints,
+          display: true,
         },
       },
       y: {
@@ -846,8 +877,8 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTot
         display: true,
         ticks: {
           color: "#bcffd6",
-          autoSkip: true,
-          callback: makeTickLabelCallback(bounds.max),
+          autoSkip: false,
+          callback: makeYAxisTickLabelCallback(bounds.min, bounds.max),
         },
         grid: {
           color: (context: { tick?: { value?: number | string } }) => {
@@ -901,6 +932,7 @@ const syncGraphVisibilityUi = (root: Element, graphVisible: boolean): void => {
 const renderGraphDisplay = (
   root: Element,
   rollEntries: RollEntry[],
+  seedSnapshot: CalculatorValue | undefined,
   unlockedTotalDigits: number,
 ): void => {
   const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
@@ -914,7 +946,7 @@ const renderGraphDisplay = (
     graphCanvas = canvas;
   }
 
-  const chartCtor = window.Chart;
+  const chartCtor = (window as Window & { Chart?: ChartCtor }).Chart;
   if (!chartCtor) {
     return;
   }
@@ -924,11 +956,21 @@ const renderGraphDisplay = (
     return;
   }
 
-  const points = buildGraphPoints(rollEntries);
-  const hasPoints = isGraphVisible(rollEntries);
-  const options = buildGraphOptions(hasPoints, points, unlockedTotalDigits);
-  const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
-  const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));
+  const points = buildGraphPoints(rollEntries, seedSnapshot);
+  const hasPoints = points.length > 0;
+  const options = buildGraphOptions(hasPoints, points, rollEntries.length, unlockedTotalDigits);
+  const pointBackgroundColor = points.map((point) => {
+    if (point.kind === "remainder") {
+      return "#ffd84d";
+    }
+    return point.hasError ? "#ff6f6f" : "#bcffd6";
+  });
+  const pointBorderColor = points.map((point) => {
+    if (point.kind === "remainder") {
+      return "rgba(255, 216, 77, 0.9)";
+    }
+    return point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)";
+  });
 
   if (!graphChart) {
     graphChart = new chartCtor(context, {
@@ -963,7 +1005,7 @@ export const renderGraphModule = (root: Element, state: GameState): void => {
   const graphVisible = state.ui.activeVisualizer === "graph";
   syncGraphVisibilityUi(root, graphVisible);
   if (graphVisible) {
-    renderGraphDisplay(root, state.calculator.rollEntries, state.unlocks.maxTotalDigits);
+    renderGraphDisplay(root, state.calculator.rollEntries, state.calculator.seedSnapshot, state.unlocks.maxTotalDigits);
   } else {
     destroyGraphChart();
   }
@@ -1612,7 +1654,7 @@ export const render = (
     const isGraphVisible = state.ui.activeVisualizer === "graph";
     syncGraphVisibilityUi(root, isGraphVisible);
     if (isGraphVisible) {
-      renderGraphDisplay(root, state.calculator.rollEntries, state.unlocks.maxTotalDigits);
+      renderGraphDisplay(root, state.calculator.rollEntries, state.calculator.seedSnapshot, state.unlocks.maxTotalDigits);
     } else {
       destroyGraphChart();
     }

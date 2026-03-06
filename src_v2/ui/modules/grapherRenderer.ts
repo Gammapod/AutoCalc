@@ -66,11 +66,11 @@ type ChartCtor = new (ctx: CanvasRenderingContext2D, config: GraphChartConfig) =
 let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 
-const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTotalDigits: number): GraphOptions => {
+const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], maxXIndex: number, unlockedTotalDigits: number): GraphOptions => {
+  const xWindow = buildGraphXWindow(maxXIndex);
   const bounds = buildGraphYWindow(unlockedTotalDigits);
-  const xWindow = buildGraphXWindow(points.length);
   const defaultWindowMax = buildGraphXWindow(0).max;
-  const makeTickLabelCallback =
+  const makeXAxisTickLabelCallback =
     (axisMax: number) =>
     (value: string | number): string => {
       const numeric = typeof value === "number" ? value : Number(value);
@@ -82,6 +82,18 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTot
         return "";
       }
       return nearestFive.toString();
+    };
+  const makeYAxisTickLabelCallback =
+    (axisMin: number, axisMax: number) =>
+    (value: string | number): string => {
+      const numeric = typeof value === "number" ? value : Number(value);
+      if (!Number.isFinite(numeric)) {
+        return "";
+      }
+      if (Math.abs(numeric - axisMin) < 1e-9 || Math.abs(numeric) < 1e-9 || Math.abs(numeric - axisMax) < 1e-9) {
+        return Math.trunc(numeric).toString();
+      }
+      return "";
     };
   return {
     animation: false,
@@ -95,15 +107,15 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTot
       x: {
         min: hasPoints ? xWindow.min : 0,
         max: hasPoints ? xWindow.max : defaultWindowMax,
-        display: hasPoints,
+        display: true,
         ticks: {
           color: "#bcffd6",
           precision: 0,
           autoSkip: true,
-          callback: makeTickLabelCallback(xWindow.max),
+          callback: makeXAxisTickLabelCallback(xWindow.max),
         },
-        grid: { color: "rgba(188, 255, 214, 0.2)", display: hasPoints },
-        border: { color: "rgba(188, 255, 214, 0.45)", display: hasPoints },
+        grid: { color: "rgba(188, 255, 214, 0.2)", display: true },
+        border: { color: "rgba(188, 255, 214, 0.45)", display: true },
       },
       y: {
         min: bounds.min,
@@ -111,8 +123,8 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTot
         display: true,
         ticks: {
           color: "#bcffd6",
-          autoSkip: true,
-          callback: makeTickLabelCallback(bounds.max),
+          autoSkip: false,
+          callback: makeYAxisTickLabelCallback(bounds.min, bounds.max),
         },
         grid: {
           color: (context: { tick?: { value?: number | string } }) => {
@@ -167,11 +179,21 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     return;
   }
 
-  const points = buildGraphPoints(state.calculator.rollEntries);
-  const hasPoints = isGraphRenderable(state.calculator.rollEntries);
-  const options = buildGraphOptions(hasPoints, points, state.unlocks.maxTotalDigits);
-  const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
-  const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));
+  const points = buildGraphPoints(state.calculator.rollEntries, state.calculator.seedSnapshot);
+  const hasPoints = isGraphRenderable(state.calculator.rollEntries, state.calculator.seedSnapshot);
+  const options = buildGraphOptions(hasPoints, points, state.calculator.rollEntries.length, state.unlocks.maxTotalDigits);
+  const pointBackgroundColor = points.map((point) => {
+    if (point.kind === "remainder") {
+      return "#ffd84d";
+    }
+    return point.hasError ? "#ff6f6f" : "#bcffd6";
+  });
+  const pointBorderColor = points.map((point) => {
+    if (point.kind === "remainder") {
+      return "rgba(255, 216, 77, 0.9)";
+    }
+    return point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)";
+  });
 
   if (!graphChart) {
     graphChart = new chartCtor(context, {

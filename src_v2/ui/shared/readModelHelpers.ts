@@ -1,4 +1,4 @@
-import type { RollEntry } from "../../../src/domain/types.js";
+import type { CalculatorValue, RollEntry } from "../../../src/domain/types.js";
 export {
   buildOperationSlotDisplay,
   buildRollViewModel,
@@ -12,29 +12,52 @@ export {
 export type GraphPoint = {
   x: number;
   y: number;
+  kind?: "seed" | "roll" | "remainder";
   hasError: boolean;
 };
 
-export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
+export const buildGraphPoints = (
+  rollEntries: RollEntry[],
+  seedSnapshot?: CalculatorValue,
+): GraphPoint[] => {
   const points: GraphPoint[] = [];
-  let previousVisibleErrorCode: string | undefined;
+  if (seedSnapshot?.kind === "rational") {
+    points.push({
+      x: 0,
+      y: Number(seedSnapshot.value.num) / Number(seedSnapshot.value.den),
+      kind: "seed",
+      hasError: false,
+    });
+  }
   for (let index = 0; index < rollEntries.length; index += 1) {
     const entry = rollEntries[index];
-    const errorCode = entry.error?.code;
-    if (errorCode && errorCode === previousVisibleErrorCode) {
-      continue;
-    }
+    const x = index + 1;
     const value = entry.y;
     if (value.kind !== "rational") {
-      previousVisibleErrorCode = errorCode;
+      if (entry.remainder) {
+        points.push({
+          x,
+          y: Number(entry.remainder.num) / Number(entry.remainder.den),
+          kind: "remainder",
+          hasError: false,
+        });
+      }
       continue;
     }
     points.push({
-      x: points.length,
+      x,
       y: Number(value.value.num) / Number(value.value.den),
-      hasError: Boolean(errorCode),
+      kind: "roll",
+      hasError: Boolean(entry.error),
     });
-    previousVisibleErrorCode = errorCode;
+    if (entry.remainder) {
+      points.push({
+        x,
+        y: Number(entry.remainder.num) / Number(entry.remainder.den),
+        kind: "remainder",
+        hasError: false,
+      });
+    }
   }
   return points;
 };

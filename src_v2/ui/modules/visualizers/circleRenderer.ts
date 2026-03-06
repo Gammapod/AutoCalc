@@ -20,8 +20,8 @@ export const renderCircleVisualizerPanel = (root: Element, _state: GameState): v
   if (!circlePanel) {
     return;
   }
-  const points = buildGraphPoints(_state.calculator.rollEntries);
-  const xWindow = buildGraphXWindow(points.length);
+  const points = buildGraphPoints(_state.calculator.rollEntries, _state.calculator.seedSnapshot);
+  const xWindow = buildGraphXWindow(_state.calculator.rollEntries.length);
   const yWindow = buildGraphYWindow(_state.unlocks.maxTotalDigits);
   const maxMagnitude = Math.max(Math.abs(yWindow.min), Math.abs(yWindow.max), 1);
   const angularStepCount = Math.max(1, buildGraphXWindow(0).max);

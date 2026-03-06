@@ -22,6 +22,6 @@ export const buildReadModel = (state: GameState): DomainReadModel => ({
   rollView: buildRollViewModel(state.calculator.rollEntries),
   slotView: buildOperationSlotDisplay(state),
   unlockRows: buildUnlockRows(state),
-  graphPoints: buildGraphPoints(state.calculator.rollEntries),
+  graphPoints: buildGraphPoints(state.calculator.rollEntries, state.calculator.seedSnapshot),
   graphVisible: isGraphVisible(state.calculator.rollEntries),
 });
