@@ -14,7 +14,7 @@ export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
 export const TOTAL_DIGITS_MIN = 1;
 export const TOTAL_DIGITS_MAX = 12;
-export const OPERATION_SLOTS_MIN = 1;
+export const OPERATION_SLOTS_MIN = 0;
 export const OPERATION_SLOTS_MAX = 4;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
@@ -168,7 +168,7 @@ export const initialState = (): GameState => {
       uiUnlocks: {
         storageVisible: true,
       },
-      maxSlots: 1,
+      maxSlots: 0,
       maxTotalDigits: 1,
     },
     completedUnlockIds: [],

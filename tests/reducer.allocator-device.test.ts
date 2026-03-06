@@ -50,7 +50,7 @@ export const runReducerAllocatorDeviceTests = (): void => {
 
   const withSlots = reducer(maxRaised, { type: "ALLOCATOR_ADJUST", field: "slots", delta: 1 });
   assert.equal(withSlots.allocator.allocations.slots, 1, "slots allocation increments");
-  assert.equal(withSlots.unlocks.maxSlots, 2, "slots allocation updates effective max slots (1 + alloc)");
+  assert.equal(withSlots.unlocks.maxSlots, 1, "slots allocation updates effective max slots (alloc)");
   assertAllocatorInvariant(withSlots);
 
   const withRange = reducer(maxRaised, { type: "ALLOCATOR_ADJUST", field: "range", delta: 1 });
@@ -100,7 +100,7 @@ export const runReducerAllocatorDeviceTests = (): void => {
   assert.equal(reset.ui.keypadColumns, 1, "reset projection restores effective width baseline");
   assert.equal(reset.ui.keypadRows, 1, "reset projection restores effective height baseline");
   assert.equal(reset.unlocks.maxTotalDigits, 1, "reset projection restores effective range baseline");
-  assert.equal(reset.unlocks.maxSlots, 1, "reset projection restores effective slots baseline");
+  assert.equal(reset.unlocks.maxSlots, 0, "reset projection restores effective slots baseline");
   assert.deepEqual(reset.calculator, configured.calculator, "allocator reset does not alter calculator run state");
   assertAllocatorInvariant(reset);
 };

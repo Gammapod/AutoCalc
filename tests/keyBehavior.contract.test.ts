@@ -41,6 +41,7 @@ const unlockKey = (state: GameState, key: Key): GameState => {
       ...state,
       unlocks: {
         ...state.unlocks,
+        maxSlots: Math.max(state.unlocks.maxSlots, 1),
         slotOperators: {
           ...state.unlocks.slotOperators,
           [key]: true,

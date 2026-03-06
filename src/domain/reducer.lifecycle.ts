@@ -7,7 +7,7 @@ import type { Action, GameState } from "./types.js";
 // Non-key lifecycle transitions: reset/hydrate/debug unlock-all.
 const applyUnlockAll = (state: GameState): GameState => {
   const withCatalogEffects = unlockCatalog.reduce((next, unlock) => applyEffect(unlock.effect, next), state);
-  const targetSlotAllocation = 3;
+  const targetSlotAllocation = 4;
   const spentWithoutSlots =
     withCatalogEffects.allocator.allocations.width +
     withCatalogEffects.allocator.allocations.height +

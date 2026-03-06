@@ -46,6 +46,7 @@ const withUnlockedKeys = (state: GameState, keys: readonly Key[]): GameState => 
         ...next,
         unlocks: {
           ...next.unlocks,
+          maxSlots: Math.max(next.unlocks.maxSlots, 1),
           slotOperators: {
             ...next.unlocks.slotOperators,
             [key]: true,

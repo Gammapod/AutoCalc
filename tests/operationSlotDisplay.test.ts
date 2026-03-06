@@ -7,10 +7,14 @@ import type { GameState } from "../src/domain/types.js";
 export const runOperationSlotDisplayTests = (): void => {
   const base = initialState();
 
-  assert.equal(buildOperationSlotDisplay(base), "[ _ _ ]", "empty state shows one placeholder slot");
+  assert.equal(buildOperationSlotDisplay(base), "(no operation slots)", "empty state shows no-slot fallback");
 
   const draftingOperatorOnly: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
     calculator: {
       ...base.calculator,
       draftingSlot: { operator: "+", operandInput: "", isNegative: false },
@@ -20,6 +24,10 @@ export const runOperationSlotDisplayTests = (): void => {
 
   const draftingOperatorOnlyNegative: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
     calculator: {
       ...base.calculator,
       draftingSlot: { operator: "+", operandInput: "", isNegative: true },
@@ -33,6 +41,10 @@ export const runOperationSlotDisplayTests = (): void => {
 
   const draftingWithOperand: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
     calculator: {
       ...base.calculator,
       draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
@@ -42,6 +54,10 @@ export const runOperationSlotDisplayTests = (): void => {
 
   const draftingMultiplyOperatorOnly: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
     calculator: {
       ...base.calculator,
       draftingSlot: { operator: "*", operandInput: "", isNegative: false },
@@ -55,6 +71,10 @@ export const runOperationSlotDisplayTests = (): void => {
 
   const draftingWithNegativeOperand: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
     calculator: {
       ...base.calculator,
       draftingSlot: { operator: "+", operandInput: "1", isNegative: true },
@@ -143,12 +163,16 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(projectedDisplay),
-    "[ + 1 ] -> [ _ _ ] -> [ _ _ ] -> [ _ _ ]",
+    "[ + 1 ] -> [ _ _ ] -> [ _ _ ]",
     "display capacity follows allocator-projected max slot count",
   );
 
   const committedMultiply: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
     calculator: {
       ...base.calculator,
       operationSlots: [{ operator: "*", operand: 2n }],
@@ -158,6 +182,10 @@ export const runOperationSlotDisplayTests = (): void => {
 
   const committedEuclidean: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
     calculator: {
       ...base.calculator,
       operationSlots: [{ operator: "#", operand: 3n }],
@@ -167,6 +195,10 @@ export const runOperationSlotDisplayTests = (): void => {
 
   const committedModulo: GameState = {
     ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
     calculator: {
       ...base.calculator,
       operationSlots: [{ operator: "\u27E1", operand: 3n }],

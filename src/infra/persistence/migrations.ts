@@ -214,7 +214,7 @@ const EXECUTION_ERROR_KIND_VALUES: readonly ExecutionErrorKind[] = [
   "division_by_zero",
   "nan_input",
 ];
-const MAX_SLOTS_MIN = 1;
+const MAX_SLOTS_MIN = 0;
 const MAX_SLOTS_MAX = 4;
 const MAX_TOTAL_DIGITS_MIN = 1;
 const MAX_TOTAL_DIGITS_MAX = 12;
@@ -720,22 +720,21 @@ export const migrateV8ToV9 = (input: SerializableStateV8): SerializableStateV9 =
 };
 
 export const migrateV9ToV10 = (input: SerializableStateV9): SerializableStateV10 => {
-  const existingExtra = Math.max(0, input.unlocks.maxSlots - 1);
-  const slotsAllocation = Math.min(existingExtra, 3);
+  const projectedSlots = Math.max(0, Math.min(4, input.unlocks.maxSlots));
   return {
     ...input,
     allocatorReturnPressCount: 0,
     allocatorAllocatePressCount: 0,
     allocator: normalizeAllocatorV10({
-      maxPoints: input.allocator.maxPoints + slotsAllocation,
+      maxPoints: input.allocator.maxPoints + projectedSlots,
       allocations: {
         ...input.allocator.allocations,
-        slots: slotsAllocation,
+        slots: projectedSlots,
       },
     }),
     unlocks: {
       ...input.unlocks,
-      maxSlots: Math.max(1, Math.min(4, 1 + slotsAllocation)),
+      maxSlots: projectedSlots,
     },
   };
 };

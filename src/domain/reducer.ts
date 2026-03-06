@@ -100,7 +100,7 @@ const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorS
   const columns = clampToRange(1 + withAllocator.allocator.allocations.width, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
   const rows = clampToRange(1 + withAllocator.allocator.allocations.height, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
   const maxDigits = clampToRange(1 + withAllocator.allocator.allocations.range, TOTAL_DIGITS_MIN, TOTAL_DIGITS_MAX);
-  const maxSlots = clampToRange(1 + withAllocator.allocator.allocations.slots, OPERATION_SLOTS_MIN, OPERATION_SLOTS_MAX);
+  const maxSlots = clampToRange(withAllocator.allocator.allocations.slots, OPERATION_SLOTS_MIN, OPERATION_SLOTS_MAX);
   const resized = applySetKeypadDimensions(withAllocator, columns, rows);
   if (resized.unlocks.maxTotalDigits === maxDigits && resized.unlocks.maxSlots === maxSlots) {
     return resized;

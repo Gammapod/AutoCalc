@@ -177,7 +177,7 @@ export const runPersistenceTests = (): void => {
   assert.ok(legacyV7.state, "v7 payload hydrates");
   assert.deepEqual(
     legacyV7.state?.allocator,
-    { maxPoints: 3, allocations: { width: 0, height: 0, range: 1, speed: 0, slots: 1 } },
+    { maxPoints: 4, allocations: { width: 0, height: 0, range: 1, speed: 0, slots: 2 } },
     "v7 migration preserves effective runtime in v9 allocator model",
   );
 
