@@ -1,6 +1,7 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../domain/calculatorValue.js";
+import { calculatorValueToDisplayString, isRationalCalculatorValue, toRationalCalculatorValue } from "../domain/calculatorValue.js";
 import { isKeyUnlocked } from "../domain/keyUnlocks.js";
+import { getRollYDomain } from "../domain/rollDerived.js";
 import { STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { evaluateLayoutDrop } from "../domain/layoutRules.js";
@@ -638,66 +639,42 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
   appendChecklistQuickstartGuide(unlockEl);
 };
 
-const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
-  const rationalTotal = isRationalCalculatorValue(state.calculator.total) ? state.calculator.total.value : null;
-  const hasRationalTotal = rationalTotal !== null;
-  const hasIntegerTotal = hasRationalTotal && rationalTotal.den === 1n;
-  const hasAnyKeyPress = Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
-  const shouldRenderClearedPlaceholder =
-    isClearedCalculatorState(state.calculator) && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress);
-  totalEl.innerHTML = "";
-  if (shouldRenderClearedPlaceholder) {
-    const frame = document.createElement("div");
-    frame.className = "seg-frame";
-    const slotModels = buildClearedTotalSlotModel(state.unlocks.maxTotalDigits);
-    for (const slot of slotModels) {
-      const digitEl = document.createElement("div");
-      digitEl.className = `seg-digit seg-digit--${slot.state}`;
-      for (const segmentName of SEGMENT_NAMES) {
-        const segmentEl = document.createElement("div");
-        segmentEl.className = `seg seg-${segmentName}`;
-        if (slot.state === "active" && slot.activeSegments.includes(segmentName)) {
-          segmentEl.classList.add("seg--on");
-        }
-        digitEl.appendChild(segmentEl);
-      }
-      frame.appendChild(digitEl);
-    }
-    totalEl.appendChild(frame);
-    totalEl.setAttribute("aria-label", "Total _");
-    return;
-  }
-
-  if (!hasRationalTotal) {
-    const fraction = document.createElement("div");
-    fraction.className = "seg-fraction";
-    fraction.textContent = "NaN";
-    totalEl.appendChild(fraction);
-    totalEl.setAttribute("aria-label", "Total NaN");
-    return;
-  }
-
+const renderSevenSegmentValue = (
+  target: HTMLElement,
+  value: CalculatorValue,
+  unlockedDigits: number,
+  pendingNegative: boolean,
+): void => {
+  const rationalValue = isRationalCalculatorValue(value) ? value.value : null;
+  const hasRationalValue = rationalValue !== null;
+  const hasIntegerValue = hasRationalValue && rationalValue.den === 1n;
   const isNegative =
-    hasIntegerTotal &&
-    (rationalTotal.num < 0n || (rationalTotal.num === 0n && state.calculator.pendingNegativeTotal));
+    hasIntegerValue && (rationalValue.num < 0n || (rationalValue.num === 0n && pendingNegative));
 
   if (isNegative) {
     const sign = document.createElement("div");
     sign.className = "seg-sign";
     sign.textContent = "-";
-    totalEl.appendChild(sign);
+    target.appendChild(sign);
   }
 
-  if (!hasIntegerTotal) {
+  if (!hasRationalValue) {
     const fraction = document.createElement("div");
     fraction.className = "seg-fraction";
-    fraction.textContent = toDisplayString(rationalTotal);
-    totalEl.appendChild(fraction);
-    totalEl.setAttribute("aria-label", `Total ${toDisplayString(rationalTotal)}`);
+    fraction.textContent = "NaN";
+    target.appendChild(fraction);
     return;
   }
 
-  const slotModels = buildTotalSlotModel(state.calculator.total, state.unlocks.maxTotalDigits);
+  if (!hasIntegerValue) {
+    const fraction = document.createElement("div");
+    fraction.className = "seg-fraction";
+    fraction.textContent = toDisplayString(rationalValue);
+    target.appendChild(fraction);
+    return;
+  }
+
+  const slotModels = buildTotalSlotModel(value, unlockedDigits);
   const frame = document.createElement("div");
   frame.className = "seg-frame";
 
@@ -716,9 +693,80 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
 
     frame.appendChild(digitEl);
   }
+  target.appendChild(frame);
+};
 
+const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
+  const latestRollEntry = state.calculator.rollEntries.at(-1);
+  const domainValue = latestRollEntry?.y ?? state.calculator.total;
+  const totalIsNaN = !isRationalCalculatorValue(state.calculator.total);
+  const hasLatestRollError = Boolean(state.calculator.rollEntries.at(-1)?.error);
+  const hasAnyKeyPress = Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
+  const shouldRenderClearedPlaceholder =
+    isClearedCalculatorState(state.calculator) && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress);
+  totalEl.classList.toggle("total-display--error", hasLatestRollError);
+  totalEl.innerHTML = "";
+  const stack = document.createElement("div");
+  stack.className = "total-display-stack";
+  const metaRow = document.createElement("div");
+  metaRow.className = "total-meta-row";
+  const domainIndicator = document.createElement("span");
+  domainIndicator.className = "total-domain-indicator";
+  if (shouldRenderClearedPlaceholder) {
+    domainIndicator.textContent = "";
+    domainIndicator.setAttribute("aria-hidden", "true");
+  } else {
+    domainIndicator.textContent = totalIsNaN ? "∅" : getRollYDomain(domainValue);
+    domainIndicator.setAttribute("aria-hidden", "false");
+  }
+  domainIndicator.classList.toggle("total-domain-indicator--nan", totalIsNaN && !shouldRenderClearedPlaceholder);
+  metaRow.appendChild(domainIndicator);
+
+  const remainderDisplay = document.createElement("div");
+  remainderDisplay.className = "total-remainder-display";
+  if (latestRollEntry?.remainder) {
+    remainderDisplay.setAttribute("aria-hidden", "false");
+    renderSevenSegmentValue(
+      remainderDisplay,
+      toRationalCalculatorValue(latestRollEntry.remainder),
+      state.unlocks.maxTotalDigits,
+      false,
+    );
+  } else {
+    remainderDisplay.setAttribute("aria-hidden", "true");
+  }
+  metaRow.appendChild(remainderDisplay);
+  stack.appendChild(metaRow);
+
+  const primaryDisplay = document.createElement("div");
+  primaryDisplay.className = "total-primary-display";
+  if (shouldRenderClearedPlaceholder) {
+    const frame = document.createElement("div");
+    frame.className = "seg-frame";
+    const slotModels = buildClearedTotalSlotModel(state.unlocks.maxTotalDigits);
+    for (const slot of slotModels) {
+      const digitEl = document.createElement("div");
+      digitEl.className = `seg-digit seg-digit--${slot.state}`;
+      for (const segmentName of SEGMENT_NAMES) {
+        const segmentEl = document.createElement("div");
+        segmentEl.className = `seg seg-${segmentName}`;
+        if (slot.state === "active" && slot.activeSegments.includes(segmentName)) {
+          segmentEl.classList.add("seg--on");
+        }
+        digitEl.appendChild(segmentEl);
+      }
+      frame.appendChild(digitEl);
+    }
+    primaryDisplay.appendChild(frame);
+    stack.appendChild(primaryDisplay);
+    totalEl.appendChild(stack);
+    totalEl.setAttribute("aria-label", "Total _");
+    return;
+  }
   totalEl.setAttribute("aria-label", `Total ${calculatorValueToDisplayString(state.calculator.total)}`);
-  totalEl.appendChild(frame);
+  renderSevenSegmentValue(primaryDisplay, state.calculator.total, state.unlocks.maxTotalDigits, state.calculator.pendingNegativeTotal);
+  stack.appendChild(primaryDisplay);
+  totalEl.appendChild(stack);
 };
 
 export const renderChecklistModule = (root: Element, state: GameState): void => {

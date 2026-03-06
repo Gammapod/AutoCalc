@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import type { Action, GameState } from "../src/domain/types.js";
+import type { Action, GameState, RollEntry } from "../src/domain/types.js";
 import { createShellRenderer } from "../src_v2/ui/renderAdapter.js";
 import { click } from "./helpers/eventHarness.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 
 export const runUiIntegrationMobileShellTests = (): void => {
+  const r = (num: bigint, den: bigint = 1n): RollEntry["y"] => ({
+    kind: "rational",
+    value: { num, den },
+  });
   const harness = installDomHarness("http://localhost:4173/index.html?ui=mobile");
   const dispatched: Action[] = [];
   const dispatch = (action: Action): Action => {
@@ -99,6 +103,102 @@ export const runUiIntegrationMobileShellTests = (): void => {
       host?.getAttribute("data-v2-visualizer-height-lock"),
       null,
       "rapid visualizer sequence does not leave swap height lock behind",
+    );
+
+    const totalPanel = harness.root.querySelector<HTMLElement>("[data-v2-total-panel]");
+    assert.ok(totalPanel, "total panel is mounted");
+    const hiddenDomainOnCleared = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
+    assert.equal(
+      hiddenDomainOnCleared?.getAttribute("aria-hidden"),
+      "true",
+      "domain indicator is hidden when total display is the cleared placeholder",
+    );
+    const withErrorTotal: GameState = {
+      ...withTotal,
+      calculator: {
+        ...withTotal.calculator,
+        total: r(11n),
+        rollEntries: [
+          { y: r(5n) },
+          { y: r(11n), error: { code: "n/0", kind: "division_by_zero" } },
+        ],
+      },
+    };
+    renderer.render(withErrorTotal, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    const domainIndicatorWithError = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
+    const remainderDisplayWithError = totalPanel?.querySelector<HTMLElement>(".total-remainder-display");
+    assert.equal(
+      totalPanel?.classList.contains("total-display--error"),
+      true,
+      "total panel enters error color mode when latest roll entry has an error",
+    );
+    assert.equal(domainIndicatorWithError?.textContent, "ℕ", "domain indicator renders latest y domain symbol");
+    assert.equal(
+      domainIndicatorWithError?.classList.contains("total-domain-indicator--nan"),
+      false,
+      "domain indicator keeps default (green) styling for non-NaN totals",
+    );
+    assert.equal(
+      remainderDisplayWithError?.getAttribute("aria-hidden"),
+      "true",
+      "remainder display is hidden when latest roll entry has no remainder",
+    );
+
+    const withRemainderTotal: GameState = {
+      ...withErrorTotal,
+      calculator: {
+        ...withErrorTotal.calculator,
+        total: r(1n, 2n),
+        rollEntries: [
+          ...withErrorTotal.calculator.rollEntries,
+          { y: r(1n, 2n), remainder: { num: 1n, den: 3n } },
+        ],
+      },
+    };
+    renderer.render(withRemainderTotal, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    const domainIndicatorWithRemainder = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
+    const remainderDisplayWithRemainder = totalPanel?.querySelector<HTMLElement>(".total-remainder-display");
+    assert.equal(
+      totalPanel?.classList.contains("total-display--error"),
+      false,
+      "total panel clears error color mode when latest roll entry is not an error",
+    );
+    assert.equal(domainIndicatorWithRemainder?.textContent, "ℚ", "domain indicator updates for fractional y values");
+    assert.equal(
+      remainderDisplayWithRemainder?.getAttribute("aria-hidden"),
+      "false",
+      "remainder display is visible when latest roll entry includes remainder",
+    );
+    assert.equal(
+      remainderDisplayWithRemainder?.textContent?.includes("1/3"),
+      true,
+      "remainder display renders the latest remainder value",
+    );
+
+    const withNanTotal: GameState = {
+      ...withRemainderTotal,
+      calculator: {
+        ...withRemainderTotal.calculator,
+        total: { kind: "nan" },
+        rollEntries: [...withRemainderTotal.calculator.rollEntries, { y: { kind: "nan" } }],
+      },
+    };
+    renderer.render(withNanTotal, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    const domainIndicatorWithNan = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
+    assert.equal(domainIndicatorWithNan?.textContent, "∅", "domain indicator shows null-set symbol when total is NaN");
+    assert.equal(
+      domainIndicatorWithNan?.classList.contains("total-domain-indicator--nan"),
+      true,
+      "domain indicator switches to NaN (red) styling when total is NaN",
     );
 
     const keyButton = harness.root.querySelector<HTMLButtonElement>(".key[data-key='++']");
