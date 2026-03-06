@@ -18,16 +18,24 @@ const padLeft = (text: string, width: number): string => {
 };
 
 const buildDivider = (width: number): string => "-".repeat(width);
+const FEED_VISIBLE_ROWS = 7;
+const FEED_Y_DIVIDER_FILL_WIDTH = 256;
 
 const appendFeedTableLine = (
   table: HTMLElement,
-  prefixText: string,
+  leftText: string,
   rText: string | null,
   className?: string,
 ): void => {
   const line = document.createElement("div");
   line.className = className ?? "v2-feed-table-line";
-  line.appendChild(document.createTextNode(prefixText));
+  if (rText !== null) {
+    line.classList.add("v2-feed-table-line--with-r");
+  }
+  const left = document.createElement("span");
+  left.className = "v2-feed-left-col";
+  left.textContent = leftText;
+  line.appendChild(left);
   if (rText !== null) {
     const rSpan = document.createElement("span");
     rSpan.className = "v2-feed-r-col";
@@ -37,8 +45,8 @@ const appendFeedTableLine = (
   table.appendChild(line);
 };
 
-const buildPlainFeedTableLine = (prefixText: string, rText: string | null): string =>
-  `${prefixText}${rText ?? ""}`;
+const buildPlainFeedTableLine = (leftText: string, rText: string | null): string =>
+  `${leftText}${rText ?? ""}`;
 
 const isClearedCalculatorState = (state: GameState): boolean =>
   isRationalCalculatorValue(state.calculator.total) &&
@@ -81,15 +89,18 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   feedPanel.innerHTML = "";
   feedPanel.setAttribute("aria-hidden", "false");
 
-  const headerPrefix = `|${padCenter("X", view.xWidth)}|${padCenter("Y", view.yWidth)}`;
-  const dividerPrefix = `|${buildDivider(view.xWidth)}|${buildDivider(view.yWidth)}`;
-  const headerR = view.showRColumn ? `|${padCenter("r", view.rWidth)}|` : null;
-  const dividerR = view.showRColumn ? `|${buildDivider(view.rWidth)}|` : null;
-  const plainLines: string[] = [buildPlainFeedTableLine(headerPrefix, headerR), buildPlainFeedTableLine(dividerPrefix, dividerR)];
-  for (const row of view.rows) {
-    const rowPrefix = `|${padLeft(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`;
-    const rowR = view.showRColumn ? `|${padLeft(row.rText ?? "", view.rWidth)}|` : null;
-    plainLines.push(buildPlainFeedTableLine(rowPrefix, rowR));
+  const headerLeft = `${padCenter("X", view.xWidth)}|${padCenter("Y", view.yWidth)}`;
+  const dividerLeft = `${buildDivider(view.xWidth)}|${buildDivider(Math.max(view.yWidth, FEED_Y_DIVIDER_FILL_WIDTH))}`;
+  const headerR = view.showRColumn ? `|${padCenter("r", view.rWidth)}` : null;
+  const dividerR = view.showRColumn ? `|${buildDivider(view.rWidth)}` : null;
+  const plainLines: string[] = [buildPlainFeedTableLine(headerLeft, headerR), buildPlainFeedTableLine(dividerLeft, dividerR)];
+  for (let index = 0; index < FEED_VISIBLE_ROWS; index += 1) {
+    const row = view.rows[index];
+    const rowLeft = row
+      ? `${padLeft(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
+      : `${" ".repeat(view.xWidth)}|${" ".repeat(view.yWidth)}`;
+    const rowR = view.showRColumn ? `|${padLeft(row?.rText ?? "", view.rWidth)}` : null;
+    plainLines.push(buildPlainFeedTableLine(rowLeft, rowR));
   }
 
   if (typeof document === "undefined") {
@@ -100,17 +111,20 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   const table = document.createElement("div");
   table.className = "v2-feed-table";
 
-  appendFeedTableLine(table, headerPrefix, headerR);
-  appendFeedTableLine(table, dividerPrefix, dividerR);
+  appendFeedTableLine(table, headerLeft, headerR);
+  appendFeedTableLine(table, dividerLeft, dividerR);
 
-  for (const row of view.rows) {
-    const rowPrefix = `|${padLeft(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`;
-    const rowR = view.showRColumn ? `|${padLeft(row.rText ?? "", view.rWidth)}|` : null;
+  for (let index = 0; index < FEED_VISIBLE_ROWS; index += 1) {
+    const row = view.rows[index];
+    const rowLeft = row
+      ? `${padLeft(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
+      : `${" ".repeat(view.xWidth)}|${" ".repeat(view.yWidth)}`;
+    const rowR = view.showRColumn ? `|${padLeft(row?.rText ?? "", view.rWidth)}` : null;
     appendFeedTableLine(
       table,
-      rowPrefix,
+      rowLeft,
       rowR,
-      row.hasError ? "v2-feed-table-line v2-feed-row--error" : "v2-feed-table-line",
+      row?.hasError ? "v2-feed-table-line v2-feed-row--error" : "v2-feed-table-line",
     );
   }
 

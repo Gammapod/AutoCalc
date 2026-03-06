@@ -104,7 +104,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       inputBlocked: false,
     });
     assert.equal(
-      feedPanel?.textContent?.includes("|  X  |"),
+      feedPanel?.textContent?.includes("  X  |"),
       true,
       "feed panel renders ascii table header",
     );
