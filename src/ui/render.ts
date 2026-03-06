@@ -1,7 +1,7 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../domain/calculatorValue.js";
 import { isKeyUnlocked } from "../domain/keyUnlocks.js";
-import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, STORAGE_COLUMNS } from "../domain/state.js";
+import { STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { evaluateLayoutDrop } from "../domain/layoutRules.js";
 import {
@@ -32,6 +32,7 @@ import type {
   LayoutSurface,
   RollErrorEntry,
   SlotOperator,
+  VisualizerId,
 } from "../domain/types.js";
 import { toDisplayString } from "../infra/math/rationalEngine.js";
 import { toPreferredFractionString } from "../infra/math/euclideanEngine.js";
@@ -234,8 +235,6 @@ export const formatKeyLabel = (key: Key): string => {
 };
 
 const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
-const GRAPH_TOGGLE_BEHAVIOR: KeyButtonBehavior = { type: "toggle_flag", flag: GRAPH_VISIBLE_FLAG };
-const FEED_TOGGLE_BEHAVIOR: KeyButtonBehavior = { type: "toggle_flag", flag: FEED_VISIBLE_FLAG };
 const STORAGE_SORT_FLAG_BY_GROUP: Record<KeyVisualGroup, string> = {
   execution: "storage.sort.execution",
   value_expression: "storage.sort.value_expression",
@@ -286,23 +285,28 @@ export const buildStorageSortToggleSequence = (
 };
 
 const getButtonFlag = (state: GameState, flag: string): boolean => {
-  if (flag === GRAPH_VISIBLE_FLAG) {
-    return state.ui.buttonFlags[GRAPH_VISIBLE_FLAG] ?? false;
-  }
   return Boolean(state.ui.buttonFlags[flag]);
 };
 
+const visualizerForKey = (key: KeyCell["key"]): VisualizerId | null => {
+  if (key === "GRAPH") {
+    return "graph";
+  }
+  if (key === "FEED") {
+    return "feed";
+  }
+  return null;
+};
+
 export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => {
-  if (cell.key === "GRAPH") {
-    return cell.behavior ?? GRAPH_TOGGLE_BEHAVIOR;
-  }
-  if (cell.key === "FEED") {
-    return cell.behavior ?? FEED_TOGGLE_BEHAVIOR;
-  }
   return cell.behavior ?? PRESS_KEY_BEHAVIOR;
 };
 
 export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => {
+  const visualizer = visualizerForKey(cell.key);
+  if (visualizer) {
+    return state.ui.activeVisualizer === visualizer;
+  }
   const behavior = getKeyButtonBehavior(cell);
   return behavior.type === "toggle_flag" ? getButtonFlag(state, behavior.flag) : false;
 };
@@ -315,6 +319,10 @@ export const formatKeyCellLabel = (state: GameState, cell: KeyCell): string => {
 };
 
 export const buildKeyButtonAction = (state: GameState, cell: KeyCell): Action => {
+  const visualizer = visualizerForKey(cell.key);
+  if (visualizer) {
+    return { type: "TOGGLE_VISUALIZER", visualizer };
+  }
   const behavior = getKeyButtonBehavior(cell);
   if (behavior.type === "toggle_flag") {
     return { type: "TOGGLE_FLAG", flag: behavior.flag };
@@ -323,6 +331,11 @@ export const buildKeyButtonAction = (state: GameState, cell: KeyCell): Action =>
 };
 
 const queueToggleAnimation = (state: GameState, cell: KeyCell): void => {
+  const visualizer = visualizerForKey(cell.key);
+  if (visualizer) {
+    pendingToggleAnimationByFlag[visualizer] = state.ui.activeVisualizer === visualizer ? "off" : "on";
+    return;
+  }
   const behavior = getKeyButtonBehavior(cell);
   if (behavior.type !== "toggle_flag") {
     return;
@@ -331,6 +344,10 @@ const queueToggleAnimation = (state: GameState, cell: KeyCell): void => {
 };
 
 const readToggleAnimation = (cell: KeyCell): "on" | "off" | null => {
+  const visualizer = visualizerForKey(cell.key);
+  if (visualizer) {
+    return pendingToggleAnimationByFlag[visualizer] ?? null;
+  }
   const behavior = getKeyButtonBehavior(cell);
   if (behavior.type !== "toggle_flag") {
     return null;
@@ -904,7 +921,7 @@ const renderGraphDisplay = (
 };
 
 export const renderGraphModule = (root: Element, state: GameState): void => {
-  const graphVisible = getButtonFlag(state, GRAPH_VISIBLE_FLAG);
+  const graphVisible = state.ui.activeVisualizer === "graph";
   syncGraphVisibilityUi(root, graphVisible);
   if (graphVisible) {
     renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors, state.unlocks.maxTotalDigits);
@@ -914,7 +931,7 @@ export const renderGraphModule = (root: Element, state: GameState): void => {
 };
 
 export const isFeedRollVisible = (state: GameState, _rollHasRows: boolean): boolean =>
-  getButtonFlag(state, FEED_VISIBLE_FLAG) && !getButtonFlag(state, GRAPH_VISIBLE_FLAG);
+  state.ui.activeVisualizer === "feed";
 
 export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   return getKeyVisualGroupShared(key);
@@ -1553,7 +1570,7 @@ export const render = (
   const newlyUnlockedKeys = getNewlyUnlockedKeys(state);
 
   if (!options.skipGraph) {
-    const isGraphVisible = getButtonFlag(state, GRAPH_VISIBLE_FLAG);
+    const isGraphVisible = state.ui.activeVisualizer === "graph";
     syncGraphVisibilityUi(root, isGraphVisible);
     if (isGraphVisible) {
       renderGraphDisplay(root, state.calculator.roll, state.calculator.rollErrors, state.unlocks.maxTotalDigits);

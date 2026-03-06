@@ -1,4 +1,4 @@
-import { AUTO_EQUALS_FLAG, FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG } from "../domain/state.js";
+import { AUTO_EQUALS_FLAG } from "../domain/state.js";
 import { getOperationSnapshot } from "../domain/slotDrafting.js";
 import type { ExecKey, GameState, Key, KeyCell, Store } from "../domain/types.js";
 
@@ -15,7 +15,12 @@ type TimerApi = {
 export type AutoEqualsSchedulerOptions = {
   intervalMs?: number;
   timers?: TimerApi;
-  dispatchAction?: (action: { type: "PRESS_KEY"; key: Key } | { type: "TOGGLE_FLAG"; flag: string }) => void;
+  dispatchAction?: (
+    action:
+      | { type: "PRESS_KEY"; key: Key }
+      | { type: "TOGGLE_FLAG"; flag: string }
+      | { type: "TOGGLE_VISUALIZER"; visualizer: "graph" | "feed" | "circle" },
+  ) => void;
   onAutoKeyActivated?: (key: Key) => void;
 };
 
@@ -48,31 +53,37 @@ const getInstalledExecutorKey = (state: GameState): ExecKey | null => {
   return null;
 };
 
-const getKeyCellDefaultToggleFlag = (cell: KeyCell): string | null => {
+const getDefaultVisualizerForCell = (cell: KeyCell): "graph" | "feed" | null => {
   if (cell.key === "GRAPH") {
-    return GRAPH_VISIBLE_FLAG;
+    return "graph";
   }
   if (cell.key === "FEED") {
-    return FEED_VISIBLE_FLAG;
+    return "feed";
   }
   return null;
 };
 
 const resolveCellAction = (
   cell: KeyCell,
-): { type: "PRESS_KEY"; key: Key } | { type: "TOGGLE_FLAG"; flag: string } => {
+):
+  | { type: "PRESS_KEY"; key: Key }
+  | { type: "TOGGLE_FLAG"; flag: string }
+  | { type: "TOGGLE_VISUALIZER"; visualizer: "graph" | "feed" | "circle" } => {
   if (cell.behavior?.type === "toggle_flag") {
     return { type: "TOGGLE_FLAG", flag: cell.behavior.flag };
   }
-  const defaultToggleFlag = getKeyCellDefaultToggleFlag(cell);
-  if (defaultToggleFlag) {
-    return { type: "TOGGLE_FLAG", flag: defaultToggleFlag };
+  const defaultVisualizer = getDefaultVisualizerForCell(cell);
+  if (defaultVisualizer) {
+    return { type: "TOGGLE_VISUALIZER", visualizer: defaultVisualizer };
   }
   return { type: "PRESS_KEY", key: cell.key };
 };
 
 type AutoActionPlan = {
-  action: { type: "PRESS_KEY"; key: Key } | { type: "TOGGLE_FLAG"; flag: string };
+  action:
+    | { type: "PRESS_KEY"; key: Key }
+    | { type: "TOGGLE_FLAG"; flag: string }
+    | { type: "TOGGLE_VISUALIZER"; visualizer: "graph" | "feed" | "circle" };
   key: Key;
 };
 

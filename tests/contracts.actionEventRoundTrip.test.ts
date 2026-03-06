@@ -26,4 +26,9 @@ export const runContractsActionEventRoundTripTests = (): void => {
     "FlagToggled",
     "TOGGLE_FLAG continues to map through the explicit fallback branch",
   );
+  assert.equal(
+    eventFromAction({ type: "TOGGLE_VISUALIZER", visualizer: "graph" }).type,
+    "VisualizerToggled",
+    "TOGGLE_VISUALIZER maps through explicit visualizer branch",
+  );
 };

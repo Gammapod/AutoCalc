@@ -22,7 +22,13 @@ import { applyToggleFlag } from "../../src/domain/reducer.flags.js";
 import { clearOperationEntry } from "../../src/domain/reducer.stateBuilders.js";
 import { unlockCatalog } from "../../src/content/unlocks.catalog.js";
 import { applyUnlocks } from "../../src/domain/unlocks.js";
-import type { AllocatorAllocationField, AllocatorBudgetSnapshot, AllocatorState, GameState } from "../../src/domain/types.js";
+import type {
+  AllocatorAllocationField,
+  AllocatorBudgetSnapshot,
+  AllocatorState,
+  GameState,
+  VisualizerId,
+} from "../../src/domain/types.js";
 import { actionFromEvent, type DomainEvent } from "./events.js";
 
 const ALLOCATOR_TRIM_ORDER: readonly AllocatorAllocationField[] = ["speed", "range", "slots", "height", "width"];
@@ -115,6 +121,20 @@ const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorS
   };
 };
 
+const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): GameState => {
+  const activeVisualizer = state.ui.activeVisualizer === visualizer ? "none" : visualizer;
+  if (state.ui.activeVisualizer === activeVisualizer) {
+    return state;
+  }
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      activeVisualizer,
+    },
+  };
+};
+
 const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState => {
   const action = actionFromEvent(event);
   if (action.type === "PRESS_KEY") {
@@ -157,6 +177,9 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
   }
   if (action.type === "TOGGLE_FLAG") {
     return applyToggleFlag(state, action.flag);
+  }
+  if (action.type === "TOGGLE_VISUALIZER") {
+    return applyToggleVisualizer(state, action.visualizer);
   }
   if (action.type === "ALLOCATOR_ADJUST") {
     const nextAllocator = applyAllocationDelta(state.allocator, action.field, action.delta);

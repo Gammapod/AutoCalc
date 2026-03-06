@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
 import type { KeyCell } from "../src/domain/types.js";
 import { resolveAllocatorModeAction } from "../src/app/allocatorModeAction.js";
 import {
@@ -15,16 +15,16 @@ export const runContractsUiActionEmissionTests = (): void => {
   const graphAction = buildKeyButtonAction(state, graphCell);
   assert.deepEqual(
     graphAction,
-    { type: "TOGGLE_FLAG", flag: GRAPH_VISIBLE_FLAG },
-    "GRAPH key emits toggle flag action",
+    { type: "TOGGLE_VISUALIZER", visualizer: "graph" },
+    "GRAPH key emits visualizer toggle action",
   );
 
   const feedCell: KeyCell = { kind: "key", key: "FEED" };
   const feedAction = buildKeyButtonAction(state, feedCell);
   assert.deepEqual(
     feedAction,
-    { type: "TOGGLE_FLAG", flag: FEED_VISIBLE_FLAG },
-    "FEED key emits toggle flag action",
+    { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
+    "FEED key emits visualizer toggle action",
   );
 
   const digitCell: KeyCell = { kind: "key", key: "1" };

@@ -16,7 +16,7 @@ import {
 import {
   evaluateLayoutDrop,
 } from "./layoutRules.js";
-import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface } from "./types.js";
+import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface, VisualizerId } from "./types.js";
 
 export { isStorageLayoutValid } from "./layoutRules.js";
 
@@ -211,16 +211,34 @@ const clearButtonFlag = (state: GameState, flag: string): GameState => {
   };
 };
 
+const visualizerFromKey = (key: KeyCell["key"]): VisualizerId | null => {
+  if (key === "GRAPH") {
+    return "graph";
+  }
+  if (key === "FEED") {
+    return "feed";
+  }
+  return null;
+};
+
 const clearToggleFlagWhenLeavingKeypad = (
   state: GameState,
   keyCell: KeyCell,
   fromSurface: LayoutSurface,
   toSurface: LayoutSurface,
 ): GameState => {
-  if (fromSurface !== "keypad" || toSurface !== "storage") {
-    return state;
+  const visualizer = visualizerFromKey(keyCell.key);
+  if (visualizer && fromSurface === "keypad" && toSurface === "storage" && state.ui.activeVisualizer === visualizer) {
+    return {
+      ...state,
+      ui: {
+        ...state.ui,
+        activeVisualizer: "none",
+      },
+    };
   }
-  if (keyCell.behavior?.type !== "toggle_flag") {
+
+  if (fromSurface !== "keypad" || toSurface !== "storage" || keyCell.behavior?.type !== "toggle_flag") {
     return state;
   }
   return clearButtonFlag(state, keyCell.behavior.flag);

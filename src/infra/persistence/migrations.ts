@@ -2,8 +2,6 @@ import {
   defaultDrawerKeyLayout,
   defaultKeyLayout,
   defaultStorageLayout,
-  FEED_VISIBLE_FLAG,
-  GRAPH_VISIBLE_FLAG,
   initialState,
   KEYPAD_DEFAULT_COLUMNS,
   KEYPAD_DEFAULT_ROWS,
@@ -15,6 +13,7 @@ import {
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { resizeKeyLayout } from "../../domain/reducer.layout.js";
 import type {
+  ActiveVisualizer,
   DraftingSlot,
   ErrorCode,
   ExecutionErrorKind,
@@ -186,6 +185,12 @@ export type SerializableStateV10 = SerializableStateV7 & {
   allocatorAllocatePressCount?: number;
 };
 
+export type SerializableStateV11 = SerializableStateV10 & {
+  ui: SerializableStateV10["ui"] & {
+    activeVisualizer: ActiveVisualizer;
+  };
+};
+
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN)$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
@@ -214,6 +219,8 @@ const EXECUTION_ERROR_KIND_VALUES: readonly ExecutionErrorKind[] = [
   "division_by_zero",
   "nan_input",
 ];
+const LEGACY_GRAPH_VISIBLE_FLAG = "graph.visible";
+const LEGACY_FEED_VISIBLE_FLAG = "feed.visible";
 const MAX_SLOTS_MIN = 0;
 const MAX_SLOTS_MAX = 4;
 const MAX_TOTAL_DIGITS_MIN = 1;
@@ -247,11 +254,31 @@ const normalizeButtonFlags = (value: unknown): Record<string, boolean> => {
   return normalized;
 };
 
-const withDefaultButtonFlags = (flags: Record<string, boolean>): Record<string, boolean> => ({
-  [GRAPH_VISIBLE_FLAG]: false,
-  [FEED_VISIBLE_FLAG]: false,
-  ...flags,
-});
+const withDefaultButtonFlags = (flags: Record<string, boolean>): Record<string, boolean> => ({ ...flags });
+
+const stripLegacyVisualizerFlags = (flags: Record<string, boolean>): Record<string, boolean> => {
+  const next = { ...flags };
+  delete next[LEGACY_GRAPH_VISIBLE_FLAG];
+  delete next[LEGACY_FEED_VISIBLE_FLAG];
+  return next;
+};
+
+const resolveLegacyActiveVisualizerFromFlags = (flags: Record<string, boolean>): ActiveVisualizer => {
+  if (Boolean(flags[LEGACY_GRAPH_VISIBLE_FLAG])) {
+    return "graph";
+  }
+  if (Boolean(flags[LEGACY_FEED_VISIBLE_FLAG])) {
+    return "feed";
+  }
+  return "none";
+};
+
+const normalizeActiveVisualizer = (value: unknown, flags: Record<string, boolean>): ActiveVisualizer => {
+  if (value === "graph" || value === "feed" || value === "circle" || value === "none") {
+    return value;
+  }
+  return resolveLegacyActiveVisualizerFromFlags(flags);
+};
 
 const hasOnlyKnownLayoutCells = (layout: unknown): layout is LayoutCell[] =>
   Array.isArray(layout) &&
@@ -739,6 +766,18 @@ export const migrateV9ToV10 = (input: SerializableStateV9): SerializableStateV10
   };
 };
 
+export const migrateV10ToV11 = (input: SerializableStateV10): SerializableStateV11 => {
+  const buttonFlags = withDefaultButtonFlags(normalizeButtonFlags(input.ui.buttonFlags));
+  return {
+    ...input,
+    ui: {
+      ...input.ui,
+      buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
+      activeVisualizer: normalizeActiveVisualizer(undefined, buttonFlags),
+    },
+  };
+};
+
 const toSerializableInitialV10 = (): SerializableStateV10 => {
   const defaults = initialState();
   return {
@@ -769,7 +808,18 @@ const toSerializableInitialV10 = (): SerializableStateV10 => {
   };
 };
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 =>
+const toSerializableInitialV11 = (): SerializableStateV11 => {
+  const v10 = toSerializableInitialV10();
+  return {
+    ...v10,
+    ui: {
+      ...v10.ui,
+      activeVisualizer: "none",
+    },
+  };
+};
+
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 =>
   version === 1 ||
   version === 2 ||
   version === 3 ||
@@ -779,7 +829,8 @@ export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4
   version === 7 ||
   version === 8 ||
   version === 9 ||
-  version === 10;
+  version === 10 ||
+  version === 11;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -1106,12 +1157,20 @@ export const validateSerializableStateV10 = (state: unknown): state is Serializa
   return spent <= allocator.maxPoints;
 };
 
-export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV10 | null => {
+export const validateSerializableStateV11 = (state: unknown): state is SerializableStateV11 => {
+  if (!isObject(state) || !validateSerializableStateV10(state)) {
+    return false;
+  }
+  return (state as SerializableStateV11).ui.activeVisualizer !== undefined
+    && normalizeActiveVisualizer((state as SerializableStateV11).ui.activeVisualizer, {}) === (state as SerializableStateV11).ui.activeVisualizer;
+};
+
+export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV11 | null => {
   if (!isValidSchemaVersion(schemaVersion)) {
     return null;
   }
   if (schemaVersion < 6) {
-    return toSerializableInitialV10();
+    return toSerializableInitialV11();
   }
   if (!isObject(state)) {
     return null;
@@ -1141,7 +1200,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     if (!validateSerializableStateV6(normalizedV6)) {
       return null;
     }
-    return migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(normalizedV6))));
+    return migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(normalizedV6)))));
   }
   if (schemaVersion === 7) {
     const asV7 = state as SerializableStateV7;
@@ -1168,7 +1227,9 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           )
         : {},
     };
-    return validateSerializableStateV7(normalizedV7) ? migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(normalizedV7))) : null;
+    return validateSerializableStateV7(normalizedV7)
+      ? migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(normalizedV7))))
+      : null;
   }
   if (schemaVersion === 8) {
     const asV8 = state as SerializableStateV8;
@@ -1196,7 +1257,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         : {},
       allocator: normalizeAllocatorV8(asV8.allocator),
     };
-    return validateSerializableStateV8(normalizedV8) ? migrateV9ToV10(migrateV8ToV9(normalizedV8)) : null;
+    return validateSerializableStateV8(normalizedV8) ? migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(normalizedV8))) : null;
   }
   if (schemaVersion === 9) {
     const asV9 = state as SerializableStateV9;
@@ -1224,7 +1285,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         : {},
       allocator: normalizeAllocatorV9(asV9.allocator),
     };
-    return validateSerializableStateV9(normalizedV9) ? migrateV9ToV10(normalizedV9) : null;
+    return validateSerializableStateV9(normalizedV9) ? migrateV10ToV11(migrateV9ToV10(normalizedV9)) : null;
   }
   if (schemaVersion === 10) {
     const asV10 = state as SerializableStateV10;
@@ -1260,7 +1321,45 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           : 0,
       allocator: normalizeAllocatorV10(asV10.allocator),
     };
-    return validateSerializableStateV10(normalizedV10) ? normalizedV10 : null;
+    return validateSerializableStateV10(normalizedV10) ? migrateV10ToV11(normalizedV10) : null;
+  }
+  if (schemaVersion === 11) {
+    const asV11 = state as SerializableStateV11;
+    const buttonFlags = withDefaultButtonFlags(normalizeButtonFlags(asV11.ui?.buttonFlags));
+    const normalizedV11: SerializableStateV11 = {
+      ...asV11,
+      calculator: {
+        ...asV11.calculator,
+        rollErrors: Array.isArray(asV11.calculator?.rollErrors) ? asV11.calculator.rollErrors.filter(isRollErrorEntry) : [],
+      },
+      ui: {
+        ...asV11.ui,
+        keyLayout: hasOnlyKnownLayoutCells(asV11.ui?.keyLayout)
+          ? asV11.ui.keyLayout
+          : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+        storageLayout: normalizeStorageSlots(asV11.ui?.storageLayout ?? defaultStorageLayout()),
+        buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
+        activeVisualizer: normalizeActiveVisualizer(asV11.ui?.activeVisualizer, buttonFlags),
+      },
+      unlocks: normalizeUnlocks(asV11.unlocks),
+      keyPressCounts: isObject(asV11.keyPressCounts)
+        ? Object.fromEntries(
+            Object.entries(asV11.keyPressCounts).filter(
+              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
+            ),
+          )
+        : {},
+      allocatorReturnPressCount:
+        isInteger(asV11.allocatorReturnPressCount) && asV11.allocatorReturnPressCount >= 0
+          ? asV11.allocatorReturnPressCount
+          : 0,
+      allocatorAllocatePressCount:
+        isInteger(asV11.allocatorAllocatePressCount) && asV11.allocatorAllocatePressCount >= 0
+          ? asV11.allocatorAllocatePressCount
+          : 0,
+      allocator: normalizeAllocatorV10(asV11.allocator),
+    };
+    return validateSerializableStateV11(normalizedV11) ? normalizedV11 : null;
   }
   return null;
 };

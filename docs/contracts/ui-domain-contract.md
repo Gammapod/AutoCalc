@@ -29,9 +29,9 @@ Platform divergence is allowed only if shared invariants stay intact.
 
 The visualizer surface is governed by these invariants:
 
-1. UI key interactions for `GRAPH` and `FEED` emit `TOGGLE_FLAG` actions only.
-2. Visualizer toggle exclusivity is enforced in domain flag reducer logic.
-3. Visualizer host resolves exactly one active panel from an ordered registry (`graph`, then `feed`), or `none`.
+1. UI key interactions for `GRAPH` and `FEED` emit `TOGGLE_VISUALIZER` actions only.
+2. Visualizer selection is enforced in domain state via `ui.activeVisualizer`.
+3. Visualizer host resolves exactly one active panel from `ui.activeVisualizer`, or `none` if unsupported.
 4. Inactive visualizer modules must clear their DOM state during host render to avoid stale panel artifacts.
 5. Mobile and desktop shells may vary in layout framing, but must share visualizer action/state outcomes.
 

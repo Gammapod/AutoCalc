@@ -18,6 +18,7 @@ export const buildActionFixtures = (): Action[] => {
     { type: "UPGRADE_KEYPAD_ROW" },
     { type: "UPGRADE_KEYPAD_COLUMN" },
     { type: "TOGGLE_FLAG", flag: "sticky.negate" },
+    { type: "TOGGLE_VISUALIZER", visualizer: "graph" },
     { type: "ALLOCATOR_ADJUST", field: "width", delta: 1 },
     { type: "ALLOCATOR_SET_MAX_POINTS", value: 12 },
     { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 2 },

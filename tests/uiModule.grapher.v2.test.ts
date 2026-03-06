@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { initialState, GRAPH_VISIBLE_FLAG } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
 import { clearGrapherV2Module, renderGrapherV2Module } from "../src_v2/ui/modules/grapherRenderer.js";
 import type { GameState } from "../src/domain/types.js";
 
@@ -21,10 +21,7 @@ export const runUiModuleGrapherV2Tests = (): void => {
     ...initialState(),
     ui: {
       ...initialState().ui,
-      buttonFlags: {
-        ...initialState().ui.buttonFlags,
-        [GRAPH_VISIBLE_FLAG]: true,
-      },
+      activeVisualizer: "graph",
     },
   };
   assert.doesNotThrow(

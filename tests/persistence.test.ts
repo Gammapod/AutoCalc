@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import {
-  FEED_VISIBLE_FLAG,
   SAVE_KEY,
   SAVE_SCHEMA_VERSION,
   initialState,
@@ -11,6 +10,7 @@ import {
   createLocalStorageRepo,
   loadFromRawSave,
 } from "../src/infra/persistence/localStorageRepo.js";
+import type { GameState } from "../src/domain/types.js";
 
 type MemoryStorage = {
   getItem: (key: string) => string | null;
@@ -39,7 +39,7 @@ export const runPersistenceTests = (): void => {
   const repo = createLocalStorageRepo(storage);
 
   const base = initialState();
-  const persisted = {
+  const persisted: GameState = {
     ...base,
     calculator: {
       ...base.calculator,
@@ -67,10 +67,7 @@ export const runPersistenceTests = (): void => {
     },
     ui: {
       ...base.ui,
-      buttonFlags: {
-        ...base.ui.buttonFlags,
-        [FEED_VISIBLE_FLAG]: true,
-      },
+      activeVisualizer: "feed",
     },
     completedUnlockIds: ["unlock_equals_on_total_11"],
   };
@@ -94,7 +91,7 @@ export const runPersistenceTests = (): void => {
   );
   assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
   assert.equal(loaded?.unlocks.visualizers.FEED, true, "round-trip FEED visualizer unlock");
-  assert.equal(Boolean(loaded?.ui.buttonFlags[FEED_VISIBLE_FLAG]), true, "round-trip FEED visibility flag");
+  assert.equal(loaded?.ui.activeVisualizer, "feed", "round-trip active visualizer");
 
   const legacyV1 = loadFromRawSave(
     JSON.stringify({
@@ -219,6 +216,55 @@ export const runPersistenceTests = (): void => {
     legacyV8.state?.allocator,
     { maxPoints: 17, allocations: { width: 2, height: 1, range: 4, speed: 3, slots: 0 } },
     "v8 migration preserves effective runtime and converts to budget model",
+  );
+
+  const legacyV10WithVisualizerFlags = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 10,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          rollErrors: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 1,
+          keypadRows: 1,
+          buttonFlags: {
+            "graph.visible": true,
+            "feed.visible": true,
+          },
+        },
+        keyPressCounts: {},
+        unlocks: initialState().unlocks,
+        completedUnlockIds: [],
+        allocatorReturnPressCount: 0,
+        allocatorAllocatePressCount: 0,
+        allocator: {
+          maxPoints: 0,
+          allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
+        },
+      },
+    }),
+  );
+  assert.ok(legacyV10WithVisualizerFlags.state, "v10 payload hydrates");
+  assert.equal(
+    legacyV10WithVisualizerFlags.state?.ui.activeVisualizer,
+    "graph",
+    "v10 migration maps legacy flags to activeVisualizer with graph precedence",
+  );
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(legacyV10WithVisualizerFlags.state?.ui.buttonFlags ?? {}, "graph.visible"),
+    false,
+    "legacy graph visibility flag is removed from buttonFlags",
   );
 
   const badJson = loadFromRawSave("{");

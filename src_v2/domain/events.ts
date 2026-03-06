@@ -19,6 +19,7 @@ export type DomainEvent =
   | { type: "KeypadRowUpgraded" }
   | { type: "KeypadColumnUpgraded" }
   | { type: "FlagToggled"; flag: string }
+  | { type: "VisualizerToggled"; visualizer: "graph" | "feed" | "circle" }
   | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed" | "slots"; delta: 1 | -1 }
   | { type: "AllocatorMaxPointsSet"; value: number }
   | { type: "AllocatorMaxPointsAdded"; amount: number }
@@ -75,6 +76,9 @@ export const eventFromAction = (action: Action): DomainEvent => {
   }
   if (action.type === "UPGRADE_KEYPAD_COLUMN") {
     return { type: "KeypadColumnUpgraded" };
+  }
+  if (action.type === "TOGGLE_VISUALIZER") {
+    return { type: "VisualizerToggled", visualizer: action.visualizer };
   }
   if (action.type === "ALLOCATOR_ADJUST") {
     return { type: "AllocatorAdjusted", field: action.field, delta: action.delta };
@@ -146,6 +150,9 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   }
   if (event.type === "KeypadColumnUpgraded") {
     return { type: "UPGRADE_KEYPAD_COLUMN" };
+  }
+  if (event.type === "VisualizerToggled") {
+    return { type: "TOGGLE_VISUALIZER", visualizer: event.visualizer };
   }
   if (event.type === "AllocatorAdjusted") {
     return { type: "ALLOCATOR_ADJUST", field: event.field, delta: event.delta };

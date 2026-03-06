@@ -20,6 +20,7 @@ const isStorageLayoutAction = (action: Action): boolean => {
 const isRuntimeInteractiveAction = (action: Action): boolean =>
   action.type === "PRESS_KEY" ||
   action.type === "TOGGLE_FLAG" ||
+  action.type === "TOGGLE_VISUALIZER" ||
   action.type === "MOVE_LAYOUT_CELL" ||
   action.type === "SWAP_LAYOUT_CELLS" ||
   action.type === "ALLOCATOR_ADJUST" ||
@@ -64,7 +65,7 @@ export const createInteractionRuntime = (initialMode: InteractionMode = "calcula
     }
 
     if (runtime.mode === "modify") {
-      if (action.type === "PRESS_KEY" || action.type === "TOGGLE_FLAG") {
+      if (action.type === "PRESS_KEY" || action.type === "TOGGLE_FLAG" || action.type === "TOGGLE_VISUALIZER") {
         return true;
       }
       return false;

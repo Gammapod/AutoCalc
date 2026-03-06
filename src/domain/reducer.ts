@@ -22,7 +22,14 @@ import { applyToggleFlag } from "./reducer.flags.js";
 import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyUnlocks } from "./unlocks.js";
-import type { Action, AllocatorAllocationField, AllocatorBudgetSnapshot, AllocatorState, GameState } from "./types.js";
+import type {
+  Action,
+  AllocatorAllocationField,
+  AllocatorBudgetSnapshot,
+  AllocatorState,
+  GameState,
+  VisualizerId,
+} from "./types.js";
 // Root reducer orchestrator: route actions to focused domain reducers.
 
 const ALLOCATOR_TRIM_ORDER: readonly AllocatorAllocationField[] = ["speed", "range", "slots", "height", "width"];
@@ -115,6 +122,20 @@ const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorS
   };
 };
 
+const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): GameState => {
+  const activeVisualizer = state.ui.activeVisualizer === visualizer ? "none" : visualizer;
+  if (state.ui.activeVisualizer === activeVisualizer) {
+    return state;
+  }
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      activeVisualizer,
+    },
+  };
+};
+
 const reduceLegacy = (state: GameState, action: Action): GameState => {
   if (action.type === "PRESS_KEY") {
     return applyKeyAction(state, action.key);
@@ -156,6 +177,9 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
   }
   if (action.type === "TOGGLE_FLAG") {
     return applyToggleFlag(state, action.flag);
+  }
+  if (action.type === "TOGGLE_VISUALIZER") {
+    return applyToggleVisualizer(state, action.visualizer);
   }
   if (action.type === "ALLOCATOR_ADJUST") {
     const nextAllocator = applyAllocationDelta(state.allocator, action.field, action.delta);

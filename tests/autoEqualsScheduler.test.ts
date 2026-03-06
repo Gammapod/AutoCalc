@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "../src/app/autoEqualsScheduler.js";
-import { AUTO_EQUALS_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
+import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState, Key, Store } from "../src/domain/types.js";
 
@@ -94,6 +94,9 @@ const countExecutorPressesForKey = (actions: Action[], key: Key): number =>
 
 const countToggleActionsForFlag = (actions: Action[], flag: string): number =>
   actions.filter((action) => action.type === "TOGGLE_FLAG" && action.flag === flag).length;
+
+const countVisualizerToggleActions = (actions: Action[], visualizer: "graph" | "feed" | "circle"): number =>
+  actions.filter((action) => action.type === "TOGGLE_VISUALIZER" && action.visualizer === visualizer).length;
 
 export const runAutoEqualsSchedulerTests = (): void => {
   const timers = createFakeTimerApi();
@@ -274,20 +277,20 @@ export const runAutoEqualsSchedulerTests = (): void => {
   graphToggleStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   graphToggleScheduler.sync(graphToggleStore.getState());
   assert.equal(
-    Boolean(graphToggleStore.getState().ui.buttonFlags[GRAPH_VISIBLE_FLAG]),
-    true,
-    "toggle key below play/pause is toggled on by immediate attempt",
+    graphToggleStore.getState().ui.activeVisualizer,
+    "graph",
+    "visualizer key below play/pause is toggled on by immediate attempt",
   );
   graphToggleTimers.tick();
   assert.equal(
-    Boolean(graphToggleStore.getState().ui.buttonFlags[GRAPH_VISIBLE_FLAG]),
-    false,
-    "toggle key below play/pause is toggled off on the next tick",
+    graphToggleStore.getState().ui.activeVisualizer,
+    "none",
+    "visualizer key below play/pause is toggled off on the next tick",
   );
   assert.equal(
-    countToggleActionsForFlag(graphToggleStore.actions, GRAPH_VISIBLE_FLAG),
+    countVisualizerToggleActions(graphToggleStore.actions, "graph"),
     2,
-    "toggle key below play/pause dispatches toggle action each attempt",
+    "visualizer key below play/pause dispatches visualizer toggle action each attempt",
   );
 
   scheduler.dispose();

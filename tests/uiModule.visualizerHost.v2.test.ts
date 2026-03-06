@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
 import { clearVisualizerHost, renderVisualizerHost, resolveActiveVisualizerPanel } from "../src_v2/ui/renderAdapter.js";
 import { VISUALIZER_REGISTRY } from "../src_v2/ui/modules/visualizers/registry.js";
 import type { GameState } from "../src/domain/types.js";
@@ -45,10 +45,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     ...base,
     ui: {
       ...base.ui,
-      buttonFlags: {
-        ...base.ui.buttonFlags,
-        [GRAPH_VISIBLE_FLAG]: true,
-      },
+      activeVisualizer: "graph",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withGraphOn), "graph", "graph flag activates graph panel");
@@ -57,10 +54,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     ...base,
     ui: {
       ...base.ui,
-      buttonFlags: {
-        ...base.ui.buttonFlags,
-        [FEED_VISIBLE_FLAG]: true,
-      },
+      activeVisualizer: "feed",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withFeedOnEmptyRoll), "feed", "feed stays visible while FEED is toggled");
@@ -78,13 +72,19 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     ...withFeedOnRoll,
     ui: {
       ...withFeedOnRoll.ui,
-      buttonFlags: {
-        ...withFeedOnRoll.ui.buttonFlags,
-        [GRAPH_VISIBLE_FLAG]: true,
-      },
+      activeVisualizer: "graph",
     },
   };
-  assert.equal(resolveActiveVisualizerPanel(withGraphAndFeed), "graph", "graph suppresses feed when both flags are on");
+  assert.equal(resolveActiveVisualizerPanel(withGraphAndFeed), "graph", "graph panel is active when selected");
+
+  const withCircleSelected: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      activeVisualizer: "circle",
+    },
+  };
+  assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "none", "unsupported visualizer ids resolve to none");
 
   const missingRoot: RootLike = {
     querySelector: () => null,

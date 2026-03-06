@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { buildRollLines, buildRollRows, buildRollViewModel } from "../src_v2/ui/shared/readModel.js";
 import { resolveActiveVisualizerPanel } from "../src_v2/ui/modules/visualizerHost.js";
-import { FEED_VISIBLE_FLAG, GRAPH_VISIBLE_FLAG, initialState } from "../src/domain/state.js";
-import type { EuclidRemainderEntry } from "../src/domain/types.js";
+import { initialState } from "../src/domain/state.js";
+import type { EuclidRemainderEntry, GameState } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
@@ -105,31 +105,25 @@ export const runRollDisplayTests = (): void => {
   const base = initialState();
   assert.equal(resolveActiveVisualizerPanel(base), "none", "no visualizer flags leaves visualizer host inactive");
 
-  const withFeedOn = {
+  const withFeedOn: GameState = {
     ...base,
     ui: {
       ...base.ui,
-      buttonFlags: {
-        ...base.ui.buttonFlags,
-        [FEED_VISIBLE_FLAG]: true,
-      },
+      activeVisualizer: "feed",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withFeedOn), "feed", "FEED on activates feed panel");
 
-  const withFeedAndGraphOn = {
+  const withFeedAndGraphOn: GameState = {
     ...withFeedOn,
     ui: {
       ...withFeedOn.ui,
-      buttonFlags: {
-        ...withFeedOn.ui.buttonFlags,
-        [GRAPH_VISIBLE_FLAG]: true,
-      },
+      activeVisualizer: "graph",
     },
   };
   assert.equal(
     resolveActiveVisualizerPanel(withFeedAndGraphOn),
     "graph",
-    "graph flag takes precedence over feed when both visualizers are toggled",
+    "graph active visualizer wins when selected",
   );
 };

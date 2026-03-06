@@ -4,6 +4,8 @@ export type ValueExpressionKey = Digit | "NEG";
 export type UtilityKey = "C" | "CE" | "UNDO";
 export type StepKey = "\u23EF";
 export type VisualizerKey = "GRAPH" | "FEED";
+export type VisualizerId = "graph" | "feed" | "circle";
+export type ActiveVisualizer = VisualizerId | "none";
 export type ExecKey = "=" | "++" | "--";
 export type Key = ValueExpressionKey | SlotOperator | UtilityKey | StepKey | VisualizerKey | ExecKey;
 
@@ -326,6 +328,7 @@ export type GameState = {
     storageLayout: Array<KeyCell | null>;
     keypadColumns: number;
     keypadRows: number;
+    activeVisualizer: ActiveVisualizer;
     buttonFlags: Record<string, boolean>;
   };
   keyPressCounts: Partial<Record<Key, number>>;
@@ -402,6 +405,11 @@ export type ToggleFlagAction = {
   flag: string;
 };
 
+export type ToggleVisualizerAction = {
+  type: "TOGGLE_VISUALIZER";
+  visualizer: VisualizerId;
+};
+
 export type AllocatorAdjustAction = {
   type: "ALLOCATOR_ADJUST";
   field: AllocatorAllocationField;
@@ -443,6 +451,7 @@ export type Action =
   | UpgradeKeypadRowAction
   | UpgradeKeypadColumnAction
   | ToggleFlagAction
+  | ToggleVisualizerAction
   | AllocatorAdjustAction
   | AllocatorSetMaxPointsAction
   | AllocatorAddMaxPointsAction

@@ -1,4 +1,3 @@
-import { GRAPH_VISIBLE_FLAG } from "../../../src/domain/state.js";
 import type { GameState } from "../../../src/domain/types.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
 
@@ -143,7 +142,7 @@ export const clearGrapherV2Module = (): void => {
 };
 
 export const renderGrapherV2Module = (root: Element, state: GameState): void => {
-  const graphVisible = Boolean(state.ui.buttonFlags[GRAPH_VISIBLE_FLAG]);
+  const graphVisible = state.ui.activeVisualizer === "graph";
   if (!graphVisible) {
     clearGrapherV2Module();
     return;

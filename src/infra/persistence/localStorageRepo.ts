@@ -2,7 +2,7 @@ import { parseRational, toDisplayString } from "../math/rationalEngine.js";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
 import { isRationalCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue } from "../../domain/calculatorValue.js";
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
-import { isValidSchemaVersion, migrateToLatest, type SerializableStateV10, type SerializableSlot } from "./migrations.js";
+import { isValidSchemaVersion, migrateToLatest, type SerializableStateV11, type SerializableSlot } from "./migrations.js";
 import type { GameState } from "../../domain/types.js";
 
 type SavePayload = {
@@ -40,7 +40,7 @@ const serializeCalculatorValue = (value: GameState["calculator"]["total"]): stri
 const deserializeCalculatorValue = (value: string): GameState["calculator"]["total"] =>
   value.trim() === "NaN" ? toNanCalculatorValue() : toRationalCalculatorValue(parseRational(value));
 
-const toSerializableState = (state: GameState): SerializableStateV10 => ({
+const toSerializableState = (state: GameState): SerializableStateV11 => ({
   calculator: {
     total: serializeCalculatorValue(state.calculator.total),
     pendingNegativeTotal: state.calculator.pendingNegativeTotal,
@@ -63,6 +63,7 @@ const toSerializableState = (state: GameState): SerializableStateV10 => ({
     storageLayout: state.ui.storageLayout,
     keypadColumns: state.ui.keypadColumns,
     keypadRows: state.ui.keypadRows,
+    activeVisualizer: state.ui.activeVisualizer,
     buttonFlags: state.ui.buttonFlags,
   },
   keyPressCounts: state.keyPressCounts,
@@ -73,7 +74,7 @@ const toSerializableState = (state: GameState): SerializableStateV10 => ({
   allocator: state.allocator,
 });
 
-const fromSerializableStateV3 = (payloadState: SerializableStateV10): GameState => ({
+const fromSerializableStateV3 = (payloadState: SerializableStateV11): GameState => ({
   calculator: {
     total: deserializeCalculatorValue(payloadState.calculator.total),
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
@@ -103,6 +104,7 @@ const fromSerializableStateV3 = (payloadState: SerializableStateV10): GameState 
     storageLayout: payloadState.ui.storageLayout,
     keypadColumns: payloadState.ui.keypadColumns,
     keypadRows: payloadState.ui.keypadRows,
+    activeVisualizer: payloadState.ui.activeVisualizer,
     buttonFlags: payloadState.ui.buttonFlags,
   },
   keyPressCounts: payloadState.keyPressCounts ?? {},

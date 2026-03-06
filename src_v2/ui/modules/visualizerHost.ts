@@ -19,8 +19,11 @@ const clearHostUiState = (root: Element): void => {
 };
 
 export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPanel => {
-  const active = VISUALIZER_REGISTRY.find((panel) => panel.isVisible(state));
-  return active?.id ?? "none";
+  const active = state.ui.activeVisualizer;
+  if (active === "none") {
+    return "none";
+  }
+  return VISUALIZER_REGISTRY.some((panel) => panel.id === active) ? active : "none";
 };
 
 export const renderVisualizerHost = (root: Element, state: GameState): void => {
