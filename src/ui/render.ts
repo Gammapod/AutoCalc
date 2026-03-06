@@ -633,8 +633,11 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   const rationalTotal = isRationalCalculatorValue(state.calculator.total) ? state.calculator.total.value : null;
   const hasRationalTotal = rationalTotal !== null;
   const hasIntegerTotal = hasRationalTotal && rationalTotal.den === 1n;
+  const hasAnyKeyPress = Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
+  const shouldRenderClearedPlaceholder =
+    isClearedCalculatorState(state.calculator) && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress);
   totalEl.innerHTML = "";
-  if (isClearedCalculatorState(state.calculator)) {
+  if (shouldRenderClearedPlaceholder) {
     const frame = document.createElement("div");
     frame.className = "seg-frame";
     const slotModels = buildClearedTotalSlotModel(state.unlocks.maxTotalDigits);

@@ -21,17 +21,32 @@ export const runReducerInputTests = (): void => {
       ...base.unlocks,
       valueExpression: {
         ...base.unlocks.valueExpression,
+        "0": true,
         "1": true,
+        "2": true,
       },
     },
   };
   const freshFirstDigit = applyKeyAction(freshBootNoSaveState, "1");
   assert.deepEqual(freshFirstDigit.calculator.total, r(1n), "fresh boot accepts one initial total digit");
-  const freshBlockedSecondDigit = applyKeyAction(freshFirstDigit, "1");
+  assert.equal(
+    freshFirstDigit.calculator.singleDigitInitialTotalEntry,
+    false,
+    "entering a seed digit marks seed as present",
+  );
+  const freshBlockedSecondDigit = applyKeyAction(freshFirstDigit, "2");
   assert.deepEqual(
     freshBlockedSecondDigit.calculator.total,
-    r(1n),
-    "fresh boot blocks a second initial total digit",
+    r(2n),
+    "fresh boot replaces a second initial total digit",
+  );
+
+  const freshZeroSeed = applyKeyAction(freshBootNoSaveState, "0");
+  assert.deepEqual(freshZeroSeed.calculator.total, r(0n), "fresh boot accepts zero seed input");
+  assert.equal(
+    freshZeroSeed.calculator.singleDigitInitialTotalEntry,
+    false,
+    "entering seed zero marks seed as present (not placeholder)",
   );
 
   const fullyUnlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
@@ -40,8 +55,8 @@ export const runReducerInputTests = (): void => {
   const blockedFreshSecondDigit = applyKeyAction(firstFreshDigit, "8");
   assert.deepEqual(
     blockedFreshSecondDigit.calculator.total,
-    r(9n),
-    "second total digit on fresh cleared save is blocked by 1-digit cap",
+    r(8n),
+    "second total digit on fresh cleared save replaces first seed digit",
   );
 
   const afterClear = applyKeyAction(fullyUnlocked, "C");
@@ -50,8 +65,8 @@ export const runReducerInputTests = (): void => {
   const blockedSecondTotalDigit = applyKeyAction(firstTotalDigit, "8");
   assert.deepEqual(
     blockedSecondTotalDigit.calculator.total,
-    r(9n),
-    "second total digit after clear is blocked by 1-digit cap",
+    r(8n),
+    "second total digit after clear replaces first seed digit",
   );
 
   const divByZeroSource: GameState = {
@@ -114,4 +129,15 @@ export const runReducerInputTests = (): void => {
   const afterDecrement = applyKeyAction(decrementSource, "--");
   assert.deepEqual(afterDecrement.calculator.total, r(-1n), "decrement updates total");
   assert.deepEqual(afterDecrement.calculator.roll, [r(-1n)], "decrement appends new total to roll");
+
+  const activeRollDigitNoOp: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(5n),
+      roll: [r(5n)],
+    },
+  };
+  const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "1");
+  assert.deepEqual(afterActiveRollDigit, activeRollDigitNoOp, "digit key is no-op while roll is active");
 };

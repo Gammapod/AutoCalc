@@ -5,6 +5,8 @@ import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/c
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
 import type { GameState, Key } from "../src/domain/types.js";
+import { getSlotInputScenariosByTag } from "./helpers/slotInput.contractFixtures.js";
+import { assertScenarioResult, runScenario, type SlotInputRuntimeAdapter } from "./helpers/slotInput.contractRunner.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
@@ -241,7 +243,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
 };
 
 const assertEdgeExpectation = (key: Key, kind: string): void => {
-  if (kind === "digit_blocks_second_operand_digit") {
+  if (kind === "digit_replaces_full_operand_digit") {
     const state = unlockKey(
       {
         ...initialState(),
@@ -253,11 +255,11 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       key,
     );
     const next = applyKeyAction(state, key);
-    assert.equal(next.calculator.draftingSlot?.operandInput, "9", `digit ${key} should not exceed one-digit operand`);
+    assert.equal(next.calculator.draftingSlot?.operandInput, key, `digit ${key} should replace full one-digit operand`);
     return;
   }
 
-  if (kind === "operator_requires_operand_before_commit") {
+  if (kind === "operator_replaces_empty_drafting_operator") {
     let state = unlockKey(initialState(), key);
     state = {
       ...state,
@@ -267,7 +269,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       },
     };
     const next = applyKeyAction(state, key);
-    assert.equal(next.calculator.draftingSlot?.operator, "+", `operator ${key} should not replace empty drafting slot`);
+    assert.equal(next.calculator.draftingSlot?.operator, key, `operator ${key} should replace empty drafting slot operator`);
     return;
   }
 
@@ -459,5 +461,17 @@ export const runKeyBehaviorContractTests = (): void => {
     }
     assertPrimaryExpectation(spec.key, spec.primaryExpectation);
     assertEdgeExpectation(spec.key, spec.edgeCaseExpectation);
+  }
+
+  const legacySlotAdapter: SlotInputRuntimeAdapter = {
+    name: "legacy.applyKeyAction",
+    applyKeyAction,
+  };
+  const slotScenarios = getSlotInputScenariosByTag("legacy_contract");
+  for (const scenario of slotScenarios) {
+    const result = runScenario(legacySlotAdapter, scenario);
+    if (scenario.expectedProjection) {
+      assertScenarioResult(result, scenario.expectedProjection);
+    }
   }
 };

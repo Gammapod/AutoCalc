@@ -50,6 +50,8 @@ import { runContractsParityLongTracesTests } from "./contracts.parityLongTraces.
 import { runContractsParitySeededFuzzTests } from "./contracts.paritySeededFuzz.test.js";
 import { runContractsUiActionEmissionTests } from "./contracts.uiActionEmission.test.js";
 import { runContractsActionEventRoundTripTests } from "./contracts.actionEventRoundTrip.test.js";
+import { runContractsSlotInputParityTests } from "./contracts.slotInputParity.test.js";
+import { runContractsSlotInputTargetSpecTests } from "./contracts.slotInputTargetSpec.test.js";
 import { runV2RulesAdaptersTests } from "./v2Rules.adapters.test.js";
 import { runUiIntegrationMobileShellTests } from "./uiIntegration.mobileShell.test.js";
 import { runUiIntegrationDesktopShellTests } from "./uiIntegration.desktopShell.test.js";
@@ -109,6 +111,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/parity-seeded-fuzz", runContractsParitySeededFuzzTests],
   ["contracts/ui-action-emission", runContractsUiActionEmissionTests],
   ["contracts/action-event-round-trip", runContractsActionEventRoundTripTests],
+  ["contracts/slot-input-parity", runContractsSlotInputParityTests],
+  ["contracts/slot-input-target-spec", runContractsSlotInputTargetSpecTests],
   ["v2/rules-adapters", runV2RulesAdaptersTests],
 ];
 

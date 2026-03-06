@@ -17,8 +17,8 @@ export type KeyPrimaryExpectationKind =
   | "pause_counts_only";
 
 export type KeyEdgeExpectationKind =
-  | "digit_blocks_second_operand_digit"
-  | "operator_requires_operand_before_commit"
+  | "digit_replaces_full_operand_digit"
+  | "operator_replaces_empty_drafting_operator"
   | "neg_toggles_drafting_sign"
   | "c_checklist_recorded_once"
   | "ce_preserves_total_when_clearing"
@@ -42,7 +42,7 @@ const d = (key: Key): KeyBehaviorSpec => ({
   lockModel: "unlockable",
   unlockPathPolicy: key === "0" || key === "1" || key === "4" ? "catalog" : "none_planned",
   primaryExpectation: "digit_sets_drafting_operand",
-  edgeCaseExpectation: "digit_blocks_second_operand_digit",
+  edgeCaseExpectation: "digit_replaces_full_operand_digit",
 });
 
 const op = (key: Key): KeyBehaviorSpec => ({
@@ -50,7 +50,7 @@ const op = (key: Key): KeyBehaviorSpec => ({
   lockModel: "unlockable",
   unlockPathPolicy: key === "+" || key === "-" ? "catalog" : "none_planned",
   primaryExpectation: "operator_starts_drafting",
-  edgeCaseExpectation: "operator_requires_operand_before_commit",
+  edgeCaseExpectation: "operator_replaces_empty_drafting_operator",
 });
 
 export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
