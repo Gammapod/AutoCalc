@@ -5,7 +5,7 @@ export type UtilityKey = "C" | "CE" | "UNDO";
 export type StepKey = "\u23EF";
 export type VisualizerKey = "GRAPH" | "FEED";
 export type VisualizerId = "graph" | "feed" | "circle";
-export type ActiveVisualizer = VisualizerId | "none";
+export type ActiveVisualizer = "total" | VisualizerId;
 export type ExecKey = "=" | "++" | "--";
 export type Key = ValueExpressionKey | SlotOperator | UtilityKey | StepKey | VisualizerKey | ExecKey;
 
@@ -464,3 +464,4 @@ export type Store = {
   dispatch: (action: Action) => Action;
   subscribe: (subscriber: (state: GameState) => void) => () => void;
 };
+

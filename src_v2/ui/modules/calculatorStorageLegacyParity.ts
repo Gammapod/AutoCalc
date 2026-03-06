@@ -1562,7 +1562,7 @@ export const render = (
   options: RenderOptions = {},
 ): void => {
   ensureKeyLabelResizeListener();
-  const totalEl = root.querySelector("[data-total]");
+  const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
   const slotEl = root.querySelector("[data-slot]");
   const rollEl = root.querySelector("[data-roll]");
   const unlockEl = root.querySelector("[data-unlocks]");
@@ -1864,6 +1864,7 @@ export const render = (
     }
   }
 };
+
 
 
 

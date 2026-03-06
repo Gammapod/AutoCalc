@@ -1,8 +1,8 @@
-﻿import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
+import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 11;
+export const SAVE_SCHEMA_VERSION = 12;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const AUTO_EQUALS_FLAG = "execution.pause";
@@ -116,7 +116,7 @@ export const initialState = (): GameState => {
       storageLayout: defaultStorageLayout(),
       keypadColumns: KEYPAD_DEFAULT_COLUMNS,
       keypadRows: KEYPAD_DEFAULT_ROWS,
-      activeVisualizer: "none",
+      activeVisualizer: "total",
       buttonFlags: {},
     },
     keyPressCounts: {},
@@ -170,3 +170,4 @@ export const initialState = (): GameState => {
     completedUnlockIds: [],
   };
 };
+

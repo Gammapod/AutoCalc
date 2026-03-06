@@ -233,7 +233,7 @@ const clearToggleFlagWhenLeavingKeypad = (
       ...state,
       ui: {
         ...state.ui,
-        activeVisualizer: "none",
+        activeVisualizer: "total",
       },
     };
   }
@@ -431,3 +431,4 @@ export const applyUpgradeKeypadColumn = (state: GameState): GameState => {
   const resizedCells = resizeAnchored(getCurrentKeypadCells(state), upgradedColumns, currentRows);
   return withKeypadState(state, resizedCells, upgradedColumns, currentRows);
 };
+

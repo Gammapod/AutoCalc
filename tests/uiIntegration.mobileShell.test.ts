@@ -52,6 +52,55 @@ export const runUiIntegrationMobileShellTests = (): void => {
       interactionMode: "calculator",
       inputBlocked: false,
     });
+    const host = harness.root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
+    const withGraph: GameState = {
+      ...withStorage,
+      ui: {
+        ...withStorage.ui,
+        activeVisualizer: "graph",
+      },
+    };
+    const withFeed: GameState = {
+      ...withStorage,
+      ui: {
+        ...withStorage.ui,
+        activeVisualizer: "feed",
+      },
+    };
+    const withTotal: GameState = {
+      ...withStorage,
+      ui: {
+        ...withStorage.ui,
+        activeVisualizer: "total",
+      },
+    };
+    renderer.render(withGraph, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    renderer.render(withFeed, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    renderer.render(withGraph, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    renderer.render(withTotal, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    assert.equal(
+      host?.dataset.v2VisualizerTransition,
+      "exit",
+      "rapid visualizer sequence ends with exit transition into total",
+    );
+    assert.equal(
+      host?.getAttribute("data-v2-visualizer-height-lock"),
+      null,
+      "rapid visualizer sequence does not leave swap height lock behind",
+    );
+
     const keyButton = harness.root.querySelector<HTMLButtonElement>(".key[data-key='++']");
     assert.ok(keyButton, "calculator key exists after mobile render");
     click(keyButton as HTMLButtonElement);
@@ -66,3 +115,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     harness.teardown();
   }
 };
+
+
+
+

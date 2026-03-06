@@ -579,6 +579,10 @@
         display: none;
       }
 
+      .v2-total-panel {
+        display: none;
+      }
+
       .display {
         border: 1px solid #515c6a;
         border-radius: 7px;
@@ -587,7 +591,7 @@
         box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
       }
 
-      [data-total] {
+      [data-v2-total-panel] {
         position: relative;
         min-height: 70px;
         display: flex;
@@ -1697,18 +1701,46 @@
       body[data-ui-shell="mobile"] .v2-visualizer-host,
       body[data-ui-shell="desktop"] .v2-visualizer-host {
         display: block;
+        position: relative;
         margin-bottom: 8px;
+        height: var(--v2-visualizer-window-height);
+        opacity: 1;
+        transform: translateY(0);
+        transform-origin: top center;
+        overflow: hidden;
+        transition:
+          height 220ms cubic-bezier(0.2, 0.7, 0.1, 1),
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
-      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-panel="none"],
-      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-panel="none"] {
-        display: none;
+      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-transition="enter"],
+      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-transition="enter"] {
+        transform: translateY(0);
+      }
+
+      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-transition="exit"],
+      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-transition="exit"] {
+        transform: translateY(12px);
+      }
+
+      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"],
+      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"] {
+        height: var(--v2-visualizer-lock-height, var(--v2-visualizer-window-height));
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher {
+        position: absolute;
+        inset: 0;
         margin-bottom: 0;
         height: var(--v2-visualizer-window-height);
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher,
@@ -1729,7 +1761,9 @@
 
       body[data-ui-shell="mobile"] .v2-feed-panel,
       body[data-ui-shell="desktop"] .v2-feed-panel {
-        display: none;
+        display: flex;
+        position: absolute;
+        inset: 0;
         height: var(--v2-visualizer-window-height);
         overflow: hidden;
         padding: 8px 10px;
@@ -1741,11 +1775,53 @@
         color: #b4f1d3;
         flex-direction: column;
         justify-content: flex-end;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-total-panel,
+      body[data-ui-shell="desktop"] .v2-total-panel {
         display: flex;
+        position: absolute;
+        inset: 0;
+        justify-content: flex-end;
+        align-items: center;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="total"] .v2-total-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="total"] .v2-total-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher {
+        opacity: 0;
+        transform: translateY(-12px);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel {
+        opacity: 0;
+        transform: translateY(12px);
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .roll-line,
@@ -1757,6 +1833,20 @@
       body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher .grapher-screen {
         height: 100%;
         aspect-ratio: auto;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        body[data-ui-shell="mobile"] .v2-visualizer-host,
+        body[data-ui-shell="desktop"] .v2-visualizer-host,
+        body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
+        body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher,
+        body[data-ui-shell="mobile"] .v2-total-panel,
+        body[data-ui-shell="desktop"] .v2-total-panel,
+        body[data-ui-shell="mobile"] .v2-feed-panel,
+        body[data-ui-shell="desktop"] .v2-feed-panel {
+          transition-duration: 1ms;
+          transform: none;
+        }
       }
 
       body[data-ui-shell="mobile"] [data-storage-keys] {
@@ -2040,7 +2130,8 @@
                 <div class="slot" aria-hidden="true"></div>
                 <div class="display-stack">
                   <div class="display display--shared" data-display-window data-graph-visible="false">
-                    <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="none" aria-hidden="true">
+                    <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                      <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
                       <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
                         <div class="grapher-screen">
                           <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
@@ -2048,7 +2139,6 @@
                       </section>
                       <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
                     </section>
-                    <div data-total aria-live="polite"></div>
                   </div>
                   <div class="display" data-slot></div>
                 </div>

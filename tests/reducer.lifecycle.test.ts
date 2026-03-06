@@ -53,6 +53,7 @@ export const runReducerLifecycleTests = (): void => {
   assert.equal(feedOn.ui.activeVisualizer, "feed", "FEED visualizer toggles on and replaces graph");
 
   const feedOff = reducer(feedOn, { type: "TOGGLE_VISUALIZER", visualizer: "feed" });
-  assert.equal(feedOff.ui.activeVisualizer, "none", "pressing active visualizer toggles off to none");
+  assert.equal(feedOff.ui.activeVisualizer, "total", "pressing active visualizer toggles off to total");
 };
+
 

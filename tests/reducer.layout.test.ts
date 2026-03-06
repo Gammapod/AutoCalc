@@ -158,8 +158,8 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.equal(
     graphMoveBackToStorage.ui.activeVisualizer,
-    "none",
-    "moving active GRAPH off keypad clears active visualizer",
+    "total",
+    "moving active GRAPH off keypad resets active visualizer to total",
   );
 
   const swapWithinKeypad = reducer(toKeypadMove, {
@@ -351,8 +351,8 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.equal(
     graphSwappedOut.ui.activeVisualizer,
-    "none",
-    "swapping active GRAPH off keypad clears active visualizer",
+    "total",
+    "swapping active GRAPH off keypad resets active visualizer to total",
   );
 
   const feedStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "FEED");
@@ -375,8 +375,8 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.equal(
     feedMoveBackToStorage.ui.activeVisualizer,
-    "none",
-    "moving active FEED off keypad clears active visualizer",
+    "total",
+    "moving active FEED off keypad resets active visualizer to total",
   );
 
   const allowedFormerBottomRightSwap = reducer(toKeypadMove, {
@@ -612,3 +612,6 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.equal(noopResize, baseline, "unchanged dimensions are a no-op");
 };
+
+
+

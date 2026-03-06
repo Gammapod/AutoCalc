@@ -12,7 +12,15 @@ type FakeElement = {
   innerHTML: string;
   dataset: Record<string, string>;
   attributes: Record<string, string>;
+  style: {
+    setProperty: (name: string, value: string) => void;
+    removeProperty: (name: string) => void;
+  };
   setAttribute: (name: string, value: string) => void;
+  removeAttribute: (name: string) => void;
+  addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  getBoundingClientRect: () => { height: number };
 };
 
 const createFakeElement = (): FakeElement => {
@@ -20,8 +28,28 @@ const createFakeElement = (): FakeElement => {
     innerHTML: "",
     dataset: {},
     attributes: {},
+    style: {
+      setProperty(name: string, value: string): void {
+        element.attributes[`style:${name}`] = value;
+      },
+      removeProperty(name: string): void {
+        delete element.attributes[`style:${name}`];
+      },
+    },
     setAttribute(name: string, value: string): void {
       element.attributes[name] = value;
+    },
+    removeAttribute(name: string): void {
+      delete element.attributes[name];
+    },
+    addEventListener(): void {
+      // no-op in fake element
+    },
+    removeEventListener(): void {
+      // no-op in fake element
+    },
+    getBoundingClientRect(): { height: number } {
+      return { height: 168 };
     },
   };
   return element;
@@ -34,7 +62,7 @@ const r = (num: bigint): { kind: "rational"; value: { num: bigint; den: bigint }
 
 export const runUiModuleVisualizerHostV2Tests = (): void => {
   const base = initialState();
-  assert.equal(resolveActiveVisualizerPanel(base), "none", "no toggles keeps visualizer host hidden");
+  assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total");
   assert.deepEqual(
     VISUALIZER_REGISTRY.map((module) => module.id),
     ["graph", "feed"],
@@ -84,7 +112,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       activeVisualizer: "circle",
     },
   };
-  assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "none", "unsupported visualizer ids resolve to none");
+  assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "total", "unsupported visualizer ids resolve to total");
 
   const missingRoot: RootLike = {
     querySelector: () => null,
@@ -93,12 +121,15 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     () => renderVisualizerHost(missingRoot as unknown as Element, withFeedOnRoll),
     "visualizer host renderer safely handles missing mount points",
   );
+  clearVisualizerHost(missingRoot as unknown as Element);
 
   const renderHost = createFakeElement();
   const renderGraphDevice = createFakeElement();
   const renderFeedPanel = createFakeElement();
+  const renderTotalPanel = createFakeElement();
   renderFeedPanel.innerHTML = "stale";
   renderFeedPanel.attributes["aria-hidden"] = "false";
+  renderTotalPanel.attributes["aria-hidden"] = "false";
   const renderRoot: RootLike = {
     querySelector: (selector: string) => {
       if (selector === "[data-v2-visualizer-host]") {
@@ -110,21 +141,43 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-feed-panel]") {
         return renderFeedPanel as unknown as Element;
       }
+      if (selector === "[data-v2-total-panel]") {
+        return renderTotalPanel as unknown as Element;
+      }
       return null;
     },
   };
   renderVisualizerHost(renderRoot as unknown as Element, withGraphOn);
   assert.equal(renderHost.dataset.v2VisualizerPanel, "graph", "host data state tracks active graph panel");
+  assert.equal(renderHost.dataset.v2VisualizerFrom, "total", "host tracks previous panel");
+  assert.equal(renderHost.dataset.v2VisualizerTo, "graph", "host tracks next panel");
+  assert.equal(renderHost.dataset.v2VisualizerTransition, "enter", "total to graph is enter transition");
   assert.equal(renderHost.attributes["aria-hidden"], "false", "active panel keeps visualizer host visible");
   assert.equal(renderGraphDevice.attributes["aria-hidden"], "false", "graph panel is shown when graph is active");
   assert.equal(renderFeedPanel.innerHTML, "", "inactive feed panel is cleared during graph render");
   assert.equal(renderFeedPanel.attributes["aria-hidden"], "true", "inactive feed panel is hidden during graph render");
+  assert.equal(renderTotalPanel.attributes["aria-hidden"], "true", "inactive total panel is hidden during graph render");
+  const withFeedOn: GameState = {
+    ...withGraphOn,
+    ui: {
+      ...withGraphOn.ui,
+      activeVisualizer: "feed",
+    },
+  };
+  renderVisualizerHost(renderRoot as unknown as Element, withFeedOn);
+  assert.equal(renderHost.dataset.v2VisualizerTransition, "swap", "graph to feed is swap transition");
+  assert.equal(renderHost.attributes["data-v2-visualizer-height-lock"], "true", "swap applies temporary height lock");
+
+  renderVisualizerHost(renderRoot as unknown as Element, base);
+  assert.equal(renderHost.dataset.v2VisualizerTransition, "exit", "visualizer to total is exit transition");
 
   const host = createFakeElement();
   const graphDevice = createFakeElement();
   const feedPanel = createFakeElement();
+  const totalPanel = createFakeElement();
   feedPanel.innerHTML = "stale";
   feedPanel.attributes["aria-hidden"] = "false";
+  totalPanel.attributes["aria-hidden"] = "false";
   host.dataset.v2VisualizerPanel = "feed";
   const cleanupRoot: RootLike = {
     querySelector: (selector: string) => {
@@ -137,6 +190,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-feed-panel]") {
         return feedPanel as unknown as Element;
       }
+      if (selector === "[data-v2-total-panel]") {
+        return totalPanel as unknown as Element;
+      }
       return null;
     },
   };
@@ -144,6 +200,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(feedPanel.innerHTML, "", "clearVisualizerHost clears feed rows");
   assert.equal(feedPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides feed panel");
   assert.equal(graphDevice.attributes["aria-hidden"], "true", "clearVisualizerHost hides graph panel");
+  assert.equal(totalPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides total panel");
   assert.equal(host.attributes["aria-hidden"], "true", "clearVisualizerHost hides host");
-  assert.equal(host.dataset.v2VisualizerPanel, "none", "clearVisualizerHost resets host panel");
+  assert.equal(host.dataset.v2VisualizerPanel, "total", "clearVisualizerHost resets host panel");
 };

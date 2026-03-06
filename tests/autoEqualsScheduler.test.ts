@@ -284,8 +284,8 @@ export const runAutoEqualsSchedulerTests = (): void => {
   graphToggleTimers.tick();
   assert.equal(
     graphToggleStore.getState().ui.activeVisualizer,
-    "none",
-    "visualizer key below play/pause is toggled off on the next tick",
+    "total",
+    "visualizer key below play/pause returns to total on the next tick",
   );
   assert.equal(
     countVisualizerToggleActions(graphToggleStore.actions, "graph"),
@@ -319,3 +319,4 @@ export const runAutoEqualsSchedulerTests = (): void => {
   assert.equal(Boolean(normalized.ui.buttonFlags[AUTO_EQUALS_FLAG]), false, "runtime load clears auto-equals flag");
   assert.equal(Boolean(normalized.ui.buttonFlags["another.flag"]), true, "runtime load preserves other flags");
 };
+

@@ -123,7 +123,7 @@ const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorS
 };
 
 const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): GameState => {
-  const activeVisualizer = state.ui.activeVisualizer === visualizer ? "none" : visualizer;
+  const activeVisualizer = state.ui.activeVisualizer === visualizer ? "total" : visualizer;
   if (state.ui.activeVisualizer === activeVisualizer) {
     return state;
   }
@@ -237,3 +237,4 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
 };
 
 export const reducer = (state: GameState = initialState(), action: Action): GameState => reduceLegacy(state, action);
+

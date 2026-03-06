@@ -103,7 +103,7 @@ export const runRollDisplayTests = (): void => {
   );
 
   const base = initialState();
-  assert.equal(resolveActiveVisualizerPanel(base), "none", "no visualizer flags leaves visualizer host inactive");
+  assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total panel");
 
   const withFeedOn: GameState = {
     ...base,
@@ -127,3 +127,4 @@ export const runRollDisplayTests = (): void => {
     "graph active visualizer wins when selected",
   );
 };
+

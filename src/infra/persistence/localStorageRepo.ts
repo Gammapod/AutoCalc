@@ -2,7 +2,7 @@ import { parseRational, toDisplayString } from "../math/rationalEngine.js";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
 import { isRationalCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue } from "../../domain/calculatorValue.js";
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
-import { isValidSchemaVersion, migrateToLatest, type SerializableStateV11, type SerializableSlot } from "./migrations.js";
+import { isValidSchemaVersion, migrateToLatest, type SerializableStateV12, type SerializableSlot } from "./migrations.js";
 import type { GameState } from "../../domain/types.js";
 
 type SavePayload = {
@@ -40,7 +40,7 @@ const serializeCalculatorValue = (value: GameState["calculator"]["total"]): stri
 const deserializeCalculatorValue = (value: string): GameState["calculator"]["total"] =>
   value.trim() === "NaN" ? toNanCalculatorValue() : toRationalCalculatorValue(parseRational(value));
 
-const toSerializableState = (state: GameState): SerializableStateV11 => ({
+const toSerializableState = (state: GameState): SerializableStateV12 => ({
   calculator: {
     total: serializeCalculatorValue(state.calculator.total),
     pendingNegativeTotal: state.calculator.pendingNegativeTotal,
@@ -74,7 +74,7 @@ const toSerializableState = (state: GameState): SerializableStateV11 => ({
   allocator: state.allocator,
 });
 
-const fromSerializableStateV3 = (payloadState: SerializableStateV11): GameState => ({
+const fromSerializableStateV3 = (payloadState: SerializableStateV12): GameState => ({
   calculator: {
     total: deserializeCalculatorValue(payloadState.calculator.total),
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,

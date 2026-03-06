@@ -122,7 +122,7 @@ const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorS
 };
 
 const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): GameState => {
-  const activeVisualizer = state.ui.activeVisualizer === visualizer ? "none" : visualizer;
+  const activeVisualizer = state.ui.activeVisualizer === visualizer ? "total" : visualizer;
   if (state.ui.activeVisualizer === activeVisualizer) {
     return state;
   }
@@ -238,3 +238,4 @@ const applyLegacySemantics = (state: GameState, event: DomainEvent): GameState =
 
 export const applyEvent = (state: GameState | undefined, event: DomainEvent): GameState =>
   applyLegacySemantics(state ?? initialState(), event);
+

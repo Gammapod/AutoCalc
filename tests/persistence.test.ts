@@ -267,6 +267,92 @@ export const runPersistenceTests = (): void => {
     "legacy graph visibility flag is removed from buttonFlags",
   );
 
+  const legacyV11WithNoneVisualizer = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 11,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          rollErrors: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 1,
+          keypadRows: 1,
+          activeVisualizer: "none",
+          buttonFlags: {},
+        },
+        keyPressCounts: {},
+        unlocks: initialState().unlocks,
+        completedUnlockIds: [],
+        allocatorReturnPressCount: 0,
+        allocatorAllocatePressCount: 0,
+        allocator: {
+          maxPoints: 0,
+          allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
+        },
+      },
+    }),
+  );
+  assert.ok(legacyV11WithNoneVisualizer.state, "v11 payload with none visualizer hydrates");
+  assert.equal(
+    legacyV11WithNoneVisualizer.state?.ui.activeVisualizer,
+    "total",
+    "v11 migration maps legacy none visualizer to total",
+  );
+
+  const legacyV11InvalidVisualizerWithFlags = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 11,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "0",
+          pendingNegativeTotal: false,
+          roll: [],
+          rollErrors: [],
+          euclidRemainders: [],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 1,
+          keypadRows: 1,
+          activeVisualizer: "bogus",
+          buttonFlags: {
+            "feed.visible": true,
+          },
+        },
+        keyPressCounts: {},
+        unlocks: initialState().unlocks,
+        completedUnlockIds: [],
+        allocatorReturnPressCount: 0,
+        allocatorAllocatePressCount: 0,
+        allocator: {
+          maxPoints: 0,
+          allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
+        },
+      },
+    }),
+  );
+  assert.ok(legacyV11InvalidVisualizerWithFlags.state, "v11 payload with invalid visualizer hydrates");
+  assert.equal(
+    legacyV11InvalidVisualizerWithFlags.state?.ui.activeVisualizer,
+    "feed",
+    "v11 invalid visualizer falls back to legacy feed flag mapping",
+  );
+
   const badJson = loadFromRawSave("{");
   assert.equal(badJson.state, null, "invalid JSON fails safely");
   assert.equal(badJson.reason, LoadFailureReason.InvalidJson, "invalid JSON reason is reported");
