@@ -12,7 +12,7 @@ const padCenter = (text: string, width: number): string => {
 
 const padLeft = (text: string, width: number): string => {
   if (text.length >= width) {
-    return text.slice(-width);
+    return text;
   }
   return `${" ".repeat(width - text.length)}${text}`;
 };
@@ -85,7 +85,11 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
     return;
   }
 
-  const view = buildFeedTableViewModel(resolveFeedSeedSnapshot(state), state.calculator.rollEntries);
+  const view = buildFeedTableViewModel(
+    resolveFeedSeedSnapshot(state),
+    state.calculator.rollEntries,
+    state.unlocks.maxTotalDigits,
+  );
   feedPanel.innerHTML = "";
   feedPanel.setAttribute("aria-hidden", "false");
 

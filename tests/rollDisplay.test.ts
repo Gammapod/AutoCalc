@@ -137,10 +137,10 @@ export const runRollDisplayTests = (): void => {
     feedWithErrorRows,
     [
       { x: 0, yText: "10", hasRemainder: false, hasError: false },
-      { x: 1, yText: "", hasRemainder: false, hasError: true },
-      { x: 2, yText: "", hasRemainder: false, hasError: true },
+      { x: 1, yText: "11", hasRemainder: false, hasError: true },
+      { x: 2, yText: "12", hasRemainder: false, hasError: true },
     ],
-    "feed table keeps one row per error entry without deduplication",
+    "feed table keeps one row per error entry without deduplication while preserving y display text",
   );
 
   const feedWindowWithRemainder = buildFeedTableViewModel(

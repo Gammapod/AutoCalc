@@ -1,5 +1,6 @@
 import { unlockCatalog } from "../../../src/content/unlocks.catalog.js";
 import { toPreferredFractionString } from "../../../src/infra/math/euclideanEngine.js";
+import { calculatorValueToDisplayString } from "../../../src/domain/calculatorValue.js";
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../../src/domain/analysis.js";
 import { buildUnlockCriteria } from "../../../src/domain/unlockEngine.js";
 import type {
@@ -74,6 +75,7 @@ export type FeedTableViewModel = {
 
 const FEED_MAX_VISIBLE_ROWS = 7;
 const FEED_FIXED_COLUMN_WIDTH = 5;
+const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
   operator === "*" ? "\u00D7" : operator === "/" ? "\u00F7" : operator;
@@ -161,7 +163,7 @@ export const buildRollLines = (rollEntries: RollEntry[]): string[] =>
   rollEntries.map((entry) => (entry.y.kind === "rational" ? toPreferredFractionString(entry.y.value) : "NaN"));
 
 const calculatorValueToFeedText = (value: CalculatorValue): string =>
-  value.kind === "rational" ? toPreferredFractionString(value.value) : "NaN";
+  calculatorValueToDisplayString(value);
 
 export const buildFeedTableRows = (
   seedSnapshot: CalculatorValue | undefined,
@@ -182,7 +184,7 @@ export const buildFeedTableRows = (
     const hasRemainder = Boolean(entry.remainder) && !hasError;
     rows.push({
       x: index + 1,
-      yText: hasError ? "" : calculatorValueToFeedText(entry.y),
+      yText: calculatorValueToFeedText(entry.y),
       ...(hasRemainder ? { rText: toPreferredFractionString(entry.remainder!) } : {}),
       hasRemainder,
       hasError,
@@ -194,11 +196,12 @@ export const buildFeedTableRows = (
 export const buildFeedTableViewModel = (
   seedSnapshot: CalculatorValue | undefined,
   rollEntries: RollEntry[],
+  unlockedTotalDigits: number = 1,
 ): FeedTableViewModel => {
   const rows = buildFeedTableRows(seedSnapshot, rollEntries);
   const visibleRows = rows.slice(-FEED_MAX_VISIBLE_ROWS);
   const showRColumn = visibleRows.some((row) => row.hasRemainder);
-  const yWidth = visibleRows.reduce((max, row) => Math.max(max, row.yText.length), "Y".length);
+  const yWidth = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
   return {
     rows: visibleRows,
     showRColumn,
