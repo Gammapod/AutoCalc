@@ -83,6 +83,7 @@ export const runKeyUnlocksTests = (): void => {
   assert.equal(isKeyUnlocked(base, "C"), false, "utility key starts locked");
   assert.equal(isKeyUnlocked(base, "\u23EF"), false, "step key starts locked");
   assert.equal(isKeyUnlocked(base, "GRAPH"), false, "visualizer key starts locked");
+  assert.equal(isKeyUnlocked(base, "CIRCLE"), true, "circle visualizer key starts unlocked");
   assert.equal(isKeyUnlocked(base, "="), false, "execution key starts locked");
   assert.equal(isKeyUnlocked(base, "++"), true, "default increment key remains unlocked");
   assert.equal(isKeyUnlocked(base, "--"), false, "default decrement key starts locked");

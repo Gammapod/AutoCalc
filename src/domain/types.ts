@@ -3,7 +3,7 @@ export type SlotOperator = "+" | "-" | "*" | "/" | "#" | "⟡";
 export type ValueExpressionKey = Digit | "NEG";
 export type UtilityKey = "C" | "CE" | "UNDO";
 export type StepKey = "\u23EF";
-export type VisualizerKey = "GRAPH" | "FEED";
+export type VisualizerKey = "GRAPH" | "FEED" | "CIRCLE";
 export type VisualizerId = "graph" | "feed" | "circle";
 export type ActiveVisualizer = "total" | VisualizerId;
 export type ExecKey = "=" | "++" | "--";

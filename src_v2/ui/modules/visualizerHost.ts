@@ -92,6 +92,7 @@ const clearHostUiState = (root: Element): void => {
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
+  const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   if (host) {
     host.dataset.v2VisualizerPanel = "total";
     host.dataset.v2VisualizerTransition = "idle";
@@ -109,6 +110,9 @@ const clearHostUiState = (root: Element): void => {
   if (totalPanel) {
     totalPanel.setAttribute("aria-hidden", "true");
   }
+  if (circlePanel) {
+    circlePanel.setAttribute("aria-hidden", "true");
+  }
 };
 
 export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPanel => {
@@ -124,6 +128,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
+  const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const activePanel = resolveActiveVisualizerPanel(state);
   const transitionPhase = resolveTransitionPhase(previousActivePanel, activePanel);
   const previousPanel = previousActivePanel;
@@ -152,6 +157,9 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   }
   if (totalPanel) {
     totalPanel.setAttribute("aria-hidden", activePanel === "total" ? "false" : "true");
+  }
+  if (circlePanel) {
+    circlePanel.setAttribute("aria-hidden", activePanel === "circle" ? "false" : "true");
   }
 
   for (const panel of VISUALIZER_REGISTRY) {

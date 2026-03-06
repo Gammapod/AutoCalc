@@ -14,6 +14,7 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel("--"), "\u2212 \u2212", "decrement key label renders as spaced unicode minus signs");
   assert.equal(formatKeyLabel("NEG"), "-\u{1D465}", "NEG key label uses stylized indicator");
   assert.equal(formatKeyLabel("FEED"), "FEED", "FEED key label remains FEED");
+  assert.equal(formatKeyLabel("CIRCLE"), "\u25EF", "CIRCLE key label renders as open circle");
 
   const base = initialState();
   const pauseToggleCell: KeyCell = {

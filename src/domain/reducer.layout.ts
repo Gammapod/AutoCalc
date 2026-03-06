@@ -218,6 +218,9 @@ const visualizerFromKey = (key: KeyCell["key"]): VisualizerId | null => {
   if (key === "FEED") {
     return "feed";
   }
+  if (key === "CIRCLE") {
+    return "circle";
+  }
   return null;
 };
 

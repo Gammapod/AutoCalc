@@ -53,12 +53,15 @@ const getInstalledExecutorKey = (state: GameState): ExecKey | null => {
   return null;
 };
 
-const getDefaultVisualizerForCell = (cell: KeyCell): "graph" | "feed" | null => {
+const getDefaultVisualizerForCell = (cell: KeyCell): "graph" | "feed" | "circle" | null => {
   if (cell.key === "GRAPH") {
     return "graph";
   }
   if (cell.key === "FEED") {
     return "feed";
+  }
+  if (cell.key === "CIRCLE") {
+    return "circle";
   }
   return null;
 };

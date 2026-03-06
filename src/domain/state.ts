@@ -63,6 +63,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "UNDO" },
   { kind: "key", key: "C" },
   { kind: "key", key: "FEED" },
+  { kind: "key", key: "CIRCLE" },
   { kind: "key", key: "GRAPH" },
   { kind: "key", key: "/" },
   { kind: "key", key: "\u27E1" },
@@ -155,6 +156,7 @@ export const initialState = (): GameState => {
       visualizers: {
         GRAPH: false,
         FEED: false,
+        CIRCLE: true,
       },
       execution: {
         "=": false,

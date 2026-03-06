@@ -51,6 +51,12 @@ export const runButtonBehaviorTests = (): void => {
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key dispatches visualizer toggle action",
   );
+  const circleToggleCell: KeyCell = { kind: "key", key: "CIRCLE" };
+  assert.deepEqual(
+    buildKeyButtonAction(base, circleToggleCell),
+    { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
+    "CIRCLE key dispatches visualizer toggle action",
+  );
 
   const now = Date.now();
   setSuppressClicksUntilForTests(now + 500);

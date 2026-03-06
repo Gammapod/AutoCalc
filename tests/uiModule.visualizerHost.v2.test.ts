@@ -65,8 +65,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total");
   assert.deepEqual(
     VISUALIZER_REGISTRY.map((module) => module.id),
-    ["graph", "feed"],
-    "visualizer registry preserves graph-first precedence order",
+    ["graph", "feed", "circle"],
+    "visualizer registry preserves graph/feed order with circle support",
   );
 
   const withGraphOn: GameState = {
@@ -112,7 +112,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       activeVisualizer: "circle",
     },
   };
-  assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "total", "unsupported visualizer ids resolve to total");
+  assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "circle", "circle visualizer resolves to circle panel");
 
   const missingRoot: RootLike = {
     querySelector: () => null,
@@ -126,9 +126,12 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const renderHost = createFakeElement();
   const renderGraphDevice = createFakeElement();
   const renderFeedPanel = createFakeElement();
+  const renderCirclePanel = createFakeElement();
   const renderTotalPanel = createFakeElement();
   renderFeedPanel.innerHTML = "stale";
   renderFeedPanel.attributes["aria-hidden"] = "false";
+  renderCirclePanel.innerHTML = "stale";
+  renderCirclePanel.attributes["aria-hidden"] = "false";
   renderTotalPanel.attributes["aria-hidden"] = "false";
   const renderRoot: RootLike = {
     querySelector: (selector: string) => {
@@ -144,6 +147,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-total-panel]") {
         return renderTotalPanel as unknown as Element;
       }
+      if (selector === "[data-v2-circle-panel]") {
+        return renderCirclePanel as unknown as Element;
+      }
       return null;
     },
   };
@@ -156,6 +162,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderGraphDevice.attributes["aria-hidden"], "false", "graph panel is shown when graph is active");
   assert.equal(renderFeedPanel.innerHTML, "", "inactive feed panel is cleared during graph render");
   assert.equal(renderFeedPanel.attributes["aria-hidden"], "true", "inactive feed panel is hidden during graph render");
+  assert.equal(renderCirclePanel.innerHTML, "", "inactive circle panel is cleared during graph render");
+  assert.equal(renderCirclePanel.attributes["aria-hidden"], "true", "inactive circle panel is hidden during graph render");
   assert.equal(renderTotalPanel.attributes["aria-hidden"], "true", "inactive total panel is hidden during graph render");
   const withFeedOn: GameState = {
     ...withGraphOn,
@@ -174,9 +182,12 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const host = createFakeElement();
   const graphDevice = createFakeElement();
   const feedPanel = createFakeElement();
+  const circlePanel = createFakeElement();
   const totalPanel = createFakeElement();
   feedPanel.innerHTML = "stale";
   feedPanel.attributes["aria-hidden"] = "false";
+  circlePanel.innerHTML = "stale";
+  circlePanel.attributes["aria-hidden"] = "false";
   totalPanel.attributes["aria-hidden"] = "false";
   host.dataset.v2VisualizerPanel = "feed";
   const cleanupRoot: RootLike = {
@@ -193,12 +204,17 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-total-panel]") {
         return totalPanel as unknown as Element;
       }
+      if (selector === "[data-v2-circle-panel]") {
+        return circlePanel as unknown as Element;
+      }
       return null;
     },
   };
   clearVisualizerHost(cleanupRoot as unknown as Element);
   assert.equal(feedPanel.innerHTML, "", "clearVisualizerHost clears feed rows");
+  assert.equal(circlePanel.innerHTML, "", "clearVisualizerHost clears circle panel");
   assert.equal(feedPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides feed panel");
+  assert.equal(circlePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides circle panel");
   assert.equal(graphDevice.attributes["aria-hidden"], "true", "clearVisualizerHost hides graph panel");
   assert.equal(totalPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides total panel");
   assert.equal(host.attributes["aria-hidden"], "true", "clearVisualizerHost hides host");

@@ -85,6 +85,9 @@ export const formatKeyLabel = (key: Key): string => {
   if (key === "--") {
     return "\u2212 \u2212";
   }
+  if (key === "CIRCLE") {
+    return "\u25EF";
+  }
   if (key === "*" || key === "/") {
     return formatOperatorForDisplay(key);
   }
@@ -104,7 +107,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (key === "C" || key === "CE" || key === "UNDO") {
     return "utility";
   }
-  if (key === "GRAPH" || key === "FEED") {
+  if (key === "GRAPH" || key === "FEED" || key === "CIRCLE") {
     return "visualizers";
   }
   return "execution";
