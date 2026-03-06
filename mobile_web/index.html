@@ -1488,19 +1488,6 @@
         color: #1b212b;
       }
 
-      .debug-domain {
-        display: inline-flex;
-        align-items: baseline;
-        gap: 8px;
-        font-size: 0.78rem;
-        color: #1b212b;
-      }
-
-      .debug-domain-symbol {
-        font-size: 1rem;
-        font-family: "Cambria Math", "STIX Two Math", "Segoe UI Symbol", "Times New Roman", serif;
-      }
-
       body[data-ui-shell="mobile"] {
         padding: 0;
         margin: 0;
@@ -1985,10 +1972,6 @@
           <input type="checkbox" data-debug-analysis-all-unlocked />
           <span>Use all unlocked keys</span>
         </label>
-        <div class="debug-domain">
-          <span>Current Domain</span>
-          <span class="debug-domain-symbol" data-debug-current-domain-symbol aria-live="polite">∅</span>
-        </div>
         <button type="button" class="debug-action" data-debug-run-analysis>Run Analysis</button>
         <pre class="debug-report" data-debug-analysis-report>Run analysis to generate report.</pre>
       </div>

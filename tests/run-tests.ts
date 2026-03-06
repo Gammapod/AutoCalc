@@ -25,6 +25,7 @@ import { runAutoEqualsSchedulerTests } from "./autoEqualsScheduler.test.js";
 import { runAnalysisReportTests } from "./analysisReport.test.js";
 import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
 import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
+import { runCurrentTotalDomainTests } from "./currentTotalDomain.test.js";
 import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.js";
 import { runUnlockGraphTests } from "./unlockGraph.test.js";
 import { runKeyBehaviorContractTests } from "./keyBehavior.contract.test.js";
@@ -72,6 +73,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["app/analysis-report", runAnalysisReportTests],
   ["domain/keypad-layout-model", runKeypadLayoutModelTests],
   ["domain/number-domain-analysis", runNumberDomainAnalysisTests],
+  ["domain/current-total-domain", runCurrentTotalDomainTests],
   ["domain/predicate-capability-spec", runPredicateCapabilitySpecTests],
   ["domain/unlock-graph", runUnlockGraphTests],
   ["domain/key-behavior-contract", runKeyBehaviorContractTests],
