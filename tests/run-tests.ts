@@ -23,6 +23,7 @@ import { runAnalysisReportTests } from "./analysisReport.test.js";
 import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
 import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
 import { runCurrentTotalDomainTests } from "./currentTotalDomain.test.js";
+import { runRollDerivedTests } from "./rollDerived.test.js";
 import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.js";
 import { runUnlockGraphTests } from "./unlockGraph.test.js";
 import { runKeyBehaviorContractTests } from "./keyBehavior.contract.test.js";
@@ -75,6 +76,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/keypad-layout-model", runKeypadLayoutModelTests],
   ["domain/number-domain-analysis", runNumberDomainAnalysisTests],
   ["domain/current-total-domain", runCurrentTotalDomainTests],
+  ["domain/roll-derived", runRollDerivedTests],
   ["domain/predicate-capability-spec", runPredicateCapabilitySpecTests],
   ["domain/unlock-graph", runUnlockGraphTests],
   ["domain/key-behavior-contract", runKeyBehaviorContractTests],

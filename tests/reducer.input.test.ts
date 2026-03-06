@@ -143,5 +143,21 @@ export const runReducerInputTests = (): void => {
   };
   const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "1");
   assert.deepEqual(afterActiveRollDigit, activeRollDigitNoOp, "digit key is no-op while roll is active");
+
+  const moduloExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(10n),
+      operationSlots: [{ operator: "\u27E1", operand: 4n }],
+    },
+  };
+  const afterModuloExecution = applyKeyAction(moduloExecutionSource, "=");
+  assert.deepEqual(afterModuloExecution.calculator.total, r(2n), "modulo execution sets total to the modulo component");
+  assert.deepEqual(
+    afterModuloExecution.calculator.rollEntries.at(-1)?.remainder,
+    { num: 2n, den: 1n },
+    "modulo execution records the modulo component as roll remainder",
+  );
 };
 

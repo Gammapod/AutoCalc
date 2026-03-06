@@ -60,17 +60,27 @@ export const runEngineTests = (): void => {
     "mixed pipeline reports the final euclidean remainder",
   );
 
-  const moduloResult = executeSlots(r(10n), [{ operator: "⟡", operand: 4n }]);
+  const euclidNotFinal = executeSlots(r(20n), [
+    { operator: "#", operand: 6n },
+    { operator: "+", operand: 1n },
+  ]);
   assert.deepEqual(
-    moduloResult,
-    { ok: true, total: r(2n) },
-    "modulo operator stores euclidean remainder as total",
+    euclidNotFinal,
+    { ok: true, total: r(4n) },
+    "remainder metadata is omitted when the final operation is not euclidean division or modulo",
   );
 
-  const moduloFraction = executeSlots(r(5n, 2n), [{ operator: "⟡", operand: 2n }]);
+  const moduloResult = executeSlots(r(10n), [{ operator: "\u27E1", operand: 4n }]);
+  assert.deepEqual(
+    moduloResult,
+    { ok: true, total: r(2n), euclidRemainder: r(2n) },
+    "modulo operator stores euclidean remainder as total and exposes remainder metadata",
+  );
+
+  const moduloFraction = executeSlots(r(5n, 2n), [{ operator: "\u27E1", operand: 2n }]);
   assert.deepEqual(
     moduloFraction,
-    { ok: true, total: r(1n, 2n) },
-    "modulo operator supports fractional totals and preserves exact remainder",
+    { ok: true, total: r(1n, 2n), euclidRemainder: r(1n, 2n) },
+    "modulo operator supports fractional totals and preserves exact remainder metadata",
   );
 };

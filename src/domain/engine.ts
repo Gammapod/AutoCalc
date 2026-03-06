@@ -12,18 +12,22 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
   }
 
   let nextTotal = total;
-  let lastEuclidRemainder: RationalValue | undefined;
+  let lastEuclidModComponent: RationalValue | undefined;
+  let endsWithEuclidLikeOperator = false;
   for (const slot of slots) {
     if (slot.operator === "+") {
       nextTotal = addInt(nextTotal, slot.operand);
+      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (slot.operator === "-") {
       nextTotal = subInt(nextTotal, slot.operand);
+      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (slot.operator === "*") {
       nextTotal = mulInt(nextTotal, slot.operand);
+      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (slot.operator === "/") {
@@ -31,6 +35,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
         return { ok: false, reason: "division_by_zero" };
       }
       nextTotal = divInt(nextTotal, slot.operand);
+      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (slot.operator === "#") {
@@ -39,7 +44,8 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
         return euclidean;
       }
       nextTotal = euclidean.quotient;
-      lastEuclidRemainder = euclidean.remainder;
+      lastEuclidModComponent = euclidean.remainder;
+      endsWithEuclidLikeOperator = true;
       continue;
     }
     if (slot.operator === "⟡") {
@@ -48,13 +54,15 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
         return euclidean;
       }
       nextTotal = euclidean.remainder;
+      lastEuclidModComponent = euclidean.remainder;
+      endsWithEuclidLikeOperator = true;
       continue;
     }
     throw new Error(`Unsupported operator: ${slot.operator}`);
   }
 
-  if (lastEuclidRemainder) {
-    return { ok: true, total: nextTotal, euclidRemainder: lastEuclidRemainder };
+  if (endsWithEuclidLikeOperator && lastEuclidModComponent) {
+    return { ok: true, total: nextTotal, euclidRemainder: lastEuclidModComponent };
   }
   return { ok: true, total: nextTotal };
 };
