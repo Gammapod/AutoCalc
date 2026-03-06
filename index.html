@@ -1838,15 +1838,40 @@
         pointer-events: auto;
       }
 
-      body[data-ui-shell="mobile"] .v2-circle-glyph,
-      body[data-ui-shell="desktop"] .v2-circle-glyph {
-        width: min(100%, calc(var(--v2-visualizer-window-height) - 4px));
-        aspect-ratio: 1 / 1;
-        border-radius: 50%;
-        border: 3px solid rgba(188, 255, 214, 0.88);
-        box-shadow:
-          0 0 0 1px rgba(188, 255, 214, 0.28),
-          inset 0 0 0 1px rgba(188, 255, 214, 0.24);
+      body[data-ui-shell="mobile"] .v2-circle-plot,
+      body[data-ui-shell="desktop"] .v2-circle-plot {
+        width: min(100%, calc(var(--v2-visualizer-window-height) - 2px));
+        height: auto;
+        overflow: visible;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-frame,
+      body[data-ui-shell="desktop"] .v2-circle-frame {
+        fill: none;
+        stroke: rgba(188, 255, 214, 0.92);
+        stroke-width: 2.6;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-center,
+      body[data-ui-shell="desktop"] .v2-circle-center {
+        fill: rgba(188, 255, 214, 0.92);
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-trace,
+      body[data-ui-shell="desktop"] .v2-circle-trace {
+        fill: none;
+        stroke: rgba(188, 255, 214, 0.44);
+        stroke-width: 0.9;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-point,
+      body[data-ui-shell="desktop"] .v2-circle-point {
+        fill: rgba(188, 255, 214, 0.96);
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-point--error,
+      body[data-ui-shell="desktop"] .v2-circle-point--error {
+        fill: #ffd18a;
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher,
