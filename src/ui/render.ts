@@ -541,6 +541,36 @@ export const buildVisibleChecklistRows = (...args: Parameters<typeof buildVisibl
 
 export const isChecklistUnlocked = (_state: GameState): boolean => true;
 
+const appendChecklistQuickstartGuide = (container: Element): void => {
+  const guideEl = document.createElement("div");
+  guideEl.className = "debug-guide";
+  guideEl.setAttribute("aria-label", "Feature overview");
+
+  const titleEl = document.createElement("p");
+  titleEl.className = "debug-guide-title";
+  titleEl.textContent = "Feature Overview";
+  guideEl.appendChild(titleEl);
+
+  const listEl = document.createElement("ol");
+  listEl.className = "debug-guide-list";
+  listEl.innerHTML = `
+    <li>Make calculations to unlock more convenient calculator keys.</li>
+    <li>Hold down "MODIFY CALCULATOR" for 1.5 seconds to edit calculator.</li>
+    <li>Drag+Drop keys to rearrange and modify layout.</li>
+    <li>
+      Allocator can change:
+      <ul class="debug-guide-sublist">
+        <li>Size of calculator keypad</li>
+        <li>Range of total display</li>
+        <li>Number of operations per function</li>
+        <li>Speed of auto-clicker</li>
+      </ul>
+    </li>
+  `;
+  guideEl.appendChild(listEl);
+  container.appendChild(guideEl);
+};
+
 const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
   unlockEl.setAttribute("data-checklist-state", "open");
   unlockEl.setAttribute("data-checklist-animate", "false");
@@ -568,35 +598,35 @@ const renderUnlockChecklist = (unlockEl: Element, state: GameState): void => {
     emptyStateEl.className = "unlock-empty-state";
     emptyStateEl.textContent = "No currently attemptable unlocks from active keypad layout.";
     unlockEl.appendChild(emptyStateEl);
-    return;
-  }
+  } else {
+    for (const row of rows) {
+      const rowEl = document.createElement("div");
+      rowEl.className = "unlock-row";
+      if (row.state === "completed") {
+        rowEl.classList.add("unlock-row--completed");
+      }
 
-  for (const row of rows) {
-    const rowEl = document.createElement("div");
-    rowEl.className = "unlock-row";
-    if (row.state === "completed") {
-      rowEl.classList.add("unlock-row--completed");
+      const hintEl = document.createElement("span");
+      hintEl.className = "unlock-hint";
+      if (row.difficulty === "difficult") {
+        const difficultyLabel = document.createElement("span");
+        difficultyLabel.className = "unlock-difficulty";
+        difficultyLabel.textContent = row.difficultyLabel ?? "Difficult";
+        hintEl.appendChild(difficultyLabel);
+        hintEl.appendChild(document.createTextNode(" "));
+      }
+      hintEl.appendChild(document.createTextNode(hintByUnlockId.get(row.id) ?? ""));
+      rowEl.appendChild(hintEl);
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "unlock-name";
+      nameEl.textContent = row.name;
+      rowEl.appendChild(nameEl);
+
+      unlockEl.appendChild(rowEl);
     }
-
-    const hintEl = document.createElement("span");
-    hintEl.className = "unlock-hint";
-    if (row.difficulty === "difficult") {
-      const difficultyLabel = document.createElement("span");
-      difficultyLabel.className = "unlock-difficulty";
-      difficultyLabel.textContent = row.difficultyLabel ?? "Difficult";
-      hintEl.appendChild(difficultyLabel);
-      hintEl.appendChild(document.createTextNode(" "));
-    }
-    hintEl.appendChild(document.createTextNode(hintByUnlockId.get(row.id) ?? ""));
-    rowEl.appendChild(hintEl);
-
-    const nameEl = document.createElement("span");
-    nameEl.className = "unlock-name";
-    nameEl.textContent = row.name;
-    rowEl.appendChild(nameEl);
-
-    unlockEl.appendChild(rowEl);
   }
+  appendChecklistQuickstartGuide(unlockEl);
 };
 
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
