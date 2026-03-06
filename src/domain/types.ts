@@ -87,6 +87,7 @@ export type DraftingSlot = {
 
 export type CalculatorState = {
   total: CalculatorValue;
+  seedSnapshot?: CalculatorValue;
   pendingNegativeTotal: boolean;
   singleDigitInitialTotalEntry: boolean;
   rollEntries: RollEntry[];

@@ -288,6 +288,7 @@ const applyEquals = (state: GameState): GameState => {
   }
 
   const finalized = finalizeDraftingSlot(state);
+  const shouldCaptureSeed = finalized.calculator.rollEntries.length === 0 && finalized.calculator.seedSnapshot === undefined;
   const evaluation = evaluateExecutionOutcome(finalized, "=");
   const nextEntry = toRollEntry(evaluation);
 
@@ -296,6 +297,7 @@ const applyEquals = (state: GameState): GameState => {
     calculator: {
       ...finalized.calculator,
       total: evaluation.nextTotal,
+      ...(shouldCaptureSeed ? { seedSnapshot: finalized.calculator.total } : {}),
       pendingNegativeTotal: false,
       rollEntries: [...finalized.calculator.rollEntries, nextEntry],
     },
@@ -310,6 +312,7 @@ const applyIncrement = (state: GameState): GameState => {
     return state;
   }
 
+  const shouldCaptureSeed = state.calculator.rollEntries.length === 0 && state.calculator.seedSnapshot === undefined;
   const evaluation = evaluateExecutionOutcome(state, "++");
   const nextEntry = toRollEntry(evaluation);
 
@@ -318,6 +321,7 @@ const applyIncrement = (state: GameState): GameState => {
     calculator: {
       ...state.calculator,
       total: evaluation.nextTotal,
+      ...(shouldCaptureSeed ? { seedSnapshot: state.calculator.total } : {}),
       pendingNegativeTotal: false,
       rollEntries: [...state.calculator.rollEntries, nextEntry],
     },
@@ -333,6 +337,7 @@ const applyDecrement = (state: GameState): GameState => {
     return state;
   }
 
+  const shouldCaptureSeed = state.calculator.rollEntries.length === 0 && state.calculator.seedSnapshot === undefined;
   const evaluation = evaluateExecutionOutcome(state, "--");
   const nextEntry = toRollEntry(evaluation);
 
@@ -341,6 +346,7 @@ const applyDecrement = (state: GameState): GameState => {
     calculator: {
       ...state.calculator,
       total: evaluation.nextTotal,
+      ...(shouldCaptureSeed ? { seedSnapshot: state.calculator.total } : {}),
       pendingNegativeTotal: false,
       rollEntries: [...state.calculator.rollEntries, nextEntry],
     },

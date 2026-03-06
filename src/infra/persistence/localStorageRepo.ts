@@ -43,6 +43,7 @@ const deserializeCalculatorValue = (value: string): GameState["calculator"]["tot
 const toSerializableState = (state: GameState): SerializableStateV13 => ({
   calculator: {
     total: serializeCalculatorValue(state.calculator.total),
+    ...(state.calculator.seedSnapshot ? { seedSnapshot: serializeCalculatorValue(state.calculator.seedSnapshot) } : {}),
     pendingNegativeTotal: state.calculator.pendingNegativeTotal,
     singleDigitInitialTotalEntry: state.calculator.singleDigitInitialTotalEntry,
     rollEntries: state.calculator.rollEntries.map((entry) => ({
@@ -76,6 +77,9 @@ const toSerializableState = (state: GameState): SerializableStateV13 => ({
 const fromSerializableStateV3 = (payloadState: SerializableStateV13): GameState => ({
   calculator: {
     total: deserializeCalculatorValue(payloadState.calculator.total),
+    seedSnapshot: payloadState.calculator.seedSnapshot
+      ? deserializeCalculatorValue(payloadState.calculator.seedSnapshot)
+      : undefined,
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
     singleDigitInitialTotalEntry: payloadState.calculator.singleDigitInitialTotalEntry ?? false,
     rollEntries: payloadState.calculator.rollEntries.map((entry) => ({

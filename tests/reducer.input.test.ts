@@ -116,8 +116,11 @@ export const runReducerInputTests = (): void => {
 
   const incrementSource = initialState();
   const afterIncrement = applyKeyAction(incrementSource, "++");
+  assert.deepEqual(afterIncrement.calculator.seedSnapshot, r(0n), "first increment captures pre-roll seed snapshot");
   assert.deepEqual(afterIncrement.calculator.total, r(1n), "increment updates total");
   assert.deepEqual(afterIncrement.calculator.rollEntries, re(r(1n)), "increment appends new total to roll");
+  const afterSecondIncrement = applyKeyAction(afterIncrement, "++");
+  assert.deepEqual(afterSecondIncrement.calculator.seedSnapshot, r(0n), "subsequent increments preserve original seed snapshot");
 
   const decrementSource: GameState = {
     ...initialState(),
@@ -130,6 +133,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterDecrement = applyKeyAction(decrementSource, "--");
+  assert.deepEqual(afterDecrement.calculator.seedSnapshot, r(0n), "first decrement captures pre-roll seed snapshot");
   assert.deepEqual(afterDecrement.calculator.total, r(-1n), "decrement updates total");
   assert.deepEqual(afterDecrement.calculator.rollEntries, re(r(-1n)), "decrement appends new total to roll");
 
@@ -153,11 +157,39 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterModuloExecution = applyKeyAction(moduloExecutionSource, "=");
+  assert.deepEqual(afterModuloExecution.calculator.seedSnapshot, r(10n), "first equals captures current seed snapshot");
   assert.deepEqual(afterModuloExecution.calculator.total, r(2n), "modulo execution sets total to the modulo component");
   assert.deepEqual(
     afterModuloExecution.calculator.rollEntries.at(-1)?.remainder,
     { num: 2n, den: 1n },
     "modulo execution records the modulo component as roll remainder",
   );
+
+  const clearSeedSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      seedSnapshot: r(7n),
+      total: r(9n),
+      rollEntries: re(r(9n)),
+    },
+  };
+  const afterCe = applyKeyAction(clearSeedSource, "CE");
+  assert.equal(afterCe.calculator.seedSnapshot, undefined, "CE clears seed snapshot");
+
+  const afterC = applyKeyAction(clearSeedSource, "C");
+  assert.equal(afterC.calculator.seedSnapshot, undefined, "C clears seed snapshot");
+
+  const undoSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      seedSnapshot: r(5n),
+      total: r(6n),
+      rollEntries: re(r(6n)),
+    },
+  };
+  const afterUndo = applyKeyAction(undoSource, "UNDO");
+  assert.deepEqual(afterUndo.calculator.seedSnapshot, r(5n), "UNDO keeps seed snapshot when roll becomes empty");
 };
 

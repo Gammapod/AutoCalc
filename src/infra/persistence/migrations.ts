@@ -201,6 +201,7 @@ export type SerializableRollEntryV13 = {
 
 export type SerializableStateV13 = Omit<SerializableStateV12, "calculator"> & {
   calculator: Omit<SerializableStateV12["calculator"], "roll" | "rollErrors" | "euclidRemainders"> & {
+    seedSnapshot?: string;
     rollEntries: SerializableRollEntryV13[];
   };
 };
@@ -833,6 +834,7 @@ export const migrateV12ToV13 = (input: SerializableStateV12): SerializableStateV
     ...input,
     calculator: {
       total: input.calculator.total,
+      seedSnapshot: undefined,
       pendingNegativeTotal: input.calculator.pendingNegativeTotal,
       singleDigitInitialTotalEntry: input.calculator.singleDigitInitialTotalEntry,
       rollEntries,
@@ -1251,6 +1253,7 @@ export const validateSerializableStateV13 = (state: unknown): state is Serializa
   const calculator = state.calculator;
   if (
     !isCalculatorValueString(calculator.total) ||
+    (calculator.seedSnapshot !== undefined && !isCalculatorValueString(calculator.seedSnapshot)) ||
     !isBoolean(calculator.pendingNegativeTotal) ||
     (calculator.singleDigitInitialTotalEntry !== undefined && !isBoolean(calculator.singleDigitInitialTotalEntry)) ||
     !Array.isArray(calculator.rollEntries) ||
@@ -1525,11 +1528,12 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     const buttonFlags = withDefaultButtonFlags(normalizeButtonFlags(asV13.ui?.buttonFlags));
     const normalizedV13: SerializableStateV13 = {
       ...asV13,
-      calculator: {
-        ...asV13.calculator,
-        rollEntries: Array.isArray(asV13.calculator?.rollEntries)
-          ? asV13.calculator.rollEntries.filter(isSerializableRollEntryV13)
-          : [],
+    calculator: {
+      ...asV13.calculator,
+      ...(isCalculatorValueString(asV13.calculator.seedSnapshot) ? { seedSnapshot: asV13.calculator.seedSnapshot } : {}),
+      rollEntries: Array.isArray(asV13.calculator?.rollEntries)
+        ? asV13.calculator.rollEntries.filter(isSerializableRollEntryV13)
+        : [],
       },
       ui: {
         ...asV13.ui,

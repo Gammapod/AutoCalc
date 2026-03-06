@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildRollLines, buildRollRows, buildRollViewModel } from "../src_v2/ui/shared/readModel.js";
+import { buildFeedTableRows, buildFeedTableViewModel, buildRollLines, buildRollRows, buildRollViewModel } from "../src_v2/ui/shared/readModel.js";
 import { resolveActiveVisualizerPanel } from "../src_v2/ui/modules/visualizerHost.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
@@ -112,6 +112,73 @@ export const runRollDisplayTests = (): void => {
       { prefix: "  =", value: "", remainder: undefined, errorCode: "n/0" },
     ],
     "non-consecutive duplicate errors are preserved",
+  );
+
+  assert.deepEqual(
+    buildFeedTableRows(r(42n), []),
+    [{ x: 0, yText: "42", hasRemainder: false, hasError: false }],
+    "feed table renders seed-only row",
+  );
+
+  assert.deepEqual(
+    buildFeedTableRows(r(42n), [e(r(50n))]),
+    [
+      { x: 0, yText: "42", hasRemainder: false, hasError: false },
+      { x: 1, yText: "50", hasRemainder: false, hasError: false },
+    ],
+    "feed table appends first calculation row after seed",
+  );
+
+  const feedWithErrorRows = buildFeedTableRows(r(10n), [
+    e(r(11n), { error: { code: "n/0", kind: "division_by_zero" } }),
+    e(r(12n), { error: { code: "n/0", kind: "division_by_zero" } }),
+  ]);
+  assert.deepEqual(
+    feedWithErrorRows,
+    [
+      { x: 0, yText: "10", hasRemainder: false, hasError: false },
+      { x: 1, yText: "", hasRemainder: false, hasError: true },
+      { x: 2, yText: "", hasRemainder: false, hasError: true },
+    ],
+    "feed table keeps one row per error entry without deduplication",
+  );
+
+  const feedWindowWithRemainder = buildFeedTableViewModel(
+    r(1n),
+    [
+      e(r(2n)),
+      e(r(3n)),
+      e(r(4n)),
+      e(r(5n)),
+      e(r(6n)),
+      e(r(7n)),
+      e(r(8n), { remainder: rv(1n, 2n) }),
+      e(r(9n)),
+    ],
+  );
+  assert.equal(feedWindowWithRemainder.rows.length, 7, "feed table keeps rolling window of seven rows");
+  assert.equal(feedWindowWithRemainder.rows[0]?.x, 2, "feed table drops oldest rows when window exceeds seven");
+  assert.equal(feedWindowWithRemainder.showRColumn, true, "feed table shows r column when visible rows contain remainder");
+  assert.equal(feedWindowWithRemainder.xWidth, 5, "feed X column width is fixed at five");
+  assert.equal(feedWindowWithRemainder.rWidth, 5, "feed r column width is fixed at five");
+
+  const feedWindowWithoutVisibleRemainder = buildFeedTableViewModel(
+    r(1n),
+    [
+      e(r(2n), { remainder: rv(1n, 2n) }),
+      e(r(3n)),
+      e(r(4n)),
+      e(r(5n)),
+      e(r(6n)),
+      e(r(7n)),
+      e(r(8n)),
+      e(r(9n)),
+    ],
+  );
+  assert.equal(
+    feedWindowWithoutVisibleRemainder.showRColumn,
+    false,
+    "feed table hides r column when remainder is outside the visible seven-row window",
   );
 
   const base = initialState();

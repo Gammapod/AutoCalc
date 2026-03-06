@@ -93,6 +93,7 @@ export const initialState = (): GameState => {
   return {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
+      seedSnapshot: undefined,
       pendingNegativeTotal: false,
       singleDigitInitialTotalEntry: false,
       rollEntries: [],

@@ -86,6 +86,64 @@ export const runUiIntegrationMobileShellTests = (): void => {
       interactionMode: "calculator",
       inputBlocked: false,
     });
+    const feedPanel = harness.root.querySelector<HTMLElement>("[data-v2-feed-panel]");
+    assert.ok(feedPanel, "feed panel is mounted");
+    const withFeedTable: GameState = {
+      ...withFeed,
+      calculator: {
+        ...withFeed.calculator,
+        seedSnapshot: r(9n),
+        rollEntries: [
+          { y: r(10n), remainder: { num: 1n, den: 2n } },
+          { y: r(11n), error: { code: "n/0", kind: "division_by_zero" } },
+        ],
+      },
+    };
+    renderer.render(withFeedTable, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    assert.equal(
+      feedPanel?.textContent?.includes("|  X  |"),
+      true,
+      "feed panel renders ascii table header",
+    );
+    assert.equal(
+      feedPanel?.querySelectorAll(".v2-feed-r-col").length ? true : false,
+      true,
+      "feed panel renders yellow r column segments when a visible row has remainder",
+    );
+    assert.equal(
+      feedPanel?.querySelectorAll(".v2-feed-row--error").length,
+      1,
+      "feed panel marks error rows in red",
+    );
+    const withFeedNoVisibleRemainder: GameState = {
+      ...withFeed,
+      calculator: {
+        ...withFeed.calculator,
+        seedSnapshot: r(1n),
+        rollEntries: [
+          { y: r(2n), remainder: { num: 1n, den: 2n } },
+          { y: r(3n) },
+          { y: r(4n) },
+          { y: r(5n) },
+          { y: r(6n) },
+          { y: r(7n) },
+          { y: r(8n) },
+          { y: r(9n) },
+        ],
+      },
+    };
+    renderer.render(withFeedNoVisibleRemainder, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    assert.equal(
+      feedPanel?.querySelector(".v2-feed-r-col"),
+      null,
+      "feed panel hides r column when no visible row includes remainder",
+    );
     renderer.render(withGraph, dispatch, {
       interactionMode: "calculator",
       inputBlocked: false,

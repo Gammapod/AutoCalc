@@ -3,6 +3,7 @@ import { toPreferredFractionString } from "../../../src/infra/math/euclideanEngi
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../../src/domain/analysis.js";
 import { buildUnlockCriteria } from "../../../src/domain/unlockEngine.js";
 import type {
+  CalculatorValue,
   GameState,
   Key,
   RollEntry,
@@ -54,6 +55,25 @@ export type RollViewModel = {
   lineCount: number;
   valueColumnChars: number;
 };
+
+export type FeedTableRow = {
+  x: number;
+  yText: string;
+  rText?: string;
+  hasRemainder: boolean;
+  hasError: boolean;
+};
+
+export type FeedTableViewModel = {
+  rows: FeedTableRow[];
+  showRColumn: boolean;
+  xWidth: number;
+  yWidth: number;
+  rWidth: number;
+};
+
+const FEED_MAX_VISIBLE_ROWS = 7;
+const FEED_FIXED_COLUMN_WIDTH = 5;
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
   operator === "*" ? "\u00D7" : operator === "/" ? "\u00F7" : operator;
@@ -139,6 +159,54 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
 
 export const buildRollLines = (rollEntries: RollEntry[]): string[] =>
   rollEntries.map((entry) => (entry.y.kind === "rational" ? toPreferredFractionString(entry.y.value) : "NaN"));
+
+const calculatorValueToFeedText = (value: CalculatorValue): string =>
+  value.kind === "rational" ? toPreferredFractionString(value.value) : "NaN";
+
+export const buildFeedTableRows = (
+  seedSnapshot: CalculatorValue | undefined,
+  rollEntries: RollEntry[],
+): FeedTableRow[] => {
+  const rows: FeedTableRow[] = [];
+  if (seedSnapshot !== undefined) {
+    rows.push({
+      x: 0,
+      yText: calculatorValueToFeedText(seedSnapshot),
+      hasRemainder: false,
+      hasError: false,
+    });
+  }
+  for (let index = 0; index < rollEntries.length; index += 1) {
+    const entry = rollEntries[index];
+    const hasError = Boolean(entry.error);
+    const hasRemainder = Boolean(entry.remainder) && !hasError;
+    rows.push({
+      x: index + 1,
+      yText: hasError ? "" : calculatorValueToFeedText(entry.y),
+      ...(hasRemainder ? { rText: toPreferredFractionString(entry.remainder!) } : {}),
+      hasRemainder,
+      hasError,
+    });
+  }
+  return rows;
+};
+
+export const buildFeedTableViewModel = (
+  seedSnapshot: CalculatorValue | undefined,
+  rollEntries: RollEntry[],
+): FeedTableViewModel => {
+  const rows = buildFeedTableRows(seedSnapshot, rollEntries);
+  const visibleRows = rows.slice(-FEED_MAX_VISIBLE_ROWS);
+  const showRColumn = visibleRows.some((row) => row.hasRemainder);
+  const yWidth = visibleRows.reduce((max, row) => Math.max(max, row.yText.length), "Y".length);
+  return {
+    rows: visibleRows,
+    showRColumn,
+    xWidth: FEED_FIXED_COLUMN_WIDTH,
+    yWidth,
+    rWidth: FEED_FIXED_COLUMN_WIDTH,
+  };
+};
 
 export const buildRollRows = (
   rollEntries: RollEntry[],

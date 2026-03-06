@@ -45,6 +45,7 @@ export const runPersistenceTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(12n),
+      seedSnapshot: r(9n),
       rollEntries: re(r(11n), r(12n)),
     },
     keyPressCounts: { "+": 3, "=": 2 },
@@ -82,6 +83,7 @@ export const runPersistenceTests = (): void => {
   const loaded = repo.load();
   assert.ok(loaded, "saved payload hydrates");
   assert.deepEqual(loaded?.calculator.total, r(12n), "round-trip total");
+  assert.deepEqual(loaded?.calculator.seedSnapshot, r(9n), "round-trip seed snapshot");
   assert.deepEqual(loaded?.keyPressCounts, { "+": 3, "=": 2 }, "round-trip key press counters");
   assert.equal(loaded?.allocatorReturnPressCount, 2, "round-trip allocator RETURN press counter");
   assert.equal(loaded?.allocatorAllocatePressCount, 3, "round-trip allocator Allocate press counter");
@@ -112,6 +114,7 @@ export const runPersistenceTests = (): void => {
   );
   assert.ok(legacyV1.state, "legacy payload hydrates");
   assert.deepEqual(legacyV1.state, initialState(), "legacy payload is hard-reset to current initial state");
+  assert.equal(legacyV1.state?.calculator.seedSnapshot, undefined, "legacy payload defaults seed snapshot to undefined");
 
   const legacyV5 = loadFromRawSave(
     JSON.stringify({
