@@ -929,6 +929,16 @@ const syncGraphVisibilityUi = (root: Element, graphVisible: boolean): void => {
   }
 };
 
+const resolveGraphSeedSnapshot = (state: GameState): GameState["calculator"]["seedSnapshot"] => {
+  if (state.calculator.seedSnapshot !== undefined) {
+    return state.calculator.seedSnapshot;
+  }
+  if (state.calculator.rollEntries.length === 0) {
+    return state.calculator.total;
+  }
+  return undefined;
+};
+
 const renderGraphDisplay = (
   root: Element,
   rollEntries: RollEntry[],
@@ -1005,7 +1015,7 @@ export const renderGraphModule = (root: Element, state: GameState): void => {
   const graphVisible = state.ui.activeVisualizer === "graph";
   syncGraphVisibilityUi(root, graphVisible);
   if (graphVisible) {
-    renderGraphDisplay(root, state.calculator.rollEntries, state.calculator.seedSnapshot, state.unlocks.maxTotalDigits);
+    renderGraphDisplay(root, state.calculator.rollEntries, resolveGraphSeedSnapshot(state), state.unlocks.maxTotalDigits);
   } else {
     destroyGraphChart();
   }
@@ -1654,7 +1664,7 @@ export const render = (
     const isGraphVisible = state.ui.activeVisualizer === "graph";
     syncGraphVisibilityUi(root, isGraphVisible);
     if (isGraphVisible) {
-      renderGraphDisplay(root, state.calculator.rollEntries, state.calculator.seedSnapshot, state.unlocks.maxTotalDigits);
+      renderGraphDisplay(root, state.calculator.rollEntries, resolveGraphSeedSnapshot(state), state.unlocks.maxTotalDigits);
     } else {
       destroyGraphChart();
     }

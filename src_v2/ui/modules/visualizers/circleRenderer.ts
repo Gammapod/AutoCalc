@@ -20,7 +20,13 @@ export const renderCircleVisualizerPanel = (root: Element, _state: GameState): v
   if (!circlePanel) {
     return;
   }
-  const points = buildGraphPoints(_state.calculator.rollEntries, _state.calculator.seedSnapshot);
+  const graphSeedSnapshot =
+    _state.calculator.seedSnapshot !== undefined
+      ? _state.calculator.seedSnapshot
+      : _state.calculator.rollEntries.length === 0
+        ? _state.calculator.total
+        : undefined;
+  const points = buildGraphPoints(_state.calculator.rollEntries, graphSeedSnapshot);
   const xWindow = buildGraphXWindow(_state.calculator.rollEntries.length);
   const yWindow = buildGraphYWindow(_state.unlocks.maxTotalDigits);
   const maxMagnitude = Math.max(Math.abs(yWindow.min), Math.abs(yWindow.max), 1);

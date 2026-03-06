@@ -66,6 +66,16 @@ type ChartCtor = new (ctx: CanvasRenderingContext2D, config: GraphChartConfig) =
 let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 
+const resolveGraphSeedSnapshot = (state: GameState): GameState["calculator"]["seedSnapshot"] => {
+  if (state.calculator.seedSnapshot !== undefined) {
+    return state.calculator.seedSnapshot;
+  }
+  if (state.calculator.rollEntries.length === 0) {
+    return state.calculator.total;
+  }
+  return undefined;
+};
+
 const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], maxXIndex: number, unlockedTotalDigits: number): GraphOptions => {
   const xWindow = buildGraphXWindow(maxXIndex);
   const bounds = buildGraphYWindow(unlockedTotalDigits);
@@ -179,8 +189,9 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     return;
   }
 
-  const points = buildGraphPoints(state.calculator.rollEntries, state.calculator.seedSnapshot);
-  const hasPoints = isGraphRenderable(state.calculator.rollEntries, state.calculator.seedSnapshot);
+  const graphSeedSnapshot = resolveGraphSeedSnapshot(state);
+  const points = buildGraphPoints(state.calculator.rollEntries, graphSeedSnapshot);
+  const hasPoints = isGraphRenderable(state.calculator.rollEntries, graphSeedSnapshot);
   const options = buildGraphOptions(hasPoints, points, state.calculator.rollEntries.length, state.unlocks.maxTotalDigits);
   const pointBackgroundColor = points.map((point) => {
     if (point.kind === "remainder") {

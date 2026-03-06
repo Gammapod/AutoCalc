@@ -18,10 +18,14 @@ export type DomainReadModel = {
 };
 
 export const buildReadModel = (state: GameState): DomainReadModel => ({
+  // Match grapher seed semantics: prefer captured seed, else current total before first roll entry.
+  graphPoints: buildGraphPoints(
+    state.calculator.rollEntries,
+    state.calculator.seedSnapshot ?? (state.calculator.rollEntries.length === 0 ? state.calculator.total : undefined),
+  ),
   totalDisplay: state.calculator.total.kind === "nan" ? "NaN" : toDisplayString(state.calculator.total.value),
   rollView: buildRollViewModel(state.calculator.rollEntries),
   slotView: buildOperationSlotDisplay(state),
   unlockRows: buildUnlockRows(state),
-  graphPoints: buildGraphPoints(state.calculator.rollEntries, state.calculator.seedSnapshot),
   graphVisible: isGraphVisible(state.calculator.rollEntries),
 });
