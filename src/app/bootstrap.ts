@@ -9,11 +9,11 @@ import { createResetCalculatorState } from "../domain/reducer.stateBuilders.js";
 import { createInteractionRuntime } from "./interactionRuntime.js";
 import { resolveAllocatorModeAction } from "./allocatorModeAction.js";
 import {
-  AUTO_EQUALS_POINT_BONUS,
   createAutoEqualsScheduler,
   normalizeLoadedStateForRuntime,
 } from "./autoEqualsScheduler.js";
-import type { Action, AllocatorAllocationField, GameState, Key } from "../domain/types.js";
+import { getLambdaDerivedValues, getLambdaUnusedPoints } from "../domain/lambdaControl.js";
+import type { Action, GameState, Key } from "../domain/types.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -311,9 +311,7 @@ const clampNonNegativeInteger = (value: number, fallback: number): number => {
 };
 
 const getUnusedPoints = (state: GameState): number => {
-  const allocations = state.allocator.allocations;
-  const spent = allocations.width + allocations.height + allocations.range + allocations.speed + allocations.slots;
-  return state.allocator.maxPoints - spent;
+  return getLambdaUnusedPoints(state.lambdaControl);
 };
 
 let allocatorUnusedDisplayOverride: number | null = null;
@@ -326,13 +324,13 @@ const syncKeypadDimensionInputs = (): void => {
 
 const syncAllocatorDeviceInputs = (): void => {
   const state = store.getState();
-  const allocations = state.allocator.allocations;
+  const derived = getLambdaDerivedValues(state.lambdaControl);
   const unused = allocatorUnusedDisplayOverride ?? getUnusedPoints(state);
   const allocatorLocked = interactionRuntime.getMode() === "calculator";
   const inputBlocked = interactionRuntime.isInputBlocked();
-  const effectiveWidth = 1 + allocations.width;
-  const effectiveHeight = 1 + allocations.height;
-  const effectiveRange = 1 + allocations.range;
+  const effectiveWidth = state.lambdaControl.alpha;
+  const effectiveHeight = state.lambdaControl.beta;
+  const effectiveRange = derived.deltaEffective;
   const effectiveSlots = state.unlocks.maxSlots;
 
   renderAllocatorDisplay(allocatorUnusedEl, unused);
@@ -340,24 +338,27 @@ const syncAllocatorDeviceInputs = (): void => {
   renderAllocatorDisplay(allocatorWidthValueEl, effectiveWidth);
   renderAllocatorDisplay(allocatorHeightValueEl, effectiveHeight);
   renderAllocatorDisplay(allocatorRangeValueEl, effectiveRange);
-  renderAllocatorDisplay(allocatorSpeedValueEl, allocations.speed);
+  renderAllocatorDisplay(
+    allocatorSpeedValueEl,
+    Math.max(0, Math.trunc((Number(derived.epsilonEffective.num) / Number(derived.epsilonEffective.den)) * 10)),
+  );
   renderAllocatorDisplay(allocatorSlotsValueEl, effectiveSlots);
 
-  allocatorIncWidthButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
-  allocatorDecWidthButton.disabled = inputBlocked || allocatorLocked || allocations.width <= 0;
-  allocatorIncHeightButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
-  allocatorDecHeightButton.disabled = inputBlocked || allocatorLocked || allocations.height <= 0;
-  allocatorIncRangeButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
-  allocatorDecRangeButton.disabled = inputBlocked || allocatorLocked || allocations.range <= 0;
-  allocatorIncSpeedButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
-  allocatorDecSpeedButton.disabled = inputBlocked || allocatorLocked || allocations.speed <= 0;
-  allocatorIncSlotsButton.disabled = inputBlocked || allocatorLocked || unused <= 0;
-  allocatorDecSlotsButton.disabled = inputBlocked || allocatorLocked || allocations.slots <= 0;
+  allocatorIncWidthButton.disabled = true;
+  allocatorDecWidthButton.disabled = true;
+  allocatorIncHeightButton.disabled = true;
+  allocatorDecHeightButton.disabled = true;
+  allocatorIncRangeButton.disabled = true;
+  allocatorDecRangeButton.disabled = true;
+  allocatorIncSpeedButton.disabled = true;
+  allocatorDecSpeedButton.disabled = true;
+  allocatorIncSlotsButton.disabled = true;
+  allocatorDecSlotsButton.disabled = true;
   allocatorResetButton.disabled = inputBlocked;
   allocatorResetButton.textContent = interactionRuntime.getMode() === "calculator" ? "↓ Modify Calculator ↓" : "↑ RETURN ↑";
   allocatorDeviceEl.dataset.allocatorLocked = allocatorLocked ? "true" : "false";
 
-  debugMaxPointsInput.value = state.allocator.maxPoints.toString();
+  debugMaxPointsInput.value = state.lambdaControl.maxPoints.toString();
 };
 
 const serializeRationalForDebug = (value: { num: bigint; den: bigint }): { num: string; den: string } => ({
@@ -421,7 +422,7 @@ upgradeKeypadColumnButton.addEventListener("click", () => {
 
 applyMaxPointsButton.addEventListener("click", () => {
   const state = store.getState();
-  const value = clampNonNegativeInteger(Number(debugMaxPointsInput.value), state.allocator.maxPoints);
+  const value = clampNonNegativeInteger(Number(debugMaxPointsInput.value), state.lambdaControl.maxPoints);
   store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", value });
 });
 
@@ -429,23 +430,6 @@ toggleUiShellLink.addEventListener("click", (event) => {
   event.preventDefault();
   window.location.assign(getUiShellToggleUrl(uiShellMode));
 });
-
-const bindAllocatorStep = (button: HTMLButtonElement, field: AllocatorAllocationField, delta: 1 | -1): void => {
-  button.addEventListener("click", () => {
-    dispatchWithRuntimeGate({ type: "ALLOCATOR_ADJUST", field, delta });
-  });
-};
-
-bindAllocatorStep(allocatorDecWidthButton, "width", -1);
-bindAllocatorStep(allocatorIncWidthButton, "width", 1);
-bindAllocatorStep(allocatorDecHeightButton, "height", -1);
-bindAllocatorStep(allocatorIncHeightButton, "height", 1);
-bindAllocatorStep(allocatorDecRangeButton, "range", -1);
-bindAllocatorStep(allocatorIncRangeButton, "range", 1);
-bindAllocatorStep(allocatorDecSpeedButton, "speed", -1);
-bindAllocatorStep(allocatorIncSpeedButton, "speed", 1);
-bindAllocatorStep(allocatorDecSlotsButton, "slots", -1);
-bindAllocatorStep(allocatorIncSlotsButton, "slots", 1);
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {

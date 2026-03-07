@@ -138,6 +138,21 @@ export type AllocatorState = {
 
 export type AllocatorAllocationField = keyof AllocatorState["allocations"];
 
+export type LambdaAxis = "alpha" | "beta" | "gamma";
+
+export type LambdaOverrides = {
+  delta?: number;
+  epsilon?: RationalValue;
+};
+
+export type LambdaControl = {
+  maxPoints: number;
+  alpha: number;
+  beta: number;
+  gamma: number;
+  overrides: LambdaOverrides;
+};
+
 export type AllocatorBudgetSnapshot = {
   spentTotal: number;
   unusedPoints: number;
@@ -334,6 +349,8 @@ export type UnlockDefinition = {
 
 export type GameState = {
   calculator: CalculatorState;
+  lambdaControl: LambdaControl;
+  // Legacy projection snapshot kept for compatibility while remaining consumers migrate.
   allocator: AllocatorState;
   ui: {
     keyLayout: LayoutCell[];
@@ -452,6 +469,29 @@ export type AllocatorAllocatePressedAction = {
   type: "ALLOCATOR_ALLOCATE_PRESSED";
 };
 
+export type LambdaSetOverrideDeltaAction = {
+  type: "LAMBDA_SET_OVERRIDE_DELTA";
+  value: number;
+};
+
+export type LambdaSetOverrideEpsilonAction = {
+  type: "LAMBDA_SET_OVERRIDE_EPSILON";
+  value: RationalValue;
+};
+
+export type LambdaClearOverrideDeltaAction = {
+  type: "LAMBDA_CLEAR_OVERRIDE_DELTA";
+};
+
+export type LambdaClearOverrideEpsilonAction = {
+  type: "LAMBDA_CLEAR_OVERRIDE_EPSILON";
+};
+
+export type LambdaSetControlAction = {
+  type: "LAMBDA_SET_CONTROL";
+  value: LambdaControl;
+};
+
 export type Action =
   | PressKeyAction
   | ResetRunAction
@@ -471,7 +511,12 @@ export type Action =
   | AllocatorAddMaxPointsAction
   | ResetAllocatorDeviceAction
   | AllocatorReturnPressedAction
-  | AllocatorAllocatePressedAction;
+  | AllocatorAllocatePressedAction
+  | LambdaSetOverrideDeltaAction
+  | LambdaSetOverrideEpsilonAction
+  | LambdaClearOverrideDeltaAction
+  | LambdaClearOverrideEpsilonAction
+  | LambdaSetControlAction;
 
 export type Store = {
   getState: () => GameState;

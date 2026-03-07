@@ -6,6 +6,7 @@ import { getRollYDomain } from "../domain/rollDerived.js";
 import { STORAGE_COLUMNS } from "../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../domain/keypadLayoutModel.js";
 import { evaluateLayoutDrop } from "../domain/layoutRules.js";
+import { getLambdaDerivedValues, getLambdaUnusedPoints } from "../domain/lambdaControl.js";
 import {
   buildStepBodyHighlightRegions,
   resolveStepBodyHighlightRects,
@@ -708,34 +709,31 @@ const renderSevenSegmentValue = (
 };
 
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
-  const getAllocatorUnspentPoints = (): number =>
-    state.allocator.maxPoints - (
-      state.allocator.allocations.width +
-      state.allocator.allocations.height +
-      state.allocator.allocations.range +
-      state.allocator.allocations.speed +
-      state.allocator.allocations.slots
-    );
+  const lambdaDerived = getLambdaDerivedValues(state.lambdaControl);
   const buildMemoryStatusRow = (): HTMLElement => {
     const row = document.createElement("div");
     row.className = "total-memory-row";
 
     const lambda = document.createElement("span");
     lambda.className = "total-memory-lambda";
-    lambda.textContent = `\u03BB = ${getAllocatorUnspentPoints().toString()}`;
+    lambda.textContent = `\u03BB = ${getLambdaUnusedPoints(state.lambdaControl).toString()}`;
     row.appendChild(lambda);
 
     const variables = document.createElement("div");
     variables.className = "total-memory-variables";
-    const variableValues: Array<{ symbol: "\u03B1" | "\u03B2" | "\u03B3"; value: number }> = [
-      { symbol: "\u03B1", value: state.ui.keypadColumns },
-      { symbol: "\u03B2", value: state.ui.keypadRows },
-      { symbol: "\u03B3", value: state.unlocks.maxSlots },
+    const variableValues: Array<{ symbol: "\u03B1" | "\u03B2" | "\u03B3" | "\u03B4" | "\u03F5"; value: string }> = [
+      { symbol: "\u03B1", value: state.lambdaControl.alpha.toString() },
+      { symbol: "\u03B2", value: state.lambdaControl.beta.toString() },
+      { symbol: "\u03B3", value: state.lambdaControl.gamma.toString() },
+      { symbol: "\u03B4", value: lambdaDerived.deltaEffective.toString() },
+      { symbol: "\u03F5", value: toDisplayString(lambdaDerived.epsilonEffective) },
     ];
     for (const entry of variableValues) {
       const token = document.createElement("span");
       token.className = "total-memory-var";
-      const isSelected = state.ui.memoryVariable === entry.symbol;
+      const isSelected = entry.symbol === "\u03B1" || entry.symbol === "\u03B2" || entry.symbol === "\u03B3"
+        ? state.ui.memoryVariable === entry.symbol
+        : false;
       const leftBracket = document.createElement("span");
       leftBracket.className = isSelected
         ? "total-memory-bracket total-memory-bracket--visible"
@@ -751,7 +749,7 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
       rightBracket.textContent = "]";
       const valueText = document.createElement("span");
       valueText.className = "total-memory-value";
-      valueText.textContent = ` = ${entry.value.toString()}`;
+      valueText.textContent = ` = ${entry.value}`;
       token.append(leftBracket, symbol, rightBracket, valueText);
       variables.appendChild(token);
     }

@@ -2,6 +2,7 @@ import { parseRational, toDisplayString } from "../math/rationalEngine.js";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
 import { isRationalCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue } from "../../domain/calculatorValue.js";
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
+import { buildAllocatorSnapshot, createDefaultLambdaControl, sanitizeLambdaControl, withLegacyAllocatorFallback } from "../../domain/lambdaControl.js";
 import { isValidSchemaVersion, migrateToLatest, type SerializableStateV14, type SerializableSlot } from "./migrations.js";
 import type { GameState } from "../../domain/types.js";
 
@@ -15,6 +16,21 @@ type KeyValueStorage = {
   getItem: (key: string) => string | null;
   setItem: (key: string, value: string) => void;
   removeItem: (key: string) => void;
+};
+
+type SerializableLambdaControl = {
+  maxPoints: number;
+  alpha: number;
+  beta: number;
+  gamma: number;
+  overrides?: {
+    delta?: number;
+    epsilon?: string;
+  };
+};
+
+type SerializableStateLatest = SerializableStateV14 & {
+  lambdaControl?: SerializableLambdaControl;
 };
 
 export const enum LoadFailureReason {
@@ -40,7 +56,9 @@ const serializeCalculatorValue = (value: GameState["calculator"]["total"]): stri
 const deserializeCalculatorValue = (value: string): GameState["calculator"]["total"] =>
   value.trim() === "NaN" ? toNanCalculatorValue() : toRationalCalculatorValue(parseRational(value));
 
-const toSerializableState = (state: GameState): SerializableStateV14 => ({
+const toSerializableState = (state: GameState): SerializableStateLatest => {
+  const lambdaControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
+  return ({
   calculator: {
     total: serializeCalculatorValue(state.calculator.total),
     ...(state.calculator.seedSnapshot ? { seedSnapshot: serializeCalculatorValue(state.calculator.seedSnapshot) } : {}),
@@ -72,11 +90,42 @@ const toSerializableState = (state: GameState): SerializableStateV14 => ({
   allocatorAllocatePressCount: state.allocatorAllocatePressCount ?? 0,
   unlocks: state.unlocks,
   completedUnlockIds: state.completedUnlockIds,
-  allocator: state.allocator,
+  allocator: buildAllocatorSnapshot(lambdaControl),
+  lambdaControl: {
+    maxPoints: lambdaControl.maxPoints,
+    alpha: lambdaControl.alpha,
+    beta: lambdaControl.beta,
+    gamma: lambdaControl.gamma,
+    overrides: {
+      ...(lambdaControl.overrides.delta !== undefined ? { delta: lambdaControl.overrides.delta } : {}),
+      ...(lambdaControl.overrides.epsilon
+        ? { epsilon: toDisplayString(lambdaControl.overrides.epsilon) }
+        : {}),
+    },
+  },
 });
+};
 
-const fromSerializableStateV3 = (payloadState: SerializableStateV14): GameState => ({
-  calculator: {
+const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameState => {
+  const lambdaInput = payloadState.lambdaControl
+    ? {
+        maxPoints: payloadState.lambdaControl.maxPoints,
+        alpha: payloadState.lambdaControl.alpha,
+        beta: payloadState.lambdaControl.beta,
+        gamma: payloadState.lambdaControl.gamma,
+        overrides: {
+          ...(payloadState.lambdaControl.overrides?.delta !== undefined
+            ? { delta: payloadState.lambdaControl.overrides.delta }
+            : {}),
+          ...(payloadState.lambdaControl.overrides?.epsilon
+            ? { epsilon: parseRational(payloadState.lambdaControl.overrides.epsilon) }
+            : {}),
+        },
+      }
+    : createDefaultLambdaControl();
+  const lambdaControl = sanitizeLambdaControl(lambdaInput);
+  return {
+    calculator: {
     total: deserializeCalculatorValue(payloadState.calculator.total),
     seedSnapshot: payloadState.calculator.seedSnapshot
       ? deserializeCalculatorValue(payloadState.calculator.seedSnapshot)
@@ -112,12 +161,14 @@ const fromSerializableStateV3 = (payloadState: SerializableStateV14): GameState 
     buttonFlags: payloadState.ui.buttonFlags,
   },
   keyPressCounts: payloadState.keyPressCounts ?? {},
-  allocatorReturnPressCount: payloadState.allocatorReturnPressCount ?? 0,
-  allocatorAllocatePressCount: payloadState.allocatorAllocatePressCount ?? 0,
-  unlocks: payloadState.unlocks,
-  completedUnlockIds: payloadState.completedUnlockIds,
-  allocator: payloadState.allocator,
-});
+    allocatorReturnPressCount: payloadState.allocatorReturnPressCount ?? 0,
+    allocatorAllocatePressCount: payloadState.allocatorAllocatePressCount ?? 0,
+    unlocks: payloadState.unlocks,
+    completedUnlockIds: payloadState.completedUnlockIds,
+    lambdaControl,
+    allocator: buildAllocatorSnapshot(lambdaControl),
+  };
+};
 
 const parsePayloadEnvelope = (
   raw: string,

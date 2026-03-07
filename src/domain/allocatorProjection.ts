@@ -1,29 +1,64 @@
-import {
-  KEYPAD_DIM_MAX,
-  KEYPAD_DIM_MIN,
-  OPERATION_SLOTS_MAX,
-  OPERATION_SLOTS_MIN,
-  TOTAL_DIGITS_MAX,
-  TOTAL_DIGITS_MIN,
-} from "./state.js";
 import { applySetKeypadDimensions } from "./reducer.layout.js";
-import type { AllocatorState, GameState } from "./types.js";
+import {
+  buildAllocatorSnapshot,
+  getEffectiveKeypadColumns,
+  getEffectiveKeypadRows,
+  getEffectiveMaxSlots,
+  getEffectiveMaxTotalDigits,
+  sanitizeLambdaControl,
+} from "./lambdaControl.js";
+import type { GameState, LambdaControl } from "./types.js";
 
-const clampToRange = (value: number, min: number, max: number): number =>
-  Math.max(min, Math.min(max, value));
+const rationalEquals = (
+  a?: { num: bigint; den: bigint },
+  b?: { num: bigint; den: bigint },
+): boolean => {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.num === b.num && a.den === b.den;
+};
 
-export const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorState): GameState => {
-  const withAllocator = allocator === state.allocator ? state : { ...state, allocator };
-  const columns = clampToRange(1 + withAllocator.allocator.allocations.width, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
-  const rows = clampToRange(1 + withAllocator.allocator.allocations.height, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
-  const maxDigits = clampToRange(1 + withAllocator.allocator.allocations.range, TOTAL_DIGITS_MIN, TOTAL_DIGITS_MAX);
-  const maxSlots = clampToRange(withAllocator.allocator.allocations.slots, OPERATION_SLOTS_MIN, OPERATION_SLOTS_MAX);
-  const resized = applySetKeypadDimensions(withAllocator, columns, rows);
-  if (resized.unlocks.maxTotalDigits === maxDigits && resized.unlocks.maxSlots === maxSlots) {
+const lambdaControlEquals = (a: LambdaControl, b: LambdaControl): boolean =>
+  a.maxPoints === b.maxPoints &&
+  a.alpha === b.alpha &&
+  a.beta === b.beta &&
+  a.gamma === b.gamma &&
+  a.overrides.delta === b.overrides.delta &&
+  rationalEquals(a.overrides.epsilon, b.overrides.epsilon);
+
+export const applyAllocatorRuntimeProjection = (
+  state: GameState,
+  lambdaControl: LambdaControl,
+): GameState => {
+  const nextControl = sanitizeLambdaControl(lambdaControl);
+  const withControl = lambdaControlEquals(nextControl, state.lambdaControl)
+    ? state
+    : { ...state, lambdaControl: nextControl };
+  const columns = getEffectiveKeypadColumns(withControl.lambdaControl);
+  const rows = getEffectiveKeypadRows(withControl.lambdaControl);
+  const maxDigits = getEffectiveMaxTotalDigits(withControl.lambdaControl);
+  const maxSlots = getEffectiveMaxSlots(withControl.lambdaControl);
+  const resized = applySetKeypadDimensions(withControl, columns, rows);
+  const allocator = buildAllocatorSnapshot(resized.lambdaControl);
+  if (
+    resized.unlocks.maxTotalDigits === maxDigits &&
+    resized.unlocks.maxSlots === maxSlots &&
+    resized.allocator.maxPoints === allocator.maxPoints &&
+    resized.allocator.allocations.width === allocator.allocations.width &&
+    resized.allocator.allocations.height === allocator.allocations.height &&
+    resized.allocator.allocations.range === allocator.allocations.range &&
+    resized.allocator.allocations.speed === allocator.allocations.speed &&
+    resized.allocator.allocations.slots === allocator.allocations.slots
+  ) {
     return resized;
   }
   return {
     ...resized,
+    allocator,
     unlocks: {
       ...resized.unlocks,
       maxTotalDigits: maxDigits,

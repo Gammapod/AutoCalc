@@ -1,4 +1,4 @@
-import type { Action, GameState, Key, VisualizerId } from "./types.js";
+import type { Action, GameState, Key, LambdaControl, VisualizerId } from "./types.js";
 
 export type DomainEvent =
   | { type: "KeyPressed"; key: Key }
@@ -25,7 +25,12 @@ export type DomainEvent =
   | { type: "AllocatorMaxPointsAdded"; amount: number }
   | { type: "AllocatorDeviceResetRequested" }
   | { type: "AllocatorReturnPressed" }
-  | { type: "AllocatorAllocatePressed" };
+  | { type: "AllocatorAllocatePressed" }
+  | { type: "LambdaOverrideDeltaSet"; value: number }
+  | { type: "LambdaOverrideEpsilonSet"; value: { num: string; den: string } }
+  | { type: "LambdaOverrideDeltaCleared" }
+  | { type: "LambdaOverrideEpsilonCleared" }
+  | { type: "LambdaControlSet"; value: LambdaControl };
 
 export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "PRESS_KEY") {
@@ -97,6 +102,27 @@ export const eventFromAction = (action: Action): DomainEvent => {
   }
   if (action.type === "ALLOCATOR_ALLOCATE_PRESSED") {
     return { type: "AllocatorAllocatePressed" };
+  }
+  if (action.type === "LAMBDA_SET_OVERRIDE_DELTA") {
+    return { type: "LambdaOverrideDeltaSet", value: action.value };
+  }
+  if (action.type === "LAMBDA_SET_OVERRIDE_EPSILON") {
+    return {
+      type: "LambdaOverrideEpsilonSet",
+      value: {
+        num: action.value.num.toString(),
+        den: action.value.den.toString(),
+      },
+    };
+  }
+  if (action.type === "LAMBDA_CLEAR_OVERRIDE_DELTA") {
+    return { type: "LambdaOverrideDeltaCleared" };
+  }
+  if (action.type === "LAMBDA_CLEAR_OVERRIDE_EPSILON") {
+    return { type: "LambdaOverrideEpsilonCleared" };
+  }
+  if (action.type === "LAMBDA_SET_CONTROL") {
+    return { type: "LambdaControlSet", value: action.value };
   }
   return { type: "FlagToggled", flag: action.flag };
 };
@@ -171,6 +197,27 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   }
   if (event.type === "AllocatorAllocatePressed") {
     return { type: "ALLOCATOR_ALLOCATE_PRESSED" };
+  }
+  if (event.type === "LambdaOverrideDeltaSet") {
+    return { type: "LAMBDA_SET_OVERRIDE_DELTA", value: event.value };
+  }
+  if (event.type === "LambdaOverrideEpsilonSet") {
+    return {
+      type: "LAMBDA_SET_OVERRIDE_EPSILON",
+      value: {
+        num: BigInt(event.value.num),
+        den: BigInt(event.value.den),
+      },
+    };
+  }
+  if (event.type === "LambdaOverrideDeltaCleared") {
+    return { type: "LAMBDA_CLEAR_OVERRIDE_DELTA" };
+  }
+  if (event.type === "LambdaOverrideEpsilonCleared") {
+    return { type: "LAMBDA_CLEAR_OVERRIDE_EPSILON" };
+  }
+  if (event.type === "LambdaControlSet") {
+    return { type: "LAMBDA_SET_CONTROL", value: event.value };
   }
   return { type: "TOGGLE_FLAG", flag: event.flag };
 };

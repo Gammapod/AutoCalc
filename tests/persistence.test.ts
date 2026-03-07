@@ -57,8 +57,18 @@ export const runPersistenceTests = (): void => {
         width: 2,
         height: 1,
         range: 3,
-        speed: 1,
+        speed: 0,
         slots: 2,
+      },
+    },
+    lambdaControl: {
+      maxPoints: 9,
+      alpha: 2,
+      beta: 1,
+      gamma: 2,
+      overrides: {
+        delta: 3,
+        epsilon: { num: 9n, den: 10n },
       },
     },
     unlocks: {
@@ -89,8 +99,22 @@ export const runPersistenceTests = (): void => {
   assert.equal(loaded?.allocatorAllocatePressCount, 3, "round-trip allocator Allocate press counter");
   assert.deepEqual(
     loaded?.allocator,
-    { maxPoints: 9, allocations: { width: 2, height: 1, range: 3, speed: 1, slots: 2 } },
-    "round-trip allocator fields",
+    { maxPoints: 9, allocations: { width: 2, height: 1, range: 3, speed: 0, slots: 2 } },
+    "round-trip allocator snapshot fields",
+  );
+  assert.deepEqual(
+    loaded?.lambdaControl,
+    {
+      maxPoints: 9,
+      alpha: 2,
+      beta: 1,
+      gamma: 2,
+      overrides: {
+        delta: 3,
+        epsilon: { num: 9n, den: 10n },
+      },
+    },
+    "round-trip canonical lambda control",
   );
   assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
   assert.equal(loaded?.unlocks.visualizers.FEED, true, "round-trip FEED visualizer unlock");
@@ -177,9 +201,9 @@ export const runPersistenceTests = (): void => {
   );
   assert.ok(legacyV7.state, "v7 payload hydrates");
   assert.deepEqual(
-    legacyV7.state?.allocator,
-    { maxPoints: 4, allocations: { width: 0, height: 0, range: 1, speed: 0, slots: 2 } },
-    "v7 migration preserves effective runtime in v9 allocator model",
+    legacyV7.state?.lambdaControl,
+    { maxPoints: 0, alpha: 0, beta: 0, gamma: 0, overrides: {} },
+    "v7 migration resets lambda control",
   );
 
   const legacyV8 = loadFromRawSave(
@@ -217,9 +241,9 @@ export const runPersistenceTests = (): void => {
   );
   assert.ok(legacyV8.state, "v8 payload hydrates");
   assert.deepEqual(
-    legacyV8.state?.allocator,
-    { maxPoints: 17, allocations: { width: 2, height: 1, range: 4, speed: 3, slots: 0 } },
-    "v8 migration preserves effective runtime and converts to budget model",
+    legacyV8.state?.lambdaControl,
+    { maxPoints: 0, alpha: 0, beta: 0, gamma: 0, overrides: {} },
+    "v8 migration resets lambda control",
   );
 
   const legacyV10WithVisualizerFlags = loadFromRawSave(
@@ -495,8 +519,8 @@ export const runPersistenceTests = (): void => {
   );
   assert.ok(overspentV9.state, "overspent v9 payload hydrates");
   assert.deepEqual(
-    overspentV9.state?.allocator,
-    { maxPoints: 2, allocations: { width: 2, height: 0, range: 0, speed: 0, slots: 0 } },
-    "overspent allocator payload is trimmed by priority",
+    overspentV9.state?.lambdaControl,
+    { maxPoints: 0, alpha: 0, beta: 0, gamma: 0, overrides: {} },
+    "overspent legacy allocator payload is ignored in favor of reset lambda control",
   );
 };

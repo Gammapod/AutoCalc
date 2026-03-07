@@ -3,68 +3,62 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { initialState } from "./state.js";
 import { applyEffect } from "./unlocks.js";
 import type { Action, GameState } from "./types.js";
+import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
+import { sanitizeLambdaControl } from "./lambdaControl.js";
 
 // Non-key lifecycle transitions: reset/hydrate/debug unlock-all.
 const applyUnlockAll = (state: GameState): GameState => {
   const withCatalogEffects = unlockCatalog.reduce((next, unlock) => applyEffect(unlock.effect, next), state);
-  const targetSlotAllocation = 4;
-  const spentWithoutSlots =
-    withCatalogEffects.allocator.allocations.width +
-    withCatalogEffects.allocator.allocations.height +
-    withCatalogEffects.allocator.allocations.range +
-    withCatalogEffects.allocator.allocations.speed;
-  const minMaxPoints = spentWithoutSlots + targetSlotAllocation;
+  const withProjectedControl = applyAllocatorRuntimeProjection(withCatalogEffects, {
+    ...withCatalogEffects.lambdaControl,
+    alpha: 7,
+    beta: 7,
+    gamma: 4,
+    maxPoints: Math.max(withCatalogEffects.lambdaControl.maxPoints, 18),
+  });
   return {
-    ...withCatalogEffects,
+    ...withProjectedControl,
     calculator: {
-      ...withCatalogEffects.calculator,
+      ...withProjectedControl.calculator,
       singleDigitInitialTotalEntry: true,
     },
-    allocator: {
-      ...withCatalogEffects.allocator,
-      maxPoints: Math.max(withCatalogEffects.allocator.maxPoints, minMaxPoints),
-      allocations: {
-        ...withCatalogEffects.allocator.allocations,
-        slots: targetSlotAllocation,
-      },
-    },
     unlocks: {
-      ...withCatalogEffects.unlocks,
+      ...withProjectedControl.unlocks,
       valueAtoms: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.valueAtoms).map((key) => [key, true]),
+        Object.keys(withProjectedControl.unlocks.valueAtoms).map((key) => [key, true]),
       ) as GameState["unlocks"]["valueAtoms"],
       valueCompose: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.valueCompose).map((key) => [key, true]),
+        Object.keys(withProjectedControl.unlocks.valueCompose).map((key) => [key, true]),
       ) as GameState["unlocks"]["valueCompose"],
       valueExpression: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.valueExpression).map((key) => [key, true]),
+        Object.keys(withProjectedControl.unlocks.valueExpression).map((key) => [key, true]),
       ) as GameState["unlocks"]["valueExpression"],
       slotOperators: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.slotOperators).map((operator) => [operator, true]),
+        Object.keys(withProjectedControl.unlocks.slotOperators).map((operator) => [operator, true]),
       ) as GameState["unlocks"]["slotOperators"],
       utilities: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.utilities).map((utility) => [utility, true]),
+        Object.keys(withProjectedControl.unlocks.utilities).map((utility) => [utility, true]),
       ) as GameState["unlocks"]["utilities"],
       memory: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.memory).map((memoryKey) => [memoryKey, true]),
+        Object.keys(withProjectedControl.unlocks.memory).map((memoryKey) => [memoryKey, true]),
       ) as GameState["unlocks"]["memory"],
       steps: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.steps).map((stepKey) => [stepKey, true]),
+        Object.keys(withProjectedControl.unlocks.steps).map((stepKey) => [stepKey, true]),
       ) as GameState["unlocks"]["steps"],
       visualizers: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.visualizers).map((visualizer) => [visualizer, true]),
+        Object.keys(withProjectedControl.unlocks.visualizers).map((visualizer) => [visualizer, true]),
       ) as GameState["unlocks"]["visualizers"],
       execution: Object.fromEntries(
-        Object.keys(withCatalogEffects.unlocks.execution).map((executionKey) => [executionKey, true]),
+        Object.keys(withProjectedControl.unlocks.execution).map((executionKey) => [executionKey, true]),
       ) as GameState["unlocks"]["execution"],
       uiUnlocks: {
-        ...withCatalogEffects.unlocks.uiUnlocks,
+        ...withProjectedControl.unlocks.uiUnlocks,
         storageVisible: true,
       },
       maxSlots: 4,
     },
     completedUnlockIds: [
-      ...new Set([...withCatalogEffects.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)]),
+      ...new Set([...withProjectedControl.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)]),
     ],
   };
 };
@@ -75,10 +69,7 @@ export const applyLifecycleAction = (state: GameState, action: Action): GameStat
   }
   if (action.type === "HYDRATE_SAVE") {
     const expectedLength = Math.max(1, action.state.ui.keypadColumns * action.state.ui.keypadRows);
-    if (action.state.ui.keypadCells.length === expectedLength) {
-      return action.state;
-    }
-    return {
+    const withCells = action.state.ui.keypadCells.length === expectedLength ? action.state : {
       ...action.state,
       ui: {
         ...action.state.ui,
@@ -89,6 +80,7 @@ export const applyLifecycleAction = (state: GameState, action: Action): GameStat
         ),
       },
     };
+    return applyAllocatorRuntimeProjection(withCells, sanitizeLambdaControl(withCells.lambdaControl));
   }
   if (action.type === "UNLOCK_ALL") {
     return applyUnlockAll(state);

@@ -3,6 +3,7 @@ import { applyUpgradeKeypadColumn, applyUpgradeKeypadRow } from "./reducer.layou
 import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import { STORAGE_COLUMNS } from "./state.js";
 import { setButtonUnlocked } from "./buttonStateAccess.js";
+import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 
@@ -192,13 +193,10 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
     };
   }
   if (effect.type === "increase_allocator_max_points") {
-    return {
-      ...state,
-      allocator: {
-        ...state.allocator,
-        maxPoints: state.allocator.maxPoints + effect.amount,
-      },
-    };
+    return applyAllocatorRuntimeProjection(state, {
+      ...state.lambdaControl,
+      maxPoints: state.lambdaControl.maxPoints + effect.amount,
+    });
   }
   if (effect.type === "unlock_second_slot") {
     // Slot capacity is allocator-projected; keep this effect as a backward-compatible no-op.

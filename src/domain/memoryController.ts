@@ -1,34 +1,22 @@
-import { KEYPAD_DIM_MAX, KEYPAD_DIM_MIN, OPERATION_SLOTS_MAX, OPERATION_SLOTS_MIN } from "./state.js";
 import type { Digit, GameState, Key, MemoryVariable } from "./types.js";
-
-type MemorySelectionBinding = {
-  allocatorField: "width" | "height" | "slots";
-  readValue: (state: GameState) => number;
-  allocationMin: number;
-  allocationMax: number;
-};
+import { adjustAxis, withLegacyAllocatorFallback } from "./lambdaControl.js";
+import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 
 const MEMORY_VARIABLE_CYCLE: readonly MemoryVariable[] = ["α", "β", "γ"];
 
-const MEMORY_SELECTION_BINDINGS: Record<MemoryVariable, MemorySelectionBinding> = {
-  α: {
-    allocatorField: "width",
-    readValue: (state) => state.ui.keypadColumns,
-    allocationMin: KEYPAD_DIM_MIN - 1,
-    allocationMax: KEYPAD_DIM_MAX - 1,
-  },
-  β: {
-    allocatorField: "height",
-    readValue: (state) => state.ui.keypadRows,
-    allocationMin: KEYPAD_DIM_MIN - 1,
-    allocationMax: KEYPAD_DIM_MAX - 1,
-  },
-  γ: {
-    allocatorField: "slots",
-    readValue: (state) => state.unlocks.maxSlots,
-    allocationMin: OPERATION_SLOTS_MIN,
-    allocationMax: OPERATION_SLOTS_MAX,
-  },
+const memoryVariableToAxis = (memoryVariable: MemoryVariable): "alpha" | "beta" | "gamma" => {
+  if (memoryVariable === "α") {
+    return "alpha";
+  }
+  if (memoryVariable === "β") {
+    return "beta";
+  }
+  return "gamma";
+};
+
+const readSelectedMemoryValue = (state: GameState): number => {
+  const axis = memoryVariableToAxis(state.ui.memoryVariable);
+  return state.lambdaControl[axis];
 };
 
 export const isMemoryKey = (key: Key): boolean =>
@@ -50,47 +38,18 @@ export const cycleMemoryVariable = (state: GameState): GameState => {
   };
 };
 
-const getSelectedMemoryBinding = (state: GameState): MemorySelectionBinding =>
-  MEMORY_SELECTION_BINDINGS[state.ui.memoryVariable];
-
 export const resolveMemoryRecallDigit = (state: GameState): Digit => {
-  const memoryValue = getSelectedMemoryBinding(state).readValue(state);
+  const memoryValue = readSelectedMemoryValue(state);
   const digitValue = Math.max(0, Math.min(9, Math.trunc(memoryValue)));
   return digitValue.toString() as Digit;
 };
 
-const getUnusedAllocatorPoints = (state: GameState): number =>
-  state.allocator.maxPoints - (
-    state.allocator.allocations.width +
-    state.allocator.allocations.height +
-    state.allocator.allocations.range +
-    state.allocator.allocations.speed +
-    state.allocator.allocations.slots
-  );
-
-export const applyMemoryAdjust = (
-  state: GameState,
-  delta: 1 | -1,
-  projectAllocator: (state: GameState, allocator: GameState["allocator"]) => GameState,
-): GameState => {
-  const selected = getSelectedMemoryBinding(state);
-  const current = state.allocator.allocations[selected.allocatorField];
-  const nextValue = current + delta;
-  if (delta === 1 && getUnusedAllocatorPoints(state) <= 0) {
+export const applyMemoryAdjust = (state: GameState, delta: 1 | -1): GameState => {
+  const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
+  const axis = memoryVariableToAxis(state.ui.memoryVariable);
+  const nextControl = adjustAxis(effectiveControl, axis, delta);
+  if (nextControl === effectiveControl) {
     return state;
   }
-  if (delta === -1 && current <= selected.allocationMin) {
-    return state;
-  }
-  if (nextValue < selected.allocationMin || nextValue > selected.allocationMax) {
-    return state;
-  }
-  const nextAllocator = {
-    ...state.allocator,
-    allocations: {
-      ...state.allocator.allocations,
-      [selected.allocatorField]: nextValue,
-    },
-  };
-  return projectAllocator(state, nextAllocator);
+  return applyAllocatorRuntimeProjection(state, nextControl);
 };

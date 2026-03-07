@@ -30,7 +30,6 @@ import { isDigitKey, isOperatorKey } from "./buttonRegistry.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
 import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, GameState, Key, RationalValue, RollEntry, SlotOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
-import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { applyMemoryAdjust, cycleMemoryVariable, isMemoryKey, resolveMemoryRecallDigit } from "./memoryController.js";
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
@@ -444,10 +443,10 @@ const applyMemoryKeyAction = (state: GameState, key: Key): GameState => {
     return applyDigitValue(state, resolveMemoryRecallDigit(state));
   }
   if (key === "M+") {
-    return applyMemoryAdjust(state, 1, applyAllocatorRuntimeProjection);
+    return applyMemoryAdjust(state, 1);
   }
   if (key === "M–") {
-    return applyMemoryAdjust(state, -1, applyAllocatorRuntimeProjection);
+    return applyMemoryAdjust(state, -1);
   }
   return state;
 };

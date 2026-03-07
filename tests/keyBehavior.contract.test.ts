@@ -259,9 +259,12 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     state = unlockKey(state, "α,β,γ");
     state = {
       ...state,
+      lambdaControl: {
+        ...state.lambdaControl,
+        alpha: 4,
+      },
       ui: {
         ...state.ui,
-        keypadColumns: 4,
         memoryVariable: "α",
       },
       calculator: {

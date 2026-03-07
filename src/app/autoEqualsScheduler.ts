@@ -1,6 +1,7 @@
 import { AUTO_EQUALS_FLAG } from "../domain/state.js";
 import { keyToVisualizerId } from "../domain/buttonRegistry.js";
 import { getOperationSnapshot } from "../domain/slotDrafting.js";
+import { getAutoEqualsRateMultiplier as getLambdaAutoEqualsRateMultiplier } from "../domain/lambdaControl.js";
 import type { ExecKey, GameState, Key, KeyCell, Store, VisualizerId } from "../domain/types.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
@@ -36,8 +37,7 @@ const EXECUTOR_KEYS: readonly ExecKey[] = ["=", "++", "--"];
 const PLAY_PAUSE_KEY = "\u23EF";
 
 const getAutoEqualsRateMultiplier = (state: GameState): number => {
-  const speedPoints = Math.max(0, state.allocator.allocations.speed);
-  return 1 + speedPoints * AUTO_EQUALS_POINT_BONUS;
+  return getLambdaAutoEqualsRateMultiplier(state.lambdaControl);
 };
 
 const getAutoEqualsIntervalMs = (state: GameState, baseIntervalMs: number): number =>

@@ -105,10 +105,9 @@ const runScript = (state: GameState, script: Key[]): GameState =>
   script.reduce((nextState, key) => reducer(nextState, { type: "PRESS_KEY", key }), state);
 
 const withTwoDigitRange = (state: GameState): GameState =>
-  reducer(reducer(state, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 1 }), {
-    type: "ALLOCATOR_ADJUST",
-    field: "range",
-    delta: 1,
+  reducer(state, {
+    type: "LAMBDA_SET_OVERRIDE_DELTA",
+    value: 1,
   });
 
 const proofFixtures: ProofFixture[] = [

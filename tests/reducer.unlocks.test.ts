@@ -11,10 +11,9 @@ const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, d
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 const press = (state: GameState, key: Key): GameState => reducer(state, { type: "PRESS_KEY", key });
 const withTwoDigitRange = (state: GameState): GameState =>
-  reducer(reducer(state, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 1 }), {
-    type: "ALLOCATOR_ADJUST",
-    field: "range",
-    delta: 1,
+  reducer(state, {
+    type: "LAMBDA_SET_OVERRIDE_DELTA",
+    value: 1,
   });
 
 const findKeypadIndex = (state: GameState, key: Key): number =>

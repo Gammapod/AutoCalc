@@ -1,4 +1,6 @@
+import { getLambdaDerivedValues, getLambdaUnusedPoints, toNumber } from "../../../domain/lambdaControl.js";
 import type { GameState, MemoryVariable } from "../../../domain/types.js";
+import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 
 type KatexRenderOptions = {
   displayMode?: boolean;
@@ -15,23 +17,26 @@ const getKatexApi = (): KatexApi | undefined => {
 };
 
 const selectedVectorEntry = (selectedVariable: MemoryVariable): string => {
-  if (selectedVariable === "\u03B1") {
+  if (selectedVariable === "α") {
     return String.raw`{\color{#be8ee8}{[\alpha]}}`;
   }
-  if (selectedVariable === "\u03B2") {
+  if (selectedVariable === "β") {
     return String.raw`{\color{#be8ee8}{[\beta]}}`;
   }
   return String.raw`{\color{#be8ee8}{[\gamma]}}`;
 };
 
-const buildEigenAllocatorLatex = (selectedVariable: MemoryVariable): string => {
-  const alphaEntry = selectedVariable === "\u03B1" ? selectedVectorEntry(selectedVariable) : String.raw`\alpha`;
-  const betaEntry = selectedVariable === "\u03B2" ? selectedVectorEntry(selectedVariable) : String.raw`\beta`;
-  const gammaEntry = selectedVariable === "\u03B3" ? selectedVectorEntry(selectedVariable) : String.raw`\gamma`;
+const buildEigenAllocatorLatex = (state: GameState): string => {
+  const alphaEntry = state.ui.memoryVariable === "α" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\alpha`;
+  const betaEntry = state.ui.memoryVariable === "β" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\beta`;
+  const gammaEntry = state.ui.memoryVariable === "γ" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\gamma`;
+  const derived = getLambdaDerivedValues(state.lambdaControl);
+  const delta = derived.deltaEffective;
+  const epsilon = toDisplayString(derived.epsilonEffective);
+  const epsilonFloat = toNumber(derived.epsilonEffective);
+  const unused = getLambdaUnusedPoints(state.lambdaControl);
   return String.raw`
-
-EIGEN ALLOCATOR | ~,==,"< \\\\[12pt]
-
+\text{ALLOCATOR ~,==,"<}\\[10pt]
 \begin{bmatrix}
 ${alphaEntry}\\
 ${betaEntry}\\
@@ -53,7 +58,7 @@ ${alphaEntry}&0&0&0&0\\
 \lambda{\updownarrow}\\
 \lambda{[\text{\_ \_}]}\\
 \lambda{[-\delta,\delta]}\\
-\lambda{\frac{\Delta T}{\epsilon}}
+\lambda{\frac{\Delta T}{1.05^\epsilon}}
 \end{bmatrix}
 `;
 };
@@ -78,13 +83,13 @@ export const renderEigenAllocatorVisualizerPanel = (root: Element, state: GameSt
   panel.classList.add("v2-eigen-allocator-panel--latex");
 
   if (typeof document === "undefined") {
-    panel.textContent = "||v|| x ||A|| = ||\u03BB||";
+    panel.textContent = "lambda control";
     return;
   }
   const equation = document.createElement("div");
   equation.className = "v2-eigen-equation";
   const katexApi = getKatexApi();
-  const latex = buildEigenAllocatorLatex(state.ui.memoryVariable);
+  const latex = buildEigenAllocatorLatex(state);
   if (katexApi) {
     try {
       katexApi.render(latex, equation, {
@@ -92,10 +97,10 @@ export const renderEigenAllocatorVisualizerPanel = (root: Element, state: GameSt
         throwOnError: false,
       });
     } catch {
-      equation.textContent = "||v|| x ||A|| = ||\u03BB||";
+      equation.textContent = "lambda control";
     }
   } else {
-    equation.textContent = "||v|| x ||A|| = ||\u03BB||";
+    equation.textContent = "lambda control";
   }
   panel.appendChild(equation);
 };

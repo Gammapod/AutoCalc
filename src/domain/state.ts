@@ -1,9 +1,10 @@
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
+import { buildAllocatorSnapshot, createDefaultLambdaControl } from "./lambdaControl.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 14;
+export const SAVE_SCHEMA_VERSION = 15;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const AUTO_EQUALS_FLAG = "execution.pause";
@@ -128,6 +129,7 @@ export const initialState = (): GameState => {
   const keyLayout = defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS);
   const valueAtoms = buildUnlockRecord("valueAtoms");
   const valueCompose = buildUnlockRecord("valueCompose");
+  const lambdaControl = createDefaultLambdaControl();
   return {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
@@ -138,16 +140,8 @@ export const initialState = (): GameState => {
       operationSlots: [],
       draftingSlot: null,
     },
-    allocator: {
-      maxPoints: 0,
-      allocations: {
-        width: 0,
-        height: 0,
-        range: 0,
-        speed: 0,
-        slots: 0,
-      },
-    },
+    lambdaControl,
+    allocator: buildAllocatorSnapshot(lambdaControl),
     ui: {
       keyLayout,
       keypadCells: fromKeyLayoutArray(keyLayout, KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),

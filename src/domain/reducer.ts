@@ -17,82 +17,32 @@ import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyUnlocks } from "./unlocks.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
+import {
+  adjustAxis,
+  resetLambdaAdjustments,
+  sanitizeLambdaControl,
+  withLegacyAllocatorFallback,
+  withMaxPointsAdded,
+  withMaxPointsSet,
+} from "./lambdaControl.js";
 import type {
   Action,
-  AllocatorAllocationField,
-  AllocatorBudgetSnapshot,
-  AllocatorState,
   GameState,
   VisualizerId,
 } from "./types.js";
 // Root reducer orchestrator: route actions to focused domain reducers.
 
-const ALLOCATOR_TRIM_ORDER: readonly AllocatorAllocationField[] = ["speed", "range", "slots", "height", "width"];
-
-const clampNonNegativeInteger = (value: number, fallback: number): number => {
-  if (!Number.isInteger(value)) {
-    return fallback;
+const allocatorFieldToAxis = (field: "width" | "height" | "range" | "speed" | "slots"): "alpha" | "beta" | "gamma" | null => {
+  if (field === "width") {
+    return "alpha";
   }
-  return Math.max(0, value);
-};
-
-const getSpentTotal = (allocator: AllocatorState): number =>
-  allocator.allocations.width +
-  allocator.allocations.height +
-  allocator.allocations.range +
-  allocator.allocations.speed +
-  allocator.allocations.slots;
-
-const getUnusedPoints = (allocator: AllocatorState): number => allocator.maxPoints - getSpentTotal(allocator);
-
-const getAllocatorBudgetSnapshot = (allocator: AllocatorState): AllocatorBudgetSnapshot => ({
-  spentTotal: getSpentTotal(allocator),
-  unusedPoints: getUnusedPoints(allocator),
-});
-
-const trimAllocationsToBudget = (allocator: AllocatorState): AllocatorState => {
-  const nextAllocations = { ...allocator.allocations };
-  let overspend = getSpentTotal(allocator) - allocator.maxPoints;
-  if (overspend <= 0) {
-    return allocator;
+  if (field === "height") {
+    return "beta";
   }
-  for (const field of ALLOCATOR_TRIM_ORDER) {
-    if (overspend <= 0) {
-      break;
-    }
-    const reduction = Math.min(nextAllocations[field], overspend);
-    nextAllocations[field] -= reduction;
-    overspend -= reduction;
+  if (field === "slots") {
+    return "gamma";
   }
-  return {
-    ...allocator,
-    allocations: nextAllocations,
-  };
-};
-
-const applyMaxPointsSetWithTrim = (allocator: AllocatorState, rawValue: number): AllocatorState => {
-  const maxPoints = clampNonNegativeInteger(rawValue, allocator.maxPoints);
-  const base: AllocatorState = maxPoints === allocator.maxPoints ? allocator : { ...allocator, maxPoints };
-  return trimAllocationsToBudget(base);
-};
-
-const applyAllocationDelta = (allocator: AllocatorState, field: AllocatorAllocationField, delta: 1 | -1): AllocatorState => {
-  const budget = getAllocatorBudgetSnapshot(allocator);
-  const current = allocator.allocations[field];
-  if (delta === 1 && budget.unusedPoints <= 0) {
-    return allocator;
-  }
-  if (delta === -1 && current <= 0) {
-    return allocator;
-  }
-  const nextValue = current + delta;
-  return {
-    ...allocator,
-    allocations: {
-      ...allocator.allocations,
-      [field]: nextValue,
-    },
-  };
+  return null;
 };
 
 const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): GameState => {
@@ -155,42 +105,35 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
     return applyToggleVisualizer(state, action.visualizer);
   }
   if (action.type === "ALLOCATOR_ADJUST") {
-    const nextAllocator = applyAllocationDelta(state.allocator, action.field, action.delta);
-    if (nextAllocator === state.allocator) {
+    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
+    const axis = allocatorFieldToAxis(action.field);
+    if (!axis) {
       return state;
     }
-    return applyAllocatorRuntimeProjection(state, nextAllocator);
+    const nextControl = adjustAxis(effectiveControl, axis, action.delta);
+    if (nextControl === effectiveControl) {
+      return state;
+    }
+    return applyAllocatorRuntimeProjection(state, nextControl);
   }
   if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
-    const nextAllocator = applyMaxPointsSetWithTrim(state.allocator, action.value);
-    if (nextAllocator === state.allocator) {
+    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
+    const nextControl = withMaxPointsSet(effectiveControl, action.value);
+    if (nextControl === effectiveControl) {
       return state;
     }
-    return applyAllocatorRuntimeProjection(state, nextAllocator);
+    return applyAllocatorRuntimeProjection(state, nextControl);
   }
   if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
-    const amount = clampNonNegativeInteger(action.amount, 0);
-    if (amount <= 0) {
+    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
+    const nextControl = withMaxPointsAdded(effectiveControl, action.amount);
+    if (nextControl === effectiveControl) {
       return state;
     }
-    const nextAllocator = {
-      ...state.allocator,
-      maxPoints: state.allocator.maxPoints + amount,
-    };
-    return applyAllocatorRuntimeProjection(state, nextAllocator);
+    return applyAllocatorRuntimeProjection(state, nextControl);
   }
   if (action.type === "RESET_ALLOCATOR_DEVICE") {
-    const nextAllocator: AllocatorState = {
-      ...state.allocator,
-      allocations: {
-        width: 0,
-        height: 0,
-        range: 0,
-        speed: 0,
-        slots: 0,
-      },
-    };
-    return applyAllocatorRuntimeProjection(state, nextAllocator);
+    return applyAllocatorRuntimeProjection(state, resetLambdaAdjustments(state.lambdaControl));
   }
   if (action.type === "ALLOCATOR_RETURN_PRESSED") {
     const withCount: GameState = {
@@ -205,6 +148,49 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
       allocatorAllocatePressCount: (state.allocatorAllocatePressCount ?? 0) + 1,
     };
     return applyUnlocks(withCount, unlockCatalog);
+  }
+  if (action.type === "LAMBDA_SET_OVERRIDE_DELTA") {
+    const next = sanitizeLambdaControl({
+      ...state.lambdaControl,
+      overrides: {
+        ...state.lambdaControl.overrides,
+        delta: action.value,
+      },
+    });
+    return applyAllocatorRuntimeProjection(state, next);
+  }
+  if (action.type === "LAMBDA_SET_OVERRIDE_EPSILON") {
+    const next = sanitizeLambdaControl({
+      ...state.lambdaControl,
+      overrides: {
+        ...state.lambdaControl.overrides,
+        epsilon: action.value,
+      },
+    });
+    return applyAllocatorRuntimeProjection(state, next);
+  }
+  if (action.type === "LAMBDA_CLEAR_OVERRIDE_DELTA") {
+    const next = sanitizeLambdaControl({
+      ...state.lambdaControl,
+      overrides: {
+        ...state.lambdaControl.overrides,
+      },
+    });
+    delete next.overrides.delta;
+    return applyAllocatorRuntimeProjection(state, next);
+  }
+  if (action.type === "LAMBDA_CLEAR_OVERRIDE_EPSILON") {
+    const next = sanitizeLambdaControl({
+      ...state.lambdaControl,
+      overrides: {
+        ...state.lambdaControl.overrides,
+      },
+    });
+    delete next.overrides.epsilon;
+    return applyAllocatorRuntimeProjection(state, next);
+  }
+  if (action.type === "LAMBDA_SET_CONTROL") {
+    return applyAllocatorRuntimeProjection(state, action.value);
   }
   return state;
 };
