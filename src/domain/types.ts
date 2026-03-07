@@ -1,14 +1,21 @@
-export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-export type SlotOperator = "+" | "-" | "*" | "/" | "#" | "⟡";
-export type ValueExpressionKey = Digit | "NEG";
-export type UtilityKey = "C" | "CE" | "UNDO";
-export type StepKey = "\u23EF";
-export type VisualizerKey = "GRAPH" | "FEED" | "CIRCLE";
+import type {
+  ButtonCategory,
+  ButtonKey,
+  ButtonKeyByBehaviorKind,
+  ButtonKeyByUnlockBucket,
+} from "./buttonRegistry.js";
+
+export type Digit = ButtonKeyByBehaviorKind<"digit">;
+export type SlotOperator = ButtonKeyByUnlockBucket<"slotOperators">;
+export type ValueExpressionKey = ButtonKeyByUnlockBucket<"valueExpression">;
+export type UtilityKey = ButtonKeyByUnlockBucket<"utilities">;
+export type StepKey = ButtonKeyByUnlockBucket<"steps">;
+export type VisualizerKey = ButtonKeyByUnlockBucket<"visualizers">;
 export type VisualizerId = "graph" | "feed" | "circle";
 export type ActiveVisualizer = "total" | VisualizerId;
-export type ExecKey = "=" | "++" | "--";
-export type Key = ValueExpressionKey | SlotOperator | UtilityKey | StepKey | VisualizerKey | ExecKey;
-
+export type ExecKey = ButtonKeyByUnlockBucket<"execution">;
+export type Key = ButtonKey;
+export type KeyCategory = ButtonCategory;
 export type KeyCell = {
   kind: "key";
   key: Key;
@@ -461,4 +468,5 @@ export type Store = {
   dispatch: (action: Action) => Action;
   subscribe: (subscriber: (state: GameState) => void) => () => void;
 };
+
 

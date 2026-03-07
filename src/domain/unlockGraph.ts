@@ -1,4 +1,5 @@
 import type { GameState, Key, UnlockDefinition } from "./types.js";
+import { getPredicateCapabilitySpec, type CapabilityId } from "./predicateCapabilitySpec.js";
 
 export type GraphNodeType = "key" | "function" | "condition" | "sufficient_set";
 export type GraphEdgeType = "necessary" | "sufficient" | "requires" | "unlocks";
@@ -233,51 +234,59 @@ const unlockedKeyFromEffect = (unlock: UnlockDefinition): Key | null => {
   return null;
 };
 
-const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition): string[] => {
-  if (
-    unlock.predicate.type === "total_equals"
-    || unlock.predicate.type === "total_at_least"
-    || unlock.predicate.type === "total_magnitude_at_least"
-  ) {
-    return ["fn.step_plus_one"];
-  }
-  if (unlock.predicate.type === "roll_contains_value") {
-    return ["fn.execute_activation", "fn.form_operator_plus_operand"];
-  }
-  if (unlock.predicate.type === "roll_ends_with_sequence") {
-    return ["fn.execute_activation", "fn.roll_growth"];
-  }
-  if (unlock.predicate.type === "roll_ends_with_equal_run") {
-    return ["fn.execute_activation", "fn.roll_equal_run"];
-  }
-  if (unlock.predicate.type === "roll_ends_with_incrementing_run") {
-    return ["fn.execute_activation", "fn.roll_incrementing_run"];
-  }
-  if (unlock.predicate.type === "roll_ends_with_alternating_sign_constant_abs_run") {
-    return ["fn.execute_activation", "fn.roll_alternating_sign_constant_abs"];
-  }
-  if (unlock.predicate.type === "roll_ends_with_constant_step_run") {
-    return ["fn.execute_activation", "fn.roll_constant_step_run"];
-  }
-  if (unlock.predicate.type === "operation_first_euclid_equivalent_modulo") {
-    return ["fn.execute_activation", "fn.euclid_division_operator", "fn.form_operator_plus_operand"];
-  }
-  if (unlock.predicate.type === "key_press_count_at_least") {
+const capabilityToFunctionIds: Record<Exclude<CapabilityId, "press_target_key">, string[]> = {
+  execute_activation: ["fn.execute_activation"],
+  step_plus_one: ["fn.step_plus_one"],
+  step_minus_one: ["fn.step_minus_one"],
+  reset_to_zero: ["fn.reset_to_zero"],
+  form_operator_plus_operand: ["fn.form_operator_plus_operand"],
+  allocator_return_press: ["fn.allocator_return_press"],
+  allocator_allocate_press: ["fn.allocator_allocate_press"],
+  roll_growth: ["fn.roll_growth"],
+  roll_equal_run: ["fn.roll_equal_run"],
+  roll_incrementing_run: ["fn.roll_incrementing_run"],
+  roll_alternating_sign_constant_abs: ["fn.roll_alternating_sign_constant_abs"],
+  roll_constant_step_run: ["fn.roll_constant_step_run"],
+  division_by_zero_error: ["fn.division_by_zero_error"],
+  euclid_division_operator: ["fn.euclid_division_operator"],
+};
+
+const resolveFunctionIdsForCapability = (unlock: UnlockDefinition, capability: CapabilityId): string[] => {
+  if (capability === "press_target_key") {
+    if (unlock.predicate.type !== "key_press_count_at_least") {
+      throw new Error(
+        `Capability press_target_key requires key_press_count_at_least predicate (unlock=${unlock.id}, predicate=${unlock.predicate.type})`,
+      );
+    }
     return [pressFunctionId(unlock.predicate.key)];
   }
-  if (unlock.predicate.type === "overflow_error_seen") {
-    return ["fn.step_plus_one"];
+  return capabilityToFunctionIds[capability];
+};
+
+const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition, functionRules: Map<string, FunctionRule>): string[] => {
+  const spec = getPredicateCapabilitySpec(unlock.predicate.type);
+  if (!spec) {
+    throw new Error(`Missing predicate capability spec for ${unlock.predicate.type} (unlock=${unlock.id})`);
   }
-  if (unlock.predicate.type === "division_by_zero_error_seen") {
-    return ["fn.execute_activation", "fn.division_by_zero_error"];
+  if (spec.notes?.startsWith("TODO:")) {
+    throw new Error(`Predicate capability spec is TODO for ${unlock.predicate.type} (unlock=${unlock.id})`);
   }
-  if (unlock.predicate.type === "allocator_return_press_count_at_least") {
-    return ["fn.allocator_return_press"];
+  const functionIds = new Set<string>();
+  for (const required of spec.necessary) {
+    const resolved = resolveFunctionIdsForCapability(unlock, required.capability);
+    if (resolved.length === 0) {
+      throw new Error(
+        `No function rules mapped for capability ${required.capability} (unlock=${unlock.id}, predicate=${unlock.predicate.type})`,
+      );
+    }
+    for (const functionId of resolved) {
+      if (!functionRules.has(functionId)) {
+        throw new Error(`Missing function rule ${functionId} for unlock ${unlock.id}`);
+      }
+      functionIds.add(functionId);
+    }
   }
-  if (unlock.predicate.type === "allocator_allocate_press_count_at_least") {
-    return ["fn.allocator_allocate_press"];
-  }
-  return [];
+  return [...functionIds].sort();
 };
 
 const buildFunctionRules = (catalog: UnlockDefinition[]): Map<string, FunctionRule> => {
@@ -364,7 +373,7 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
 
   for (const unlock of catalog) {
     const conditionNodeId = `cond.${unlock.id}`;
-    const requiredFunctions = requiredFunctionIdsForUnlock(unlock);
+    const requiredFunctions = requiredFunctionIdsForUnlock(unlock, functionRules);
     for (const functionId of requiredFunctions) {
       const rule = functionRules.get(functionId);
       edges.push({
@@ -464,7 +473,7 @@ export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Ke
       if (reachableConditionIds.has(unlock.id)) {
         continue;
       }
-      const requiredFunctions = requiredFunctionIdsForUnlock(unlock);
+      const requiredFunctions = requiredFunctionIdsForUnlock(unlock, functionRules);
       const missingFunctions = requiredFunctions.filter((functionId) => !functionRules.get(functionId)?.isSatisfied(unlockedKeys));
       if (missingFunctions.length > 0) {
         continue;
@@ -483,7 +492,7 @@ export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Ke
     .filter((unlockId) => !reachableConditionIds.has(unlockId));
 
   for (const unlock of catalog) {
-    const requiredFunctions = requiredFunctionIdsForUnlock(unlock);
+    const requiredFunctions = requiredFunctionIdsForUnlock(unlock, functionRules);
     const missingFunctions = requiredFunctions.filter((functionId) => !functionRules.get(functionId)?.isSatisfied(unlockedKeys));
     conditionStatuses.push({
       unlockId: unlock.id,
@@ -500,7 +509,7 @@ export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Ke
     if (!targetKey) {
       continue;
     }
-    for (const functionId of requiredFunctionIdsForUnlock(unlock)) {
+    for (const functionId of requiredFunctionIdsForUnlock(unlock, functionRules)) {
       const providers = collectContributorKeys(functionRules.get(functionId)?.sufficiency ?? []);
       for (const providerKey of providers) {
         keyDependencyEdges.push([providerKey, targetKey]);

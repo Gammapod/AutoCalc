@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { initialState } from "../src/domain/state.js";
+import type { UnlockDefinition } from "../src/domain/types.js";
 import {
   analyzeUnlockGraph,
   buildUnlockGraph,
@@ -30,6 +31,10 @@ export const runUnlockGraphTests = (): void => {
   assert.ok(requireEdges.length > 0, "expected requirement edges from conditions to functions");
   assert.ok(sufficientEdges.length > 0, "expected sufficient edges from keys or sufficient-set nodes");
   assert.ok(necessaryEdges.length > 0, "expected necessary edges for multi-key sufficient sets");
+  const functionNodeIds = new Set(graph.nodes.filter((node) => node.type === "function").map((node) => node.id));
+  for (const edge of requireEdges) {
+    assert.equal(functionNodeIds.has(edge.to), true, `requires edge must target function node (${edge.to})`);
+  }
 
   const analysis = analyzeUnlockGraph(unlockCatalog, startingKeys);
   assert.ok(
@@ -147,4 +152,21 @@ export const runUnlockGraphTests = (): void => {
   assert.equal(filteredGraph.nodes.some((node) => node.id === "key.--"), false, "-- should be removed when it is not an incoming unlock target");
   assert.equal(filteredGraph.nodes.some((node) => node.id === "key.X"), false, "keys with no incoming unlock should be removed");
   assert.equal(filteredGraph.nodes.some((node) => node.id === "fn.drop"), false, "downstream dependencies of removed keys should be removed");
+
+  const todoSpecCatalog: UnlockDefinition[] = [
+    {
+      id: "todo_predicate_fixture",
+      description: "fixture",
+      predicate: { type: "total_at_most", value: 1n },
+      effect: { type: "unlock_digit", key: "1" },
+      once: true,
+      domainNodeId: "NN",
+      targetNodeId: "fixture",
+    },
+  ];
+  assert.throws(
+    () => buildUnlockGraph(todoSpecCatalog, startingKeys),
+    /Predicate capability spec is TODO/,
+    "unlock graph should fail fast when catalog uses TODO capability specs",
+  );
 };

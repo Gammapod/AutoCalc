@@ -1,0 +1,38 @@
+import assert from "node:assert/strict";
+import { buttonRegistry } from "../src/domain/buttonRegistry.js";
+import { isButtonUnlocked, iterUnlockedButtons, setButtonUnlocked } from "../src/domain/buttonStateAccess.js";
+import { initialState } from "../src/domain/state.js";
+
+const sort = (values: string[]): string[] => [...values].sort((a, b) => a.localeCompare(b));
+
+export const runButtonRegistryContractTests = (): void => {
+  const keys = buttonRegistry.map((entry) => entry.key);
+  assert.equal(new Set(keys).size, keys.length, "button registry must not contain duplicate keys");
+
+  const state = initialState();
+  const runtimeKeys = sort([
+    ...Object.keys(state.unlocks.valueExpression),
+    ...Object.keys(state.unlocks.slotOperators),
+    ...Object.keys(state.unlocks.utilities),
+    ...Object.keys(state.unlocks.steps),
+    ...Object.keys(state.unlocks.visualizers),
+    ...Object.keys(state.unlocks.execution),
+  ]);
+  const registryUnlockKeys = sort(buttonRegistry.map((entry) => entry.key));
+  assert.deepEqual(
+    registryUnlockKeys,
+    runtimeKeys,
+    "registry unlock buckets must exactly match runtime unlock-state keys",
+  );
+
+  const defaultUnlockedByRegistry = sort(buttonRegistry.filter((entry) => entry.defaultUnlocked).map((entry) => entry.key));
+  const defaultUnlockedByState = sort(iterUnlockedButtons(state));
+  assert.deepEqual(defaultUnlockedByState, defaultUnlockedByRegistry, "default unlocked state must come from button registry metadata");
+
+  for (const entry of buttonRegistry) {
+    const unlockedState = setButtonUnlocked(state, entry.key, true);
+    assert.equal(isButtonUnlocked(unlockedState, entry.key), true, `${entry.key} can be marked unlocked via state access helper`);
+    const relockedState = setButtonUnlocked(unlockedState, entry.key, false);
+    assert.equal(isButtonUnlocked(relockedState, entry.key), false, `${entry.key} can be marked locked via state access helper`);
+  }
+};

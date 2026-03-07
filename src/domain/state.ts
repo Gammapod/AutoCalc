@@ -1,4 +1,5 @@
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
+import { buttonRegistry, type ButtonUnlockBucket } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
@@ -18,6 +19,26 @@ export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
 const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["++"];
+
+type UnlockBucket = Exclude<ButtonUnlockBucket, "none">;
+type UnlockBucketRecord<B extends UnlockBucket> =
+  B extends "valueExpression" ? GameState["unlocks"]["valueExpression"]
+    : B extends "slotOperators" ? GameState["unlocks"]["slotOperators"]
+      : B extends "utilities" ? GameState["unlocks"]["utilities"]
+        : B extends "steps" ? GameState["unlocks"]["steps"]
+          : B extends "visualizers" ? GameState["unlocks"]["visualizers"]
+            : GameState["unlocks"]["execution"];
+
+const buildUnlockRecord = <B extends UnlockBucket>(bucket: B): UnlockBucketRecord<B> => {
+  const record: Record<string, boolean> = {};
+  for (const entry of buttonRegistry) {
+    if (entry.unlockBucket !== bucket) {
+      continue;
+    }
+    record[entry.key] = entry.defaultUnlocked;
+  }
+  return record as UnlockBucketRecord<B>;
+};
 
 export const defaultStorageKeys = (): KeyCell[] =>
   defaultKeyLayout()
@@ -123,45 +144,12 @@ export const initialState = (): GameState => {
     allocatorReturnPressCount: 0,
     allocatorAllocatePressCount: 0,
     unlocks: {
-      valueExpression: {
-        "0": false,
-        "1": false,
-        "2": false,
-        "3": false,
-        "4": false,
-        "5": false,
-        "6": false,
-        "7": false,
-        "8": false,
-        "9": false,
-        NEG: false,
-      },
-      slotOperators: {
-        "+": false,
-        "-": false,
-        "*": false,
-        "/": false,
-        "#": false,
-        "\u27E1": false,
-      },
-      utilities: {
-        C: false,
-        CE: false,
-        UNDO: false,
-      },
-      steps: {
-        "\u23EF": false,
-      },
-      visualizers: {
-        GRAPH: false,
-        FEED: false,
-        CIRCLE: true,
-      },
-      execution: {
-        "=": false,
-        "++": true,
-        "--": false,
-      },
+      valueExpression: buildUnlockRecord("valueExpression"),
+      slotOperators: buildUnlockRecord("slotOperators"),
+      utilities: buildUnlockRecord("utilities"),
+      steps: buildUnlockRecord("steps"),
+      visualizers: buildUnlockRecord("visualizers"),
+      execution: buildUnlockRecord("execution"),
       uiUnlocks: {
         storageVisible: true,
       },

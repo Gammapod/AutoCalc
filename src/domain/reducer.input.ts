@@ -23,12 +23,11 @@ import {
 import { isKeyUnlocked } from "./keyUnlocks.js";
 import { clearOperationEntry, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import { CHECKLIST_UNLOCK_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
+import { isDigitKey, isOperatorKey } from "./buttonRegistry.js";
 import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, GameState, Key, RationalValue, RollEntry, SlotOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
-const DIGITS: Digit[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-
 const incrementKeyPressCount = (state: GameState, key: Key): GameState => ({
   ...state,
   keyPressCounts: {
@@ -407,9 +406,8 @@ const applyUndo = (state: GameState): GameState => {
   };
 };
 
-const isDigit = (key: Key): key is Digit => DIGITS.includes(key as Digit);
-const isOperator = (key: Key): key is SlotOperator =>
-  key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1";
+const isDigit = (key: Key): key is Digit => isDigitKey(key);
+const isOperator = (key: Key): key is SlotOperator => isOperatorKey(key);
 
 const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
   if (state.calculator.rollEntries.length === 0 || !isOperator(key)) {

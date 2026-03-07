@@ -2,6 +2,7 @@ import { fromKeyLayoutArray, toIndexFromCoord } from "./keypadLayoutModel.js";
 import { applyUpgradeKeypadColumn, applyUpgradeKeypadRow } from "./reducer.layout.js";
 import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import { STORAGE_COLUMNS } from "./state.js";
+import { setButtonUnlocked } from "./buttonStateAccess.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 
@@ -178,17 +179,8 @@ const moveUnlockedKeyToStorageFront = (state: GameState, key: Key): GameState =>
 };
 
 export const applyEffect = (effect: UnlockEffect, state: GameState): GameState => {
-  if (effect.type === "unlock_utility") {
-    return {
-      ...state,
-      unlocks: {
-        ...state.unlocks,
-        utilities: {
-          ...state.unlocks.utilities,
-          [effect.key]: true,
-        },
-      },
-    };
+  if (isUnlockKeyEffect(effect)) {
+    return setButtonUnlocked(state, keyFromUnlockEffect(effect), true);
   }
   if (effect.type === "increase_max_total_digits") {
     return {
@@ -205,42 +197,6 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
       allocator: {
         ...state.allocator,
         maxPoints: state.allocator.maxPoints + effect.amount,
-      },
-    };
-  }
-  if (effect.type === "unlock_slot_operator") {
-    return {
-      ...state,
-      unlocks: {
-        ...state.unlocks,
-        slotOperators: {
-          ...state.unlocks.slotOperators,
-          [effect.key]: true,
-        },
-      },
-    };
-  }
-  if (effect.type === "unlock_execution") {
-    return {
-      ...state,
-      unlocks: {
-        ...state.unlocks,
-        execution: {
-          ...state.unlocks.execution,
-          [effect.key]: true,
-        },
-      },
-    };
-  }
-  if (effect.type === "unlock_digit") {
-    return {
-      ...state,
-      unlocks: {
-        ...state.unlocks,
-        valueExpression: {
-          ...state.unlocks.valueExpression,
-          [effect.key]: true,
-        },
       },
     };
   }
