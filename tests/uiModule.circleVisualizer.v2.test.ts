@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import {
   detectResidueWheelSpec,
+  projectRadialPoints,
   projectResidueWheelPoints,
   resolveCircleRenderMode,
 } from "../src_v2/ui/modules/visualizers/circleModel.js";
@@ -138,5 +139,30 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
       "residue-wheel points lie on the perimeter radius",
     );
   }
-};
 
+  const positiveRadial: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries: [e(r(5n))],
+    },
+  };
+  const negativeRadial: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries: [e(r(-5n))],
+    },
+  };
+  const positiveProjection = projectRadialPoints(positiveRadial, 50, 48);
+  const negativeRadialProjection = projectRadialPoints(negativeRadial, 50, 48);
+  assert.ok(positiveProjection.dots.length > 0, "radial projection includes the positive roll point");
+  assert.ok(negativeRadialProjection.dots.length > 0, "radial projection includes the negative roll point");
+  const positiveRollDot = positiveProjection.dots[positiveProjection.dots.length - 1];
+  const negativeRollDot = negativeRadialProjection.dots[negativeRadialProjection.dots.length - 1];
+  assert.ok(
+    Math.abs(negativeRollDot.px - (100 - positiveRollDot.px)) < 1e-6 &&
+      Math.abs(negativeRollDot.py - (100 - positiveRollDot.py)) < 1e-6,
+    "negative radial y values project opposite equivalent positive y values",
+  );
+};

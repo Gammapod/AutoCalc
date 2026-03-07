@@ -101,7 +101,7 @@ export const projectRadialPoints = (
     }
     const ringIndex = point.x % angularStepCount;
     const theta = (ringIndex / angularStepCount) * Math.PI * 2;
-    const normalizedMagnitude = Math.min(1, Math.abs(point.y) / maxMagnitude);
+    const normalizedMagnitude = Math.max(-1, Math.min(1, point.y / maxMagnitude));
     const radial = normalizedMagnitude * radius;
     const px = center + Math.cos(theta) * radial;
     const py = center - Math.sin(theta) * radial;
