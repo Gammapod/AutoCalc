@@ -28,6 +28,8 @@ Desktop (primary direction):
 - Enforce a minimum key width threshold.
 - When additional columns would push keys below that threshold, increase calculator body width instead.
 - Continue allowing body height changes for row upgrades.
+- Desktop minimum footprint baseline is `2 rows x 5 columns`; body width/height do not shrink below this baseline.
+- For keypad sizes below baseline (for example `1x1`), keys stretch to fill the baseline body footprint.
 
 Mobile (primary direction):
 - Keep calculator body width fixed.

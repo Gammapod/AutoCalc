@@ -86,15 +86,32 @@
         --desktop-key-height: clamp(46px, 5.6vh, 56px);
         --desktop-key-min-width: clamp(44px, 5.5vw, 62px);
         --desktop-key-gap: var(--gap);
+        --desktop-baseline-rows: 2;
+        --desktop-baseline-cols: 5;
         --desktop-calc-cols: 1;
         --desktop-calc-rows: 1;
         --desktop-calc-horizontal-chrome: 32px;
+        --desktop-calc-vertical-chrome: 260px;
+        --desktop-baseline-keypad-height: calc(
+          (var(--desktop-baseline-rows) * var(--desktop-key-height)) +
+          ((var(--desktop-baseline-rows) - 1) * var(--desktop-key-gap))
+        );
         --desktop-calc-target-width: calc(
           (var(--desktop-calc-cols) * var(--desktop-key-min-width)) +
           ((var(--desktop-calc-cols) - 1) * var(--desktop-key-gap)) +
           var(--desktop-calc-horizontal-chrome)
         );
+        --desktop-baseline-width: calc(
+          (var(--desktop-baseline-cols) * var(--desktop-key-min-width)) +
+          ((var(--desktop-baseline-cols) - 1) * var(--desktop-key-gap)) +
+          var(--desktop-calc-horizontal-chrome)
+        );
+        --desktop-baseline-calc-height: calc(
+          var(--desktop-baseline-keypad-height) + var(--desktop-calc-vertical-chrome)
+        );
         --desktop-calc-width: var(--desktop-calc-target-width);
+        --desktop-calc-min-height: var(--desktop-baseline-calc-height);
+        --desktop-visualizer-width: var(--desktop-calc-width);
       }
 
       * {
@@ -530,10 +547,12 @@
 
       body[data-ui-shell="desktop"] .calc {
         width: var(--desktop-calc-width);
+        min-height: var(--desktop-calc-min-height);
         margin-inline: auto;
         transform-origin: center bottom;
         transition:
           width 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          min-height 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
           padding 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
       }
 
@@ -940,8 +959,16 @@
         margin-inline: auto;
         transform-origin: center bottom;
         transition:
+          width 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          height 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
           grid-template-columns 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
           grid-template-rows 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
+      }
+
+      /* Visualizer is currently body-coupled; keep a dedicated width token for future decoupling. */
+      body[data-ui-shell="desktop"] [data-display-window] {
+        width: min(100%, var(--desktop-visualizer-width));
+        margin-inline: auto;
       }
 
       [data-keys][data-keypad-grow="row"] {

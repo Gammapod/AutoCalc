@@ -52,6 +52,44 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       true,
       "desktop render sets calculated body width",
     );
+    assert.equal(
+      calcBody?.style.getPropertyValue("--desktop-calc-min-height").endsWith("px"),
+      true,
+      "desktop render sets calculated minimum body height",
+    );
+    assert.equal(
+      calcBody?.style.getPropertyValue("--desktop-visualizer-width"),
+      calcBody?.style.getPropertyValue("--desktop-calc-width"),
+      "desktop visualizer width is coupled to body width token",
+    );
+    assert.equal(
+      keys?.style.gridTemplateRows.includes("minmax(var(--desktop-key-height), 1fr)"),
+      true,
+      "desktop below-baseline rows stretch to fill baseline keypad height",
+    );
+    assert.equal(
+      keys?.style.height.endsWith("px"),
+      true,
+      "desktop below-baseline rows apply explicit baseline keypad height",
+    );
+
+    const widthAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
+    const heightAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
+    const baselineState = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 2 });
+    renderer.render(baselineState, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    const widthAtBaseline = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
+    const heightAtBaseline = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
+    assert.equal(
+      keys?.style.gridTemplateRows.includes("repeat(2, var(--desktop-key-height))"),
+      true,
+      "desktop baseline rows use fixed-height row tracks",
+    );
+    assert.equal(keys?.style.height, "", "desktop baseline rows do not force stretch height");
+    assert.equal(widthAtBaseline >= widthAtOneByOne, true, "desktop baseline width is not smaller than 1x1 width floor");
+    assert.equal(heightAtBaseline >= heightAtOneByOne, true, "desktop baseline height is not smaller than 1x1 height floor");
 
     const grown = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 3 });
     renderer.render(grown, dispatch, {
@@ -59,11 +97,32 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       inputBlocked: false,
     });
     assert.equal(keys?.dataset.keypadGrow ?? "", "", "desktop suppresses keypad-only grow animation marker");
-    assert.equal(calcBody?.dataset.keypadGrow, "both", "desktop keeps unified calc body grow marker");
+    assert.equal(
+      ["row", "column", "both"].includes(calcBody?.dataset.keypadGrow ?? ""),
+      true,
+      "desktop keeps unified calc body grow marker",
+    );
     const animatedSlots = keys ? Array.from(keys.children).filter((el) => (el as HTMLElement).classList.contains("keypad-slot-enter")) : [];
     assert.equal(animatedSlots.length, 0, "desktop suppresses slot-enter animations during keypad growth");
     assert.equal(keys?.style.getPropertyValue("--desktop-calc-cols"), "4", "desktop sizing vars update after growth");
     assert.equal(keys?.style.getPropertyValue("--desktop-calc-rows"), "3", "desktop row var updates after growth");
+
+    const widthAfterGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
+    const heightAfterGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
+    const wide = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 6, rows: 2 });
+    renderer.render(wide, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    const widthAfterWideGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
+    assert.equal(widthAfterWideGrowth > widthAfterGrowth, true, "desktop width grows once columns exceed 2x5 baseline");
+    const tall = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 3 });
+    renderer.render(tall, dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    const heightAfterTallGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
+    assert.equal(heightAfterTallGrowth > heightAtBaseline, true, "desktop min-height grows once rows exceed 2x5 baseline");
 
     const keyButton = harness.root.querySelector<HTMLButtonElement>(".key[data-key='++']");
     assert.ok(keyButton, "calculator key exists after desktop render");
