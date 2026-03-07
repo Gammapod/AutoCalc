@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { buttonRegistry } from "../src/domain/buttonRegistry.js";
+import { keyRuntimeCatalog } from "../src/content/keyRuntimeCatalog.js";
 import { isButtonUnlocked, iterUnlockedButtons, setButtonUnlocked } from "../src/domain/buttonStateAccess.js";
 import { initialState } from "../src/domain/state.js";
 
@@ -23,6 +24,11 @@ export const runButtonRegistryContractTests = (): void => {
     registryUnlockKeys,
     runtimeKeys,
     "registry unlock buckets must exactly match runtime unlock-state keys",
+  );
+  assert.deepEqual(
+    registryUnlockKeys,
+    sort(keyRuntimeCatalog.map((entry) => entry.key)),
+    "runtime key catalog must stay parity-aligned with button registry keys",
   );
 
   const defaultUnlockedByRegistry = sort(buttonRegistry.filter((entry) => entry.defaultUnlocked).map((entry) => entry.key));

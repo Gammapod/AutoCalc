@@ -24,6 +24,7 @@ import { isKeyUnlocked } from "./keyUnlocks.js";
 import { clearOperationEntry, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import { CHECKLIST_UNLOCK_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import { isDigitKey, isOperatorKey } from "./buttonRegistry.js";
+import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
 import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, GameState, Key, RationalValue, RollEntry, SlotOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 
@@ -432,35 +433,23 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   const preprocessed = preprocessForActiveRoll(state, key);
   const keyed = isKeyUnlocked(preprocessed, key) ? incrementKeyPressCount(preprocessed, key) : preprocessed;
 
-  if (isDigit(key)) {
-    return applyDigit(keyed, key);
-  }
-  if (isOperator(key)) {
-    return applyOperator(keyed, key);
-  }
-  if (key === "=") {
-    return applyEquals(keyed);
-  }
-  if (key === "++") {
-    return applyIncrement(keyed);
-  }
-  if (key === "--") {
-    return applyDecrement(keyed);
-  }
-  if (key === "C") {
-    return applyC(keyed);
-  }
-  if (key === "CE") {
-    return applyCE(keyed);
-  }
-  if (key === "UNDO") {
-    return applyUnlocks(applyUndo(keyed), unlockCatalog);
-  }
-  if (key === "GRAPH") {
-    return keyed;
-  }
-  if (key === "NEG") {
-    return applyNegate(keyed);
-  }
-  return keyed;
+  const handlers: Record<KeyActionHandlerId, (nextState: GameState, currentKey: Key) => GameState> = {
+    apply_digit: (nextState, currentKey) => (isDigit(currentKey) ? applyDigit(nextState, currentKey) : nextState),
+    apply_operator: (nextState, currentKey) => (isOperator(currentKey) ? applyOperator(nextState, currentKey) : nextState),
+    apply_execute: (nextState) => nextState,
+    apply_utility: (nextState) => nextState,
+    apply_visualizer_noop: (nextState) => nextState,
+    apply_toggle_noop: (nextState) => nextState,
+    apply_noop: (nextState) => nextState,
+    apply_negate: (nextState) => applyNegate(nextState),
+    apply_clear_all: (nextState) => applyC(nextState),
+    apply_clear_entry: (nextState) => applyCE(nextState),
+    apply_undo: (nextState) => applyUnlocks(applyUndo(nextState), unlockCatalog),
+    apply_equals: (nextState) => applyEquals(nextState),
+    apply_increment: (nextState) => applyIncrement(nextState),
+    apply_decrement: (nextState) => applyDecrement(nextState),
+  };
+
+  const handlerId = resolveKeyActionHandlerId(key);
+  return handlers[handlerId](keyed, key);
 };

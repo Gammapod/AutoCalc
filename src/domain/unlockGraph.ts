@@ -1,7 +1,12 @@
-import type { GameState, Key, UnlockDefinition } from "./types.js";
+import type { GameState, Key, UnlockDefinition, UnlockEffect } from "./types.js";
 import { getPredicateCapabilitySpec, type CapabilityId } from "./predicateCapabilitySpec.js";
+import {
+  capabilityToFunctionProviderIds,
+  staticFunctionCapabilityProviders,
+  type FunctionSufficiencySpec,
+} from "./functionCapabilityProviders.js";
 
-export type GraphNodeType = "key" | "function" | "condition" | "sufficient_set";
+export type GraphNodeType = "key" | "function" | "condition" | "sufficient_set" | "effect_target";
 export type GraphEdgeType = "necessary" | "sufficient" | "requires" | "unlocks";
 
 export type GraphNode = {
@@ -30,13 +35,18 @@ type FunctionRule = {
   isSatisfied: (keys: Set<Key>) => boolean;
 };
 
-type SufficientClause = readonly Key[];
-type FunctionSufficiencySpec = readonly SufficientClause[];
+export type UnlockTargetDescriptor = {
+  id: string;
+  type: "key" | "effect_target";
+  label: string;
+  key?: Key;
+};
 
 export type ConditionStatus = {
   unlockId: string;
   reachable: boolean;
   unlockedKey: Key | null;
+  unlockedTargets: string[];
   requiredFunctions: string[];
   missingFunctions: string[];
 };
@@ -47,6 +57,8 @@ export type UnlockGraphAnalysis = {
   blockedConditionIds: string[];
   unlockedKeysReached: Key[];
   unreachableKeys: Key[];
+  reachedEffectTargets: string[];
+  unreachableEffectTargets: string[];
   conditionStatuses: ConditionStatus[];
   keyCycles: Key[][];
 };
@@ -56,9 +68,6 @@ export type UnlockGraphReport = {
   graph: UnlockGraph;
   analysis: UnlockGraphAnalysis;
 };
-
-const DIGIT_KEYS: Key[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-const OPERATOR_KEYS: Key[] = ["+", "-", "*", "/", "#", "\u27E1"];
 
 const compareKeys = (a: Key, b: Key): number => a.localeCompare(b);
 
@@ -111,106 +120,69 @@ const dedupeGraphEdges = (edges: GraphEdge[]): GraphEdge[] => {
   return deduped;
 };
 
-const operatorClauses = (): Key[][] => OPERATOR_KEYS.map((operator) => [operator]);
-
-const staticFunctionRules: FunctionRule[] = [
-  defineFunctionRule({
-    id: "fn.execute_activation",
-    label: "execute_activation",
-    rule: "= or ++ or -- is unlocked",
-    sufficiency: [["="], ["++"], ["--"]],
-  }),
-  defineFunctionRule({
-    id: "fn.step_plus_one",
-    label: "step_plus_one",
-    rule: "++ is unlocked OR (= and + and 1 are unlocked)",
-    sufficiency: [["++"], ["=", "+"]],
-  }),
-  defineFunctionRule({
-    id: "fn.step_minus_one",
-    label: "step_minus_one",
-    rule: "-- is unlocked OR (= and - and 1) OR (= and + and NEG and 1)",
-    sufficiency: [["--"], ["=", "-"], ["=", "+", "NEG"]],
-  }),
-  defineFunctionRule({
-    id: "fn.reset_to_zero",
-    label: "reset_to_zero",
-    rule: "C or UNDO is unlocked",
-    sufficiency: [["C"], ["UNDO"]],
-  }),
-  defineFunctionRule({
-    id: "fn.allocator_return_press",
-    label: "allocator_return_press",
-    rule: "allocator RETURN action is available",
-    sufficiency: [["++"]],
-  }),
-  defineFunctionRule({
-    id: "fn.allocator_allocate_press",
-    label: "allocator_allocate_press",
-    rule: "allocator Allocate action is available",
-    sufficiency: [["++"]],
-  }),
-  defineFunctionRule({
-    id: "fn.form_operator_plus_operand",
-    label: "form_operator_plus_operand",
-    rule: "at least one operator key and at least one value key are unlocked",
-    sufficiency: operatorClauses(),
-  }),
-  defineFunctionRule({
-    id: "fn.roll_growth",
-    label: "roll_growth",
-    rule: "execute activation and at least one growth-producing operation",
-    sufficiency: [
-      ["=", "++"],
-      ["=", "--"],
-      ...operatorClauses().map((clause) => ["=", ...clause] as Key[]),
-    ],
-  }),
-  defineFunctionRule({
-    id: "fn.roll_equal_run",
-    label: "roll_equal_run",
-    rule: "++ is unlocked OR (= and one of +,-,*,/ is unlocked)",
-    sufficiency: [["++"], ["=", "+"], ["=", "-"], ["=", "*"], ["=", "/"]],
-  }),
-  defineFunctionRule({
-    id: "fn.roll_incrementing_run",
-    label: "roll_incrementing_run",
-    rule: "++ is unlocked OR (= and + are unlocked)",
-    sufficiency: [["++"], ["=", "+"]],
-  }),
-  defineFunctionRule({
-    id: "fn.roll_alternating_sign_constant_abs",
-    label: "roll_alternating_sign_constant_abs",
-    rule: "= and + and NEG and at least one value key are unlocked",
-    sufficiency: [["=", "+", "NEG"]],
-  }),
-  defineFunctionRule({
-    id: "fn.roll_constant_step_run",
-    label: "roll_constant_step_run",
-    rule: "execute activation and at least one operator are unlocked",
-    sufficiency: [["=", "+"], ["=", "-"], ["=", "*"], ["=", "/"], ["=", "#"], ["=", "\u27E1"], ["++"], ["--"]],
-  }),
-  defineFunctionRule({
-    id: "fn.division_by_zero_error",
-    label: "division_by_zero_error",
-    rule: "= and / and 0 are unlocked",
-    sufficiency: [["=", "/", "0"]],
-  }),
-  defineFunctionRule({
-    id: "fn.euclid_division_operator",
-    label: "euclid_division_operator",
-    rule: "# is unlocked",
-    sufficiency: [["#"]],
-  }),
-];
-
 const pressFunctionId = (key: Key): string => `fn.press_target_key.${key}`;
+
+const unlockEffectTarget = (effect: UnlockEffect): UnlockTargetDescriptor => {
+  if (
+    effect.type === "unlock_digit" ||
+    effect.type === "unlock_slot_operator" ||
+    effect.type === "unlock_utility" ||
+    effect.type === "unlock_execution"
+  ) {
+    return {
+      id: `key.${effect.key}`,
+      type: "key",
+      label: effect.key,
+      key: effect.key,
+    };
+  }
+  if (effect.type === "increase_allocator_max_points") {
+    return { id: "effect.allocator.max_points", type: "effect_target", label: "allocator.max_points" };
+  }
+  if (effect.type === "increase_max_total_digits") {
+    return { id: "effect.calculator.max_total_digits", type: "effect_target", label: "calculator.max_total_digits" };
+  }
+  if (effect.type === "unlock_second_slot") {
+    return { id: "effect.calculator.second_slot", type: "effect_target", label: "calculator.second_slot" };
+  }
+  if (effect.type === "upgrade_keypad_column") {
+    return { id: "effect.keypad.columns", type: "effect_target", label: "keypad.columns" };
+  }
+  if (effect.type === "upgrade_keypad_row") {
+    return { id: "effect.keypad.rows", type: "effect_target", label: "keypad.rows" };
+  }
+  return {
+    id: `effect.move_key_to_coord.${effect.key}.r${effect.row}.c${effect.col}`,
+    type: "effect_target",
+    label: `move(${effect.key})@r${effect.row},c${effect.col}`,
+  };
+};
+
+const unlockTargetsFromEffect = (unlock: UnlockDefinition): UnlockTargetDescriptor[] => [unlockEffectTarget(unlock.effect)];
+
+const unlockedKeyFromEffect = (unlock: UnlockDefinition): Key | null => {
+  const target = unlockEffectTarget(unlock.effect);
+  return target.type === "key" ? target.key ?? null : null;
+};
+
+const allKnownEffectTargets = (catalog: UnlockDefinition[]): UnlockTargetDescriptor[] => {
+  const descriptors = new Map<string, UnlockTargetDescriptor>();
+  for (const unlock of catalog) {
+    const target = unlockEffectTarget(unlock.effect);
+    if (target.type !== "effect_target") {
+      continue;
+    }
+    descriptors.set(target.id, target);
+  }
+  return [...descriptors.values()].sort((a, b) => a.id.localeCompare(b.id));
+};
 
 const allKnownKeys = (catalog: UnlockDefinition[], startingKeys: Key[]): Key[] => {
   const keys = new Set<Key>(startingKeys);
   for (const unlock of catalog) {
-    if (unlock.effect.type === "unlock_digit" || unlock.effect.type === "unlock_slot_operator" || unlock.effect.type === "unlock_utility" || unlock.effect.type === "unlock_execution") {
-      keys.add(unlock.effect.key);
+    const target = unlockEffectTarget(unlock.effect);
+    if (target.type === "key" && target.key) {
+      keys.add(target.key);
     }
     if (unlock.effect.type === "move_key_to_coord") {
       keys.add(unlock.effect.key);
@@ -219,36 +191,12 @@ const allKnownKeys = (catalog: UnlockDefinition[], startingKeys: Key[]): Key[] =
       keys.add(unlock.predicate.key);
     }
   }
-  for (const fn of staticFunctionRules) {
-    for (const key of collectContributorKeys(fn.sufficiency)) {
+  for (const provider of staticFunctionCapabilityProviders) {
+    for (const key of collectContributorKeys(provider.sufficiency)) {
       keys.add(key);
     }
   }
   return [...keys].sort();
-};
-
-const unlockedKeyFromEffect = (unlock: UnlockDefinition): Key | null => {
-  if (unlock.effect.type === "unlock_digit" || unlock.effect.type === "unlock_slot_operator" || unlock.effect.type === "unlock_utility" || unlock.effect.type === "unlock_execution") {
-    return unlock.effect.key;
-  }
-  return null;
-};
-
-const capabilityToFunctionIds: Record<Exclude<CapabilityId, "press_target_key">, string[]> = {
-  execute_activation: ["fn.execute_activation"],
-  step_plus_one: ["fn.step_plus_one"],
-  step_minus_one: ["fn.step_minus_one"],
-  reset_to_zero: ["fn.reset_to_zero"],
-  form_operator_plus_operand: ["fn.form_operator_plus_operand"],
-  allocator_return_press: ["fn.allocator_return_press"],
-  allocator_allocate_press: ["fn.allocator_allocate_press"],
-  roll_growth: ["fn.roll_growth"],
-  roll_equal_run: ["fn.roll_equal_run"],
-  roll_incrementing_run: ["fn.roll_incrementing_run"],
-  roll_alternating_sign_constant_abs: ["fn.roll_alternating_sign_constant_abs"],
-  roll_constant_step_run: ["fn.roll_constant_step_run"],
-  division_by_zero_error: ["fn.division_by_zero_error"],
-  euclid_division_operator: ["fn.euclid_division_operator"],
 };
 
 const resolveFunctionIdsForCapability = (unlock: UnlockDefinition, capability: CapabilityId): string[] => {
@@ -260,7 +208,7 @@ const resolveFunctionIdsForCapability = (unlock: UnlockDefinition, capability: C
     }
     return [pressFunctionId(unlock.predicate.key)];
   }
-  return capabilityToFunctionIds[capability];
+  return capabilityToFunctionProviderIds[capability];
 };
 
 const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition, functionRules: Map<string, FunctionRule>): string[] => {
@@ -290,7 +238,17 @@ const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition, functionRules: M
 };
 
 const buildFunctionRules = (catalog: UnlockDefinition[]): Map<string, FunctionRule> => {
-  const map = new Map<string, FunctionRule>(staticFunctionRules.map((rule) => [rule.id, rule]));
+  const map = new Map<string, FunctionRule>(
+    staticFunctionCapabilityProviders.map((provider) => [
+      provider.id,
+      defineFunctionRule({
+        id: provider.id,
+        label: provider.label,
+        rule: provider.rule,
+        sufficiency: provider.sufficiency,
+      }),
+    ]),
+  );
   for (const unlock of catalog) {
     if (unlock.predicate.type !== "key_press_count_at_least") {
       continue;
@@ -313,6 +271,7 @@ const buildFunctionRules = (catalog: UnlockDefinition[]): Map<string, FunctionRu
 export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[]): UnlockGraph => {
   const functionRules = buildFunctionRules(catalog);
   const keys = allKnownKeys(catalog, startingKeys);
+  const effectTargets = allKnownEffectTargets(catalog);
 
   const keyNodes: GraphNode[] = keys.map((key) => ({
     id: `key.${key}`,
@@ -325,6 +284,11 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
     label: rule.label,
   }));
   const sufficientSetNodes: GraphNode[] = [];
+  const effectTargetNodes: GraphNode[] = effectTargets.map((target) => ({
+    id: target.id,
+    type: "effect_target",
+    label: target.label,
+  }));
   const conditionNodes: GraphNode[] = catalog.map((unlock) => ({
     id: `cond.${unlock.id}`,
     type: "condition",
@@ -383,18 +347,18 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
         label: rule?.rule,
       });
     }
-    const unlockedKey = unlockedKeyFromEffect(unlock);
-    if (unlockedKey) {
+
+    for (const target of unlockTargetsFromEffect(unlock)) {
       edges.push({
         from: conditionNodeId,
-        to: `key.${unlockedKey}`,
+        to: target.id,
         type: "unlocks",
       });
     }
   }
 
   return {
-    nodes: [...keyNodes, ...functionNodes, ...sufficientSetNodes, ...conditionNodes],
+    nodes: [...keyNodes, ...functionNodes, ...sufficientSetNodes, ...effectTargetNodes, ...conditionNodes],
     edges: dedupeGraphEdges(edges),
   };
 };
@@ -462,7 +426,9 @@ const findKeyCycles = (edges: Array<[Key, Key]>, keys: Key[]): Key[][] => {
 export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[]): UnlockGraphAnalysis => {
   const functionRules = buildFunctionRules(catalog);
   const knownKeys = allKnownKeys(catalog, startingKeys);
+  const knownEffectTargets = allKnownEffectTargets(catalog).map((target) => target.id);
   const unlockedKeys = new Set<Key>(startingKeys);
+  const reachedEffectTargets = new Set<string>();
   const reachableConditionIds = new Set<string>();
   const conditionStatuses: ConditionStatus[] = [];
 
@@ -479,9 +445,13 @@ export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Ke
         continue;
       }
       reachableConditionIds.add(unlock.id);
-      const unlockedKey = unlockedKeyFromEffect(unlock);
-      if (unlockedKey && !unlockedKeys.has(unlockedKey)) {
-        unlockedKeys.add(unlockedKey);
+      for (const target of unlockTargetsFromEffect(unlock)) {
+        if (target.type === "key" && target.key && !unlockedKeys.has(target.key)) {
+          unlockedKeys.add(target.key);
+        }
+        if (target.type === "effect_target") {
+          reachedEffectTargets.add(target.id);
+        }
       }
       changed = true;
     }
@@ -494,10 +464,12 @@ export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Ke
   for (const unlock of catalog) {
     const requiredFunctions = requiredFunctionIdsForUnlock(unlock, functionRules);
     const missingFunctions = requiredFunctions.filter((functionId) => !functionRules.get(functionId)?.isSatisfied(unlockedKeys));
+    const targets = unlockTargetsFromEffect(unlock);
     conditionStatuses.push({
       unlockId: unlock.id,
       reachable: reachableConditionIds.has(unlock.id),
       unlockedKey: unlockedKeyFromEffect(unlock),
+      unlockedTargets: targets.map((target) => target.id).sort(),
       requiredFunctions,
       missingFunctions,
     });
@@ -518,6 +490,7 @@ export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Ke
   }
   const keyCycles = findKeyCycles(keyDependencyEdges, allKnownKeys(catalog, startingKeys));
   const unreachableKeys = knownKeys.filter((key) => !unlockedKeys.has(key));
+  const unreachableEffectTargets = knownEffectTargets.filter((targetId) => !reachedEffectTargets.has(targetId));
 
   return {
     startingKeys: [...startingKeys].sort(compareKeys),
@@ -525,6 +498,8 @@ export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Ke
     blockedConditionIds,
     unlockedKeysReached: [...unlockedKeys].sort(compareKeys),
     unreachableKeys,
+    reachedEffectTargets: [...reachedEffectTargets].sort(),
+    unreachableEffectTargets,
     conditionStatuses,
     keyCycles,
   };
@@ -546,7 +521,7 @@ export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
       acc[node.type] += 1;
       return acc;
     },
-    { key: 0, function: 0, condition: 0, sufficient_set: 0 },
+    { key: 0, function: 0, condition: 0, sufficient_set: 0, effect_target: 0 },
   );
   const edgeCounts = report.graph.edges.reduce(
     (acc, edge) => {
@@ -567,7 +542,7 @@ export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
     `Generated: ${report.generatedAtIso}`,
     "",
     "Graph Summary",
-    `- Nodes: key=${nodeCounts.key}, function=${nodeCounts.function}, condition=${nodeCounts.condition}, sufficient_set=${nodeCounts.sufficient_set}`,
+    `- Nodes: key=${nodeCounts.key}, function=${nodeCounts.function}, condition=${nodeCounts.condition}, sufficient_set=${nodeCounts.sufficient_set}, effect_target=${nodeCounts.effect_target}`,
     `- Edges: necessary=${edgeCounts.necessary}, sufficient=${edgeCounts.sufficient}, requires=${edgeCounts.requires}, unlocks=${edgeCounts.unlocks}`,
     "",
     "Progression Summary",
@@ -576,6 +551,8 @@ export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
     `- Blocked conditions: ${blocked.length}`,
     `- Keys reachable from simulation: ${report.analysis.unlockedKeysReached.join(", ") || "(none)"}`,
     `- Unreachable keys: ${report.analysis.unreachableKeys.join(", ") || "(none)"}`,
+    `- Effect targets reached: ${report.analysis.reachedEffectTargets.join(", ") || "(none)"}`,
+    `- Effect targets unreachable: ${report.analysis.unreachableEffectTargets.join(", ") || "(none)"}`,
     "",
     "Blocked Conditions",
     ...(blockedLines.length > 0 ? blockedLines : ["- (none)"]),
@@ -745,6 +722,7 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
   const keyNodes = sortNodes(orderedNodes.filter((node) => node.type === "key"));
   const functionNodes = sortNodes(orderedNodes.filter((node) => node.type === "function"));
   const conditionNodes = sortNodes(orderedNodes.filter((node) => node.type === "condition"));
+  const effectTargetNodes = sortNodes(orderedNodes.filter((node) => node.type === "effect_target"));
   const sufficientSetNodes = sortNodes(orderedNodes.filter((node) => node.type === "sufficient_set"));
 
   const appendNodeSubgraph = (title: string, nodes: GraphNode[], indent = "  "): void => {
@@ -768,6 +746,9 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
   }
   lines.push("  end");
 
+  if (effectTargetNodes.length > 0) {
+    appendNodeSubgraph("EffectTargets", effectTargetNodes);
+  }
   appendNodeSubgraph("Functions", functionNodes);
   appendNodeSubgraph("Conditions", conditionNodes);
 
@@ -787,7 +768,6 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
     lines.push(`  ${fromAlias} -->|${edge.type}| ${toAlias}`);
   }
 
-  // Mirror requirement links so the graph can be read from function -> condition as well.
   const mirroredRequirementLines = new Set<string>();
   for (const edge of orderedEdges) {
     if (edge.type !== "requires") {
@@ -823,7 +803,8 @@ export const filterUnlockGraphToIncomingUnlockKeys = (
   const incomingUnlockKeyNodeIds = new Set(
     graph.edges
       .filter((edge) => edge.type === "unlocks")
-      .map((edge) => edge.to),
+      .map((edge) => edge.to)
+      .filter((nodeId) => nodesById.get(nodeId)?.type === "key"),
   );
 
   const seedNodeIds = new Set<string>();
@@ -897,3 +878,4 @@ export const deriveUnlockedKeysFromState = (state: GameState): Key[] => {
   }
   return keys.sort(compareKeys);
 };
+

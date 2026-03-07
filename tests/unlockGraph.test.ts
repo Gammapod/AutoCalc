@@ -17,6 +17,7 @@ export const runUnlockGraphTests = (): void => {
   const graph = buildUnlockGraph(unlockCatalog, startingKeys);
 
   const conditionNodes = graph.nodes.filter((node) => node.type === "condition");
+  const effectTargetNodes = graph.nodes.filter((node) => node.type === "effect_target");
   const unlockEdges = graph.edges.filter((edge) => edge.type === "unlocks");
   const requireEdges = graph.edges.filter((edge) => edge.type === "requires");
   const sufficientEdges = graph.edges.filter((edge) => edge.type === "sufficient");
@@ -27,7 +28,8 @@ export const runUnlockGraphTests = (): void => {
     unlockCatalog.length,
     "each unlock definition should map to exactly one condition node",
   );
-  assert.ok(unlockEdges.length > 0, "expected unlock edges from conditions to keys");
+  assert.ok(effectTargetNodes.length > 0, "expected graph to include non-key effect target nodes");
+  assert.ok(unlockEdges.length > 0, "expected unlock edges from conditions to targets");
   assert.ok(requireEdges.length > 0, "expected requirement edges from conditions to functions");
   assert.ok(sufficientEdges.length > 0, "expected sufficient edges from keys or sufficient-set nodes");
   assert.ok(necessaryEdges.length > 0, "expected necessary edges for multi-key sufficient sets");
@@ -45,6 +47,10 @@ export const runUnlockGraphTests = (): void => {
     analysis.unreachableKeys.includes("NEG"),
     "analysis should include keys with no unlock path as unreachable under current sufficiency rules",
   );
+  assert.ok(
+    analysis.reachedEffectTargets.includes("effect.allocator.max_points"),
+    "analysis should include reached non-key effect targets",
+  );
 
   const report = buildUnlockGraphReport(unlockCatalog, startingKeys, new Date("2026-03-01T00:00:00.000Z"));
   const formatted = formatUnlockGraphReport(report);
@@ -52,6 +58,7 @@ export const runUnlockGraphTests = (): void => {
   assert.match(formatted, /Generated: 2026-03-01T00:00:00.000Z/);
   assert.match(formatted, /Graph Summary/);
   assert.match(formatted, /sufficient_set=/);
+  assert.match(formatted, /effect_target=/);
   assert.match(formatted, /Edges: necessary=/);
 
   const filteredMermaid = formatUnlockGraphMermaid({
@@ -137,12 +144,15 @@ export const runUnlockGraphTests = (): void => {
       { id: "key.--", type: "key", label: "--" },
       { id: "key.A", type: "key", label: "A" },
       { id: "key.X", type: "key", label: "X" },
+      { id: "effect.allocator.max_points", type: "effect_target", label: "allocator.max_points" },
       { id: "fn.keep", type: "function", label: "keep" },
       { id: "fn.drop", type: "function", label: "drop" },
       { id: "cond.keep", type: "condition", label: "keep" },
+      { id: "cond.effect", type: "condition", label: "effect" },
     ],
     edges: [
       { from: "cond.keep", to: "key.A", type: "unlocks" },
+      { from: "cond.effect", to: "effect.allocator.max_points", type: "unlocks" },
       { from: "cond.keep", to: "fn.keep", type: "requires" },
       { from: "key.A", to: "fn.keep", type: "sufficient" },
       { from: "key.X", to: "fn.drop", type: "sufficient" },
@@ -152,6 +162,11 @@ export const runUnlockGraphTests = (): void => {
   assert.equal(filteredGraph.nodes.some((node) => node.id === "key.--"), false, "-- should be removed when it is not an incoming unlock target");
   assert.equal(filteredGraph.nodes.some((node) => node.id === "key.X"), false, "keys with no incoming unlock should be removed");
   assert.equal(filteredGraph.nodes.some((node) => node.id === "fn.drop"), false, "downstream dependencies of removed keys should be removed");
+  assert.equal(
+    filteredGraph.nodes.some((node) => node.id === "effect.allocator.max_points"),
+    false,
+    "non-key unlock targets should not be included in incoming-unlock-keys filter",
+  );
 
   const todoSpecCatalog: UnlockDefinition[] = [
     {

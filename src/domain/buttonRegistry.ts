@@ -1,52 +1,18 @@
-export type ButtonUnlockBucket =
-  | "valueExpression"
-  | "slotOperators"
-  | "utilities"
-  | "steps"
-  | "visualizers"
-  | "execution"
-  | "none";
+import {
+  keyRuntimeCatalog,
+  type KeyHandlerOverrideId,
+  type KeyRuntimeBehaviorKind,
+  type KeyRuntimeCatalogEntry,
+  type KeyRuntimeUnlockBucket,
+} from "../content/keyRuntimeCatalog.js";
 
-export type ButtonBehaviorKind = "digit" | "operator" | "execute" | "utility" | "visualizer" | "toggle" | "noop";
+export type ButtonUnlockBucket = KeyRuntimeUnlockBucket;
+export type ButtonBehaviorKind = KeyRuntimeBehaviorKind;
+export type ButtonHandlerOverrideId = KeyHandlerOverrideId;
+export type ButtonDefinition = KeyRuntimeCatalogEntry;
 
-export type ButtonDefinition = {
-  key: string;
-  category: string;
-  unlockBucket: ButtonUnlockBucket;
-  defaultUnlocked: boolean;
-  supportsPressCount: boolean;
-  behaviorKind: ButtonBehaviorKind;
-};
-
-export const buttonRegistry = [
-  { key: "0", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "1", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "2", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "3", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "4", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "5", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "6", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "7", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "8", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "9", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "NEG", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility" },
-  { key: "+", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "-", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "*", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "/", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "#", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "\u27E1", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "C", category: "utility", unlockBucket: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility" },
-  { key: "CE", category: "utility", unlockBucket: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility" },
-  { key: "UNDO", category: "utility", unlockBucket: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility" },
-  { key: "\u23EF", category: "step", unlockBucket: "steps", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "toggle" },
-  { key: "GRAPH", category: "visualizer", unlockBucket: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer" },
-  { key: "FEED", category: "visualizer", unlockBucket: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer" },
-  { key: "CIRCLE", category: "visualizer", unlockBucket: "visualizers", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "visualizer" },
-  { key: "=", category: "execution", unlockBucket: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute" },
-  { key: "++", category: "execution", unlockBucket: "execution", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "execute" },
-  { key: "--", category: "execution", unlockBucket: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute" },
-] as const satisfies readonly ButtonDefinition[];
+// Compatibility adapter: runtime button registry is now sourced from keyRuntimeCatalog.
+export const buttonRegistry = keyRuntimeCatalog;
 
 export type ButtonRegistryEntry = (typeof buttonRegistry)[number];
 export type ButtonKey = ButtonRegistryEntry["key"];

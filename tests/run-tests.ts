@@ -59,6 +59,7 @@ import { runV2RulesAdaptersTests } from "./v2Rules.adapters.test.js";
 import { runUiIntegrationMobileShellTests } from "./uiIntegration.mobileShell.test.js";
 import { runUiIntegrationDesktopShellTests } from "./uiIntegration.desktopShell.test.js";
 import { runButtonRegistryContractTests } from "./buttonRegistry.contract.test.js";
+import { runKeyActionHandlersContractTests } from "./keyActionHandlers.contract.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -122,6 +123,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/slot-input-target-spec", runContractsSlotInputTargetSpecTests],
   ["v2/rules-adapters", runV2RulesAdaptersTests],
   ["domain/button-registry-contract", runButtonRegistryContractTests],
+  ["domain/key-action-handlers-contract", runKeyActionHandlersContractTests],
 ];
 
 let passed = 0;

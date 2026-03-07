@@ -4,8 +4,10 @@ import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import {
   deriveCatalogPredicateCapabilitySpecs,
   getPredicateCapabilitySpec,
+  type CapabilityId,
   type PredicateType,
 } from "../src/domain/predicateCapabilitySpec.js";
+import { capabilityToFunctionProviderIds, staticFunctionCapabilityProviders } from "../src/domain/functionCapabilityProviders.js";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
 import { evaluateUnlockPredicate } from "../src/domain/unlockEngine.js";
@@ -341,6 +343,29 @@ export const runPredicateCapabilitySpecTests = (): void => {
     const derivedEntry = derivedByType.get(predicateType);
     assert.ok(derivedEntry?.usedInCatalog, `derived catalog list should include used predicate type ${predicateType}`);
     assert.equal(derivedEntry?.todo, false, `used predicate type ${predicateType} must not be marked TODO in derived report`);
+  }
+
+  const knownProviderFunctionIds = new Set(staticFunctionCapabilityProviders.map((provider) => provider.id));
+  for (const predicateType of catalogPredicateTypes) {
+    const spec = getPredicateCapabilitySpec(predicateType);
+    assert.ok(spec, `expected spec for predicate type ${predicateType}`);
+    for (const required of spec.necessary) {
+      const capability = required.capability as CapabilityId;
+      if (capability === "press_target_key") {
+        continue;
+      }
+      const mappedFunctionIds = capabilityToFunctionProviderIds[capability];
+      assert.ok(
+        mappedFunctionIds && mappedFunctionIds.length > 0,
+        `capability ${capability} must map to at least one function provider id`,
+      );
+      for (const functionId of mappedFunctionIds) {
+        assert.ok(
+          knownProviderFunctionIds.has(functionId),
+          `capability ${capability} maps to unknown function provider ${functionId}`,
+        );
+      }
+    }
   }
 
   for (const fixture of proofFixtures) {
