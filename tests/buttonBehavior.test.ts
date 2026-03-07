@@ -7,7 +7,7 @@ import {
   resetInputLockStateForTests,
   setSuppressClicksUntilForTests,
   shouldSuppressClickForTests,
-} from "../src/ui/render.js";
+} from "../src/ui/modules/calculatorModuleRenderer.js";
 import type { GameState, KeyCell } from "../src/domain/types.js";
 
 export const runButtonBehaviorTests = (): void => {

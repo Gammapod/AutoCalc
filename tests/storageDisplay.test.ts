@@ -4,7 +4,7 @@ import {
   buildStorageSortToggleSequence,
   getActiveStorageSortGroup,
   getStorageRowCount,
-} from "../src/ui/render.js";
+} from "../src/ui/modules/calculatorModuleRenderer.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
 

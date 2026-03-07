@@ -1,14 +1,14 @@
 export { buildReadModel } from "../domain/projections.js";
 export {
   renderWithShell,
-  createMobileShellRenderer,
+  createShellRenderer as createMobileShellRenderer,
   disposeShellRenderer,
   resetShellRuntimeForTests,
   canStartTouchRearrange,
   getMenuA11yState,
   shouldCloseMenuFromSwipe,
-} from "./shells/mobileShellRenderer.js";
-import { createMobileShellRenderer } from "./shells/mobileShellRenderer.js";
+} from "./shellRender.js";
+import { createShellRenderer as createMobileShellRenderer } from "./shellRender.js";
 import { createDesktopShellRenderer } from "./shells/desktopShellRenderer.js";
 export { buildShellViewModel } from "./shellModel.js";
 export {

@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
-import { render as renderLegacy } from "../src/ui/render.js";
 import { render as renderModule } from "../src/ui/modules/calculatorModuleRenderer.js";
 import {
   applyDesktopLayoutSnapshot,
@@ -21,10 +20,6 @@ export const runUiLayoutAdapterTests = (): void => {
   ];
   for (const dimension of dimensions) {
     const harness = installDomHarness("http://localhost:4173/index.html?ui=desktop");
-    let expectedColumns = "";
-    let expectedRows = "";
-    let expectedCalcWidth = "";
-    let expectedVisualizerWidth = "";
     try {
       harness.document.body.setAttribute("data-ui-shell", "desktop");
       const state = reducer(initialState(), {
@@ -32,52 +27,33 @@ export const runUiLayoutAdapterTests = (): void => {
         columns: dimension.columns,
         rows: dimension.rows,
       });
-
-      renderLegacy(harness.root, state, noopDispatch, {
+      renderModule(harness.root, state, noopDispatch, {
         interactionMode: "calculator",
         inputBlocked: false,
         skipChecklist: true,
         skipGraph: true,
       });
-
-      const keysA = harness.root.querySelector<HTMLElement>("[data-keys]");
-      const calcA = harness.root.querySelector<HTMLElement>(".calc");
-      assert.ok(keysA && calcA, "expected keys/calc elements");
-      expectedColumns = keysA.style.gridTemplateColumns;
-      expectedRows = keysA.style.gridTemplateRows;
-      expectedCalcWidth = calcA.style.getPropertyValue("--desktop-calc-width");
-      expectedVisualizerWidth = calcA.style.getPropertyValue("--desktop-visualizer-width");
-    } finally {
-      harness.teardown();
-    }
-
-    const harnessB = installDomHarness("http://localhost:4173/index.html?ui=desktop");
-    try {
-      harnessB.document.body.setAttribute("data-ui-shell", "desktop");
-      const state = reducer(initialState(), {
-        type: "SET_KEYPAD_DIMENSIONS",
-        columns: dimension.columns,
-        rows: dimension.rows,
-      });
-      renderModule(harnessB.root, state, noopDispatch, {
-        interactionMode: "calculator",
-        inputBlocked: false,
-        skipChecklist: true,
-        skipGraph: true,
-      });
-      const keysB = harnessB.root.querySelector<HTMLElement>("[data-keys]");
-      const calcB = harnessB.root.querySelector<HTMLElement>(".calc");
-      assert.ok(keysB && calcB, "expected keys/calc elements for module renderer");
-      assert.equal(expectedColumns, keysB.style.gridTemplateColumns, "grid columns parity across renderers");
-      assert.equal(expectedRows, keysB.style.gridTemplateRows, "grid rows parity across renderers");
-      assert.equal(expectedCalcWidth, calcB.style.getPropertyValue("--desktop-calc-width"), "desktop calc width var parity across renderers");
+      const keys = harness.root.querySelector<HTMLElement>("[data-keys]");
+      const calc = harness.root.querySelector<HTMLElement>(".calc");
+      assert.ok(keys && calc, "expected keys/calc elements for module renderer");
       assert.equal(
-        expectedVisualizerWidth,
-        calcB.style.getPropertyValue("--desktop-visualizer-width"),
-        "desktop visualizer width var parity across renderers",
+        keys.style.gridTemplateColumns.length > 0,
+        true,
+        "grid columns are set by module renderer",
+      );
+      assert.equal(keys.style.gridTemplateRows.length > 0, true, "grid rows are set by module renderer");
+      assert.equal(
+        calc.style.getPropertyValue("--desktop-calc-width").endsWith("px"),
+        true,
+        "desktop calc width var is set by module renderer",
+      );
+      assert.equal(
+        calc.style.getPropertyValue("--desktop-visualizer-width").endsWith("px"),
+        true,
+        "desktop visualizer width var is set by module renderer",
       );
     } finally {
-      harnessB.teardown();
+      harness.teardown();
     }
   }
 

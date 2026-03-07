@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION, initialState } from "../src/domain/state.js";
-import { createLocalStorageRepo } from "../src/infra/persistence/localStorageRepo.js";
-import { createRepository, loadFromRawSaveV2 } from "../src/persistence/repository.js";
+import { createLocalStorageRepo, loadFromRawSave } from "../src/infra/persistence/localStorageRepo.js";
 
 type MemoryStorage = {
   getItem: (key: string) => string | null;
@@ -24,22 +23,20 @@ const createMemoryStorage = (): MemoryStorage => {
 
 export const runV2PersistenceParityTests = (): void => {
   const storage = createMemoryStorage();
-  const legacyRepo = createLocalStorageRepo(storage);
-  const v2Repo = createRepository(storage);
+  const repo = createLocalStorageRepo(storage);
 
   const state = initialState();
-  legacyRepo.save(state);
+  repo.save(state);
 
   const raw = storage.getItem(SAVE_KEY);
-  assert.ok(raw, "legacy save writes payload");
+  assert.ok(raw, "save writes payload");
 
-  const legacyLoaded = legacyRepo.load();
-  const v2Loaded = v2Repo.load();
-  assert.deepEqual(v2Loaded, legacyLoaded, "v2 repository hydrates identical state to legacy repository");
+  const loaded = repo.load();
+  assert.deepEqual(loaded, state, "repository hydrates saved state");
 
   const parsed = JSON.parse(raw ?? "{}");
   assert.equal(parsed.schemaVersion, SAVE_SCHEMA_VERSION, "save schema version remains current");
 
-  const malformed = loadFromRawSaveV2("{");
-  assert.equal(malformed.state, null, "v2 raw loader rejects malformed JSON");
+  const malformed = loadFromRawSave("{");
+  assert.equal(malformed.state, null, "raw loader rejects malformed JSON");
 };

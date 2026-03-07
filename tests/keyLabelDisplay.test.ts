@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { formatKeyCellLabel, formatKeyLabel } from "../src/ui/render.js";
+import { formatKeyCellLabel } from "../src/ui/modules/calculatorModuleRenderer.js";
+import { formatKeyLabel } from "../src/ui/shared/readModel.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState, KeyCell } from "../src/domain/types.js";
 

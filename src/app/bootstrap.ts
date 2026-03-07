@@ -1,7 +1,6 @@
 import { createStore } from "./store.js";
 import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
-import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { playProgrammaticKeyPressFeedback } from "../ui/modules/programmaticKeyFeedback.js";
 import { createShellRenderer } from "../ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
@@ -12,11 +11,13 @@ import {
   createAutoEqualsScheduler,
   normalizeLoadedStateForRuntime,
 } from "./autoEqualsScheduler.js";
-import { getLambdaUnusedPoints } from "../domain/lambdaControl.js";
-import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
 import { createCueLifecycleCoordinator } from "../ui/layout/cueLifecycle.js";
 import { subscribeCueTelemetry } from "../ui/layout/cueTelemetry.js";
-import type { Action, GameState, Key } from "../domain/types.js";
+import { createAllocatorCueCoordinator, getAllocatorIncreaseFromUnlocks } from "./allocatorCueCoordinator.js";
+import { createAllocatorResetHoldController } from "./allocatorResetHoldController.js";
+import { createModeTransitionCoordinator } from "./modeTransitionCoordinator.js";
+import { createUnlockRevealCoordinator, createUnlockTracker } from "./unlockCueCoordinator.js";
+import type { Action, GameState } from "../domain/types.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -100,12 +101,6 @@ type DispatchOptions = {
   internal?: boolean;
 };
 
-const UNLOCK_REVEAL_SETTLE_TIMEOUT_MS = 1300;
-const ALLOCATOR_CUE_SETTLE_TIMEOUT_MS = 1100;
-const MODE_TRANSITION_SETTLE_TIMEOUT_MS = 1000;
-const ALLOCATOR_RESET_HOLD_MS = 1500;
-const ALLOCATOR_RESET_INDICATOR_DELAY_MS = 80;
-const ALLOCATOR_RESET_PROGRESS_EXPONENT = 8;
 const ENABLE_CUE_TELEMETRY_DEBUG = false;
 
 const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}): Action => {
@@ -120,9 +115,6 @@ const autoEqualsScheduler = createAutoEqualsScheduler(store, {
     dispatchWithRuntimeGate(action);
   },
   onAutoKeyActivated: (key) => {
-    if (!root) {
-      return;
-    }
     window.requestAnimationFrame(() => {
       playProgrammaticKeyPressFeedback(root, key);
     });
@@ -162,13 +154,6 @@ const renderApp = (state: GameState): void => {
   });
 };
 
-const redraw = (): void => {
-  renderApp(store.getState());
-  syncKeypadDimensionInputs();
-  syncAllocatorDeviceInputs();
-  syncDebugRollState();
-};
-
 const syncDebugUiState = (): void => {
   const isOpen = debugToggle.checked;
   debugMenu.hidden = !isOpen;
@@ -189,10 +174,6 @@ const clampNonNegativeInteger = (value: number, fallback: number): number => {
   return Math.max(0, value);
 };
 
-const getUnusedPoints = (state: GameState): number => {
-  return getLambdaUnusedPoints(state.lambdaControl);
-};
-
 const syncKeypadDimensionInputs = (): void => {
   const state = store.getState();
   keypadWidthInput.value = state.ui.keypadColumns.toString();
@@ -202,10 +183,8 @@ const syncKeypadDimensionInputs = (): void => {
 const syncAllocatorDeviceInputs = (): void => {
   const state = store.getState();
   debugMaxPointsInput.value = state.lambdaControl.maxPoints.toString();
-  if (allocatorResetButton) {
-    allocatorResetButton.disabled = interactionRuntime.isInputBlocked();
-    allocatorResetButton.textContent = interactionRuntime.getMode() === "calculator" ? "Modify Layout" : "Return";
-  }
+  allocatorResetButton.disabled = interactionRuntime.isInputBlocked();
+  allocatorResetButton.textContent = interactionRuntime.getMode() === "calculator" ? "Modify Layout" : "Return";
 };
 
 const serializeRationalForDebug = (value: { num: bigint; den: bigint }): { num: string; den: string } => ({
@@ -224,8 +203,163 @@ const syncDebugRollState = (): void => {
   debugRollStateEl.textContent = JSON.stringify(serializedRollState, null, 2);
 };
 
+const redraw = (): void => {
+  renderApp(store.getState());
+  syncKeypadDimensionInputs();
+  syncAllocatorDeviceInputs();
+  syncDebugRollState();
+};
+
+const renderAndPersistState = (state: GameState): void => {
+  renderApp(state);
+  syncKeypadDimensionInputs();
+  syncAllocatorDeviceInputs();
+  syncDebugRollState();
+  storageRepo.save(state);
+};
+
 redraw();
 autoEqualsScheduler.startIfNeeded();
+
+const cueCoordinator = createCueLifecycleCoordinator();
+const modeTransitionCoordinator = createModeTransitionCoordinator({
+  cueCoordinator,
+  playShellCue: async (target) => {
+    await shellRenderer.playTransitionCue(target);
+  },
+  setInputBlocked: (blocked) => {
+    interactionRuntime.setInputBlocked(blocked);
+  },
+  redraw,
+  setMode: (mode) => {
+    interactionRuntime.setMode(mode);
+  },
+  resetForModifyMode: () => {
+    const state = store.getState();
+    dispatchWithRuntimeGate(
+      {
+        type: "HYDRATE_SAVE",
+        state: {
+          ...state,
+          calculator: createResetCalculatorState(),
+        },
+      },
+      { internal: true },
+    );
+  },
+  focusModifyMode: () => {
+    shellRenderer.forceActiveView({
+      snapId: "bottom",
+      includeTransition: true,
+    });
+  },
+  focusCalculatorMode: () => {
+    shellRenderer.forceActiveView({
+      snapId: "middle",
+      middlePanelId: "calculator",
+      includeTransition: true,
+    });
+  },
+});
+
+const unlockRevealCoordinator = createUnlockRevealCoordinator({
+  cueCoordinator,
+  playShellCue: async (target) => {
+    await shellRenderer.playTransitionCue(target);
+  },
+  setInputBlocked: (blocked) => {
+    interactionRuntime.setInputBlocked(blocked);
+  },
+  redraw,
+  renderAndPersistState,
+  focusStoragePanel: () => {
+    shellRenderer.forceActiveView({
+      bottomPanelId: "storage",
+      includeTransition: true,
+    });
+  },
+});
+
+const allocatorCueCoordinator = createAllocatorCueCoordinator({
+  cueCoordinator,
+  playShellCue: async (target) => {
+    await shellRenderer.playTransitionCue(target);
+  },
+  setInputBlocked: (blocked) => {
+    interactionRuntime.setInputBlocked(blocked);
+  },
+  redraw,
+  focusStoragePanel: () => {
+    shellRenderer.forceActiveView({
+      bottomPanelId: "storage",
+      includeTransition: true,
+    });
+  },
+});
+
+const unlockTracker = createUnlockTracker(store.getState());
+
+const unsubscribeCueTelemetry =
+  ENABLE_CUE_TELEMETRY_DEBUG
+    ? subscribeCueTelemetry((event) => {
+        console.debug("[cue]", event.cueKind, event.phase, event.durationMs ?? "", event.metadata ?? {});
+      })
+    : () => {};
+
+let previousStateForCues = store.getState();
+
+const unsubscribe = store.subscribe((state) => {
+  autoEqualsScheduler.sync(state);
+  const latest = store.getState();
+  const previous = previousStateForCues;
+  previousStateForCues = latest;
+
+  const hasNewUnlock = unlockTracker.hasNewUnlock(latest);
+  const maxPointIncreaseFromUnlocks = getAllocatorIncreaseFromUnlocks(previous, latest);
+
+  if (!modeTransitionCoordinator.isModeTransitionInFlight() && (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock)) {
+    if (maxPointIncreaseFromUnlocks > 0) {
+      void (async () => {
+        await allocatorCueCoordinator.runAllocatorIncreaseCue();
+      })();
+    }
+    if (hasNewUnlock) {
+      void (async () => {
+        await unlockRevealCoordinator.runUnlockRevealCue(latest);
+      })();
+    }
+    return;
+  }
+
+  renderAndPersistState(latest);
+});
+
+const activateAllocatorReset = async (): Promise<void> => {
+  if (interactionRuntime.isInputBlocked()) {
+    return;
+  }
+  if (interactionRuntime.getMode() === "calculator") {
+    dispatchWithRuntimeGate(resolveAllocatorModeAction("calculator"));
+    await modeTransitionCoordinator.runModeTransition("modify");
+    return;
+  }
+  dispatchWithRuntimeGate(resolveAllocatorModeAction("modify"));
+  await modeTransitionCoordinator.runModeTransition("calculator");
+};
+
+const allocatorResetHoldController = createAllocatorResetHoldController({
+  button: allocatorResetButton,
+  isInputBlocked: () => interactionRuntime.isInputBlocked(),
+  onActivated: activateAllocatorReset,
+});
+
+window.__autoCalcBootstrapCleanup__ = () => {
+  allocatorResetHoldController.dispose();
+  unsubscribe();
+  unsubscribeCueTelemetry();
+  shellRenderer.dispose();
+  autoEqualsScheduler.dispose();
+};
 
 debugToggle.addEventListener("change", () => {
   syncDebugUiState();
@@ -277,450 +411,7 @@ toggleUiShellLink.addEventListener("click", (event) => {
   window.location.assign(getUiShellToggleUrl(uiShellMode));
 });
 
-const moveAllKeysToStorage = (): void => {
-  const MAX_RELOCATIONS = 256;
-  let relocations = 0;
-  while (relocations < MAX_RELOCATIONS) {
-    const state = store.getState();
-    const keypadIndex = state.ui.keyLayout.findIndex((cell) => cell.kind === "key");
-    if (keypadIndex < 0) {
-      return;
-    }
-    const storageIndex = state.ui.storageLayout.findIndex((cell) => cell === null);
-    if (storageIndex < 0) {
-      return;
-    }
-    dispatchWithRuntimeGate(
-      {
-        type: "MOVE_LAYOUT_CELL",
-        fromSurface: "keypad",
-        fromIndex: keypadIndex,
-        toSurface: "storage",
-        toIndex: storageIndex,
-      },
-      { internal: true },
-    );
-    relocations += 1;
-  }
-};
-
-const resetForModifyMode = (): void => {
-  const state = store.getState();
-  dispatchWithRuntimeGate(
-    {
-      type: "HYDRATE_SAVE",
-      state: {
-        ...state,
-        calculator: createResetCalculatorState(),
-      },
-    },
-    { internal: true },
-  );
-};
-
-const cueCoordinator = createCueLifecycleCoordinator();
-const isModeTransitionInFlight = (): boolean => cueCoordinator.getState().inFlightCueKind === "mode_transition";
-const unsubscribeCueTelemetry =
-  ENABLE_CUE_TELEMETRY_DEBUG
-    ? subscribeCueTelemetry((event) => {
-        console.debug("[cue]", event.cueKind, event.phase, event.durationMs ?? "", event.metadata ?? {});
-      })
-    : () => {};
-
-const allocatorIncreaseByUnlockId = new Map(
-  unlockCatalog.flatMap((unlock) => {
-    if (unlock.effect.type !== "increase_allocator_max_points") {
-      return [];
-    }
-    return [[unlock.id, unlock.effect.amount] as const];
-  }),
-);
-
-const collectUnlockedKeys = (state: GameState): Set<Key> => {
-  const unlocked = new Set<Key>();
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.valueAtoms)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.valueCompose)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.valueExpression)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.slotOperators)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.utilities)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.memory)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.steps)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.visualizers)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  for (const [key, isUnlocked] of Object.entries(state.unlocks.execution)) {
-    if (isUnlocked) {
-      unlocked.add(key as Key);
-    }
-  }
-  return unlocked;
-};
-
-let knownUnlockedKeys = collectUnlockedKeys(store.getState());
-
-const runUnlockRevealCue = async (stateAtUnlock: GameState): Promise<void> => {
-  await cueCoordinator.run(
-    {
-      kind: "unlock_reveal",
-      target: "storage",
-    },
-    {
-      playShellCue: async (target) => {
-        await shellRenderer.playTransitionCue(target);
-      },
-      awaitMotionSettled,
-      setInputBlocked: (blocked) => {
-        interactionRuntime.setInputBlocked(blocked);
-      },
-      redraw,
-      applyStateMutation: () => {
-        renderApp(stateAtUnlock);
-        syncKeypadDimensionInputs();
-        syncAllocatorDeviceInputs();
-        syncDebugRollState();
-        storageRepo.save(stateAtUnlock);
-      },
-      setShellFocusView: () => {
-        shellRenderer.forceActiveView({
-          bottomPanelId: "storage",
-          includeTransition: true,
-        });
-      },
-      phaseTimeoutMs: {
-        settle: UNLOCK_REVEAL_SETTLE_TIMEOUT_MS,
-      },
-    },
-  );
-};
-
-const runAllocatorIncreaseCue = async (previousUnused: number, nextUnused: number): Promise<void> => {
-  void previousUnused;
-  void nextUnused;
-  await cueCoordinator.run(
-    {
-      kind: "allocator_increase",
-      target: "storage",
-    },
-    {
-      playShellCue: async (target) => {
-        await shellRenderer.playTransitionCue(target);
-      },
-      awaitMotionSettled,
-      setInputBlocked: (blocked) => {
-        interactionRuntime.setInputBlocked(blocked);
-      },
-      redraw,
-      setShellFocusView: () => {
-        shellRenderer.forceActiveView({
-          bottomPanelId: "storage",
-          includeTransition: true,
-        });
-      },
-      phaseTimeoutMs: {
-        settle: ALLOCATOR_CUE_SETTLE_TIMEOUT_MS,
-      },
-    },
-  );
-};
-
-const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<void> => {
-  await cueCoordinator.run(
-    {
-      kind: "mode_transition",
-      target: targetMode === "modify" ? undefined : "calculator",
-      nextMode: targetMode,
-    },
-    {
-      playShellCue: async (target) => {
-        await shellRenderer.playTransitionCue(target);
-      },
-      awaitMotionSettled,
-      setInputBlocked: (blocked) => {
-        interactionRuntime.setInputBlocked(blocked);
-      },
-      redraw,
-      applyStateMutation: () => {
-        if (targetMode === "modify") {
-          resetForModifyMode();
-        }
-        interactionRuntime.setMode(targetMode);
-      },
-      setShellFocusView: () => {
-        if (targetMode === "modify") {
-          shellRenderer.forceActiveView({
-            snapId: "bottom",
-            includeTransition: true,
-          });
-          return;
-        }
-        shellRenderer.forceActiveView({
-          snapId: "middle",
-          middlePanelId: "calculator",
-          includeTransition: true,
-        });
-      },
-      phaseTimeoutMs: {
-        settle: MODE_TRANSITION_SETTLE_TIMEOUT_MS,
-      },
-    },
-  );
-};
-
-let previousStateForCues = store.getState();
-
-const unsubscribe = store.subscribe((state) => {
-  autoEqualsScheduler.sync(state);
-  const latest = store.getState();
-  const previous = previousStateForCues;
-  previousStateForCues = latest;
-
-  const currentUnlockedKeys = collectUnlockedKeys(latest);
-  const hasNewUnlock = [...currentUnlockedKeys].some((key) => !knownUnlockedKeys.has(key));
-  knownUnlockedKeys = currentUnlockedKeys;
-
-  const previousCompleted = new Set(previous.completedUnlockIds);
-  const newlyCompletedUnlockIds = latest.completedUnlockIds.filter((id) => !previousCompleted.has(id));
-  const maxPointIncreaseFromUnlocks = newlyCompletedUnlockIds.reduce((sum, unlockId) => {
-    return sum + (allocatorIncreaseByUnlockId.get(unlockId) ?? 0);
-  }, 0);
-
-  if (!isModeTransitionInFlight() && (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock)) {
-    if (maxPointIncreaseFromUnlocks > 0) {
-      void (async () => {
-        await runAllocatorIncreaseCue(getUnusedPoints(previous), getUnusedPoints(latest));
-      })();
-    }
-    if (hasNewUnlock) {
-      void (async () => {
-        await runUnlockRevealCue(latest);
-      })();
-    }
-    return;
-  }
-
-  renderApp(latest);
-  syncKeypadDimensionInputs();
-  syncAllocatorDeviceInputs();
-  syncDebugRollState();
-  storageRepo.save(latest);
-});
-
-window.__autoCalcBootstrapCleanup__ = () => {
-  stopAllocatorResetHold();
-  unsubscribe();
-  unsubscribeCueTelemetry();
-  shellRenderer?.dispose();
-  autoEqualsScheduler.dispose();
-};
-
-const activateAllocatorReset = async (): Promise<void> => {
-  if (interactionRuntime.isInputBlocked()) {
-    return;
-  }
-  if (interactionRuntime.getMode() === "calculator") {
-    dispatchWithRuntimeGate(resolveAllocatorModeAction("calculator"));
-    await runModeTransition("modify");
-    return;
-  }
-  dispatchWithRuntimeGate(resolveAllocatorModeAction("modify"));
-  await runModeTransition("calculator");
-};
-
-let allocatorResetHoldTimer: number | null = null;
-let allocatorResetIndicatorTimer: number | null = null;
-let allocatorResetHoldRaf: number | null = null;
-let allocatorResetHolding = false;
-let allocatorResetTriggered = false;
-let allocatorResetHoldStartedAt = 0;
-let allocatorResetKeyboardHold = false;
-
-const clearAllocatorResetHoldVisuals = (): void => {
-  allocatorResetButton.classList.remove("allocator-mode-action--holding", "allocator-mode-action--hold-visible");
-  allocatorResetButton.style.setProperty("--hold-progress", "0");
-};
-
-const updateAllocatorResetHoldProgress = (): void => {
-  if (!allocatorResetHolding) {
-    return;
-  }
-  const elapsed = performance.now() - allocatorResetHoldStartedAt;
-  const progressWindowMs = ALLOCATOR_RESET_HOLD_MS - ALLOCATOR_RESET_INDICATOR_DELAY_MS;
-  const progressElapsed = Math.max(0, elapsed - ALLOCATOR_RESET_INDICATOR_DELAY_MS);
-  const linearProgress = Math.max(0, Math.min(1, progressElapsed / progressWindowMs));
-  const easedProgress =
-    linearProgress <= 0
-      ? 0
-      : linearProgress >= 1
-        ? 1
-        : Math.pow(2, ALLOCATOR_RESET_PROGRESS_EXPONENT * (linearProgress - 1));
-  allocatorResetButton.style.setProperty("--hold-progress", easedProgress.toFixed(4));
-  allocatorResetHoldRaf = window.requestAnimationFrame(updateAllocatorResetHoldProgress);
-};
-
-const clearAllocatorResetHoldTimers = (): void => {
-  if (allocatorResetHoldTimer !== null) {
-    window.clearTimeout(allocatorResetHoldTimer);
-    allocatorResetHoldTimer = null;
-  }
-  if (allocatorResetIndicatorTimer !== null) {
-    window.clearTimeout(allocatorResetIndicatorTimer);
-    allocatorResetIndicatorTimer = null;
-  }
-  if (allocatorResetHoldRaf !== null) {
-    window.cancelAnimationFrame(allocatorResetHoldRaf);
-    allocatorResetHoldRaf = null;
-  }
-};
-
-const stopAllocatorResetHold = (): void => {
-  clearAllocatorResetHoldTimers();
-  allocatorResetHolding = false;
-  allocatorResetKeyboardHold = false;
-  clearAllocatorResetHoldVisuals();
-};
-
-const triggerAllocatorResetHold = async (): Promise<void> => {
-  if (!allocatorResetHolding || allocatorResetTriggered) {
-    return;
-  }
-  allocatorResetTriggered = true;
-  allocatorResetButton.classList.add("allocator-mode-action--hold-visible");
-  allocatorResetButton.style.setProperty("--hold-progress", "1");
-  stopAllocatorResetHold();
-  await activateAllocatorReset();
-};
-
-const startAllocatorResetHold = (): void => {
-  if (allocatorResetHolding || allocatorResetButton.disabled || interactionRuntime.isInputBlocked()) {
-    return;
-  }
-  allocatorResetHolding = true;
-  allocatorResetTriggered = false;
-  allocatorResetHoldStartedAt = performance.now();
-  allocatorResetButton.classList.add("allocator-mode-action--holding");
-  allocatorResetButton.classList.remove("allocator-mode-action--hold-visible");
-  allocatorResetButton.style.setProperty("--hold-progress", "0");
-
-  allocatorResetIndicatorTimer = window.setTimeout(() => {
-    if (!allocatorResetHolding || allocatorResetTriggered) {
-      return;
-    }
-    allocatorResetButton.classList.add("allocator-mode-action--hold-visible");
-  }, ALLOCATOR_RESET_INDICATOR_DELAY_MS);
-
-  allocatorResetHoldTimer = window.setTimeout(() => {
-    void triggerAllocatorResetHold();
-  }, ALLOCATOR_RESET_HOLD_MS);
-
-  updateAllocatorResetHoldProgress();
-};
-
-const cancelAllocatorResetHold = (): void => {
-  if (!allocatorResetHolding || allocatorResetTriggered) {
-    return;
-  }
-  stopAllocatorResetHold();
-};
-
-allocatorResetButton.addEventListener("pointerdown", (event) => {
-  if (event.button !== 0) {
-    return;
-  }
-  startAllocatorResetHold();
-});
-
-allocatorResetButton.addEventListener("pointerup", () => {
-  cancelAllocatorResetHold();
-});
-
-allocatorResetButton.addEventListener("pointercancel", () => {
-  cancelAllocatorResetHold();
-});
-
-window.addEventListener("pointerup", cancelAllocatorResetHold);
-window.addEventListener("pointercancel", cancelAllocatorResetHold);
-window.addEventListener("mouseup", cancelAllocatorResetHold);
-window.addEventListener("touchend", cancelAllocatorResetHold);
-window.addEventListener("touchcancel", cancelAllocatorResetHold);
-
-allocatorResetButton.addEventListener("keydown", (event) => {
-  if (event.repeat) {
-    return;
-  }
-  if (event.key !== " " && event.key !== "Enter") {
-    return;
-  }
-  event.preventDefault();
-  allocatorResetKeyboardHold = true;
-  startAllocatorResetHold();
-});
-
-allocatorResetButton.addEventListener("keyup", (event) => {
-  if (event.key !== " " && event.key !== "Enter") {
-    return;
-  }
-  event.preventDefault();
-  if (!allocatorResetKeyboardHold) {
-    return;
-  }
-  cancelAllocatorResetHold();
-});
-
-allocatorResetButton.addEventListener("blur", () => {
-  cancelAllocatorResetHold();
-});
-
-allocatorResetButton.addEventListener(
-  "click",
-  (event) => {
-    // Activation is handled by press-and-hold timing, not click.
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  },
-  { capture: true },
-);
-
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState !== "visible") {
-    cancelAllocatorResetHold();
-  }
-});
-
 syncDebugUiState();
 syncKeypadDimensionInputs();
 syncAllocatorDeviceInputs();
 syncDebugRollState();
-
-
-
-

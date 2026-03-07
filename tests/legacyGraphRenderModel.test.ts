@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "../src/ui/render.js";
+import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "../src/ui/modules/visualizers/graphModel.js";
 import type { CalculatorValue, RollEntry } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
