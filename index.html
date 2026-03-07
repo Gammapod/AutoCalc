@@ -1922,6 +1922,22 @@
           transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
+      body[data-ui-shell="mobile"] .v2-circle-mode-indicator,
+      body[data-ui-shell="desktop"] .v2-circle-mode-indicator {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 2;
+        width: 24px;
+        text-align: center;
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(18px, 2.8vw, 24px);
+        line-height: 1;
+        color: var(--lit);
+        text-shadow: 0 0 6px rgba(188, 255, 214, 0.45);
+        pointer-events: none;
+      }
+
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="circle"] .v2-circle-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="circle"] .v2-circle-panel {
         opacity: 1;
@@ -1939,8 +1955,23 @@
       body[data-ui-shell="mobile"] .v2-circle-frame,
       body[data-ui-shell="desktop"] .v2-circle-frame {
         fill: none;
-        stroke: rgba(188, 255, 214, 0.92);
-        stroke-width: 2.6;
+        stroke: rgba(188, 255, 214, 0.68);
+        stroke-width: 1.4;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-slice,
+      body[data-ui-shell="desktop"] .v2-circle-slice {
+        stroke: rgba(188, 255, 214, 0.28);
+        stroke-width: 0.65;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-slice-label,
+      body[data-ui-shell="desktop"] .v2-circle-slice-label {
+        fill: rgba(188, 255, 214, 0.84);
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 5.2px;
+        font-weight: 600;
+        user-select: none;
       }
 
       body[data-ui-shell="mobile"] .v2-circle-center,
@@ -1958,6 +1989,16 @@
       body[data-ui-shell="mobile"] .v2-circle-point,
       body[data-ui-shell="desktop"] .v2-circle-point {
         fill: rgba(188, 255, 214, 0.96);
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-point,
+      body[data-ui-shell="desktop"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-point {
+        fill: #f2cf57;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-trace,
+      body[data-ui-shell="desktop"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-trace {
+        stroke: rgba(242, 207, 87, 0.74);
       }
 
       body[data-ui-shell="mobile"] .v2-circle-point--error,

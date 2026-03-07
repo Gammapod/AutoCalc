@@ -12,6 +12,40 @@ const VIEWBOX_SIZE = 100;
 const CENTER = VIEWBOX_SIZE / 2;
 const PLOT_RADIUS = 48;
 
+const appendModeIndicator = (circlePanel: HTMLElement, mode: "radial" | "residue_wheel"): void => {
+  const indicator = document.createElement("span");
+  indicator.className = "v2-circle-mode-indicator";
+  indicator.textContent = mode === "residue_wheel" ? "\u27E1" : "\u03B8";
+  indicator.setAttribute("aria-hidden", "true");
+  circlePanel.appendChild(indicator);
+};
+
+const appendResidueWheelSlices = (svg: SVGElement, modulusNumber: number): void => {
+  const labelRadius = PLOT_RADIUS + 5;
+  for (let residue = 0; residue < modulusNumber; residue += 1) {
+    const theta = (residue / modulusNumber) * Math.PI * 2;
+    const x2 = CENTER + Math.cos(theta) * PLOT_RADIUS;
+    const y2 = CENTER - Math.sin(theta) * PLOT_RADIUS;
+
+    const slice = document.createElementNS(SVG_NS, "line");
+    slice.setAttribute("class", "v2-circle-slice");
+    slice.setAttribute("x1", CENTER.toFixed(2));
+    slice.setAttribute("y1", CENTER.toFixed(2));
+    slice.setAttribute("x2", x2.toFixed(2));
+    slice.setAttribute("y2", y2.toFixed(2));
+    svg.appendChild(slice);
+
+    const label = document.createElementNS(SVG_NS, "text");
+    label.setAttribute("class", "v2-circle-slice-label");
+    label.setAttribute("x", (CENTER + Math.cos(theta) * labelRadius).toFixed(2));
+    label.setAttribute("y", (CENTER - Math.sin(theta) * labelRadius).toFixed(2));
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("dominant-baseline", "middle");
+    label.textContent = residue.toString();
+    svg.appendChild(label);
+  }
+};
+
 export const clearCircleVisualizerPanel = (root: Element): void => {
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   if (!circlePanel) {
@@ -59,9 +93,9 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
   centerDot.setAttribute("cx", CENTER.toString());
   centerDot.setAttribute("cy", CENTER.toString());
   centerDot.setAttribute("r", "1.2");
-  svg.appendChild(centerDot);
 
   if (residueWheelSpec) {
+    appendResidueWheelSlices(svg, residueWheelSpec.modulusNumber);
     const projected = projectResidueWheelPoints(state.calculator.rollEntries, residueWheelSpec, CENTER, PLOT_RADIUS);
     for (const segment of projected.segments) {
       appendTraceSegment(svg, segment);
@@ -87,6 +121,8 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
     }
   }
 
+  svg.appendChild(centerDot);
+  appendModeIndicator(circlePanel, mode);
   circlePanel.appendChild(svg);
   circlePanel.setAttribute("aria-hidden", "false");
 };
