@@ -18,6 +18,7 @@ const runtimeKeysFromInitialUnlocks = (): Key[] => {
     ...(Object.keys(state.unlocks.valueExpression) as Key[]),
     ...(Object.keys(state.unlocks.slotOperators) as Key[]),
     ...(Object.keys(state.unlocks.utilities) as Key[]),
+    ...(Object.keys(state.unlocks.memory) as Key[]),
     ...(Object.keys(state.unlocks.steps) as Key[]),
     ...(Object.keys(state.unlocks.visualizers) as Key[]),
     ...(Object.keys(state.unlocks.execution) as Key[]),
@@ -57,6 +58,18 @@ const unlockKey = (state: GameState, key: Key): GameState => {
         ...state.unlocks,
         utilities: {
           ...state.unlocks.utilities,
+          [key]: true,
+        },
+      },
+    };
+  }
+  if (key in state.unlocks.memory) {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        memory: {
+          ...state.unlocks.memory,
           [key]: true,
         },
       },
@@ -241,6 +254,69 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
+  if (kind === "memory_recall_sets_input") {
+    let state = unlockKey(initialState(), "M→");
+    state = unlockKey(state, "α,β,γ");
+    state = {
+      ...state,
+      ui: {
+        ...state.ui,
+        keypadColumns: 4,
+        memoryVariable: "α",
+      },
+      calculator: {
+        ...state.calculator,
+        draftingSlot: { operator: "+", operandInput: "", isNegative: false },
+      },
+    };
+    const next = applyKeyAction(state, "M→");
+    assert.equal(next.calculator.draftingSlot?.operandInput, "4", "M→ should inject selected memory value like a digit");
+    return;
+  }
+
+  if (kind === "memory_adjusts_allocator") {
+    if (key === "M+") {
+      const base = initialState();
+      const state = unlockKey({
+        ...base,
+        allocator: {
+          ...base.allocator,
+          maxPoints: 1,
+        },
+        ui: {
+          ...base.ui,
+          memoryVariable: "α",
+        },
+      }, "M+");
+      const next = applyKeyAction(state, "M+");
+      assert.equal(next.allocator.allocations.width, 1, "M+ should increase selected allocator dimension");
+      assert.equal(next.ui.keypadColumns, 2, "M+ on α should project to keypad column growth");
+      return;
+    }
+    if (key === "M–") {
+      const base = initialState();
+      const state = unlockKey({
+        ...base,
+        allocator: {
+          ...base.allocator,
+          maxPoints: 1,
+          allocations: {
+            ...base.allocator.allocations,
+            width: 1,
+          },
+        },
+        ui: {
+          ...base.ui,
+          memoryVariable: "α",
+        },
+      }, "M–");
+      const next = applyKeyAction(state, "M–");
+      assert.equal(next.allocator.allocations.width, 0, "M– should decrease selected allocator dimension");
+      assert.equal(next.ui.keypadColumns, 1, "M– on α should project to keypad column reduction");
+      return;
+    }
+  }
+
   throw new Error(`Unknown primary expectation kind: ${kind}`);
 };
 
@@ -422,6 +498,58 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     const next = applyKeyAction(state, "\u23EF");
     assert.deepEqual(next.calculator, state.calculator, "play/pause should not mutate calculator state");
     return;
+  }
+
+  if (kind === "memory_recall_noop_on_active_roll") {
+    const base = initialState();
+    const state = unlockKey(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          memoryVariable: "β",
+        },
+        calculator: {
+          ...base.calculator,
+          rollEntries: re(r(3n)),
+        },
+      },
+      "M→",
+    );
+    const next = applyKeyAction(state, "M→");
+    assert.deepEqual(next.calculator, state.calculator, "M→ should no-op while roll is active, like digit entry");
+    return;
+  }
+
+  if (kind === "memory_adjust_noop_without_budget_or_bounds") {
+    if (key === "M+") {
+      const base = initialState();
+      const state = unlockKey({
+        ...base,
+        ui: {
+          ...base.ui,
+          memoryVariable: "α",
+        },
+      }, "M+");
+      const next = applyKeyAction(state, "M+");
+      assert.equal(next.allocator.allocations.width, state.allocator.allocations.width, "M+ should no-op with no spare allocator budget");
+      assert.equal(next.ui.keypadColumns, state.ui.keypadColumns, "M+ no-op should keep projected keypad width unchanged");
+      return;
+    }
+    if (key === "M–") {
+      const base = initialState();
+      const state = unlockKey({
+        ...base,
+        ui: {
+          ...base.ui,
+          memoryVariable: "α",
+        },
+      }, "M–");
+      const next = applyKeyAction(state, "M–");
+      assert.equal(next.allocator.allocations.width, 0, "M– should no-op at lower bound");
+      assert.equal(next.ui.keypadColumns, 1, "M– no-op at lower bound should keep projected width");
+      return;
+    }
   }
 
   throw new Error(`Unknown edge expectation kind: ${kind}`);

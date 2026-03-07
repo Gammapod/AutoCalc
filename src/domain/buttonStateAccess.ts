@@ -51,6 +51,9 @@ export const isButtonUnlocked = (state: GameState, key: ButtonKey): boolean => {
   if (definition.unlockGroup === "utilities") {
     return state.unlocks.utilities[key as ButtonKeyByUnlockGroup<"utilities">];
   }
+  if (definition.unlockGroup === "memory") {
+    return state.unlocks.memory[key as ButtonKeyByUnlockGroup<"memory">];
+  }
   if (definition.unlockGroup === "steps") {
     return state.unlocks.steps[key as ButtonKeyByUnlockGroup<"steps">];
   }
@@ -106,6 +109,22 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
         ...state.unlocks,
         utilities: {
           ...state.unlocks.utilities,
+          [typedKey]: unlocked,
+        },
+      },
+    };
+  }
+  if (definition.unlockGroup === "memory") {
+    const typedKey = key as ButtonKeyByUnlockGroup<"memory">;
+    if (state.unlocks.memory[typedKey] === unlocked) {
+      return state;
+    }
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        memory: {
+          ...state.unlocks.memory,
           [typedKey]: unlocked,
         },
       },

@@ -22,11 +22,16 @@ import {
 } from "./functionBuilder.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
 import { clearOperationEntry, createResetCalculatorState } from "./reducer.stateBuilders.js";
-import { CHECKLIST_UNLOCK_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
+import {
+  CHECKLIST_UNLOCK_ID,
+  OVERFLOW_ERROR_SEEN_ID,
+} from "./state.js";
 import { isDigitKey, isOperatorKey } from "./buttonRegistry.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
 import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, GameState, Key, RationalValue, RollEntry, SlotOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
+import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
+import { applyMemoryAdjust, cycleMemoryVariable, isMemoryKey, resolveMemoryRecallDigit } from "./memoryController.js";
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
 const incrementKeyPressCount = (state: GameState, key: Key): GameState => ({
@@ -98,6 +103,13 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
 
 const applyDigit = (state: GameState, digit: Digit): GameState => {
   if (!state.unlocks.valueAtoms[digit] && !state.unlocks.valueExpression[digit]) {
+    return state;
+  }
+  return applyDigitValue(state, digit);
+};
+
+const applyDigitValue = (state: GameState, digit: Digit): GameState => {
+  if (state.calculator.rollEntries.length > 0) {
     return state;
   }
 
@@ -421,6 +433,25 @@ const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
   return clearOperationEntry(state);
 };
 
+const applyMemoryKeyAction = (state: GameState, key: Key): GameState => {
+  if (!isMemoryKey(key) || !isKeyUnlocked(state, key)) {
+    return state;
+  }
+  if (key === "α,β,γ") {
+    return cycleMemoryVariable(state);
+  }
+  if (key === "M→") {
+    return applyDigitValue(state, resolveMemoryRecallDigit(state));
+  }
+  if (key === "M+") {
+    return applyMemoryAdjust(state, 1, applyAllocatorRuntimeProjection);
+  }
+  if (key === "M–") {
+    return applyMemoryAdjust(state, -1, applyAllocatorRuntimeProjection);
+  }
+  return state;
+};
+
 export const applyKeyAction = (state: GameState, key: Key): GameState => {
   // Input precedence:
   // 1) active-roll digit keys are hard no-op
@@ -441,6 +472,7 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
     apply_visualizer_noop: (nextState) => nextState,
     apply_toggle_noop: (nextState) => nextState,
     apply_noop: (nextState) => nextState,
+    apply_memory: (nextState, currentKey) => applyMemoryKeyAction(nextState, currentKey),
     apply_negate: (nextState) => applyNegate(nextState),
     apply_clear_all: (nextState) => applyC(nextState),
     apply_clear_entry: (nextState) => applyCE(nextState),

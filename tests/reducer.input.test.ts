@@ -191,5 +191,81 @@ export const runReducerInputTests = (): void => {
   };
   const afterUndo = applyKeyAction(undoSource, "UNDO");
   assert.deepEqual(afterUndo.calculator.seedSnapshot, r(5n), "UNDO keeps seed snapshot when roll becomes empty");
+
+  const memoryCycleLocked = initialState();
+  const afterLockedMemoryCycle = applyKeyAction(memoryCycleLocked, "α,β,γ");
+  assert.equal(afterLockedMemoryCycle.ui.memoryVariable, "α", "locked memory-cycle key does not change selected variable");
+
+  const memoryCycleUnlocked: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      memory: {
+        ...initialState().unlocks.memory,
+        "α,β,γ": true,
+      },
+    },
+  };
+  const afterFirstMemoryCycle = applyKeyAction(memoryCycleUnlocked, "α,β,γ");
+  assert.equal(afterFirstMemoryCycle.ui.memoryVariable, "β", "memory-cycle key advances α to β");
+  const afterSecondMemoryCycle = applyKeyAction(afterFirstMemoryCycle, "α,β,γ");
+  assert.equal(afterSecondMemoryCycle.ui.memoryVariable, "γ", "memory-cycle key advances β to γ");
+  const afterThirdMemoryCycle = applyKeyAction(afterSecondMemoryCycle, "α,β,γ");
+  assert.equal(afterThirdMemoryCycle.ui.memoryVariable, "α", "memory-cycle key wraps γ to α");
+
+  const memoryPlusBase = initialState();
+  const memoryPlusUnlocked: GameState = {
+    ...memoryPlusBase,
+    allocator: {
+      ...memoryPlusBase.allocator,
+      maxPoints: 2,
+    },
+    unlocks: {
+      ...memoryPlusBase.unlocks,
+      memory: {
+        ...memoryPlusBase.unlocks.memory,
+        "M+": true,
+      },
+    },
+  };
+  const plusAlpha = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "α" } }, "M+");
+  assert.equal(plusAlpha.ui.keypadColumns, 2, "M+ with α increases keypad columns");
+  const plusBeta = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "β" } }, "M+");
+  assert.equal(plusBeta.ui.keypadRows, 2, "M+ with β increases keypad rows");
+  const plusGamma = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "γ" } }, "M+");
+  assert.equal(plusGamma.unlocks.maxSlots, 1, "M+ with γ increases operation slot count");
+
+  const memoryMinusBase = initialState();
+  const memoryMinusUnlocked: GameState = {
+    ...memoryMinusBase,
+    allocator: {
+      ...memoryMinusBase.allocator,
+      maxPoints: 3,
+      allocations: {
+        ...memoryMinusBase.allocator.allocations,
+        width: 1,
+        height: 1,
+        slots: 1,
+      },
+    },
+    unlocks: {
+      ...memoryMinusBase.unlocks,
+      memory: {
+        ...memoryMinusBase.unlocks.memory,
+        "M–": true,
+      },
+    },
+    ui: {
+      ...memoryMinusBase.ui,
+      keypadColumns: 2,
+      keypadRows: 2,
+    },
+  };
+  const minusAlpha = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "α" } }, "M–");
+  assert.equal(minusAlpha.ui.keypadColumns, 1, "M– with α decreases keypad columns");
+  const minusBeta = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "β" } }, "M–");
+  assert.equal(minusBeta.ui.keypadRows, 1, "M– with β decreases keypad rows");
+  const minusGamma = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "γ" } }, "M–");
+  assert.equal(minusGamma.unlocks.maxSlots, 0, "M– with γ decreases operation slot count");
 };
 

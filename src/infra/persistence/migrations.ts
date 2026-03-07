@@ -25,6 +25,7 @@ import type {
   Slot,
   UnlockState,
   ValueExpressionKey,
+  MemoryVariable,
 } from "../../domain/types.js";
 
 export type SerializableSlot = {
@@ -50,6 +51,7 @@ export type SerializableStateV1 = {
     valueExpression?: Partial<UnlockState["valueExpression"]>;
     slotOperators?: Partial<UnlockState["slotOperators"]>;
     utilities?: Partial<Record<"C" | "CE" | "UNDO" | "GRAPH" | "\u23EF" | "NEG", boolean>>;
+    memory?: Partial<UnlockState["memory"]>;
     visualizers?: Partial<UnlockState["visualizers"]>;
     execution?: Partial<UnlockState["execution"]>;
   };
@@ -108,6 +110,7 @@ export type SerializableStateV5 = {
     storageLayout: Array<KeyCell | null>;
     keypadColumns: number;
     keypadRows: number;
+    memoryVariable?: MemoryVariable;
     buttonFlags: Record<string, boolean>;
   };
   unlocks: UnlockState;
@@ -215,13 +218,16 @@ const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
 const UTILITY_KEY_VALUES = ["C", "CE", "UNDO"] as const;
+const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] as const;
 const STEP_KEY_VALUES = ["\u23EF"] as const;
-const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "CIRCLE"] as const;
+const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "CIRCLE", "\u03BB"] as const;
 const EXEC_KEY_VALUES = ["=", "++", "--"] as const;
+const MEMORY_VARIABLE_VALUES: readonly MemoryVariable[] = ["α", "β", "γ"];
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
   ...SLOT_OPERATOR_VALUES,
   ...UTILITY_KEY_VALUES,
+  ...MEMORY_KEY_VALUES,
   ...STEP_KEY_VALUES,
   ...VISUALIZER_KEY_VALUES,
   ...EXEC_KEY_VALUES,
@@ -255,6 +261,8 @@ const isCalculatorValueString = (value: unknown): value is string => isString(va
 const isSlotOperator = (value: unknown): value is Slot["operator"] =>
   isString(value) && SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
 const isKnownKey = (value: unknown): value is Key => isString(value) && KEY_VALUES.includes(value as Key);
+const isMemoryVariable = (value: unknown): value is MemoryVariable =>
+  isString(value) && MEMORY_VARIABLE_VALUES.includes(value as MemoryVariable);
 const isBooleanRecord = (value: unknown): value is Record<string, boolean> =>
   isObject(value) && Object.values(value).every(isBoolean);
 
@@ -299,6 +307,9 @@ const normalizeActiveVisualizer = (value: unknown, flags: Record<string, boolean
   }
   return resolveLegacyActiveVisualizerFromFlags(flags);
 };
+
+const normalizeMemoryVariable = (value: unknown): MemoryVariable =>
+  isMemoryVariable(value) ? value : "α";
 
 const hasOnlyKnownLayoutCells = (layout: unknown): layout is LayoutCell[] =>
   Array.isArray(layout) &&
@@ -497,6 +508,7 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
     },
     slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
     utilities: { ...defaults.utilities, ...(source?.utilities ?? {}) },
+    memory: { ...defaults.memory, ...(source?.memory ?? {}) },
     steps: {
       ...defaults.steps,
       ...(source?.steps ?? {}),
@@ -593,6 +605,7 @@ export const migrateV4ToV5 = (input: SerializableStateV4): SerializableStateV5 =
       storageLayout,
       keypadColumns,
       keypadRows,
+      memoryVariable: "α",
       buttonFlags: withDefaultButtonFlags({}),
     },
     calculator: {
@@ -621,6 +634,7 @@ export const migrateV5ToV6 = (input: SerializableStateV5, resetForLegacy: boolea
         storageLayout: defaults.ui.storageLayout,
         keypadColumns: defaults.ui.keypadColumns,
         keypadRows: defaults.ui.keypadRows,
+        memoryVariable: defaults.ui.memoryVariable,
         buttonFlags: defaults.ui.buttonFlags,
       },
       keyPressCounts: {},
@@ -819,6 +833,7 @@ export const migrateV10ToV11 = (input: SerializableStateV10): SerializableStateV
       ...input.ui,
       buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
       activeVisualizer: normalizeActiveVisualizer(undefined, buttonFlags),
+      memoryVariable: normalizeMemoryVariable(input.ui.memoryVariable),
     },
   };
 };
@@ -828,6 +843,7 @@ export const migrateV11ToV12 = (input: SerializableStateV11): SerializableStateV
   ui: {
     ...input.ui,
     activeVisualizer: normalizeActiveVisualizer(input.ui.activeVisualizer, input.ui.buttonFlags),
+    memoryVariable: normalizeMemoryVariable(input.ui.memoryVariable),
   },
 });
 
@@ -980,6 +996,7 @@ export const validateSerializableStateV3 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.memory), unlocks.memory) ||
     !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||
     !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
@@ -1035,6 +1052,7 @@ export const validateSerializableStateV4 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.memory), unlocks.memory) ||
     !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||
     !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
@@ -1081,6 +1099,7 @@ export const validateSerializableStateV5 = (state: unknown): state is Serializab
     !hasOnlyKnownStorageSlots(ui.storageLayout) ||
     !isInteger(ui.keypadColumns) ||
     !isInteger(ui.keypadRows) ||
+    (ui.memoryVariable !== undefined && !isMemoryVariable(ui.memoryVariable)) ||
     !isBooleanRecord(ui.buttonFlags)
   ) {
     return false;
@@ -1097,6 +1116,7 @@ export const validateSerializableStateV5 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
+    !hasValidBooleans(Object.keys(defaults.memory), unlocks.memory) ||
     !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||
     !hasValidBooleans(Object.keys(defaults.visualizers), unlocks.visualizers) ||
     !hasValidBooleans(Object.keys(defaults.execution), unlocks.execution) ||
@@ -1278,8 +1298,10 @@ export const validateSerializableStateV11 = (state: unknown): state is Serializa
   if (!isObject(state) || !validateSerializableStateV10(state)) {
     return false;
   }
-  return (state as SerializableStateV11).ui.activeVisualizer !== undefined
-    && normalizeActiveVisualizer((state as SerializableStateV11).ui.activeVisualizer, {}) === (state as SerializableStateV11).ui.activeVisualizer;
+  const ui = (state as SerializableStateV11).ui;
+  return ui.activeVisualizer !== undefined
+    && normalizeActiveVisualizer(ui.activeVisualizer, {}) === ui.activeVisualizer
+    && (ui.memoryVariable === undefined || isMemoryVariable(ui.memoryVariable));
 };
 
 export const validateSerializableStateV12 = (state: unknown): state is SerializableStateV12 =>
@@ -1507,6 +1529,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         storageLayout: normalizeStorageSlots(asV11.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
         activeVisualizer: normalizeActiveVisualizer(asV11.ui?.activeVisualizer, buttonFlags),
+        memoryVariable: normalizeMemoryVariable(asV11.ui?.memoryVariable),
       },
       unlocks: normalizeUnlocks(asV11.unlocks),
       keyPressCounts: isObject(asV11.keyPressCounts)
@@ -1545,6 +1568,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         storageLayout: normalizeStorageSlots(asV12.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
         activeVisualizer: normalizeActiveVisualizer(asV12.ui?.activeVisualizer, buttonFlags),
+        memoryVariable: normalizeMemoryVariable(asV12.ui?.memoryVariable),
       },
       unlocks: normalizeUnlocks(asV12.unlocks),
       keyPressCounts: isObject(asV12.keyPressCounts)
@@ -1586,6 +1610,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         storageLayout: normalizeStorageSlots(asV13.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
         activeVisualizer: normalizeActiveVisualizer(asV13.ui?.activeVisualizer, buttonFlags),
+        memoryVariable: normalizeMemoryVariable(asV13.ui?.memoryVariable),
       },
       unlocks: normalizeUnlocks(asV13.unlocks),
       keyPressCounts: isObject(asV13.keyPressCounts)
@@ -1627,6 +1652,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         storageLayout: normalizeStorageSlots(asV14.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
         activeVisualizer: normalizeActiveVisualizer(asV14.ui?.activeVisualizer, buttonFlags),
+        memoryVariable: normalizeMemoryVariable(asV14.ui?.memoryVariable),
       },
       unlocks: normalizeUnlocks(asV14.unlocks),
       keyPressCounts: isObject(asV14.keyPressCounts)

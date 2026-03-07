@@ -26,9 +26,10 @@ type UnlockGroupRecord<B extends UnlockGroup> =
     : B extends "valueCompose" ? GameState["unlocks"]["valueCompose"]
     : B extends "slotOperators" ? GameState["unlocks"]["slotOperators"]
       : B extends "utilities" ? GameState["unlocks"]["utilities"]
-        : B extends "steps" ? GameState["unlocks"]["steps"]
-          : B extends "visualizers" ? GameState["unlocks"]["visualizers"]
-            : GameState["unlocks"]["execution"];
+        : B extends "memory" ? GameState["unlocks"]["memory"]
+          : B extends "steps" ? GameState["unlocks"]["steps"]
+            : B extends "visualizers" ? GameState["unlocks"]["visualizers"]
+              : GameState["unlocks"]["execution"];
 
 const buildUnlockRecord = <B extends UnlockGroup>(group: B): UnlockGroupRecord<B> => {
   const record: Record<string, boolean> = {};
@@ -92,9 +93,14 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "CE" },
   { kind: "key", key: "UNDO" },
   { kind: "key", key: "C" },
+  { kind: "key", key: "M+" },
+  { kind: "key", key: "M\u2013" },
+  { kind: "key", key: "M\u2192" },
+  { kind: "key", key: "\u03B1,\u03B2,\u03B3" },
   { kind: "key", key: "FEED" },
   { kind: "key", key: "CIRCLE" },
   { kind: "key", key: "GRAPH" },
+  { kind: "key", key: "\u03BB" },
   { kind: "key", key: "/" },
   { kind: "key", key: "\u27E1" },
   { kind: "key", key: "#" },
@@ -149,6 +155,7 @@ export const initialState = (): GameState => {
       keypadColumns: KEYPAD_DEFAULT_COLUMNS,
       keypadRows: KEYPAD_DEFAULT_ROWS,
       activeVisualizer: "total",
+      memoryVariable: "α",
       buttonFlags: {},
     },
     keyPressCounts: {},
@@ -160,6 +167,7 @@ export const initialState = (): GameState => {
       valueExpression: combineValueExpressionUnlocks(valueAtoms, valueCompose),
       slotOperators: buildUnlockRecord("slotOperators"),
       utilities: buildUnlockRecord("utilities"),
+      memory: buildUnlockRecord("memory"),
       steps: buildUnlockRecord("steps"),
       visualizers: buildUnlockRecord("visualizers"),
       execution: buildUnlockRecord("execution"),

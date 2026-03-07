@@ -55,5 +55,5 @@ export const keyToVisualizerId = (key: ButtonKey): ButtonVisualizerId | null => 
   if (!definition || definition.behaviorKind !== "visualizer") {
     return null;
   }
-  return definition.visualizerId ?? null;
+  return ("visualizerId" in definition ? definition.visualizerId : undefined) ?? null;
 };

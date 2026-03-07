@@ -1,11 +1,5 @@
 import {
   initialState,
-  KEYPAD_DIM_MAX,
-  KEYPAD_DIM_MIN,
-  OPERATION_SLOTS_MAX,
-  OPERATION_SLOTS_MIN,
-  TOTAL_DIGITS_MAX,
-  TOTAL_DIGITS_MIN,
 } from "./state.js";
 import { applyKeyAction } from "./reducer.input.js";
 import {
@@ -22,6 +16,7 @@ import { applyToggleFlag } from "./reducer.flags.js";
 import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyUnlocks } from "./unlocks.js";
+import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import type {
   Action,
   AllocatorAllocationField,
@@ -40,8 +35,6 @@ const clampNonNegativeInteger = (value: number, fallback: number): number => {
   }
   return Math.max(0, value);
 };
-
-const clampToRange = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
 const getSpentTotal = (allocator: AllocatorState): number =>
   allocator.allocations.width +
@@ -98,26 +91,6 @@ const applyAllocationDelta = (allocator: AllocatorState, field: AllocatorAllocat
     allocations: {
       ...allocator.allocations,
       [field]: nextValue,
-    },
-  };
-};
-
-const applyAllocatorRuntimeProjection = (state: GameState, allocator: AllocatorState): GameState => {
-  const withAllocator = allocator === state.allocator ? state : { ...state, allocator };
-  const columns = clampToRange(1 + withAllocator.allocator.allocations.width, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
-  const rows = clampToRange(1 + withAllocator.allocator.allocations.height, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
-  const maxDigits = clampToRange(1 + withAllocator.allocator.allocations.range, TOTAL_DIGITS_MIN, TOTAL_DIGITS_MAX);
-  const maxSlots = clampToRange(withAllocator.allocator.allocations.slots, OPERATION_SLOTS_MIN, OPERATION_SLOTS_MAX);
-  const resized = applySetKeypadDimensions(withAllocator, columns, rows);
-  if (resized.unlocks.maxTotalDigits === maxDigits && resized.unlocks.maxSlots === maxSlots) {
-    return resized;
-  }
-  return {
-    ...resized,
-    unlocks: {
-      ...resized.unlocks,
-      maxTotalDigits: maxDigits,
-      maxSlots,
     },
   };
 };

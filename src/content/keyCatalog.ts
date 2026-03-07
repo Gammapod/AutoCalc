@@ -3,6 +3,7 @@ export type KeyUnlockGroup =
   | "valueCompose"
   | "slotOperators"
   | "utilities"
+  | "memory"
   | "steps"
   | "visualizers"
   | "execution"
@@ -28,6 +29,10 @@ export type KeyHandlerOverrideId =
   | "utility_clear_all"
   | "utility_clear_entry"
   | "utility_undo"
+  | "memory_cycle_variable"
+  | "memory_recall_into_input"
+  | "memory_adjust_plus"
+  | "memory_adjust_minus"
   | "execute_equals"
   | "execute_increment"
   | "execute_decrement";
@@ -86,10 +91,15 @@ export const keyCatalog = [
   { key: "C", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits(["can_reset"]), handlerOverrideId: "utility_clear_all" },
   { key: "CE", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "utility_clear_entry" },
   { key: "UNDO", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits(["can_undo"]), handlerOverrideId: "utility_undo" },
+  { key: "\u03B1,\u03B2,\u03B3", category: "memory", unlockGroup: "memory", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "noop", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "memory_cycle_variable" },
+  { key: "M+", category: "memory", unlockGroup: "memory", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "noop", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "memory_adjust_plus" },
+  { key: "M\u2013", category: "memory", unlockGroup: "memory", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "noop", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "memory_adjust_minus" },
+  { key: "M\u2192", category: "memory", unlockGroup: "memory", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "noop", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "memory_recall_into_input" },
   { key: "\u23EF", category: "step", unlockGroup: "steps", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "toggle", inputFamily: "toggle", valueRole: "none", traits: withBaseTraits([]) },
   { key: "GRAPH", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "graph" },
   { key: "FEED", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "feed" },
   { key: "CIRCLE", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "circle" },
+  { key: "\u03BB", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]) },
   { key: "=", category: "execution", unlockGroup: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute", "can_change_total"]), handlerOverrideId: "execute_equals" },
   { key: "++", category: "execution", unlockGroup: "execution", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute", "can_change_total"]), handlerOverrideId: "execute_increment" },
   { key: "--", category: "execution", unlockGroup: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute", "can_change_total"]), handlerOverrideId: "execute_decrement" },

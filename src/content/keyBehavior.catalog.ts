@@ -14,7 +14,9 @@ export type KeyPrimaryExpectationKind =
   | "equals_executes_drafted_plus_one"
   | "increment_increases_total"
   | "decrement_decreases_total"
-  | "pause_counts_only";
+  | "pause_counts_only"
+  | "memory_recall_sets_input"
+  | "memory_adjusts_allocator";
 
 export type KeyEdgeExpectationKind =
   | "digit_replaces_full_operand_digit"
@@ -27,7 +29,9 @@ export type KeyEdgeExpectationKind =
   | "equals_division_by_zero_sets_nan"
   | "increment_clears_pending_negative"
   | "decrement_clears_pending_negative"
-  | "pause_does_not_mutate_calculator_state";
+  | "pause_does_not_mutate_calculator_state"
+  | "memory_recall_noop_on_active_roll"
+  | "memory_adjust_noop_without_budget_or_bounds";
 
 export type KeyBehaviorSpec = {
   key: Key;
@@ -99,6 +103,34 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "undo_noop_when_roll_empty",
   },
   {
+    key: "\u03B1,\u03B2,\u03B3",
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
+    key: "M+",
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "memory_adjusts_allocator",
+    edgeCaseExpectation: "memory_adjust_noop_without_budget_or_bounds",
+  },
+  {
+    key: "M\u2013",
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "memory_adjusts_allocator",
+    edgeCaseExpectation: "memory_adjust_noop_without_budget_or_bounds",
+  },
+  {
+    key: "M\u2192",
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "memory_recall_sets_input",
+    edgeCaseExpectation: "memory_recall_noop_on_active_roll",
+  },
+  {
     key: "GRAPH",
     lockModel: "unlockable",
     unlockPathPolicy: "none_planned",
@@ -115,6 +147,13 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   {
     key: "CIRCLE",
     lockModel: "always_unlocked",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
+    key: "\u03BB",
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
     primaryExpectation: "graph_counts_only",
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
   },

@@ -241,6 +241,7 @@ const STORAGE_SORT_FLAG_BY_GROUP: Record<KeyVisualGroup, string> = {
   value_expression: "storage.sort.value_expression",
   slot_operator: "storage.sort.slot_operator",
   utility: "storage.sort.utility",
+  memory: "storage.sort.memory",
   step: "storage.sort.step",
   visualizers: "storage.sort.visualizers",
 };
@@ -270,6 +271,7 @@ const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: KeyVisualGroup; ariaL
   { label: "\u{1D45B}", group: "value_expression", ariaLabel: "Value expression keys" },
   { label: "\u2A02", group: "slot_operator", ariaLabel: "Operator keys" },
   { label: "\u23CF", group: "utility", ariaLabel: "Utility keys" },
+  { label: "M", group: "memory", ariaLabel: "Memory keys" },
   { label: "\u25B6", group: "step", ariaLabel: "Step keys" },
   { label: "\u2191__", group: "visualizers", ariaLabel: "Visualizer keys" },
 ];
@@ -772,6 +774,10 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
     }
     primaryDisplay.appendChild(frame);
     stack.appendChild(primaryDisplay);
+    const memoryIndicator = document.createElement("span");
+    memoryIndicator.className = "total-memory-indicator";
+    memoryIndicator.textContent = `M=${state.ui.memoryVariable}`;
+    stack.appendChild(memoryIndicator);
     totalEl.appendChild(stack);
     totalEl.setAttribute("aria-label", "Total _");
     return;
@@ -779,6 +785,10 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   totalEl.setAttribute("aria-label", `Total ${calculatorValueToDisplayString(state.calculator.total)}`);
   renderSevenSegmentValue(primaryDisplay, state.calculator.total, state.unlocks.maxTotalDigits, state.calculator.pendingNegativeTotal);
   stack.appendChild(primaryDisplay);
+  const memoryIndicator = document.createElement("span");
+  memoryIndicator.className = "total-memory-indicator";
+  memoryIndicator.textContent = `M=${state.ui.memoryVariable}`;
+  stack.appendChild(memoryIndicator);
   totalEl.appendChild(stack);
 };
 
@@ -1546,6 +1556,9 @@ const buildUnlockSnapshot = (state: GameState): Record<Key, boolean> => {
   for (const [key, unlocked] of Object.entries(state.unlocks.utilities)) {
     snapshot[key as Key] = unlocked;
   }
+  for (const [key, unlocked] of Object.entries(state.unlocks.memory)) {
+    snapshot[key as Key] = unlocked;
+  }
   for (const [key, unlocked] of Object.entries(state.unlocks.steps)) {
     snapshot[key as Key] = unlocked;
   }
@@ -1750,6 +1763,9 @@ export const render = (
     button.type = "button";
     button.className = "key key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
+    if (cell.key === "NEG") {
+      button.classList.add("key--value-modifier");
+    }
     if (newlyUnlockedKeys.has(cell.key)) {
       button.classList.add("key--unlock-animate");
       bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);
@@ -1867,6 +1883,9 @@ export const render = (
     button.type = "button";
     button.className = "key key--storage key--storage-unlocked key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
+    if (cell.key === "NEG") {
+      button.classList.add("key--value-modifier");
+    }
     if (newlyUnlockedKeys.has(cell.key)) {
       button.classList.add("key--unlock-animate");
       bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);

@@ -533,6 +533,11 @@ const collectUnlockedKeys = (state: GameState): Set<Key> => {
       unlocked.add(key as Key);
     }
   }
+  for (const [key, isUnlocked] of Object.entries(state.unlocks.memory)) {
+    if (isUnlocked) {
+      unlocked.add(key as Key);
+    }
+  }
   for (const [key, isUnlocked] of Object.entries(state.unlocks.steps)) {
     if (isUnlocked) {
       unlocked.add(key as Key);

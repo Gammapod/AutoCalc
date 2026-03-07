@@ -12,10 +12,12 @@ export type ValueAtomKey = ButtonKeyByUnlockGroup<"valueAtoms">;
 export type ValueComposeKey = ButtonKeyByUnlockGroup<"valueCompose">;
 export type ValueExpressionKey = ValueAtomKey | ValueComposeKey;
 export type UtilityKey = ButtonKeyByUnlockGroup<"utilities">;
+export type MemoryKey = ButtonKeyByUnlockGroup<"memory">;
 export type StepKey = ButtonKeyByUnlockGroup<"steps">;
 export type VisualizerKey = ButtonKeyByUnlockGroup<"visualizers">;
 export type VisualizerId = ButtonVisualizerId;
 export type ActiveVisualizer = "total" | VisualizerId;
+export type MemoryVariable = "α" | "β" | "γ";
 export type ExecKey = ButtonKeyByUnlockGroup<"execution">;
 export type Key = ButtonKey;
 export type KeyCategory = ButtonCategory;
@@ -112,6 +114,7 @@ export type UnlockState = {
   valueExpression: Record<ValueExpressionKey, boolean>;
   slotOperators: Record<SlotOperator, boolean>;
   utilities: Record<UtilityKey, boolean>;
+  memory: Record<MemoryKey, boolean>;
   steps: Record<StepKey, boolean>;
   visualizers: Record<VisualizerKey, boolean>;
   execution: Record<ExecKey, boolean>;
@@ -339,6 +342,7 @@ export type GameState = {
     keypadColumns: number;
     keypadRows: number;
     activeVisualizer: ActiveVisualizer;
+    memoryVariable: MemoryVariable;
     buttonFlags: Record<string, boolean>;
   };
   keyPressCounts: Partial<Record<Key, number>>;

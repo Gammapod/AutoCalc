@@ -9,6 +9,7 @@ export type KeyActionHandlerId =
   | "apply_visualizer_noop"
   | "apply_toggle_noop"
   | "apply_noop"
+  | "apply_memory"
   | "apply_negate"
   | "apply_clear_all"
   | "apply_clear_entry"
@@ -32,6 +33,10 @@ const overrideHandlerById: Record<ButtonHandlerOverrideId, KeyActionHandlerId> =
   utility_clear_all: "apply_clear_all",
   utility_clear_entry: "apply_clear_entry",
   utility_undo: "apply_undo",
+  memory_cycle_variable: "apply_memory",
+  memory_recall_into_input: "apply_memory",
+  memory_adjust_plus: "apply_memory",
+  memory_adjust_minus: "apply_memory",
   execute_equals: "apply_equals",
   execute_increment: "apply_increment",
   execute_decrement: "apply_decrement",

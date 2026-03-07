@@ -1,7 +1,7 @@
 import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
 import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js";
-import { isDigitKey, isOperatorKey, isVisualizerKey } from "../../domain/buttonRegistry.js";
+import { getButtonDefinition, isDigitKey, isOperatorKey, isVisualizerKey } from "../../domain/buttonRegistry.js";
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../domain/analysis.js";
 import { buildUnlockCriteria } from "../../domain/unlockEngine.js";
 import type {
@@ -14,7 +14,7 @@ import type {
   UnlockEffect,
 } from "../../domain/types.js";
 
-export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "step" | "visualizers" | "execution";
+export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "memory" | "step" | "visualizers" | "execution";
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -127,6 +127,9 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   }
   if (key === "C" || key === "CE" || key === "UNDO") {
     return "utility";
+  }
+  if (getButtonDefinition(key)?.category === "memory") {
+    return "memory";
   }
   if (isVisualizerKey(key)) {
     return "visualizers";

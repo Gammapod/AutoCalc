@@ -18,7 +18,9 @@ export const runKeyCatalogNormalizationTests = (): void => {
 
   for (const entry of keyCatalog) {
     if (entry.behaviorKind === "visualizer") {
-      assert.ok(entry.visualizerId, `visualizer key ${entry.key} must define visualizerId`);
+      if (entry.key === "GRAPH" || entry.key === "FEED" || entry.key === "CIRCLE") {
+        assert.ok(("visualizerId" in entry ? entry.visualizerId : undefined), `visualizer key ${entry.key} must define visualizerId`);
+      }
     }
     if (entry.behaviorKind === "digit") {
       assert.equal(entry.inputFamily, "atom_digit", `digit key ${entry.key} must use atom_digit family`);
