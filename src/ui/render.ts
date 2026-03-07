@@ -708,6 +708,57 @@ const renderSevenSegmentValue = (
 };
 
 const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
+  const getAllocatorUnspentPoints = (): number =>
+    state.allocator.maxPoints - (
+      state.allocator.allocations.width +
+      state.allocator.allocations.height +
+      state.allocator.allocations.range +
+      state.allocator.allocations.speed +
+      state.allocator.allocations.slots
+    );
+  const buildMemoryStatusRow = (): HTMLElement => {
+    const row = document.createElement("div");
+    row.className = "total-memory-row";
+
+    const lambda = document.createElement("span");
+    lambda.className = "total-memory-lambda";
+    lambda.textContent = `\u03BB = ${getAllocatorUnspentPoints().toString()}`;
+    row.appendChild(lambda);
+
+    const variables = document.createElement("div");
+    variables.className = "total-memory-variables";
+    const variableValues: Array<{ symbol: "\u03B1" | "\u03B2" | "\u03B3"; value: number }> = [
+      { symbol: "\u03B1", value: state.ui.keypadColumns },
+      { symbol: "\u03B2", value: state.ui.keypadRows },
+      { symbol: "\u03B3", value: state.unlocks.maxSlots },
+    ];
+    for (const entry of variableValues) {
+      const token = document.createElement("span");
+      token.className = "total-memory-var";
+      const isSelected = state.ui.memoryVariable === entry.symbol;
+      const leftBracket = document.createElement("span");
+      leftBracket.className = isSelected
+        ? "total-memory-bracket total-memory-bracket--visible"
+        : "total-memory-bracket";
+      leftBracket.textContent = "[";
+      const symbol = document.createElement("span");
+      symbol.className = isSelected ? "total-memory-symbol total-memory-symbol--selected" : "total-memory-symbol";
+      symbol.textContent = entry.symbol;
+      const rightBracket = document.createElement("span");
+      rightBracket.className = isSelected
+        ? "total-memory-bracket total-memory-bracket--visible"
+        : "total-memory-bracket";
+      rightBracket.textContent = "]";
+      const valueText = document.createElement("span");
+      valueText.className = "total-memory-value";
+      valueText.textContent = ` = ${entry.value.toString()}`;
+      token.append(leftBracket, symbol, rightBracket, valueText);
+      variables.appendChild(token);
+    }
+    row.appendChild(variables);
+    return row;
+  };
+
   const latestRollEntry = state.calculator.rollEntries.at(-1);
   const domainValue = latestRollEntry?.y ?? state.calculator.total;
   const totalIsNaN = !isRationalCalculatorValue(state.calculator.total);
@@ -770,10 +821,7 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
     }
     primaryDisplay.appendChild(frame);
     stack.appendChild(primaryDisplay);
-    const memoryIndicator = document.createElement("span");
-    memoryIndicator.className = "total-memory-indicator";
-    memoryIndicator.textContent = `M=${state.ui.memoryVariable}`;
-    stack.appendChild(memoryIndicator);
+    stack.appendChild(buildMemoryStatusRow());
     totalEl.appendChild(stack);
     totalEl.setAttribute("aria-label", "Total _");
     return;
@@ -781,10 +829,7 @@ const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   totalEl.setAttribute("aria-label", `Total ${calculatorValueToDisplayString(state.calculator.total)}`);
   renderSevenSegmentValue(primaryDisplay, state.calculator.total, state.unlocks.maxTotalDigits, state.calculator.pendingNegativeTotal);
   stack.appendChild(primaryDisplay);
-  const memoryIndicator = document.createElement("span");
-  memoryIndicator.className = "total-memory-indicator";
-  memoryIndicator.textContent = `M=${state.ui.memoryVariable}`;
-  stack.appendChild(memoryIndicator);
+  stack.appendChild(buildMemoryStatusRow());
   totalEl.appendChild(stack);
 };
 
