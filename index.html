@@ -2446,58 +2446,6 @@
       <main id="app" class="app-layout" aria-label="AutoCalc">
         <section class="play-area">
           <div class="device-row">
-            <section class="device device--allocator" data-allocator-device aria-label="Allocator">
-              <div class="allocator-header">
-                <h2 class="allocator-title">EIGEN ALLOCATOR | ~,==,"&lt;</h2>
-              </div>
-              <div class="allocator-grid">
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-unused>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="lambda">lambda=</span>
-                  <span class="allocator-stepper-placeholder" aria-hidden="true"></span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-width data-allocator-effective-width>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="width">m=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-width>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-width>+</button>
-                  </span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-height data-allocator-effective-height>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="height">n=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-height>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-height>+</button>
-                  </span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-range data-allocator-effective-range>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="range">R=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-range>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-range>+</button>
-                  </span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-speed data-allocator-effective-speed>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="speed">t=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-speed>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-speed>+</button>
-                  </span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-slots data-allocator-effective-slots>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="slots">S=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-slots>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-slots>+</button>
-                  </span>
-                </div>
-              </div>
-            </section>
             <section class="device device--calc" data-calc-device>
               <section class="roll" data-roll aria-label="Calculator roll"></section>
               <section class="calc">
@@ -2519,7 +2467,7 @@
                   <div class="display" data-slot></div>
                 </div>
                 <div data-keys></div>
-                <button type="button" class="allocator-mode-action" data-allocator-reset>Allocate 𝝀</button>
+                <button type="button" class="allocator-mode-action" data-mode-toggle>Modify Layout</button>
               </section>
             </section>
           </div>

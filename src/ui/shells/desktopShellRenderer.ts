@@ -1,18 +1,14 @@
 import type { Action, GameState } from "../../domain/types.js";
 import { clearVisualizerHost, renderVisualizerHost } from "../modules/visualizerHost.js";
 import { renderChecklistV2Module } from "../modules/checklistRenderer.js";
-import { renderAllocatorV2Module } from "../modules/allocatorRenderer.js";
 import { renderCalculatorStorageV2Module } from "../modules/calculatorStorageRenderer.js";
 import type { ShellRenderer, ShellRenderOptions } from "../shellRender.js";
 
 const CUE_DURATION_MS = 520;
 
-const findCueTarget = (root: Element, target: "calculator" | "allocator" | "storage"): HTMLElement | null => {
+const findCueTarget = (root: Element, target: "calculator" | "storage"): HTMLElement | null => {
   if (target === "calculator") {
     return root.querySelector<HTMLElement>("[data-calc-device]");
-  }
-  if (target === "allocator") {
-    return root.querySelector<HTMLElement>("[data-allocator-device]");
   }
   return root.querySelector<HTMLElement>(".storage");
 };
@@ -22,7 +18,6 @@ const applyDesktopA11yMarkers = (root: Element, interactionMode: ShellRenderOpti
   const checklist = root.querySelector<HTMLElement>(".checklist-shell");
   const storage = root.querySelector<HTMLElement>(".storage");
   const calc = root.querySelector<HTMLElement>("[data-calc-device]");
-  const allocator = root.querySelector<HTMLElement>("[data-allocator-device]");
   const mode = interactionMode ?? "calculator";
 
   if (playArea) {
@@ -38,9 +33,6 @@ const applyDesktopA11yMarkers = (root: Element, interactionMode: ShellRenderOpti
   }
   if (calc) {
     calc.setAttribute("data-desktop-panel", "calculator");
-  }
-  if (allocator) {
-    allocator.setAttribute("data-desktop-panel", "allocator");
   }
 };
 
@@ -65,7 +57,6 @@ export const createDesktopShellRenderer = (root: Element): ShellRenderer => {
     });
     renderVisualizerHost(root, state);
     renderChecklistV2Module(root, state);
-    renderAllocatorV2Module(root, state, dispatch);
   };
 
   const forceActiveView: ShellRenderer["forceActiveView"] = () => {

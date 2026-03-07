@@ -54,11 +54,11 @@ ${alphaEntry}&0&0&0&0\\
 \end{bmatrix}
 =
 \begin{bmatrix}
-\lambda{\leftrightarrow}\\
-\lambda{\updownarrow}\\
-\lambda{[\text{\_ \_}]}\\
-\lambda{[-\delta,\delta]}\\
-\lambda{\frac{\Delta T}{1.05^\epsilon}}
+\lambda{\leftrightarrow}=${state.lambdaControl.alpha.toString()}\\
+\lambda{\updownarrow}=${state.lambdaControl.beta.toString()}\\
+\lambda{[\text{\_ \_}]}=${state.lambdaControl.gamma.toString()}\\
+\lambda{[-\delta,\delta]}=${delta.toString()}\\
+\lambda{\frac{\Delta T}{1.05^\epsilon}=${epsilon}}
 \end{bmatrix}
 `;
 };

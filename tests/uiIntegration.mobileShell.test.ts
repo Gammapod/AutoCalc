@@ -42,14 +42,14 @@ export const runUiIntegrationMobileShellTests = (): void => {
 
     renderer.forceActiveView({
       snapId: "bottom",
-      bottomPanelId: "allocator",
+      bottomPanelId: "checklist",
       includeTransition: false,
     });
-    const allocatorPanel = shellRoot?.querySelector<HTMLElement>("[data-v2-drawer-panel='allocator']");
+    const allocatorPanel = shellRoot?.querySelector<HTMLElement>("[data-v2-drawer-panel='checklist']");
     assert.equal(
       allocatorPanel?.getAttribute("aria-hidden"),
       "false",
-      "forceActiveView can orchestrate bottom allocator panel",
+      "forceActiveView can orchestrate bottom checklist panel",
     );
 
     renderer.render(withStorage, dispatch, {

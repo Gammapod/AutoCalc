@@ -4,7 +4,6 @@ import { createShellController } from "./shellController.js";
 import type { SnapId } from "./shellModel.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "./touchRearrangeController.js";
 import { renderChecklistV2Module } from "./modules/checklistRenderer.js";
-import { renderAllocatorV2Module } from "./modules/allocatorRenderer.js";
 import { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
 import { clearVisualizerHost, renderVisualizerHost } from "./modules/visualizerHost.js";
 
@@ -13,10 +12,10 @@ export type ShellRenderer = {
   forceActiveView: (options: {
     snapId?: SnapId;
     middlePanelId?: "calculator";
-    bottomPanelId?: "storage" | "allocator" | "checklist";
+    bottomPanelId?: "storage" | "checklist";
     includeTransition?: boolean;
   }) => void;
-  playTransitionCue: (target: "calculator" | "allocator" | "storage") => Promise<void>;
+  playTransitionCue: (target: "calculator" | "storage") => Promise<void>;
   dispose: () => void;
   resetForTests: () => void;
 };
@@ -40,7 +39,6 @@ type ShellRefs = {
   bottomDrawerViewport: HTMLElement;
   bottomDrawerTrack: HTMLElement;
   bottomDrawerPanelStorage: HTMLElement;
-  bottomDrawerPanelAllocator: HTMLElement;
   bottomDrawerPanelChecklist: HTMLElement;
   controlsUp: HTMLButtonElement;
   controlsDown: HTMLButtonElement;
@@ -63,7 +61,6 @@ type PointerSession = {
   axisLock: "none" | "x" | "y";
   startedInRightEdgeZone: boolean;
   startedInStorage: boolean;
-  startedInAllocator: boolean;
   startedInChecklist: boolean;
   preferredDrawerTarget: DrawerDragTarget;
   startedInMenu: boolean;
@@ -293,11 +290,9 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   const getBottomDrawerOffset = (refs: ShellRefs): number =>
     (() => {
       const activePanel =
-        controller.runtime.activeBottomPanelId === "allocator"
-          ? refs.bottomDrawerPanelAllocator
-          : controller.runtime.activeBottomPanelId === "checklist"
-            ? refs.bottomDrawerPanelChecklist
-            : refs.bottomDrawerPanelStorage;
+        controller.runtime.activeBottomPanelId === "checklist"
+          ? refs.bottomDrawerPanelChecklist
+          : refs.bottomDrawerPanelStorage;
       const activeRect = activePanel.getBoundingClientRect();
       const baseRect = refs.bottomDrawerPanelStorage.getBoundingClientRect();
       const inset = getDrawerLeadInset(refs.bottomDrawerViewport, refs.bottomDrawerPanelStorage);
@@ -314,10 +309,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     refs.bottomDrawerPanelStorage.setAttribute(
       "aria-hidden",
       controller.runtime.activeBottomPanelId === "storage" ? "false" : "true",
-    );
-    refs.bottomDrawerPanelAllocator.setAttribute(
-      "aria-hidden",
-      controller.runtime.activeBottomPanelId === "allocator" ? "false" : "true",
     );
     refs.bottomDrawerPanelChecklist.setAttribute(
       "aria-hidden",
@@ -513,7 +504,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
         axisLock: "none",
         startedInRightEdgeZone,
         startedInStorage: !!target?.closest("[data-storage-keys]"),
-        startedInAllocator: !!target?.closest("[data-v2-drawer-panel='allocator']"),
         startedInChecklist: !!target?.closest("[data-v2-drawer-panel='checklist']"),
         preferredDrawerTarget,
         startedInMenu: false,
@@ -720,7 +710,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
         axisLock: "none",
         startedInRightEdgeZone: false,
         startedInStorage: false,
-        startedInAllocator: false,
         startedInChecklist: false,
         preferredDrawerTarget: "middle",
         startedInMenu: true,
@@ -779,10 +768,8 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       }
       const next =
         controller.runtime.activeBottomPanelId === "storage"
-          ? "allocator"
-          : controller.runtime.activeBottomPanelId === "allocator"
-            ? "checklist"
-            : "storage";
+          ? "checklist"
+          : "storage";
       controller.setBottomPanel(next);
       syncSnapAndUi(refs, state, true);
     });
@@ -820,7 +807,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     const bottomDrawerViewport = shell.querySelector<HTMLElement>("[data-v2-bottom-drawer-viewport='true']");
     const bottomDrawerTrack = shell.querySelector<HTMLElement>("[data-v2-bottom-drawer-track='true']");
     const bottomDrawerPanelStorage = shell.querySelector<HTMLElement>("[data-v2-drawer-panel='storage']");
-    const bottomDrawerPanelAllocator = shell.querySelector<HTMLElement>("[data-v2-drawer-panel='allocator']");
     const bottomDrawerPanelChecklist = shell.querySelector<HTMLElement>("[data-v2-drawer-panel='checklist']");
     const controlsUp = shell.querySelector<HTMLButtonElement>("[data-v2-control='up']");
     const controlsDown = shell.querySelector<HTMLButtonElement>("[data-v2-control='down']");
@@ -844,7 +830,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       !bottomDrawerViewport ||
       !bottomDrawerTrack ||
       !bottomDrawerPanelStorage ||
-      !bottomDrawerPanelAllocator ||
       !bottomDrawerPanelChecklist ||
       !controlsUp ||
       !controlsDown ||
@@ -872,7 +857,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       bottomDrawerViewport,
       bottomDrawerTrack,
       bottomDrawerPanelStorage,
-      bottomDrawerPanelAllocator,
       bottomDrawerPanelChecklist,
       controlsUp,
       controlsDown,
@@ -898,13 +882,12 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       return existing;
     }
 
-    const allocatorDevice = root.querySelector<HTMLElement>("[data-allocator-device]");
     const calcDevice = root.querySelector<HTMLElement>("[data-calc-device]");
     const storageSection = root.querySelector<HTMLElement>(".storage");
     const checklistShell = root.querySelector<HTMLElement>(".checklist-shell");
     const keys = root.querySelector<HTMLElement>("[data-keys]");
     const storageKeys = root.querySelector<HTMLElement>("[data-storage-keys]");
-    if (!allocatorDevice || !calcDevice || !storageSection || !checklistShell || !keys || !storageKeys) {
+    if (!calcDevice || !storageSection || !checklistShell || !keys || !storageKeys) {
       throw new Error("V2 shell could not find required modules.");
     }
 
@@ -952,9 +935,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     const bottomDrawerPanelStorage = document.createElement("section");
     bottomDrawerPanelStorage.className = "v2-bottom-drawer-panel";
     bottomDrawerPanelStorage.dataset.v2DrawerPanel = "storage";
-    const bottomDrawerPanelAllocator = document.createElement("section");
-    bottomDrawerPanelAllocator.className = "v2-bottom-drawer-panel";
-    bottomDrawerPanelAllocator.dataset.v2DrawerPanel = "allocator";
     const bottomDrawerPanelChecklist = document.createElement("section");
     bottomDrawerPanelChecklist.className = "v2-bottom-drawer-panel";
     bottomDrawerPanelChecklist.dataset.v2DrawerPanel = "checklist";
@@ -964,9 +944,8 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     middleDrawerViewport.appendChild(middleDrawerTrack);
     sectionCalc.appendChild(middleDrawerViewport);
     bottomDrawerPanelStorage.appendChild(storageSection);
-    bottomDrawerPanelAllocator.appendChild(allocatorDevice);
     bottomDrawerPanelChecklist.appendChild(checklistShell);
-    bottomDrawerTrack.append(bottomDrawerPanelStorage, bottomDrawerPanelAllocator, bottomDrawerPanelChecklist);
+    bottomDrawerTrack.append(bottomDrawerPanelStorage, bottomDrawerPanelChecklist);
     bottomDrawerViewport.appendChild(bottomDrawerTrack);
     sectionStorage.appendChild(bottomDrawerViewport);
 
@@ -1037,7 +1016,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       bottomDrawerViewport,
       bottomDrawerTrack,
       bottomDrawerPanelStorage,
-      bottomDrawerPanelAllocator,
       bottomDrawerPanelChecklist,
       controlsUp,
       controlsDown,
@@ -1071,7 +1049,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     });
     renderVisualizerHost(root, state);
     renderChecklistV2Module(root, state);
-    renderAllocatorV2Module(root, state, dispatch);
     syncSnapAndUi(refs, state, false);
   };
 
@@ -1097,9 +1074,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   const playTransitionCue: ShellRenderer["playTransitionCue"] = async (target) => {
     const refs = ensureShellRefs();
     const element =
-      target === "allocator"
-        ? refs.bottomDrawerPanelAllocator
-        : target === "storage"
+      target === "storage"
           ? refs.bottomDrawerPanelStorage
           : refs.middleDrawerPanelCalculator;
     element.classList.remove("v2-transition-cue");

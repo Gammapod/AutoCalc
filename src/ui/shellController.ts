@@ -3,7 +3,7 @@ import type { GameState } from "../domain/types.js";
 import type { InteractionMode } from "../app/interactionRuntime.js";
 
 type AxisLock = "none" | "x" | "y";
-export type BottomDrawerPanelId = "storage" | "allocator" | "checklist";
+export type BottomDrawerPanelId = "storage" | "checklist";
 export type MiddleDrawerPanelId = "calculator";
 
 export type GestureSession = {
@@ -101,17 +101,11 @@ export const resolveBottomPanelFromDrag = (
 
   if (shouldMoveLeft) {
     if (activePanelId === "storage") {
-      return "allocator";
-    }
-    if (activePanelId === "allocator") {
       return "checklist";
     }
   }
   if (shouldMoveRight) {
     if (activePanelId === "checklist") {
-      return "allocator";
-    }
-    if (activePanelId === "allocator") {
       return "storage";
     }
   }

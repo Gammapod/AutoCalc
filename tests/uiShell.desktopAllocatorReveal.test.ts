@@ -24,7 +24,6 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
   const checklist = createMockElement();
   const storage = createMockElement();
   const calc = createMockElement();
-  const allocator = createMockElement();
   const root = {
     querySelector: (selector: string) => {
       if (selector === ".play-area") {
@@ -38,9 +37,6 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
       }
       if (selector === "[data-calc-device]") {
         return calc;
-      }
-      if (selector === "[data-allocator-device]") {
-        return allocator;
       }
       return null;
     },

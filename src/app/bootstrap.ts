@@ -12,7 +12,7 @@ import {
   createAutoEqualsScheduler,
   normalizeLoadedStateForRuntime,
 } from "./autoEqualsScheduler.js";
-import { getLambdaDerivedValues, getLambdaUnusedPoints } from "../domain/lambdaControl.js";
+import { getLambdaUnusedPoints } from "../domain/lambdaControl.js";
 import type { Action, GameState, Key } from "../domain/types.js";
 
 declare global {
@@ -54,33 +54,8 @@ const debugMaxPointsInput = document.querySelector<HTMLInputElement>("[data-debu
 const applyMaxPointsButton = document.querySelector<HTMLButtonElement>("[data-debug-apply-max-points]");
 const debugRollStateEl = document.querySelector<HTMLElement>("[data-debug-roll-state]");
 const toggleUiShellLink = document.querySelector<HTMLAnchorElement>("[data-debug-toggle-ui-shell]");
-const allocatorDeviceEl = document.querySelector<HTMLElement>("[data-allocator-device]");
+const allocatorResetButton = document.querySelector<HTMLButtonElement>("[data-mode-toggle]");
 
-const allocatorUnusedEl = document.querySelector<HTMLElement>("[data-allocator-unused]");
-const allocatorWidthValueEl = document.querySelector<HTMLElement>("[data-allocator-width]");
-const allocatorHeightValueEl = document.querySelector<HTMLElement>("[data-allocator-height]");
-const allocatorRangeValueEl = document.querySelector<HTMLElement>("[data-allocator-range]");
-const allocatorSpeedValueEl = document.querySelector<HTMLElement>("[data-allocator-speed]");
-const allocatorSlotsValueEl = document.querySelector<HTMLElement>("[data-allocator-slots]");
-const allocatorEffectiveWidthEl = document.querySelector<HTMLElement>("[data-allocator-effective-width]");
-const allocatorEffectiveHeightEl = document.querySelector<HTMLElement>("[data-allocator-effective-height]");
-const allocatorEffectiveRangeEl = document.querySelector<HTMLElement>("[data-allocator-effective-range]");
-const allocatorEffectiveSpeedEl = document.querySelector<HTMLElement>("[data-allocator-effective-speed]");
-const allocatorEffectiveSlotsEl = document.querySelector<HTMLElement>("[data-allocator-effective-slots]");
-const allocatorIncWidthButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-width]");
-const allocatorDecWidthButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-width]");
-const allocatorIncHeightButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-height]");
-const allocatorDecHeightButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-height]");
-const allocatorIncRangeButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-range]");
-const allocatorDecRangeButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-range]");
-const allocatorIncSpeedButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-speed]");
-const allocatorDecSpeedButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-speed]");
-const allocatorIncSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-inc-slots]");
-const allocatorDecSlotsButton = document.querySelector<HTMLButtonElement>("[data-allocator-dec-slots]");
-const allocatorResetButton = document.querySelector<HTMLButtonElement>("[data-allocator-reset]");
-const allocatorLabelEls = Array.from(document.querySelectorAll<HTMLElement>("[data-allocator-label]"));
-const requiredAllocatorLabelKeys = new Set(["lambda", "width", "height", "range", "speed", "slots"]);
-const presentAllocatorLabelKeys = new Set(allocatorLabelEls.map((labelEl) => labelEl.dataset.allocatorLabel).filter(Boolean));
 if (
   !debugToggle ||
   !debugMenu ||
@@ -95,110 +70,10 @@ if (
   !applyMaxPointsButton ||
   !debugRollStateEl ||
   !toggleUiShellLink ||
-  !allocatorDeviceEl ||
-  !allocatorUnusedEl ||
-  !allocatorWidthValueEl ||
-  !allocatorHeightValueEl ||
-  !allocatorRangeValueEl ||
-  !allocatorSpeedValueEl ||
-  !allocatorSlotsValueEl ||
-  !allocatorEffectiveWidthEl ||
-  !allocatorEffectiveHeightEl ||
-  !allocatorEffectiveRangeEl ||
-  !allocatorEffectiveSpeedEl ||
-  !allocatorEffectiveSlotsEl ||
-  !allocatorIncWidthButton ||
-  !allocatorDecWidthButton ||
-  !allocatorIncHeightButton ||
-  !allocatorDecHeightButton ||
-  !allocatorIncRangeButton ||
-  !allocatorDecRangeButton ||
-  !allocatorIncSpeedButton ||
-  !allocatorDecSpeedButton ||
-  !allocatorIncSlotsButton ||
-  !allocatorDecSlotsButton ||
-  !allocatorResetButton ||
-  allocatorLabelEls.length === 0 ||
-  requiredAllocatorLabelKeys.size !== presentAllocatorLabelKeys.size ||
-  [...requiredAllocatorLabelKeys].some((key) => !presentAllocatorLabelKeys.has(key))
+  !allocatorResetButton
 ) {
   throw new Error("Required UI controls are missing.");
 }
-
-type AllocatorLabelKey = "lambda" | "width" | "height" | "range" | "speed" | "slots";
-
-const renderAllocatorLabels = (): void => {
-  const labelsByKey = new Map<AllocatorLabelKey, { latex: string; fallback: string; ariaLabel: string }>([
-    ["lambda", { latex: String.raw`= \lambda - (m + n + R + t + S)`, fallback: "= lambda", ariaLabel: "equals lambda" }],
-    ["width", {  latex: String.raw`= m (m\leftrightarrow\,,0,0,0,0)`, fallback: "= <-> m", ariaLabel: "equals left right arrow m" }],
-    ["height", { latex: String.raw`= n (0,n\updownarrow\,0,0,0)`, fallback: "= ^v n", ariaLabel: "equals up down arrow n" }],
-    ["range", {  latex: String.raw`= R (0,0,[-R,R],0,0)`, fallback: "= R", ariaLabel: "equals R" }],
-    ["speed", {  latex: String.raw`= t (0,0,0,\frac{ΔT}{1.05^t},0)`, fallback: "= t", ariaLabel: "equals t" }],
-    ["slots", {  latex: String.raw`= S (0,0,0,0,S[\ \_\ \_\ ])`, fallback: "= S", ariaLabel: "equals S" }],
-  ]);
-  const katexApi = window.katex;
-  for (const labelEl of allocatorLabelEls) {
-    const keyRaw = labelEl.dataset.allocatorLabel;
-    const key = keyRaw === undefined ? null : (keyRaw as AllocatorLabelKey);
-    const config = key ? labelsByKey.get(key) : null;
-    if (!config) {
-      continue;
-    }
-    if (!katexApi) {
-      labelEl.textContent = config.fallback;
-      labelEl.setAttribute("aria-label", config.ariaLabel);
-      continue;
-    }
-    try {
-      katexApi.render(config.latex, labelEl, {
-        displayMode: false,
-        throwOnError: false,
-      });
-      labelEl.setAttribute("aria-label", config.ariaLabel);
-    } catch {
-      labelEl.textContent = config.fallback;
-      labelEl.setAttribute("aria-label", config.ariaLabel);
-    }
-  }
-};
-
-const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
-type SegmentName = (typeof SEGMENT_NAMES)[number];
-
-const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
-  "0": ["a", "b", "c", "d", "e", "f"],
-  "1": ["b", "c"],
-  "2": ["a", "b", "d", "e", "g"],
-  "3": ["a", "b", "c", "d", "g"],
-  "4": ["b", "c", "f", "g"],
-  "5": ["a", "c", "d", "f", "g"],
-  "6": ["a", "c", "d", "e", "f", "g"],
-  "7": ["a", "b", "c"],
-  "8": ["a", "b", "c", "d", "e", "f", "g"],
-  "9": ["a", "b", "c", "d", "f", "g"],
-};
-
-const renderAllocatorDisplay = (target: HTMLElement, value: number): void => {
-  const text = Math.max(0, Math.trunc(value)).toString();
-  target.innerHTML = "";
-  const frame = document.createElement("div");
-  frame.className = "allocator-seg-frame";
-  for (const char of text) {
-    const digit = document.createElement("div");
-    digit.className = "seg-digit allocator-seg-digit";
-    const activeSegments = DIGIT_SEGMENTS[char] ?? [];
-    for (const segmentName of SEGMENT_NAMES) {
-      const segment = document.createElement("div");
-      segment.className = `seg allocator-seg seg-${segmentName}`;
-      if (activeSegments.includes(segmentName)) {
-        segment.classList.add("seg--on", "allocator-seg--on");
-      }
-      digit.appendChild(segment);
-    }
-    frame.appendChild(digit);
-  }
-  target.appendChild(frame);
-};
 
 const storageRepo = createLocalStorageRepo(window.localStorage);
 const loaded = storageRepo.load();
@@ -314,8 +189,6 @@ const getUnusedPoints = (state: GameState): number => {
   return getLambdaUnusedPoints(state.lambdaControl);
 };
 
-let allocatorUnusedDisplayOverride: number | null = null;
-
 const syncKeypadDimensionInputs = (): void => {
   const state = store.getState();
   keypadWidthInput.value = state.ui.keypadColumns.toString();
@@ -324,41 +197,11 @@ const syncKeypadDimensionInputs = (): void => {
 
 const syncAllocatorDeviceInputs = (): void => {
   const state = store.getState();
-  const derived = getLambdaDerivedValues(state.lambdaControl);
-  const unused = allocatorUnusedDisplayOverride ?? getUnusedPoints(state);
-  const allocatorLocked = interactionRuntime.getMode() === "calculator";
-  const inputBlocked = interactionRuntime.isInputBlocked();
-  const effectiveWidth = state.lambdaControl.alpha;
-  const effectiveHeight = state.lambdaControl.beta;
-  const effectiveRange = derived.deltaEffective;
-  const effectiveSlots = state.unlocks.maxSlots;
-
-  renderAllocatorDisplay(allocatorUnusedEl, unused);
-
-  renderAllocatorDisplay(allocatorWidthValueEl, effectiveWidth);
-  renderAllocatorDisplay(allocatorHeightValueEl, effectiveHeight);
-  renderAllocatorDisplay(allocatorRangeValueEl, effectiveRange);
-  renderAllocatorDisplay(
-    allocatorSpeedValueEl,
-    Math.max(0, Math.trunc((Number(derived.epsilonEffective.num) / Number(derived.epsilonEffective.den)) * 10)),
-  );
-  renderAllocatorDisplay(allocatorSlotsValueEl, effectiveSlots);
-
-  allocatorIncWidthButton.disabled = true;
-  allocatorDecWidthButton.disabled = true;
-  allocatorIncHeightButton.disabled = true;
-  allocatorDecHeightButton.disabled = true;
-  allocatorIncRangeButton.disabled = true;
-  allocatorDecRangeButton.disabled = true;
-  allocatorIncSpeedButton.disabled = true;
-  allocatorDecSpeedButton.disabled = true;
-  allocatorIncSlotsButton.disabled = true;
-  allocatorDecSlotsButton.disabled = true;
-  allocatorResetButton.disabled = inputBlocked;
-  allocatorResetButton.textContent = interactionRuntime.getMode() === "calculator" ? "↓ Modify Calculator ↓" : "↑ RETURN ↑";
-  allocatorDeviceEl.dataset.allocatorLocked = allocatorLocked ? "true" : "false";
-
   debugMaxPointsInput.value = state.lambdaControl.maxPoints.toString();
+  if (allocatorResetButton) {
+    allocatorResetButton.disabled = interactionRuntime.isInputBlocked();
+    allocatorResetButton.textContent = interactionRuntime.getMode() === "calculator" ? "Modify Layout" : "Return";
+  }
 };
 
 const serializeRationalForDebug = (value: { num: bigint; den: bigint }): { num: string; den: string } => ({
@@ -377,7 +220,6 @@ const syncDebugRollState = (): void => {
   debugRollStateEl.textContent = JSON.stringify(serializedRollState, null, 2);
 };
 
-renderAllocatorLabels();
 redraw();
 autoEqualsScheduler.startIfNeeded();
 
@@ -580,34 +422,23 @@ const runAllocatorIncreaseCue = async (previousUnused: number, nextUnused: numbe
   }
   allocatorIncreaseCueInFlight = true;
   interactionRuntime.setInputBlocked(true);
-  allocatorUnusedDisplayOverride = previousUnused;
-  allocatorUnusedEl.classList.add("allocator-display--cue", "allocator-display--cue-pending");
   redraw();
   try {
     if (shellRenderer) {
-      await shellRenderer.playTransitionCue("allocator");
+      await shellRenderer.playTransitionCue("storage");
       shellRenderer.forceActiveView({
-        bottomPanelId: "allocator",
+        bottomPanelId: "storage",
         includeTransition: true,
       });
     } else {
       await sleep(520);
     }
-    allocatorUnusedEl.classList.add("allocator-display--cue-focus");
+    void previousUnused;
+    void nextUnused;
     await sleep(ALLOCATOR_CUE_PRE_APPLY_MS);
-    allocatorUnusedDisplayOverride = nextUnused;
-    allocatorUnusedEl.classList.remove("allocator-display--cue-pending");
-    allocatorUnusedEl.classList.add("allocator-display--cue-applied");
     redraw();
     await sleep(ALLOCATOR_CUE_POST_APPLY_MS);
   } finally {
-    allocatorUnusedDisplayOverride = null;
-    allocatorUnusedEl.classList.remove(
-      "allocator-display--cue",
-      "allocator-display--cue-pending",
-      "allocator-display--cue-focus",
-      "allocator-display--cue-applied",
-    );
     interactionRuntime.setInputBlocked(false);
     allocatorIncreaseCueInFlight = false;
     redraw();
@@ -886,3 +717,7 @@ syncDebugUiState();
 syncKeypadDimensionInputs();
 syncAllocatorDeviceInputs();
 syncDebugRollState();
+
+
+
+
