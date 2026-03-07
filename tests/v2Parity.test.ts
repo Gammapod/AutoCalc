@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState } from "../src/domain/types.js";
-import { reduceActionWithV2 } from "../src_v2/compat/legacyReducerAdapter.js";
-import { compareParity } from "../src_v2/compat/parityHarness.js";
-import { executeCommand } from "../src_v2/domain/commands.js";
-import { getCalculatorMode } from "../src_v2/domain/modes.js";
+import { reduceActionWithV2 } from "../src/compat/legacyReducerAdapter.js";
+import { compareParity } from "../src/compat/parityHarness.js";
+import { executeCommand } from "../src/domain/commands.js";
+import { getCalculatorMode } from "../src/domain/modes.js";
 
 const runSequence = (actions: Action[]): { legacy: GameState; v2: GameState } => {
   let legacy = initialState();

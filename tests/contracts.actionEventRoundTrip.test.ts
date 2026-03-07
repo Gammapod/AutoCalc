@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { buildActionFixtures, buildDomainEventFixtures, roundTripAction, roundTripEvent } from "./helpers/actionEventRoundTrip.js";
-import { eventFromAction } from "../src_v2/domain/events.js";
+import { eventFromAction } from "../src/domain/events.js";
 
 export const runContractsActionEventRoundTripTests = (): void => {
   const actions = buildActionFixtures();

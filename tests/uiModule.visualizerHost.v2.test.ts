@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { clearVisualizerHost, renderVisualizerHost, resolveActiveVisualizerPanel } from "../src_v2/ui/renderAdapter.js";
-import { VISUALIZER_REGISTRY } from "../src_v2/ui/modules/visualizers/registry.js";
+import { clearVisualizerHost, renderVisualizerHost, resolveActiveVisualizerPanel } from "../src/ui/renderAdapter.js";
+import { VISUALIZER_REGISTRY } from "../src/ui/modules/visualizers/registry.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 
 type RootLike = {

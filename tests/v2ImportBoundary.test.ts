@@ -22,17 +22,25 @@ const collectTsFiles = (dir: string): string[] => {
 const normalize = (value: string): string => value.replaceAll("\\", "/");
 
 export const runV2ImportBoundaryTests = (): void => {
-  const root = resolve(process.cwd(), "src_v2");
+  const root = resolve(process.cwd(), "src");
   const files = collectTsFiles(root);
 
   const offenders: string[] = [];
   for (const file of files) {
     const content = readFileSync(file, "utf8");
-    const hasUiImport = /from\s+["'][^"']*src\/ui\//.test(content) || /import\(["'][^"']*src\/ui\//.test(content);
-    if (hasUiImport) {
+    const hasForbiddenImport =
+      /from\s+["'][^"']*src\//.test(content) ||
+      /import\(["'][^"']*src\//.test(content) ||
+      /from\s+["'][^"']*src_legacy_tmp\//.test(content) ||
+      /import\(["'][^"']*src_legacy_tmp\//.test(content);
+    if (hasForbiddenImport) {
       offenders.push(normalize(file));
     }
   }
 
-  assert.deepEqual(offenders, [], `src_v2 must not import src/ui modules. Offenders: ${offenders.join(", ")}`);
+  assert.deepEqual(
+    offenders,
+    [],
+    `src must not use root-style src/* imports or src_legacy_tmp imports. Offenders: ${offenders.join(", ")}`,
+  );
 };

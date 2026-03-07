@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import type { Action, GameState, RollEntry } from "../src/domain/types.js";
-import { createShellRenderer } from "../src_v2/ui/renderAdapter.js";
+import { createShellRenderer } from "../src/ui/renderAdapter.js";
 import { click } from "./helpers/eventHarness.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 

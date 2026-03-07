@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { canStartTouchRearrange } from "../src_v2/ui/renderAdapter.js";
+import { canStartTouchRearrange } from "../src/ui/renderAdapter.js";
 
 export const runUiShellTouchRearrangeBottomSnapGateTests = (): void => {
   const state = initialState();

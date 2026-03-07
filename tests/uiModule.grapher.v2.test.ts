@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { clearGrapherV2Module, renderGrapherV2Module } from "../src_v2/ui/modules/grapherRenderer.js";
+import { clearGrapherV2Module, renderGrapherV2Module } from "../src/ui/modules/grapherRenderer.js";
 import type { GameState } from "../src/domain/types.js";
 
 type RootLike = {

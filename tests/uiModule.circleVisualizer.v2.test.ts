@@ -5,7 +5,7 @@ import {
   projectRadialPoints,
   projectResidueWheelPoints,
   resolveCircleRenderMode,
-} from "../src_v2/ui/modules/visualizers/circleModel.js";
+} from "../src/ui/modules/visualizers/circleModel.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): RollEntry["y"] => ({

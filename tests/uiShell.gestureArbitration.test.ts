@@ -8,7 +8,7 @@ import {
   resolveBottomPanelFromDrag,
   resolveMiddlePanelFromDrag,
   resolveSnapFromDrag,
-} from "../src_v2/ui/renderAdapter.js";
+} from "../src/ui/renderAdapter.js";
 import type { GameState } from "../src/domain/types.js";
 
 export const runUiShellGestureArbitrationTests = (): void => {

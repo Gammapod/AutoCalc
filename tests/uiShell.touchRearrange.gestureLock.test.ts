@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { createTouchRearrangeController } from "../src_v2/ui/renderAdapter.js";
+import { createTouchRearrangeController } from "../src/ui/renderAdapter.js";
 
 export const runUiShellTouchRearrangeGestureLockTests = (): void => {
   const state = initialState();

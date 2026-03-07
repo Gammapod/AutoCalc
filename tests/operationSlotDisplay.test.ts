@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
-import { buildOperationSlotDisplay } from "../src_v2/ui/shared/readModel.js";
+import { buildOperationSlotDisplay } from "../src/ui/shared/readModel.js";
 import type { GameState } from "../src/domain/types.js";
 
 export const runOperationSlotDisplayTests = (): void => {

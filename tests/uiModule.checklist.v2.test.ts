@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { initialState } from "../src/domain/state.js";
-import { renderChecklistV2Module } from "../src_v2/ui/renderAdapter.js";
-import { buildVisibleChecklistRows } from "../src_v2/ui/shared/readModelHelpers.js";
+import { renderChecklistV2Module } from "../src/ui/renderAdapter.js";
+import { buildVisibleChecklistRows } from "../src/ui/shared/readModelHelpers.js";
 
 type RootLike = {
   querySelector: (selector: string) => Element | null;

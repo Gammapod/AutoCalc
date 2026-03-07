@@ -6,7 +6,7 @@ import {
   buildKeyButtonAction,
   buildLayoutDropDispatchAction,
   resolveCalculatorKeysLocked,
-} from "../src_v2/ui/modules/calculatorStorageCore.js";
+} from "../src/ui/modules/calculatorStorageCore.js";
 
 export const runContractsUiActionEmissionTests = (): void => {
   const state = initialState();

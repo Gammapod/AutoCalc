@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { buildShellViewModel, createShellController, getMenuA11yState, shouldCloseMenuFromSwipe } from "../src_v2/ui/renderAdapter.js";
+import { buildShellViewModel, createShellController, getMenuA11yState, shouldCloseMenuFromSwipe } from "../src/ui/renderAdapter.js";
 
 export const runUiShellRightMenuTests = (): void => {
   const state = initialState();

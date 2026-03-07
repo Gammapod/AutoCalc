@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { renderAllocatorV2Module } from "../src_v2/ui/renderAdapter.js";
+import { renderAllocatorV2Module } from "../src/ui/renderAdapter.js";
 
 type RootLike = {
   querySelector: (selector: string) => Element | null;

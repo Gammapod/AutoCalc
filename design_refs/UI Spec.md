@@ -1,7 +1,7 @@
 # AutoCalc UI Specification (Current Implementation)
 
 Last updated: 2026-03-03
-Scope: DOM/CSS behavior in `index.html`, plus runtime render behavior in `src/ui/` and `src_v2/ui/`.
+Scope: DOM/CSS behavior in `index.html`, plus runtime render behavior in `src/ui/` and `src/ui/`.
 
 ## 1. Layout Model
 

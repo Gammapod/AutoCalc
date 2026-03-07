@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { buildShellViewModel } from "../src_v2/ui/renderAdapter.js";
+import { buildShellViewModel } from "../src/ui/renderAdapter.js";
 import type { GameState } from "../src/domain/types.js";
 
 export const runUiShellSnapAvailabilityTests = (): void => {

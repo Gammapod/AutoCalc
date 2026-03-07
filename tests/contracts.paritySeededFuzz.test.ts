@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { reducer } from "../src/domain/reducer.js";
-import type { Action, GameState } from "../src/domain/types.js";
-import { compareParity } from "../src_v2/compat/parityHarness.js";
-import { executeCommand } from "../src_v2/domain/commands.js";
+import type { Action } from "../src/domain/types.js";
+import { executeCommand } from "../src/domain/commands.js";
+import { buildReadModel } from "../src/domain/projections.js";
 import { SEEDED_PARITY_RUNS } from "./contracts/fixtures/fuzzConfig.js";
+import { PARITY_GOLDEN } from "./contracts/fixtures/parityGolden.js";
+import { stableSerialize } from "./helpers/stableSerialize.js";
 
 const ACTION_POOL: readonly Action[] = [
   { type: "PRESS_KEY", key: "1" },
@@ -44,29 +45,28 @@ const sampleAction = (rand: () => number): Action => {
   return ACTION_POOL[index];
 };
 
-const runSeed = (seed: number, steps: number): { ok: boolean; step: number; action?: Action; mismatches?: unknown } => {
+const expectedBySeed = new Map(PARITY_GOLDEN.seededRuns.map((entry) => [`${entry.seed}:${entry.steps}`, entry]));
+
+const runSeed = (seed: number, steps: number): { state: string; readModel: string } => {
   const rand = createSeededRng(seed);
-  let legacy: GameState = initialState();
-  let v2: GameState = initialState();
+  let state = initialState();
   for (let step = 0; step < steps; step += 1) {
     const action = sampleAction(rand);
-    legacy = reducer(legacy, action);
-    v2 = executeCommand(v2, { type: "DispatchAction", action }).state;
-    const parity = compareParity(legacy, v2);
-    if (!parity.ok) {
-      return { ok: false, step, action, mismatches: parity.mismatches };
-    }
+    state = executeCommand(state, { type: "DispatchAction", action }).state;
   }
-  return { ok: true, step: steps };
+  return {
+    state: stableSerialize(state),
+    readModel: stableSerialize(buildReadModel(state)),
+  };
 };
 
 export const runContractsParitySeededFuzzTests = (): void => {
   for (const run of SEEDED_PARITY_RUNS) {
-    const result = runSeed(run.seed, run.steps);
-    assert.equal(
-      result.ok,
-      true,
-      `seeded parity failed seed=${run.seed} step=${result.step} action=${JSON.stringify(result.action)} mismatches=${JSON.stringify(result.mismatches)}`,
-    );
+    const key = `${run.seed}:${run.steps}`;
+    const expected = expectedBySeed.get(key);
+    assert.ok(expected, `missing golden fixture for seed run ${key}`);
+    const actual = runSeed(run.seed, run.steps);
+    assert.equal(actual.state, expected.state, `state mismatch for seeded run ${key}`);
+    assert.equal(actual.readModel, expected.readModel, `read-model mismatch for seeded run ${key}`);
   }
 };

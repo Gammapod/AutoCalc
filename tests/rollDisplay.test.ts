@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { buildFeedTableRows, buildFeedTableViewModel, buildRollLines, buildRollRows, buildRollViewModel } from "../src_v2/ui/shared/readModel.js";
-import { resolveActiveVisualizerPanel } from "../src_v2/ui/modules/visualizerHost.js";
+import { buildFeedTableRows, buildFeedTableViewModel, buildRollLines, buildRollRows, buildRollViewModel } from "../src/ui/shared/readModel.js";
+import { resolveActiveVisualizerPanel } from "../src/ui/modules/visualizerHost.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 

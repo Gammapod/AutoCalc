@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { createDesktopShellRenderer } from "../src_v2/ui/shells/desktopShellRenderer.js";
+import { createDesktopShellRenderer } from "../src/ui/shells/desktopShellRenderer.js";
 
 type MockEl = HTMLElement & {
   __attrs: Map<string, string>;

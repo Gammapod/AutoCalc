@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION, initialState } from "../src/domain/state.js";
 import { createLocalStorageRepo } from "../src/infra/persistence/localStorageRepo.js";
-import { createRepository, loadFromRawSaveV2 } from "../src_v2/persistence/repository.js";
+import { createRepository, loadFromRawSaveV2 } from "../src/persistence/repository.js";
 
 type MemoryStorage = {
   getItem: (key: string) => string | null;

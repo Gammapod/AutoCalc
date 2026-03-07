@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { unlockCatalog as legacyCatalog } from "../src/content/unlocks.catalog.js";
 import { applyEffect as applyLegacyEffect, applyUnlocks } from "../src/domain/unlocks.js";
 import { initialState } from "../src/domain/state.js";
-import { evaluateUnlocks } from "../src_v2/rules/ruleRuntime.js";
-import { unlockCatalog as rulesCatalog } from "../src_v2/rules/unlockCatalog.js";
-import { applyEffect as applyRulesEffect } from "../src_v2/rules/effects.js";
+import { evaluateUnlocks } from "../src/rules/ruleRuntime.js";
+import { unlockCatalog as rulesCatalog } from "../src/rules/unlockCatalog.js";
+import { applyEffect as applyRulesEffect } from "../src/rules/effects.js";
 import {
   analyzeUnlockPredicate as analyzeViaRules,
   buildUnlockCriteria as buildCriteriaViaRules,
   evaluateUnlockPredicate as evaluateViaRules,
-} from "../src_v2/rules/predicateAdapters.js";
+} from "../src/rules/predicateAdapters.js";
 import type { UnlockPredicate } from "../src/domain/types.js";
 
 export const runV2RulesAdaptersTests = (): void => {

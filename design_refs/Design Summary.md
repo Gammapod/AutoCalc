@@ -1,7 +1,7 @@
 # AutoCalc Design Summary
 
 Last updated: 2026-03-03
-Scope: Current runtime behavior across `src/` (domain/app/ui) and `src_v2/` (shell rendering).
+Scope: Current runtime behavior across `src/` (domain/app/ui) and `src/` (shell rendering).
 
 ## Core Identity
 
@@ -66,5 +66,5 @@ Default shell mode is v2, with a vertically stacked touch-aware layout and drawe
 
 ## Scope Notes
 
-- Source of truth for behavior is code under `src/` and `src_v2/`.
+- Source of truth for behavior is code under `src/` and `src/`.
 - Design refs are descriptive documentation and should be updated alongside behavior changes.

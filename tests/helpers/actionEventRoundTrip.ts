@@ -1,7 +1,7 @@
 import { initialState } from "../../src/domain/state.js";
 import type { Action } from "../../src/domain/types.js";
-import type { DomainEvent } from "../../src_v2/domain/events.js";
-import { actionFromEvent, eventFromAction } from "../../src_v2/domain/events.js";
+import type { DomainEvent } from "../../src/domain/events.js";
+import { actionFromEvent, eventFromAction } from "../../src/domain/events.js";
 
 export const buildActionFixtures = (): Action[] => {
   const state = initialState();

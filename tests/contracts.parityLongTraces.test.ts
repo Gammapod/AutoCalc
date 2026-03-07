@@ -1,29 +1,33 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { reducer } from "../src/domain/reducer.js";
-import type { Action, GameState } from "../src/domain/types.js";
-import { compareParity } from "../src_v2/compat/parityHarness.js";
-import { executeCommand } from "../src_v2/domain/commands.js";
+import type { Action } from "../src/domain/types.js";
+import { executeCommand } from "../src/domain/commands.js";
+import { buildReadModel } from "../src/domain/projections.js";
 import { LONG_TRACE_FIXTURES } from "./contracts/fixtures/actionSequences.js";
+import { PARITY_GOLDEN } from "./contracts/fixtures/parityGolden.js";
+import { stableSerialize } from "./helpers/stableSerialize.js";
 
-const runParitySequence = (actions: Action[]): { legacy: GameState; v2: GameState } => {
-  let legacy = initialState();
-  let v2 = initialState();
+const expectedById = new Map<string, (typeof PARITY_GOLDEN.longTraces)[number]>(
+  PARITY_GOLDEN.longTraces.map((entry) => [entry.id, entry]),
+);
+
+const runSequence = (actions: readonly Action[]) => {
+  let state = initialState();
   for (const action of actions) {
-    legacy = reducer(legacy, action);
-    v2 = executeCommand(v2, { type: "DispatchAction", action }).state;
+    state = executeCommand(state, { type: "DispatchAction", action }).state;
   }
-  return { legacy, v2 };
+  return {
+    state: stableSerialize(state),
+    readModel: stableSerialize(buildReadModel(state)),
+  };
 };
 
 export const runContractsParityLongTracesTests = (): void => {
   for (const fixture of LONG_TRACE_FIXTURES) {
-    const { legacy, v2 } = runParitySequence(fixture.actions);
-    const parity = compareParity(legacy, v2);
-    assert.equal(
-      parity.ok,
-      true,
-      `long-trace parity failed for fixture ${fixture.id}: ${JSON.stringify(parity.mismatches)}`,
-    );
+    const expected = expectedById.get(fixture.id);
+    assert.ok(expected, `missing golden fixture for ${fixture.id}`);
+    const actual = runSequence(fixture.actions);
+    assert.equal(actual.state, expected.state, `state mismatch for fixture ${fixture.id}`);
+    assert.equal(actual.readModel, expected.readModel, `read-model mismatch for fixture ${fixture.id}`);
   }
 };

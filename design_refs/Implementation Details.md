@@ -1,7 +1,7 @@
 # AutoCalc Implementation Details (Current Runtime Contract)
 
 Last updated: 2026-03-03
-Scope: Runtime behavior implemented in `src/` and active shell rendering in `src_v2/`.
+Scope: Runtime behavior implemented in `src/` and active shell rendering in `src/`.
 
 ## Architecture Overview
 
@@ -11,7 +11,7 @@ Primary layers:
 2. Content (`src/content`): unlock catalog and key behavior catalog.
 3. Infrastructure (`src/infra`): rational/euclidean math, persistence, migrations.
 4. UI v1 renderer (`src/ui`): DOM rendering for classic shell.
-5. UI v2 shell (`src_v2/ui`): stacked shell, touch rearrangement, modular rendering adapter.
+5. UI v2 shell (`src/ui`): stacked shell, touch rearrangement, modular rendering adapter.
 6. App bootstrap/store (`src/app`): mode resolution, store wiring, scheduler, debug controls.
 
 ## Runtime Key Types

@@ -52,7 +52,7 @@ Shared components are optional and decided case-by-case.
 
 1. UI layers emit domain actions; domain layers own behavior.
 2. Parity checks and contract tests are required for cross-platform changes.
-3. Import boundaries must prevent unintended coupling (e.g., `src_v2` importing legacy UI paths).
+3. Import boundaries must prevent unintended coupling (e.g., `src` importing legacy UI paths).
 4. Accessibility is part of the contract (keyboard and screen-reader baseline), not post-hoc polish.
 
 ## 7. Quality Gates for UI Work

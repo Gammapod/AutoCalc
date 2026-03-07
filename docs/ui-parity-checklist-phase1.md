@@ -1,6 +1,6 @@
 # UI Parity Checklist (Phase 1 Baseline)
 
-Purpose: functional parity gate before and after removing `src_v2 -> src/ui` runtime dependencies.
+Purpose: functional parity gate before and after removing `src -> src/ui` runtime dependencies.
 
 ## Environment
 
@@ -32,7 +32,7 @@ Purpose: functional parity gate before and after removing `src_v2 -> src/ui` run
 
 1. `npm test` must pass.
 2. `v2/import-boundary` test must pass.
-3. No `src_v2` file imports `src/ui/*`.
+3. No `src` file imports `src/ui/*`.
 
 ## Signoff
 
