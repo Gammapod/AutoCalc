@@ -1,5 +1,6 @@
 import type { GameState } from "../../../src/domain/types.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
+import { resolveGraphSeedSnapshot } from "./visualizers/seedSnapshot.js";
 
 type GraphDataset = {
   data: GraphPoint[];
@@ -63,17 +64,26 @@ type ChartHandle = {
 
 type ChartCtor = new (ctx: CanvasRenderingContext2D, config: GraphChartConfig) => ChartHandle;
 
-let graphChart: ChartHandle | null = null;
-let graphCanvas: HTMLCanvasElement | null = null;
+type GrapherRuntime = {
+  graphChart: ChartHandle | null;
+  graphCanvas: HTMLCanvasElement | null;
+};
 
-const resolveGraphSeedSnapshot = (state: GameState): GameState["calculator"]["seedSnapshot"] => {
-  if (state.calculator.seedSnapshot !== undefined) {
-    return state.calculator.seedSnapshot;
+const grapherRuntimeByRoot = new WeakMap<Element, GrapherRuntime>();
+const grapherRuntimes = new Set<GrapherRuntime>();
+
+const getGrapherRuntime = (root: Element): GrapherRuntime => {
+  const existing = grapherRuntimeByRoot.get(root);
+  if (existing) {
+    return existing;
   }
-  if (state.calculator.rollEntries.length === 0) {
-    return state.calculator.total;
-  }
-  return undefined;
+  const created: GrapherRuntime = {
+    graphChart: null,
+    graphCanvas: null,
+  };
+  grapherRuntimeByRoot.set(root, created);
+  grapherRuntimes.add(created);
+  return created;
 };
 
 const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], maxXIndex: number, unlockedTotalDigits: number): GraphOptions => {
@@ -157,27 +167,39 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], maxXIndex: 
   };
 };
 
-export const clearGrapherV2Module = (): void => {
-  graphChart?.destroy();
-  graphChart = null;
-  graphCanvas = null;
+export const clearGrapherV2Module = (root?: Element): void => {
+  if (root) {
+    const runtime = grapherRuntimeByRoot.get(root);
+    runtime?.graphChart?.destroy();
+    if (runtime) {
+      runtime.graphChart = null;
+      runtime.graphCanvas = null;
+    }
+    return;
+  }
+  for (const runtime of grapherRuntimes) {
+    runtime.graphChart?.destroy();
+    runtime.graphChart = null;
+    runtime.graphCanvas = null;
+  }
 };
 
 export const renderGrapherV2Module = (root: Element, state: GameState): void => {
+  const runtime = getGrapherRuntime(root);
   const graphVisible = state.ui.activeVisualizer === "graph";
   if (!graphVisible) {
-    clearGrapherV2Module();
+    clearGrapherV2Module(root);
     return;
   }
 
   const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
   if (!canvas) {
-    clearGrapherV2Module();
+    clearGrapherV2Module(root);
     return;
   }
-  if (graphCanvas !== canvas) {
-    clearGrapherV2Module();
-    graphCanvas = canvas;
+  if (runtime.graphCanvas !== canvas) {
+    clearGrapherV2Module(root);
+    runtime.graphCanvas = canvas;
   }
 
   const chartCtor = (window as Window & { Chart?: ChartCtor }).Chart;
@@ -206,8 +228,8 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     return point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)";
   });
 
-  if (!graphChart) {
-    graphChart = new chartCtor(context, {
+  if (!runtime.graphChart) {
+    runtime.graphChart = new chartCtor(context, {
       type: "scatter",
       data: {
         datasets: [
@@ -227,10 +249,10 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     return;
   }
 
-  graphChart.data.datasets[0].data = points;
-  graphChart.data.datasets[0].pointRadius = hasPoints ? 3 : 0;
-  graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;
-  graphChart.data.datasets[0].pointBorderColor = pointBorderColor;
-  graphChart.options = options;
-  graphChart.update("none");
+  runtime.graphChart.data.datasets[0].data = points;
+  runtime.graphChart.data.datasets[0].pointRadius = hasPoints ? 3 : 0;
+  runtime.graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;
+  runtime.graphChart.data.datasets[0].pointBorderColor = pointBorderColor;
+  runtime.graphChart.options = options;
+  runtime.graphChart.update("none");
 };

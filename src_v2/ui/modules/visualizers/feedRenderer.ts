@@ -1,6 +1,6 @@
 import type { GameState } from "../../../../src/domain/types.js";
-import { isRationalCalculatorValue } from "../../../../src/domain/calculatorValue.js";
 import { buildFeedTableViewModel } from "../../shared/readModel.js";
+import { resolveFeedSeedSnapshot } from "./seedSnapshot.js";
 
 const padCenter = (text: string, width: number): string => {
   const visibleText = text.length > width ? text.slice(0, width) : text;
@@ -47,28 +47,6 @@ const appendFeedTableLine = (
 
 const buildPlainFeedTableLine = (leftText: string, rText: string | null): string =>
   `${leftText}${rText ?? ""}`;
-
-const isClearedCalculatorState = (state: GameState): boolean =>
-  isRationalCalculatorValue(state.calculator.total) &&
-  state.calculator.total.value.num === 0n &&
-  state.calculator.total.value.den === 1n &&
-  !state.calculator.pendingNegativeTotal &&
-  state.calculator.rollEntries.length === 0 &&
-  state.calculator.operationSlots.length === 0 &&
-  state.calculator.draftingSlot === null;
-
-const resolveFeedSeedSnapshot = (state: GameState): GameState["calculator"]["seedSnapshot"] => {
-  if (state.calculator.seedSnapshot !== undefined) {
-    return state.calculator.seedSnapshot;
-  }
-  const hasAnyKeyPress = Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
-  const shouldRenderClearedPlaceholder =
-    isClearedCalculatorState(state) && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress);
-  if (state.calculator.rollEntries.length === 0 && !shouldRenderClearedPlaceholder) {
-    return state.calculator.total;
-  }
-  return undefined;
-};
 
 export const clearFeedVisualizerPanel = (root: Element): void => {
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");

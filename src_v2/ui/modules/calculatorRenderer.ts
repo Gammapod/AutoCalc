@@ -1,6 +1,6 @@
 import type { Action, GameState } from "../../../src/domain/types.js";
 import type { InteractionMode } from "../../../src/app/interactionRuntime.js";
-import { render as renderParity } from "./calculatorStorageLegacyParity.js";
+import { render as renderCalculatorAndStorage } from "./calculatorModuleRenderer.js";
 
 export const renderCalculatorV2Module = (
   root: Element,
@@ -11,7 +11,7 @@ export const renderCalculatorV2Module = (
     inputBlocked: boolean;
   },
 ): void => {
-  renderParity(root, state, dispatch, {
+  renderCalculatorAndStorage(root, state, dispatch, {
     skipChecklist: true,
     skipGraph: true,
     interactionMode: options.interactionMode,

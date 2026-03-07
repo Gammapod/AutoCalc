@@ -220,4 +220,61 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(totalPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides total panel");
   assert.equal(host.attributes["aria-hidden"], "true", "clearVisualizerHost hides host");
   assert.equal(host.dataset.v2VisualizerPanel, "total", "clearVisualizerHost resets host panel");
+
+  const firstHost = createFakeElement();
+  const firstGraphDevice = createFakeElement();
+  const firstFeedPanel = createFakeElement();
+  const firstCirclePanel = createFakeElement();
+  const firstTotalPanel = createFakeElement();
+  const firstRoot: RootLike = {
+    querySelector: (selector: string) => {
+      if (selector === "[data-v2-visualizer-host]") {
+        return firstHost as unknown as Element;
+      }
+      if (selector === "[data-grapher-device]") {
+        return firstGraphDevice as unknown as Element;
+      }
+      if (selector === "[data-v2-feed-panel]") {
+        return firstFeedPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-total-panel]") {
+        return firstTotalPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-circle-panel]") {
+        return firstCirclePanel as unknown as Element;
+      }
+      return null;
+    },
+  };
+
+  const secondHost = createFakeElement();
+  const secondGraphDevice = createFakeElement();
+  const secondFeedPanel = createFakeElement();
+  const secondCirclePanel = createFakeElement();
+  const secondTotalPanel = createFakeElement();
+  const secondRoot: RootLike = {
+    querySelector: (selector: string) => {
+      if (selector === "[data-v2-visualizer-host]") {
+        return secondHost as unknown as Element;
+      }
+      if (selector === "[data-grapher-device]") {
+        return secondGraphDevice as unknown as Element;
+      }
+      if (selector === "[data-v2-feed-panel]") {
+        return secondFeedPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-total-panel]") {
+        return secondTotalPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-circle-panel]") {
+        return secondCirclePanel as unknown as Element;
+      }
+      return null;
+    },
+  };
+
+  renderVisualizerHost(firstRoot as unknown as Element, withGraphOn);
+  renderVisualizerHost(secondRoot as unknown as Element, withFeedOn);
+  assert.equal(firstHost.dataset.v2VisualizerTransition, "enter", "first root transition is independent");
+  assert.equal(secondHost.dataset.v2VisualizerTransition, "enter", "second root transition is independent");
 };

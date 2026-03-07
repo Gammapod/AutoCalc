@@ -1,6 +1,7 @@
 import { isRationalCalculatorValue } from "../../../../src/domain/calculatorValue.js";
 import type { GameState, RollEntry } from "../../../../src/domain/types.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "./graphModel.js";
+import { resolveGraphSeedSnapshot } from "./seedSnapshot.js";
 
 export type CircleRenderMode = "radial" | "residue_wheel";
 
@@ -86,13 +87,7 @@ export const projectRadialPoints = (
   center: number,
   radius: number,
 ): RadialProjection => {
-  const graphSeedSnapshot =
-    state.calculator.seedSnapshot !== undefined
-      ? state.calculator.seedSnapshot
-      : state.calculator.rollEntries.length === 0
-        ? state.calculator.total
-        : undefined;
-  const points = buildGraphPoints(state.calculator.rollEntries, graphSeedSnapshot);
+  const points = buildGraphPoints(state.calculator.rollEntries, resolveGraphSeedSnapshot(state));
   const xWindow = buildGraphXWindow(state.calculator.rollEntries.length);
   const yWindow = buildGraphYWindow(state.unlocks.maxTotalDigits);
   const maxMagnitude = Math.max(Math.abs(yWindow.min), Math.abs(yWindow.max), 1);

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { resolveCalculatorKeysLocked } from "../src_v2/ui/modules/calculatorStorageLegacyParity.js";
+import { resolveCalculatorKeysLocked } from "../src_v2/ui/modules/calculatorStorageCore.js";
 
 export const runUiModuleCalculatorStorageV2Tests = (): void => {
   assert.equal(

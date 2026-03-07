@@ -7,8 +7,8 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
     id: "graph",
     render: (root, state) => renderGrapherV2Module(root, state),
-    clear: () => {
-      clearGrapherV2Module();
+    clear: (root) => {
+      clearGrapherV2Module(root);
     },
   },
   {

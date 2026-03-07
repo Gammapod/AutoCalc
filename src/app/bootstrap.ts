@@ -2,7 +2,7 @@ import { createStore } from "./store.js";
 import { initialState, KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { playProgrammaticKeyPressFeedback } from "../../src_v2/ui/modules/calculatorStorageLegacyParity.js";
+import { playProgrammaticKeyPressFeedback } from "../../src_v2/ui/modules/programmaticKeyFeedback.js";
 import { createShellRenderer } from "../../src_v2/ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
 import { createResetCalculatorState } from "../domain/reducer.stateBuilders.js";

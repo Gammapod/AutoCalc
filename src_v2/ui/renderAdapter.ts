@@ -26,6 +26,8 @@ export { renderGrapherV2Module } from "./modules/grapherRenderer.js";
 export { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
 export { renderCalculatorV2Module } from "./modules/calculatorRenderer.js";
 export { renderStorageV2Module } from "./modules/storageRenderer.js";
+export { buildKeyButtonAction, buildLayoutDropDispatchAction, resolveCalculatorKeysLocked } from "./modules/calculatorStorageCore.js";
+export { playProgrammaticKeyPressFeedback } from "./modules/programmaticKeyFeedback.js";
 export { clearVisualizerHost, resolveActiveVisualizerPanel, renderVisualizerHost } from "./modules/visualizerHost.js";
 
 export type ShellRendererVariant = "mobile" | "desktop";

@@ -4,49 +4,72 @@ import type { VisualizerHostPanel } from "./visualizers/types.js";
 
 type VisualizerTransitionPhase = "idle" | "enter" | "exit" | "swap";
 
+type VisualizerHostRuntime = {
+  previousActivePanel: VisualizerHostPanel;
+  transitionUnlockTimer: ReturnType<typeof setTimeout> | null;
+  transitionUnlockHost: HTMLElement | null;
+  transitionEndHost: HTMLElement | null;
+  transitionEndListener: ((event: Event) => void) | null;
+};
+
 const TRANSITION_DURATION_MS = 220;
 const LOCK_HEIGHT_VAR = "--v2-visualizer-lock-height";
+const hostRuntimeByRoot = new WeakMap<Element, VisualizerHostRuntime>();
+const hostRuntimes = new Set<VisualizerHostRuntime>();
 
-let previousActivePanel: VisualizerHostPanel = "total";
-let transitionUnlockTimer: ReturnType<typeof setTimeout> | null = null;
-let transitionUnlockHost: HTMLElement | null = null;
-let transitionEndHost: HTMLElement | null = null;
-let transitionEndListener: ((event: Event) => void) | null = null;
+const createHostRuntime = (): VisualizerHostRuntime => ({
+  previousActivePanel: "total",
+  transitionUnlockTimer: null,
+  transitionUnlockHost: null,
+  transitionEndHost: null,
+  transitionEndListener: null,
+});
 
-const clearTransitionUnlockTimer = (): void => {
-  if (transitionUnlockTimer !== null) {
-    globalThis.clearTimeout(transitionUnlockTimer);
-    transitionUnlockTimer = null;
+const getHostRuntime = (root: Element): VisualizerHostRuntime => {
+  const existing = hostRuntimeByRoot.get(root);
+  if (existing) {
+    return existing;
+  }
+  const created = createHostRuntime();
+  hostRuntimeByRoot.set(root, created);
+  hostRuntimes.add(created);
+  return created;
+};
+
+const clearTransitionUnlockTimer = (runtime: VisualizerHostRuntime): void => {
+  if (runtime.transitionUnlockTimer !== null) {
+    globalThis.clearTimeout(runtime.transitionUnlockTimer);
+    runtime.transitionUnlockTimer = null;
   }
 };
 
-const clearTransitionEndListener = (): void => {
-  if (!transitionEndHost || !transitionEndListener) {
+const clearTransitionEndListener = (runtime: VisualizerHostRuntime): void => {
+  if (!runtime.transitionEndHost || !runtime.transitionEndListener) {
     return;
   }
-  transitionEndHost.removeEventListener("transitionend", transitionEndListener);
-  transitionEndHost = null;
-  transitionEndListener = null;
+  runtime.transitionEndHost.removeEventListener("transitionend", runtime.transitionEndListener);
+  runtime.transitionEndHost = null;
+  runtime.transitionEndListener = null;
 };
 
-const releaseSwapLock = (host: HTMLElement): void => {
-  if (transitionUnlockHost === host) {
-    transitionUnlockHost = null;
+const releaseSwapLock = (runtime: VisualizerHostRuntime, host: HTMLElement): void => {
+  if (runtime.transitionUnlockHost === host) {
+    runtime.transitionUnlockHost = null;
   }
   host.removeAttribute("data-v2-visualizer-height-lock");
   host.style.removeProperty(LOCK_HEIGHT_VAR);
-  clearTransitionEndListener();
-  clearTransitionUnlockTimer();
+  clearTransitionEndListener(runtime);
+  clearTransitionUnlockTimer(runtime);
 };
 
-const scheduleSwapUnlock = (host: HTMLElement): void => {
-  if (transitionUnlockHost && transitionUnlockHost !== host) {
-    releaseSwapLock(transitionUnlockHost);
+const scheduleSwapUnlock = (runtime: VisualizerHostRuntime, host: HTMLElement): void => {
+  if (runtime.transitionUnlockHost && runtime.transitionUnlockHost !== host) {
+    releaseSwapLock(runtime, runtime.transitionUnlockHost);
   }
-  transitionUnlockHost = host;
-  clearTransitionEndListener();
-  transitionEndHost = host;
-  transitionEndListener = (event: Event) => {
+  runtime.transitionUnlockHost = host;
+  clearTransitionEndListener(runtime);
+  runtime.transitionEndHost = host;
+  runtime.transitionEndListener = (event: Event) => {
     if (
       typeof TransitionEvent !== "undefined" &&
       !(event instanceof TransitionEvent)
@@ -57,12 +80,12 @@ const scheduleSwapUnlock = (host: HTMLElement): void => {
     if (propertyName !== "height") {
       return;
     }
-    releaseSwapLock(host);
+    releaseSwapLock(runtime, host);
   };
-  host.addEventListener("transitionend", transitionEndListener);
-  clearTransitionUnlockTimer();
-  transitionUnlockTimer = globalThis.setTimeout(() => {
-    releaseSwapLock(host);
+  host.addEventListener("transitionend", runtime.transitionEndListener);
+  clearTransitionUnlockTimer(runtime);
+  runtime.transitionUnlockTimer = globalThis.setTimeout(() => {
+    releaseSwapLock(runtime, host);
   }, TRANSITION_DURATION_MS + 40);
 };
 
@@ -87,7 +110,7 @@ const resolveTransitionPhase = (
   return "idle";
 };
 
-const clearHostUiState = (root: Element): void => {
+const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void => {
   const host = root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
@@ -99,7 +122,7 @@ const clearHostUiState = (root: Element): void => {
     host.dataset.v2VisualizerFrom = "total";
     host.dataset.v2VisualizerTo = "total";
     host.setAttribute("aria-hidden", "true");
-    releaseSwapLock(host);
+    releaseSwapLock(runtime, host);
   }
   if (graphDevice) {
     graphDevice.setAttribute("aria-hidden", "true");
@@ -124,23 +147,24 @@ export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPa
 };
 
 export const renderVisualizerHost = (root: Element, state: GameState): void => {
+  const runtime = getHostRuntime(root);
   const host = root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const activePanel = resolveActiveVisualizerPanel(state);
-  const transitionPhase = resolveTransitionPhase(previousActivePanel, activePanel);
-  const previousPanel = previousActivePanel;
+  const transitionPhase = resolveTransitionPhase(runtime.previousActivePanel, activePanel);
+  const previousPanel = runtime.previousActivePanel;
 
   if (host) {
     if (transitionPhase === "swap") {
       const hostHeight = Math.max(1, Math.round(host.getBoundingClientRect().height));
       host.style.setProperty(LOCK_HEIGHT_VAR, `${hostHeight.toString()}px`);
       host.setAttribute("data-v2-visualizer-height-lock", "true");
-      scheduleSwapUnlock(host);
+      scheduleSwapUnlock(runtime, host);
     } else {
-      releaseSwapLock(host);
+      releaseSwapLock(runtime, host);
     }
     host.dataset.v2VisualizerPanel = activePanel;
     host.dataset.v2VisualizerTransition = transitionPhase;
@@ -170,19 +194,30 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
     }
   }
 
-  previousActivePanel = activePanel;
+  runtime.previousActivePanel = activePanel;
+};
+
+const clearRuntime = (runtime: VisualizerHostRuntime): void => {
+  runtime.previousActivePanel = "total";
+  if (runtime.transitionUnlockHost) {
+    releaseSwapLock(runtime, runtime.transitionUnlockHost);
+  } else {
+    clearTransitionEndListener(runtime);
+    clearTransitionUnlockTimer(runtime);
+  }
 };
 
 export const clearVisualizerHost = (root: Element): void => {
-  previousActivePanel = "total";
-  if (transitionUnlockHost) {
-    releaseSwapLock(transitionUnlockHost);
-  } else {
-    clearTransitionEndListener();
-    clearTransitionUnlockTimer();
-  }
+  const runtime = hostRuntimeByRoot.get(root) ?? getHostRuntime(root);
+  clearRuntime(runtime);
   for (const panel of VISUALIZER_REGISTRY) {
     panel.clear(root);
   }
-  clearHostUiState(root);
+  clearHostUiState(runtime, root);
+};
+
+const clearAllVisualizerHostRuntimesForTests = (): void => {
+  for (const runtime of hostRuntimes) {
+    clearRuntime(runtime);
+  }
 };
