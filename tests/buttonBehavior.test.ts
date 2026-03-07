@@ -57,6 +57,12 @@ export const runButtonBehaviorTests = (): void => {
     { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
     "CIRCLE key dispatches visualizer toggle action",
   );
+  const eigenAllocatorToggleCell: KeyCell = { kind: "key", key: "\u03BB" };
+  assert.deepEqual(
+    buildKeyButtonAction(base, eigenAllocatorToggleCell),
+    { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" },
+    "\u03BB key dispatches eigen allocator visualizer toggle action",
+  );
 
   const now = Date.now();
   setSuppressClicksUntilForTests(now + 500);

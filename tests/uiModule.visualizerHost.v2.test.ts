@@ -66,8 +66,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total");
   assert.deepEqual(
     VISUALIZER_REGISTRY.map((module) => module.id),
-    ["graph", "feed", "circle"],
-    "visualizer registry preserves graph/feed order with circle support",
+    ["graph", "feed", "circle", "eigen_allocator"],
+    "visualizer registry preserves graph/feed/circle order with eigen allocator support",
   );
 
   const withGraphOn: GameState = {
@@ -115,6 +115,15 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   };
   assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "circle", "circle visualizer resolves to circle panel");
 
+  const withEigenSelected: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      activeVisualizer: "eigen_allocator",
+    },
+  };
+  assert.equal(resolveActiveVisualizerPanel(withEigenSelected), "eigen_allocator", "lambda visualizer resolves to eigen allocator panel");
+
   const missingRoot: RootLike = {
     querySelector: () => null,
   };
@@ -128,6 +137,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const renderGraphDevice = createFakeElement();
   const renderFeedPanel = createFakeElement();
   const renderCirclePanel = createFakeElement();
+  const renderEigenAllocatorPanel = createFakeElement();
   const renderTotalPanel = createFakeElement();
   renderFeedPanel.innerHTML = "stale";
   renderFeedPanel.attributes["aria-hidden"] = "false";
@@ -151,6 +161,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-circle-panel]") {
         return renderCirclePanel as unknown as Element;
       }
+      if (selector === "[data-v2-eigen-allocator-panel]") {
+        return renderEigenAllocatorPanel as unknown as Element;
+      }
       return null;
     },
   };
@@ -165,6 +178,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderFeedPanel.attributes["aria-hidden"], "true", "inactive feed panel is hidden during graph render");
   assert.equal(renderCirclePanel.innerHTML, "", "inactive circle panel is cleared during graph render");
   assert.equal(renderCirclePanel.attributes["aria-hidden"], "true", "inactive circle panel is hidden during graph render");
+  assert.equal(renderEigenAllocatorPanel.innerHTML, "", "inactive eigen allocator panel is cleared during graph render");
+  assert.equal(renderEigenAllocatorPanel.attributes["aria-hidden"], "true", "inactive eigen allocator panel is hidden during graph render");
   assert.equal(renderTotalPanel.attributes["aria-hidden"], "true", "inactive total panel is hidden during graph render");
   const withFeedOn: GameState = {
     ...withGraphOn,
@@ -184,6 +199,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const graphDevice = createFakeElement();
   const feedPanel = createFakeElement();
   const circlePanel = createFakeElement();
+  const eigenAllocatorPanel = createFakeElement();
   const totalPanel = createFakeElement();
   feedPanel.innerHTML = "stale";
   feedPanel.attributes["aria-hidden"] = "false";
@@ -208,14 +224,19 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-circle-panel]") {
         return circlePanel as unknown as Element;
       }
+      if (selector === "[data-v2-eigen-allocator-panel]") {
+        return eigenAllocatorPanel as unknown as Element;
+      }
       return null;
     },
   };
   clearVisualizerHost(cleanupRoot as unknown as Element);
   assert.equal(feedPanel.innerHTML, "", "clearVisualizerHost clears feed rows");
   assert.equal(circlePanel.innerHTML, "", "clearVisualizerHost clears circle panel");
+  assert.equal(eigenAllocatorPanel.innerHTML, "", "clearVisualizerHost clears eigen allocator panel");
   assert.equal(feedPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides feed panel");
   assert.equal(circlePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides circle panel");
+  assert.equal(eigenAllocatorPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides eigen allocator panel");
   assert.equal(graphDevice.attributes["aria-hidden"], "true", "clearVisualizerHost hides graph panel");
   assert.equal(totalPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides total panel");
   assert.equal(host.attributes["aria-hidden"], "true", "clearVisualizerHost hides host");
@@ -225,6 +246,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const firstGraphDevice = createFakeElement();
   const firstFeedPanel = createFakeElement();
   const firstCirclePanel = createFakeElement();
+  const firstEigenAllocatorPanel = createFakeElement();
   const firstTotalPanel = createFakeElement();
   const firstRoot: RootLike = {
     querySelector: (selector: string) => {
@@ -243,6 +265,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-circle-panel]") {
         return firstCirclePanel as unknown as Element;
       }
+      if (selector === "[data-v2-eigen-allocator-panel]") {
+        return firstEigenAllocatorPanel as unknown as Element;
+      }
       return null;
     },
   };
@@ -251,6 +276,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const secondGraphDevice = createFakeElement();
   const secondFeedPanel = createFakeElement();
   const secondCirclePanel = createFakeElement();
+  const secondEigenAllocatorPanel = createFakeElement();
   const secondTotalPanel = createFakeElement();
   const secondRoot: RootLike = {
     querySelector: (selector: string) => {
@@ -268,6 +294,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       if (selector === "[data-v2-circle-panel]") {
         return secondCirclePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-eigen-allocator-panel]") {
+        return secondEigenAllocatorPanel as unknown as Element;
       }
       return null;
     },

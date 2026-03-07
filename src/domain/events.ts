@@ -1,4 +1,4 @@
-import type { Action, GameState, Key } from "./types.js";
+import type { Action, GameState, Key, VisualizerId } from "./types.js";
 
 export type DomainEvent =
   | { type: "KeyPressed"; key: Key }
@@ -19,7 +19,7 @@ export type DomainEvent =
   | { type: "KeypadRowUpgraded" }
   | { type: "KeypadColumnUpgraded" }
   | { type: "FlagToggled"; flag: string }
-  | { type: "VisualizerToggled"; visualizer: "graph" | "feed" | "circle" }
+  | { type: "VisualizerToggled"; visualizer: VisualizerId }
   | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed" | "slots"; delta: 1 | -1 }
   | { type: "AllocatorMaxPointsSet"; value: number }
   | { type: "AllocatorMaxPointsAdded"; amount: number }

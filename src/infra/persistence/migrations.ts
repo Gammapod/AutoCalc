@@ -302,7 +302,7 @@ const normalizeActiveVisualizer = (value: unknown, flags: Record<string, boolean
   if (value === "none") {
     return "total";
   }
-  if (value === "total" || value === "graph" || value === "feed" || value === "circle") {
+  if (value === "total" || value === "graph" || value === "feed" || value === "circle" || value === "eigen_allocator") {
     return value;
   }
   return resolveLegacyActiveVisualizerFromFlags(flags);

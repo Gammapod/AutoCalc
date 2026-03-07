@@ -54,6 +54,12 @@ export const runReducerLifecycleTests = (): void => {
 
   const feedOff = reducer(feedOn, { type: "TOGGLE_VISUALIZER", visualizer: "feed" });
   assert.equal(feedOff.ui.activeVisualizer, "total", "pressing active visualizer toggles off to total");
+
+  const eigenOn = reducer(feedOff, { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" });
+  assert.equal(eigenOn.ui.activeVisualizer, "eigen_allocator", "\u03BB visualizer toggles on");
+
+  const eigenOff = reducer(eigenOn, { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" });
+  assert.equal(eigenOff.ui.activeVisualizer, "total", "pressing active \u03BB visualizer toggles off to total");
 };
 
 

@@ -116,6 +116,7 @@ const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void =
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
+  const eigenAllocatorPanel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
   if (host) {
     host.dataset.v2VisualizerPanel = "total";
     host.dataset.v2VisualizerTransition = "idle";
@@ -136,6 +137,9 @@ const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void =
   if (circlePanel) {
     circlePanel.setAttribute("aria-hidden", "true");
   }
+  if (eigenAllocatorPanel) {
+    eigenAllocatorPanel.setAttribute("aria-hidden", "true");
+  }
 };
 
 export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPanel => {
@@ -153,6 +157,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
+  const eigenAllocatorPanel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
   const activePanel = resolveActiveVisualizerPanel(state);
   const transitionPhase = resolveTransitionPhase(runtime.previousActivePanel, activePanel);
   const previousPanel = runtime.previousActivePanel;
@@ -184,6 +189,9 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   }
   if (circlePanel) {
     circlePanel.setAttribute("aria-hidden", activePanel === "circle" ? "false" : "true");
+  }
+  if (eigenAllocatorPanel) {
+    eigenAllocatorPanel.setAttribute("aria-hidden", activePanel === "eigen_allocator" ? "false" : "true");
   }
 
   for (const panel of VISUALIZER_REGISTRY) {
