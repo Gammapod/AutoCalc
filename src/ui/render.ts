@@ -1185,6 +1185,7 @@ const parsePxValue = (value: string, fallback: number): number => {
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
 type DesktopSizingVm = {
+  keyMinWidthPx: number;
   widthPx: number;
   baselineWidthPx: number;
   minHeightPx: number;
@@ -1199,15 +1200,14 @@ const computeDesktopSizingVm = (
   columns: number,
   rows: number,
 ): DesktopSizingVm => {
-  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 720;
-  const keyMinWidth = clamp(viewportWidth * 0.055, 44, 62);
   const keyHeight = clamp(viewportHeight * 0.056, 46, 56);
+  const keyMinWidth = keyHeight * 1.5;
   const horizontalChrome = 32;
   const fallbackGap = 10;
   const computedGap = typeof window !== "undefined" ? window.getComputedStyle(keysEl).getPropertyValue("--gap") : "";
   const gap = parsePxValue(computedGap, fallbackGap);
-  const baselineCols = 5;
+  const baselineCols = 4;
   const baselineRows = 2;
   const effectiveCols = Math.max(columns, baselineCols);
   const effectiveRows = Math.max(rows, baselineRows);
@@ -1224,6 +1224,7 @@ const computeDesktopSizingVm = (
   const minHeight = keypadHeight + verticalChrome;
   const shouldStretchKeypadHeight = rows < baselineRows;
   return {
+    keyMinWidthPx: keyMinWidth,
     widthPx: Math.max(calcWidth, baselineWidth),
     baselineWidthPx: baselineWidth,
     minHeightPx: Math.max(minHeight, baselineMinHeight),
@@ -1239,6 +1240,7 @@ const syncDesktopCalcSizingVars = (keysEl: HTMLElement, calcBodyEl: HTMLElement 
   for (const element of targets) {
     element.style.setProperty("--desktop-calc-cols", columns.toString());
     element.style.setProperty("--desktop-calc-rows", rows.toString());
+    element.style.setProperty("--desktop-key-min-width", `${sizing.keyMinWidthPx.toFixed(2)}px`);
     element.style.setProperty("--desktop-calc-width", `${sizing.widthPx.toFixed(2)}px`);
     element.style.setProperty("--desktop-calc-min-height", `${sizing.minHeightPx.toFixed(2)}px`);
     element.style.setProperty("--desktop-baseline-width", `${sizing.baselineWidthPx.toFixed(2)}px`);
@@ -1883,6 +1885,7 @@ export const render = (
       keysEl.style.removeProperty("height");
       keysEl.style.removeProperty("--desktop-calc-cols");
       keysEl.style.removeProperty("--desktop-calc-rows");
+      keysEl.style.removeProperty("--desktop-key-min-width");
       keysEl.style.removeProperty("--desktop-calc-width");
       keysEl.style.removeProperty("--desktop-calc-min-height");
       keysEl.style.removeProperty("--desktop-baseline-width");
@@ -1892,6 +1895,7 @@ export const render = (
       if (calcBodyEl) {
         calcBodyEl.style.removeProperty("--desktop-calc-cols");
         calcBodyEl.style.removeProperty("--desktop-calc-rows");
+        calcBodyEl.style.removeProperty("--desktop-key-min-width");
         calcBodyEl.style.removeProperty("--desktop-calc-width");
         calcBodyEl.style.removeProperty("--desktop-calc-min-height");
         calcBodyEl.style.removeProperty("--desktop-baseline-width");

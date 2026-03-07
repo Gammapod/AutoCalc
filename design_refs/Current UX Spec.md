@@ -25,10 +25,10 @@ Mobile strategy:
 ## 3. Sizing Direction
 
 Desktop (primary direction):
-- Enforce a minimum key width threshold.
+- Enforce a desktop key-slot aspect floor of `height:width = 1:1.5` (width must be at least `1.5x` key height).
 - When additional columns would push keys below that threshold, increase calculator body width instead.
 - Continue allowing body height changes for row upgrades.
-- Desktop minimum footprint baseline is `2 rows x 5 columns`; body width/height do not shrink below this baseline.
+- Desktop minimum footprint baseline is `2 rows x 4 columns`; body width/height do not shrink below this baseline.
 - For keypad sizes below baseline (for example `1x1`), keys stretch to fill the baseline body footprint.
 
 Mobile (primary direction):

@@ -48,6 +48,11 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     assert.equal(keys?.style.getPropertyValue("--desktop-calc-cols"), "1", "desktop render sets keypad column sizing var");
     assert.equal(keys?.style.getPropertyValue("--desktop-calc-rows"), "1", "desktop render sets keypad row sizing var");
     assert.equal(
+      keys?.style.getPropertyValue("--desktop-key-min-width").endsWith("px"),
+      true,
+      "desktop render sets ratio-driven key minimum width token",
+    );
+    assert.equal(
       calcBody?.style.getPropertyValue("--desktop-calc-width").endsWith("px"),
       true,
       "desktop render sets calculated body width",
@@ -75,7 +80,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
 
     const widthAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
     const heightAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
-    const baselineState = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 2 });
+    const baselineState = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 2 });
     renderer.render(baselineState, dispatch, {
       interactionMode: "calculator",
       inputBlocked: false,
@@ -107,22 +112,20 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     assert.equal(keys?.style.getPropertyValue("--desktop-calc-cols"), "4", "desktop sizing vars update after growth");
     assert.equal(keys?.style.getPropertyValue("--desktop-calc-rows"), "3", "desktop row var updates after growth");
 
-    const widthAfterGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
-    const heightAfterGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
-    const wide = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 6, rows: 2 });
+    const wide = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 2 });
     renderer.render(wide, dispatch, {
       interactionMode: "calculator",
       inputBlocked: false,
     });
     const widthAfterWideGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
-    assert.equal(widthAfterWideGrowth > widthAfterGrowth, true, "desktop width grows once columns exceed 2x5 baseline");
-    const tall = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 3 });
+    assert.equal(widthAfterWideGrowth > widthAtBaseline, true, "desktop width grows once columns exceed 4-column minimum-width baseline");
+    const tall = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 3 });
     renderer.render(tall, dispatch, {
       interactionMode: "calculator",
       inputBlocked: false,
     });
     const heightAfterTallGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
-    assert.equal(heightAfterTallGrowth > heightAtBaseline, true, "desktop min-height grows once rows exceed 2x5 baseline");
+    assert.equal(heightAfterTallGrowth > heightAtBaseline, true, "desktop min-height grows once rows exceed 2-row baseline");
 
     const keyButton = harness.root.querySelector<HTMLButtonElement>(".key[data-key='++']");
     assert.ok(keyButton, "calculator key exists after desktop render");
