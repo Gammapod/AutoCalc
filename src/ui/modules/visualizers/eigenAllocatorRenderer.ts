@@ -29,6 +29,9 @@ const buildEigenAllocatorLatex = (selectedVariable: MemoryVariable): string => {
   const betaEntry = selectedVariable === "\u03B2" ? selectedVectorEntry(selectedVariable) : String.raw`\beta`;
   const gammaEntry = selectedVariable === "\u03B3" ? selectedVectorEntry(selectedVariable) : String.raw`\gamma`;
   return String.raw`
+
+EIGEN ALLOCATOR | ~,==,"< \\\\[12pt]
+
 \begin{bmatrix}
 ${alphaEntry}\\
 ${betaEntry}\\
@@ -38,11 +41,11 @@ ${gammaEntry}\\
 \end{bmatrix}
 \times
 \begin{bmatrix}
-\alpha&0&0&0&0\\
-0&\beta&0&0&0\\
-0&0&\gamma&0&0\\
+${alphaEntry}&0&0&0&0\\
+0&${betaEntry}&0&0&0\\
+0&0&${gammaEntry}&0&0\\
 0.5&0.5&1&\delta&0\\
-0.1&0.1&0.1&\epsilon&0
+0.1&0.1&0.1&0.1&\epsilon
 \end{bmatrix}
 =
 \begin{bmatrix}
