@@ -16,6 +16,7 @@ import {
 import {
   evaluateLayoutDrop,
 } from "./layoutRules.js";
+import { keyToVisualizerId } from "./buttonRegistry.js";
 import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface, VisualizerId } from "./types.js";
 
 export { isStorageLayoutValid } from "./layoutRules.js";
@@ -212,16 +213,7 @@ const clearButtonFlag = (state: GameState, flag: string): GameState => {
 };
 
 const visualizerFromKey = (key: KeyCell["key"]): VisualizerId | null => {
-  if (key === "GRAPH") {
-    return "graph";
-  }
-  if (key === "FEED") {
-    return "feed";
-  }
-  if (key === "CIRCLE") {
-    return "circle";
-  }
-  return null;
+  return keyToVisualizerId(key);
 };
 
 const clearToggleFlagWhenLeavingKeypad = (

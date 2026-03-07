@@ -16,6 +16,9 @@ export const stableSerialize = (value: unknown): string => {
       const obj = input as Record<string, unknown>;
       const out: Record<string, unknown> = {};
       for (const key of Object.keys(obj).sort()) {
+        if (key === "valueAtoms" || key === "valueCompose") {
+          continue;
+        }
         out[key] = walk(obj[key]);
       }
       return out;

@@ -1,4 +1,5 @@
 import { getButtonDefinition, type ButtonBehaviorKind, type ButtonHandlerOverrideId, type ButtonKey } from "./buttonRegistry.js";
+import { buttonRegistry } from "./buttonRegistry.js";
 
 export type KeyActionHandlerId =
   | "apply_digit"
@@ -48,3 +49,17 @@ export const resolveKeyActionHandlerId = (key: ButtonKey): KeyActionHandlerId =>
 };
 
 export const listBehaviorHandlerIds = (): Readonly<Record<ButtonBehaviorKind, KeyActionHandlerId>> => behaviorHandlerByKind;
+
+export const validateKeyCatalogHandlerCoherence = (): string[] => {
+  const issues: string[] = [];
+  for (const entry of buttonRegistry) {
+    const overrideId = "handlerOverrideId" in entry ? entry.handlerOverrideId : undefined;
+    if (overrideId && !overrideHandlerById[overrideId]) {
+      issues.push(`missing override handler mapping for ${entry.key} (${overrideId})`);
+    }
+    if (!overrideId && !behaviorHandlerByKind[entry.behaviorKind]) {
+      issues.push(`missing behavior handler mapping for ${entry.key} (${entry.behaviorKind})`);
+    }
+  }
+  return issues;
+};

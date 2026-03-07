@@ -60,6 +60,7 @@ import { runUiIntegrationMobileShellTests } from "./uiIntegration.mobileShell.te
 import { runUiIntegrationDesktopShellTests } from "./uiIntegration.desktopShell.test.js";
 import { runButtonRegistryContractTests } from "./buttonRegistry.contract.test.js";
 import { runKeyActionHandlersContractTests } from "./keyActionHandlers.contract.test.js";
+import { runKeyCatalogNormalizationTests } from "./keyCatalog.normalization.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -124,6 +125,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["v2/rules-adapters", runV2RulesAdaptersTests],
   ["domain/button-registry-contract", runButtonRegistryContractTests],
   ["domain/key-action-handlers-contract", runKeyActionHandlersContractTests],
+  ["domain/key-catalog-normalization", runKeyCatalogNormalizationTests],
 ];
 
 let passed = 0;

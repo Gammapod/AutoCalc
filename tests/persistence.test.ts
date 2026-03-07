@@ -357,6 +357,57 @@ export const runPersistenceTests = (): void => {
     "v11 invalid visualizer falls back to legacy feed flag mapping",
   );
 
+  const legacyV13ValueExpressionOnly = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 13,
+      savedAt: Date.now(),
+      state: {
+        ...JSON.parse(JSON.stringify({
+          calculator: {
+            total: "0",
+            pendingNegativeTotal: false,
+            singleDigitInitialTotalEntry: false,
+            rollEntries: [],
+            operationSlots: [],
+            draftingSlot: null,
+          },
+          ui: {
+            keyLayout: initialState().ui.keyLayout,
+            keypadCells: initialState().ui.keypadCells,
+            storageLayout: initialState().ui.storageLayout,
+            keypadColumns: 1,
+            keypadRows: 1,
+            activeVisualizer: "total",
+            buttonFlags: {},
+          },
+          keyPressCounts: {},
+          unlocks: {
+            ...initialState().unlocks,
+            valueExpression: { ...initialState().unlocks.valueExpression, NEG: true, "1": true },
+          },
+          completedUnlockIds: [],
+          allocatorReturnPressCount: 0,
+          allocatorAllocatePressCount: 0,
+          allocator: {
+            maxPoints: 0,
+            allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
+          },
+        })),
+      },
+    }),
+  );
+  assert.ok(legacyV13ValueExpressionOnly.state, "v13 payload hydrates under v14 runtime");
+  assert.equal(
+    legacyV13ValueExpressionOnly.state?.unlocks.valueAtoms["1"],
+    true,
+    "v13 valueExpression digit maps to split valueAtoms unlocks",
+  );
+  assert.equal(
+    legacyV13ValueExpressionOnly.state?.unlocks.valueCompose.NEG,
+    true,
+    "v13 valueExpression compose key maps to split valueCompose unlocks",
+  );
+
   const badJson = loadFromRawSave("{");
   assert.equal(badJson.state, null, "invalid JSON fails safely");
   assert.equal(badJson.reason, LoadFailureReason.InvalidJson, "invalid JSON reason is reported");

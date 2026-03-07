@@ -1,3 +1,10 @@
+import {
+  keyCatalog,
+  type KeyBehaviorKind,
+  type KeyCatalogEntry,
+  type KeyHandlerOverrideId,
+} from "./keyCatalog.js";
+
 export type KeyRuntimeUnlockBucket =
   | "valueExpression"
   | "slotOperators"
@@ -7,17 +14,7 @@ export type KeyRuntimeUnlockBucket =
   | "execution"
   | "none";
 
-export type KeyRuntimeBehaviorKind = "digit" | "operator" | "execute" | "utility" | "visualizer" | "toggle" | "noop";
-
-export type KeyHandlerOverrideId =
-  | "negate_total_or_drafting"
-  | "utility_clear_all"
-  | "utility_clear_entry"
-  | "utility_undo"
-  | "execute_equals"
-  | "execute_increment"
-  | "execute_decrement";
-
+export type KeyRuntimeBehaviorKind = KeyBehaviorKind;
 export type KeyRuntimeCatalogEntry = {
   key: string;
   category: string;
@@ -28,34 +25,36 @@ export type KeyRuntimeCatalogEntry = {
   handlerOverrideId?: KeyHandlerOverrideId;
 };
 
-export const keyRuntimeCatalog = [
-  { key: "0", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "1", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "2", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "3", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "4", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "5", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "6", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "7", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "8", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "9", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit" },
-  { key: "NEG", category: "value_expression", unlockBucket: "valueExpression", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", handlerOverrideId: "negate_total_or_drafting" },
-  { key: "+", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "-", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "*", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "/", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "#", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "\u27E1", category: "slot_operator", unlockBucket: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator" },
-  { key: "C", category: "utility", unlockBucket: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", handlerOverrideId: "utility_clear_all" },
-  { key: "CE", category: "utility", unlockBucket: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", handlerOverrideId: "utility_clear_entry" },
-  { key: "UNDO", category: "utility", unlockBucket: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", handlerOverrideId: "utility_undo" },
-  { key: "\u23EF", category: "step", unlockBucket: "steps", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "toggle" },
-  { key: "GRAPH", category: "visualizer", unlockBucket: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer" },
-  { key: "FEED", category: "visualizer", unlockBucket: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer" },
-  { key: "CIRCLE", category: "visualizer", unlockBucket: "visualizers", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "visualizer" },
-  { key: "=", category: "execution", unlockBucket: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", handlerOverrideId: "execute_equals" },
-  { key: "++", category: "execution", unlockBucket: "execution", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "execute", handlerOverrideId: "execute_increment" },
-  { key: "--", category: "execution", unlockBucket: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", handlerOverrideId: "execute_decrement" },
-] as const satisfies readonly KeyRuntimeCatalogEntry[];
+const toRuntimeUnlockBucket = (entry: KeyCatalogEntry): KeyRuntimeUnlockBucket => {
+  if (entry.unlockGroup === "valueAtoms" || entry.unlockGroup === "valueCompose") {
+    return "valueExpression";
+  }
+  if (entry.unlockGroup === "slotOperators") {
+    return "slotOperators";
+  }
+  if (entry.unlockGroup === "utilities") {
+    return "utilities";
+  }
+  if (entry.unlockGroup === "steps") {
+    return "steps";
+  }
+  if (entry.unlockGroup === "visualizers") {
+    return "visualizers";
+  }
+  if (entry.unlockGroup === "execution") {
+    return "execution";
+  }
+  return "none";
+};
+
+export const keyRuntimeCatalog = keyCatalog.map((entry) => ({
+  key: entry.key,
+  category: entry.category,
+  unlockBucket: toRuntimeUnlockBucket(entry),
+  defaultUnlocked: entry.defaultUnlocked,
+  supportsPressCount: entry.supportsPressCount,
+  behaviorKind: entry.behaviorKind,
+  ...(("handlerOverrideId" in entry && entry.handlerOverrideId) ? { handlerOverrideId: entry.handlerOverrideId } : {}),
+})) as readonly KeyRuntimeCatalogEntry[];
 
 export type KeyRuntimeCatalogRecord = (typeof keyRuntimeCatalog)[number];

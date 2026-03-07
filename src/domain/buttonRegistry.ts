@@ -1,24 +1,25 @@
 import {
-  keyRuntimeCatalog,
+  keyCatalog,
+  type KeyCatalogEntry,
   type KeyHandlerOverrideId,
-  type KeyRuntimeBehaviorKind,
-  type KeyRuntimeCatalogEntry,
-  type KeyRuntimeUnlockBucket,
-} from "../content/keyRuntimeCatalog.js";
+  type KeyBehaviorKind,
+  type KeyUnlockGroup,
+  type KeyVisualizerId,
+} from "../content/keyCatalog.js";
 
-export type ButtonUnlockBucket = KeyRuntimeUnlockBucket;
-export type ButtonBehaviorKind = KeyRuntimeBehaviorKind;
+export type ButtonUnlockGroup = KeyUnlockGroup;
+export type ButtonBehaviorKind = KeyBehaviorKind;
 export type ButtonHandlerOverrideId = KeyHandlerOverrideId;
-export type ButtonDefinition = KeyRuntimeCatalogEntry;
+export type ButtonDefinition = KeyCatalogEntry;
 
-// Compatibility adapter: runtime button registry is now sourced from keyRuntimeCatalog.
-export const buttonRegistry = keyRuntimeCatalog;
+export const buttonRegistry = keyCatalog;
 
 export type ButtonRegistryEntry = (typeof buttonRegistry)[number];
 export type ButtonKey = ButtonRegistryEntry["key"];
 export type ButtonCategory = ButtonRegistryEntry["category"];
-export type RegisteredButtonUnlockBucket = ButtonRegistryEntry["unlockBucket"];
-export type ButtonKeyByUnlockBucket<B extends ButtonUnlockBucket> = Extract<ButtonRegistryEntry, { unlockBucket: B }>["key"];
+export type ButtonVisualizerId = KeyVisualizerId;
+export type RegisteredButtonUnlockGroup = ButtonRegistryEntry["unlockGroup"];
+export type ButtonKeyByUnlockGroup<B extends ButtonUnlockGroup> = Extract<ButtonRegistryEntry, { unlockGroup: B }>["key"];
 export type ButtonKeyByBehaviorKind<K extends ButtonBehaviorKind> = Extract<ButtonRegistryEntry, { behaviorKind: K }>["key"];
 
 const buttonDefinitionByKey = new Map<ButtonKey, ButtonRegistryEntry>(
@@ -44,7 +45,15 @@ export const isUtilityKey = (key: ButtonKey): key is ButtonKeyByBehaviorKind<"ut
 export const isVisualizerKey = (key: ButtonKey): key is ButtonKeyByBehaviorKind<"visualizer"> =>
   getButtonDefinition(key)?.behaviorKind === "visualizer";
 
-export const getButtonKeysByUnlockBucket = <B extends ButtonUnlockBucket>(bucket: B): ButtonKeyByUnlockBucket<B>[] =>
+export const getButtonKeysByUnlockGroup = <B extends ButtonUnlockGroup>(group: B): ButtonKeyByUnlockGroup<B>[] =>
   buttonRegistry
-    .filter((entry): entry is Extract<ButtonRegistryEntry, { unlockBucket: B }> => entry.unlockBucket === bucket)
-    .map((entry) => entry.key) as ButtonKeyByUnlockBucket<B>[];
+    .filter((entry): entry is Extract<ButtonRegistryEntry, { unlockGroup: B }> => entry.unlockGroup === group)
+    .map((entry) => entry.key) as ButtonKeyByUnlockGroup<B>[];
+
+export const keyToVisualizerId = (key: ButtonKey): ButtonVisualizerId | null => {
+  const definition = getButtonDefinition(key);
+  if (!definition || definition.behaviorKind !== "visualizer") {
+    return null;
+  }
+  return definition.visualizerId ?? null;
+};

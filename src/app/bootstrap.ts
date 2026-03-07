@@ -508,6 +508,16 @@ const allocatorIncreaseByUnlockId = new Map(
 
 const collectUnlockedKeys = (state: GameState): Set<Key> => {
   const unlocked = new Set<Key>();
+  for (const [key, isUnlocked] of Object.entries(state.unlocks.valueAtoms)) {
+    if (isUnlocked) {
+      unlocked.add(key as Key);
+    }
+  }
+  for (const [key, isUnlocked] of Object.entries(state.unlocks.valueCompose)) {
+    if (isUnlocked) {
+      unlocked.add(key as Key);
+    }
+  }
   for (const [key, isUnlocked] of Object.entries(state.unlocks.valueExpression)) {
     if (isUnlocked) {
       unlocked.add(key as Key);

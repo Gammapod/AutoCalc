@@ -88,7 +88,10 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
   const hasNeg = isAvailable("NEG");
   const hasZero = isAvailable("0");
   const hasOne = isAvailable("1");
-  const hasSomeDigit = Object.keys(state.unlocks.valueExpression).some((key) => isAvailable(key as Key));
+  const hasSomeDigit = [
+    ...Object.keys(state.unlocks.valueAtoms),
+    ...Object.keys(state.unlocks.valueExpression),
+  ].some((key) => isAvailable(key as Key));
   const hasSomeOperator = ["+", "-", "*", "/", "#", "\u27E1"].some((key) => isAvailable(key as Key));
   const allocatorReturnPress = (state.allocatorReturnPressCount ?? 0) >= 1;
   const allocatorAllocatePress = (state.allocatorAllocatePressCount ?? 0) >= 1;

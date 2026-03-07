@@ -1,6 +1,7 @@
 import { AUTO_EQUALS_FLAG } from "../domain/state.js";
+import { keyToVisualizerId } from "../domain/buttonRegistry.js";
 import { getOperationSnapshot } from "../domain/slotDrafting.js";
-import type { ExecKey, GameState, Key, KeyCell, Store } from "../domain/types.js";
+import type { ExecKey, GameState, Key, KeyCell, Store, VisualizerId } from "../domain/types.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
 export const AUTO_EQUALS_POINT_BONUS = 0.01;
@@ -19,7 +20,7 @@ export type AutoEqualsSchedulerOptions = {
     action:
       | { type: "PRESS_KEY"; key: Key }
       | { type: "TOGGLE_FLAG"; flag: string }
-      | { type: "TOGGLE_VISUALIZER"; visualizer: "graph" | "feed" | "circle" },
+      | { type: "TOGGLE_VISUALIZER"; visualizer: VisualizerId },
   ) => void;
   onAutoKeyActivated?: (key: Key) => void;
 };
@@ -53,25 +54,14 @@ const getInstalledExecutorKey = (state: GameState): ExecKey | null => {
   return null;
 };
 
-const getDefaultVisualizerForCell = (cell: KeyCell): "graph" | "feed" | "circle" | null => {
-  if (cell.key === "GRAPH") {
-    return "graph";
-  }
-  if (cell.key === "FEED") {
-    return "feed";
-  }
-  if (cell.key === "CIRCLE") {
-    return "circle";
-  }
-  return null;
-};
+const getDefaultVisualizerForCell = (cell: KeyCell): VisualizerId | null => keyToVisualizerId(cell.key);
 
 const resolveCellAction = (
   cell: KeyCell,
 ):
   | { type: "PRESS_KEY"; key: Key }
   | { type: "TOGGLE_FLAG"; flag: string }
-  | { type: "TOGGLE_VISUALIZER"; visualizer: "graph" | "feed" | "circle" } => {
+  | { type: "TOGGLE_VISUALIZER"; visualizer: VisualizerId } => {
   if (cell.behavior?.type === "toggle_flag") {
     return { type: "TOGGLE_FLAG", flag: cell.behavior.flag };
   }
@@ -86,7 +76,7 @@ type AutoActionPlan = {
   action:
     | { type: "PRESS_KEY"; key: Key }
     | { type: "TOGGLE_FLAG"; flag: string }
-    | { type: "TOGGLE_VISUALIZER"; visualizer: "graph" | "feed" | "circle" };
+    | { type: "TOGGLE_VISUALIZER"; visualizer: VisualizerId };
   key: Key;
 };
 

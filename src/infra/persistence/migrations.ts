@@ -206,6 +206,8 @@ export type SerializableStateV13 = Omit<SerializableStateV12, "calculator"> & {
   };
 };
 
+export type SerializableStateV14 = SerializableStateV13;
+
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN)$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
@@ -455,18 +457,43 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
   const defaults = defaultUnlocks();
   const sourceDigits = source?.digits ?? {};
   const sourceValueExpression = source?.valueExpression ?? {};
+  const sourceValueAtoms = source?.valueAtoms ?? {};
+  const sourceValueCompose = source?.valueCompose ?? {};
   const legacyNegUtility = source?.utilities?.NEG;
   const legacyValueExpressionFromDigits = Object.fromEntries(
     Object.keys(defaults.valueExpression)
       .filter((key) => key !== "NEG")
       .map((digit) => [digit, sourceDigits[digit as keyof typeof sourceDigits]]),
   ) as Partial<Record<Exclude<ValueExpressionKey, "NEG">, boolean>>;
+  const mergedValueExpression = {
+    ...defaults.valueExpression,
+    ...legacyValueExpressionFromDigits,
+    ...sourceValueAtoms,
+    ...sourceValueCompose,
+    ...sourceValueExpression,
+    ...(typeof legacyNegUtility === "boolean" ? { NEG: legacyNegUtility } : {}),
+  };
+  const normalizedValueAtoms = {
+    ...defaults.valueAtoms,
+    ...sourceValueAtoms,
+    ...Object.fromEntries(
+      Object.keys(defaults.valueAtoms).map((key) => [key, mergedValueExpression[key as keyof typeof mergedValueExpression]]),
+    ),
+  };
+  const normalizedValueCompose = {
+    ...defaults.valueCompose,
+    ...sourceValueCompose,
+    ...Object.fromEntries(
+      Object.keys(defaults.valueCompose).map((key) => [key, mergedValueExpression[key as keyof typeof mergedValueExpression]]),
+    ),
+  };
   return {
+    valueAtoms: normalizedValueAtoms,
+    valueCompose: normalizedValueCompose,
     valueExpression: {
       ...defaults.valueExpression,
-      ...legacyValueExpressionFromDigits,
-      ...sourceValueExpression,
-      ...(typeof legacyNegUtility === "boolean" ? { NEG: legacyNegUtility } : {}),
+      ...normalizedValueAtoms,
+      ...normalizedValueCompose,
     },
     slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
     utilities: { ...defaults.utilities, ...(source?.utilities ?? {}) },
@@ -844,6 +871,11 @@ export const migrateV12ToV13 = (input: SerializableStateV12): SerializableStateV
   };
 };
 
+export const migrateV13ToV14 = (input: SerializableStateV13): SerializableStateV14 => ({
+  ...input,
+  unlocks: normalizeUnlocks(input.unlocks),
+});
+
 const toSerializableInitialV10 = (): SerializableStateV10 => {
   const defaults = initialState();
   return {
@@ -887,8 +919,9 @@ const toSerializableInitialV11 = (): SerializableStateV11 => {
 
 const toSerializableInitialV12 = (): SerializableStateV12 => migrateV11ToV12(toSerializableInitialV11());
 const toSerializableInitialV13 = (): SerializableStateV13 => migrateV12ToV13(toSerializableInitialV12());
+const toSerializableInitialV14 = (): SerializableStateV14 => migrateV13ToV14(toSerializableInitialV13());
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 =>
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 =>
   version === 1 ||
   version === 2 ||
   version === 3 ||
@@ -901,7 +934,8 @@ export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4
   version === 10 ||
   version === 11 ||
   version === 12 ||
-  version === 13;
+  version === 13 ||
+  version === 14;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -941,6 +975,8 @@ export const validateSerializableStateV3 = (state: unknown): state is Serializab
     isObject(source) && keys.every((key) => isBoolean(source[key]));
 
   if (
+    !hasValidBooleans(Object.keys(defaults.valueAtoms), unlocks.valueAtoms) ||
+    !hasValidBooleans(Object.keys(defaults.valueCompose), unlocks.valueCompose) ||
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
@@ -994,6 +1030,8 @@ export const validateSerializableStateV4 = (state: unknown): state is Serializab
     isObject(source) && keys.every((key) => isBoolean(source[key]));
 
   if (
+    !hasValidBooleans(Object.keys(defaults.valueAtoms), unlocks.valueAtoms) ||
+    !hasValidBooleans(Object.keys(defaults.valueCompose), unlocks.valueCompose) ||
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
@@ -1054,6 +1092,8 @@ export const validateSerializableStateV5 = (state: unknown): state is Serializab
     isObject(source) && keys.every((key) => isBoolean(source[key]));
 
   if (
+    !hasValidBooleans(Object.keys(defaults.valueAtoms), unlocks.valueAtoms) ||
+    !hasValidBooleans(Object.keys(defaults.valueCompose), unlocks.valueCompose) ||
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
@@ -1281,12 +1321,15 @@ export const validateSerializableStateV13 = (state: unknown): state is Serializa
   return validateSerializableStateV12(shadowV12);
 };
 
-export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV13 | null => {
+export const validateSerializableStateV14 = (state: unknown): state is SerializableStateV14 =>
+  validateSerializableStateV13(state);
+
+export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV14 | null => {
   if (!isValidSchemaVersion(schemaVersion)) {
     return null;
   }
   if (schemaVersion < 6) {
-    return toSerializableInitialV13();
+    return toSerializableInitialV14();
   }
   if (!isObject(state)) {
     return null;
@@ -1316,9 +1359,9 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     if (!validateSerializableStateV6(normalizedV6)) {
       return null;
     }
-    return migrateV12ToV13(
+    return migrateV13ToV14(migrateV12ToV13(
       migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(normalizedV6)))))),
-    );
+    ));
   }
   if (schemaVersion === 7) {
     const asV7 = state as SerializableStateV7;
@@ -1346,7 +1389,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         : {},
     };
     return validateSerializableStateV7(normalizedV7)
-      ? migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(normalizedV7))))))
+      ? migrateV13ToV14(migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(normalizedV7)))))))
       : null;
   }
   if (schemaVersion === 8) {
@@ -1376,7 +1419,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       allocator: normalizeAllocatorV8(asV8.allocator),
     };
     return validateSerializableStateV8(normalizedV8)
-      ? migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(normalizedV8)))))
+      ? migrateV13ToV14(migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(normalizedV8))))))
       : null;
   }
   if (schemaVersion === 9) {
@@ -1406,7 +1449,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       allocator: normalizeAllocatorV9(asV9.allocator),
     };
     return validateSerializableStateV9(normalizedV9)
-      ? migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(normalizedV9))))
+      ? migrateV13ToV14(migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(normalizedV9)))))
       : null;
   }
   if (schemaVersion === 10) {
@@ -1444,7 +1487,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       allocator: normalizeAllocatorV10(asV10.allocator),
     };
     return validateSerializableStateV10(normalizedV10)
-      ? migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(normalizedV10)))
+      ? migrateV13ToV14(migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(normalizedV10))))
       : null;
   }
   if (schemaVersion === 11) {
@@ -1483,7 +1526,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           : 0,
       allocator: normalizeAllocatorV10(asV11.allocator),
     };
-    return validateSerializableStateV11(normalizedV11) ? migrateV12ToV13(migrateV11ToV12(normalizedV11)) : null;
+    return validateSerializableStateV11(normalizedV11) ? migrateV13ToV14(migrateV12ToV13(migrateV11ToV12(normalizedV11))) : null;
   }
   if (schemaVersion === 12) {
     const asV12 = state as SerializableStateV12;
@@ -1521,7 +1564,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           : 0,
       allocator: normalizeAllocatorV10(asV12.allocator),
     };
-    return validateSerializableStateV12(normalizedV12) ? migrateV12ToV13(normalizedV12) : null;
+    return validateSerializableStateV12(normalizedV12) ? migrateV13ToV14(migrateV12ToV13(normalizedV12)) : null;
   }
   if (schemaVersion === 13) {
     const asV13 = state as SerializableStateV13;
@@ -1562,7 +1605,48 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
           : 0,
       allocator: normalizeAllocatorV10(asV13.allocator),
     };
-    return validateSerializableStateV13(normalizedV13) ? normalizedV13 : null;
+    return validateSerializableStateV13(normalizedV13) ? migrateV13ToV14(normalizedV13) : null;
+  }
+  if (schemaVersion === 14) {
+    const asV14 = state as SerializableStateV14;
+    const buttonFlags = withDefaultButtonFlags(normalizeButtonFlags(asV14.ui?.buttonFlags));
+    const normalizedV14: SerializableStateV14 = {
+      ...asV14,
+      calculator: {
+        ...asV14.calculator,
+        ...(isCalculatorValueString(asV14.calculator.seedSnapshot) ? { seedSnapshot: asV14.calculator.seedSnapshot } : {}),
+        rollEntries: Array.isArray(asV14.calculator?.rollEntries)
+          ? asV14.calculator.rollEntries.filter(isSerializableRollEntryV13)
+          : [],
+      },
+      ui: {
+        ...asV14.ui,
+        keyLayout: hasOnlyKnownLayoutCells(asV14.ui?.keyLayout)
+          ? asV14.ui.keyLayout
+          : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+        storageLayout: normalizeStorageSlots(asV14.ui?.storageLayout ?? defaultStorageLayout()),
+        buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
+        activeVisualizer: normalizeActiveVisualizer(asV14.ui?.activeVisualizer, buttonFlags),
+      },
+      unlocks: normalizeUnlocks(asV14.unlocks),
+      keyPressCounts: isObject(asV14.keyPressCounts)
+        ? Object.fromEntries(
+            Object.entries(asV14.keyPressCounts).filter(
+              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
+            ),
+          )
+        : {},
+      allocatorReturnPressCount:
+        isInteger(asV14.allocatorReturnPressCount) && asV14.allocatorReturnPressCount >= 0
+          ? asV14.allocatorReturnPressCount
+          : 0,
+      allocatorAllocatePressCount:
+        isInteger(asV14.allocatorAllocatePressCount) && asV14.allocatorAllocatePressCount >= 0
+          ? asV14.allocatorAllocatePressCount
+          : 0,
+      allocator: normalizeAllocatorV10(asV14.allocator),
+    };
+    return validateSerializableStateV14(normalizedV14) ? normalizedV14 : null;
   }
   return null;
 };

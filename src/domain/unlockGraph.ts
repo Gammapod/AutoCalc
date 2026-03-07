@@ -846,6 +846,16 @@ export const filterUnlockGraphToIncomingUnlockKeys = (
 
 export const deriveUnlockedKeysFromState = (state: GameState): Key[] => {
   const keys: Key[] = [];
+  for (const [key, unlocked] of Object.entries(state.unlocks.valueAtoms)) {
+    if (unlocked) {
+      keys.push(key as Key);
+    }
+  }
+  for (const [key, unlocked] of Object.entries(state.unlocks.valueCompose)) {
+    if (unlocked) {
+      keys.push(key as Key);
+    }
+  }
   for (const [key, unlocked] of Object.entries(state.unlocks.valueExpression)) {
     if (unlocked) {
       keys.push(key as Key);
@@ -878,4 +888,3 @@ export const deriveUnlockedKeysFromState = (state: GameState): Key[] => {
   }
   return keys.sort(compareKeys);
 };
-

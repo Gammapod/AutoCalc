@@ -30,6 +30,12 @@ const applyUnlockAll = (state: GameState): GameState => {
     },
     unlocks: {
       ...withCatalogEffects.unlocks,
+      valueAtoms: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.valueAtoms).map((key) => [key, true]),
+      ) as GameState["unlocks"]["valueAtoms"],
+      valueCompose: Object.fromEntries(
+        Object.keys(withCatalogEffects.unlocks.valueCompose).map((key) => [key, true]),
+      ) as GameState["unlocks"]["valueCompose"],
       valueExpression: Object.fromEntries(
         Object.keys(withCatalogEffects.unlocks.valueExpression).map((key) => [key, true]),
       ) as GameState["unlocks"]["valueExpression"],

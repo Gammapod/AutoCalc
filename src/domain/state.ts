@@ -1,9 +1,9 @@
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
-import { buttonRegistry, type ButtonUnlockBucket } from "./buttonRegistry.js";
+import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 13;
+export const SAVE_SCHEMA_VERSION = 14;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const AUTO_EQUALS_FLAG = "execution.pause";
@@ -20,25 +20,34 @@ export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
 const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["++"];
 
-type UnlockBucket = Exclude<ButtonUnlockBucket, "none">;
-type UnlockBucketRecord<B extends UnlockBucket> =
-  B extends "valueExpression" ? GameState["unlocks"]["valueExpression"]
+type UnlockGroup = Exclude<ButtonUnlockGroup, "none">;
+type UnlockGroupRecord<B extends UnlockGroup> =
+  B extends "valueAtoms" ? GameState["unlocks"]["valueAtoms"]
+    : B extends "valueCompose" ? GameState["unlocks"]["valueCompose"]
     : B extends "slotOperators" ? GameState["unlocks"]["slotOperators"]
       : B extends "utilities" ? GameState["unlocks"]["utilities"]
         : B extends "steps" ? GameState["unlocks"]["steps"]
           : B extends "visualizers" ? GameState["unlocks"]["visualizers"]
             : GameState["unlocks"]["execution"];
 
-const buildUnlockRecord = <B extends UnlockBucket>(bucket: B): UnlockBucketRecord<B> => {
+const buildUnlockRecord = <B extends UnlockGroup>(group: B): UnlockGroupRecord<B> => {
   const record: Record<string, boolean> = {};
   for (const entry of buttonRegistry) {
-    if (entry.unlockBucket !== bucket) {
+    if (entry.unlockGroup !== group) {
       continue;
     }
     record[entry.key] = entry.defaultUnlocked;
   }
-  return record as UnlockBucketRecord<B>;
+  return record as UnlockGroupRecord<B>;
 };
+
+const combineValueExpressionUnlocks = (
+  valueAtoms: GameState["unlocks"]["valueAtoms"],
+  valueCompose: GameState["unlocks"]["valueCompose"],
+): GameState["unlocks"]["valueExpression"] => ({
+  ...valueAtoms,
+  ...valueCompose,
+});
 
 export const defaultStorageKeys = (): KeyCell[] =>
   defaultKeyLayout()
@@ -111,6 +120,8 @@ export const defaultKeyLayout = (): LayoutCell[] => [
 
 export const initialState = (): GameState => {
   const keyLayout = defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS);
+  const valueAtoms = buildUnlockRecord("valueAtoms");
+  const valueCompose = buildUnlockRecord("valueCompose");
   return {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
@@ -144,7 +155,9 @@ export const initialState = (): GameState => {
     allocatorReturnPressCount: 0,
     allocatorAllocatePressCount: 0,
     unlocks: {
-      valueExpression: buildUnlockRecord("valueExpression"),
+      valueAtoms,
+      valueCompose,
+      valueExpression: combineValueExpressionUnlocks(valueAtoms, valueCompose),
       slotOperators: buildUnlockRecord("slotOperators"),
       utilities: buildUnlockRecord("utilities"),
       steps: buildUnlockRecord("steps"),

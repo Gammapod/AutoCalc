@@ -2,18 +2,21 @@ import type {
   ButtonCategory,
   ButtonKey,
   ButtonKeyByBehaviorKind,
-  ButtonKeyByUnlockBucket,
+  ButtonKeyByUnlockGroup,
+  ButtonVisualizerId,
 } from "./buttonRegistry.js";
 
 export type Digit = ButtonKeyByBehaviorKind<"digit">;
-export type SlotOperator = ButtonKeyByUnlockBucket<"slotOperators">;
-export type ValueExpressionKey = ButtonKeyByUnlockBucket<"valueExpression">;
-export type UtilityKey = ButtonKeyByUnlockBucket<"utilities">;
-export type StepKey = ButtonKeyByUnlockBucket<"steps">;
-export type VisualizerKey = ButtonKeyByUnlockBucket<"visualizers">;
-export type VisualizerId = "graph" | "feed" | "circle";
+export type SlotOperator = ButtonKeyByUnlockGroup<"slotOperators">;
+export type ValueAtomKey = ButtonKeyByUnlockGroup<"valueAtoms">;
+export type ValueComposeKey = ButtonKeyByUnlockGroup<"valueCompose">;
+export type ValueExpressionKey = ValueAtomKey | ValueComposeKey;
+export type UtilityKey = ButtonKeyByUnlockGroup<"utilities">;
+export type StepKey = ButtonKeyByUnlockGroup<"steps">;
+export type VisualizerKey = ButtonKeyByUnlockGroup<"visualizers">;
+export type VisualizerId = ButtonVisualizerId;
 export type ActiveVisualizer = "total" | VisualizerId;
-export type ExecKey = ButtonKeyByUnlockBucket<"execution">;
+export type ExecKey = ButtonKeyByUnlockGroup<"execution">;
 export type Key = ButtonKey;
 export type KeyCategory = ButtonCategory;
 export type KeyCell = {
@@ -103,6 +106,9 @@ export type CalculatorState = {
 };
 
 export type UnlockState = {
+  valueAtoms: Record<ValueAtomKey, boolean>;
+  valueCompose: Record<ValueComposeKey, boolean>;
+  // Legacy mirror kept for compatibility while tests and fixtures migrate.
   valueExpression: Record<ValueExpressionKey, boolean>;
   slotOperators: Record<SlotOperator, boolean>;
   utilities: Record<UtilityKey, boolean>;

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { buttonRegistry } from "../src/domain/buttonRegistry.js";
+import { keyCatalog } from "../src/content/keyCatalog.js";
 import { keyRuntimeCatalog } from "../src/content/keyRuntimeCatalog.js";
 import { isButtonUnlocked, iterUnlockedButtons, setButtonUnlocked } from "../src/domain/buttonStateAccess.js";
 import { initialState } from "../src/domain/state.js";
@@ -9,21 +10,29 @@ const sort = (values: string[]): string[] => [...values].sort((a, b) => a.locale
 export const runButtonRegistryContractTests = (): void => {
   const keys = buttonRegistry.map((entry) => entry.key);
   assert.equal(new Set(keys).size, keys.length, "button registry must not contain duplicate keys");
+  assert.equal(new Set(keyCatalog.map((entry) => entry.key)).size, keyCatalog.length, "key catalog must not contain duplicate keys");
 
   const state = initialState();
-  const runtimeKeys = sort([
-    ...Object.keys(state.unlocks.valueExpression),
+  const runtimePrimaryUnlockKeys = sort([
+    ...Object.keys(state.unlocks.valueAtoms),
+    ...Object.keys(state.unlocks.valueCompose),
     ...Object.keys(state.unlocks.slotOperators),
     ...Object.keys(state.unlocks.utilities),
     ...Object.keys(state.unlocks.steps),
     ...Object.keys(state.unlocks.visualizers),
     ...Object.keys(state.unlocks.execution),
   ]);
+  const runtimeLegacyUnlockKeys = sort(Object.keys(state.unlocks.valueExpression));
   const registryUnlockKeys = sort(buttonRegistry.map((entry) => entry.key));
   assert.deepEqual(
     registryUnlockKeys,
-    runtimeKeys,
-    "registry unlock buckets must exactly match runtime unlock-state keys",
+    runtimePrimaryUnlockKeys,
+    "registry unlock groups must exactly match primary runtime unlock-state keys",
+  );
+  assert.deepEqual(
+    runtimeLegacyUnlockKeys,
+    sort([...Object.keys(state.unlocks.valueAtoms), ...Object.keys(state.unlocks.valueCompose)]),
+    "legacy valueExpression mirror must stay in sync with split value unlock groups",
   );
   assert.deepEqual(
     registryUnlockKeys,

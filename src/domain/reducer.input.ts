@@ -97,7 +97,7 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
 };
 
 const applyDigit = (state: GameState, digit: Digit): GameState => {
-  if (!state.unlocks.valueExpression[digit]) {
+  if (!state.unlocks.valueAtoms[digit] && !state.unlocks.valueExpression[digit]) {
     return state;
   }
 
@@ -139,7 +139,7 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
 };
 
 const applyNegate = (state: GameState): GameState => {
-  if (!state.unlocks.valueExpression.NEG) {
+  if (!state.unlocks.valueCompose.NEG && !state.unlocks.valueExpression.NEG) {
     return state;
   }
 

@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { keyRuntimeCatalog } from "../src/content/keyRuntimeCatalog.js";
-import { listBehaviorHandlerIds, resolveKeyActionHandlerId } from "../src/domain/keyActionHandlers.js";
+import {
+  listBehaviorHandlerIds,
+  resolveKeyActionHandlerId,
+  validateKeyCatalogHandlerCoherence,
+} from "../src/domain/keyActionHandlers.js";
 
 export const runKeyActionHandlersContractTests = (): void => {
   const behaviorKindsInCatalog = new Set(keyRuntimeCatalog.map((entry) => entry.behaviorKind));
@@ -13,7 +17,13 @@ export const runKeyActionHandlersContractTests = (): void => {
   }
 
   for (const entry of keyRuntimeCatalog) {
-    const handlerId = resolveKeyActionHandlerId(entry.key);
+    const handlerId = resolveKeyActionHandlerId(entry.key as Parameters<typeof resolveKeyActionHandlerId>[0]);
     assert.ok(handlerId, `key ${entry.key} must resolve to a key-action handler`);
   }
+
+  assert.deepEqual(
+    validateKeyCatalogHandlerCoherence(),
+    [],
+    "catalog entries must remain coherent with handler behavior and overrides",
+  );
 };

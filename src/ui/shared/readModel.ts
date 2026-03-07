@@ -1,6 +1,7 @@
 import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
 import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js";
+import { isDigitKey, isOperatorKey, isVisualizerKey } from "../../domain/buttonRegistry.js";
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../domain/analysis.js";
 import { buildUnlockCriteria } from "../../domain/unlockEngine.js";
 import type {
@@ -115,10 +116,10 @@ export const formatKeyLabel = (key: Key): string => {
 };
 
 export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
-  if (/^\d$/.test(key) || key === "NEG") {
+  if (isDigitKey(key) || key === "NEG") {
     return "value_expression";
   }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
+  if (isOperatorKey(key)) {
     return "slot_operator";
   }
   if (key === "\u23EF") {
@@ -127,7 +128,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (key === "C" || key === "CE" || key === "UNDO") {
     return "utility";
   }
-  if (key === "GRAPH" || key === "FEED" || key === "CIRCLE") {
+  if (isVisualizerKey(key)) {
     return "visualizers";
   }
   return "execution";

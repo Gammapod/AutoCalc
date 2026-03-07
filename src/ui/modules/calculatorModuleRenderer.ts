@@ -1,5 +1,6 @@
 import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { calculatorValueToDisplayString, isRationalCalculatorValue, toRationalCalculatorValue } from "../../domain/calculatorValue.js";
+import { keyToVisualizerId } from "../../domain/buttonRegistry.js";
 import { isKeyUnlocked } from "../../domain/keyUnlocks.js";
 import { getRollYDomain } from "../../domain/rollDerived.js";
 import { STORAGE_COLUMNS } from "../../domain/state.js";
@@ -310,16 +311,7 @@ const getButtonFlag = (state: GameState, flag: string): boolean => {
 };
 
 const visualizerForKey = (key: KeyCell["key"]): VisualizerId | null => {
-  if (key === "GRAPH") {
-    return "graph";
-  }
-  if (key === "FEED") {
-    return "feed";
-  }
-  if (key === "CIRCLE") {
-    return "circle";
-  }
-  return null;
+  return keyToVisualizerId(key);
 };
 
 export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => {
@@ -1539,6 +1531,12 @@ const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => 
 const buildUnlockSnapshot = (state: GameState): Record<Key, boolean> => {
   const snapshot: Partial<Record<Key, boolean>> = {};
 
+  for (const [key, unlocked] of Object.entries(state.unlocks.valueAtoms)) {
+    snapshot[key as Key] = unlocked;
+  }
+  for (const [key, unlocked] of Object.entries(state.unlocks.valueCompose)) {
+    snapshot[key as Key] = unlocked;
+  }
   for (const [key, unlocked] of Object.entries(state.unlocks.valueExpression)) {
     snapshot[key as Key] = unlocked;
   }
