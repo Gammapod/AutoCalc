@@ -67,6 +67,26 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       calcBody?.style.getPropertyValue("--desktop-calc-width"),
       "desktop visualizer width is coupled to body width token",
     );
+
+    harness.root.setAttribute("data-visualizer-width-mode", "fixed");
+    harness.root.setAttribute("data-visualizer-width-px", "333");
+    renderer.render(initialState(), dispatch, {
+      interactionMode: "calculator",
+      inputBlocked: false,
+    });
+    assert.equal(
+      calcBody?.style.getPropertyValue("--desktop-visualizer-width"),
+      "333.00px",
+      "desktop visualizer width can be decoupled via fixed width config",
+    );
+    assert.equal(
+      calcBody?.style.getPropertyValue("--desktop-visualizer-width")
+        !== calcBody?.style.getPropertyValue("--desktop-calc-width"),
+      true,
+      "fixed visualizer width differs from calculated body width when configured",
+    );
+    harness.root.removeAttribute("data-visualizer-width-mode");
+    harness.root.removeAttribute("data-visualizer-width-px");
     assert.equal(
       keys?.style.gridTemplateRows.includes("minmax(var(--desktop-key-height), 1fr)"),
       true,

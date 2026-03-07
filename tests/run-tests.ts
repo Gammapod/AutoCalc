@@ -44,6 +44,12 @@ import { runUiModuleGrapherV2Tests } from "./uiModule.grapher.v2.test.js";
 import { runUiModuleVisualizerHostV2Tests } from "./uiModule.visualizerHost.v2.test.js";
 import { runUiModuleCircleVisualizerV2Tests } from "./uiModule.circleVisualizer.v2.test.js";
 import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
+import { runUiLayoutEngineTests } from "./uiLayoutEngine.test.js";
+import { runUiMotionCoordinatorTests } from "./uiMotionCoordinator.test.js";
+import { runUiCueLifecycleTests } from "./uiCueLifecycle.test.js";
+import { runUiMotionLifecycleBridgeTests } from "./uiMotionLifecycleBridge.test.js";
+import { runUiLayoutAdapterTests } from "./uiLayoutAdapter.test.js";
+import { runUiCueTelemetryTests } from "./uiCueTelemetry.test.js";
 import { runKeyUnlocksTests } from "./keyUnlocks.test.js";
 import { runLayoutRulesInvariantTests } from "./layoutRules.invariant.test.js";
 import { runLayoutRulesEquivalenceTests } from "./layoutRules.equivalence.test.js";
@@ -111,6 +117,12 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/circle-visualizer-v2", runUiModuleCircleVisualizerV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
+  ["ui/layout-engine", runUiLayoutEngineTests],
+  ["ui/motion-coordinator", runUiMotionCoordinatorTests],
+  ["ui/cue-lifecycle", runUiCueLifecycleTests],
+  ["ui/motion-lifecycle-bridge", runUiMotionLifecycleBridgeTests],
+  ["ui/layout-adapter", runUiLayoutAdapterTests],
+  ["ui/cue-telemetry", runUiCueTelemetryTests],
   ["ui-integration/mobile-shell", runUiIntegrationMobileShellTests],
   ["ui-integration/desktop-shell", runUiIntegrationDesktopShellTests],
   ["v2/import-boundary", runV2ImportBoundaryTests],

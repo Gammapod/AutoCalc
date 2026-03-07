@@ -3,6 +3,7 @@ import { clearVisualizerHost, renderVisualizerHost } from "../modules/visualizer
 import { renderChecklistV2Module } from "../modules/checklistRenderer.js";
 import { renderCalculatorStorageV2Module } from "../modules/calculatorStorageRenderer.js";
 import type { ShellRenderer, ShellRenderOptions } from "../shellRender.js";
+import { awaitMotionSettled, beginMotionCycle, completeMotionCycle } from "../layout/motionLifecycleBridge.js";
 
 const CUE_DURATION_MS = 520;
 
@@ -36,6 +37,43 @@ const applyDesktopA11yMarkers = (root: Element, interactionMode: ShellRenderOpti
   }
 };
 
+const playElementCueAnimation = async (
+  element: HTMLElement | null,
+  channel: string,
+  fallbackMs: number,
+): Promise<void> => {
+  const token = beginMotionCycle(channel, fallbackMs);
+  if (!element) {
+    await awaitMotionSettled(token);
+    return;
+  }
+
+  let completed = false;
+  const complete = (): void => {
+    if (completed) {
+      return;
+    }
+    completed = true;
+    completeMotionCycle(token);
+  };
+  const controller = new AbortController();
+
+  const finish = (): void => {
+    controller.abort();
+    complete();
+  };
+
+  element.classList.remove("v2-transition-cue");
+  void element.offsetWidth;
+  element.classList.add("v2-transition-cue");
+  element.addEventListener("animationend", finish, { signal: controller.signal });
+  element.addEventListener("animationcancel", finish, { signal: controller.signal });
+
+  await awaitMotionSettled(token);
+  controller.abort();
+  element.classList.remove("v2-transition-cue");
+};
+
 export const createDesktopShellRenderer = (root: Element): ShellRenderer => {
   let latestState: GameState | null = null;
   let latestDispatch: ((action: Action) => unknown) | null = null;
@@ -67,20 +105,7 @@ export const createDesktopShellRenderer = (root: Element): ShellRenderer => {
   };
 
   const playTransitionCue: ShellRenderer["playTransitionCue"] = async (target) => {
-    const element = findCueTarget(root, target);
-    if (!element) {
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, CUE_DURATION_MS);
-      });
-      return;
-    }
-    element.classList.remove("v2-transition-cue");
-    void element.offsetWidth;
-    element.classList.add("v2-transition-cue");
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, CUE_DURATION_MS);
-    });
-    element.classList.remove("v2-transition-cue");
+    await playElementCueAnimation(findCueTarget(root, target), `shell-cue:${target}`, CUE_DURATION_MS + 60);
   };
 
   const dispose = (): void => {

@@ -13,6 +13,9 @@ import {
   normalizeLoadedStateForRuntime,
 } from "./autoEqualsScheduler.js";
 import { getLambdaUnusedPoints } from "../domain/lambdaControl.js";
+import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
+import { createCueLifecycleCoordinator } from "../ui/layout/cueLifecycle.js";
+import { subscribeCueTelemetry } from "../ui/layout/cueTelemetry.js";
 import type { Action, GameState, Key } from "../domain/types.js";
 
 declare global {
@@ -97,12 +100,13 @@ type DispatchOptions = {
   internal?: boolean;
 };
 
-const UNLOCK_REVEAL_DURATION_MS = 1200;
-const ALLOCATOR_CUE_PRE_APPLY_MS = 480;
-const ALLOCATOR_CUE_POST_APPLY_MS = 420;
+const UNLOCK_REVEAL_SETTLE_TIMEOUT_MS = 1300;
+const ALLOCATOR_CUE_SETTLE_TIMEOUT_MS = 1100;
+const MODE_TRANSITION_SETTLE_TIMEOUT_MS = 1000;
 const ALLOCATOR_RESET_HOLD_MS = 1500;
 const ALLOCATOR_RESET_INDICATOR_DELAY_MS = 80;
 const ALLOCATOR_RESET_PROGRESS_EXPONENT = 8;
+const ENABLE_CUE_TELEMETRY_DEBUG = false;
 
 const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}): Action => {
   if (!options.internal && interactionRuntime.shouldBlockAction(action)) {
@@ -273,11 +277,6 @@ toggleUiShellLink.addEventListener("click", (event) => {
   window.location.assign(getUiShellToggleUrl(uiShellMode));
 });
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
-
 const moveAllKeysToStorage = (): void => {
   const MAX_RELOCATIONS = 256;
   let relocations = 0;
@@ -319,9 +318,14 @@ const resetForModifyMode = (): void => {
   );
 };
 
-let modeTransitionInFlight = false;
-let unlockRevealInFlight = false;
-let allocatorIncreaseCueInFlight = false;
+const cueCoordinator = createCueLifecycleCoordinator();
+const isModeTransitionInFlight = (): boolean => cueCoordinator.getState().inFlightCueKind === "mode_transition";
+const unsubscribeCueTelemetry =
+  ENABLE_CUE_TELEMETRY_DEBUG
+    ? subscribeCueTelemetry((event) => {
+        console.debug("[cue]", event.cueKind, event.phase, event.durationMs ?? "", event.metadata ?? {});
+      })
+    : () => {};
 
 const allocatorIncreaseByUnlockId = new Map(
   unlockCatalog.flatMap((unlock) => {
@@ -385,116 +389,114 @@ const collectUnlockedKeys = (state: GameState): Set<Key> => {
 let knownUnlockedKeys = collectUnlockedKeys(store.getState());
 
 const runUnlockRevealCue = async (stateAtUnlock: GameState): Promise<void> => {
-  if (unlockRevealInFlight || modeTransitionInFlight) {
-    return;
-  }
-  unlockRevealInFlight = true;
-  interactionRuntime.setInputBlocked(true);
-  redraw();
-  try {
-    if (shellRenderer) {
-      await shellRenderer.playTransitionCue("storage");
-      shellRenderer.forceActiveView({
-        bottomPanelId: "storage",
-        includeTransition: true,
-      });
-    } else {
-      await sleep(520);
-    }
-
-    renderApp(stateAtUnlock);
-    syncKeypadDimensionInputs();
-    syncAllocatorDeviceInputs();
-    syncDebugRollState();
-    storageRepo.save(stateAtUnlock);
-
-    await sleep(UNLOCK_REVEAL_DURATION_MS + 100);
-  } finally {
-    interactionRuntime.setInputBlocked(false);
-    unlockRevealInFlight = false;
-    redraw();
-  }
+  await cueCoordinator.run(
+    {
+      kind: "unlock_reveal",
+      target: "storage",
+    },
+    {
+      playShellCue: async (target) => {
+        await shellRenderer.playTransitionCue(target);
+      },
+      awaitMotionSettled,
+      setInputBlocked: (blocked) => {
+        interactionRuntime.setInputBlocked(blocked);
+      },
+      redraw,
+      applyStateMutation: () => {
+        renderApp(stateAtUnlock);
+        syncKeypadDimensionInputs();
+        syncAllocatorDeviceInputs();
+        syncDebugRollState();
+        storageRepo.save(stateAtUnlock);
+      },
+      setShellFocusView: () => {
+        shellRenderer.forceActiveView({
+          bottomPanelId: "storage",
+          includeTransition: true,
+        });
+      },
+      phaseTimeoutMs: {
+        settle: UNLOCK_REVEAL_SETTLE_TIMEOUT_MS,
+      },
+    },
+  );
 };
 
 const runAllocatorIncreaseCue = async (previousUnused: number, nextUnused: number): Promise<void> => {
-  if (allocatorIncreaseCueInFlight || modeTransitionInFlight) {
-    return;
-  }
-  allocatorIncreaseCueInFlight = true;
-  interactionRuntime.setInputBlocked(true);
-  redraw();
-  try {
-    if (shellRenderer) {
-      await shellRenderer.playTransitionCue("storage");
-      shellRenderer.forceActiveView({
-        bottomPanelId: "storage",
-        includeTransition: true,
-      });
-    } else {
-      await sleep(520);
-    }
-    void previousUnused;
-    void nextUnused;
-    await sleep(ALLOCATOR_CUE_PRE_APPLY_MS);
-    redraw();
-    await sleep(ALLOCATOR_CUE_POST_APPLY_MS);
-  } finally {
-    interactionRuntime.setInputBlocked(false);
-    allocatorIncreaseCueInFlight = false;
-    redraw();
-  }
+  void previousUnused;
+  void nextUnused;
+  await cueCoordinator.run(
+    {
+      kind: "allocator_increase",
+      target: "storage",
+    },
+    {
+      playShellCue: async (target) => {
+        await shellRenderer.playTransitionCue(target);
+      },
+      awaitMotionSettled,
+      setInputBlocked: (blocked) => {
+        interactionRuntime.setInputBlocked(blocked);
+      },
+      redraw,
+      setShellFocusView: () => {
+        shellRenderer.forceActiveView({
+          bottomPanelId: "storage",
+          includeTransition: true,
+        });
+      },
+      phaseTimeoutMs: {
+        settle: ALLOCATOR_CUE_SETTLE_TIMEOUT_MS,
+      },
+    },
+  );
 };
 
 const runModeTransition = async (targetMode: "calculator" | "modify"): Promise<void> => {
-  if (modeTransitionInFlight) {
-    return;
-  }
-  modeTransitionInFlight = true;
-  interactionRuntime.setInputBlocked(true);
-  redraw();
-  try {
-    if (!shellRenderer || targetMode === "modify") {
-      await sleep(520);
-    } else {
-      await shellRenderer.playTransitionCue("calculator");
-    }
-    await sleep(500);
-    if (targetMode === "modify") {
-      resetForModifyMode();
-    }
-    interactionRuntime.setMode(targetMode);
-    redraw();
-    if (shellRenderer) {
-      if (targetMode === "modify") {
-        shellRenderer.forceActiveView({
-          snapId: "bottom",
-          includeTransition: true,
-        });
-      } else {
+  await cueCoordinator.run(
+    {
+      kind: "mode_transition",
+      target: targetMode === "modify" ? undefined : "calculator",
+      nextMode: targetMode,
+    },
+    {
+      playShellCue: async (target) => {
+        await shellRenderer.playTransitionCue(target);
+      },
+      awaitMotionSettled,
+      setInputBlocked: (blocked) => {
+        interactionRuntime.setInputBlocked(blocked);
+      },
+      redraw,
+      applyStateMutation: () => {
+        if (targetMode === "modify") {
+          resetForModifyMode();
+        }
+        interactionRuntime.setMode(targetMode);
+      },
+      setShellFocusView: () => {
+        if (targetMode === "modify") {
+          shellRenderer.forceActiveView({
+            snapId: "bottom",
+            includeTransition: true,
+          });
+          return;
+        }
         shellRenderer.forceActiveView({
           snapId: "middle",
           middlePanelId: "calculator",
           includeTransition: true,
         });
-      }
-    }
-    await sleep(240);
-  } finally {
-    interactionRuntime.setInputBlocked(false);
-    modeTransitionInFlight = false;
-    redraw();
-  }
+      },
+      phaseTimeoutMs: {
+        settle: MODE_TRANSITION_SETTLE_TIMEOUT_MS,
+      },
+    },
+  );
 };
 
 let previousStateForCues = store.getState();
-let cueQueue: Promise<void> = Promise.resolve();
-const enqueueCue = (runner: () => Promise<void>): void => {
-  cueQueue = cueQueue.then(async () => {
-    await runner();
-  }).catch((error) => {
-    console.error("UI cue failed", error);
-  });
-};
 
 const unsubscribe = store.subscribe((state) => {
   autoEqualsScheduler.sync(state);
@@ -512,16 +514,16 @@ const unsubscribe = store.subscribe((state) => {
     return sum + (allocatorIncreaseByUnlockId.get(unlockId) ?? 0);
   }, 0);
 
-  if (!modeTransitionInFlight && (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock)) {
+  if (!isModeTransitionInFlight() && (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock)) {
     if (maxPointIncreaseFromUnlocks > 0) {
-      enqueueCue(async () => {
+      void (async () => {
         await runAllocatorIncreaseCue(getUnusedPoints(previous), getUnusedPoints(latest));
-      });
+      })();
     }
     if (hasNewUnlock) {
-      enqueueCue(async () => {
+      void (async () => {
         await runUnlockRevealCue(latest);
-      });
+      })();
     }
     return;
   }
@@ -536,6 +538,7 @@ const unsubscribe = store.subscribe((state) => {
 window.__autoCalcBootstrapCleanup__ = () => {
   stopAllocatorResetHold();
   unsubscribe();
+  unsubscribeCueTelemetry();
   shellRenderer?.dispose();
   autoEqualsScheduler.dispose();
 };

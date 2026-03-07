@@ -38,6 +38,18 @@ import type {
 } from "../../domain/types.js";
 import { toDisplayString } from "../../infra/math/rationalEngine.js";
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
+import { resolveLayoutMotionIntent } from "../layout/motionCoordinator.js";
+import { beginMotionCycle, completeMotionCycle } from "../layout/motionLifecycleBridge.js";
+import {
+  applyDesktopLayoutSnapshot,
+  clearDesktopSizingVars,
+  isDesktopShellContext,
+  resolveSingleInstanceSnapshot,
+} from "../layout/layoutAdapter.js";
+import type {
+  CalculatorLayoutSnapshot,
+  InteractionLayoutMode,
+} from "../layout/types.js";
 
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
@@ -146,8 +158,6 @@ declare global {
 
 let previousUnlockSnapshot: Record<Key, boolean> | null = null;
 let pendingToggleAnimationByFlag: Record<string, "on" | "off"> = {};
-let previousKeypadColumns: number | null = null;
-let previousKeypadRows: number | null = null;
 let graphChart: ChartHandle | null = null;
 let graphCanvas: HTMLCanvasElement | null = null;
 let dragSession: DragSession | null = null;
@@ -173,6 +183,10 @@ const STORAGE_MIN_KEY_WIDTH_PX = 56;
 const STORAGE_FALLBACK_GAP_PX = 8;
 const KEY_LABEL_INLINE_GUTTER_PX = 6;
 const KEY_LABEL_SQUISH_THRESHOLD_PX = 2;
+const DESKTOP_LAYOUT_RUNTIME = new WeakMap<Element, {
+  previousSnapshot: CalculatorLayoutSnapshot | null;
+  previousInteractionMode: InteractionLayoutMode | null;
+}>();
 
 let keyLabelResizeBound = false;
 
@@ -1132,92 +1146,20 @@ const shouldReduceMotion = (): boolean => {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 };
 
-const isDesktopUiShell = (): boolean => {
-  if (typeof document === "undefined") {
-    return false;
+const getDesktopLayoutRuntime = (root: Element): {
+  previousSnapshot: CalculatorLayoutSnapshot | null;
+  previousInteractionMode: InteractionLayoutMode | null;
+} => {
+  const existing = DESKTOP_LAYOUT_RUNTIME.get(root);
+  if (existing) {
+    return existing;
   }
-  return document.body.getAttribute("data-ui-shell") === "desktop";
-};
-
-const isDesktopShellContext = (root: Element): boolean => {
-  if (isDesktopUiShell()) {
-    return true;
-  }
-  return !!root.querySelector<HTMLElement>(".play-area[data-desktop-shell='true']");
-};
-
-const parsePxValue = (value: string, fallback: number): number => {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
-
-type DesktopSizingVm = {
-  keyMinWidthPx: number;
-  widthPx: number;
-  baselineWidthPx: number;
-  minHeightPx: number;
-  baselineMinHeightPx: number;
-  baselineKeypadHeightPx: number;
-  shouldStretchKeypadHeight: boolean;
-};
-
-const computeDesktopSizingVm = (
-  keysEl: HTMLElement,
-  calcBodyEl: HTMLElement | null,
-  columns: number,
-  rows: number,
-): DesktopSizingVm => {
-  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 720;
-  const keyHeight = clamp(viewportHeight * 0.056, 46, 56);
-  const keyMinWidth = keyHeight * 1.5;
-  const horizontalChrome = 32;
-  const fallbackGap = 10;
-  const computedGap = typeof window !== "undefined" ? window.getComputedStyle(keysEl).getPropertyValue("--gap") : "";
-  const gap = parsePxValue(computedGap, fallbackGap);
-  const baselineCols = 4;
-  const baselineRows = 2;
-  const effectiveCols = Math.max(columns, baselineCols);
-  const effectiveRows = Math.max(rows, baselineRows);
-  const baselineWidth = baselineCols * keyMinWidth + Math.max(0, baselineCols - 1) * gap + horizontalChrome;
-  const calcWidth = effectiveCols * keyMinWidth + Math.max(0, effectiveCols - 1) * gap + horizontalChrome;
-  const baselineKeypadHeight = baselineRows * keyHeight + Math.max(0, baselineRows - 1) * gap;
-  const keypadHeight = effectiveRows * keyHeight + Math.max(0, effectiveRows - 1) * gap;
-  const calcRect = calcBodyEl?.getBoundingClientRect();
-  const keysRect = keysEl.getBoundingClientRect();
-  const measuredChrome = calcRect && keysRect ? calcRect.height - keysRect.height : 0;
-  const fallbackVerticalChrome = 260;
-  const verticalChrome = Math.max(120, measuredChrome > 0 ? measuredChrome : fallbackVerticalChrome);
-  const baselineMinHeight = baselineKeypadHeight + verticalChrome;
-  const minHeight = keypadHeight + verticalChrome;
-  const shouldStretchKeypadHeight = rows < baselineRows;
-  return {
-    keyMinWidthPx: keyMinWidth,
-    widthPx: Math.max(calcWidth, baselineWidth),
-    baselineWidthPx: baselineWidth,
-    minHeightPx: Math.max(minHeight, baselineMinHeight),
-    baselineMinHeightPx: baselineMinHeight,
-    baselineKeypadHeightPx: baselineKeypadHeight,
-    shouldStretchKeypadHeight,
+  const created = {
+    previousSnapshot: null,
+    previousInteractionMode: null,
   };
-};
-
-const syncDesktopCalcSizingVars = (keysEl: HTMLElement, calcBodyEl: HTMLElement | null, columns: number, rows: number): DesktopSizingVm => {
-  const sizing = computeDesktopSizingVm(keysEl, calcBodyEl, columns, rows);
-  const targets = calcBodyEl ? [keysEl, calcBodyEl] : [keysEl];
-  for (const element of targets) {
-    element.style.setProperty("--desktop-calc-cols", columns.toString());
-    element.style.setProperty("--desktop-calc-rows", rows.toString());
-    element.style.setProperty("--desktop-key-min-width", `${sizing.keyMinWidthPx.toFixed(2)}px`);
-    element.style.setProperty("--desktop-calc-width", `${sizing.widthPx.toFixed(2)}px`);
-    element.style.setProperty("--desktop-calc-min-height", `${sizing.minHeightPx.toFixed(2)}px`);
-    element.style.setProperty("--desktop-baseline-width", `${sizing.baselineWidthPx.toFixed(2)}px`);
-    element.style.setProperty("--desktop-baseline-calc-height", `${sizing.baselineMinHeightPx.toFixed(2)}px`);
-    element.style.setProperty("--desktop-baseline-keypad-height", `${sizing.baselineKeypadHeightPx.toFixed(2)}px`);
-    element.style.setProperty("--desktop-visualizer-width", `${sizing.widthPx.toFixed(2)}px`);
-  }
-  return sizing;
+  DESKTOP_LAYOUT_RUNTIME.set(root, created);
+  return created;
 };
 
 export const isInputAnimationLocked = (): boolean => inputAnimationLockCount > 0;
@@ -1301,6 +1243,46 @@ const bindPrefixedAnimationLock = (element: HTMLElement, animationPrefix: string
     element,
     (activeAnimationName) => activeAnimationName.startsWith(animationPrefix),
     fallbackMs,
+  );
+};
+
+const bindPrefixedAnimationCompletion = (
+  element: HTMLElement,
+  animationPrefix: string,
+  onComplete: () => void,
+): void => {
+  let completed = false;
+  const controller = new AbortController();
+  const finish = (): void => {
+    if (completed) {
+      return;
+    }
+    completed = true;
+    controller.abort();
+    onComplete();
+  };
+
+  element.addEventListener(
+    "animationend",
+    (event: Event) => {
+      const animationEvent = event as AnimationEvent;
+      if (!animationEvent.animationName.startsWith(animationPrefix)) {
+        return;
+      }
+      finish();
+    },
+    { signal: controller.signal },
+  );
+  element.addEventListener(
+    "animationcancel",
+    (event: Event) => {
+      const animationEvent = event as AnimationEvent;
+      if (!animationEvent.animationName.startsWith(animationPrefix)) {
+        return;
+      }
+      finish();
+    },
+    { signal: controller.signal },
   );
 };
 
@@ -1828,62 +1810,63 @@ export const render = (
     renderUnlockChecklist(unlockEl, state);
   }
 
-  const hadPreviousKeypadDimensions = previousKeypadColumns !== null && previousKeypadRows !== null;
-  const keypadDimensionsChanged =
-    hadPreviousKeypadDimensions &&
-    (previousKeypadColumns !== state.ui.keypadColumns || previousKeypadRows !== state.ui.keypadRows);
   const desktopShell = isDesktopShellContext(root);
-  const keypadBeforeRects = keypadDimensionsChanged ? collectKeypadCellRects(keysEl) : new Map<string, DOMRect>();
+  const runtime = getDesktopLayoutRuntime(root);
   const calcBodyEl = keysEl.closest<HTMLElement>(".calc");
+  const currentSnapshot =
+    keysEl instanceof HTMLElement
+      ? resolveSingleInstanceSnapshot({
+          root,
+          keysEl,
+          calcBodyEl,
+          columns: state.ui.keypadColumns,
+          rows: state.ui.keypadRows,
+          interactionMode,
+          inputBlocked,
+        })
+      : null;
+  const modeChanged = runtime.previousInteractionMode !== null && runtime.previousInteractionMode !== interactionMode;
+  const layoutMotionToken = beginMotionCycle("layout", CALC_GROW_MAX_DURATION_MS + INPUT_LOCK_FALLBACK_BUFFER_MS);
+  let layoutMotionCompleted = false;
+  const completeLayoutMotion = (): void => {
+    if (layoutMotionCompleted) {
+      return;
+    }
+    layoutMotionCompleted = true;
+    completeMotionCycle(layoutMotionToken);
+  };
+  const motionIntent =
+    currentSnapshot
+      ? resolveLayoutMotionIntent(runtime.previousSnapshot, currentSnapshot, {
+          reduceMotion: shouldReduceMotion(),
+          modeChanged,
+        })
+      : {
+          kind: "none" as const,
+          forCalculatorId: "primary",
+          keypadGrowDirection: "",
+        };
+  const keypadDimensionsChanged = motionIntent.keypadGrowDirection !== "";
+  const keypadBeforeRects = keypadDimensionsChanged ? collectKeypadCellRects(keysEl) : new Map<string, DOMRect>();
 
   keysEl.innerHTML = "";
   if (keysEl instanceof HTMLElement) {
-    if (desktopShell) {
-      const sizing = syncDesktopCalcSizingVars(keysEl, calcBodyEl, state.ui.keypadColumns, state.ui.keypadRows);
-      keysEl.style.gridTemplateColumns = `repeat(${state.ui.keypadColumns}, minmax(var(--desktop-key-min-width), 1fr))`;
-      keysEl.style.gridTemplateRows =
-        sizing.shouldStretchKeypadHeight
-          ? `repeat(${state.ui.keypadRows}, minmax(var(--desktop-key-height), 1fr))`
-          : `repeat(${state.ui.keypadRows}, var(--desktop-key-height))`;
-      if (sizing.shouldStretchKeypadHeight) {
-        keysEl.style.height = `${sizing.baselineKeypadHeightPx.toFixed(2)}px`;
-      } else {
-        keysEl.style.removeProperty("height");
-      }
+    if (desktopShell && currentSnapshot) {
+      applyDesktopLayoutSnapshot(keysEl, calcBodyEl, currentSnapshot);
     } else {
       keysEl.style.gridTemplateColumns = `repeat(${state.ui.keypadColumns}, minmax(0, 1fr))`;
       keysEl.style.gridTemplateRows = `repeat(${state.ui.keypadRows}, minmax(48px, 1fr))`;
       keysEl.style.removeProperty("height");
-      keysEl.style.removeProperty("--desktop-calc-cols");
-      keysEl.style.removeProperty("--desktop-calc-rows");
-      keysEl.style.removeProperty("--desktop-key-min-width");
-      keysEl.style.removeProperty("--desktop-calc-width");
-      keysEl.style.removeProperty("--desktop-calc-min-height");
-      keysEl.style.removeProperty("--desktop-baseline-width");
-      keysEl.style.removeProperty("--desktop-baseline-calc-height");
-      keysEl.style.removeProperty("--desktop-baseline-keypad-height");
-      keysEl.style.removeProperty("--desktop-visualizer-width");
-      if (calcBodyEl) {
-        calcBodyEl.style.removeProperty("--desktop-calc-cols");
-        calcBodyEl.style.removeProperty("--desktop-calc-rows");
-        calcBodyEl.style.removeProperty("--desktop-key-min-width");
-        calcBodyEl.style.removeProperty("--desktop-calc-width");
-        calcBodyEl.style.removeProperty("--desktop-calc-min-height");
-        calcBodyEl.style.removeProperty("--desktop-baseline-width");
-        calcBodyEl.style.removeProperty("--desktop-baseline-calc-height");
-        calcBodyEl.style.removeProperty("--desktop-baseline-keypad-height");
-        calcBodyEl.style.removeProperty("--desktop-visualizer-width");
-      }
+      clearDesktopSizingVars(keysEl, calcBodyEl);
     }
-    if (!keypadDimensionsChanged || shouldReduceMotion()) {
+    if (!keypadDimensionsChanged) {
       delete keysEl.dataset.keypadGrow;
       if (calcBodyEl) {
         delete calcBodyEl.dataset.keypadGrow;
       }
+      completeLayoutMotion();
     } else {
-      const grewRows = previousKeypadRows !== null && state.ui.keypadRows > previousKeypadRows;
-      const grewColumns = previousKeypadColumns !== null && state.ui.keypadColumns > previousKeypadColumns;
-      const growDirection = grewRows && grewColumns ? "both" : grewRows ? "row" : grewColumns ? "column" : "";
+      const growDirection = motionIntent.keypadGrowDirection;
       if (growDirection) {
         if (!desktopShell) {
           keysEl.dataset.keypadGrow = growDirection;
@@ -1894,12 +1877,16 @@ export const render = (
         if (calcBodyEl) {
           calcBodyEl.dataset.keypadGrow = growDirection;
           bindPrefixedAnimationLock(calcBodyEl, "calc-grow-", CALC_GROW_MAX_DURATION_MS);
+          bindPrefixedAnimationCompletion(calcBodyEl, "calc-grow-", completeLayoutMotion);
+        } else if (!desktopShell) {
+          bindPrefixedAnimationCompletion(keysEl, "keypad-grow-", completeLayoutMotion);
         }
       } else {
         delete keysEl.dataset.keypadGrow;
         if (calcBodyEl) {
           delete calcBodyEl.dataset.keypadGrow;
         }
+        completeLayoutMotion();
       }
     }
   }
@@ -1988,8 +1975,8 @@ export const render = (
   if (keypadDimensionsChanged && !desktopShell) {
     playKeypadFlip(keysEl, keypadBeforeRects);
   }
-  previousKeypadColumns = state.ui.keypadColumns;
-  previousKeypadRows = state.ui.keypadRows;
+  runtime.previousSnapshot = currentSnapshot;
+  runtime.previousInteractionMode = interactionMode;
 
   storageEl.innerHTML = "";
   storageEl.setAttribute("aria-hidden", "false");
