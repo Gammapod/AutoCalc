@@ -385,6 +385,8 @@ export const applySetKeypadDimensions = (state: GameState, columns: number, rows
     nextState = clearToggleFlagWhenLeavingKeypad(nextState, removedCell, "keypad", "storage");
   }
 
+  // Current policy keeps a bottom-right anchor (new rows at top, new columns at left).
+  // If we add left/right shrink-side selection later, inject policy at this resize boundary.
   const keyLayout = resizeKeyLayout(nextState.ui.keyLayout, currentColumns, currentRows, clampedColumns, clampedRows);
   const keypadCells = fromKeyLayoutArray(keyLayout, clampedColumns, clampedRows);
   let nextStorageLayout = nextState.ui.storageLayout;
