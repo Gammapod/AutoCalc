@@ -24,6 +24,16 @@ const getLatestSymbolicRoll = (state: GameState): NonNullable<GameState["calcula
   return null;
 };
 
+const appendFunctionLine = (panel: HTMLElement): void => {
+  if (typeof document === "undefined") {
+    return;
+  }
+  const line = document.createElement("div");
+  line.className = "v2-algebraic-function-line";
+  line.textContent = "??(??) = ??";
+  panel.appendChild(line);
+};
+
 export const clearAlgebraicVisualizerPanel = (root: Element): void => {
   const panel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
   if (!panel) {
@@ -46,6 +56,7 @@ export const renderAlgebraicVisualizerPanel = (root: Element, state: GameState):
   const symbolic = getLatestSymbolicRoll(state);
   if (!symbolic) {
     panel.textContent = "No algebraic result yet";
+    appendFunctionLine(panel);
     return;
   }
 
@@ -74,8 +85,9 @@ export const renderAlgebraicVisualizerPanel = (root: Element, state: GameState):
   if (symbolic.truncated) {
     const suffix = document.createElement("div");
     suffix.className = "v2-algebraic-truncated";
-    suffix.textContent = "â€¦";
+    suffix.textContent = "…";
     panel.appendChild(suffix);
   }
-};
 
+  appendFunctionLine(panel);
+};

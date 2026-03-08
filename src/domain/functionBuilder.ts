@@ -12,6 +12,8 @@ export type FunctionBuilderLimits = {
   maxOperandDigits: number;
 };
 
+const isNaturalDivisorOperator = (operator: SlotOperator): boolean => operator === "#" || operator === "\u27E1";
+
 const withDigit = (source: string, digit: Digit): string => {
   if (source === "0") {
     return digit;
@@ -130,9 +132,11 @@ export const applyDigitInput = (
   const slotIndex = builder.operationSlots.length - 1;
   const currentSlot = builder.operationSlots[slotIndex];
   const nextOperand =
-    typeof currentSlot.operand === "bigint"
-      ? (nextMagnitude === 0n ? 0n : currentSlot.operand < 0n ? -nextMagnitude : nextMagnitude)
-      : nextMagnitude;
+    isNaturalDivisorOperator(currentSlot.operator)
+      ? nextMagnitude
+      : typeof currentSlot.operand === "bigint"
+        ? (nextMagnitude === 0n ? 0n : currentSlot.operand < 0n ? -nextMagnitude : nextMagnitude)
+        : nextMagnitude;
   if (nextOperand === currentSlot.operand) {
     return builder;
   }
@@ -150,6 +154,9 @@ export const applyDigitInput = (
 export const applyNegateInput = (builder: FunctionBuilderState): FunctionBuilderState => {
   const draftingSlot = builder.draftingSlot;
   if (draftingSlot) {
+    if (isNaturalDivisorOperator(draftingSlot.operator)) {
+      return builder;
+    }
     return {
       operationSlots: builder.operationSlots,
       draftingSlot: {
@@ -165,6 +172,9 @@ export const applyNegateInput = (builder: FunctionBuilderState): FunctionBuilder
 
   const slotIndex = builder.operationSlots.length - 1;
   const currentSlot = builder.operationSlots[slotIndex];
+  if (isNaturalDivisorOperator(currentSlot.operator)) {
+    return builder;
+  }
   if (typeof currentSlot.operand === "bigint" && currentSlot.operand === 0n) {
     return builder;
   }

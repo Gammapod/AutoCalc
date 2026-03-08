@@ -2,6 +2,7 @@ import { parseExpressionOrNull } from "./expression.js";
 import type { CalculatorState, DraftingSlot, Slot } from "./types.js";
 
 const DIGITS_ONLY_RE = /^\d+$/;
+const isNaturalDivisorOperator = (operator: DraftingSlot["operator"]): boolean => operator === "#" || operator === "\u27E1";
 
 export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): Slot | null => {
   if (draftingSlot.operandInput === "") {
@@ -9,11 +10,18 @@ export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): Slot | null
   }
 
   const normalizedInput = draftingSlot.operandInput.trim();
+  if (isNaturalDivisorOperator(draftingSlot.operator) && !DIGITS_ONLY_RE.test(normalizedInput)) {
+    return null;
+  }
   if (DIGITS_ONLY_RE.test(normalizedInput)) {
     const magnitude = BigInt(normalizedInput);
     return {
       operator: draftingSlot.operator,
-      operand: draftingSlot.isNegative && magnitude !== 0n ? -magnitude : magnitude,
+      operand: isNaturalDivisorOperator(draftingSlot.operator)
+        ? magnitude
+        : draftingSlot.isNegative && magnitude !== 0n
+          ? -magnitude
+          : magnitude,
     };
   }
 

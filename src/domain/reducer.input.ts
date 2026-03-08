@@ -52,6 +52,7 @@ const withDigit = (source: string, digit: Digit): string => {
   }
   return `${source}${digit}`;
 };
+const isNaturalDivisorOperator = (operator: string): boolean => operator === "#" || operator === "\u27E1";
 
 const getMagnitudeText = (total: GameState["calculator"]["total"]): string => {
   if (!isRationalCalculatorValue(total) || !isInteger(total.value)) {
@@ -122,6 +123,9 @@ const applyConstantValue = (state: GameState, constant: ExpressionConstant): Gam
 
   const builder = fromCalculator(state.calculator);
   if (builder.draftingSlot) {
+    if (isNaturalDivisorOperator(builder.draftingSlot.operator)) {
+      return state;
+    }
     return applyUnlocks(withBuilderPatchApplied(state, {
       operationSlots: builder.operationSlots,
       draftingSlot: {
@@ -134,6 +138,9 @@ const applyConstantValue = (state: GameState, constant: ExpressionConstant): Gam
   if (builder.operationSlots.length > 0) {
     const operationSlots = [...builder.operationSlots];
     const slotIndex = operationSlots.length - 1;
+    if (isNaturalDivisorOperator(operationSlots[slotIndex].operator)) {
+      return state;
+    }
     operationSlots[slotIndex] = {
       ...operationSlots[slotIndex],
       operand: constant === "e" ? { type: "constant", value: "e" } : { type: "constant", value: "pi" },
@@ -207,6 +214,13 @@ const applyNegate = (state: GameState): GameState => {
   }
 
   if (state.calculator.rollEntries.length > 0) {
+    return state;
+  }
+
+  if (
+    (state.calculator.draftingSlot && isNaturalDivisorOperator(state.calculator.draftingSlot.operator))
+    || isNaturalDivisorOperator(state.calculator.operationSlots[state.calculator.operationSlots.length - 1]?.operator ?? "")
+  ) {
     return state;
   }
 

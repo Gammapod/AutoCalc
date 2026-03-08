@@ -165,6 +165,86 @@ export const runReducerInputTests = (): void => {
     "modulo execution records the modulo component as roll remainder",
   );
 
+  const euclidDraftConstantBlocked = applyKeyAction(
+    applyKeyAction(fullyUnlocked, "#"),
+    "pi",
+  );
+  assert.equal(
+    euclidDraftConstantBlocked.calculator.draftingSlot?.operandInput,
+    "",
+    "euclidean drafting only accepts numeric divisor input",
+  );
+
+  const moduloDraftNegBlocked = applyKeyAction(
+    {
+      ...fullyUnlocked,
+      calculator: {
+        ...fullyUnlocked.calculator,
+        total: r(5n),
+        draftingSlot: { operator: "\u27E1", operandInput: "3", isNegative: false },
+      },
+    },
+    "NEG",
+  );
+  assert.equal(
+    moduloDraftNegBlocked.calculator.draftingSlot?.isNegative,
+    false,
+    "modulo drafting ignores NEG so divisors stay natural",
+  );
+  assert.deepEqual(
+    moduloDraftNegBlocked.calculator.total,
+    r(5n),
+    "rejected modulo NEG does not transfer negation to total",
+  );
+  assert.equal(
+    moduloDraftNegBlocked.calculator.pendingNegativeTotal,
+    false,
+    "rejected modulo NEG does not toggle pending total sign",
+  );
+
+  const euclidCommittedNegBlocked = applyKeyAction(
+    {
+      ...fullyUnlocked,
+      calculator: {
+        ...fullyUnlocked.calculator,
+        total: r(5n),
+        operationSlots: [{ operator: "#", operand: 3n }],
+      },
+    },
+    "NEG",
+  );
+  assert.deepEqual(
+    euclidCommittedNegBlocked.calculator.operationSlots,
+    [{ operator: "#", operand: 3n }],
+    "euclidean committed divisor ignores NEG so divisors stay natural",
+  );
+  assert.deepEqual(
+    euclidCommittedNegBlocked.calculator.total,
+    r(5n),
+    "rejected euclidean NEG does not transfer negation to total",
+  );
+  assert.equal(
+    euclidCommittedNegBlocked.calculator.pendingNegativeTotal,
+    false,
+    "rejected euclidean NEG does not toggle pending total sign",
+  );
+
+  const euclidDigitRewriteNormalizesSign = applyKeyAction(
+    {
+      ...fullyUnlocked,
+      calculator: {
+        ...fullyUnlocked.calculator,
+        operationSlots: [{ operator: "#", operand: -4n }],
+      },
+    },
+    "7",
+  );
+  assert.deepEqual(
+    euclidDigitRewriteNormalizesSign.calculator.operationSlots,
+    [{ operator: "#", operand: 7n }],
+    "digit rewrite on euclidean divisor always normalizes to natural number",
+  );
+
   const clearSeedSource: GameState = {
     ...fullyUnlocked,
     calculator: {
