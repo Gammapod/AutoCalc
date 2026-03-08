@@ -148,6 +148,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
       ...initialState().calculator,
       operationSlots: [{ operator: "+", operand: 1n }],
     },
+    completedUnlockIds: ["unlock_allocator_point_on_first_natural_result"],
     unlocks: {
       ...initialState().unlocks,
       execution: {
@@ -321,4 +322,5 @@ export const runAutoEqualsSchedulerTests = (): void => {
   assert.equal(Boolean(normalized.ui.buttonFlags[AUTO_EQUALS_FLAG]), false, "runtime load clears auto-equals flag");
   assert.equal(Boolean(normalized.ui.buttonFlags["another.flag"]), true, "runtime load preserves other flags");
 };
+
 

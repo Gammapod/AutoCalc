@@ -395,6 +395,112 @@ const applyCE = (state: GameState): GameState => {
   return applyCECore(state);
 };
 
+const applyBackspace = (state: GameState): GameState => {
+  if (!state.unlocks.utilities["\u2190"]) {
+    return state;
+  }
+  if (state.calculator.rollEntries.length > 0) {
+    return state;
+  }
+
+  const slotToDrafting = (slot: { operator: SlotOperator; operand: bigint }) => ({
+    operator: slot.operator,
+    operandInput: (slot.operand < 0n ? -slot.operand : slot.operand).toString(),
+    isNegative: slot.operand < 0n && slot.operand !== 0n,
+  });
+
+  const drafting = state.calculator.draftingSlot;
+  if (drafting) {
+    if (drafting.operandInput.length > 0) {
+      const nextInput = drafting.operandInput.slice(0, -1);
+      if (nextInput === drafting.operandInput) {
+        return state;
+      }
+      return applyUnlocks(
+        withBuilderPatchApplied(state, {
+          operationSlots: state.calculator.operationSlots,
+          draftingSlot: {
+            ...drafting,
+            operandInput: nextInput,
+          },
+        }),
+        unlockCatalog,
+      );
+    }
+    if (drafting.isNegative && drafting.operandInput.length === 0) {
+      return applyUnlocks(
+        withBuilderPatchApplied(state, {
+          operationSlots: state.calculator.operationSlots,
+          draftingSlot: {
+            ...drafting,
+            isNegative: false,
+          },
+        }),
+        unlockCatalog,
+      );
+    }
+
+    if (state.calculator.operationSlots.length > 0) {
+      const priorCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
+      return applyUnlocks(
+        withBuilderPatchApplied(state, {
+          operationSlots: state.calculator.operationSlots.slice(0, -1),
+          draftingSlot: slotToDrafting(priorCommitted),
+        }),
+        unlockCatalog,
+      );
+    }
+
+    return applyUnlocks(
+      withBuilderPatchApplied(state, {
+        operationSlots: state.calculator.operationSlots,
+        draftingSlot: null,
+      }),
+      unlockCatalog,
+    );
+  }
+
+  if (state.calculator.operationSlots.length > 0) {
+    const lastCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
+    const restoredDrafting = slotToDrafting(lastCommitted);
+    const trimmedInput = restoredDrafting.operandInput.slice(0, -1);
+    return applyUnlocks(
+      withBuilderPatchApplied(state, {
+        operationSlots: state.calculator.operationSlots.slice(0, -1),
+        draftingSlot: {
+          ...restoredDrafting,
+          operandInput: trimmedInput,
+        },
+      }),
+      unlockCatalog,
+    );
+  }
+
+  if (!isSeedEntryContext(state) || !isRationalCalculatorValue(state.calculator.total) || !isInteger(state.calculator.total.value)) {
+    return state;
+  }
+  const value = state.calculator.total.value;
+  const magnitudeText = value.num < 0n ? (-value.num).toString() : value.num.toString();
+  const nextMagnitudeText = magnitudeText.length <= 1 ? "0" : magnitudeText.slice(0, -1);
+  const nextMagnitude = BigInt(nextMagnitudeText);
+  const shouldBeNegative = value.num < 0n;
+  const nextNum = nextMagnitude === 0n ? 0n : shouldBeNegative ? -nextMagnitude : nextMagnitude;
+  if (nextNum === value.num) {
+    return state;
+  }
+
+  return applyUnlocks(
+    {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        total: toRationalCalculatorValue({ num: nextNum, den: 1n }),
+      },
+    },
+    unlockCatalog,
+  );
+};
+
 const applyUndo = (state: GameState): GameState => {
   if (!state.unlocks.utilities.UNDO) {
     return state;
@@ -475,6 +581,7 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
     apply_negate: (nextState) => applyNegate(nextState),
     apply_clear_all: (nextState) => applyC(nextState),
     apply_clear_entry: (nextState) => applyCE(nextState),
+    apply_backspace: (nextState) => applyBackspace(nextState),
     apply_undo: (nextState) => applyUnlocks(applyUndo(nextState), unlockCatalog),
     apply_equals: (nextState) => applyEquals(nextState),
     apply_increment: (nextState) => applyIncrement(nextState),

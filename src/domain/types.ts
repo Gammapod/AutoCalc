@@ -91,6 +91,8 @@ export type RollEntry = {
   };
 };
 
+export type RollDomainType = "natural" | "non_positive_integer" | "rational_non_integer";
+
 export type DraftingSlot = {
   operator: SlotOperator;
   operandInput: string;
@@ -203,6 +205,11 @@ export type RollContainsValuePredicate = {
   value: bigint;
 };
 
+export type RollContainsDomainTypePredicate = {
+  type: "roll_contains_domain_type";
+  domainType: RollDomainType;
+};
+
 export type RollEndsWithEqualRunPredicate = {
   type: "roll_ends_with_equal_run";
   length: number;
@@ -261,6 +268,7 @@ export type UnlockPredicate =
   | OperationFirstEuclidEquivalentModuloPredicate
   | RollEndsWithSequencePredicate
   | RollContainsValuePredicate
+  | RollContainsDomainTypePredicate
   | RollEndsWithEqualRunPredicate
   | RollEndsWithIncrementingRunPredicate
   | RollEndsWithAlternatingSignConstantAbsRunPredicate

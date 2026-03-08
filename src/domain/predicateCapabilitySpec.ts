@@ -12,6 +12,7 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "operation_first_euclid_equivalent_modulo",
   "roll_ends_with_sequence",
   "roll_contains_value",
+  "roll_contains_domain_type",
   "roll_ends_with_equal_run",
   "roll_ends_with_incrementing_run",
   "roll_ends_with_alternating_sign_constant_abs_run",
@@ -148,6 +149,20 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "incrementing_run_via_plus_one_execution",
         allOf: ["execute_activation", "roll_incrementing_run"],
         rationale: "Repeated +1 execution yields step-1 incrementing suffixes.",
+      },
+    ],
+  },
+  roll_contains_domain_type: {
+    predicateType: "roll_contains_domain_type",
+    necessary: [
+      { capability: "execute_activation", reason: "Domain classification depends on values appended into roll by execution." },
+      { capability: "roll_growth", reason: "Need roll-producing behavior to observe at least one classified value." },
+    ],
+    sufficientSets: [
+      {
+        id: "roll_contains_domain_type_via_roll_growth",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "With executable roll growth, at least one domain-typed result can be produced and observed.",
       },
     ],
   },

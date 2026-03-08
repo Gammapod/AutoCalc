@@ -50,7 +50,7 @@ const unlockKey = (state: GameState, key: Key): GameState => {
       },
     };
   }
-  if (key === "C" || key === "CE" || key === "UNDO") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "\u2190") {
     return {
       ...state,
       unlocks: {
@@ -142,6 +142,20 @@ const proofFixtures: ProofFixture[] = [
     predicate: { type: "roll_contains_value", value: 0n },
     buildInitialState: () => buildStateWithUnlockedKeys(["+", "0", "="]),
     script: ["+", "0", "="],
+  },
+  {
+    id: "proof_roll_contains_domain_type_natural",
+    predicateType: "roll_contains_domain_type",
+    sufficientSetId: "roll_contains_domain_type_via_roll_growth",
+    predicate: { type: "roll_contains_domain_type", domainType: "natural" },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["++"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(1n)),
+      },
+    }),
+    script: [],
   },
   {
     id: "proof_equal_run_4_via_plus0_repeat",

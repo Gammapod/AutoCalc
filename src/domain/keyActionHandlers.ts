@@ -13,6 +13,7 @@ export type KeyActionHandlerId =
   | "apply_negate"
   | "apply_clear_all"
   | "apply_clear_entry"
+  | "apply_backspace"
   | "apply_undo"
   | "apply_equals"
   | "apply_increment"
@@ -32,6 +33,7 @@ const overrideHandlerById: Record<ButtonHandlerOverrideId, KeyActionHandlerId> =
   negate_total_or_drafting: "apply_negate",
   utility_clear_all: "apply_clear_all",
   utility_clear_entry: "apply_clear_entry",
+  utility_backspace: "apply_backspace",
   utility_undo: "apply_undo",
   memory_cycle_variable: "apply_memory",
   memory_recall_into_input: "apply_memory",

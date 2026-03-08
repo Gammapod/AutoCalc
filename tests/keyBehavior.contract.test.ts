@@ -193,6 +193,22 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
+  if (kind === "backspace_deletes_last_input") {
+    const state = unlockKey(
+      {
+        ...initialState(),
+        calculator: {
+          ...initialState().calculator,
+          draftingSlot: { operator: "+", operandInput: "9", isNegative: false },
+        },
+      },
+      "\u2190",
+    );
+    const next = applyKeyAction(state, "\u2190");
+    assert.equal(next.calculator.draftingSlot?.operandInput, "", "backspace should delete the last drafting digit");
+    return;
+  }
+
   if (kind === "undo_pops_roll") {
     const state = unlockKey(
       {
@@ -395,6 +411,13 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     const next = applyKeyAction(state, "CE");
     assert.deepEqual(next.calculator.total, r(42n), "CE should preserve total");
     assert.equal(next.calculator.rollEntries.length, 0, "CE should clear roll");
+    return;
+  }
+
+  if (kind === "backspace_noop_when_nothing_to_delete") {
+    const state = unlockKey(initialState(), "\u2190");
+    const next = applyKeyAction(state, "\u2190");
+    assert.deepEqual(next.calculator, state.calculator, "backspace should no-op when nothing is deletable");
     return;
   }
 

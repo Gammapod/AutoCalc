@@ -267,5 +267,93 @@ export const runReducerInputTests = (): void => {
   assert.equal(minusBeta.ui.keypadRows, 1, "M– with β decreases keypad rows");
   const minusGamma = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "γ" } }, "M–");
   assert.equal(minusGamma.unlocks.maxSlots, 0, "M– with γ decreases operation slot count");
+  const withBackspaceUnlocked: GameState = {
+    ...fullyUnlocked,
+    unlocks: {
+      ...fullyUnlocked.unlocks,
+      utilities: {
+        ...fullyUnlocked.unlocks.utilities,
+        "\u2190": true,
+      },
+    },
+  };
+
+  const backspaceLockedNoOp = applyKeyAction(initialState(), "\u2190");
+  assert.deepEqual(backspaceLockedNoOp, initialState(), "locked backspace remains a no-op");
+
+  const backspaceDraftingDelete: GameState = {
+    ...withBackspaceUnlocked,
+    calculator: {
+      ...withBackspaceUnlocked.calculator,
+      draftingSlot: { operator: "+", operandInput: "9", isNegative: false },
+    },
+  };
+  const afterBackspaceDraftingDelete = applyKeyAction(backspaceDraftingDelete, "\u2190");
+  assert.equal(
+    afterBackspaceDraftingDelete.calculator.draftingSlot?.operandInput,
+    "",
+    "backspace removes last drafting operand digit",
+  );
+
+  const backspaceDraftingNegFlag: GameState = {
+    ...withBackspaceUnlocked,
+    calculator: {
+      ...withBackspaceUnlocked.calculator,
+      draftingSlot: { operator: "+", operandInput: "", isNegative: true },
+    },
+  };
+  const afterBackspaceDraftingNegFlag = applyKeyAction(backspaceDraftingNegFlag, "\u2190");
+  assert.equal(
+    afterBackspaceDraftingNegFlag.calculator.draftingSlot?.isNegative,
+    false,
+    "backspace clears drafting negative flag when operand input is empty",
+  );
+
+  const backspaceSeedTrim: GameState = {
+    ...withBackspaceUnlocked,
+    calculator: {
+      ...withBackspaceUnlocked.calculator,
+      total: r(-42n),
+      rollEntries: [],
+      operationSlots: [],
+      draftingSlot: null,
+    },
+  };
+  const afterBackspaceSeedTrim = applyKeyAction(backspaceSeedTrim, "\u2190");
+  assert.deepEqual(afterBackspaceSeedTrim.calculator.total, r(-4n), "backspace trims seed-entry magnitude and preserves sign");
+  const afterBackspaceSeedToZero = applyKeyAction(afterBackspaceSeedTrim, "\u2190");
+  assert.deepEqual(afterBackspaceSeedToZero.calculator.total, r(0n), "backspace turns single-digit seed magnitude into zero");
+
+  const backspaceActiveRollNoOp: GameState = {
+    ...withBackspaceUnlocked,
+    calculator: {
+      ...withBackspaceUnlocked.calculator,
+      rollEntries: re(r(1n)),
+    },
+  };
+  const afterBackspaceActiveRollNoOp = applyKeyAction(backspaceActiveRollNoOp, "\u2190");
+  assert.deepEqual(afterBackspaceActiveRollNoOp.calculator, backspaceActiveRollNoOp.calculator, "backspace is no-op on active roll");
+
+  const backspaceFunctionWalkStart: GameState = {
+    ...withBackspaceUnlocked,
+    calculator: {
+      ...withBackspaceUnlocked.calculator,
+      total: r(4n),
+      operationSlots: [{ operator: "+", operand: 1n }],
+      draftingSlot: { operator: "-", operandInput: "3", isNegative: false },
+    },
+  };
+  const afterWalk1 = applyKeyAction(backspaceFunctionWalkStart, "\u2190");
+  assert.equal(afterWalk1.calculator.draftingSlot?.operandInput, "", "walk 1 clears trailing operand digit");
+  const afterWalk2 = applyKeyAction(afterWalk1, "\u2190");
+  assert.equal(afterWalk2.calculator.draftingSlot?.operator, "+", "walk 2 removes current operator and restores previous slot operator");
+  assert.equal(afterWalk2.calculator.draftingSlot?.operandInput, "1", "walk 2 restores previous slot operand");
+  const afterWalk3 = applyKeyAction(afterWalk2, "\u2190");
+  assert.equal(afterWalk3.calculator.draftingSlot?.operandInput, "", "walk 3 clears restored operand digit");
+  const afterWalk4 = applyKeyAction(afterWalk3, "\u2190");
+  assert.equal(afterWalk4.calculator.draftingSlot, null, "walk 4 removes restored operator");
+  const afterWalk5 = applyKeyAction(afterWalk4, "\u2190");
+  assert.deepEqual(afterWalk5.calculator.total, r(0n), "walk 5 trims seed total value");
 };
+
 

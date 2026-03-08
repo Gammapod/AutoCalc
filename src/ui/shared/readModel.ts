@@ -125,7 +125,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (key === "\u23EF") {
     return "step";
   }
-  if (key === "C" || key === "CE" || key === "UNDO") {
+  if (key === "C" || key === "CE" || key === "UNDO" || key === "\u2190") {
     return "utility";
   }
   if (getButtonDefinition(key)?.category === "memory") {

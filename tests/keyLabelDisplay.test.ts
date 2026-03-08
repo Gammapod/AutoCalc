@@ -10,6 +10,7 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel("#"), "#/\u27E1", "euclidean division key label renders as #/\u27E1");
   assert.equal(formatKeyLabel("\u27E1"), "\u27E1", "modulo key label renders as \u27E1");
   assert.equal(formatKeyLabel("UNDO"), "\u21BA", "undo key label renders as \u238C");
+  assert.equal(formatKeyLabel("\u2190"), "\u2190", "backspace key label remains left arrow");
   assert.equal(formatKeyLabel("\u23EF"), "\u25BA", "play/pause key defaults to play icon");
   assert.equal(formatKeyLabel("+"), "+", "plus key label remains +");
   assert.equal(formatKeyLabel("--"), "\u2212 \u2212", "decrement key label renders as spaced unicode minus signs");

@@ -92,6 +92,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "graph" },
   { kind: "placeholder", area: "empty" },
   { kind: "key", key: "CE" },
+  { kind: "key", key: "\u2190" },
   { kind: "key", key: "UNDO" },
   { kind: "key", key: "C" },
   { kind: "key", key: "M+" },

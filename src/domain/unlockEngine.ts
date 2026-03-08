@@ -5,6 +5,7 @@ import { getOperationSnapshot } from "./slotDrafting.js";
 import { OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import type {
   GameState,
+  RollContainsDomainTypePredicate,
   AllocatorReturnPressCountAtLeastPredicate,
   AllocatorAllocatePressCountAtLeastPredicate,
   DivisionByZeroErrorSeenPredicate,
@@ -153,6 +154,25 @@ const analyzeRollEndsWithIncrementingRun: PredicateAnalyzer<RollEndsWithIncremen
   return {
     isMet,
     criteria: [{ label: `run +${step.toString()} x${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
+const analyzeRollContainsDomainType: PredicateAnalyzer<RollContainsDomainTypePredicate> = (predicate, state) => {
+  const isMet = state.calculator.rollEntries.some((entry) => {
+    if (!isRationalCalculatorValue(entry.y)) {
+      return false;
+    }
+    if (entry.y.value.den !== 1n) {
+      return predicate.domainType === "rational_non_integer";
+    }
+    if (entry.y.value.num > 0n) {
+      return predicate.domainType === "natural";
+    }
+    return predicate.domainType === "non_positive_integer";
+  });
+  return {
+    isMet,
+    criteria: [{ label: predicate.domainType, checked: isMet }],
   };
 };
 
@@ -318,6 +338,7 @@ const analyzers = {
   total_magnitude_at_least: analyzeTotalMagnitudeAtLeast,
   roll_ends_with_sequence: analyzeRollEndsWithSequence,
   roll_contains_value: analyzeRollContainsValue,
+  roll_contains_domain_type: analyzeRollContainsDomainType,
   operation_equals: analyzeOperationEquals,
   operation_first_euclid_equivalent_modulo: analyzeOperationFirstEuclidEquivalentModulo,
   roll_length_at_least: analyzeRollLengthAtLeast,

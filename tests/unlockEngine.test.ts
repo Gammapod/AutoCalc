@@ -116,6 +116,58 @@ export const runUnlockEngineTests = (): void => {
     "roll_contains_value unmet",
   );
 
+  const rollContainsDomainNatural: UnlockPredicate = { type: "roll_contains_domain_type", domainType: "natural" };
+  assertCriteriaConsistency(
+    rollContainsDomainNatural,
+    {
+      ...base,
+      calculator: { ...base.calculator, rollEntries: re(r(1n), r(2n), r(3n)) },
+    },
+    "roll_contains_domain_type natural met",
+  );
+  assertCriteriaConsistency(
+    rollContainsDomainNatural,
+    {
+      ...base,
+      calculator: { ...base.calculator, rollEntries: re(r(0n), r(-1n)) },
+    },
+    "roll_contains_domain_type natural unmet",
+  );
+
+  const rollContainsDomainNonPositive: UnlockPredicate = {
+    type: "roll_contains_domain_type",
+    domainType: "non_positive_integer",
+  };
+  assertCriteriaConsistency(
+    rollContainsDomainNonPositive,
+    {
+      ...base,
+      calculator: { ...base.calculator, rollEntries: re(r(0n), r(-2n)) },
+    },
+    "roll_contains_domain_type non_positive_integer met",
+  );
+
+  const rollContainsDomainRationalNonInteger: UnlockPredicate = {
+    type: "roll_contains_domain_type",
+    domainType: "rational_non_integer",
+  };
+  assertCriteriaConsistency(
+    rollContainsDomainRationalNonInteger,
+    {
+      ...base,
+      calculator: { ...base.calculator, rollEntries: re(r(1n, 2n), r(3n, 2n)) },
+    },
+    "roll_contains_domain_type rational_non_integer met",
+  );
+  assertCriteriaConsistency(
+    rollContainsDomainRationalNonInteger,
+    {
+      ...base,
+      calculator: { ...base.calculator, rollEntries: [{ y: { kind: "nan" } }] },
+    },
+    "roll_contains_domain_type ignores nan entries",
+  );
+
   const alternatingAbsRun: UnlockPredicate = {
     type: "roll_ends_with_alternating_sign_constant_abs_run",
     length: 7,

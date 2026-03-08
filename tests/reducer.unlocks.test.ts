@@ -42,16 +42,105 @@ export const runReducerUnlockTests = (): void => {
   }
   assert.equal(
     allocatorPointGateState.allocator.maxPoints,
-    allocatorPointsBefore + 1,
-    "maxPoints increases by 1 when total reaches at least 9",
+    allocatorPointsBefore + 2,
+    "maxPoints increases by 2 when total reaches at least 9 (base milestone + natural-domain reward)",
+  );
+  assert.equal(
+    allocatorPointGateState.unlocks.utilities["\u2190"],
+    true,
+    "backspace unlocks at total >= 9",
   );
   for (let i = 0; i < 5; i += 1) {
     allocatorPointGateState = press(allocatorPointGateState, "++");
   }
   assert.equal(
     allocatorPointGateState.allocator.maxPoints,
-    allocatorPointsBefore + 1,
-    "allocator maxPoints unlock applies once",
+    allocatorPointsBefore + 2,
+    "allocator maxPoints unlocks apply once after first total>=9/natural milestones",
+  );
+
+  const domainNaturalRewardState = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(1n)),
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(
+    domainNaturalRewardState.completedUnlockIds.includes("unlock_allocator_point_on_first_natural_result"),
+    true,
+    "natural-domain reward unlock records completion",
+  );
+
+  const domainNonPositiveRewardState = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(0n), r(-2n)),
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(
+    domainNonPositiveRewardState.completedUnlockIds.includes("unlock_allocator_point_on_first_non_positive_integer_result"),
+    true,
+    "non-positive-domain reward unlock records completion",
+  );
+
+  const domainRationalNonIntegerRewardState = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(1n, 2n)),
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(
+    domainRationalNonIntegerRewardState.completedUnlockIds.includes("unlock_allocator_point_on_first_rational_non_integer_result"),
+    true,
+    "rational-non-integer-domain reward unlock records completion",
+  );
+
+  const numberRewardState = applyUnlocks(
+    {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(69n), r(101n), r(420n), r(5318008n), r(8675309n)),
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(
+    numberRewardState.completedUnlockIds.includes("unlock_allocator_point_on_roll_contains_69"),
+    true,
+    "69 reward unlock records completion",
+  );
+  assert.equal(
+    numberRewardState.completedUnlockIds.includes("unlock_allocator_point_on_roll_contains_101"),
+    true,
+    "101 reward unlock records completion",
+  );
+  assert.equal(
+    numberRewardState.completedUnlockIds.includes("unlock_allocator_point_on_roll_contains_420"),
+    true,
+    "420 reward unlock records completion",
+  );
+  assert.equal(
+    numberRewardState.completedUnlockIds.includes("unlock_allocator_point_on_roll_contains_5318008"),
+    true,
+    "5318008 reward unlock records completion",
+  );
+  assert.equal(
+    numberRewardState.completedUnlockIds.includes("unlock_allocator_point_on_roll_contains_8675309"),
+    true,
+    "8675309 reward unlock records completion",
   );
 
   const undoFromReturn = reducer(initialState(), { type: "ALLOCATOR_RETURN_PRESSED" });
@@ -203,3 +292,4 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(state.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID), true, "first successful C press unlocks checklist");
   assert.equal(state.completedUnlockIds.length, beforeC + 1, "checklist unlock id recorded once");
 };
+

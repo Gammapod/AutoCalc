@@ -50,7 +50,7 @@ export type SerializableStateV1 = {
     digits?: Partial<Record<Exclude<ValueExpressionKey, "NEG">, boolean>>;
     valueExpression?: Partial<UnlockState["valueExpression"]>;
     slotOperators?: Partial<UnlockState["slotOperators"]>;
-    utilities?: Partial<Record<"C" | "CE" | "UNDO" | "GRAPH" | "\u23EF" | "NEG", boolean>>;
+    utilities?: Partial<Record<"C" | "CE" | "UNDO" | "\u2190" | "GRAPH" | "\u23EF" | "NEG", boolean>>;
     memory?: Partial<UnlockState["memory"]>;
     visualizers?: Partial<UnlockState["visualizers"]>;
     execution?: Partial<UnlockState["execution"]>;
@@ -217,7 +217,7 @@ const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
-const UTILITY_KEY_VALUES = ["C", "CE", "UNDO"] as const;
+const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190"] as const;
 const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] as const;
 const STEP_KEY_VALUES = ["\u23EF"] as const;
 const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "CIRCLE", "\u03BB"] as const;

@@ -9,6 +9,7 @@ export type KeyPrimaryExpectationKind =
   | "neg_toggles_pending_sign"
   | "c_resets_calculator"
   | "ce_clears_entry"
+  | "backspace_deletes_last_input"
   | "undo_pops_roll"
   | "graph_counts_only"
   | "equals_executes_drafted_plus_one"
@@ -24,6 +25,7 @@ export type KeyEdgeExpectationKind =
   | "neg_toggles_drafting_sign"
   | "c_checklist_recorded_once"
   | "ce_preserves_total_when_clearing"
+  | "backspace_noop_when_nothing_to_delete"
   | "undo_noop_when_roll_empty"
   | "graph_does_not_mutate_calculator_state"
   | "equals_division_by_zero_sets_nan"
@@ -94,6 +96,13 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     unlockPathPolicy: "none_planned",
     primaryExpectation: "ce_clears_entry",
     edgeCaseExpectation: "ce_preserves_total_when_clearing",
+  },
+  {
+    key: "\u2190",
+    lockModel: "unlockable",
+    unlockPathPolicy: "catalog",
+    primaryExpectation: "backspace_deletes_last_input",
+    edgeCaseExpectation: "backspace_noop_when_nothing_to_delete",
   },
   {
     key: "UNDO",
