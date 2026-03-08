@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import {
-  beginInputAnimationLock,
   buildKeyButtonAction,
   isToggleFlagActive,
+} from "../src/ui/modules/calculatorStorageCore.js";
+import {
+  beginInputAnimationLock,
   resetInputLockStateForTests,
   setSuppressClicksUntilForTests,
   shouldSuppressClickForTests,
-} from "../src/ui/modules/calculatorModuleRenderer.js";
+} from "../src/ui/modules/input/pressFeedback.js";
 import type { GameState, KeyCell } from "../src/domain/types.js";
 
 export const runButtonBehaviorTests = (): void => {

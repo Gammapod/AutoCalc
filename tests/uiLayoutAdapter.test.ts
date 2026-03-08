@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
-import { render as renderModule } from "../src/ui/modules/calculatorModuleRenderer.js";
+import { renderCalculatorV2Module as renderModule } from "../src/ui/modules/calculator/render.js";
 import {
   applyDesktopLayoutSnapshot,
   buildSingleInstanceLayoutInput,
@@ -30,8 +30,6 @@ export const runUiLayoutAdapterTests = (): void => {
       renderModule(harness.root, state, noopDispatch, {
         interactionMode: "calculator",
         inputBlocked: false,
-        skipChecklist: true,
-        skipGraph: true,
       });
       const keys = harness.root.querySelector<HTMLElement>("[data-keys]");
       const calc = harness.root.querySelector<HTMLElement>(".calc");
@@ -64,8 +62,6 @@ export const runUiLayoutAdapterTests = (): void => {
     renderModule(harness.root, state, noopDispatch, {
       interactionMode: "calculator",
       inputBlocked: false,
-      skipChecklist: true,
-      skipGraph: true,
     });
     const keys = harness.root.querySelector<HTMLElement>("[data-keys]");
     const calc = harness.root.querySelector<HTMLElement>(".calc");

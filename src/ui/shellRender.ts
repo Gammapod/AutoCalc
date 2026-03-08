@@ -7,6 +7,7 @@ import { renderChecklistV2Module } from "./modules/checklistRenderer.js";
 import { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
 import { clearVisualizerHost, renderVisualizerHost } from "./modules/visualizerHost.js";
 import { awaitMotionSettled, beginMotionCycle, completeMotionCycle } from "./layout/motionLifecycleBridge.js";
+import { disposeRuntime } from "./runtime/registry.js";
 
 export type ShellRenderer = {
   render: (state: GameState, dispatch: (action: Action) => unknown, options?: ShellRenderOptions) => void;
@@ -1120,6 +1121,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   const dispose = (): void => {
     touchRearrange.cancel();
     clearVisualizerHost(root);
+    disposeRuntime(root);
     for (const cleanup of cleanupListeners.splice(0)) {
       cleanup();
     }

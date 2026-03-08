@@ -1,6 +1,6 @@
-import type { Action, GameState } from "../../domain/types.js";
-import type { InteractionMode } from "../../app/interactionRuntime.js";
-import { renderCalculatorV2Module as renderCalculatorOwned } from "./calculator/render.js";
+import type { Action, GameState } from "../../../domain/types.js";
+import type { InteractionMode } from "../../../app/interactionRuntime.js";
+import { render as renderCalculatorAndStorage } from "../calculatorModuleRenderer.js";
 
 export const renderCalculatorV2Module = (
   root: Element,
@@ -11,7 +11,7 @@ export const renderCalculatorV2Module = (
     inputBlocked: boolean;
   },
 ): void => {
-  renderCalculatorOwned(root, state, dispatch, {
+  renderCalculatorAndStorage(root, state, dispatch, {
     interactionMode: options.interactionMode,
     inputBlocked: options.inputBlocked,
   });

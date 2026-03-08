@@ -5,7 +5,6 @@ import { isKeyUnlocked } from "../../domain/keyUnlocks.js";
 import { getRollYDomain } from "../../domain/rollDerived.js";
 import { STORAGE_COLUMNS } from "../../domain/state.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../../domain/keypadLayoutModel.js";
-import { evaluateLayoutDrop } from "../../domain/layoutRules.js";
 import { getLambdaDerivedValues, getLambdaUnusedPoints } from "../../domain/lambdaControl.js";
 import {
   buildStepBodyHighlightRegions,
@@ -31,7 +30,6 @@ import type {
   KeyButtonBehavior,
   KeyCell,
   Key,
-  LayoutSurface,
   RollEntry,
   SlotOperator,
   VisualizerId,
@@ -50,6 +48,30 @@ import type {
   CalculatorLayoutSnapshot,
   InteractionLayoutMode,
 } from "../layout/types.js";
+import { getOrCreateRuntime } from "../runtime/registry.js";
+import {
+  beginInputAnimationLock as beginInputAnimationLockInput,
+  bindQuickTapPressFeedback as bindQuickTapPressFeedbackInput,
+  isInputAnimationLocked as isInputAnimationLockedInput,
+  playProgrammaticKeyPressFeedback as playProgrammaticKeyPressFeedbackInput,
+  resetInputLockStateForTests as resetInputLockStateForTestsInput,
+  setSuppressClicksUntilForTests as setSuppressClicksUntilForTestsInput,
+  shouldSuppressClick as shouldSuppressClickInput,
+  shouldSuppressClickForTests as shouldSuppressClickForTestsInput,
+} from "./input/pressFeedback.js";
+import {
+  bindDraggableCell as bindDraggableCellInput,
+  bindDropTargetCell as bindDropTargetCellInput,
+  buildLayoutDropDispatchAction as buildLayoutDropDispatchActionInput,
+  classifyDropAction as classifyDropActionInput,
+  shouldStartDragFromDelta as shouldStartDragFromDeltaInput,
+} from "./input/dragDrop.js";
+import {
+  clearToggleAnimations,
+  getCalculatorModuleState,
+  queueToggleAnimation as queueToggleAnimationById,
+  readToggleAnimation as readToggleAnimationById,
+} from "./calculator/runtime.js";
 
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"] as const;
@@ -156,39 +178,22 @@ declare global {
   }
 }
 
-let previousUnlockSnapshot: Record<Key, boolean> | null = null;
-let pendingToggleAnimationByFlag: Record<string, "on" | "off"> = {};
-let graphChart: ChartHandle | null = null;
-let graphCanvas: HTMLCanvasElement | null = null;
-let dragSession: DragSession | null = null;
-let storageGridResizeObserver: ResizeObserver | null = null;
-let observedStorageGrid: HTMLElement | null = null;
-let suppressClicksUntil = 0;
-let inputAnimationLockCount = 0;
 const GRAPH_WINDOW_SIZE = 25;
 const DRAG_START_THRESHOLD_PX = 6;
-const DRAG_CLICK_SUPPRESS_MS = 220;
 const INPUT_LOCK_FALLBACK_BUFFER_MS = 80;
 const UNLOCK_ANIMATION_DURATION_MS = 1200;
 const KEYPAD_SLOT_ENTER_DURATION_MS = 760;
 const KEYPAD_GROW_MAX_DURATION_MS = 880;
 const CALC_GROW_MAX_DURATION_MS = 980;
-const QUICK_TAP_PRESS_MIN_VISIBLE_MS = 55;
-const PROGRAMMATIC_PRESS_MIN_VISIBLE_MS = 140;
 const UNLOCK_ANIMATION_NAME = "key-unlock-pulse";
 const KEYPAD_SLOT_ENTER_ANIMATION_NAME = "keypad-slot-enter";
 const STEP_BODY_HIGHLIGHT_CLASS = "keypad-step-body-highlight";
-const STORAGE_MIN_VISUAL_COLUMNS = 1;
-const STORAGE_MIN_KEY_WIDTH_PX = 56;
-const STORAGE_FALLBACK_GAP_PX = 8;
 const KEY_LABEL_INLINE_GUTTER_PX = 6;
 const KEY_LABEL_SQUISH_THRESHOLD_PX = 2;
 const DESKTOP_LAYOUT_RUNTIME = new WeakMap<Element, {
   previousSnapshot: CalculatorLayoutSnapshot | null;
   previousInteractionMode: InteractionLayoutMode | null;
 }>();
-
-let keyLabelResizeBound = false;
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -206,25 +211,35 @@ export type UnlockRowVm = {
   difficultyLabel?: "Difficult";
 };
 
-type DropAction = "move" | "swap";
-type DragTarget = {
-  surface: LayoutSurface;
-  index: number;
+type CalculatorRendererRuntimeState = {
+  graphChart: ChartHandle | null;
+  graphCanvas: HTMLCanvasElement | null;
 };
 
-type DragSession = {
-  state: GameState;
-  dispatch: (action: Action) => unknown;
-  source: DragTarget;
-  key: Key;
-  originElement: HTMLElement;
-  originX: number;
-  originY: number;
-  ghost: HTMLElement | null;
-  active: boolean;
-  target: DragTarget | null;
-  targetAction: DropAction | null;
-  targetElement: HTMLElement | null;
+const createRuntimeState = (): CalculatorRendererRuntimeState => ({
+  graphChart: null,
+  graphCanvas: null,
+});
+
+const getRuntimeState = (root: Element): CalculatorRendererRuntimeState => {
+  const runtime = getOrCreateRuntime(root).calculator;
+  const existing = runtime.state.calculatorModuleRendererState as CalculatorRendererRuntimeState | undefined;
+  if (existing) {
+    return existing;
+  }
+  const created = createRuntimeState();
+  runtime.state.calculatorModuleRendererState = created;
+  runtime.dispose = () => {
+    created.graphChart?.destroy();
+    created.graphChart = null;
+    runtime.state.calculatorModuleRendererState = createRuntimeState();
+  };
+  runtime.resetForTests = () => {
+    created.graphChart?.destroy();
+    created.graphChart = null;
+    created.graphCanvas = null;
+  };
+  return created;
 };
 
 const DIGIT_SEGMENTS: Record<string, readonly SegmentName[]> = {
@@ -261,26 +276,6 @@ const STORAGE_SORT_FLAG_BY_GROUP: Record<KeyVisualGroup, string> = {
   visualizers: "storage.sort.visualizers",
 };
 
-export const buildLayoutDropDispatchAction = (
-  source: { surface: LayoutSurface; index: number },
-  target: { surface: LayoutSurface; index: number },
-  action: DropAction,
-): Action =>
-  action === "move"
-    ? {
-        type: "MOVE_LAYOUT_CELL",
-        fromSurface: source.surface,
-        fromIndex: source.index,
-        toSurface: target.surface,
-        toIndex: target.index,
-      }
-    : {
-        type: "SWAP_LAYOUT_CELLS",
-        fromSurface: source.surface,
-        fromIndex: source.index,
-        toSurface: target.surface,
-        toIndex: target.index,
-      };
 const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: KeyVisualGroup; ariaLabel: string }> = [
   { label: "=", group: "execution", ariaLabel: "Execution keys" },
   { label: "\u{1D45B}", group: "value_expression", ariaLabel: "Value expression keys" },
@@ -293,7 +288,7 @@ const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: KeyVisualGroup; ariaL
 
 const getStorageSortFlag = (group: KeyVisualGroup): string => STORAGE_SORT_FLAG_BY_GROUP[group];
 
-export const getActiveStorageSortGroup = (state: GameState): KeyVisualGroup | null => {
+const getActiveStorageSortGroup = (state: GameState): KeyVisualGroup | null => {
   for (const segment of STORAGE_SORT_SEGMENTS) {
     if (Boolean(state.ui.buttonFlags[getStorageSortFlag(segment.group)])) {
       return segment.group;
@@ -302,7 +297,7 @@ export const getActiveStorageSortGroup = (state: GameState): KeyVisualGroup | nu
   return null;
 };
 
-export const buildStorageSortToggleSequence = (
+const buildStorageSortToggleSequence = (
   state: GameState,
   targetGroup: KeyVisualGroup,
 ): Action[] => {
@@ -331,11 +326,11 @@ const visualizerForKey = (key: KeyCell["key"]): VisualizerId | null => {
   return keyToVisualizerId(key);
 };
 
-export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => {
+const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => {
   return cell.behavior ?? PRESS_KEY_BEHAVIOR;
 };
 
-export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => {
+const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => {
   const visualizer = visualizerForKey(cell.key);
   if (visualizer) {
     return state.ui.activeVisualizer === visualizer;
@@ -344,14 +339,14 @@ export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => 
   return behavior.type === "toggle_flag" ? getButtonFlag(state, behavior.flag) : false;
 };
 
-export const formatKeyCellLabel = (state: GameState, cell: KeyCell): string => {
+const formatKeyCellLabel = (state: GameState, cell: KeyCell): string => {
   if (cell.key === "\u23EF") {
     return isToggleFlagActive(state, cell) ? "\u275A\u275A" : "\u25BA";
   }
   return formatKeyLabel(cell.key);
 };
 
-export const buildKeyButtonAction = (state: GameState, cell: KeyCell): Action => {
+const buildKeyButtonAction = (state: GameState, cell: KeyCell): Action => {
   const visualizer = visualizerForKey(cell.key);
   if (visualizer) {
     return { type: "TOGGLE_VISUALIZER", visualizer };
@@ -363,29 +358,36 @@ export const buildKeyButtonAction = (state: GameState, cell: KeyCell): Action =>
   return { type: "PRESS_KEY", key: cell.key };
 };
 
-const queueToggleAnimation = (state: GameState, cell: KeyCell): void => {
+const getToggleAnimationIdForCell = (cell: KeyCell): string | null => {
   const visualizer = visualizerForKey(cell.key);
   if (visualizer) {
-    pendingToggleAnimationByFlag[visualizer] = state.ui.activeVisualizer === visualizer ? "off" : "on";
-    return;
-  }
-  const behavior = getKeyButtonBehavior(cell);
-  if (behavior.type !== "toggle_flag") {
-    return;
-  }
-  pendingToggleAnimationByFlag[behavior.flag] = isToggleFlagActive(state, cell) ? "off" : "on";
-};
-
-const readToggleAnimation = (cell: KeyCell): "on" | "off" | null => {
-  const visualizer = visualizerForKey(cell.key);
-  if (visualizer) {
-    return pendingToggleAnimationByFlag[visualizer] ?? null;
+    return visualizer;
   }
   const behavior = getKeyButtonBehavior(cell);
   if (behavior.type !== "toggle_flag") {
     return null;
   }
-  return pendingToggleAnimationByFlag[behavior.flag] ?? null;
+  return behavior.flag;
+};
+
+const queueToggleAnimation = (root: Element, state: GameState, cell: KeyCell): void => {
+  const toggleAnimationId = getToggleAnimationIdForCell(cell);
+  if (!toggleAnimationId) {
+    return;
+  }
+  queueToggleAnimationById(
+    root,
+    toggleAnimationId,
+    isToggleFlagActive(state, cell) ? "off" : "on",
+  );
+};
+
+const readToggleAnimation = (root: Element, cell: KeyCell): "on" | "off" | null => {
+  const toggleAnimationId = getToggleAnimationIdForCell(cell);
+  if (!toggleAnimationId) {
+    return null;
+  }
+  return readToggleAnimationById(root, toggleAnimationId);
 };
 
 const setKeyButtonLabel = (button: HTMLButtonElement, label: string): void => {
@@ -421,24 +423,25 @@ const fitKeyLabelsInContainer = (container: ParentNode): void => {
   buttons.forEach((button) => fitKeyButtonLabel(button));
 };
 
-const refitAllVisibleKeyLabels = (): void => {
-  const keypad = document.querySelector<HTMLElement>("[data-keys]");
+const refitAllVisibleKeyLabels = (root: Element): void => {
+  const keypad = root.querySelector<HTMLElement>("[data-keys]");
   if (keypad) {
     fitKeyLabelsInContainer(keypad);
   }
-  const storage = document.querySelector<HTMLElement>("[data-storage-keys]");
+  const storage = root.querySelector<HTMLElement>("[data-storage-keys]");
   if (storage) {
     fitKeyLabelsInContainer(storage);
   }
 };
 
-const ensureKeyLabelResizeListener = (): void => {
-  if (keyLabelResizeBound) {
+const ensureKeyLabelResizeListener = (root: Element): void => {
+  const calculatorState = getCalculatorModuleState(root);
+  if (calculatorState.keyLabelResizeBound) {
     return;
   }
-  keyLabelResizeBound = true;
+  calculatorState.keyLabelResizeBound = true;
   window.addEventListener("resize", () => {
-    refitAllVisibleKeyLabels();
+    refitAllVisibleKeyLabels(root);
   });
 };
 
@@ -953,14 +956,15 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], unlockedTot
   };
 };
 
-const destroyGraphChart = (): void => {
-  graphChart?.destroy();
-  graphChart = null;
-  graphCanvas = null;
+const destroyGraphChart = (root: Element): void => {
+  const runtime = getRuntimeState(root);
+  runtime.graphChart?.destroy();
+  runtime.graphChart = null;
+  runtime.graphCanvas = null;
 };
 
-export const clearGraphModule = (): void => {
-  destroyGraphChart();
+export const clearGraphModule = (root: Element): void => {
+  destroyGraphChart(root);
 };
 
 const syncGraphVisibilityUi = (root: Element, graphVisible: boolean): void => {
@@ -983,15 +987,16 @@ const renderGraphDisplay = (
   rollEntries: RollEntry[],
   unlockedTotalDigits: number,
 ): void => {
+  const runtime = getRuntimeState(root);
   const canvas = root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
   if (!canvas) {
-    destroyGraphChart();
+    destroyGraphChart(root);
     return;
   }
 
-  if (graphCanvas !== canvas) {
-    destroyGraphChart();
-    graphCanvas = canvas;
+  if (runtime.graphCanvas !== canvas) {
+    destroyGraphChart(root);
+    runtime.graphCanvas = canvas;
   }
 
   const chartCtor = window.Chart;
@@ -1010,8 +1015,8 @@ const renderGraphDisplay = (
   const pointBackgroundColor = points.map((point) => (point.hasError ? "#ff6f6f" : "#bcffd6"));
   const pointBorderColor = points.map((point) => (point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)"));
 
-  if (!graphChart) {
-    graphChart = new chartCtor(context, {
+  if (!runtime.graphChart) {
+    runtime.graphChart = new chartCtor(context, {
       type: "scatter",
       data: {
         datasets: [
@@ -1031,12 +1036,12 @@ const renderGraphDisplay = (
     return;
   }
 
-  graphChart.data.datasets[0].data = points;
-  graphChart.data.datasets[0].pointRadius = hasPoints ? 3 : 0;
-  graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;
-  graphChart.data.datasets[0].pointBorderColor = pointBorderColor;
-  graphChart.options = options;
-  graphChart.update("none");
+  runtime.graphChart.data.datasets[0].data = points;
+  runtime.graphChart.data.datasets[0].pointRadius = hasPoints ? 3 : 0;
+  runtime.graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;
+  runtime.graphChart.data.datasets[0].pointBorderColor = pointBorderColor;
+  runtime.graphChart.options = options;
+  runtime.graphChart.update("none");
 };
 
 export const renderGraphModule = (root: Element, state: GameState): void => {
@@ -1045,7 +1050,7 @@ export const renderGraphModule = (root: Element, state: GameState): void => {
   if (graphVisible) {
     renderGraphDisplay(root, state.calculator.rollEntries, state.unlocks.maxTotalDigits);
   } else {
-    destroyGraphChart();
+    destroyGraphChart(root);
   }
 };
 
@@ -1066,77 +1071,11 @@ const buildKeypadSlotLabels = (
     return `R${coord.row}C${coord.col} #${index}`;
   });
 
-export const getStorageRowCount = (buttonCount: number, columns: number = STORAGE_COLUMNS): number => {
+const getStorageRowCount = (buttonCount: number, columns: number = STORAGE_COLUMNS): number => {
   if (columns <= 0) {
     return 1;
   }
   return Math.max(1, Math.ceil(buttonCount / columns));
-};
-
-const buildStorageSlotLabels = (layout: GameState["ui"]["storageLayout"], columns: number): string[] =>
-  layout.map((_cell, index) => {
-    const row = Math.floor(index / columns) + 1;
-    const column = (index % columns) + 1;
-    return `S${row}C${column} #${index}`;
-  });
-
-const parsePixelValue = (value: string | null | undefined, fallback: number): number => {
-  if (!value) {
-    return fallback;
-  }
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const getStorageVisualColumns = (storageEl: HTMLElement): number => {
-  if (typeof window === "undefined") {
-    return STORAGE_COLUMNS;
-  }
-  const computed = window.getComputedStyle(storageEl);
-  const gap = parsePixelValue(computed.columnGap || computed.gap, STORAGE_FALLBACK_GAP_PX);
-  const paddingLeft = parsePixelValue(computed.paddingLeft, 0);
-  const paddingRight = parsePixelValue(computed.paddingRight, 0);
-  const contentWidth = Math.max(0, storageEl.clientWidth - paddingLeft - paddingRight);
-  if (contentWidth <= 0) {
-    return STORAGE_COLUMNS;
-  }
-  const columns = Math.floor((contentWidth + gap) / (STORAGE_MIN_KEY_WIDTH_PX + gap));
-  return Math.max(STORAGE_MIN_VISUAL_COLUMNS, Math.min(STORAGE_COLUMNS, columns));
-};
-
-const syncStorageGridMetrics = (storageEl: HTMLElement): number => {
-  const columns = getStorageVisualColumns(storageEl);
-  storageEl.style.setProperty("--storage-columns", columns.toString());
-  storageEl.setAttribute("data-storage-columns", columns.toString());
-  const slotCount = Number.parseInt(storageEl.dataset.storageSlotCount ?? "0", 10);
-  const rowCount = getStorageRowCount(slotCount, columns);
-  storageEl.setAttribute("data-storage-rows", rowCount.toString());
-  storageEl.style.setProperty("--storage-rows", rowCount.toString());
-  return columns;
-};
-
-const ensureStorageGridObserver = (storageEl: HTMLElement): void => {
-  if (typeof ResizeObserver === "undefined") {
-    return;
-  }
-  if (!storageGridResizeObserver) {
-    storageGridResizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const target = entry.target;
-        if (target instanceof HTMLElement) {
-          syncStorageGridMetrics(target);
-        }
-      }
-    });
-  }
-  if (observedStorageGrid === storageEl) {
-    return;
-  }
-  if (observedStorageGrid) {
-    storageGridResizeObserver.unobserve(observedStorageGrid);
-  }
-  observedStorageGrid = storageEl;
-  storageGridResizeObserver.observe(storageEl);
 };
 
 const shouldReduceMotion = (): boolean => {
@@ -1162,25 +1101,10 @@ const getDesktopLayoutRuntime = (root: Element): {
   return created;
 };
 
-export const isInputAnimationLocked = (): boolean => inputAnimationLockCount > 0;
+const isInputAnimationLocked = (root?: Element): boolean => isInputAnimationLockedInput(root);
 
-export const beginInputAnimationLock = (fallbackMs: number): (() => void) => {
-  inputAnimationLockCount += 1;
-  let released = false;
-  const release = (): void => {
-    if (released) {
-      return;
-    }
-    released = true;
-    if (timerId !== null) {
-      window.clearTimeout(timerId);
-    }
-    inputAnimationLockCount = Math.max(0, inputAnimationLockCount - 1);
-  };
-  const timerId =
-    typeof window !== "undefined" && fallbackMs > 0 ? window.setTimeout(release, fallbackMs) : null;
-  return release;
-};
+const beginInputAnimationLock = (fallbackMs: number, root?: Element): (() => void) =>
+  beginInputAnimationLockInput(fallbackMs, root);
 
 const bindAnimationLock = (
   element: HTMLElement,
@@ -1206,7 +1130,8 @@ const bindAnimationLock = (
       if (!matchesAnimationName(animationEvent.animationName) || releaseLock) {
         return;
       }
-      releaseLock = beginInputAnimationLock(fallbackMs + INPUT_LOCK_FALLBACK_BUFFER_MS);
+      const runtimeRoot = element.closest("#app") ?? undefined;
+      releaseLock = beginInputAnimationLock(fallbackMs + INPUT_LOCK_FALLBACK_BUFFER_MS, runtimeRoot ?? undefined);
     },
     { signal: controller.signal },
   );
@@ -1333,7 +1258,7 @@ const playKeypadFlip = (container: Element, beforeRects: Map<string, DOMRect>): 
   }
 };
 
-export const buildStorageRenderOrder = (state: GameState): number[] => {
+const buildStorageRenderOrder = (state: GameState): number[] => {
   const selectedTypeUnlocked: number[] = [];
   const otherUnlocked: number[] = [];
   const empty: number[] = [];
@@ -1360,288 +1285,33 @@ export const buildStorageRenderOrder = (state: GameState): number[] => {
   return [...selectedTypeUnlocked, ...otherUnlocked, ...empty, ...locked];
 };
 
-export const shouldStartDragFromDelta = (
+const shouldStartDragFromDelta = (
   deltaX: number,
   deltaY: number,
   thresholdPx: number = DRAG_START_THRESHOLD_PX,
-): boolean => deltaX * deltaX + deltaY * deltaY >= thresholdPx * thresholdPx;
+): boolean => shouldStartDragFromDeltaInput(deltaX, deltaY, thresholdPx);
 
-const parseDragTarget = (value: unknown): DragTarget | null => {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-  const target = value as { surface?: unknown; index?: unknown };
-  if ((target.surface !== "keypad" && target.surface !== "storage") || typeof target.index !== "number") {
-    return null;
-  }
-  if (!Number.isInteger(target.index) || target.index < 0) {
-    return null;
-  }
-  return { surface: target.surface, index: target.index };
-};
-
-export const classifyDropAction = (
+const classifyDropAction = (
   state: GameState,
-  source: DragTarget,
-  destination: DragTarget,
-): DropAction | null => {
-  const decision = evaluateLayoutDrop(state, source, destination);
-  return decision.allowed ? decision.action : null;
-};
+  source: { surface: "keypad" | "storage"; index: number },
+  destination: { surface: "keypad" | "storage"; index: number },
+): "move" | "swap" | null => classifyDropActionInput(state, source, destination);
 
-const findDragTargetElement = (target: DragTarget): HTMLElement | null =>
-  document.querySelector<HTMLElement>(
-    `[data-layout-surface="${target.surface}"][data-layout-index="${target.index.toString()}"]`,
-  );
+const buildLayoutDropDispatchAction = (
+  source: { surface: "keypad" | "storage"; index: number },
+  target: { surface: "keypad" | "storage"; index: number },
+  action: "move" | "swap",
+): Action => buildLayoutDropDispatchActionInput(source, target, action);
 
-const clearDragDecorations = (): void => {
-  document.querySelectorAll(".drop-target-valid, .drop-target-invalid, .drag-source").forEach((node) => {
-    node.classList.remove("drop-target-valid", "drop-target-invalid", "drag-source");
-  });
-};
+const playProgrammaticKeyPressFeedback = (root: ParentNode, key: Key): void =>
+  playProgrammaticKeyPressFeedbackInput(root, key);
 
-const clearDragSession = (): void => {
-  if (!dragSession) {
-    return;
-  }
-  dragSession.ghost?.remove();
-  clearDragDecorations();
-  dragSession = null;
-};
+const shouldSuppressClickForTests = (): boolean => shouldSuppressClickForTestsInput();
 
-const onDragMove = (event: MouseEvent): void => {
-  if (!dragSession) {
-    return;
-  }
+const setSuppressClicksUntilForTests = (timestampMs: number): void =>
+  setSuppressClicksUntilForTestsInput(timestampMs);
 
-  const deltaX = event.clientX - dragSession.originX;
-  const deltaY = event.clientY - dragSession.originY;
-  if (!dragSession.active && !shouldStartDragFromDelta(deltaX, deltaY)) {
-    return;
-  }
-
-  if (!dragSession.active) {
-    dragSession.active = true;
-    suppressClicksUntil = Date.now() + DRAG_CLICK_SUPPRESS_MS;
-    dragSession.originElement.classList.add("drag-source");
-    const ghost = dragSession.originElement.cloneNode(true) as HTMLElement;
-    ghost.classList.remove("drag-source", "drop-target-valid", "drop-target-invalid");
-    ghost.classList.add("drag-ghost");
-    ghost.style.width = `${Math.round(dragSession.originElement.getBoundingClientRect().width)}px`;
-    document.body.appendChild(ghost);
-    dragSession.ghost = ghost;
-  }
-
-  dragSession.ghost?.style.setProperty("left", `${event.clientX + 12}px`);
-  dragSession.ghost?.style.setProperty("top", `${event.clientY + 12}px`);
-
-  const hovered = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
-  const targetNode = hovered?.closest<HTMLElement>("[data-layout-surface][data-layout-index]") ?? null;
-  clearDragDecorations();
-  dragSession.originElement.classList.add("drag-source");
-  if (!targetNode) {
-    dragSession.target = null;
-    dragSession.targetAction = null;
-    dragSession.targetElement = null;
-    return;
-  }
-
-  const surface = targetNode.dataset.layoutSurface;
-  const indexRaw = targetNode.dataset.layoutIndex;
-  const parsed = parseDragTarget({ surface, index: indexRaw ? Number(indexRaw) : NaN });
-  if (!parsed) {
-    dragSession.target = null;
-    dragSession.targetAction = null;
-    dragSession.targetElement = null;
-    targetNode.classList.add("drop-target-invalid");
-    return;
-  }
-
-  const action = classifyDropAction(dragSession.state, dragSession.source, parsed);
-  dragSession.target = parsed;
-  dragSession.targetAction = action;
-  dragSession.targetElement = targetNode;
-  targetNode.classList.add(action ? "drop-target-valid" : "drop-target-invalid");
-};
-
-const onDragUp = (): void => {
-  if (!dragSession) {
-    window.removeEventListener("mousemove", onDragMove);
-    return;
-  }
-  if (dragSession.active && dragSession.target && dragSession.targetAction) {
-    dragSession.dispatch(buildLayoutDropDispatchAction(dragSession.source, dragSession.target, dragSession.targetAction));
-  }
-  window.removeEventListener("mousemove", onDragMove);
-  clearDragSession();
-};
-
-const bindDraggableCell = (
-  element: HTMLElement,
-  state: GameState,
-  dispatch: (action: Action) => unknown,
-  source: DragTarget,
-  key: Key,
-): void => {
-  element.dataset.layoutSurface = source.surface;
-  element.dataset.layoutIndex = source.index.toString();
-  element.dataset.layoutOccupied = "key";
-  element.addEventListener("mousedown", (event) => {
-    if (event.button !== 0) {
-      return;
-    }
-    if (element instanceof HTMLButtonElement && element.disabled) {
-      const appRoot = element.closest<HTMLElement>("#app");
-      const interactionMode = appRoot?.dataset.interactionMode;
-      const canDragFromLockedKeypad = interactionMode === "modify" && source.surface === "keypad";
-      if (!canDragFromLockedKeypad) {
-        return;
-      }
-    }
-    clearDragSession();
-    dragSession = {
-      state,
-      dispatch,
-      source,
-      key,
-      originElement: element,
-      originX: event.clientX,
-      originY: event.clientY,
-      ghost: null,
-      active: false,
-      target: null,
-      targetAction: null,
-      targetElement: null,
-    };
-    window.addEventListener("mousemove", onDragMove, { once: false });
-    window.addEventListener("mouseup", onDragUp, { once: true });
-  });
-};
-
-const bindQuickTapPressFeedback = (element: HTMLButtonElement): void => {
-  let pressStartedAt = 0;
-  let isPressedVisualActive = false;
-  let releaseTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const setPressedVisualActive = (active: boolean): void => {
-    if (isPressedVisualActive === active) {
-      return;
-    }
-    isPressedVisualActive = active;
-    element.classList.toggle("key--quick-press", active);
-  };
-
-  const clearReleaseTimer = (): void => {
-    if (releaseTimer === null) {
-      return;
-    }
-    clearTimeout(releaseTimer);
-    releaseTimer = null;
-  };
-
-  const beginPressVisual = (): void => {
-    if (element.disabled) {
-      return;
-    }
-    clearReleaseTimer();
-    pressStartedAt = performance.now();
-    setPressedVisualActive(true);
-  };
-
-  const endPressVisual = (): void => {
-    if (!isPressedVisualActive) {
-      return;
-    }
-    const elapsedMs = performance.now() - pressStartedAt;
-    const remainingMs = Math.max(0, QUICK_TAP_PRESS_MIN_VISIBLE_MS - elapsedMs);
-    if (remainingMs <= 0) {
-      setPressedVisualActive(false);
-      return;
-    }
-    clearReleaseTimer();
-    releaseTimer = setTimeout(() => {
-      releaseTimer = null;
-      setPressedVisualActive(false);
-    }, remainingMs);
-  };
-
-  element.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) {
-      return;
-    }
-    beginPressVisual();
-    const onPointerUp = (): void => {
-      window.removeEventListener("pointerup", onPointerUp, true);
-      window.removeEventListener("pointercancel", onPointerUp, true);
-      endPressVisual();
-    };
-    window.addEventListener("pointerup", onPointerUp, true);
-    window.addEventListener("pointercancel", onPointerUp, true);
-  });
-
-  element.addEventListener("keydown", (event) => {
-    if (event.repeat) {
-      return;
-    }
-    if (event.key === " " || event.key === "Enter") {
-      beginPressVisual();
-    }
-  });
-
-  element.addEventListener("keyup", (event) => {
-    if (event.key === " " || event.key === "Enter") {
-      endPressVisual();
-    }
-  });
-
-  element.addEventListener("blur", () => {
-    endPressVisual();
-  });
-};
-
-const programmaticPressReleaseTimers = new WeakMap<HTMLButtonElement, ReturnType<typeof setTimeout>>();
-
-const beginProgrammaticPressVisual = (button: HTMLButtonElement): void => {
-  const existingTimer = programmaticPressReleaseTimers.get(button);
-  if (existingTimer) {
-    clearTimeout(existingTimer);
-    programmaticPressReleaseTimers.delete(button);
-  }
-  button.classList.remove("key--quick-press");
-  // Force reflow so repeated programmatic presses retrigger the visual transition.
-  void button.offsetWidth;
-  button.classList.add("key--quick-press");
-  const releaseTimer = setTimeout(() => {
-    programmaticPressReleaseTimers.delete(button);
-    button.classList.remove("key--quick-press");
-  }, PROGRAMMATIC_PRESS_MIN_VISIBLE_MS);
-  programmaticPressReleaseTimers.set(button, releaseTimer);
-};
-
-export const playProgrammaticKeyPressFeedback = (root: ParentNode, key: Key): void => {
-  const candidates = Array.from(root.querySelectorAll<HTMLButtonElement>(".key[data-key]"));
-  const matching = candidates.filter((button) => button.dataset.key === key && !button.disabled);
-  if (matching.length === 0) {
-    return;
-  }
-  const keypadButton = matching.find((button) => button.dataset.layoutSurface === "keypad");
-  beginProgrammaticPressVisual(keypadButton ?? matching[0]);
-};
-
-const bindDropTargetCell = (element: HTMLElement, surface: LayoutSurface, index: number): void => {
-  element.dataset.layoutSurface = surface;
-  element.dataset.layoutIndex = index.toString();
-};
-
-const shouldSuppressClick = (): boolean => Date.now() < suppressClicksUntil || isInputAnimationLocked();
-export const shouldSuppressClickForTests = (): boolean => shouldSuppressClick();
-export const setSuppressClicksUntilForTests = (timestampMs: number): void => {
-  suppressClicksUntil = timestampMs;
-};
-export const resetInputLockStateForTests = (): void => {
-  suppressClicksUntil = 0;
-  inputAnimationLockCount = 0;
-};
+const resetInputLockStateForTests = (): void => resetInputLockStateForTestsInput();
 
 const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => {
   const slotLabel = document.createElement("span");
@@ -1685,31 +1355,30 @@ const buildUnlockSnapshot = (state: GameState): Record<Key, boolean> => {
   return snapshot as Record<Key, boolean>;
 };
 
-const getNewlyUnlockedKeys = (state: GameState): Set<Key> => {
+const getNewlyUnlockedKeys = (root: Element, state: GameState): Set<Key> => {
+  const calculatorState = getCalculatorModuleState(root);
   const currentSnapshot = buildUnlockSnapshot(state);
-  if (!previousUnlockSnapshot) {
-    previousUnlockSnapshot = currentSnapshot;
+  if (!calculatorState.previousUnlockSnapshot) {
+    calculatorState.previousUnlockSnapshot = currentSnapshot;
     return new Set<Key>();
   }
 
   const newlyUnlocked = new Set<Key>();
   for (const key of Object.keys(currentSnapshot) as Key[]) {
-    if (!previousUnlockSnapshot[key] && currentSnapshot[key]) {
+    if (!calculatorState.previousUnlockSnapshot[key] && currentSnapshot[key]) {
       newlyUnlocked.add(key);
     }
   }
-  previousUnlockSnapshot = currentSnapshot;
+  calculatorState.previousUnlockSnapshot = currentSnapshot;
   return newlyUnlocked;
 };
 
 export type RenderOptions = {
-  skipGraph?: boolean;
-  skipChecklist?: boolean;
   interactionMode?: "calculator" | "modify";
   inputBlocked?: boolean;
 };
 
-export const resolveCalculatorKeysLocked = (
+const resolveCalculatorKeysLocked = (
   interactionMode: "calculator" | "modify",
   inputBlocked: boolean,
   uiShell: string | null,
@@ -1724,17 +1393,15 @@ export const render = (
   dispatch: (action: Action) => unknown,
   options: RenderOptions = {},
 ): void => {
-  ensureKeyLabelResizeListener();
+  ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
   const slotEl = root.querySelector("[data-slot]");
   const rollEl = root.querySelector("[data-roll]");
   const unlockEl = root.querySelector("[data-unlocks]");
   const keysEl = root.querySelector("[data-keys]");
-  const storageSortControlsEl = root.querySelector("[data-storage-sort-controls]");
-  const storageEl = root.querySelector("[data-storage-keys]");
 
-  if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl || !storageEl) {
-    throw new Error("UI mount points are missing.");
+  if (!totalEl || !slotEl || !rollEl || !unlockEl || !keysEl) {
+    throw new Error("Calculator UI mount points are missing.");
   }
 
   const interactionMode = options.interactionMode ?? "calculator";
@@ -1744,80 +1411,71 @@ export const render = (
     inputBlocked,
     document.body.getAttribute("data-ui-shell"),
   );
-  const storageLocked = inputBlocked || interactionMode === "calculator";
   if (root instanceof HTMLElement) {
     root.dataset.interactionMode = interactionMode;
     root.dataset.inputBlocked = inputBlocked ? "true" : "false";
   }
-  if (storageEl instanceof HTMLElement) {
-    storageEl.dataset.storageLocked = storageLocked ? "true" : "false";
-  }
 
-  const newlyUnlockedKeys = getNewlyUnlockedKeys(state);
+  const newlyUnlockedKeys = getNewlyUnlockedKeys(root, state);
 
-  if (!options.skipGraph) {
-    const isGraphVisible = state.ui.activeVisualizer === "graph";
-    syncGraphVisibilityUi(root, isGraphVisible);
-    if (isGraphVisible) {
-      renderGraphDisplay(root, state.calculator.rollEntries, state.unlocks.maxTotalDigits);
-    } else {
-      destroyGraphChart();
+  {
+    const resolvedTotalEl = totalEl as Element;
+    const resolvedSlotEl = slotEl as Element;
+    const resolvedRollEl = rollEl as Element;
+    const resolvedUnlockEl = unlockEl as Element;
+    const resolvedKeysEl = keysEl as Element;
+
+    renderTotalDisplay(resolvedTotalEl, state);
+    resolvedSlotEl.textContent = buildOperationSlotDisplay(state);
+
+    const rollView = buildRollViewModel(state.calculator.rollEntries);
+    const rollVisible = isFeedRollVisible(state, rollView.isVisible);
+    resolvedRollEl.innerHTML = "";
+    resolvedRollEl.setAttribute("data-roll-visible", rollVisible ? "true" : "false");
+    resolvedRollEl.setAttribute("aria-hidden", rollVisible ? "false" : "true");
+    resolvedRollEl.setAttribute("aria-label", rollVisible ? "Calculator roll" : "Calculator roll hidden");
+    if (resolvedRollEl instanceof HTMLElement) {
+      resolvedRollEl.style.setProperty("--roll-line-count", rollView.lineCount.toString());
     }
-  }
+    for (const row of rollView.rows) {
+      const line = document.createElement("div");
+      line.className = getRollLineClassName(row);
 
-  renderTotalDisplay(totalEl, state);
-  slotEl.textContent = buildOperationSlotDisplay(state);
+      const prefix = document.createElement("span");
+      prefix.className = "roll-prefix";
+      prefix.textContent = row.prefix;
+      line.appendChild(prefix);
 
-  const rollView = buildRollViewModel(state.calculator.rollEntries);
-  const rollVisible = isFeedRollVisible(state, rollView.isVisible);
-  rollEl.innerHTML = "";
-  rollEl.setAttribute("data-roll-visible", rollVisible ? "true" : "false");
-  rollEl.setAttribute("aria-hidden", rollVisible ? "false" : "true");
-  rollEl.setAttribute("aria-label", rollVisible ? "Calculator roll" : "Calculator roll hidden");
-  if (rollEl instanceof HTMLElement) {
-    rollEl.style.setProperty("--roll-line-count", rollView.lineCount.toString());
-  }
-  for (const row of rollView.rows) {
-    const line = document.createElement("div");
-    line.className = getRollLineClassName(row);
+      const value = document.createElement("span");
+      value.className = "roll-value";
+      value.textContent = row.value;
+      line.appendChild(value);
 
-    const prefix = document.createElement("span");
-    prefix.className = "roll-prefix";
-    prefix.textContent = row.prefix;
-    line.appendChild(prefix);
+      if (row.errorCode) {
+        const remainder = document.createElement("span");
+        remainder.className = "roll-remainder";
+        remainder.textContent = `Err: ${row.errorCode}`;
+        line.appendChild(remainder);
+      } else if (row.remainder) {
+        const remainder = document.createElement("span");
+        remainder.className = "roll-remainder";
+        remainder.textContent = `⟡= ${row.remainder}`;
+        line.appendChild(remainder);
+      }
 
-    const value = document.createElement("span");
-    value.className = "roll-value";
-    value.textContent = row.value;
-    line.appendChild(value);
-
-    if (row.errorCode) {
-      const remainder = document.createElement("span");
-      remainder.className = "roll-remainder";
-      remainder.textContent = `Err: ${row.errorCode}`;
-      line.appendChild(remainder);
-    } else if (row.remainder) {
-      const remainder = document.createElement("span");
-      remainder.className = "roll-remainder";
-      remainder.textContent = `⟡= ${row.remainder}`;
-      line.appendChild(remainder);
+      resolvedRollEl.appendChild(line);
     }
 
-    rollEl.appendChild(line);
-  }
+    renderUnlockChecklist(resolvedUnlockEl, state);
 
-  if (!options.skipChecklist) {
-    renderUnlockChecklist(unlockEl, state);
-  }
-
-  const desktopShell = isDesktopShellContext(root);
-  const runtime = getDesktopLayoutRuntime(root);
-  const calcBodyEl = keysEl.closest<HTMLElement>(".calc");
-  const currentSnapshot =
-    keysEl instanceof HTMLElement
+    const desktopShell = isDesktopShellContext(root);
+    const runtime = getDesktopLayoutRuntime(root);
+    const calcBodyEl = resolvedKeysEl.closest<HTMLElement>(".calc");
+    const currentSnapshot =
+      resolvedKeysEl instanceof HTMLElement
       ? resolveSingleInstanceSnapshot({
           root,
-          keysEl,
+          keysEl: resolvedKeysEl,
           calcBodyEl,
           columns: state.ui.keypadColumns,
           rows: state.ui.keypadRows,
@@ -1846,21 +1504,21 @@ export const render = (
           forCalculatorId: "primary",
           keypadGrowDirection: "",
         };
-  const keypadDimensionsChanged = motionIntent.keypadGrowDirection !== "";
-  const keypadBeforeRects = keypadDimensionsChanged ? collectKeypadCellRects(keysEl) : new Map<string, DOMRect>();
+    const keypadDimensionsChanged = motionIntent.keypadGrowDirection !== "";
+    const keypadBeforeRects = keypadDimensionsChanged ? collectKeypadCellRects(resolvedKeysEl) : new Map<string, DOMRect>();
 
-  keysEl.innerHTML = "";
-  if (keysEl instanceof HTMLElement) {
+    resolvedKeysEl.innerHTML = "";
+    if (resolvedKeysEl instanceof HTMLElement) {
     if (desktopShell && currentSnapshot) {
-      applyDesktopLayoutSnapshot(keysEl, calcBodyEl, currentSnapshot);
+        applyDesktopLayoutSnapshot(resolvedKeysEl, calcBodyEl, currentSnapshot);
     } else {
-      keysEl.style.gridTemplateColumns = `repeat(${state.ui.keypadColumns}, minmax(0, 1fr))`;
-      keysEl.style.gridTemplateRows = `repeat(${state.ui.keypadRows}, minmax(48px, 1fr))`;
-      keysEl.style.removeProperty("height");
-      clearDesktopSizingVars(keysEl, calcBodyEl);
+        resolvedKeysEl.style.gridTemplateColumns = `repeat(${state.ui.keypadColumns}, minmax(0, 1fr))`;
+        resolvedKeysEl.style.gridTemplateRows = `repeat(${state.ui.keypadRows}, minmax(48px, 1fr))`;
+        resolvedKeysEl.style.removeProperty("height");
+        clearDesktopSizingVars(resolvedKeysEl, calcBodyEl);
     }
     if (!keypadDimensionsChanged) {
-      delete keysEl.dataset.keypadGrow;
+      delete resolvedKeysEl.dataset.keypadGrow;
       if (calcBodyEl) {
         delete calcBodyEl.dataset.keypadGrow;
       }
@@ -1869,27 +1527,27 @@ export const render = (
       const growDirection = motionIntent.keypadGrowDirection;
       if (growDirection) {
         if (!desktopShell) {
-          keysEl.dataset.keypadGrow = growDirection;
-          bindPrefixedAnimationLock(keysEl, "keypad-grow-", KEYPAD_GROW_MAX_DURATION_MS);
+          resolvedKeysEl.dataset.keypadGrow = growDirection;
+          bindPrefixedAnimationLock(resolvedKeysEl, "keypad-grow-", KEYPAD_GROW_MAX_DURATION_MS);
         } else {
-          delete keysEl.dataset.keypadGrow;
+          delete resolvedKeysEl.dataset.keypadGrow;
         }
         if (calcBodyEl) {
           calcBodyEl.dataset.keypadGrow = growDirection;
           bindPrefixedAnimationLock(calcBodyEl, "calc-grow-", CALC_GROW_MAX_DURATION_MS);
           bindPrefixedAnimationCompletion(calcBodyEl, "calc-grow-", completeLayoutMotion);
         } else if (!desktopShell) {
-          bindPrefixedAnimationCompletion(keysEl, "keypad-grow-", completeLayoutMotion);
+          bindPrefixedAnimationCompletion(resolvedKeysEl, "keypad-grow-", completeLayoutMotion);
         }
       } else {
-        delete keysEl.dataset.keypadGrow;
+        delete resolvedKeysEl.dataset.keypadGrow;
         if (calcBodyEl) {
           delete calcBodyEl.dataset.keypadGrow;
         }
         completeLayoutMotion();
       }
     }
-  }
+    }
   const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout, state.ui.keypadColumns, state.ui.keypadRows);
   const stepBodyHighlights = buildStepBodyHighlightRegions(state);
   for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
@@ -1900,11 +1558,11 @@ export const render = (
       const placeholder = document.createElement("div");
       placeholder.className = "placeholder placeholder--drop-slot";
       placeholder.setAttribute("aria-hidden", "true");
-      bindDropTargetCell(placeholder, "keypad", index);
+      bindDropTargetCellInput(placeholder, "keypad", index);
       placeholder.dataset.layoutOccupied = "empty";
       placeholder.dataset.keypadCellId = slotId;
       appendDebugSlotLabel(placeholder, slotLabel);
-      keysEl.appendChild(placeholder);
+      resolvedKeysEl.appendChild(placeholder);
       continue;
     }
     if (!isKeyUnlocked(state, cell.key)) {
@@ -1913,7 +1571,7 @@ export const render = (
       hidden.setAttribute("aria-hidden", "true");
       hidden.dataset.keypadCellId = slotId;
       appendDebugSlotLabel(hidden, slotLabel);
-      keysEl.appendChild(hidden);
+      resolvedKeysEl.appendChild(hidden);
       continue;
     }
 
@@ -1931,7 +1589,7 @@ export const render = (
     setKeyButtonLabel(button, formatKeyCellLabel(state, cell));
     const keypadToggleActive = isToggleFlagActive(state, cell);
     button.classList.toggle("key--toggle-active", keypadToggleActive);
-    const keypadToggleAnimation = readToggleAnimation(cell);
+    const keypadToggleAnimation = readToggleAnimation(root, cell);
     if (keypadToggleAnimation === "on") {
       button.classList.add("key--toggle-animate-on");
     } else if (keypadToggleAnimation === "off") {
@@ -1941,8 +1599,8 @@ export const render = (
     button.disabled = calculatorKeysLocked;
     button.dataset.keypadCellId = slotId;
     button.dataset.key = cell.key;
-    bindQuickTapPressFeedback(button);
-    bindDraggableCell(button, state, dispatch, { surface: "keypad", index }, cell.key);
+    bindQuickTapPressFeedbackInput(root, button);
+    bindDraggableCellInput(root, button, state, dispatch, { surface: "keypad", index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
     button.addEventListener("click", () => {
       if (button.disabled) {
@@ -1951,15 +1609,15 @@ export const render = (
       if (interactionMode !== "calculator") {
         return;
       }
-      if (shouldSuppressClick()) {
+      if (shouldSuppressClickInput(root)) {
         return;
       }
-      queueToggleAnimation(state, cell);
+      queueToggleAnimation(root, state, cell);
       dispatch(buildKeyButtonAction(state, cell));
     });
-    keysEl.appendChild(button);
+    resolvedKeysEl.appendChild(button);
   }
-  const stepHighlightRects = resolveStepBodyHighlightRects(keysEl, stepBodyHighlights);
+  const stepHighlightRects = resolveStepBodyHighlightRects(resolvedKeysEl, stepBodyHighlights);
   for (const rect of stepHighlightRects) {
     const highlight = document.createElement("div");
     highlight.className = STEP_BODY_HIGHLIGHT_CLASS;
@@ -1968,115 +1626,18 @@ export const render = (
     highlight.style.top = `${rect.top.toFixed(2)}px`;
     highlight.style.width = `${rect.width.toFixed(2)}px`;
     highlight.style.height = `${rect.height.toFixed(2)}px`;
-    keysEl.appendChild(highlight);
+    resolvedKeysEl.appendChild(highlight);
   }
-  fitKeyLabelsInContainer(keysEl);
+  fitKeyLabelsInContainer(resolvedKeysEl);
 
   if (keypadDimensionsChanged && !desktopShell) {
-    playKeypadFlip(keysEl, keypadBeforeRects);
+    playKeypadFlip(resolvedKeysEl, keypadBeforeRects);
   }
   runtime.previousSnapshot = currentSnapshot;
   runtime.previousInteractionMode = interactionMode;
-
-  storageEl.innerHTML = "";
-  storageEl.setAttribute("aria-hidden", "false");
-  storageEl.setAttribute("data-storage-visible", "true");
-  if (storageSortControlsEl) {
-    const activeStorageSortGroup = getActiveStorageSortGroup(state);
-    storageSortControlsEl.innerHTML = "";
-    for (const segment of STORAGE_SORT_SEGMENTS) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "storage-sort-button";
-      const isActive = activeStorageSortGroup === segment.group;
-      button.textContent = segment.label;
-      button.dataset.storageSortGroup = segment.group;
-      button.setAttribute("aria-label", segment.ariaLabel);
-      button.setAttribute("aria-pressed", isActive ? "true" : "false");
-      if (isActive) {
-        button.classList.add("storage-sort-button--active");
-      }
-      button.disabled = inputBlocked;
-      button.addEventListener("click", () => {
-        if (inputBlocked || isActive) {
-          return;
-        }
-        for (const action of buildStorageSortToggleSequence(state, segment.group)) {
-          dispatch(action);
-        }
-      });
-      storageSortControlsEl.appendChild(button);
-    }
   }
-  if (storageEl instanceof HTMLElement) {
-    storageEl.dataset.storageSlotCount = state.ui.storageLayout.length.toString();
-    ensureStorageGridObserver(storageEl);
-  }
-  const storageColumns = storageEl instanceof HTMLElement ? syncStorageGridMetrics(storageEl) : STORAGE_COLUMNS;
-  const storageLabels = buildStorageSlotLabels(state.ui.storageLayout, storageColumns);
-  const storageRenderOrder = buildStorageRenderOrder(state);
-  for (const index of storageRenderOrder) {
-    const cell = state.ui.storageLayout[index];
-    const slotLabel = storageLabels[index] ?? `S#${index}`;
-    if (!cell) {
-      const empty = document.createElement("div");
-      empty.className = "placeholder placeholder--drop-slot placeholder--storage-empty";
-      empty.setAttribute("aria-hidden", "true");
-      bindDropTargetCell(empty, "storage", index);
-      empty.dataset.layoutOccupied = "empty";
-      appendDebugSlotLabel(empty, slotLabel);
-      storageEl.appendChild(empty);
-      continue;
-    }
-    if (!isKeyUnlocked(state, cell.key)) {
-      const hidden = document.createElement("div");
-      hidden.className = "placeholder placeholder--drop-slot placeholder--storage-empty placeholder--locked-hidden";
-      hidden.setAttribute("aria-hidden", "true");
-      appendDebugSlotLabel(hidden, slotLabel);
-      storageEl.appendChild(hidden);
-      continue;
-    }
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "key key--storage key--storage-unlocked key--draggable";
-    button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    if (cell.key === "NEG") {
-      button.classList.add("key--value-modifier");
-    }
-    if (newlyUnlockedKeys.has(cell.key)) {
-      button.classList.add("key--unlock-animate");
-      bindExactAnimationLock(button, UNLOCK_ANIMATION_NAME, UNLOCK_ANIMATION_DURATION_MS);
-    }
-    setKeyButtonLabel(button, formatKeyCellLabel(state, cell));
-    const storageToggleActive = isToggleFlagActive(state, cell);
-    button.classList.toggle("key--toggle-active", storageToggleActive);
-    const storageToggleAnimation = readToggleAnimation(cell);
-    if (storageToggleAnimation === "on") {
-      button.classList.add("key--toggle-animate-on");
-    } else if (storageToggleAnimation === "off") {
-      button.classList.add("key--toggle-animate-off");
-    }
-    button.setAttribute("aria-pressed", storageToggleActive ? "true" : "false");
-    button.disabled = storageLocked;
-    button.dataset.key = cell.key;
-    bindDraggableCell(button, state, dispatch, { surface: "storage", index }, cell.key);
-    appendDebugSlotLabel(button, slotLabel);
-    storageEl.appendChild(button);
-  }
-  fitKeyLabelsInContainer(storageEl);
-
-  pendingToggleAnimationByFlag = {};
-
-  if (dragSession?.active) {
-    const sourceNode = findDragTargetElement(dragSession.source);
-    if (!sourceNode) {
-      clearDragSession();
-    } else {
-      dragSession.originElement = sourceNode;
-      sourceNode.classList.add("drag-source");
-    }
-  }
+  clearToggleAnimations(root);
 };
 
 

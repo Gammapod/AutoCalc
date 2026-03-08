@@ -1,12 +1,18 @@
 import type { Action, GameState } from "../../domain/types.js";
+import type { InteractionMode } from "../../app/interactionRuntime.js";
+import { renderStorageV2Module as renderStorageOwned } from "./storage/render.js";
 
 export const renderStorageV2Module = (
   root: Element,
-  _state: GameState,
-  _dispatch: (action: Action) => unknown,
+  state: GameState,
+  dispatch: (action: Action) => unknown,
+  options: {
+    interactionMode: InteractionMode;
+    inputBlocked: boolean;
+  },
 ): void => {
-  const storageMount = root.querySelector("[data-storage-keys]");
-  if (!storageMount) {
-    throw new Error("Storage module mount point is missing.");
-  }
+  renderStorageOwned(root, state, dispatch, {
+    interactionMode: options.interactionMode,
+    inputBlocked: options.inputBlocked,
+  });
 };

@@ -1,0 +1,75 @@
+import { getOrCreateRuntime } from "../../runtime/registry.js";
+import type { Action, GameState, Key, LayoutSurface } from "../../../domain/types.js";
+import type { UiModuleRuntime } from "../../runtime/types.js";
+
+export type DragTarget = {
+  surface: LayoutSurface;
+  index: number;
+};
+
+export type DropAction = "move" | "swap";
+
+export type DragSession = {
+  state: GameState;
+  dispatch: (action: Action) => unknown;
+  source: DragTarget;
+  key: Key;
+  originElement: HTMLElement;
+  originX: number;
+  originY: number;
+  ghost: HTMLElement | null;
+  active: boolean;
+  target: DragTarget | null;
+  targetAction: DropAction | null;
+  targetElement: HTMLElement | null;
+};
+
+export type InputModuleState = {
+  dragSession: DragSession | null;
+  suppressClicksUntil: number;
+  inputAnimationLockCount: number;
+  boundDraggableElements: WeakSet<HTMLElement>;
+  boundQuickTapButtons: WeakSet<HTMLButtonElement>;
+};
+
+const createInputModuleState = (): InputModuleState => ({
+  dragSession: null,
+  suppressClicksUntil: 0,
+  inputAnimationLockCount: 0,
+  boundDraggableElements: new WeakSet<HTMLElement>(),
+  boundQuickTapButtons: new WeakSet<HTMLButtonElement>(),
+});
+
+const FALLBACK_TEST_STATE: InputModuleState = createInputModuleState();
+
+export const getInputModuleRuntime = (root: Element): UiModuleRuntime =>
+  getOrCreateRuntime(root).input;
+
+export const getInputModuleState = (root: Element): InputModuleState => {
+  const runtime = getInputModuleRuntime(root);
+  const existing = runtime.state.inputModuleState as InputModuleState | undefined;
+  if (existing) {
+    return existing;
+  }
+  const created = createInputModuleState();
+  runtime.state.inputModuleState = created;
+  runtime.dispose = () => {
+    created.dragSession?.ghost?.remove();
+    created.dragSession = null;
+    created.suppressClicksUntil = 0;
+    created.inputAnimationLockCount = 0;
+    created.boundDraggableElements = new WeakSet<HTMLElement>();
+    created.boundQuickTapButtons = new WeakSet<HTMLButtonElement>();
+    runtime.state.inputModuleState = createInputModuleState();
+  };
+  runtime.resetForTests = () => {
+    created.dragSession?.ghost?.remove();
+    created.dragSession = null;
+    created.suppressClicksUntil = 0;
+    created.inputAnimationLockCount = 0;
+  };
+  return created;
+};
+
+export const getFallbackInputTestState = (): InputModuleState => FALLBACK_TEST_STATE;
+
