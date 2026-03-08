@@ -18,6 +18,7 @@ import { createModeTransitionCoordinator } from "./modeTransitionCoordinator.js"
 import { createUnlockRevealCoordinator, createUnlockTracker } from "./unlockCueCoordinator.js";
 import { resolveBootstrapUiRefs } from "./ui/bootstrapUiRefs.js";
 import { createBootstrapUiController } from "./ui/bootstrapUiController.js";
+import { createResetRunHandler, createStoreSubscriptionCoordinator } from "./bootstrap/subscriptionCoordinator.js";
 import type { Action, GameState } from "../domain/types.js";
 
 declare global {
@@ -205,32 +206,15 @@ const unsubscribeCueTelemetry =
       })
     : () => {};
 
-let previousStateForCues = store.getState();
-
-const unsubscribe = store.subscribe((state) => {
-  autoEqualsScheduler.sync(state);
-  const latest = store.getState();
-  const previous = previousStateForCues;
-  previousStateForCues = latest;
-
-  const hasNewUnlock = unlockTracker.hasNewUnlock(latest);
-  const maxPointIncreaseFromUnlocks = getAllocatorIncreaseFromUnlocks(previous, latest);
-
-  if (!modeTransitionCoordinator.isModeTransitionInFlight() && (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock)) {
-    if (maxPointIncreaseFromUnlocks > 0) {
-      void (async () => {
-        await allocatorCueCoordinator.runAllocatorIncreaseCue();
-      })();
-    }
-    if (hasNewUnlock) {
-      void (async () => {
-        await unlockRevealCoordinator.runUnlockRevealCue(latest);
-      })();
-    }
-    return;
-  }
-
-  renderAndPersistState(latest);
+const unsubscribe = createStoreSubscriptionCoordinator(store, {
+  autoEqualsScheduler,
+  unlockTracker,
+  modeTransitionCoordinator,
+  allocatorCueCoordinator,
+  unlockRevealCoordinator,
+  getAllocatorIncreaseFromUnlocks,
+  renderAndPersistState,
+  initialState: store.getState(),
 });
 
 const activateAllocatorReset = async (): Promise<void> => {
@@ -255,21 +239,7 @@ uiController = createBootstrapUiController({
   isInputBlocked: () => interactionRuntime.isInputBlocked(),
   getInteractionMode: () => interactionRuntime.getMode(),
   onAllocatorModeActivate: activateAllocatorReset,
-  onResetRun: () => {
-    store.dispatch({ type: "RESET_RUN" });
-    const reset = store.getState();
-    store.dispatch({
-      type: "HYDRATE_SAVE",
-      state: {
-        ...reset,
-        calculator: {
-          ...reset.calculator,
-          singleDigitInitialTotalEntry: true,
-        },
-      },
-    });
-    storageRepo.clear();
-  },
+  onResetRun: createResetRunHandler(store, storageRepo),
   onUnlockAll: () => {
     store.dispatch({ type: "UNLOCK_ALL" });
   },

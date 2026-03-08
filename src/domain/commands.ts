@@ -13,9 +13,6 @@ export type ExecuteCommandResult = {
 };
 
 export const executeCommand = (state: GameState | undefined, command: DomainCommand): ExecuteCommandResult => {
-  if (command.type !== "DispatchAction") {
-    return { state: state as GameState, events: [] };
-  }
   const event = eventFromAction(command.action);
   const nextState = applyEvent(state, event);
   return { state: nextState, events: [event] };

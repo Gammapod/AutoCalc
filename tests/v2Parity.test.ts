@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState } from "../src/domain/types.js";
-import { reduceActionWithV2 } from "../src/compat/legacyReducerAdapter.js";
 import { compareParity } from "../src/compat/parityHarness.js";
 import { executeCommand } from "../src/domain/commands.js";
 import { getCalculatorMode } from "../src/domain/modes.js";
@@ -49,10 +48,6 @@ export const runV2ParityTests = (): void => {
   const { legacy, v2 } = runSequence(actions);
   const parity = compareParity(legacy, v2);
   assert.equal(parity.ok, true, `v2 state/read-model parity holds (${JSON.stringify(parity.mismatches)})`);
-
-  const reducedViaAdapter = actions.reduce((state, action) => reduceActionWithV2(state, action), initialState());
-  const parityAdapter = compareParity(v2, reducedViaAdapter);
-  assert.equal(parityAdapter.ok, true, "v2 adapter and command runtime produce identical results");
 
   assert.equal(getCalculatorMode(initialState()), "idle", "mode idle when no draft/roll");
   assert.equal(

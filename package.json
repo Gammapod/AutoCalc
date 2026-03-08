@@ -15,7 +15,11 @@
     "build:android:apk": "npm run mobile:android:sync && node ./scripts/build-android-apk.mjs",
     "build:desktop": "npm run build:web && node ./scripts/build-desktop.mjs",
     "build:watch": "tsc -w -p tsconfig.json",
-    "ci:verify": "npm run build:web && node ./dist/tests/run-tests.js",
+    "ci:verify": "npm run build:web && node ./dist/tests/run-tests.js && npm run ci:verify:ui-complexity",
+    "ci:verify:parity": "npm run build:web && node ./dist/tests/run-tests.js --grep=\"^(v2/parity|v2/persistence-parity|contracts/parity-)\"",
+    "ci:verify:action-event": "npm run build:web && node ./dist/tests/run-tests.js --grep=\"^contracts/action-event-round-trip$\"",
+    "ci:verify:shell": "npm run build:web && node ./dist/tests/run-tests.js --grep=\"^(ui-shell/|ui-integration/(mobile-shell|desktop-shell)$)\"",
+    "ci:verify:ui-complexity": "node ./scripts/check-ui-complexity.mjs",
     "dev:serve": "node ./scripts/dev-server.mjs",
     "release:win:portable": "npm run ci:verify && node ./scripts/build-desktop.mjs",
     "test": "npm run ci:verify"

@@ -1,4 +1,4 @@
-﻿import { reducer } from "../domain/reducer.js";
+import { executeCommand } from "../domain/commands.js";
 import type { Action, GameState, Store } from "../domain/types.js";
 
 export const createStore = (initialState: GameState): Store => {
@@ -8,7 +8,7 @@ export const createStore = (initialState: GameState): Store => {
   return {
     getState: () => state,
     dispatch: (action: Action) => {
-      state = reducer(state, action);
+      state = executeCommand(state, { type: "DispatchAction", action }).state;
       for (const subscriber of subscribers) {
         subscriber(state);
       }
@@ -20,3 +20,4 @@ export const createStore = (initialState: GameState): Store => {
     },
   };
 };
+

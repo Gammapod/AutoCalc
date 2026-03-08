@@ -70,6 +70,13 @@ import { runButtonRegistryContractTests } from "./buttonRegistry.contract.test.j
 import { runKeyActionHandlersContractTests } from "./keyActionHandlers.contract.test.js";
 import { runKeyCatalogNormalizationTests } from "./keyCatalog.normalization.test.js";
 import { runBootstrapBoundaryTests } from "./bootstrapBoundary.test.js";
+import { runContentDrillUnlockExtensionTests } from "./contentDrill.unlockExtension.test.js";
+import { runUiShellRefsBuilderTests } from "./uiShell.refsBuilder.test.js";
+import { runUiShellTransformsTests } from "./uiShell.transforms.test.js";
+import { runUiShellMenuA11yTests } from "./uiShell.menuA11y.test.js";
+import { runUiModuleCalculatorMotionTests } from "./uiModule.calculatorMotion.test.js";
+import { runUiModuleCalculatorKeypadRenderTests } from "./uiModule.calculatorKeypadRender.test.js";
+import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -144,10 +151,26 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/key-action-handlers-contract", runKeyActionHandlersContractTests],
   ["domain/key-catalog-normalization", runKeyCatalogNormalizationTests],
   ["app/bootstrap-boundary", runBootstrapBoundaryTests],
+  ["content-drill/unlock-extension", runContentDrillUnlockExtensionTests],
+  ["ui-shell/refs-builder", runUiShellRefsBuilderTests],
+  ["ui-shell/transforms", runUiShellTransformsTests],
+  ["ui-shell/menu-a11y", runUiShellMenuA11yTests],
+  ["ui-module/calculator-motion", runUiModuleCalculatorMotionTests],
+  ["ui-module/calculator-keypad-render", runUiModuleCalculatorKeypadRenderTests],
+  ["ui/complexity-gate", runUiComplexityGateTests],
 ];
 
+const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));
+const grepPattern = grepArg ? grepArg.slice("--grep=".length) : "";
+const testFilter = grepPattern.length > 0 ? new RegExp(grepPattern) : null;
+const testsToRun = testFilter ? tests.filter(([name]) => testFilter.test(name)) : tests;
+
+if (testsToRun.length === 0) {
+  throw new Error(`No tests matched filter pattern: ${grepPattern}`);
+}
+
 let passed = 0;
-for (const [name, fn] of tests) {
+for (const [name, fn] of testsToRun) {
   try {
     await fn();
     console.log(`PASS ${name}`);
@@ -159,6 +182,6 @@ for (const [name, fn] of tests) {
   }
 }
 
-if (passed === tests.length) {
+if (passed === testsToRun.length) {
   console.log(`All ${passed} test groups passed.`);
 }

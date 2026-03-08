@@ -32,6 +32,10 @@ export type DomainEvent =
   | { type: "LambdaOverrideEpsilonCleared" }
   | { type: "LambdaControlSet"; value: LambdaControl };
 
+const assertNever = (value: never): never => {
+  throw new Error(`Unhandled variant: ${JSON.stringify(value)}`);
+};
+
 export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "PRESS_KEY") {
     return { type: "KeyPressed", key: action.key };
@@ -124,7 +128,10 @@ export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "LAMBDA_SET_CONTROL") {
     return { type: "LambdaControlSet", value: action.value };
   }
-  return { type: "FlagToggled", flag: action.flag };
+  if (action.type === "TOGGLE_FLAG") {
+    return { type: "FlagToggled", flag: action.flag };
+  }
+  return assertNever(action);
 };
 
 export const actionFromEvent = (event: DomainEvent): Action => {
@@ -219,5 +226,8 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   if (event.type === "LambdaControlSet") {
     return { type: "LAMBDA_SET_CONTROL", value: event.value };
   }
-  return { type: "TOGGLE_FLAG", flag: event.flag };
+  if (event.type === "FlagToggled") {
+    return { type: "TOGGLE_FLAG", flag: event.flag };
+  }
+  return assertNever(event);
 };
