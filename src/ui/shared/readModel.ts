@@ -75,15 +75,38 @@ export type FeedTableViewModel = {
   rWidth: number;
 };
 
+export type AlgebraicMainLineSource = "builder_unsimplified" | "roll_simplified" | "roll_literal";
+
+export type AlgebraicViewModel = {
+  seedLine: string;
+  recurrenceLine: string;
+  mainLine: string;
+  mainLineSource: AlgebraicMainLineSource;
+  hasIncompleteDraft: boolean;
+  containsEuclidLiteral: boolean;
+  recurrenceExpressionText: string;
+};
+
 const FEED_MAX_VISIBLE_ROWS = 7;
 const FEED_FIXED_COLUMN_WIDTH = 5;
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
+
+const isZeroRational = (value: CalculatorValue): boolean =>
+  value.kind === "rational" && value.value.num === 0n && value.value.den === 1n;
+
+const hasAnyKeyPress = (state: GameState): boolean =>
+  Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
   operator === "*" ? "\u00D7" : operator === "/" ? "\u00F7" : operator;
 
 export const formatOperatorForOperationSlotDisplay = (operator: SlotOperator): string =>
   operator === "\u27E1" ? "\u2662" : formatOperatorForDisplay(operator);
+
+const isEuclidLiteralOperator = (operator: SlotOperator): boolean => operator === "#" || operator === "\u27E1";
+
+const formatAlgebraicOperator = (operator: SlotOperator): string =>
+  isEuclidLiteralOperator(operator) ? operator : formatOperatorForDisplay(operator);
 
 export const formatKeyLabel = (key: Key): string => {
   if (key === "pi") {
@@ -165,6 +188,126 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   }
 
   return tokens.join(" -> ");
+};
+
+const resolveSeedValueForAlgebra = (state: GameState): CalculatorValue | null => {
+  if (state.calculator.rollEntries.length > 0 && state.calculator.seedSnapshot) {
+    return state.calculator.seedSnapshot;
+  }
+
+  const noSeedEnteredYet =
+    isZeroRational(state.calculator.total)
+    && !state.calculator.pendingNegativeTotal
+    && state.calculator.rollEntries.length === 0
+    && state.calculator.operationSlots.length === 0
+    && state.calculator.draftingSlot === null
+    && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress(state));
+  if (noSeedEnteredYet) {
+    return null;
+  }
+
+  return state.calculator.total;
+};
+
+const normalizeDraftOperandText = (drafting: NonNullable<GameState["calculator"]["draftingSlot"]>): { value: string; incomplete: boolean } => {
+  if (drafting.operandInput === "") {
+    return { value: "_", incomplete: true };
+  }
+  const signedValue = `${drafting.isNegative ? "-" : ""}${drafting.operandInput}`;
+  return { value: signedValue, incomplete: false };
+};
+
+const toExpressionOperandText = (operand: GameState["calculator"]["operationSlots"][number]["operand"]): string =>
+  typeof operand === "bigint" ? operand.toString() : expressionToDisplayString(slotOperandToExpression(operand));
+
+export const buildFunctionRecurrenceDisplay = (
+  state: GameState,
+): { line: string; hasIncompleteDraft: boolean; containsEuclidLiteral: boolean; expressionText: string } => {
+  let displayAccumulator = "f_n";
+  let expressionAccumulator = "f_n";
+  let hasIncompleteDraft = false;
+  let containsEuclidLiteral = false;
+
+  for (const slot of state.calculator.operationSlots) {
+    const operandText = toExpressionOperandText(slot.operand);
+    const displayOperator = formatAlgebraicOperator(slot.operator);
+    displayAccumulator = `(${displayAccumulator} ${displayOperator} ${operandText})`;
+    expressionAccumulator = `(${expressionAccumulator}${slot.operator}${operandText})`;
+    containsEuclidLiteral = containsEuclidLiteral || isEuclidLiteralOperator(slot.operator);
+  }
+
+  if (state.calculator.draftingSlot) {
+    const draftOperand = normalizeDraftOperandText(state.calculator.draftingSlot);
+    const displayOperator = formatAlgebraicOperator(state.calculator.draftingSlot.operator);
+    displayAccumulator = `(${displayAccumulator} ${displayOperator} ${draftOperand.value})`;
+    expressionAccumulator = `(${expressionAccumulator}${state.calculator.draftingSlot.operator}${draftOperand.value})`;
+    hasIncompleteDraft = draftOperand.incomplete;
+    containsEuclidLiteral = containsEuclidLiteral || isEuclidLiteralOperator(state.calculator.draftingSlot.operator);
+  }
+
+  return {
+    line: `f_{n+1} = ${displayAccumulator}`,
+    hasIncompleteDraft,
+    containsEuclidLiteral,
+    expressionText: expressionAccumulator,
+  };
+};
+
+export const buildAlgebraicViewModel = (state: GameState): AlgebraicViewModel => {
+  const seedValue = resolveSeedValueForAlgebra(state);
+  const seedLine = seedValue ? `f_0 = ${calculatorValueToDisplayString(seedValue)}` : "f_0 = _";
+  const recurrence = buildFunctionRecurrenceDisplay(state);
+  const preRollMain = recurrence.line;
+
+  if (state.calculator.rollEntries.length === 0) {
+    return {
+      seedLine,
+      recurrenceLine: recurrence.line,
+      mainLine: preRollMain,
+      mainLineSource: "builder_unsimplified",
+      hasIncompleteDraft: recurrence.hasIncompleteDraft,
+      containsEuclidLiteral: recurrence.containsEuclidLiteral,
+      recurrenceExpressionText: recurrence.expressionText,
+    };
+  }
+
+  if (recurrence.containsEuclidLiteral) {
+    return {
+      seedLine,
+      recurrenceLine: recurrence.line,
+      mainLine: preRollMain,
+      mainLineSource: "roll_literal",
+      hasIncompleteDraft: recurrence.hasIncompleteDraft,
+      containsEuclidLiteral: recurrence.containsEuclidLiteral,
+      recurrenceExpressionText: recurrence.expressionText,
+    };
+  }
+
+  const latestRelevantSymbolic = [...state.calculator.rollEntries]
+    .reverse()
+    .find((entry) => entry.symbolic?.exprText === recurrence.expressionText);
+
+  if (!latestRelevantSymbolic?.symbolic) {
+    return {
+      seedLine,
+      recurrenceLine: recurrence.line,
+      mainLine: preRollMain,
+      mainLineSource: "builder_unsimplified",
+      hasIncompleteDraft: recurrence.hasIncompleteDraft,
+      containsEuclidLiteral: recurrence.containsEuclidLiteral,
+      recurrenceExpressionText: recurrence.expressionText,
+    };
+  }
+
+  return {
+    seedLine,
+    recurrenceLine: recurrence.line,
+    mainLine: latestRelevantSymbolic.symbolic.renderText,
+    mainLineSource: "roll_simplified",
+    hasIncompleteDraft: recurrence.hasIncompleteDraft,
+    containsEuclidLiteral: recurrence.containsEuclidLiteral,
+    recurrenceExpressionText: recurrence.expressionText,
+  };
 };
 
 export const buildRollLines = (rollEntries: RollEntry[]): string[] =>

@@ -165,6 +165,61 @@ export const runReducerInputTests = (): void => {
     "modulo execution records the modulo component as roll remainder",
   );
 
+  const symbolicPiCancellationSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(0n),
+      operationSlots: [
+        { operator: "+", operand: { type: "constant", value: "pi" } },
+        { operator: "-", operand: { type: "constant", value: "pi" } },
+      ],
+    },
+  };
+  const afterPiCancellation = applyKeyAction(symbolicPiCancellationSource, "=");
+  assert.deepEqual(afterPiCancellation.calculator.total, r(0n), "symbolic pi cancellation resolves to exact rational");
+  assert.equal(afterPiCancellation.calculator.rollEntries.at(-1)?.error, undefined, "rational symbolic simplification is not an error");
+  assert.ok(afterPiCancellation.calculator.rollEntries.at(-1)?.symbolic, "rational symbolic simplification records symbolic payload");
+  assert.equal(
+    afterPiCancellation.calculator.rollEntries.at(-1)?.symbolic?.exprText,
+    "((f_n(x)+pi)-pi)",
+    "symbolic payload key tracks builder recurrence signature",
+  );
+
+  const symbolicECancellationSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(1n),
+      operationSlots: [
+        { operator: "*", operand: { type: "constant", value: "e" } },
+        { operator: "/", operand: { type: "constant", value: "e" } },
+      ],
+    },
+  };
+  const afterECancellation = applyKeyAction(symbolicECancellationSource, "=");
+  assert.deepEqual(afterECancellation.calculator.total, r(1n), "symbolic e cancellation resolves to exact rational");
+  assert.equal(afterECancellation.calculator.rollEntries.at(-1)?.error, undefined, "exact symbolic rational stays non-error");
+  assert.ok(afterECancellation.calculator.rollEntries.at(-1)?.symbolic, "exact symbolic rational still records symbolic payload");
+
+  const symbolicNonRationalSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(1n),
+      operationSlots: [{ operator: "+", operand: { type: "constant", value: "pi" } }],
+    },
+  };
+  const afterNonRationalSymbolic = applyKeyAction(symbolicNonRationalSource, "=");
+  assert.deepEqual(afterNonRationalSymbolic.calculator.total, toNanCalculatorValue(), "non-rational symbolic total is rejected in default visualizer");
+  assert.equal(afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.error?.code, "ALG", "non-rational symbolic result records ALG error");
+  assert.ok(afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.symbolic, "non-rational symbolic result records symbolic payload");
+  assert.equal(
+    afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.symbolic?.renderText.includes("."),
+    false,
+    "symbolic render text never uses decimal notation",
+  );
+
   const euclidDraftConstantBlocked = applyKeyAction(
     applyKeyAction(fullyUnlocked, "#"),
     "pi",

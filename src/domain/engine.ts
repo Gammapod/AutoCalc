@@ -1,7 +1,8 @@
 import { addInt, divInt, mulInt, subInt } from "../infra/math/rationalEngine.js";
 import { euclideanDivide } from "../infra/math/euclideanEngine.js";
+import { parseSimplifiedTextToExactRational, simplifyExpressionToText } from "../infra/math/symbolicAdapter.js";
 import { calculatorValueToExpression, isRationalCalculatorValue, toExpressionCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue } from "./calculatorValue.js";
-import { intExpr, normalizeExpression, slotOperandToExpression } from "./expression.js";
+import { expressionToDisplayString, intExpr, normalizeExpression, slotOperandToExpression } from "./expression.js";
 import type { CalculatorValue, ExpressionValue, RationalValue, Slot } from "./types.js";
 
 export type ExecuteSlotsResult =
@@ -92,9 +93,96 @@ const applyBinaryExpression = (
   return null;
 };
 
+const applyBinaryExpressionRaw = (
+  left: ExpressionValue,
+  operator: Slot["operator"],
+  right: ExpressionValue,
+): ExpressionValue | null => {
+  if (operator === "+") {
+    return { type: "binary", op: "add", left, right };
+  }
+  if (operator === "-") {
+    return { type: "binary", op: "sub", left, right };
+  }
+  if (operator === "*") {
+    return { type: "binary", op: "mul", left, right };
+  }
+  if (operator === "/") {
+    return { type: "binary", op: "div", left, right };
+  }
+  return null;
+};
+
 export type ExecuteSlotsValueResult =
   | { ok: true; total: CalculatorValue; euclidRemainder?: RationalValue }
   | { ok: false; reason: "division_by_zero" | "nan_input" | "unsupported_symbolic" };
+
+export type BuildSymbolicExpressionResult =
+  | { ok: true; expression: ExpressionValue }
+  | { ok: false; reason: "nan_input" | "unsupported_symbolic" };
+
+export const buildSymbolicExpression = (total: CalculatorValue, slots: Slot[]): BuildSymbolicExpressionResult => {
+  if (total.kind === "nan") {
+    return { ok: false, reason: "nan_input" };
+  }
+  let currentExpression = calculatorValueToExpression(total);
+  if (!currentExpression) {
+    return { ok: false, reason: "nan_input" };
+  }
+  for (const slot of slots) {
+    if (slot.operator === "#" || slot.operator === "\u27E1") {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
+    const right = typeof slot.operand === "bigint" ? intExpr(slot.operand) : slotOperandToExpression(slot.operand);
+    const applied = applyBinaryExpressionRaw(currentExpression, slot.operator, right);
+    if (!applied) {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
+    currentExpression = applied;
+  }
+  return { ok: true, expression: currentExpression };
+};
+
+export type SymbolicEvaluation = {
+  simplifiedText: string;
+  isExactRational: boolean;
+  rationalValue?: RationalValue;
+};
+
+export type SymbolicEvaluationError = {
+  reason: "cas_error" | "non_rational" | "unsupported_expression";
+};
+
+export type EvaluateSymbolicExpressionResult =
+  | { ok: true; value: SymbolicEvaluation }
+  | { ok: false; error: SymbolicEvaluationError; simplifiedText: string };
+
+export const evaluateSymbolicExpression = (expression: ExpressionValue): EvaluateSymbolicExpressionResult => {
+  const simplified = simplifyExpressionToText(expression);
+  if (!simplified.ok) {
+    return {
+      ok: false,
+      error: { reason: simplified.reason },
+      simplifiedText: expressionToDisplayString(expression),
+    };
+  }
+  const rationalValue = parseSimplifiedTextToExactRational(simplified.text);
+  if (!rationalValue) {
+    return {
+      ok: false,
+      error: { reason: "non_rational" },
+      simplifiedText: simplified.text,
+    };
+  }
+  return {
+    ok: true,
+    value: {
+      simplifiedText: simplified.text,
+      isExactRational: true,
+      rationalValue,
+    },
+  };
+};
 
 export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): ExecuteSlotsValueResult => {
   if (total.kind === "nan") {

@@ -2188,6 +2188,7 @@
       body[data-ui-shell="mobile"] .v2-algebraic-equation,
       body[data-ui-shell="desktop"] .v2-algebraic-equation {
         width: 100%;
+        max-width: 100%;
         overflow-x: auto;
         overflow-y: hidden;
         text-align: center;
@@ -2211,17 +2212,42 @@
         color: #f2cf57;
       }
 
-      body[data-ui-shell="mobile"] .v2-algebraic-function-line,
-      body[data-ui-shell="desktop"] .v2-algebraic-function-line {
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-row,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-row {
+        width: 100%;
         position: absolute;
         left: 10px;
         right: 10px;
         bottom: 8px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-function,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-function,
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-seed,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-seed {
         font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
         font-size: 0.76rem;
-        line-height: 1;
+        line-height: 1.25;
         color: #b4f1d3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-function,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-function {
+        flex: 1 1 auto;
         text-align: left;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-seed,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-seed {
+        flex: 0 0 auto;
+        text-align: right;
       }
 
       body[data-ui-shell="mobile"] .v2-eigen-equation,
@@ -2665,6 +2691,7 @@
     </div>
     <script src="./node_modules/katex/dist/katex.min.js"></script>
     <script src="./node_modules/chart.js/dist/chart.umd.min.js"></script>
+    <script src="./node_modules/algebrite/dist/algebrite.bundle-for-browser.js"></script>
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>

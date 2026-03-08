@@ -1,3 +1,4 @@
+import Algebrite from "algebrite";
 import { runEngineTests } from "./engine.test.js";
 import { runReducerInputTests } from "./reducer.input.test.js";
 import { runReducerLayoutTests } from "./reducer.layout.test.js";
@@ -46,6 +47,7 @@ import { runUiModuleCircleVisualizerV2Tests } from "./uiModule.circleVisualizer.
 import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
 import { runUiModuleStorageV2Tests } from "./uiModule.storage.v2.test.js";
 import { runUiModuleInputV2Tests } from "./uiModule.input.v2.test.js";
+import { runUiModuleAlgebraicRendererV2Tests } from "./uiModule.algebraicRenderer.v2.test.js";
 import { runUiLayoutEngineTests } from "./uiLayoutEngine.test.js";
 import { runUiMotionCoordinatorTests } from "./uiMotionCoordinator.test.js";
 import { runUiCueLifecycleTests } from "./uiCueLifecycle.test.js";
@@ -127,6 +129,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
   ["ui-module/storage-v2", runUiModuleStorageV2Tests],
   ["ui-module/input-v2", runUiModuleInputV2Tests],
+  ["ui-module/algebraic-renderer-v2", runUiModuleAlgebraicRendererV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/circle-visualizer-v2", runUiModuleCircleVisualizerV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
@@ -164,6 +167,11 @@ const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));
 const grepPattern = grepArg ? grepArg.slice("--grep=".length) : "";
 const testFilter = grepPattern.length > 0 ? new RegExp(grepPattern) : null;
 const testsToRun = testFilter ? tests.filter(([name]) => testFilter.test(name)) : tests;
+
+// Runtime symbolic adapter reads Algebrite from global scope to stay browser-compatible.
+(
+  globalThis as typeof globalThis & { Algebrite?: unknown }
+).Algebrite = Algebrite;
 
 if (testsToRun.length === 0) {
   throw new Error(`No tests matched filter pattern: ${grepPattern}`);

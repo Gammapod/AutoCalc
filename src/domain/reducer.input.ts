@@ -15,8 +15,8 @@ import {
   toNanCalculatorValue,
   toRationalCalculatorValue,
 } from "./calculatorValue.js";
-import { intExpr, parseExpressionOrNull, slotOperandToExpression } from "./expression.js";
-import { executeSlotsValue } from "./engine.js";
+import { expressionToDisplayString, intExpr, parseExpressionOrNull, slotOperandToExpression } from "./expression.js";
+import { buildSymbolicExpression, evaluateSymbolicExpression, executeSlotsValue } from "./engine.js";
 import {
   applyDigitInput,
   applyNegateInput,
@@ -292,21 +292,30 @@ type EvaluatedExecution = {
 
 const SYMBOLIC_RENDER_CHAR_CAP = 160;
 
-const toSymbolicPayload = (exprText: string): NonNullable<RollEntry["symbolic"]> => {
-  const truncated = exprText.length > SYMBOLIC_RENDER_CHAR_CAP;
+const toSymbolicPayload = (exprText: string, renderText: string = exprText): NonNullable<RollEntry["symbolic"]> => {
+  const truncated = renderText.length > SYMBOLIC_RENDER_CHAR_CAP;
   return {
     exprText,
     truncated,
-    renderText: truncated ? exprText.slice(0, SYMBOLIC_RENDER_CHAR_CAP) : exprText,
+    renderText: truncated ? renderText.slice(0, SYMBOLIC_RENDER_CHAR_CAP) : renderText,
   };
 };
 
-const toSymbolicExecution = (exprText: string): EvaluatedExecution => ({
+const toSymbolicExecution = (exprText: string, renderText: string = exprText): EvaluatedExecution => ({
   nextTotal: toNanCalculatorValue(),
   errorCode: "ALG",
   errorKind: "symbolic_result",
-  symbolic: toSymbolicPayload(exprText),
+  symbolic: toSymbolicPayload(exprText, renderText),
 });
+
+const buildBuilderExpressionSignature = (slots: GameState["calculator"]["operationSlots"]): string => {
+  let signature = "f_n(x)";
+  for (const slot of slots) {
+    const operand = typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand));
+    signature = `(${signature}${slot.operator}${operand})`;
+  }
+  return signature;
+};
 
 const applyOverflowPolicy = (value: RationalValue, maxDigits: number): EvaluatedExecution => {
   const boundary = computeOverflowBoundary(maxDigits);
@@ -390,8 +399,31 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
   }
 
   if (!isRationalCalculatorValue(execution.total)) {
+    if (execution.total.kind !== "expr") {
+      return {
+        nextTotal: toNanCalculatorValue(),
+        errorCode: NAN_INPUT_ERROR_CODE,
+        errorKind: "nan_input",
+      };
+    }
+    const symbolicExpression = buildSymbolicExpression(currentTotal, state.calculator.operationSlots);
+    const expressionForEvaluation = symbolicExpression.ok ? symbolicExpression.expression : execution.total.value;
+    const expressionKey = buildBuilderExpressionSignature(state.calculator.operationSlots);
+    const symbolicEvaluation = evaluateSymbolicExpression(expressionForEvaluation);
+    const symbolicText = symbolicEvaluation.ok
+      ? symbolicEvaluation.value.simplifiedText
+      : symbolicEvaluation.simplifiedText;
+    if (!symbolicEvaluation.ok) {
+      return toSymbolicExecution(expressionKey, symbolicText);
+    }
+    const rationalized = symbolicEvaluation.value.rationalValue;
+    if (!rationalized) {
+      return toSymbolicExecution(expressionKey, symbolicText);
+    }
+    const overflowChecked = applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits);
     return {
-      ...toSymbolicExecution(calculatorValueToDisplayString(execution.total)),
+      ...overflowChecked,
+      symbolic: toSymbolicPayload(expressionKey, symbolicText),
       ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
     };
   }

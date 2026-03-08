@@ -3,25 +3,14 @@
   "configurations": [
     {
       "name": "Debug AutoCalc (Server + Chrome)",
-      "type": "pwa-node",
+      "type": "pwa-chrome",
       "request": "launch",
-      "preLaunchTask": "npm: build:watch",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev:serve"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "serverReadyAction": {
-        "pattern": "SERVER_READY\\s+(https?://\\S+)",
-        "uriFormat": "%s",
-        "action": "debugWithChrome",
-        "webRoot": "${workspaceFolder}"
-      },
-      "outputCapture": "std",
-      "skipFiles": [
-        "<node_internals>/**"
+      "preLaunchTask": "debug: prepare",
+      "url": "http://localhost:4173/index.html",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
       ]
     },
     {

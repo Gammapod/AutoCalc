@@ -136,6 +136,8 @@ export type ErrorCode = "x∉[-R,R]" | "n/0" | "NaN" | "ALG";
 export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input" | "symbolic_result";
 
 export type SymbolicRollPayload = {
+  // Canonical symbolic evaluation payload used by algebraic visualizer.
+  // Present for both rational-accepted symbolic executions and ALG-rejected symbolic executions.
   exprText: string;
   truncated: boolean;
   renderText: string;

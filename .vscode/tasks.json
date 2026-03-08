@@ -34,8 +34,26 @@
       "label": "npm: dev:serve"
     },
     {
+      "label": "debug: ensure-server",
+      "type": "shell",
+      "command": "if (Test-NetConnection -ComputerName localhost -Port 4173 -WarningAction SilentlyContinue -InformationLevel Quiet) { Write-Output 'SERVER_READY http://localhost:4173/index.html' } else { npm run dev:serve }",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": ".*"
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "SERVER_READY",
+          "endsPattern": "SERVER_READY"
+        }
+      }
+    },
+    {
       "label": "debug: prepare",
-      "dependsOn": ["npm: build:watch", "npm: dev:serve"],
+      "dependsOn": ["npm: build:watch", "debug: ensure-server"],
       "dependsOrder": "parallel"
     }
   ]
