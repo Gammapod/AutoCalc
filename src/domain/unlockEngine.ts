@@ -10,6 +10,7 @@ import type {
   AllocatorReturnPressCountAtLeastPredicate,
   AllocatorAllocatePressCountAtLeastPredicate,
   DivisionByZeroErrorSeenPredicate,
+  SymbolicErrorSeenPredicate,
   OverflowErrorSeenPredicate,
   KeyPressCountAtLeastPredicate,
   OperationFirstEuclidEquivalentModuloPredicate,
@@ -249,6 +250,14 @@ const analyzeDivisionByZeroErrorSeen: PredicateAnalyzer<DivisionByZeroErrorSeenP
   };
 };
 
+const analyzeSymbolicErrorSeen: PredicateAnalyzer<SymbolicErrorSeenPredicate> = (_predicate, state) => {
+  const isMet = state.calculator.rollEntries.some((entry) => entry.error?.kind === "symbolic_result");
+  return {
+    isMet,
+    criteria: [{ label: "symbolic result observed", checked: isMet }],
+  };
+};
+
 const analyzeAllocatorReturnPressCountAtLeast: PredicateAnalyzer<AllocatorReturnPressCountAtLeastPredicate> = (
   predicate,
   state,
@@ -350,6 +359,7 @@ const analyzers = {
   key_press_count_at_least: analyzeKeyPressCountAtLeast,
   overflow_error_seen: analyzeOverflowErrorSeen,
   division_by_zero_error_seen: analyzeDivisionByZeroErrorSeen,
+  symbolic_error_seen: analyzeSymbolicErrorSeen,
   allocator_return_press_count_at_least: analyzeAllocatorReturnPressCountAtLeast,
   allocator_allocate_press_count_at_least: analyzeAllocatorAllocatePressCountAtLeast,
 } as const;

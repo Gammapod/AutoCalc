@@ -656,6 +656,10 @@
         display: none;
       }
 
+      .v2-algebraic-panel {
+        display: none;
+      }
+
       .display {
         border: 1px solid #515c6a;
         border-radius: 7px;
@@ -2130,6 +2134,57 @@
         pointer-events: auto;
       }
 
+      body[data-ui-shell="mobile"] .v2-algebraic-panel,
+      body[data-ui-shell="desktop"] .v2-algebraic-panel {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        padding: 8px 10px;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        gap: 6px;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="algebraic"] .v2-algebraic-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="algebraic"] .v2-algebraic-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-equation,
+      body[data-ui-shell="desktop"] .v2-algebraic-equation {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        text-align: center;
+        color: #b4f1d3;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-equation .katex-display,
+      body[data-ui-shell="desktop"] .v2-algebraic-equation .katex-display {
+        margin: 0;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-equation .katex,
+      body[data-ui-shell="desktop"] .v2-algebraic-equation .katex {
+        font-size: clamp(0.9rem, 2vw, 1rem);
+        color: #b4f1d3;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-truncated,
+      body[data-ui-shell="desktop"] .v2-algebraic-truncated {
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        color: #f2cf57;
+      }
+
       body[data-ui-shell="mobile"] .v2-eigen-equation,
       body[data-ui-shell="desktop"] .v2-eigen-equation {
         width: 100%;
@@ -2301,6 +2356,8 @@
         body[data-ui-shell="desktop"] .v2-circle-panel,
         body[data-ui-shell="mobile"] .v2-eigen-allocator-panel,
         body[data-ui-shell="desktop"] .v2-eigen-allocator-panel,
+        body[data-ui-shell="mobile"] .v2-algebraic-panel,
+        body[data-ui-shell="desktop"] .v2-algebraic-panel,
         body[data-ui-shell="mobile"] .v2-feed-panel,
         body[data-ui-shell="desktop"] .v2-feed-panel {
           transition-duration: 1ms;
@@ -2544,6 +2601,7 @@
                       <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
                       <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
                       <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
+                      <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                     </section>
                   </div>
                   <div class="display" data-slot></div>

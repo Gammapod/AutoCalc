@@ -102,6 +102,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "FEED" },
   { kind: "key", key: "CIRCLE" },
   { kind: "key", key: "GRAPH" },
+  { kind: "key", key: "ALG" },
   { kind: "key", key: "\u03BB" },
   { kind: "key", key: "/" },
   { kind: "key", key: "\u27E1" },

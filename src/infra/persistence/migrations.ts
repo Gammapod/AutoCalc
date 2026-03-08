@@ -200,6 +200,11 @@ export type SerializableRollEntryV13 = {
   y: string;
   remainder?: string;
   error?: SerializableRollErrorEntry;
+  symbolic?: {
+    exprText: string;
+    truncated: boolean;
+    renderText: string;
+  };
 };
 
 export type SerializableStateV13 = Omit<SerializableStateV12, "calculator"> & {
@@ -220,7 +225,7 @@ const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "pi", "e", "NEG"] as const
 const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190"] as const;
 const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] as const;
 const STEP_KEY_VALUES = ["\u23EF"] as const;
-const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "CIRCLE", "\u03BB"] as const;
+const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "CIRCLE", "\u03BB", "ALG"] as const;
 const EXEC_KEY_VALUES = ["=", "++", "--"] as const;
 const MEMORY_VARIABLE_VALUES: readonly MemoryVariable[] = ["α", "β", "γ"];
 const KEY_VALUES: readonly Key[] = [
@@ -236,11 +241,13 @@ const ERROR_CODE_VALUES: readonly ErrorCode[] = [
   "x∉[-R,R]",
   "n/0",
   "NaN",
+  "ALG",
 ];
 const EXECUTION_ERROR_KIND_VALUES: readonly ExecutionErrorKind[] = [
   "overflow",
   "division_by_zero",
   "nan_input",
+  "symbolic_result",
 ];
 const LEGACY_GRAPH_VISIBLE_FLAG = "graph.visible";
 const LEGACY_FEED_VISIBLE_FLAG = "feed.visible";
@@ -302,7 +309,14 @@ const normalizeActiveVisualizer = (value: unknown, flags: Record<string, boolean
   if (value === "none") {
     return "total";
   }
-  if (value === "total" || value === "graph" || value === "feed" || value === "circle" || value === "eigen_allocator") {
+  if (
+    value === "total" ||
+    value === "graph" ||
+    value === "feed" ||
+    value === "circle" ||
+    value === "algebraic" ||
+    value === "eigen_allocator"
+  ) {
     return value;
   }
   return resolveLegacyActiveVisualizerFromFlags(flags);
@@ -1156,11 +1170,21 @@ const isRollErrorEntry = (value: unknown): value is SerializableRollErrorEntry =
   isString(value.kind) &&
   EXECUTION_ERROR_KIND_VALUES.includes(value.kind as ExecutionErrorKind);
 
+const isSerializableSymbolicRollPayload = (
+  value: unknown,
+): value is NonNullable<SerializableRollEntryV13["symbolic"]> =>
+  isObject(value) &&
+  isString(value.exprText) &&
+  isBoolean(value.truncated) &&
+  isString(value.renderText) &&
+  value.renderText.length <= 160;
+
 const isSerializableRollEntryV13 = (value: unknown): value is SerializableRollEntryV13 =>
   isObject(value) &&
   isCalculatorValueString(value.y) &&
   (value.remainder === undefined || isRationalString(value.remainder)) &&
-  (value.error === undefined || isRollErrorEntry({ ...value.error, rollIndex: 0 }));
+  (value.error === undefined || isRollErrorEntry({ ...value.error, rollIndex: 0 })) &&
+  (value.symbolic === undefined || isSerializableSymbolicRollPayload(value.symbolic));
 
 export const validateSerializableStateV7 = (state: unknown): state is SerializableStateV7 => {
   if (!isObject(state) || !isObject(state.calculator) || !isObject(state.ui) || !isObject(state.unlocks)) {

@@ -6,6 +6,7 @@ import {
   clearEigenAllocatorVisualizerPanel,
   renderEigenAllocatorVisualizerPanel,
 } from "./eigenAllocatorRenderer.js";
+import { clearAlgebraicVisualizerPanel, renderAlgebraicVisualizerPanel } from "./algebraicRenderer.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -29,5 +30,10 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     id: "eigen_allocator",
     render: renderEigenAllocatorVisualizerPanel,
     clear: clearEigenAllocatorVisualizerPanel,
+  },
+  {
+    id: "algebraic",
+    render: renderAlgebraicVisualizerPanel,
+    clear: clearAlgebraicVisualizerPanel,
   },
 ];

@@ -80,6 +80,15 @@ const toSerializableState = (state: GameState): SerializableStateLatest => {
       y: serializeCalculatorValue(entry.y),
       ...(entry.remainder ? { remainder: toDisplayString(entry.remainder) } : {}),
       ...(entry.error ? { error: { ...entry.error, rollIndex: 0 } } : {}),
+      ...(entry.symbolic
+        ? {
+            symbolic: {
+              exprText: entry.symbolic.exprText,
+              truncated: entry.symbolic.truncated,
+              renderText: entry.symbolic.renderText,
+            },
+          }
+        : {}),
     })),
     operationSlots: state.calculator.operationSlots.map<SerializableSlot>((slot) => ({
       operator: slot.operator,
@@ -148,6 +157,15 @@ const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameSta
       y: deserializeCalculatorValue(entry.y),
       ...(entry.remainder ? { remainder: parseRational(entry.remainder) } : {}),
       ...(entry.error ? { error: { code: entry.error.code, kind: entry.error.kind } } : {}),
+      ...(entry.symbolic
+        ? {
+            symbolic: {
+              exprText: entry.symbolic.exprText,
+              truncated: entry.symbolic.truncated,
+              renderText: entry.symbolic.renderText,
+            },
+          }
+        : {}),
     })),
     operationSlots: payloadState.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,

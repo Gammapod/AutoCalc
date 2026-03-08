@@ -169,6 +169,13 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
   },
   {
+    key: "ALG",
+    lockModel: "unlockable",
+    unlockPathPolicy: "catalog",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
     key: "=",
     lockModel: "unlockable",
     unlockPathPolicy: "catalog",

@@ -20,6 +20,7 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "key_press_count_at_least",
   "overflow_error_seen",
   "division_by_zero_error_seen",
+  "symbolic_error_seen",
   "allocator_return_press_count_at_least",
   "allocator_allocate_press_count_at_least",
 ];
@@ -39,6 +40,7 @@ export type CapabilityId =
   | "roll_alternating_sign_constant_abs"
   | "roll_constant_step_run"
   | "division_by_zero_error"
+  | "symbolic_result_error"
   | "euclid_division_operator";
 
 export type NecessaryCapability = {
@@ -272,6 +274,20 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "division_by_zero_seen_via_exec_div_zero",
         allOf: ["execute_activation", "division_by_zero_error"],
         rationale: "Executing with a zero divisor records a division-by-zero error.",
+      },
+    ],
+  },
+  symbolic_error_seen: {
+    predicateType: "symbolic_error_seen",
+    necessary: [
+      { capability: "execute_activation", reason: "Symbolic outcomes are recorded on execution." },
+      { capability: "symbolic_result_error", reason: "Need a path that produces symbolic-output error entries." },
+    ],
+    sufficientSets: [
+      {
+        id: "symbolic_error_seen_via_symbolic_execution",
+        allOf: ["execute_activation", "symbolic_result_error"],
+        rationale: "Executing a symbolic expression records a symbolic-result error entry.",
       },
     ],
   },

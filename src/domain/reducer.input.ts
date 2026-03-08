@@ -273,7 +273,26 @@ type EvaluatedExecution = {
   euclidRemainder?: RationalValue;
   errorCode?: ErrorCode;
   errorKind?: ExecutionErrorKind;
+  symbolic?: RollEntry["symbolic"];
 };
+
+const SYMBOLIC_RENDER_CHAR_CAP = 160;
+
+const toSymbolicPayload = (exprText: string): NonNullable<RollEntry["symbolic"]> => {
+  const truncated = exprText.length > SYMBOLIC_RENDER_CHAR_CAP;
+  return {
+    exprText,
+    truncated,
+    renderText: truncated ? exprText.slice(0, SYMBOLIC_RENDER_CHAR_CAP) : exprText,
+  };
+};
+
+const toSymbolicExecution = (exprText: string): EvaluatedExecution => ({
+  nextTotal: toNanCalculatorValue(),
+  errorCode: "ALG",
+  errorKind: "symbolic_result",
+  symbolic: toSymbolicPayload(exprText),
+});
 
 const applyOverflowPolicy = (value: RationalValue, maxDigits: number): EvaluatedExecution => {
   const boundary = computeOverflowBoundary(maxDigits);
@@ -320,9 +339,8 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
         errorKind: "nan_input",
       };
     }
-    return {
-      nextTotal: toExpressionCalculatorValue({ type: "binary", op: "add", left: expr, right: intExpr(1n) }),
-    };
+    const symbolicValue = toExpressionCalculatorValue({ type: "binary", op: "add", left: expr, right: intExpr(1n) });
+    return toSymbolicExecution(calculatorValueToDisplayString(symbolicValue));
   }
   if (execKey === "--") {
     if (isRationalCalculatorValue(currentTotal)) {
@@ -337,9 +355,8 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
         errorKind: "nan_input",
       };
     }
-    return {
-      nextTotal: toExpressionCalculatorValue({ type: "binary", op: "sub", left: expr, right: intExpr(1n) }),
-    };
+    const symbolicValue = toExpressionCalculatorValue({ type: "binary", op: "sub", left: expr, right: intExpr(1n) });
+    return toSymbolicExecution(calculatorValueToDisplayString(symbolicValue));
   }
 
   const execution = executeSlotsValue(currentTotal, state.calculator.operationSlots);
@@ -360,7 +377,7 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
 
   if (!isRationalCalculatorValue(execution.total)) {
     return {
-      nextTotal: execution.total,
+      ...toSymbolicExecution(calculatorValueToDisplayString(execution.total)),
       ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
     };
   }
@@ -375,6 +392,7 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
 const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => ({
   y: evaluation.nextTotal,
   ...(evaluation.euclidRemainder && !evaluation.errorCode ? { remainder: evaluation.euclidRemainder } : {}),
+  ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
   ...(evaluation.errorCode && evaluation.errorKind
     ? {
       error: {

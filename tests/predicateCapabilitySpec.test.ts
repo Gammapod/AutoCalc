@@ -297,6 +297,20 @@ const proofFixtures: ProofFixture[] = [
     script: [],
   },
   {
+    id: "proof_symbolic_error_seen",
+    predicateType: "symbolic_error_seen",
+    sufficientSetId: "symbolic_error_seen_via_symbolic_execution",
+    predicate: { type: "symbolic_error_seen" },
+    buildInitialState: () => ({
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: [{ y: { kind: "nan" }, error: { code: "ALG", kind: "symbolic_result" } }],
+      },
+    }),
+    script: [],
+  },
+  {
     id: "proof_allocator_return_press_count_once",
     predicateType: "allocator_return_press_count_at_least",
     sufficientSetId: "allocator_return_press_count_by_return_click",

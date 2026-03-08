@@ -273,6 +273,9 @@ const getUnlockName = (effect: UnlockEffect): string => {
   if (effect.type === "unlock_execution") {
     return effect.key;
   }
+  if (effect.type === "unlock_visualizer") {
+    return effect.key;
+  }
   if (effect.type === "unlock_utility") {
     return effect.key;
   }

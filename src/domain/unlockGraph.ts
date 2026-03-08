@@ -127,7 +127,8 @@ const unlockEffectTarget = (effect: UnlockEffect): UnlockTargetDescriptor => {
     effect.type === "unlock_digit" ||
     effect.type === "unlock_slot_operator" ||
     effect.type === "unlock_utility" ||
-    effect.type === "unlock_execution"
+    effect.type === "unlock_execution" ||
+    effect.type === "unlock_visualizer"
   ) {
     return {
       id: `key.${effect.key}`,

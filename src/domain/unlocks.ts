@@ -117,16 +117,18 @@ const isUnlockKeyEffect = (
   | Extract<UnlockEffect, { type: "unlock_digit" }>
   | Extract<UnlockEffect, { type: "unlock_slot_operator" }>
   | Extract<UnlockEffect, { type: "unlock_execution" }>
+  | Extract<UnlockEffect, { type: "unlock_visualizer" }>
   | Extract<UnlockEffect, { type: "unlock_utility" }> =>
   effect.type === "unlock_digit" ||
   effect.type === "unlock_slot_operator" ||
+  effect.type === "unlock_visualizer" ||
   effect.type === "unlock_execution" ||
   effect.type === "unlock_utility";
 
 const keyFromUnlockEffect = (
   effect: Extract<
     UnlockEffect,
-    { type: "unlock_digit" } | { type: "unlock_slot_operator" } | { type: "unlock_execution" } | { type: "unlock_utility" }
+    { type: "unlock_digit" } | { type: "unlock_slot_operator" } | { type: "unlock_execution" } | { type: "unlock_visualizer" } | { type: "unlock_utility" }
   >,
 ): Key => effect.key;
 

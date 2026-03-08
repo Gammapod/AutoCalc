@@ -241,4 +241,14 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetNodeId: "Alloc_maxPoints_plus_1_on_value_8675309",
     targetLabel: "\u03BB++",
   },
+  {
+    id: "unlock_alg_visualizer_on_first_symbolic_result",
+    description: "See algebraic outcomes.",
+    predicate: { type: "symbolic_error_seen" },
+    effect: { type: "unlock_visualizer", key: "ALG" },
+    once: true,
+    domainNodeId: "NA",
+    targetNodeId: "Valg_unlock_symbolic_result",
+    targetLabel: "ALG",
+  },
 ];

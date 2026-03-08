@@ -58,6 +58,8 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
   const divideKey = hasKey("/") ? "/" : null;
   const zeroKey = hasKey("0") ? "0" : null;
   const euclidKey = hasKey("#") ? "#" : null;
+  const piKey = hasKey("pi") ? "pi" : null;
+  const eKey = hasKey("e") ? "e" : null;
 
   const operatorClauses = operatorKeysList.map((operator) => [operator]);
   const executeActivationClauses = executeKeys.map((key) => [key]);
@@ -198,6 +200,17 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
       rule: "# is unlocked",
       sufficiency: uniqueClauses(euclidKey ? [clause(euclidKey)] : []),
     },
+    {
+      id: "fn.symbolic_result_error",
+      label: "symbolic_result_error",
+      rule: "any execute key plus at least one symbolic atom key is unlocked",
+      sufficiency: uniqueClauses(
+        executeKeys.flatMap((executeKey) => [
+          ...(piKey ? [[executeKey, piKey]] : []),
+          ...(eKey ? [[executeKey, eKey]] : []),
+        ]),
+      ),
+    },
   ];
 
   for (const provider of providers) {
@@ -229,6 +242,7 @@ export const buildCapabilityToProviderIndex = (
   roll_constant_step_run: ["fn.roll_constant_step_run"],
   division_by_zero_error: ["fn.division_by_zero_error"],
   euclid_division_operator: ["fn.euclid_division_operator"],
+  symbolic_result_error: ["fn.symbolic_result_error"],
 });
 
 export const capabilityToFunctionProviderIds = buildCapabilityToProviderIndex(staticFunctionCapabilityProviders);

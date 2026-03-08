@@ -131,9 +131,15 @@ export type CalculatorValue =
       kind: "nan";
     };
 
-export type ErrorCode = "x∉[-R,R]" | "n/0" | "NaN";
+export type ErrorCode = "x∉[-R,R]" | "n/0" | "NaN" | "ALG";
 
-export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input";
+export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input" | "symbolic_result";
+
+export type SymbolicRollPayload = {
+  exprText: string;
+  truncated: boolean;
+  renderText: string;
+};
 
 export type RollEntry = {
   y: CalculatorValue;
@@ -142,6 +148,7 @@ export type RollEntry = {
     code: ErrorCode;
     kind: ExecutionErrorKind;
   };
+  symbolic?: SymbolicRollPayload;
 };
 
 export type RollDomainType = "natural" | "non_positive_integer" | "rational_non_integer";
@@ -301,6 +308,10 @@ export type DivisionByZeroErrorSeenPredicate = {
   type: "division_by_zero_error_seen";
 };
 
+export type SymbolicErrorSeenPredicate = {
+  type: "symbolic_error_seen";
+};
+
 export type AllocatorReturnPressCountAtLeastPredicate = {
   type: "allocator_return_press_count_at_least";
   count: number;
@@ -329,6 +340,7 @@ export type UnlockPredicate =
   | KeyPressCountAtLeastPredicate
   | OverflowErrorSeenPredicate
   | DivisionByZeroErrorSeenPredicate
+  | SymbolicErrorSeenPredicate
   | AllocatorReturnPressCountAtLeastPredicate
   | AllocatorAllocatePressCountAtLeastPredicate;
 
@@ -355,6 +367,11 @@ export type UnlockSlotOperatorEffect = {
 export type UnlockExecutionEffect = {
   type: "unlock_execution";
   key: ExecKey;
+};
+
+export type UnlockVisualizerEffect = {
+  type: "unlock_visualizer";
+  key: VisualizerKey;
 };
 
 export type UnlockDigitEffect = {
@@ -388,6 +405,7 @@ export type UnlockEffect =
   | IncreaseAllocatorMaxPointsEffect
   | UnlockSlotOperatorEffect
   | UnlockExecutionEffect
+  | UnlockVisualizerEffect
   | UnlockDigitEffect
   | UnlockSecondSlotEffect
   | UpgradeKeypadColumnEffect

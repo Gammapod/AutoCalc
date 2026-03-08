@@ -66,8 +66,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total");
   assert.deepEqual(
     VISUALIZER_REGISTRY.map((module) => module.id),
-    ["graph", "feed", "circle", "eigen_allocator"],
-    "visualizer registry preserves graph/feed/circle order with eigen allocator support",
+    ["graph", "feed", "circle", "eigen_allocator", "algebraic"],
+    "visualizer registry preserves graph/feed/circle order with eigen allocator and algebraic support",
   );
 
   const withGraphOn: GameState = {
@@ -138,6 +138,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const renderFeedPanel = createFakeElement();
   const renderCirclePanel = createFakeElement();
   const renderEigenAllocatorPanel = createFakeElement();
+  const renderAlgebraicPanel = createFakeElement();
   const renderTotalPanel = createFakeElement();
   renderFeedPanel.innerHTML = "stale";
   renderFeedPanel.attributes["aria-hidden"] = "false";
@@ -164,6 +165,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return renderEigenAllocatorPanel as unknown as Element;
       }
+      if (selector === "[data-v2-algebraic-panel]") {
+        return renderAlgebraicPanel as unknown as Element;
+      }
       return null;
     },
   };
@@ -180,6 +184,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderCirclePanel.attributes["aria-hidden"], "true", "inactive circle panel is hidden during graph render");
   assert.equal(renderEigenAllocatorPanel.innerHTML, "", "inactive eigen allocator panel is cleared during graph render");
   assert.equal(renderEigenAllocatorPanel.attributes["aria-hidden"], "true", "inactive eigen allocator panel is hidden during graph render");
+  assert.equal(renderAlgebraicPanel.innerHTML, "", "inactive algebraic panel is cleared during graph render");
+  assert.equal(renderAlgebraicPanel.attributes["aria-hidden"], "true", "inactive algebraic panel is hidden during graph render");
   assert.equal(renderTotalPanel.attributes["aria-hidden"], "true", "inactive total panel is hidden during graph render");
   const withFeedOn: GameState = {
     ...withGraphOn,
@@ -200,6 +206,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const feedPanel = createFakeElement();
   const circlePanel = createFakeElement();
   const eigenAllocatorPanel = createFakeElement();
+  const algebraicPanel = createFakeElement();
   const totalPanel = createFakeElement();
   feedPanel.innerHTML = "stale";
   feedPanel.attributes["aria-hidden"] = "false";
@@ -227,6 +234,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return eigenAllocatorPanel as unknown as Element;
       }
+      if (selector === "[data-v2-algebraic-panel]") {
+        return algebraicPanel as unknown as Element;
+      }
       return null;
     },
   };
@@ -234,9 +244,11 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(feedPanel.innerHTML, "", "clearVisualizerHost clears feed rows");
   assert.equal(circlePanel.innerHTML, "", "clearVisualizerHost clears circle panel");
   assert.equal(eigenAllocatorPanel.innerHTML, "", "clearVisualizerHost clears eigen allocator panel");
+  assert.equal(algebraicPanel.innerHTML, "", "clearVisualizerHost clears algebraic panel");
   assert.equal(feedPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides feed panel");
   assert.equal(circlePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides circle panel");
   assert.equal(eigenAllocatorPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides eigen allocator panel");
+  assert.equal(algebraicPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides algebraic panel");
   assert.equal(graphDevice.attributes["aria-hidden"], "true", "clearVisualizerHost hides graph panel");
   assert.equal(totalPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides total panel");
   assert.equal(host.attributes["aria-hidden"], "true", "clearVisualizerHost hides host");
@@ -247,6 +259,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const firstFeedPanel = createFakeElement();
   const firstCirclePanel = createFakeElement();
   const firstEigenAllocatorPanel = createFakeElement();
+  const firstAlgebraicPanel = createFakeElement();
   const firstTotalPanel = createFakeElement();
   const firstRoot: RootLike = {
     querySelector: (selector: string) => {
@@ -268,6 +281,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return firstEigenAllocatorPanel as unknown as Element;
       }
+      if (selector === "[data-v2-algebraic-panel]") {
+        return firstAlgebraicPanel as unknown as Element;
+      }
       return null;
     },
   };
@@ -277,6 +293,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const secondFeedPanel = createFakeElement();
   const secondCirclePanel = createFakeElement();
   const secondEigenAllocatorPanel = createFakeElement();
+  const secondAlgebraicPanel = createFakeElement();
   const secondTotalPanel = createFakeElement();
   const secondRoot: RootLike = {
     querySelector: (selector: string) => {
@@ -297,6 +314,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return secondEigenAllocatorPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-algebraic-panel]") {
+        return secondAlgebraicPanel as unknown as Element;
       }
       return null;
     },

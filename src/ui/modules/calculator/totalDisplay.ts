@@ -17,6 +17,7 @@ const renderSevenSegmentValue = (
   value: CalculatorValue,
   unlockedDigits: number,
   pendingNegative: boolean,
+  nanLabel: string = "NaN",
 ): void => {
   const rationalValue = isRationalCalculatorValue(value) ? value.value : null;
   const isNaNValue = value.kind === "nan";
@@ -35,7 +36,7 @@ const renderSevenSegmentValue = (
   if (isNaNValue) {
     const fraction = document.createElement("div");
     fraction.className = "seg-fraction";
-    fraction.textContent = "NaN";
+    fraction.textContent = nanLabel;
     target.appendChild(fraction);
     return;
   }
@@ -127,6 +128,8 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   };
 
   const latestRollEntry = state.calculator.rollEntries.at(-1);
+  const latestErrorCode = latestRollEntry?.error?.code;
+  const shouldDisplayAlgLabel = latestErrorCode === "ALG";
   const domainValue = latestRollEntry?.y ?? state.calculator.total;
   const totalIsNaN = state.calculator.total.kind === "nan";
   const hasLatestRollError = Boolean(state.calculator.rollEntries.at(-1)?.error);
@@ -193,8 +196,14 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     totalEl.setAttribute("aria-label", "Total _");
     return;
   }
-  totalEl.setAttribute("aria-label", `Total ${calculatorValueToDisplayString(state.calculator.total)}`);
-  renderSevenSegmentValue(primaryDisplay, state.calculator.total, state.unlocks.maxTotalDigits, state.calculator.pendingNegativeTotal);
+  totalEl.setAttribute("aria-label", `Total ${shouldDisplayAlgLabel ? "ALG" : calculatorValueToDisplayString(state.calculator.total)}`);
+  renderSevenSegmentValue(
+    primaryDisplay,
+    state.calculator.total,
+    state.unlocks.maxTotalDigits,
+    state.calculator.pendingNegativeTotal,
+    shouldDisplayAlgLabel ? "ALG" : "NaN",
+  );
   stack.appendChild(primaryDisplay);
   stack.appendChild(buildMemoryStatusRow());
   totalEl.appendChild(stack);
