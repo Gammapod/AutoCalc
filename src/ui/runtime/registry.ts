@@ -14,6 +14,8 @@ const createRootRuntime = (): UiRootRuntime => ({
   storage: createModuleRuntime(),
   input: createModuleRuntime(),
   visualizerHost: createModuleRuntime(),
+  grapher: createModuleRuntime(),
+  shell: createModuleRuntime(),
 });
 
 export const getOrCreateRuntime = (root: Element): UiRootRuntime => {
@@ -27,6 +29,9 @@ export const getOrCreateRuntime = (root: Element): UiRootRuntime => {
   return created;
 };
 
+export const getRuntimeIfExists = (root: Element): UiRootRuntime | undefined =>
+  runtimeByRoot.get(root);
+
 export const disposeRuntime = (root: Element): void => {
   const runtime = runtimeByRoot.get(root);
   if (!runtime) {
@@ -36,6 +41,8 @@ export const disposeRuntime = (root: Element): void => {
   runtime.storage.dispose();
   runtime.input.dispose();
   runtime.visualizerHost.dispose();
+  runtime.grapher.dispose();
+  runtime.shell.dispose();
   runtimeByRoot.delete(root);
   runtimes.delete(runtime);
 };
@@ -46,9 +53,19 @@ export const resetAllUiRuntimeForTests = (): void => {
     runtime.storage.state = {};
     runtime.input.state = {};
     runtime.visualizerHost.state = {};
+    runtime.grapher.state = {};
+    runtime.shell.state = {};
     runtime.calculator.resetForTests?.();
     runtime.storage.resetForTests?.();
     runtime.input.resetForTests?.();
     runtime.visualizerHost.resetForTests?.();
+    runtime.grapher.resetForTests?.();
+    runtime.shell.resetForTests?.();
+  }
+};
+
+export const forEachUiRootRuntime = (visitor: (runtime: UiRootRuntime) => void): void => {
+  for (const runtime of runtimes) {
+    visitor(runtime);
   }
 };

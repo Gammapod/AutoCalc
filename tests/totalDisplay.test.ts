@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildClearedTotalSlotModel, buildTotalSlotModel, isClearedCalculatorState } from "../src/ui/modules/calculatorModuleRenderer.js";
+import { buildClearedTotalSlotModel, buildTotalSlotModel, isClearedCalculatorState } from "../src/ui/modules/calculator/viewModel.js";
 import { initialState } from "../src/domain/state.js";
 import type { RollEntry } from "../src/domain/types.js";
 

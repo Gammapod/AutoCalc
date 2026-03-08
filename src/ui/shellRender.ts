@@ -7,7 +7,7 @@ import { renderChecklistV2Module } from "./modules/checklistRenderer.js";
 import { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
 import { clearVisualizerHost, renderVisualizerHost } from "./modules/visualizerHost.js";
 import { awaitMotionSettled, beginMotionCycle, completeMotionCycle } from "./layout/motionLifecycleBridge.js";
-import { disposeRuntime } from "./runtime/registry.js";
+import { forEachUiRootRuntime, getOrCreateRuntime, getRuntimeIfExists } from "./runtime/registry.js";
 
 export type ShellRenderer = {
   render: (state: GameState, dispatch: (action: Action) => unknown, options?: ShellRenderOptions) => void;
@@ -76,9 +76,6 @@ type MenuA11yState = {
 const MENU_CLOSE_SWIPE_DISTANCE_PX = 96;
 const MENU_OPEN_SWIPE_DISTANCE_PX = 28;
 type DrawerDragTarget = "middle" | "bottom";
-
-const rendererCache = new WeakMap<Element, ShellRenderer>();
-const rendererRegistry = new Set<ShellRenderer>();
 
 const isSurfaceValue = (value: string | undefined): value is LayoutSurface => value === "keypad" || value === "storage";
 
@@ -1121,7 +1118,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   const dispose = (): void => {
     touchRearrange.cancel();
     clearVisualizerHost(root);
-    disposeRuntime(root);
     for (const cleanup of cleanupListeners.splice(0)) {
       cleanup();
     }
@@ -1164,27 +1160,39 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
 };
 
 export const renderWithShell = (root: Element, state: GameState, dispatch: (action: Action) => unknown): void => {
-  let renderer = rendererCache.get(root);
+  const shellRuntime = getOrCreateRuntime(root).shell;
+  let renderer = shellRuntime.state.shellRenderer as ShellRenderer | undefined;
   if (!renderer) {
     renderer = createShellRenderer(root);
-    rendererCache.set(root, renderer);
-    rendererRegistry.add(renderer);
+    shellRuntime.state.shellRenderer = renderer;
+    shellRuntime.dispose = () => {
+      renderer?.dispose();
+      shellRuntime.state.shellRenderer = undefined;
+    };
+    shellRuntime.resetForTests = () => {
+      renderer?.resetForTests();
+    };
   }
   renderer.render(state, dispatch);
 };
 
 export const disposeShellRenderer = (root: Element): void => {
-  const renderer = rendererCache.get(root);
+  const rootRuntime = getRuntimeIfExists(root);
+  if (!rootRuntime) {
+    return;
+  }
+  const shellRuntime = rootRuntime.shell;
+  const renderer = shellRuntime.state.shellRenderer as ShellRenderer | undefined;
   if (!renderer) {
     return;
   }
   renderer.dispose();
-  rendererRegistry.delete(renderer);
-  rendererCache.delete(root);
+  shellRuntime.state.shellRenderer = undefined;
 };
 
 export const resetShellRuntimeForTests = (): void => {
-  for (const renderer of rendererRegistry) {
-    renderer.resetForTests();
-  }
+  forEachUiRootRuntime((runtime) => {
+    const renderer = runtime.shell.state.shellRenderer as ShellRenderer | undefined;
+    renderer?.resetForTests();
+  });
 };

@@ -1,6 +1,7 @@
 import type { GameState } from "../../domain/types.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
 import { resolveGraphSeedSnapshot } from "./visualizers/seedSnapshot.js";
+import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
 
 type GraphDataset = {
   data: GraphPoint[];
@@ -69,20 +70,32 @@ type GrapherRuntime = {
   graphCanvas: HTMLCanvasElement | null;
 };
 
-const grapherRuntimeByRoot = new WeakMap<Element, GrapherRuntime>();
-const grapherRuntimes = new Set<GrapherRuntime>();
+const createGrapherRuntime = (): GrapherRuntime => ({
+  graphChart: null,
+  graphCanvas: null,
+});
+
+const clearGrapherRuntime = (runtime: GrapherRuntime): void => {
+  runtime.graphChart?.destroy();
+  runtime.graphChart = null;
+  runtime.graphCanvas = null;
+};
 
 const getGrapherRuntime = (root: Element): GrapherRuntime => {
-  const existing = grapherRuntimeByRoot.get(root);
+  const moduleRuntime = getOrCreateRuntime(root).grapher;
+  const existing = moduleRuntime.state.grapherModuleState as GrapherRuntime | undefined;
   if (existing) {
     return existing;
   }
-  const created: GrapherRuntime = {
-    graphChart: null,
-    graphCanvas: null,
+  const created = createGrapherRuntime();
+  moduleRuntime.state.grapherModuleState = created;
+  moduleRuntime.dispose = () => {
+    clearGrapherRuntime(created);
+    moduleRuntime.state.grapherModuleState = createGrapherRuntime();
   };
-  grapherRuntimeByRoot.set(root, created);
-  grapherRuntimes.add(created);
+  moduleRuntime.resetForTests = () => {
+    clearGrapherRuntime(created);
+  };
   return created;
 };
 
@@ -169,19 +182,15 @@ const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], maxXIndex: 
 
 export const clearGrapherV2Module = (root?: Element): void => {
   if (root) {
-    const runtime = grapherRuntimeByRoot.get(root);
-    runtime?.graphChart?.destroy();
-    if (runtime) {
-      runtime.graphChart = null;
-      runtime.graphCanvas = null;
-    }
+    clearGrapherRuntime(getGrapherRuntime(root));
     return;
   }
-  for (const runtime of grapherRuntimes) {
-    runtime.graphChart?.destroy();
-    runtime.graphChart = null;
-    runtime.graphCanvas = null;
-  }
+  forEachUiRootRuntime((runtime) => {
+    const grapherRuntime = runtime.grapher.state.grapherModuleState as GrapherRuntime | undefined;
+    if (grapherRuntime) {
+      clearGrapherRuntime(grapherRuntime);
+    }
+  });
 };
 
 export const renderGrapherV2Module = (root: Element, state: GameState): void => {

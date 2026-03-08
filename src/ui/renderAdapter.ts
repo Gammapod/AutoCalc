@@ -23,11 +23,11 @@ export { createTouchRearrangeController } from "./touchRearrangeController.js";
 export { renderChecklistV2Module } from "./modules/checklistRenderer.js";
 export { renderGrapherV2Module } from "./modules/grapherRenderer.js";
 export { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
-export { renderCalculatorV2Module } from "./modules/calculatorRenderer.js";
-export { renderStorageV2Module } from "./modules/storageRenderer.js";
+export { renderCalculatorV2Module } from "./modules/calculator/render.js";
+export { renderStorageV2Module } from "./modules/storage/render.js";
 export { renderInputV2Module } from "./modules/input/render.js";
 export { buildKeyButtonAction, buildLayoutDropDispatchAction, resolveCalculatorKeysLocked } from "./modules/calculatorStorageCore.js";
-export { playProgrammaticKeyPressFeedback } from "./modules/programmaticKeyFeedback.js";
+export { playProgrammaticKeyPressFeedback } from "./modules/input/pressFeedback.js";
 export { clearVisualizerHost, resolveActiveVisualizerPanel, renderVisualizerHost } from "./modules/visualizerHost.js";
 export { getOrCreateRuntime, disposeRuntime, resetAllUiRuntimeForTests } from "./runtime/registry.js";
 

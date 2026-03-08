@@ -21,10 +21,14 @@ export type CalculatorRuntime = UiModuleRuntime;
 export type StorageRuntime = UiModuleRuntime;
 export type InputRuntime = UiModuleRuntime;
 export type VisualizerHostRuntime = UiModuleRuntime;
+export type GrapherRuntime = UiModuleRuntime;
+export type ShellRuntime = UiModuleRuntime;
 
 export type UiRootRuntime = {
   calculator: CalculatorRuntime;
   storage: StorageRuntime;
   input: InputRuntime;
   visualizerHost: VisualizerHostRuntime;
+  grapher: GrapherRuntime;
+  shell: ShellRuntime;
 };

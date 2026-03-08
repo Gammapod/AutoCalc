@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { initialState } from "../src/domain/state.js";
 import { renderStorageV2Module } from "../src/ui/modules/storage/render.js";
@@ -34,14 +34,18 @@ export const runUiModuleStorageV2Tests = (): void => {
     harness.teardown();
   }
 
-  const storageRendererSource = readFileSync(
-    resolve(process.cwd(), "src/ui/modules/storageRenderer.ts"),
+  const renderAdapterSource = readFileSync(
+    resolve(process.cwd(), "src/ui/renderAdapter.ts"),
     "utf8",
   );
   assert.equal(
-    storageRendererSource.includes("calculatorModuleRenderer"),
+    renderAdapterSource.includes("./modules/storage/render.js"),
+    true,
+    "render adapter routes storage export to storage module owner path",
+  );
+  assert.equal(
+    existsSync(resolve(process.cwd(), "src/ui/modules/storageRenderer.ts")),
     false,
-    "storage renderer no longer imports calculatorModuleRenderer directly",
+    "storage wrapper file removed",
   );
 };
-

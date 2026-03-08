@@ -1,5 +1,6 @@
 import { getOrCreateRuntime } from "../../runtime/registry.js";
 import type { UiModuleRuntime } from "../../runtime/types.js";
+import type { CalculatorLayoutSnapshot, InteractionLayoutMode } from "../../layout/types.js";
 
 export type CalculatorModuleState = {
   pendingToggleAnimationByFlag: Record<string, "on" | "off">;
@@ -7,10 +8,20 @@ export type CalculatorModuleState = {
   keyLabelResizeBound: boolean;
 };
 
+export type CalculatorLayoutRuntimeState = {
+  previousSnapshot: CalculatorLayoutSnapshot | null;
+  previousInteractionMode: InteractionLayoutMode | null;
+};
+
 const createCalculatorModuleState = (): CalculatorModuleState => ({
   pendingToggleAnimationByFlag: {},
   previousUnlockSnapshot: null,
   keyLabelResizeBound: false,
+});
+
+const createCalculatorLayoutRuntimeState = (): CalculatorLayoutRuntimeState => ({
+  previousSnapshot: null,
+  previousInteractionMode: null,
 });
 
 export const getCalculatorModuleRuntime = (root: Element): UiModuleRuntime =>
@@ -24,11 +35,39 @@ export const getCalculatorModuleState = (root: Element): CalculatorModuleState =
   }
   const created = createCalculatorModuleState();
   runtime.state.calculatorModuleState = created;
+  runtime.dispose = () => {
+    created.pendingToggleAnimationByFlag = {};
+    created.previousUnlockSnapshot = null;
+    created.keyLabelResizeBound = false;
+    const layoutRuntime = runtime.state.calculatorLayoutRuntimeState as CalculatorLayoutRuntimeState | undefined;
+    if (layoutRuntime) {
+      layoutRuntime.previousSnapshot = null;
+      layoutRuntime.previousInteractionMode = null;
+    }
+    runtime.state.calculatorModuleState = createCalculatorModuleState();
+    runtime.state.calculatorLayoutRuntimeState = createCalculatorLayoutRuntimeState();
+  };
   runtime.resetForTests = () => {
     created.pendingToggleAnimationByFlag = {};
     created.previousUnlockSnapshot = null;
     created.keyLabelResizeBound = false;
+    const layoutRuntime = runtime.state.calculatorLayoutRuntimeState as CalculatorLayoutRuntimeState | undefined;
+    if (layoutRuntime) {
+      layoutRuntime.previousSnapshot = null;
+      layoutRuntime.previousInteractionMode = null;
+    }
   };
+  return created;
+};
+
+export const getCalculatorLayoutRuntimeState = (root: Element): CalculatorLayoutRuntimeState => {
+  const runtime = getCalculatorModuleRuntime(root);
+  const existing = runtime.state.calculatorLayoutRuntimeState as CalculatorLayoutRuntimeState | undefined;
+  if (existing) {
+    return existing;
+  }
+  const created = createCalculatorLayoutRuntimeState();
+  runtime.state.calculatorLayoutRuntimeState = created;
   return created;
 };
 

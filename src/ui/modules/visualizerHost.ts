@@ -1,6 +1,7 @@
 import type { GameState } from "../../domain/types.js";
 import { VISUALIZER_REGISTRY } from "./visualizers/registry.js";
 import type { VisualizerHostPanel } from "./visualizers/types.js";
+import { getOrCreateRuntime } from "../runtime/registry.js";
 
 type VisualizerTransitionPhase = "idle" | "enter" | "exit" | "swap";
 
@@ -14,8 +15,6 @@ type VisualizerHostRuntime = {
 
 const TRANSITION_DURATION_MS = 220;
 const LOCK_HEIGHT_VAR = "--v2-visualizer-lock-height";
-const hostRuntimeByRoot = new WeakMap<Element, VisualizerHostRuntime>();
-const hostRuntimes = new Set<VisualizerHostRuntime>();
 
 const createHostRuntime = (): VisualizerHostRuntime => ({
   previousActivePanel: "total",
@@ -26,13 +25,20 @@ const createHostRuntime = (): VisualizerHostRuntime => ({
 });
 
 const getHostRuntime = (root: Element): VisualizerHostRuntime => {
-  const existing = hostRuntimeByRoot.get(root);
+  const moduleRuntime = getOrCreateRuntime(root).visualizerHost;
+  const existing = moduleRuntime.state.visualizerHostModuleState as VisualizerHostRuntime | undefined;
   if (existing) {
     return existing;
   }
   const created = createHostRuntime();
-  hostRuntimeByRoot.set(root, created);
-  hostRuntimes.add(created);
+  moduleRuntime.state.visualizerHostModuleState = created;
+  moduleRuntime.dispose = () => {
+    clearRuntime(created);
+    moduleRuntime.state.visualizerHostModuleState = createHostRuntime();
+  };
+  moduleRuntime.resetForTests = () => {
+    clearRuntime(created);
+  };
   return created;
 };
 
@@ -216,16 +222,10 @@ const clearRuntime = (runtime: VisualizerHostRuntime): void => {
 };
 
 export const clearVisualizerHost = (root: Element): void => {
-  const runtime = hostRuntimeByRoot.get(root) ?? getHostRuntime(root);
+  const runtime = getHostRuntime(root);
   clearRuntime(runtime);
   for (const panel of VISUALIZER_REGISTRY) {
     panel.clear(root);
   }
   clearHostUiState(runtime, root);
-};
-
-const clearAllVisualizerHostRuntimesForTests = (): void => {
-  for (const runtime of hostRuntimes) {
-    clearRuntime(runtime);
-  }
 };

@@ -69,6 +69,7 @@ import { runUiIntegrationDesktopShellTests } from "./uiIntegration.desktopShell.
 import { runButtonRegistryContractTests } from "./buttonRegistry.contract.test.js";
 import { runKeyActionHandlersContractTests } from "./keyActionHandlers.contract.test.js";
 import { runKeyCatalogNormalizationTests } from "./keyCatalog.normalization.test.js";
+import { runBootstrapBoundaryTests } from "./bootstrapBoundary.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -142,6 +143,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/button-registry-contract", runButtonRegistryContractTests],
   ["domain/key-action-handlers-contract", runKeyActionHandlersContractTests],
   ["domain/key-catalog-normalization", runKeyCatalogNormalizationTests],
+  ["app/bootstrap-boundary", runBootstrapBoundaryTests],
 ];
 
 let passed = 0;

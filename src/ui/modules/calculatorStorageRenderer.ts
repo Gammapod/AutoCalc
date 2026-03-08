@@ -1,7 +1,7 @@
 import type { Action, GameState } from "../../domain/types.js";
 import type { InteractionMode } from "../../app/interactionRuntime.js";
-import { renderCalculatorV2Module } from "./calculatorRenderer.js";
-import { renderStorageV2Module } from "./storageRenderer.js";
+import { renderCalculatorV2Module } from "./calculator/render.js";
+import { renderStorageV2Module } from "./storage/render.js";
 import { renderInputV2Module } from "./input/render.js";
 
 export const renderCalculatorStorageV2Module = (

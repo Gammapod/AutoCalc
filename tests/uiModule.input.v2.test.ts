@@ -85,15 +85,16 @@ export const runUiModuleInputV2Tests = (): void => {
     resolve(process.cwd(), "src/ui/modules/input/pressFeedback.ts"),
     "utf8",
   );
+  const legacyMonolithToken = "calculator" + "ModuleRenderer";
   assert.equal(
-    dragDropSource.includes("calculatorModuleRenderer"),
+    dragDropSource.includes(legacyMonolithToken),
     false,
-    "input drag-drop module does not import calculatorModuleRenderer",
+    "input drag-drop module does not import the legacy monolith renderer",
   );
   assert.equal(
-    pressFeedbackSource.includes("calculatorModuleRenderer"),
+    pressFeedbackSource.includes(legacyMonolithToken),
     false,
-    "input press feedback module does not import calculatorModuleRenderer",
+    "input press feedback module does not import the legacy monolith renderer",
   );
 
   resetInputLockStateForTests();
