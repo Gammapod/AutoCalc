@@ -212,11 +212,11 @@ export type SerializableStateV13 = Omit<SerializableStateV12, "calculator"> & {
 export type SerializableStateV14 = SerializableStateV13;
 
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
-const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN)$/;
+const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN|[A-Za-z0-9_()+\-*/\s]+)$/;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
-const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "NEG"] as const;
+const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "pi", "e", "NEG"] as const;
 const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190"] as const;
 const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] as const;
 const STEP_KEY_VALUES = ["\u23EF"] as const;

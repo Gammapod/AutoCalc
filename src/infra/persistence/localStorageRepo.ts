@@ -1,6 +1,7 @@
 import { parseRational, toDisplayString } from "../math/rationalEngine.js";
 import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
-import { isRationalCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue } from "../../domain/calculatorValue.js";
+import { isRationalCalculatorValue, toExpressionCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue } from "../../domain/calculatorValue.js";
+import { expressionToDisplayString, parseExpressionOrThrow } from "../../domain/expression.js";
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, sanitizeLambdaControl, withLegacyAllocatorFallback } from "../../domain/lambdaControl.js";
 import { isValidSchemaVersion, migrateToLatest, type SerializableStateV14, type SerializableSlot } from "./migrations.js";
@@ -51,10 +52,21 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const serializeCalculatorValue = (value: GameState["calculator"]["total"]): string =>
-  isRationalCalculatorValue(value) ? toDisplayString(value.value) : "NaN";
+  value.kind === "nan" ? "NaN" : isRationalCalculatorValue(value) ? toDisplayString(value.value) : expressionToDisplayString(value.value);
 
 const deserializeCalculatorValue = (value: string): GameState["calculator"]["total"] =>
-  value.trim() === "NaN" ? toNanCalculatorValue() : toRationalCalculatorValue(parseRational(value));
+  value.trim() === "NaN"
+    ? toNanCalculatorValue()
+    : (() => {
+      const expression = parseExpressionOrThrow(value);
+      if (expression.type === "int_literal") {
+        return toRationalCalculatorValue({ num: expression.value, den: 1n });
+      }
+      if (expression.type === "rational_literal") {
+        return toRationalCalculatorValue(expression.value);
+      }
+      return toExpressionCalculatorValue(expression);
+    })();
 
 const toSerializableState = (state: GameState): SerializableStateLatest => {
   const lambdaControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
@@ -71,7 +83,7 @@ const toSerializableState = (state: GameState): SerializableStateLatest => {
     })),
     operationSlots: state.calculator.operationSlots.map<SerializableSlot>((slot) => ({
       operator: slot.operator,
-      operand: slot.operand.toString(),
+      operand: typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slot.operand),
     })),
     draftingSlot: state.calculator.draftingSlot,
   },
@@ -139,7 +151,13 @@ const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameSta
     })),
     operationSlots: payloadState.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,
-      operand: BigInt(slot.operand),
+      operand: (() => {
+        const expression = parseExpressionOrThrow(slot.operand);
+        if (expression.type === "int_literal") {
+          return expression.value;
+        }
+        return expression;
+      })(),
     })),
     draftingSlot: payloadState.calculator.draftingSlot,
   },

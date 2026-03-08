@@ -1,17 +1,22 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { addInt, isInteger } from "../infra/math/rationalEngine.js";
 import {
+  calculatorValueToExpression,
+  calculatorValueToRational,
   clampRationalToBoundary,
+  calculatorValueToDisplayString,
   computeOverflowBoundary,
   DIVISION_BY_ZERO_ERROR_CODE,
   exceedsMagnitudeBoundary,
   isRationalCalculatorValue,
   NAN_INPUT_ERROR_CODE,
   OVERFLOW_ERROR_CODE,
+  toExpressionCalculatorValue,
   toNanCalculatorValue,
   toRationalCalculatorValue,
 } from "./calculatorValue.js";
-import { executeSlots } from "./engine.js";
+import { intExpr, parseExpressionOrNull, slotOperandToExpression } from "./expression.js";
+import { executeSlotsValue } from "./engine.js";
 import {
   applyDigitInput,
   applyNegateInput,
@@ -28,7 +33,7 @@ import {
 } from "./state.js";
 import { isDigitKey, isOperatorKey } from "./buttonRegistry.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
-import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, GameState, Key, RationalValue, RollEntry, SlotOperator } from "./types.js";
+import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, ExpressionConstant, GameState, Key, RationalValue, RollEntry, SlotOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 import { applyMemoryAdjust, cycleMemoryVariable, isMemoryKey, resolveMemoryRecallDigit } from "./memoryController.js";
 
@@ -105,6 +110,53 @@ const applyDigit = (state: GameState, digit: Digit): GameState => {
     return state;
   }
   return applyDigitValue(state, digit);
+};
+
+const applyConstantValue = (state: GameState, constant: ExpressionConstant): GameState => {
+  if (!state.unlocks.valueAtoms[constant] && !state.unlocks.valueExpression[constant]) {
+    return state;
+  }
+  if (state.calculator.rollEntries.length > 0) {
+    return state;
+  }
+
+  const builder = fromCalculator(state.calculator);
+  if (builder.draftingSlot) {
+    return applyUnlocks(withBuilderPatchApplied(state, {
+      operationSlots: builder.operationSlots,
+      draftingSlot: {
+        ...builder.draftingSlot,
+        operandInput: constant,
+      },
+    }), unlockCatalog);
+  }
+
+  if (builder.operationSlots.length > 0) {
+    const operationSlots = [...builder.operationSlots];
+    const slotIndex = operationSlots.length - 1;
+    operationSlots[slotIndex] = {
+      ...operationSlots[slotIndex],
+      operand: constant === "e" ? { type: "constant", value: "e" } : { type: "constant", value: "pi" },
+    };
+    return applyUnlocks(withBuilderPatchApplied(state, { operationSlots, draftingSlot: null }), unlockCatalog);
+  }
+
+  if (!isSeedEntryContext(state)) {
+    return state;
+  }
+
+  return applyUnlocks(
+    {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        total: toExpressionCalculatorValue(constant === "e" ? { type: "constant", value: "e" } : { type: "constant", value: "pi" }),
+        pendingNegativeTotal: false,
+        singleDigitInitialTotalEntry: false,
+      },
+    },
+    unlockCatalog,
+  );
 };
 
 const applyDigitValue = (state: GameState, digit: Digit): GameState => {
@@ -247,7 +299,7 @@ const markOverflowErrorSeen = (state: GameState): GameState => {
 
 const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): EvaluatedExecution => {
   const currentTotal = state.calculator.total;
-  if (!isRationalCalculatorValue(currentTotal)) {
+  if (currentTotal.kind === "nan") {
     return {
       nextTotal: toNanCalculatorValue(),
       errorCode: NAN_INPUT_ERROR_CODE,
@@ -256,24 +308,64 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
   }
 
   if (execKey === "++") {
-    const incremented = addInt(currentTotal.value, 1n);
-    return applyOverflowPolicy(incremented, state.unlocks.maxTotalDigits);
+    if (isRationalCalculatorValue(currentTotal)) {
+      const incremented = addInt(currentTotal.value, 1n);
+      return applyOverflowPolicy(incremented, state.unlocks.maxTotalDigits);
+    }
+    const expr = calculatorValueToExpression(currentTotal);
+    if (!expr) {
+      return {
+        nextTotal: toNanCalculatorValue(),
+        errorCode: NAN_INPUT_ERROR_CODE,
+        errorKind: "nan_input",
+      };
+    }
+    return {
+      nextTotal: toExpressionCalculatorValue({ type: "binary", op: "add", left: expr, right: intExpr(1n) }),
+    };
   }
   if (execKey === "--") {
-    const decremented = addInt(currentTotal.value, -1n);
-    return applyOverflowPolicy(decremented, state.unlocks.maxTotalDigits);
-  }
-
-  const execution = executeSlots(currentTotal.value, state.calculator.operationSlots);
-  if (!execution.ok) {
+    if (isRationalCalculatorValue(currentTotal)) {
+      const decremented = addInt(currentTotal.value, -1n);
+      return applyOverflowPolicy(decremented, state.unlocks.maxTotalDigits);
+    }
+    const expr = calculatorValueToExpression(currentTotal);
+    if (!expr) {
+      return {
+        nextTotal: toNanCalculatorValue(),
+        errorCode: NAN_INPUT_ERROR_CODE,
+        errorKind: "nan_input",
+      };
+    }
     return {
-      nextTotal: toNanCalculatorValue(),
-      errorCode: DIVISION_BY_ZERO_ERROR_CODE,
-      errorKind: "division_by_zero",
+      nextTotal: toExpressionCalculatorValue({ type: "binary", op: "sub", left: expr, right: intExpr(1n) }),
     };
   }
 
-  const overflowChecked = applyOverflowPolicy(execution.total, state.unlocks.maxTotalDigits);
+  const execution = executeSlotsValue(currentTotal, state.calculator.operationSlots);
+  if (!execution.ok) {
+    if (execution.reason === "unsupported_symbolic") {
+      return {
+        nextTotal: toNanCalculatorValue(),
+        errorCode: NAN_INPUT_ERROR_CODE,
+        errorKind: "nan_input",
+      };
+    }
+    return {
+      nextTotal: toNanCalculatorValue(),
+      errorCode: execution.reason === "division_by_zero" ? DIVISION_BY_ZERO_ERROR_CODE : NAN_INPUT_ERROR_CODE,
+      errorKind: execution.reason === "division_by_zero" ? "division_by_zero" : "nan_input",
+    };
+  }
+
+  if (!isRationalCalculatorValue(execution.total)) {
+    return {
+      nextTotal: execution.total,
+      ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
+    };
+  }
+
+  const overflowChecked = applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits);
   return {
     ...overflowChecked,
     euclidRemainder: execution.euclidRemainder,
@@ -395,6 +487,10 @@ const applyCE = (state: GameState): GameState => {
   return applyCECore(state);
 };
 
+const NUMERIC_DIGIT_RE = /^[0-9]$/;
+const isNumericDigit = (key: string): key is Digit => NUMERIC_DIGIT_RE.test(key);
+const isValueAtomConstant = (key: Key): key is ExpressionConstant => key === "pi" || key === "e";
+
 const applyBackspace = (state: GameState): GameState => {
   if (!state.unlocks.utilities["\u2190"]) {
     return state;
@@ -403,16 +499,33 @@ const applyBackspace = (state: GameState): GameState => {
     return state;
   }
 
-  const slotToDrafting = (slot: { operator: SlotOperator; operand: bigint }) => ({
-    operator: slot.operator,
-    operandInput: (slot.operand < 0n ? -slot.operand : slot.operand).toString(),
-    isNegative: slot.operand < 0n && slot.operand !== 0n,
-  });
+  const slotToDrafting = (slot: { operator: SlotOperator; operand: GameState["calculator"]["operationSlots"][number]["operand"] }) => {
+    if (typeof slot.operand === "bigint") {
+      return {
+        operator: slot.operator,
+        operandInput: (slot.operand < 0n ? -slot.operand : slot.operand).toString(),
+        isNegative: slot.operand < 0n && slot.operand !== 0n,
+      };
+    }
+    const expr = slotOperandToExpression(slot.operand);
+    if (expr.type === "unary" && expr.op === "neg") {
+      return {
+        operator: slot.operator,
+        operandInput: calculatorValueToDisplayString(toExpressionCalculatorValue(expr.arg)),
+        isNegative: true,
+      };
+    }
+    return {
+      operator: slot.operator,
+      operandInput: calculatorValueToDisplayString(toExpressionCalculatorValue(expr)),
+      isNegative: false,
+    };
+  };
 
   const drafting = state.calculator.draftingSlot;
   if (drafting) {
     if (drafting.operandInput.length > 0) {
-      const nextInput = drafting.operandInput.slice(0, -1);
+      const nextInput = /^\d+$/.test(drafting.operandInput) ? drafting.operandInput.slice(0, -1) : "";
       if (nextInput === drafting.operandInput) {
         return state;
       }
@@ -463,7 +576,7 @@ const applyBackspace = (state: GameState): GameState => {
   if (state.calculator.operationSlots.length > 0) {
     const lastCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
     const restoredDrafting = slotToDrafting(lastCommitted);
-    const trimmedInput = restoredDrafting.operandInput.slice(0, -1);
+    const trimmedInput = /^\d+$/.test(restoredDrafting.operandInput) ? restoredDrafting.operandInput.slice(0, -1) : "";
     return applyUnlocks(
       withBuilderPatchApplied(state, {
         operationSlots: state.calculator.operationSlots.slice(0, -1),
@@ -524,7 +637,8 @@ const applyUndo = (state: GameState): GameState => {
   };
 };
 
-const isDigit = (key: Key): key is Digit => isDigitKey(key);
+const isDigit = (key: Key): key is Digit => isDigitKey(key) && isNumericDigit(key);
+const isValueAtomDigit = (key: Key): key is Key => isDigitKey(key);
 const isOperator = (key: Key): key is SlotOperator => isOperatorKey(key);
 
 const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
@@ -562,7 +676,7 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   // 1) active-roll digit keys are hard no-op
   // 2) active-roll operator keys clear current operation entry before handling
   // 3) normal key dispatch
-  if (state.calculator.rollEntries.length > 0 && isDigit(key)) {
+  if (state.calculator.rollEntries.length > 0 && isValueAtomDigit(key)) {
     return state;
   }
 
@@ -570,7 +684,15 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
   const keyed = isKeyUnlocked(preprocessed, key) ? incrementKeyPressCount(preprocessed, key) : preprocessed;
 
   const handlers: Record<KeyActionHandlerId, (nextState: GameState, currentKey: Key) => GameState> = {
-    apply_digit: (nextState, currentKey) => (isDigit(currentKey) ? applyDigit(nextState, currentKey) : nextState),
+    apply_digit: (nextState, currentKey) => {
+      if (isDigit(currentKey)) {
+        return applyDigit(nextState, currentKey);
+      }
+      if (isValueAtomConstant(currentKey)) {
+        return applyConstantValue(nextState, currentKey);
+      }
+      return nextState;
+    },
     apply_operator: (nextState, currentKey) => (isOperator(currentKey) ? applyOperator(nextState, currentKey) : nextState),
     apply_execute: (nextState) => nextState,
     apply_utility: (nextState) => nextState,

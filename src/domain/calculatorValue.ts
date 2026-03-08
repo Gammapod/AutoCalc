@@ -1,4 +1,11 @@
-import type { CalculatorValue, ErrorCode, RationalValue } from "./types.js";
+import type { CalculatorValue, ErrorCode, ExpressionValue, RationalValue } from "./types.js";
+import {
+  expressionToDisplayString,
+  expressionToRational,
+  isExpressionInteger,
+  normalizeExpression,
+  rationalExpr,
+} from "./expression.js";
 
 export const OVERFLOW_ERROR_CODE: ErrorCode = "x∉[-R,R]";
 export const DIVISION_BY_ZERO_ERROR_CODE: ErrorCode = "n/0";
@@ -9,17 +16,50 @@ export const toRationalCalculatorValue = (value: RationalValue): CalculatorValue
   value,
 });
 
+export const toExpressionCalculatorValue = (value: ExpressionValue): CalculatorValue => ({
+  kind: "expr",
+  value: normalizeExpression(value),
+});
+
 export const toNanCalculatorValue = (): CalculatorValue => ({ kind: "nan" });
 
 export const isRationalCalculatorValue = (
   value: CalculatorValue,
 ): value is Extract<CalculatorValue, { kind: "rational" }> => value.kind === "rational";
 
+export const isExpressionCalculatorValue = (
+  value: CalculatorValue,
+): value is Extract<CalculatorValue, { kind: "expr" }> => value.kind === "expr";
+
 export const calculatorValueToDisplayString = (value: CalculatorValue): string =>
-  value.kind === "nan" ? "NaN" : value.value.den === 1n ? value.value.num.toString() : `${value.value.num.toString()}/${value.value.den.toString()}`;
+  value.kind === "nan"
+    ? "NaN"
+    : value.kind === "rational"
+      ? (value.value.den === 1n ? value.value.num.toString() : `${value.value.num.toString()}/${value.value.den.toString()}`)
+      : expressionToDisplayString(value.value);
 
 export const isCalculatorValueInteger = (value: CalculatorValue): boolean =>
-  value.kind === "rational" && value.value.den === 1n;
+  value.kind === "rational" ? value.value.den === 1n : value.kind === "expr" ? isExpressionInteger(value.value) : false;
+
+export const calculatorValueToExpression = (value: CalculatorValue): ExpressionValue | null => {
+  if (value.kind === "nan") {
+    return null;
+  }
+  if (value.kind === "rational") {
+    return rationalExpr(value.value);
+  }
+  return value.value;
+};
+
+export const calculatorValueToRational = (value: CalculatorValue): RationalValue | null => {
+  if (value.kind === "rational") {
+    return value.value;
+  }
+  if (value.kind === "expr") {
+    return expressionToRational(value.value);
+  }
+  return null;
+};
 
 export const computeOverflowBoundary = (maxDigits: number): bigint => {
   const safeDigits = Math.max(1, maxDigits);

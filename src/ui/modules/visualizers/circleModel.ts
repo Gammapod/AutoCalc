@@ -59,6 +59,9 @@ export const detectResidueWheelSpec = (state: GameState): ResidueWheelSpec | nul
   if (lastSlot.operator !== "\u27E1") {
     return null;
   }
+  if (typeof lastSlot.operand !== "bigint") {
+    return null;
+  }
   if (lastSlot.operand <= 1n) {
     return null;
   }

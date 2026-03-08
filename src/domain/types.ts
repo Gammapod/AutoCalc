@@ -6,7 +6,7 @@ import type {
   ButtonVisualizerId,
 } from "./buttonRegistry.js";
 
-export type Digit = ButtonKeyByBehaviorKind<"digit">;
+export type Digit = Extract<ButtonKeyByBehaviorKind<"digit">, "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9">;
 export type SlotOperator = ButtonKeyByUnlockGroup<"slotOperators">;
 export type ValueAtomKey = ButtonKeyByUnlockGroup<"valueAtoms">;
 export type ValueComposeKey = ButtonKeyByUnlockGroup<"valueCompose">;
@@ -61,7 +61,7 @@ export type KeyButtonBehavior = PressKeyButtonBehavior | ToggleFlagButtonBehavio
 
 export type Slot = {
   operator: SlotOperator;
-  operand: bigint;
+  operand: SlotOperand;
 };
 
 export type RationalValue = {
@@ -69,10 +69,63 @@ export type RationalValue = {
   den: bigint;
 };
 
+export type ExpressionConstant = "pi" | "e";
+
+export type IntLiteralExpr = {
+  type: "int_literal";
+  value: bigint;
+};
+
+export type RationalLiteralExpr = {
+  type: "rational_literal";
+  value: RationalValue;
+};
+
+export type ConstantExpr = {
+  type: "constant";
+  value: ExpressionConstant;
+};
+
+export type UnaryExprOp = "neg" | "ln" | "sqrt";
+
+export type UnaryExpr = {
+  type: "unary";
+  op: UnaryExprOp;
+  arg: ExpressionValue;
+};
+
+export type BinaryExprOp = "add" | "sub" | "mul" | "div";
+
+export type BinaryExpr = {
+  type: "binary";
+  op: BinaryExprOp;
+  left: ExpressionValue;
+  right: ExpressionValue;
+};
+
+export type SymbolicExpr = {
+  type: "symbolic";
+  text: string;
+};
+
+export type ExpressionValue =
+  | IntLiteralExpr
+  | RationalLiteralExpr
+  | ConstantExpr
+  | UnaryExpr
+  | BinaryExpr
+  | SymbolicExpr;
+
+export type SlotOperand = bigint | ExpressionValue;
+
 export type CalculatorValue =
   | {
       kind: "rational";
       value: RationalValue;
+    }
+  | {
+      kind: "expr";
+      value: ExpressionValue;
     }
   | {
       kind: "nan";

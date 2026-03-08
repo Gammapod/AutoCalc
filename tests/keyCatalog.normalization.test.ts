@@ -23,8 +23,12 @@ export const runKeyCatalogNormalizationTests = (): void => {
       }
     }
     if (entry.behaviorKind === "digit") {
-      assert.equal(entry.inputFamily, "atom_digit", `digit key ${entry.key} must use atom_digit family`);
-      assert.equal(entry.valueRole, "literal", `digit key ${entry.key} must use literal value role`);
+      if (entry.valueRole === "constant") {
+        assert.equal(entry.inputFamily, "atom_constant", `constant atom key ${entry.key} must use atom_constant family`);
+      } else {
+        assert.equal(entry.inputFamily, "atom_digit", `digit key ${entry.key} must use atom_digit family`);
+        assert.equal(entry.valueRole, "literal", `digit key ${entry.key} must use literal value role`);
+      }
     }
   }
 

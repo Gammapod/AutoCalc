@@ -1,4 +1,5 @@
 import { toCommittedDraftingSlot } from "./slotDrafting.js";
+import { slotOperandToExpression } from "./expression.js";
 import type { CalculatorState, Digit, DraftingSlot, Slot, SlotOperator } from "./types.js";
 
 export type FunctionBuilderState = {
@@ -17,6 +18,7 @@ const withDigit = (source: string, digit: Digit): string => {
   }
   return `${source}${digit}`;
 };
+const DIGITS_ONLY_RE = /^\d+$/;
 
 export const fromCalculator = (
   calculator: Pick<CalculatorState, "operationSlots" | "draftingSlot">,
@@ -93,6 +95,15 @@ export const applyDigitInput = (
 ): FunctionBuilderState => {
   const draftingSlot = builder.draftingSlot;
   if (draftingSlot) {
+    if (draftingSlot.operandInput.length > 0 && !DIGITS_ONLY_RE.test(draftingSlot.operandInput)) {
+      return {
+        operationSlots: builder.operationSlots,
+        draftingSlot: {
+          ...draftingSlot,
+          operandInput: digit,
+        },
+      };
+    }
     if (draftingSlot.operandInput.length >= limits.maxOperandDigits) {
       return {
         operationSlots: builder.operationSlots,
@@ -118,7 +129,10 @@ export const applyDigitInput = (
   const nextMagnitude = BigInt(digit);
   const slotIndex = builder.operationSlots.length - 1;
   const currentSlot = builder.operationSlots[slotIndex];
-  const nextOperand = nextMagnitude === 0n ? 0n : currentSlot.operand < 0n ? -nextMagnitude : nextMagnitude;
+  const nextOperand =
+    typeof currentSlot.operand === "bigint"
+      ? (nextMagnitude === 0n ? 0n : currentSlot.operand < 0n ? -nextMagnitude : nextMagnitude)
+      : nextMagnitude;
   if (nextOperand === currentSlot.operand) {
     return builder;
   }
@@ -151,13 +165,19 @@ export const applyNegateInput = (builder: FunctionBuilderState): FunctionBuilder
 
   const slotIndex = builder.operationSlots.length - 1;
   const currentSlot = builder.operationSlots[slotIndex];
-  if (currentSlot.operand === 0n) {
+  if (typeof currentSlot.operand === "bigint" && currentSlot.operand === 0n) {
     return builder;
   }
   const operationSlots = [...builder.operationSlots];
+  const nextOperand: Slot["operand"] =
+    typeof currentSlot.operand === "bigint"
+      ? -currentSlot.operand
+      : (currentSlot.operand.type === "unary" && currentSlot.operand.op === "neg")
+        ? currentSlot.operand.arg
+        : { type: "unary", op: "neg", arg: slotOperandToExpression(currentSlot.operand) };
   operationSlots[slotIndex] = {
     ...currentSlot,
-    operand: -currentSlot.operand,
+    operand: nextOperand,
   };
   return {
     operationSlots,

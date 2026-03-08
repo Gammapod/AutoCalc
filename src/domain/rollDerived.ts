@@ -1,4 +1,5 @@
 import type { CalculatorValue, RationalValue, RollEntry } from "./types.js";
+import { expressionToAlgebriteString } from "./expression.js";
 
 export type RollValueDomain = "\u2205" | "\u2115" | "\u2124" | "\u211A";
 
@@ -66,10 +67,10 @@ const factorPositiveInteger = (value: bigint): PrimeFactorTerm[] => {
 };
 
 export const getRollYAlgebriteString = (value: CalculatorValue): string =>
-  value.kind === "nan" ? "NaN" : toAlgebriteRationalString(value.value);
+  value.kind === "nan" ? "NaN" : value.kind === "rational" ? toAlgebriteRationalString(value.value) : expressionToAlgebriteString(value.value);
 
 export const getRollYDomain = (value: CalculatorValue): RollValueDomain => {
-  if (value.kind === "nan") {
+  if (value.kind === "nan" || value.kind === "expr") {
     return "\u2205";
   }
   return value.value.den === 1n ? (value.value.num >= 0n ? "\u2115" : "\u2124") : "\u211A";
@@ -89,7 +90,7 @@ export const getRationalPrimeFactorization = (value: RationalValue): RationalPri
 };
 
 export const getRollYPrimeFactorization = (value: CalculatorValue): RationalPrimeFactorization | undefined =>
-  value.kind === "nan" ? undefined : getRationalPrimeFactorization(value.value);
+  value.kind === "rational" ? getRationalPrimeFactorization(value.value) : undefined;
 
 export const getDerivedRollEntry = (entry: RollEntry, x: number): RollEntryDerived => {
   const primeFactorization = getRollYPrimeFactorization(entry.y);

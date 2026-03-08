@@ -1,6 +1,7 @@
 import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
 import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js";
+import { expressionToDisplayString, slotOperandToExpression } from "../../domain/expression.js";
 import { getButtonDefinition, isDigitKey, isOperatorKey, isVisualizerKey } from "../../domain/buttonRegistry.js";
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../domain/analysis.js";
 import { buildUnlockCriteria } from "../../domain/unlockEngine.js";
@@ -85,6 +86,9 @@ export const formatOperatorForOperationSlotDisplay = (operator: SlotOperator): s
   operator === "\u27E1" ? "\u2662" : formatOperatorForDisplay(operator);
 
 export const formatKeyLabel = (key: Key): string => {
+  if (key === "pi") {
+    return "\u03C0";
+  }
   if (key === "NEG") {
     return "-\u{1D465}";
   }
@@ -144,7 +148,7 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   }
 
   const filledTokens = state.calculator.operationSlots.map(
-    (slot) => `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${slot.operand.toString()} ]`,
+    (slot) => `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand))} ]`,
   );
   if (state.calculator.draftingSlot) {
     const operand = state.calculator.draftingSlot.operandInput
@@ -164,7 +168,7 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
 };
 
 export const buildRollLines = (rollEntries: RollEntry[]): string[] =>
-  rollEntries.map((entry) => (entry.y.kind === "rational" ? toPreferredFractionString(entry.y.value) : "NaN"));
+  rollEntries.map((entry) => calculatorValueToDisplayString(entry.y));
 
 const calculatorValueToFeedText = (value: CalculatorValue): string =>
   calculatorValueToDisplayString(value);

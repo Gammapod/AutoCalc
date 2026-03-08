@@ -19,6 +19,7 @@ const renderSevenSegmentValue = (
   pendingNegative: boolean,
 ): void => {
   const rationalValue = isRationalCalculatorValue(value) ? value.value : null;
+  const isNaNValue = value.kind === "nan";
   const hasRationalValue = rationalValue !== null;
   const hasIntegerValue = hasRationalValue && rationalValue.den === 1n;
   const isNegative =
@@ -31,11 +32,18 @@ const renderSevenSegmentValue = (
     target.appendChild(sign);
   }
 
-  if (!hasRationalValue) {
+  if (isNaNValue) {
     const fraction = document.createElement("div");
     fraction.className = "seg-fraction";
     fraction.textContent = "NaN";
     target.appendChild(fraction);
+    return;
+  }
+  if (!hasRationalValue) {
+    const symbolic = document.createElement("div");
+    symbolic.className = "seg-fraction";
+    symbolic.textContent = calculatorValueToDisplayString(value);
+    target.appendChild(symbolic);
     return;
   }
 
@@ -120,7 +128,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
 
   const latestRollEntry = state.calculator.rollEntries.at(-1);
   const domainValue = latestRollEntry?.y ?? state.calculator.total;
-  const totalIsNaN = !isRationalCalculatorValue(state.calculator.total);
+  const totalIsNaN = state.calculator.total.kind === "nan";
   const hasLatestRollError = Boolean(state.calculator.rollEntries.at(-1)?.error);
   const hasAnyKeyPress = Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
   const shouldRenderClearedPlaceholder =

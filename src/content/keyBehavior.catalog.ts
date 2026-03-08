@@ -70,6 +70,8 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   d("7"),
   d("8"),
   d("9"),
+  d("pi"),
+  d("e"),
   {
     key: "NEG",
     lockModel: "unlockable",

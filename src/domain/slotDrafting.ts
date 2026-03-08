@@ -1,14 +1,31 @@
+import { parseExpressionOrNull } from "./expression.js";
 import type { CalculatorState, DraftingSlot, Slot } from "./types.js";
+
+const DIGITS_ONLY_RE = /^\d+$/;
 
 export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): Slot | null => {
   if (draftingSlot.operandInput === "") {
     return null;
   }
 
-  const magnitude = BigInt(draftingSlot.operandInput);
+  const normalizedInput = draftingSlot.operandInput.trim();
+  if (DIGITS_ONLY_RE.test(normalizedInput)) {
+    const magnitude = BigInt(normalizedInput);
+    return {
+      operator: draftingSlot.operator,
+      operand: draftingSlot.isNegative && magnitude !== 0n ? -magnitude : magnitude,
+    };
+  }
+
+  const parsedExpression = parseExpressionOrNull(normalizedInput);
+  if (!parsedExpression) {
+    return null;
+  }
   return {
     operator: draftingSlot.operator,
-    operand: draftingSlot.isNegative && magnitude !== 0n ? -magnitude : magnitude,
+    operand: draftingSlot.isNegative
+      ? { type: "unary", op: "neg", arg: parsedExpression }
+      : parsedExpression,
   };
 };
 

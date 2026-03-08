@@ -108,7 +108,12 @@ export const createBootstrapUiController = ({
 
     const serializedRollState = state.calculator.rollEntries.map((entry, index) => ({
       x: index,
-      y: entry.y.kind === "nan" ? { kind: "nan" as const } : { kind: "rational" as const, value: serializeRationalForDebug(entry.y.value) },
+      y:
+        entry.y.kind === "nan"
+          ? { kind: "nan" as const }
+          : entry.y.kind === "rational"
+            ? { kind: "rational" as const, value: serializeRationalForDebug(entry.y.value) }
+            : { kind: "expr" as const, value: JSON.stringify(entry.y.value) },
       ...(entry.remainder ? { remainder: serializeRationalForDebug(entry.remainder) } : {}),
       ...(entry.error ? { error: entry.error } : {}),
     }));

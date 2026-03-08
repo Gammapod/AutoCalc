@@ -1,4 +1,4 @@
-import { toDisplayString } from "../infra/math/rationalEngine.js";
+import { calculatorValueToDisplayString } from "./calculatorValue.js";
 import {
   buildGraphPoints,
   buildOperationSlotDisplay,
@@ -23,7 +23,7 @@ export const buildReadModel = (state: GameState): DomainReadModel => ({
     state.calculator.rollEntries,
     state.calculator.seedSnapshot ?? (state.calculator.rollEntries.length === 0 ? state.calculator.total : undefined),
   ),
-  totalDisplay: state.calculator.total.kind === "nan" ? "NaN" : toDisplayString(state.calculator.total.value),
+  totalDisplay: calculatorValueToDisplayString(state.calculator.total),
   rollView: buildRollViewModel(state.calculator.rollEntries),
   slotView: buildOperationSlotDisplay(state),
   unlockRows: buildUnlockRows(state),

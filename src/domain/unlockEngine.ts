@@ -1,6 +1,7 @@
 import { equalsBigInt, gteBigInt, isInteger, lteBigInt } from "../infra/math/rationalEngine.js";
-import { isRationalCalculatorValue } from "./calculatorValue.js";
-import { executeSlots } from "./engine.js";
+import { calculatorValueToDisplayString, isRationalCalculatorValue } from "./calculatorValue.js";
+import { executeSlotsValue } from "./engine.js";
+import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
 import { getOperationSnapshot } from "./slotDrafting.js";
 import { OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import type {
@@ -274,15 +275,17 @@ const analyzeAllocatorAllocatePressCountAtLeast: PredicateAnalyzer<AllocatorAllo
 
 const analyzeOperationEquals: PredicateAnalyzer<OperationEqualsPredicate> = (predicate, state) => {
   const slots = getOperationSnapshot(state.calculator, predicate.includeDrafting ?? true);
+  const operandText = (operand: typeof slots[number]["operand"]): string =>
+    typeof operand === "bigint" ? operand.toString() : expressionToDisplayString(slotOperandToExpression(operand));
   const isMet =
     slots.length === predicate.slots.length &&
     slots.every(
       (slot, index) =>
-        slot.operator === predicate.slots[index].operator && slot.operand === predicate.slots[index].operand,
+        slot.operator === predicate.slots[index].operator && operandText(slot.operand) === operandText(predicate.slots[index].operand),
     );
 
-  const requiredTokens = predicate.slots.flatMap((slot) => [slot.operator, slot.operand.toString()]);
-  const currentTokens = slots.flatMap((slot) => [slot.operator, slot.operand.toString()]);
+  const requiredTokens = predicate.slots.flatMap((slot) => [slot.operator, operandText(slot.operand)]);
+  const currentTokens = slots.flatMap((slot) => [slot.operator, operandText(slot.operand)]);
   return {
     isMet,
     criteria: requiredTokens.map((token, index) => ({
@@ -302,14 +305,12 @@ const analyzeOperationFirstEuclidEquivalentModulo: PredicateAnalyzer<OperationFi
 
   let evaluationsSucceeded = false;
   let resultMatchesModuloBaseline = false;
-  if (firstIsEuclid && isRationalCalculatorValue(state.calculator.total)) {
-    const combined = executeSlots(state.calculator.total.value, slots);
-    const baseline = executeSlots(state.calculator.total.value, [{ operator: "\u27E1", operand: firstSlot.operand }]);
+  if (firstIsEuclid) {
+    const combined = executeSlotsValue(state.calculator.total, slots);
+    const baseline = executeSlotsValue(state.calculator.total, [{ operator: "\u27E1", operand: firstSlot.operand }]);
     evaluationsSucceeded = combined.ok && baseline.ok;
     if (combined.ok && baseline.ok) {
-      resultMatchesModuloBaseline =
-        combined.total.num === baseline.total.num
-        && combined.total.den === baseline.total.den;
+      resultMatchesModuloBaseline = calculatorValueToDisplayString(combined.total) === calculatorValueToDisplayString(baseline.total);
     }
   }
 
