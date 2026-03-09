@@ -25,7 +25,7 @@ export const runNumberDomainAnalysisTests = (): void => {
     "spec analysis reports one row per unlock in catalog",
   );
   const initialEqualsUnlock = initialReport.unlockSpecAnalysis.find((row) => row.unlockId === "unlock_equals_on_total_11");
-  assert.equal(initialEqualsUnlock?.status, "possible", "equal-run unlock is possible from initial config via spec capabilities");
+  assert.equal(initialEqualsUnlock?.status, "blocked", "equals unlock is blocked until allocator progression enables column growth");
 
   const withResetAndMinus: GameState = {
     ...base,

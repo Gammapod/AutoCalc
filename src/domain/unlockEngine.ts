@@ -3,7 +3,7 @@ import { calculatorValueToDisplayString, isRationalCalculatorValue } from "./cal
 import { executeSlotsValue } from "./engine.js";
 import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
 import { getOperationSnapshot } from "./slotDrafting.js";
-import { OVERFLOW_ERROR_SEEN_ID } from "./state.js";
+import { LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import type {
   GameState,
   RollContainsDomainTypePredicate,
@@ -26,6 +26,8 @@ import type {
   TotalAtMostPredicate,
   TotalMagnitudeAtLeastPredicate,
   TotalEqualsPredicate,
+  KeypadKeySlotsAtLeastPredicate,
+  LambdaSpentPointsDroppedToZeroSeenPredicate,
   UnlockPredicate,
 } from "./types.js";
 
@@ -304,6 +306,28 @@ const analyzeOperationEquals: PredicateAnalyzer<OperationEqualsPredicate> = (pre
   };
 };
 
+const analyzeKeypadKeySlotsAtLeast: PredicateAnalyzer<KeypadKeySlotsAtLeastPredicate> = (predicate, state) => {
+  const currentColumns = state.ui.keypadColumns ?? 0;
+  const currentRows = state.ui.keypadRows ?? 0;
+  const currentSlots = currentColumns * currentRows;
+  const isMet = currentSlots >= predicate.slots;
+  return {
+    isMet,
+    criteria: [{ label: `key slots >= ${predicate.slots.toString()}`, checked: isMet }],
+  };
+};
+
+const analyzeLambdaSpentPointsDroppedToZeroSeen: PredicateAnalyzer<LambdaSpentPointsDroppedToZeroSeenPredicate> = (
+  _predicate,
+  state,
+) => {
+  const isMet = state.completedUnlockIds.includes(LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID);
+  return {
+    isMet,
+    criteria: [{ label: "lambda spent points transitioned 1 -> 0", checked: isMet }],
+  };
+};
+
 const analyzeOperationFirstEuclidEquivalentModulo: PredicateAnalyzer<OperationFirstEuclidEquivalentModuloPredicate> = (
   _predicate,
   state,
@@ -362,6 +386,8 @@ const analyzers = {
   symbolic_error_seen: analyzeSymbolicErrorSeen,
   allocator_return_press_count_at_least: analyzeAllocatorReturnPressCountAtLeast,
   allocator_allocate_press_count_at_least: analyzeAllocatorAllocatePressCountAtLeast,
+  keypad_key_slots_at_least: analyzeKeypadKeySlotsAtLeast,
+  lambda_spent_points_dropped_to_zero_seen: analyzeLambdaSpentPointsDroppedToZeroSeen,
 } as const;
 
 export const analyzeUnlockPredicate = (predicate: UnlockPredicate, state: GameState): UnlockPredicateAnalysis =>

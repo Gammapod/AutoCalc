@@ -422,6 +422,9 @@ const getUnlockName = (effect: UnlockEffect): string => {
   if (effect.type === "unlock_utility") {
     return effect.key;
   }
+  if (effect.type === "unlock_memory") {
+    return effect.key;
+  }
   if (effect.type === "increase_max_total_digits") {
     return "maxTotalDigits";
   }

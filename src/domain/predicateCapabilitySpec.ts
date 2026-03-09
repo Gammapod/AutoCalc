@@ -23,6 +23,8 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "symbolic_error_seen",
   "allocator_return_press_count_at_least",
   "allocator_allocate_press_count_at_least",
+  "keypad_key_slots_at_least",
+  "lambda_spent_points_dropped_to_zero_seen",
 ];
 
 export type CapabilityId =
@@ -247,6 +249,32 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "allocator_allocate_press_count_by_allocate_click",
         allOf: ["allocator_allocate_press"],
         rationale: "Pressing Allocate increments the tracked allocator-allocate counter.",
+      },
+    ],
+  },
+  keypad_key_slots_at_least: {
+    predicateType: "keypad_key_slots_at_least",
+    necessary: [
+      { capability: "allocator_allocate_press", reason: "Keypad growth is driven by allocator interaction in current progression." },
+    ],
+    sufficientSets: [
+      {
+        id: "keypad_key_slots_at_least_via_allocator_progression",
+        allOf: ["allocator_allocate_press"],
+        rationale: "Allocator progression enables keypad slot expansion milestones.",
+      },
+    ],
+  },
+  lambda_spent_points_dropped_to_zero_seen: {
+    predicateType: "lambda_spent_points_dropped_to_zero_seen",
+    necessary: [
+      { capability: "allocator_return_press", reason: "Returning allocator points is required to observe a spent-points drop." },
+    ],
+    sufficientSets: [
+      {
+        id: "lambda_spent_drop_to_zero_via_allocator_return",
+        allOf: ["allocator_return_press"],
+        rationale: "Allocator return operations can drive spent points from 1 down to 0.",
       },
     ],
   },

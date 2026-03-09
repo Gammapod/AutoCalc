@@ -9,7 +9,7 @@ import {
 } from "../src/domain/predicateCapabilitySpec.js";
 import { capabilityToFunctionProviderIds, staticFunctionCapabilityProviders } from "../src/domain/functionCapabilityProviders.js";
 import { reducer } from "../src/domain/reducer.js";
-import { initialState } from "../src/domain/state.js";
+import { initialState, LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID } from "../src/domain/state.js";
 import { evaluateUnlockPredicate } from "../src/domain/unlockEngine.js";
 import type { GameState, Key, RollEntry, UnlockPredicate } from "../src/domain/types.js";
 
@@ -324,6 +324,34 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "allocator_allocate_press_count_by_allocate_click",
     predicate: { type: "allocator_allocate_press_count_at_least", count: 1 },
     buildInitialState: () => ({ ...initialState(), allocatorAllocatePressCount: 1 }),
+    script: [],
+  },
+  {
+    id: "proof_keypad_key_slots_at_least_three",
+    predicateType: "keypad_key_slots_at_least",
+    sufficientSetId: "keypad_key_slots_at_least_via_allocator_progression",
+    predicate: { type: "keypad_key_slots_at_least", slots: 3 },
+    buildInitialState: () => ({
+      ...initialState(),
+      allocatorAllocatePressCount: 1,
+      ui: {
+        ...initialState().ui,
+        keypadColumns: 3,
+        keypadRows: 1,
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_lambda_spent_drop_to_zero_seen",
+    predicateType: "lambda_spent_points_dropped_to_zero_seen",
+    sufficientSetId: "lambda_spent_drop_to_zero_via_allocator_return",
+    predicate: { type: "lambda_spent_points_dropped_to_zero_seen" },
+    buildInitialState: () => ({
+      ...initialState(),
+      allocatorReturnPressCount: 1,
+      completedUnlockIds: [LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID],
+    }),
     script: [],
   },
 ];

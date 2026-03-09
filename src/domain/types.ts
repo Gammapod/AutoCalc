@@ -324,6 +324,15 @@ export type AllocatorAllocatePressCountAtLeastPredicate = {
   count: number;
 };
 
+export type KeypadKeySlotsAtLeastPredicate = {
+  type: "keypad_key_slots_at_least";
+  slots: number;
+};
+
+export type LambdaSpentPointsDroppedToZeroSeenPredicate = {
+  type: "lambda_spent_points_dropped_to_zero_seen";
+};
+
 export type UnlockPredicate =
   | RollLengthAtLeastPredicate
   | TotalEqualsPredicate
@@ -344,11 +353,18 @@ export type UnlockPredicate =
   | DivisionByZeroErrorSeenPredicate
   | SymbolicErrorSeenPredicate
   | AllocatorReturnPressCountAtLeastPredicate
-  | AllocatorAllocatePressCountAtLeastPredicate;
+  | AllocatorAllocatePressCountAtLeastPredicate
+  | KeypadKeySlotsAtLeastPredicate
+  | LambdaSpentPointsDroppedToZeroSeenPredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";
   key: UtilityKey;
+};
+
+export type UnlockMemoryEffect = {
+  type: "unlock_memory";
+  key: MemoryKey;
 };
 
 export type IncreaseMaxTotalDigitsEffect = {
@@ -403,6 +419,7 @@ export type MoveKeyToCoordEffect = {
 
 export type UnlockEffect =
   | UnlockUtilityEffect
+  | UnlockMemoryEffect
   | IncreaseMaxTotalDigitsEffect
   | IncreaseAllocatorMaxPointsEffect
   | UnlockSlotOperatorEffect

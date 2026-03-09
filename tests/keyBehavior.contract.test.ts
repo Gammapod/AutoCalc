@@ -595,6 +595,7 @@ export const runKeyBehaviorContractTests = (): void => {
       unlock.effect.type === "unlock_digit"
       || unlock.effect.type === "unlock_slot_operator"
       || unlock.effect.type === "unlock_utility"
+      || unlock.effect.type === "unlock_memory"
       || unlock.effect.type === "unlock_execution"
       || unlock.effect.type === "unlock_visualizer"
     ) {

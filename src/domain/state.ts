@@ -7,6 +7,7 @@ export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 15;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
+export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
 export const AUTO_EQUALS_FLAG = "execution.pause";
 export const KEYPAD_DEFAULT_COLUMNS = 1;
 export const KEYPAD_DEFAULT_ROWS = 1;

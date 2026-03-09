@@ -274,8 +274,15 @@ export const runReducerUnlockTests = (): void => {
   }
   const eqBeforeOverflow = overflowState.unlocks.execution["="];
   overflowState = press(overflowState, "++");
-  assert.equal(eqBeforeOverflow, false, "equals remains locked before overflow equal-run");
-  assert.equal(overflowState.unlocks.execution["="], true, "equals unlocks on first equal run of 2 values");
+  assert.equal(eqBeforeOverflow, false, "equals remains locked while keypad key slots are below 3");
+  assert.equal(overflowState.unlocks.execution["="], false, "equals stays locked after overflow if keypad key slots are below 3");
+  const afterTwoColumnGrowth = reducer(
+    reducer(overflowState, { type: "ALLOCATOR_ADD_MAX_POINTS", amount: 2 }),
+    { type: "ALLOCATOR_ADJUST", field: "width", delta: 1 },
+  );
+  const afterThreeColumns = reducer(afterTwoColumnGrowth, { type: "ALLOCATOR_ADJUST", field: "width", delta: 1 });
+  assert.equal(afterThreeColumns.ui.keypadColumns * afterThreeColumns.ui.keypadRows >= 3, true, "allocator growth reaches 3 keypad key slots");
+  assert.equal(afterThreeColumns.unlocks.execution["="], true, "equals unlocks when keypad has at least 3 key slots");
   assert.equal(overflowState.unlocks.uiUnlocks.storageVisible, true, "storage is visible by default");
 
   const afterLockedMinus = press(overflowState, "--");

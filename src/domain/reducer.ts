@@ -114,7 +114,7 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
     if (nextControl === effectiveControl) {
       return state;
     }
-    return applyAllocatorRuntimeProjection(state, nextControl);
+    return applyUnlocks(applyAllocatorRuntimeProjection(state, nextControl), unlockCatalog);
   }
   if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
     const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
@@ -190,7 +190,7 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
     return applyAllocatorRuntimeProjection(state, next);
   }
   if (action.type === "LAMBDA_SET_CONTROL") {
-    return applyAllocatorRuntimeProjection(state, action.value);
+    return applyUnlocks(applyAllocatorRuntimeProjection(state, action.value), unlockCatalog);
   }
   return state;
 };
