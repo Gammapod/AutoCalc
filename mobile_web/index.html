@@ -26,12 +26,18 @@
         --key-top: #eef2f5;
         --key-bottom: #d4dae0;
         --key-stroke: #5d6773;
+        --key-value-modifier-top: #c2c9d2;
+        --key-value-modifier-bottom: #9fa9b6;
+        --key-value-modifier-stroke: #44515f;
         --key-slot-operator-top: #6a7380;
         --key-slot-operator-bottom: #4a5360;
         --key-slot-operator-stroke: #2f3742;
         --key-utility-top: #d55f5f;
         --key-utility-bottom: #a84040;
         --key-utility-stroke: #6e2424;
+        --key-memory-top: #8f66b7;
+        --key-memory-bottom: #6f4897;
+        --key-memory-stroke: #472c63;
         --key-step-top: #e0a93e;
         --key-step-bottom: #b87619;
         --key-step-stroke: #6f420b;
@@ -77,6 +83,35 @@
         --allocator-peek-offset: clamp(122px, 16vw, 168px);
         --allocator-reveal-extra: clamp(62px, 8vw, 92px);
         --allocator-desktop-motion: 460ms cubic-bezier(0.18, 0.78, 0.18, 1.02);
+        --desktop-key-height: clamp(46px, 5.6vh, 56px);
+        --desktop-key-min-width: calc(var(--desktop-key-height) * 1.5);
+        --desktop-key-gap: var(--gap);
+        --desktop-baseline-rows: 2;
+        --desktop-baseline-cols: 4;
+        --desktop-calc-cols: 1;
+        --desktop-calc-rows: 1;
+        --desktop-calc-horizontal-chrome: 32px;
+        --desktop-calc-vertical-chrome: 260px;
+        --desktop-baseline-keypad-height: calc(
+          (var(--desktop-baseline-rows) * var(--desktop-key-height)) +
+          ((var(--desktop-baseline-rows) - 1) * var(--desktop-key-gap))
+        );
+        --desktop-calc-target-width: calc(
+          (var(--desktop-calc-cols) * var(--desktop-key-min-width)) +
+          ((var(--desktop-calc-cols) - 1) * var(--desktop-key-gap)) +
+          var(--desktop-calc-horizontal-chrome)
+        );
+        --desktop-baseline-width: calc(
+          (var(--desktop-baseline-cols) * var(--desktop-key-min-width)) +
+          ((var(--desktop-baseline-cols) - 1) * var(--desktop-key-gap)) +
+          var(--desktop-calc-horizontal-chrome)
+        );
+        --desktop-baseline-calc-height: calc(
+          var(--desktop-baseline-keypad-height) + var(--desktop-calc-vertical-chrome)
+        );
+        --desktop-calc-width: var(--desktop-calc-target-width);
+        --desktop-calc-min-height: var(--desktop-baseline-calc-height);
+        --desktop-visualizer-width: var(--desktop-calc-width);
       }
 
       * {
@@ -111,6 +146,23 @@
         display: grid;
         gap: 12px;
         align-items: start;
+      }
+
+      body[data-ui-shell="desktop"] {
+        place-items: end center;
+      }
+
+      body[data-ui-shell="desktop"] .app-shell {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      body[data-ui-shell="desktop"] .play-area {
+        align-content: end;
+        justify-items: center;
+        overflow-x: auto;
+        overflow-y: visible;
+        scrollbar-gutter: stable both-edges;
       }
 
       .device-row {
@@ -332,9 +384,11 @@
       }
 
       body[data-ui-shell="desktop"] [data-desktop-shell="true"] .device-row {
-        display: grid;
-        grid-template-columns: var(--device-width) var(--device-width);
-        align-items: start;
+        display: flex;
+        justify-content: center;
+        align-items: end;
+        width: max-content;
+        min-width: 100%;
         gap: 16px;
         overflow: visible;
       }
@@ -491,6 +545,17 @@
           0 10px 20px rgba(0, 0, 0, 0.25);
       }
 
+      body[data-ui-shell="desktop"] .calc {
+        width: var(--desktop-calc-width);
+        min-height: var(--desktop-calc-min-height);
+        margin-inline: auto;
+        transform-origin: center bottom;
+        transition:
+          width 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          min-height 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          padding 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
+      }
+
       .device--grapher[hidden] {
         display: none;
       }
@@ -579,6 +644,22 @@
         display: none;
       }
 
+      .v2-total-panel {
+        display: none;
+      }
+
+      .v2-circle-panel {
+        display: none;
+      }
+
+      .v2-eigen-allocator-panel {
+        display: none;
+      }
+
+      .v2-algebraic-panel {
+        display: none;
+      }
+
       .display {
         border: 1px solid #515c6a;
         border-radius: 7px;
@@ -587,7 +668,33 @@
         box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
       }
 
-      [data-total] {
+      .display--slot-reject-blink {
+        animation: slot-reject-blink 360ms ease-in-out 1;
+      }
+
+      @keyframes slot-reject-blink {
+        0%,
+        100% {
+          border-color: #515c6a;
+          box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+        }
+        16.67%,
+        50%,
+        83.33% {
+          border-color: #ff6c6c;
+          box-shadow:
+            inset 0 1px 4px rgba(0, 0, 0, 0.7),
+            0 0 0 1px rgba(255, 108, 108, 0.92),
+            0 0 12px rgba(255, 108, 108, 0.58);
+        }
+        33.33%,
+        66.67% {
+          border-color: #515c6a;
+          box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+        }
+      }
+
+      [data-v2-total-panel] {
         position: relative;
         min-height: 102px;
         height: 100%;
@@ -655,6 +762,67 @@
         display: flex;
         justify-content: flex-end;
         align-items: center;
+      }
+
+      .total-memory-row {
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        bottom: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 0.66rem;
+        line-height: 1;
+        pointer-events: none;
+      }
+
+      .total-memory-lambda {
+        color: #be8ee8;
+        text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
+        white-space: nowrap;
+      }
+
+      .total-memory-variables {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: #b4f1d3;
+      }
+
+      .total-memory-var {
+        color: #b4f1d3;
+        text-shadow: 0 0 5px rgba(180, 241, 211, 0.35);
+        white-space: nowrap;
+      }
+
+      .total-memory-bracket {
+        display: inline-block;
+        width: 0.6ch;
+        text-align: center;
+        visibility: hidden;
+        color: #be8ee8;
+        text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
+      }
+
+      .total-memory-bracket--visible {
+        visibility: visible;
+      }
+
+      .total-memory-symbol {
+        color: #b4f1d3;
+        text-shadow: 0 0 5px rgba(180, 241, 211, 0.35);
+      }
+
+      .total-memory-symbol--selected {
+        color: #be8ee8;
+        text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
+      }
+
+      .total-memory-value {
+        color: #b4f1d3;
+        text-shadow: 0 0 5px rgba(180, 241, 211, 0.35);
       }
 
       .seg-sign {
@@ -816,6 +984,23 @@
         transform-origin: bottom right;
       }
 
+      body[data-ui-shell="desktop"] [data-keys] {
+        width: 100%;
+        margin-inline: auto;
+        transform-origin: center bottom;
+        transition:
+          width 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          height 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          grid-template-columns 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
+          grid-template-rows 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
+      }
+
+      /* Visualizer is currently body-coupled; keep a dedicated width token for future decoupling. */
+      body[data-ui-shell="desktop"] [data-display-window] {
+        width: min(100%, var(--desktop-visualizer-width));
+        margin-inline: auto;
+      }
+
       [data-keys][data-keypad-grow="row"] {
         animation: keypad-grow-row 820ms cubic-bezier(0.2, 0.7, 0.2, 1) 1;
       }
@@ -826,6 +1011,12 @@
 
       [data-keys][data-keypad-grow="both"] {
         animation: keypad-grow-both 880ms cubic-bezier(0.2, 0.7, 0.2, 1) 1;
+      }
+
+      body[data-ui-shell="desktop"] [data-keys][data-keypad-grow="row"],
+      body[data-ui-shell="desktop"] [data-keys][data-keypad-grow="column"],
+      body[data-ui-shell="desktop"] [data-keys][data-keypad-grow="both"] {
+        animation: none;
       }
 
       @keyframes keypad-grow-row {
@@ -1137,6 +1328,12 @@
         animation: key-unlock-pulse 1200ms cubic-bezier(0.22, 0.62, 0.22, 1) 1;
       }
 
+      .key--value-modifier {
+        border-color: var(--key-value-modifier-stroke);
+        background: linear-gradient(180deg, var(--key-value-modifier-top), var(--key-value-modifier-bottom));
+        color: #0f1218;
+      }
+
       .key--group-slot_operator {
         border-color: var(--key-slot-operator-stroke);
         background: linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
@@ -1146,6 +1343,12 @@
       .key--group-utility {
         border-color: var(--key-utility-stroke);
         background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
+        color: #ffffff;
+      }
+
+      .key--group-memory {
+        border-color: var(--key-memory-stroke);
+        background: linear-gradient(180deg, var(--key-memory-top), var(--key-memory-bottom));
         color: #ffffff;
       }
 
@@ -1159,6 +1362,12 @@
         border-color: var(--key-visualizers-stroke);
         background: linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
         color: #ffffff;
+      }
+
+      .key.key--group-visualizers[data-key="λ"] {
+        background:
+          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, var(--key-memory-top) 80%, var(--key-memory-bottom) 100%),
+          linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
       }
 
       .key--group-execution {
@@ -1179,8 +1388,12 @@
         filter: none;
       }
 
-      .key.key--toggle-active:not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
+      .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
         background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
+      }
+
+      .key.key--toggle-active.key--value-modifier:not(:disabled) {
+        background: linear-gradient(180deg, var(--key-value-modifier-bottom), var(--key-value-modifier-top));
       }
 
       .key.key--toggle-active.key--group-slot_operator:not(:disabled) {
@@ -1191,12 +1404,22 @@
         background: linear-gradient(180deg, var(--key-utility-bottom), var(--key-utility-top));
       }
 
+      .key.key--toggle-active.key--group-memory:not(:disabled) {
+        background: linear-gradient(180deg, var(--key-memory-bottom), var(--key-memory-top));
+      }
+
       .key.key--toggle-active.key--group-step:not(:disabled) {
         background: linear-gradient(180deg, var(--key-step-bottom), var(--key-step-top));
       }
 
       .key.key--toggle-active.key--group-visualizers:not(:disabled) {
         background: linear-gradient(180deg, var(--key-visualizers-bottom), var(--key-visualizers-top));
+      }
+
+      .key.key--toggle-active.key--group-visualizers[data-key="λ"]:not(:disabled) {
+        background:
+          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, var(--key-memory-bottom) 80%, var(--key-memory-top) 100%),
+          linear-gradient(180deg, var(--key-visualizers-bottom), var(--key-visualizers-top));
       }
 
       .key.key--toggle-active.key--group-execution:not(:disabled) {
@@ -1580,6 +1803,19 @@
         color: #1b212b;
       }
 
+      .debug-domain {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+        font-size: 0.78rem;
+        color: #1b212b;
+      }
+
+      .debug-domain-symbol {
+        font-size: 1rem;
+        font-family: "Cambria Math", "STIX Two Math", "Segoe UI Symbol", "Times New Roman", serif;
+      }
+
       body[data-ui-shell="mobile"] {
         padding: 0;
         margin: 0;
@@ -1774,18 +2010,46 @@
       body[data-ui-shell="mobile"] .v2-visualizer-host,
       body[data-ui-shell="desktop"] .v2-visualizer-host {
         display: block;
+        position: relative;
         margin-bottom: 8px;
+        height: var(--v2-visualizer-window-height);
+        opacity: 1;
+        transform: translateY(0);
+        transform-origin: top center;
+        overflow: hidden;
+        transition:
+          height 220ms cubic-bezier(0.2, 0.7, 0.1, 1),
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
-      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-panel="none"],
-      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-panel="none"] {
-        display: none;
+      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-transition="enter"],
+      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-transition="enter"] {
+        transform: translateY(0);
+      }
+
+      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-transition="exit"],
+      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-transition="exit"] {
+        transform: translateY(12px);
+      }
+
+      body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"],
+      body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"] {
+        height: var(--v2-visualizer-lock-height, var(--v2-visualizer-window-height));
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher {
+        position: absolute;
+        inset: 0;
         margin-bottom: 0;
         height: var(--v2-visualizer-window-height);
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher,
@@ -1806,24 +2070,300 @@
 
       body[data-ui-shell="mobile"] .v2-feed-panel,
       body[data-ui-shell="desktop"] .v2-feed-panel {
-        display: none;
+        display: flex;
+        position: absolute;
+        inset: 0;
         height: var(--v2-visualizer-window-height);
         overflow: hidden;
         padding: 8px 10px;
-        border: 1px solid rgba(88, 99, 114, 0.8);
-        border-radius: 8px;
-        background: linear-gradient(180deg, rgba(16, 20, 26, 0.94), rgba(11, 15, 20, 0.94));
+        border: 0;
+        border-radius: 0;
+        background: transparent;
         font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
         font-size: 0.76rem;
         color: #b4f1d3;
         flex-direction: column;
         justify-content: flex-start;
         white-space: pre;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-total-panel,
+      body[data-ui-shell="desktop"] .v2-total-panel {
         display: flex;
+        position: absolute;
+        inset: 0;
+        justify-content: flex-end;
+        align-items: center;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="total"] .v2-total-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="total"] .v2-total-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-panel,
+      body[data-ui-shell="desktop"] .v2-circle-panel {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] .v2-eigen-allocator-panel,
+      body[data-ui-shell="desktop"] .v2-eigen-allocator-panel {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        padding: 8px 10px;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="eigen_allocator"] .v2-eigen-allocator-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="eigen_allocator"] .v2-eigen-allocator-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-panel,
+      body[data-ui-shell="desktop"] .v2-algebraic-panel {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        padding: 8px 10px 30px;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        gap: 6px;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="algebraic"] .v2-algebraic-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="algebraic"] .v2-algebraic-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-equation,
+      body[data-ui-shell="desktop"] .v2-algebraic-equation {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        text-align: center;
+        color: #b4f1d3;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-equation .katex-display,
+      body[data-ui-shell="desktop"] .v2-algebraic-equation .katex-display {
+        margin: 0;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-equation .katex,
+      body[data-ui-shell="desktop"] .v2-algebraic-equation .katex {
+        font-size: clamp(0.9rem, 2vw, 1rem);
+        color: #b4f1d3;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-truncated,
+      body[data-ui-shell="desktop"] .v2-algebraic-truncated {
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        color: #f2cf57;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-row,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-row {
+        width: 100%;
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 8px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-function,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-function,
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-seed,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-seed {
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: 0.76rem;
+        line-height: 1.25;
+        color: #b4f1d3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-function,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-function {
+        flex: 1 1 auto;
+        text-align: left;
+      }
+
+      body[data-ui-shell="mobile"] .v2-algebraic-builder-seed,
+      body[data-ui-shell="desktop"] .v2-algebraic-builder-seed {
+        flex: 0 0 auto;
+        text-align: right;
+      }
+
+      body[data-ui-shell="mobile"] .v2-eigen-equation,
+      body[data-ui-shell="desktop"] .v2-eigen-equation {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        text-align: center;
+        color: #b4f1d3;
+      }
+
+      body[data-ui-shell="mobile"] .v2-eigen-equation .katex-display,
+      body[data-ui-shell="desktop"] .v2-eigen-equation .katex-display {
+        margin: 0;
+      }
+
+      body[data-ui-shell="mobile"] .v2-eigen-equation .katex,
+      body[data-ui-shell="desktop"] .v2-eigen-equation .katex {
+        font-size: clamp(0.90rem, 2vw, 1rem);
+        color: #b4f1d3;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-mode-indicator,
+      body[data-ui-shell="desktop"] .v2-circle-mode-indicator {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 2;
+        width: 24px;
+        text-align: center;
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(18px, 2.8vw, 24px);
+        line-height: 1;
+        color: var(--lit);
+        text-shadow: 0 0 6px rgba(188, 255, 214, 0.45);
+        pointer-events: none;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="circle"] .v2-circle-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="circle"] .v2-circle-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-plot,
+      body[data-ui-shell="desktop"] .v2-circle-plot {
+        width: min(100%, calc(var(--v2-visualizer-window-height) - 2px));
+        height: auto;
+        overflow: visible;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-frame,
+      body[data-ui-shell="desktop"] .v2-circle-frame {
+        fill: none;
+        stroke: rgba(188, 255, 214, 0.68);
+        stroke-width: 1.4;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-slice,
+      body[data-ui-shell="desktop"] .v2-circle-slice {
+        stroke: rgba(188, 255, 214, 0.28);
+        stroke-width: 0.65;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-slice-label,
+      body[data-ui-shell="desktop"] .v2-circle-slice-label {
+        fill: rgba(188, 255, 214, 0.84);
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 5.2px;
+        font-weight: 600;
+        user-select: none;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-center,
+      body[data-ui-shell="desktop"] .v2-circle-center {
+        fill: rgba(188, 255, 214, 0.92);
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-trace,
+      body[data-ui-shell="desktop"] .v2-circle-trace {
+        fill: none;
+        stroke: rgba(188, 255, 214, 0.44);
+        stroke-width: 0.9;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-point,
+      body[data-ui-shell="desktop"] .v2-circle-point {
+        fill: rgba(188, 255, 214, 0.96);
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-point,
+      body[data-ui-shell="desktop"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-point {
+        fill: #f2cf57;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-trace,
+      body[data-ui-shell="desktop"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-trace {
+        stroke: rgba(242, 207, 87, 0.74);
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-point--error,
+      body[data-ui-shell="desktop"] .v2-circle-point--error {
+        fill: #ffd18a;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher {
+        opacity: 0;
+        transform: translateY(-12px);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel {
+        opacity: 0;
+        transform: translateY(12px);
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-table,
@@ -1863,6 +2403,31 @@
       body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher .grapher-screen {
         height: 100%;
         aspect-ratio: auto;
+        border: 0;
+        border-radius: 0;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        body[data-ui-shell="mobile"] .v2-visualizer-host,
+        body[data-ui-shell="desktop"] .v2-visualizer-host,
+        body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
+        body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher,
+        body[data-ui-shell="mobile"] .v2-total-panel,
+        body[data-ui-shell="desktop"] .v2-total-panel,
+        body[data-ui-shell="mobile"] .v2-circle-panel,
+        body[data-ui-shell="desktop"] .v2-circle-panel,
+        body[data-ui-shell="mobile"] .v2-eigen-allocator-panel,
+        body[data-ui-shell="desktop"] .v2-eigen-allocator-panel,
+        body[data-ui-shell="mobile"] .v2-algebraic-panel,
+        body[data-ui-shell="desktop"] .v2-algebraic-panel,
+        body[data-ui-shell="mobile"] .v2-feed-panel,
+        body[data-ui-shell="desktop"] .v2-feed-panel {
+          transition-duration: 1ms;
+          transform: none;
+        }
       }
 
       body[data-ui-shell="mobile"] [data-storage-keys] {
@@ -2048,7 +2613,7 @@
           min-height: 0;
         }
 
-        [data-total] {
+        [data-v2-total-panel] {
           --total-main-height: clamp(54px, 56%, 68px);
           --total-meta-top: clamp(8px, 22%, 26px);
           --total-meta-height: clamp(16px, 18%, 20px);
@@ -2085,78 +2650,29 @@
       <main id="app" class="app-layout" aria-label="AutoCalc">
         <section class="play-area">
           <div class="device-row">
-            <section class="device device--allocator" data-allocator-device aria-label="Allocator">
-              <div class="allocator-header">
-                <h2 class="allocator-title">EIGEN ALLOCATOR | ~,==,"&lt;</h2>
-              </div>
-              <div class="allocator-grid">
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-unused>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="lambda">lambda=</span>
-                  <span class="allocator-stepper-placeholder" aria-hidden="true"></span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-width data-allocator-effective-width>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="width">m=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-width>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-width>+</button>
-                  </span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-height data-allocator-effective-height>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="height">n=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-height>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-height>+</button>
-                  </span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-range data-allocator-effective-range>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="range">R=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-range>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-range>+</button>
-                  </span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-speed data-allocator-effective-speed>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="speed">t=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-speed>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-speed>+</button>
-                  </span>
-                </div>
-                <div class="allocator-row">
-                  <span class="allocator-display" data-allocator-slots data-allocator-effective-slots>0</span>
-                  <span class="allocator-label allocator-label--math" data-allocator-label="slots">S=</span>
-                  <span class="allocator-stepper">
-                    <button type="button" class="allocator-step" data-allocator-dec-slots>-</button>
-                    <button type="button" class="allocator-step" data-allocator-inc-slots>+</button>
-                  </span>
-                </div>
-              </div>
-            </section>
             <section class="device device--calc" data-calc-device>
               <section class="roll" data-roll aria-label="Calculator roll"></section>
               <section class="calc">
                 <div class="slot" aria-hidden="true"></div>
                 <div class="display-stack">
                   <div class="display display--shared" data-display-window data-graph-visible="false">
-                    <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="none" aria-hidden="true">
+                    <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                      <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
                       <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
                         <div class="grapher-screen">
                           <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
                         </div>
                       </section>
                       <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                      <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                      <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
+                      <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                     </section>
-                    <div data-total aria-live="polite"></div>
                   </div>
                   <div class="display" data-slot></div>
                 </div>
                 <div data-keys></div>
-                <button type="button" class="allocator-mode-action" data-allocator-reset>Allocate 𝝀</button>
+                <button type="button" class="allocator-mode-action" data-mode-toggle>Modify Layout</button>
               </section>
             </section>
           </div>
@@ -2175,6 +2691,7 @@
     </div>
     <script src="./node_modules/katex/dist/katex.min.js"></script>
     <script src="./node_modules/chart.js/dist/chart.umd.min.js"></script>
+    <script src="./node_modules/algebrite/dist/algebrite.bundle-for-browser.js"></script>
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>

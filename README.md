@@ -53,11 +53,12 @@ Then open: `http://localhost:4173/index.html`
 
 The app now supports explicit shell targets in parallel:
 
-- Default behavior: uses mobile shell.
+- Default behavior: auto-detects runtime (desktop shell on desktop-like browsers, mobile shell on mobile-like browsers).
 - Shell mode resolution order:
   1. Query param override (`?ui=mobile|desktop`)
   2. Build/runtime env target `UI_SHELL_TARGET`
-  3. Default fallback (`mobile`)
+  3. Runtime auto-detection fallback (desktop/mobile)
+  4. Safe fallback (`mobile`)
 - Env override:
   - `UI_SHELL_TARGET=mobile|desktop`
 - Query param overrides (recommended for local testing):
@@ -113,7 +114,7 @@ npm run build:desktop
 ```
 
 Portable `.exe` runtime defaults to desktop shell (`?ui=desktop` at Electron entrypoint).
-Browser-hosted play defaults to mobile shell unless `?ui=desktop` is explicitly provided.
+Browser-hosted play auto-selects desktop/mobile shell unless explicitly overridden with `?ui=desktop` or `?ui=mobile`.
 
 Release build (verify + package):
 

@@ -47,4 +47,22 @@ export const runUiShellModeResolverTests = (): void => {
     "mobile",
     "missing env and query falls back to mobile default",
   );
+  assert.equal(
+    resolveUiShellMode("http://localhost/index.html", undefined, {
+      innerWidth: 1440,
+      navigator: { userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", maxTouchPoints: 0 },
+      matchMedia: () => ({ matches: false }),
+    }),
+    "desktop",
+    "desktop-like runtime falls back to desktop shell",
+  );
+  assert.equal(
+    resolveUiShellMode("http://localhost/index.html", undefined, {
+      innerWidth: 390,
+      navigator: { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)", maxTouchPoints: 5 },
+      matchMedia: () => ({ matches: true }),
+    }),
+    "mobile",
+    "mobile-like runtime falls back to mobile shell",
+  );
 };

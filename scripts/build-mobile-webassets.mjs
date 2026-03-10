@@ -30,7 +30,10 @@ const copyIntoOutput = (relativePath) => {
 rebuildOutputDir();
 copyIntoOutput("index.html");
 copyIntoOutput("dist");
-copyIntoOutput("node_modules/katex");
-copyIntoOutput("node_modules/chart.js");
+copyIntoOutput("node_modules/katex/dist/katex.min.css");
+copyIntoOutput("node_modules/katex/dist/katex.min.js");
+copyIntoOutput("node_modules/katex/dist/fonts");
+copyIntoOutput("node_modules/chart.js/dist/chart.umd.min.js");
+copyIntoOutput("node_modules/algebrite/dist/algebrite.bundle-for-browser.js");
 
 console.log(`MOBILE_WEB_ASSETS_READY ${outputDir}`);
