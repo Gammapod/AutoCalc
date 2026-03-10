@@ -13,7 +13,7 @@ v0.7.0 pivots AutoCalc toward integer-first number theory gameplay.
 - Roll output should become richer by capturing factorization context for results.
 - Unlock UX shifts from a separate checklist panel to in-calculator contextual hints.
 
-## Milestone 1: Function Definition Refactor
+## Milestone 1: Function Definition Refactor (Done - 2026-03-10)
 
 Goal: establish a new function model before introducing additional operators.
 
@@ -43,6 +43,12 @@ Goal: establish a new function model before introducing additional operators.
 - `NEG`, `++`, and `--` all follow the new unary staging path.
 - Existing binary operators preserve behavior.
 - Tests cover unary-to-slot conversion and ensure no direct execution/roll side effects on unary keypress.
+
+### Completion Note
+
+- Implemented with `-n` as the `NEG` equivalent.
+- Unary staging rules are active: `++ -> [ + 1 ]`, `-- -> [ - 1 ]`, `-n -> [ * -1 ]`.
+- Milestone 1 behavior and test criteria are satisfied.
 
 ## Milestone 2: New Operators
 
