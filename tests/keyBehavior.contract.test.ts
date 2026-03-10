@@ -17,6 +17,7 @@ const runtimeKeysFromInitialUnlocks = (): Key[] => {
   return [
     ...(Object.keys(state.unlocks.valueExpression) as Key[]),
     ...(Object.keys(state.unlocks.slotOperators) as Key[]),
+    ...(Object.keys(state.unlocks.unaryOperators) as Key[]),
     ...(Object.keys(state.unlocks.utilities) as Key[]),
     ...(Object.keys(state.unlocks.memory) as Key[]),
     ...(Object.keys(state.unlocks.steps) as Key[]),
@@ -46,6 +47,19 @@ const unlockKey = (state: GameState, key: Key): GameState => {
         maxSlots: Math.max(state.unlocks.maxSlots, 1),
         slotOperators: {
           ...state.unlocks.slotOperators,
+          [key]: true,
+        },
+      },
+    };
+  }
+  if (key in state.unlocks.unaryOperators) {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        maxSlots: Math.max(state.unlocks.maxSlots, 1),
+        unaryOperators: {
+          ...state.unlocks.unaryOperators,
           [key]: true,
         },
       },
@@ -142,10 +156,16 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "neg_toggles_pending_sign") {
-    const state = unlockKey(initialState(), "NEG");
-    const next = applyKeyAction(state, "NEG");
-    assert.equal(next.calculator.pendingNegativeTotal, true, "NEG should toggle pending sign on zero total");
+  if (kind === "unary_operator_inserts_pair") {
+    const state = unlockKey(initialState(), key);
+    const next = applyKeyAction(state, key);
+    if (key === "++") {
+      assert.deepEqual(next.calculator.draftingSlot, { operator: "+", operandInput: "1", isNegative: false }, "++ inserts [+ 1] drafting pair");
+    } else if (key === "--") {
+      assert.deepEqual(next.calculator.draftingSlot, { operator: "-", operandInput: "1", isNegative: false }, "-- inserts [- 1] drafting pair");
+    } else {
+      assert.deepEqual(next.calculator.draftingSlot, { operator: "*", operandInput: "1", isNegative: true }, "-n inserts [* -1] drafting pair");
+    }
     return;
   }
 
@@ -243,22 +263,6 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     state = applyKeyAction(state, "1");
     const next = applyKeyAction(state, "=");
     assert.deepEqual(next.calculator.total, r(1n), "= should execute drafted operation sequence");
-    return;
-  }
-
-  if (kind === "increment_increases_total") {
-    const state = initialState();
-    const next = applyKeyAction(state, "++");
-    assert.deepEqual(next.calculator.total, r(1n), "++ should increment total by one");
-    assert.deepEqual(next.calculator.rollEntries, re(r(1n)), "++ should append incremented total to roll");
-    return;
-  }
-
-  if (kind === "decrement_decreases_total") {
-    const state = unlockKey(initialState(), "--");
-    const next = applyKeyAction(state, "--");
-    assert.deepEqual(next.calculator.total, r(-1n), "-- should decrement total by one");
-    assert.deepEqual(next.calculator.rollEntries, re(r(-1n)), "-- should append decremented total to roll");
     return;
   }
 
@@ -370,19 +374,29 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "neg_toggles_drafting_sign") {
+  if (kind === "unary_operator_clears_active_roll_then_inserts_pair") {
     const state = unlockKey(
       {
         ...initialState(),
         calculator: {
           ...initialState().calculator,
-          draftingSlot: { operator: "+", operandInput: "", isNegative: false },
+          total: r(5n),
+          rollEntries: re(r(5n)),
+          operationSlots: [{ operator: "+", operand: 9n }],
+          draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
         },
       },
-      "NEG",
+      key,
     );
-    const next = applyKeyAction(state, "NEG");
-    assert.equal(next.calculator.draftingSlot?.isNegative, true, "NEG should toggle drafting sign");
+    const next = applyKeyAction(state, key);
+    assert.equal(next.calculator.rollEntries.length, 0, "unary operator clears active roll before insertion");
+    if (key === "++") {
+      assert.deepEqual(next.calculator.draftingSlot, { operator: "+", operandInput: "1", isNegative: false }, "++ inserts [+ 1] after clear");
+    } else if (key === "--") {
+      assert.deepEqual(next.calculator.draftingSlot, { operator: "-", operandInput: "1", isNegative: false }, "-- inserts [- 1] after clear");
+    } else {
+      assert.deepEqual(next.calculator.draftingSlot, { operator: "*", operandInput: "1", isNegative: true }, "-n inserts [* -1] after clear");
+    }
     return;
   }
 
@@ -480,32 +494,6 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     const next = applyKeyAction(state, "=");
     assert.deepEqual(next.calculator.total, toNanCalculatorValue(), "division by zero should set total to NaN");
     assert.equal(next.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero should record error code");
-    return;
-  }
-
-  if (kind === "increment_clears_pending_negative") {
-    const state = {
-      ...initialState(),
-      calculator: {
-        ...initialState().calculator,
-        pendingNegativeTotal: true,
-      },
-    };
-    const next = applyKeyAction(state, "++");
-    assert.equal(next.calculator.pendingNegativeTotal, false, "++ should clear pending negative sign");
-    return;
-  }
-
-  if (kind === "decrement_clears_pending_negative") {
-    const state = unlockKey({
-      ...initialState(),
-      calculator: {
-        ...initialState().calculator,
-        pendingNegativeTotal: true,
-      },
-    }, "--");
-    const next = applyKeyAction(state, "--");
-    assert.equal(next.calculator.pendingNegativeTotal, false, "-- should clear pending negative sign");
     return;
   }
 

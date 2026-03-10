@@ -33,7 +33,7 @@ const defaultTimers: TimerApi = {
 
 const isAutoEqualsEnabled = (state: GameState): boolean => Boolean(state.ui.buttonFlags[AUTO_EQUALS_FLAG]);
 const hasValidEquation = (state: GameState): boolean => getOperationSnapshot(state.calculator).length > 0;
-const EXECUTOR_KEYS: readonly ExecKey[] = ["=", "++", "--"];
+const EXECUTOR_KEYS: readonly ExecKey[] = ["="];
 const PLAY_PAUSE_KEY = "\u23EF";
 
 const getAutoEqualsRateMultiplier = (state: GameState): number => {

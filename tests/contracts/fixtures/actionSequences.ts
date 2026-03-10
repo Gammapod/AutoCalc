@@ -45,8 +45,8 @@ export const LONG_TRACE_FIXTURES: ActionSequenceFixture[] = [
     actions: [
       { type: "UNLOCK_ALL" },
       { type: "PRESS_KEY", key: "1" },
-      { type: "PRESS_KEY", key: "NEG" },
-      { type: "PRESS_KEY", key: "++" },
+      { type: "PRESS_KEY", key: "1" },
+      { type: "PRESS_KEY", key: "=" },
       { type: "PRESS_KEY", key: "C" },
       { type: "PRESS_KEY", key: "1" },
       { type: "PRESS_KEY", key: "+" },

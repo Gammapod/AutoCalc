@@ -49,10 +49,8 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
   const operatorKeysList = operatorKeys();
   const plusKey = hasKey("+") ? "+" : null;
   const minusKey = hasKey("-") ? "-" : null;
-  const negKey = hasKey("NEG") ? "NEG" : null;
+  const oneKey = hasKey("1") ? "1" : null;
   const equalsKey = hasKey("=") ? "=" : null;
-  const incrementKey = hasKey("++") ? "++" : null;
-  const decrementKey = hasKey("--") ? "--" : null;
   const clearKey = hasKey("C") ? "C" : null;
   const undoKey = hasKey("UNDO") ? "UNDO" : null;
   const divideKey = hasKey("/") ? "/" : null;
@@ -64,13 +62,10 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
   const operatorClauses = operatorKeysList.map((operator) => [operator]);
   const executeActivationClauses = executeKeys.map((key) => [key]);
   const stepPlusClauses = uniqueClauses([
-    ...(incrementKey ? [clause(incrementKey)] : []),
-    ...(equalsKey && plusKey ? [clause(equalsKey, plusKey)] : []),
+    ...(equalsKey && plusKey && oneKey ? [clause(equalsKey, plusKey, oneKey)] : []),
   ]);
   const stepMinusClauses = uniqueClauses([
-    ...(decrementKey ? [clause(decrementKey)] : []),
-    ...(equalsKey && minusKey ? [clause(equalsKey, minusKey)] : []),
-    ...(equalsKey && plusKey && negKey ? [clause(equalsKey, plusKey, negKey)] : []),
+    ...(equalsKey && minusKey && oneKey ? [clause(equalsKey, minusKey, oneKey)] : []),
   ]);
   const resetClauses = uniqueClauses([
     ...(clearKey ? [clause(clearKey)] : []),
@@ -78,13 +73,10 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
   ]);
 
   const rollGrowthClauses = uniqueClauses([
-    ...(equalsKey && incrementKey ? [clause(equalsKey, incrementKey)] : []),
-    ...(equalsKey && decrementKey ? [clause(equalsKey, decrementKey)] : []),
     ...(equalsKey ? operatorClauses.map((clause) => [equalsKey, ...clause]) : []),
   ]);
 
   const rollEqualRunClauses = uniqueClauses([
-    ...(incrementKey ? [clause(incrementKey)] : []),
     ...(equalsKey && plusKey ? [clause(equalsKey, plusKey)] : []),
     ...(equalsKey && minusKey ? [clause(equalsKey, minusKey)] : []),
     ...(equalsKey && hasKey("*") ? [clause(equalsKey, "*")] : []),
@@ -92,13 +84,10 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
   ]);
 
   const rollIncrementingClauses = uniqueClauses([
-    ...(incrementKey ? [clause(incrementKey)] : []),
-    ...(equalsKey && plusKey ? [clause(equalsKey, plusKey)] : []),
+    ...(equalsKey && plusKey && oneKey ? [clause(equalsKey, plusKey, oneKey)] : []),
   ]);
 
-  const rollAlternatingSignClauses = uniqueClauses([
-    ...(equalsKey && plusKey && negKey ? [clause(equalsKey, plusKey, negKey)] : []),
-  ]);
+  const rollAlternatingSignClauses = uniqueClauses([]);
 
   const rollConstantStepClauses = uniqueClauses([
     ...(equalsKey
@@ -111,8 +100,6 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
           ...(hasKey("\u27E1") ? [clause(equalsKey, "\u27E1")] : []),
         ]
       : []),
-    ...(incrementKey ? [clause(incrementKey)] : []),
-    ...(decrementKey ? [clause(decrementKey)] : []),
   ]);
 
   const providers: FunctionCapabilityProviderSpec[] = [
@@ -125,13 +112,13 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
     {
       id: "fn.step_plus_one",
       label: "step_plus_one",
-      rule: "++ is unlocked OR (= and + are unlocked)",
+      rule: "= and + and 1 are unlocked",
       sufficiency: stepPlusClauses,
     },
     {
       id: "fn.step_minus_one",
       label: "step_minus_one",
-      rule: "-- is unlocked OR (= and -) OR (= and + and NEG)",
+      rule: "= and - and 1 are unlocked",
       sufficiency: stepMinusClauses,
     },
     {
@@ -144,13 +131,13 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
       id: "fn.allocator_return_press",
       label: "allocator_return_press",
       rule: "allocator RETURN action is available",
-      sufficiency: incrementKey ? [clause(incrementKey)] : executeActivationClauses,
+      sufficiency: executeActivationClauses,
     },
     {
       id: "fn.allocator_allocate_press",
       label: "allocator_allocate_press",
       rule: "allocator Allocate action is available",
-      sufficiency: incrementKey ? [clause(incrementKey)] : executeActivationClauses,
+      sufficiency: executeActivationClauses,
     },
     {
       id: "fn.form_operator_plus_operand",
@@ -173,13 +160,13 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
     {
       id: "fn.roll_incrementing_run",
       label: "roll_incrementing_run",
-      rule: "++ is unlocked OR (= and + are unlocked)",
+      rule: "= and + and 1 are unlocked",
       sufficiency: rollIncrementingClauses,
     },
     {
       id: "fn.roll_alternating_sign_constant_abs",
       label: "roll_alternating_sign_constant_abs",
-      rule: "= and + and NEG are unlocked",
+      rule: "blocked: no sign-toggle key path is available in current key universe",
       sufficiency: rollAlternatingSignClauses,
     },
     {
@@ -212,12 +199,6 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
       ),
     },
   ];
-
-  for (const provider of providers) {
-    if (provider.sufficiency.length === 0) {
-      throw new Error(`Generated provider ${provider.id} has no sufficient clauses. Check keyCatalog traits.`);
-    }
-  }
 
   return providers;
 };

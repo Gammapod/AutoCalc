@@ -116,12 +116,11 @@ export const runAutoEqualsSchedulerTests = (): void => {
   store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   scheduler.sync(store.getState());
   assert.equal(countExecutorPresses(store.actions), 1, "toggling on dispatches immediate executor press once");
-  assert.equal(countExecutorPressesForKey(store.actions, "++"), 1, "fallback path presses first installed execution key");
-  assert.equal(countExecutorPressesForKey(store.actions, "="), 0, "default scheduler path should not press =");
+  assert.equal(countExecutorPressesForKey(store.actions, "="), 1, "fallback path presses first installed execution key");
   assert.equal(timers.setCalls, 1, "toggling on creates one interval");
   assert.equal(timers.setMsHistory[0], 1000, "default speed starts at one executor press per second");
   assert.equal(timers.activeCount(), 1, "interval remains active while on");
-  assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle remains on after successful ++ attempt");
+  assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle remains on after successful = attempt");
 
   store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", value: 200 });
   store.dispatch({ type: "LAMBDA_SET_OVERRIDE_EPSILON", value: { num: 10n, den: 1n } });
@@ -137,10 +136,10 @@ export const runAutoEqualsSchedulerTests = (): void => {
 
   timers.tick();
   assert.equal(countExecutorPresses(store.actions), 2, "each interval tick dispatches executor");
-  assert.equal(countExecutorPressesForKey(store.actions, "++"), 2, "tick continues pressing ++");
-  assert.deepEqual(autoActivatedKeys, ["++", "++"], "scheduler reports activated keys for press animation hooks");
-  assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "successful ++ execution keeps toggle on");
-  assert.equal(timers.activeCount(), 1, "successful ++ execution keeps interval active");
+  assert.equal(countExecutorPressesForKey(store.actions, "="), 2, "tick continues pressing =");
+  assert.deepEqual(autoActivatedKeys, ["=", "="], "scheduler reports activated keys for press animation hooks");
+  assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "successful = execution keeps toggle on");
+  assert.equal(timers.activeCount(), 1, "successful = execution keeps interval active");
 
   const stateWithValidEquation: GameState = {
     ...withPlayPauseAbove(initialState(), "="),
@@ -175,9 +174,9 @@ export const runAutoEqualsSchedulerTests = (): void => {
     "valid equations keep auto-equals running past the second attempt",
   );
   assert.equal(
-    countExecutorPressesForKey(validStore.actions, "++"),
-    0,
-    "when = is below play/pause, scheduler should not dispatch ++",
+    countExecutorPressesForKey(validStore.actions, "="),
+    3,
+    "when = is below play/pause, scheduler dispatches equals attempts",
   );
   assert.equal(Boolean(validStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle remains on while equation is valid");
 
@@ -297,7 +296,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   );
 
   scheduler.dispose();
-  assert.equal(timers.clearCalls, 2, "dispose clears the current ++ scheduler interval once");
+  assert.equal(timers.clearCalls, 2, "dispose clears the current scheduler interval once");
   assert.equal(timers.activeCount(), 0, "dispose leaves no timers active");
   validScheduler.dispose();
   invalidScheduler.dispose();

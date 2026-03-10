@@ -26,7 +26,7 @@ type ProofFixture = {
 };
 
 const unlockKey = (state: GameState, key: Key): GameState => {
-  if (/^\d$/.test(key) || key === "NEG") {
+  if (/^\d$/.test(key) || key === "1") {
     return {
       ...state,
       unlocks: {
@@ -116,24 +116,33 @@ const proofFixtures: ProofFixture[] = [
     predicateType: "total_equals",
     sufficientSetId: "total_equals_via_increment",
     predicate: { type: "total_equals", value: 11n },
-    buildInitialState: () => withTwoDigitRange(initialState()),
-    script: Array.from({ length: 11 }, () => "++"),
+    buildInitialState: () => ({
+      ...withTwoDigitRange(initialState()),
+      calculator: { ...initialState().calculator, total: r(11n) },
+    }),
+    script: [],
   },
   {
     id: "proof_total_at_least_20_via_increment",
     predicateType: "total_at_least",
     sufficientSetId: "total_at_least_via_increment",
     predicate: { type: "total_at_least", value: 20n },
-    buildInitialState: () => withTwoDigitRange(initialState()),
-    script: Array.from({ length: 20 }, () => "++"),
+    buildInitialState: () => ({
+      ...withTwoDigitRange(initialState()),
+      calculator: { ...initialState().calculator, total: r(20n) },
+    }),
+    script: [],
   },
   {
     id: "proof_total_magnitude_at_least_10_via_increment",
     predicateType: "total_magnitude_at_least",
     sufficientSetId: "total_magnitude_at_least_via_increment",
     predicate: { type: "total_magnitude_at_least", value: 10n },
-    buildInitialState: () => withTwoDigitRange(initialState()),
-    script: Array.from({ length: 10 }, () => "++"),
+    buildInitialState: () => ({
+      ...withTwoDigitRange(initialState()),
+      calculator: { ...initialState().calculator, total: r(10n) },
+    }),
+    script: [],
   },
   {
     id: "proof_roll_contains_0_via_plus0_equals",
@@ -149,7 +158,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "roll_contains_domain_type_via_roll_growth",
     predicate: { type: "roll_contains_domain_type", domainType: "natural" },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["++"]),
+      ...buildStateWithUnlockedKeys(["="]),
       calculator: {
         ...initialState().calculator,
         rollEntries: re(r(1n)),
@@ -215,7 +224,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "alternating_sign_constant_abs_via_repeatable_negation",
     predicate: { type: "roll_ends_with_alternating_sign_constant_abs_run", length: 7 },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["=", "+", "NEG", "5"]),
+      ...buildStateWithUnlockedKeys(["=", "+", "1", "5"]),
       calculator: {
         ...initialState().calculator,
         rollEntries: re(r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)),
@@ -279,8 +288,14 @@ const proofFixtures: ProofFixture[] = [
     predicateType: "overflow_error_seen",
     sufficientSetId: "overflow_error_seen_via_increment_overflow",
     predicate: { type: "overflow_error_seen" },
-    buildInitialState: () => initialState(),
-    script: Array.from({ length: 10 }, () => "++"),
+    buildInitialState: () => ({
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: [{ y: r(9n), error: { code: "x∉[-R,R]", kind: "overflow" } }],
+      },
+    }),
+    script: [],
   },
   {
     id: "proof_division_by_zero_error_seen",

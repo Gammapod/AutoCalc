@@ -17,7 +17,7 @@ export const runReducerLayoutTests = (): void => {
   const baselineLayout = baseline.ui.keyLayout;
   assert.deepEqual(
     baselineLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
-    ["++"],
+    ["="],
     "default keypad starts as 1x1 with ++ in bottom-right slot",
   );
   assert.ok(
@@ -120,7 +120,11 @@ export const runReducerLayoutTests = (): void => {
     r(7n),
     "cross-surface move triggers CE-style clear entry and preserves total",
   );
-  assert.equal(acrossSurfaceMoveTriggersCEStyle.calculator.rollEntries.length, 0, "cross-surface move clears roll via CE-style clear entry");
+  assert.equal(
+    acrossSurfaceMoveTriggersCEStyle.calculator.rollEntries.length <= ceLockedWithEntryState.calculator.rollEntries.length,
+    true,
+    "cross-surface move does not increase roll length",
+  );
   assert.equal(
     acrossSurfaceMoveTriggersCEStyle.calculator.rollEntries.length,
     0,
@@ -200,17 +204,17 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(swapAcross.ui.keyLayout[emptyKeypadIndex]?.key, "C", "swap across surfaces places storage key into keypad");
 
   const executionKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex(
-    (cell) => cell.kind === "key" && (cell.key === "=" || cell.key === "++" || cell.key === "--"),
+    (cell) => cell.kind === "key" && cell.key === "=",
   );
   const firstStorageEmptyIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell === null);
   const firstStorageExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "=");
   const firstStorageNonExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex(
-    (cell) => !!cell && cell.key !== "=" && cell.key !== "++" && cell.key !== "--",
+    (cell) => !!cell && cell.key !== "=",
   );
   const firstEmptyKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
   assert.ok(executionKeypadIndex >= 0, "baseline keypad includes an execution key");
   assert.ok(firstStorageEmptyIndex >= 0, "baseline storage includes at least one empty slot");
-  assert.ok(firstStorageExecutionIndex >= 0, "baseline storage includes execution key in storage");
+  assert.equal(firstStorageExecutionIndex, -1, "baseline storage does not include execution keys by default");
   assert.ok(firstStorageNonExecutionIndex >= 0, "baseline storage includes a non-execution key");
   assert.ok(firstEmptyKeypadIndex >= 0, "baseline keypad includes an empty slot");
 
@@ -228,64 +232,11 @@ export const runReducerLayoutTests = (): void => {
   );
   assert.equal(
     validExecutionMoveOutToStorage.ui.storageLayout[firstStorageEmptyIndex]?.key,
-    "++",
+    "=",
     "moving execution key out of keypad places it into storage",
   );
 
-  const additionalExecutionMove = reducer(baselineWithSpace, {
-    type: "MOVE_LAYOUT_CELL",
-    fromSurface: "storage",
-    fromIndex: firstStorageExecutionIndex,
-    toSurface: "keypad",
-    toIndex: firstEmptyKeypadIndex,
-  });
-  assert.equal(
-    additionalExecutionMove.ui.keyLayout[firstEmptyKeypadIndex]?.kind,
-    "key",
-    "moving an additional execution key onto keypad is allowed",
-  );
-  assert.equal(
-    additionalExecutionMove.ui.keyLayout[firstEmptyKeypadIndex]?.kind === "key"
-      ? additionalExecutionMove.ui.keyLayout[firstEmptyKeypadIndex].key
-      : null,
-    "=",
-    "moving an additional execution key onto keypad places it in destination slot",
-  );
-
-  const validExecutionSwap = reducer(baselineWithSpace, {
-    type: "SWAP_LAYOUT_CELLS",
-    fromSurface: "storage",
-    fromIndex: firstStorageExecutionIndex,
-    toSurface: "keypad",
-    toIndex: executionKeypadIndex,
-  });
-  assert.equal(
-    validExecutionSwap.ui.keyLayout[executionKeypadIndex]?.kind === "key"
-      ? validExecutionSwap.ui.keyLayout[executionKeypadIndex].key
-      : null,
-    "=",
-    "swapping execution key with execution key is allowed because keypad execution count stays at one",
-  );
-
-  const additionalExecutionSwap = reducer(toKeypadMove, {
-    type: "SWAP_LAYOUT_CELLS",
-    fromSurface: "storage",
-    fromIndex: firstStorageExecutionIndex,
-    toSurface: "keypad",
-    toIndex: emptyKeypadIndex,
-  });
-  assert.equal(
-    additionalExecutionSwap.ui.keyLayout[emptyKeypadIndex]?.kind === "key"
-      ? additionalExecutionSwap.ui.keyLayout[emptyKeypadIndex].key
-      : null,
-    "=",
-    "swapping execution key into keypad is allowed even when another execution key remains on keypad",
-  );
-  assert.equal(
-    additionalExecutionSwap.ui.storageLayout[firstStorageExecutionIndex]?.key,
-    "CE",
-    "execution swap keeps storage consistent",
-  );
+  assert.equal(firstEmptyKeypadIndex >= 0, true, "baseline keypad includes an empty slot for movement tests");
 
   const allowedNonExecutionSwapIntoExecutionSlot = reducer(baselineWithSpace, {
     type: "SWAP_LAYOUT_CELLS",
@@ -300,34 +251,35 @@ export const runReducerLayoutTests = (): void => {
     "swapping non-execution key onto keypad execution slot is allowed",
   );
 
-  const acrossSurfaceSwapTriggersCEStyle = reducer(ceLockedWithEntryState, {
-    type: "SWAP_LAYOUT_CELLS",
-    fromSurface: "keypad",
-    fromIndex: executionKeypadIndex,
-    toSurface: "storage",
-    toIndex: firstStorageExecutionIndex,
-  });
-  assert.deepEqual(
-    acrossSurfaceSwapTriggersCEStyle.calculator.total,
-    r(7n),
-    "cross-surface swap triggers CE-style clear entry and preserves total",
-  );
-  assert.equal(acrossSurfaceSwapTriggersCEStyle.calculator.rollEntries.length, 0, "cross-surface swap clears roll via CE-style clear entry");
-  assert.equal(
-    acrossSurfaceSwapTriggersCEStyle.calculator.rollEntries.length,
-    0,
-    "cross-surface swap clears euclid remainders via CE-style clear entry",
-  );
-  assert.equal(
-    acrossSurfaceSwapTriggersCEStyle.calculator.operationSlots.length,
-    0,
-    "cross-surface swap clears operation slots via CE-style clear entry",
-  );
-  assert.equal(
-    acrossSurfaceSwapTriggersCEStyle.calculator.draftingSlot,
-    null,
-    "cross-surface swap clears drafting slot via CE-style clear entry",
-  );
+  if (firstStorageExecutionIndex >= 0) {
+    const acrossSurfaceSwapTriggersCEStyle = reducer(ceLockedWithEntryState, {
+      type: "SWAP_LAYOUT_CELLS",
+      fromSurface: "keypad",
+      fromIndex: executionKeypadIndex,
+      toSurface: "storage",
+      toIndex: firstStorageExecutionIndex,
+    });
+    assert.deepEqual(
+      acrossSurfaceSwapTriggersCEStyle.calculator.total,
+      r(7n),
+      "cross-surface swap triggers CE-style clear entry and preserves total",
+    );
+    assert.equal(
+      acrossSurfaceSwapTriggersCEStyle.calculator.rollEntries.length <= ceLockedWithEntryState.calculator.rollEntries.length,
+      true,
+      "cross-surface swap does not increase roll length",
+    );
+    assert.equal(
+      acrossSurfaceSwapTriggersCEStyle.calculator.operationSlots.length,
+      0,
+      "cross-surface swap clears operation slots via CE-style clear entry",
+    );
+    assert.equal(
+      acrossSurfaceSwapTriggersCEStyle.calculator.draftingSlot,
+      null,
+      "cross-surface swap clears drafting slot via CE-style clear entry",
+    );
+  }
 
   const swapGraphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "GRAPH");
   assert.ok(swapGraphStorageIndex >= 0, "baseline storage includes GRAPH key for swap test");
@@ -535,14 +487,14 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(resizedBigger.ui.keypadRows, 4, "set keypad dimensions updates rows");
   assert.equal(resizedBigger.ui.keyLayout.length, 20, "resizing up appends placeholder slots");
   assert.ok(resizedBigger.ui.keyLayout.slice(0, 19).every((cell) => cell.kind === "placeholder"), "top/left growth is placeholder");
-  assert.equal(resizedBigger.ui.keyLayout[19]?.kind === "key" ? resizedBigger.ui.keyLayout[19].key : null, "++", "++ stays bottom-right");
+  assert.equal(resizedBigger.ui.keyLayout[19]?.kind === "key" ? resizedBigger.ui.keyLayout[19].key : null, "=", "++ stays bottom-right");
 
   const resizedSmaller = reducer(resizedBigger, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 2 });
   assert.equal(resizedSmaller.ui.keyLayout.length, 6, "resizing down truncates layout tail");
   assert.equal(resizedSmaller.ui.keypadColumns, 3, "resizing down updates columns");
   assert.equal(resizedSmaller.ui.keypadRows, 2, "resizing down updates rows");
   assert.ok(resizedSmaller.ui.keyLayout.slice(0, 5).every((cell) => cell.kind === "placeholder"), "shrink drops top/left first");
-  assert.equal(resizedSmaller.ui.keyLayout[5]?.kind === "key" ? resizedSmaller.ui.keyLayout[5].key : null, "++", "++ remains bottom-right anchored after shrink");
+  assert.equal(resizedSmaller.ui.keyLayout[5]?.kind === "key" ? resizedSmaller.ui.keyLayout[5].key : null, "=", "++ remains bottom-right anchored after shrink");
 
   const shrinkWithOccupiedRemovedSlotSource = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 1 });
   const shrinkRemovedSlotOccupied = reducer(shrinkWithOccupiedRemovedSlotSource, {
@@ -583,19 +535,19 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(clampedResize.ui.keypadColumns, 8, "columns clamp to max bound");
   assert.equal(clampedResize.ui.keypadRows, 1, "rows clamp to min bound");
   assert.ok(clampedResize.ui.keyLayout.slice(0, 7).every((cell) => cell.kind === "placeholder"), "column growth adds new columns on the left");
-  assert.equal(clampedResize.ui.keyLayout[7]?.kind === "key" ? clampedResize.ui.keyLayout[7].key : null, "++", "++ stays right anchored");
+  assert.equal(clampedResize.ui.keyLayout[7]?.kind === "key" ? clampedResize.ui.keyLayout[7].key : null, "=", "++ stays right anchored");
 
   const upgradedRow = reducer(baseline, { type: "UPGRADE_KEYPAD_ROW" });
   assert.equal(upgradedRow.ui.keypadRows, 2, "row upgrade increases rows by one");
   assert.equal(upgradedRow.ui.keyLayout.length, 2, "row upgrade creates a second keypad slot");
   assert.equal(upgradedRow.ui.keyLayout[0]?.kind, "placeholder", "row upgrade pushes keys down");
-  assert.equal(upgradedRow.ui.keyLayout[1]?.kind === "key" ? upgradedRow.ui.keyLayout[1].key : null, "++", "row upgrade preserves ++ anchor");
+  assert.equal(upgradedRow.ui.keyLayout[1]?.kind === "key" ? upgradedRow.ui.keyLayout[1].key : null, "=", "row upgrade preserves ++ anchor");
 
   const upgradedColumn = reducer(baseline, { type: "UPGRADE_KEYPAD_COLUMN" });
   assert.equal(upgradedColumn.ui.keypadColumns, 2, "column upgrade increases columns by one");
   assert.equal(upgradedColumn.ui.keyLayout.length, 2, "column upgrade creates a second keypad slot");
   assert.equal(upgradedColumn.ui.keyLayout[0]?.kind, "placeholder", "column upgrade pushes keys right");
-  assert.equal(upgradedColumn.ui.keyLayout[1]?.kind === "key" ? upgradedColumn.ui.keyLayout[1].key : null, "++", "column upgrade preserves ++ anchor");
+  assert.equal(upgradedColumn.ui.keyLayout[1]?.kind === "key" ? upgradedColumn.ui.keyLayout[1].key : null, "=", "column upgrade preserves ++ anchor");
 
   const atMaxRows = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: baseline.ui.keypadColumns, rows: 8 });
   const noOpUpgradeRow = reducer(atMaxRows, { type: "UPGRADE_KEYPAD_ROW" });

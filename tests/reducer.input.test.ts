@@ -114,28 +114,13 @@ export const runReducerInputTests = (): void => {
     "overflow records overflow error code",
   );
 
-  const incrementSource = initialState();
-  const afterIncrement = applyKeyAction(incrementSource, "++");
-  assert.deepEqual(afterIncrement.calculator.seedSnapshot, r(0n), "first increment captures pre-roll seed snapshot");
-  assert.deepEqual(afterIncrement.calculator.total, r(1n), "increment updates total");
-  assert.deepEqual(afterIncrement.calculator.rollEntries, re(r(1n)), "increment appends new total to roll");
-  const afterSecondIncrement = applyKeyAction(afterIncrement, "++");
-  assert.deepEqual(afterSecondIncrement.calculator.seedSnapshot, r(0n), "subsequent increments preserve original seed snapshot");
-
-  const decrementSource: GameState = {
-    ...initialState(),
-    unlocks: {
-      ...initialState().unlocks,
-      execution: {
-        ...initialState().unlocks.execution,
-        "--": true,
-      },
-    },
-  };
-  const afterDecrement = applyKeyAction(decrementSource, "--");
-  assert.deepEqual(afterDecrement.calculator.seedSnapshot, r(0n), "first decrement captures pre-roll seed snapshot");
-  assert.deepEqual(afterDecrement.calculator.total, r(-1n), "decrement updates total");
-  assert.deepEqual(afterDecrement.calculator.rollEntries, re(r(-1n)), "decrement appends new total to roll");
+  const equalsSource = initialState();
+  const afterEquals = applyKeyAction(equalsSource, "=");
+  assert.deepEqual(afterEquals.calculator.seedSnapshot, r(0n), "first equals captures pre-roll seed snapshot");
+  assert.deepEqual(afterEquals.calculator.total, r(0n), "equals with no operations keeps total unchanged");
+  assert.deepEqual(afterEquals.calculator.rollEntries, re(r(0n)), "equals appends current total to roll");
+  const afterSecondEquals = applyKeyAction(afterEquals, "=");
+  assert.deepEqual(afterSecondEquals.calculator.seedSnapshot, r(0n), "subsequent equals preserve original seed snapshot");
 
   const activeRollDigitNoOp: GameState = {
     ...fullyUnlocked,
@@ -147,6 +132,36 @@ export const runReducerInputTests = (): void => {
   };
   const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "1");
   assert.deepEqual(afterActiveRollDigit, activeRollDigitNoOp, "digit key is no-op while roll is active");
+
+  const lockedUnaryNoOp = applyKeyAction(initialState(), "++");
+  assert.deepEqual(lockedUnaryNoOp, initialState(), "locked unary key is a no-op");
+
+  const unaryPlus = applyKeyAction(fullyUnlocked, "++");
+  assert.deepEqual(unaryPlus.calculator.draftingSlot, { operator: "+", operandInput: "1", isNegative: false }, "++ inserts [+ 1] drafting pair");
+
+  const unaryMinus = applyKeyAction(fullyUnlocked, "--");
+  assert.deepEqual(unaryMinus.calculator.draftingSlot, { operator: "-", operandInput: "1", isNegative: false }, "-- inserts [- 1] drafting pair");
+
+  const unaryNegate = applyKeyAction(fullyUnlocked, "-n");
+  assert.deepEqual(unaryNegate.calculator.draftingSlot, { operator: "*", operandInput: "1", isNegative: true }, "-n inserts [* -1] drafting pair");
+
+  const activeRollUnarySource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(5n),
+      rollEntries: re(r(5n)),
+      operationSlots: [{ operator: "+", operand: 9n }],
+      draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
+    },
+  };
+  const activeRollUnary = applyKeyAction(activeRollUnarySource, "++");
+  assert.equal(activeRollUnary.calculator.rollEntries.length, 0, "unary key clears active roll before insertion");
+  assert.deepEqual(
+    activeRollUnary.calculator.draftingSlot,
+    { operator: "+", operandInput: "1", isNegative: false },
+    "unary key applies insertion after roll clear",
+  );
 
   const moduloExecutionSource: GameState = {
     ...fullyUnlocked,
@@ -228,60 +243,6 @@ export const runReducerInputTests = (): void => {
     euclidDraftConstantBlocked.calculator.draftingSlot?.operandInput,
     "",
     "euclidean drafting only accepts numeric divisor input",
-  );
-
-  const moduloDraftNegBlocked = applyKeyAction(
-    {
-      ...fullyUnlocked,
-      calculator: {
-        ...fullyUnlocked.calculator,
-        total: r(5n),
-        draftingSlot: { operator: "\u27E1", operandInput: "3", isNegative: false },
-      },
-    },
-    "NEG",
-  );
-  assert.equal(
-    moduloDraftNegBlocked.calculator.draftingSlot?.isNegative,
-    false,
-    "modulo drafting ignores NEG so divisors stay natural",
-  );
-  assert.deepEqual(
-    moduloDraftNegBlocked.calculator.total,
-    r(5n),
-    "rejected modulo NEG does not transfer negation to total",
-  );
-  assert.equal(
-    moduloDraftNegBlocked.calculator.pendingNegativeTotal,
-    false,
-    "rejected modulo NEG does not toggle pending total sign",
-  );
-
-  const euclidCommittedNegBlocked = applyKeyAction(
-    {
-      ...fullyUnlocked,
-      calculator: {
-        ...fullyUnlocked.calculator,
-        total: r(5n),
-        operationSlots: [{ operator: "#", operand: 3n }],
-      },
-    },
-    "NEG",
-  );
-  assert.deepEqual(
-    euclidCommittedNegBlocked.calculator.operationSlots,
-    [{ operator: "#", operand: 3n }],
-    "euclidean committed divisor ignores NEG so divisors stay natural",
-  );
-  assert.deepEqual(
-    euclidCommittedNegBlocked.calculator.total,
-    r(5n),
-    "rejected euclidean NEG does not transfer negation to total",
-  );
-  assert.equal(
-    euclidCommittedNegBlocked.calculator.pendingNegativeTotal,
-    false,
-    "rejected euclidean NEG does not toggle pending total sign",
   );
 
   const euclidDigitRewriteNormalizesSign = applyKeyAction(

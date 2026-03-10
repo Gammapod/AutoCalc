@@ -427,9 +427,9 @@ export const runPersistenceTests = (): void => {
     "v13 valueExpression digit maps to split valueAtoms unlocks",
   );
   assert.equal(
-    legacyV13ValueExpressionOnly.state?.unlocks.valueCompose.NEG,
-    true,
-    "v13 valueExpression compose key maps to split valueCompose unlocks",
+    Object.keys(legacyV13ValueExpressionOnly.state?.unlocks.valueCompose ?? {}).length,
+    0,
+    "v13 valueExpression compose keys are removed from current runtime",
   );
 
   const badJson = loadFromRawSave("{");

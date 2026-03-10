@@ -33,15 +33,11 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     button?.click();
     assert.equal(dispatches.length, 1, "click dispatches one action");
 
-    const rejectState: GameState = {
+    const singleKeyState: GameState = {
       ...initialState(),
-      calculator: {
-        ...initialState().calculator,
-        draftingSlot: { operator: "#" as const, operandInput: "3", isNegative: false },
-      },
       ui: {
         ...initialState().ui,
-        keyLayout: [{ kind: "key", key: "NEG" as const }],
+        keyLayout: [{ kind: "key", key: "1" as const }],
         keypadColumns: 1,
         keypadRows: 1,
       },
@@ -49,23 +45,48 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
         ...initialState().unlocks,
         valueExpression: {
           ...initialState().unlocks.valueExpression,
-          NEG: true,
+          "1": true,
         },
       },
     };
 
     keysEl.innerHTML = "";
-    renderKeypadCells(harness.root, keysEl, rejectState, dispatch, {
-            calculatorKeysLocked: false,
+    renderKeypadCells(harness.root, keysEl, singleKeyState, dispatch, {
+      calculatorKeysLocked: false,
       newlyUnlockedKeys: new Set(),
       bindUnlockAnimationLock: () => {},
     });
-    const negButton = keysEl.querySelector<HTMLButtonElement>("button[data-key='NEG']");
-    assert.ok(negButton, "renders NEG key when present on keypad");
-    negButton?.click();
-    assert.equal(dispatches.length, 1, "rejected NEG press does not dispatch an action");
-    const slotDisplay = harness.root.querySelector<HTMLElement>("[data-slot]");
-    assert.ok(slotDisplay?.classList.contains("display--slot-reject-blink"), "rejected NEG press blinks operation slot");
+    const oneButton = keysEl.querySelector<HTMLButtonElement>("button[data-key='1']");
+    assert.ok(oneButton, "renders configured single key");
+    oneButton?.click();
+    assert.equal(dispatches.length, 2, "single-key click dispatches normally");
+
+    const unaryState: GameState = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key", key: "++" as const }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        maxSlots: 1,
+        unaryOperators: {
+          ...initialState().unlocks.unaryOperators,
+          "++": true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, unaryState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const unaryButton = keysEl.querySelector<HTMLButtonElement>("button[data-key='++']");
+    assert.equal(unaryButton?.classList.contains("key--group-slot_operator"), true, "unary key uses operator color group");
+    assert.equal(unaryButton?.classList.contains("key--unary-operator"), true, "unary key receives unary stripe class");
   } finally {
     harness.teardown();
   }

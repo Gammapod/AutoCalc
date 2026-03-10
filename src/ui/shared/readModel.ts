@@ -112,9 +112,6 @@ export const formatKeyLabel = (key: Key): string => {
   if (key === "pi") {
     return "\u03C0";
   }
-  if (key === "NEG") {
-    return "-\u{1D465}";
-  }
   if (key === "UNDO") {
     return "\u21BA";
   }
@@ -127,14 +124,17 @@ export const formatKeyLabel = (key: Key): string => {
   if (key === "\u27E1") {
     return "\u27E1";
   }
-  if (key === "++") {
-    return "+ +";
+  if (key === "CIRCLE") {
+    return "\u25EF";
+  }
+  if (key === "-n") {
+    return "\u00B1";
   }
   if (key === "--") {
     return "\u2212 \u2212";
   }
-  if (key === "CIRCLE") {
-    return "\u25EF";
+  if (key === "++") {
+    return "+ +";
   }
   if (key === "*" || key === "/") {
     return formatOperatorForDisplay(key);
@@ -143,8 +143,11 @@ export const formatKeyLabel = (key: Key): string => {
 };
 
 export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
-  if (isDigitKey(key) || key === "NEG") {
+  if (isDigitKey(key)) {
     return "value_expression";
+  }
+  if (getButtonDefinition(key)?.unlockGroup === "unaryOperators") {
+    return "slot_operator";
   }
   if (isOperatorKey(key)) {
     return "slot_operator";

@@ -3,7 +3,7 @@ import { isKeyUnlocked } from "../src/domain/keyUnlocks.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState, Key } from "../src/domain/types.js";
 
-const withUnlock = (state: GameState, path: "valueExpression" | "slotOperators" | "utilities" | "memory" | "steps" | "visualizers" | "execution", key: string): GameState => {
+const withUnlock = (state: GameState, path: "valueExpression" | "slotOperators" | "unaryOperators" | "utilities" | "memory" | "steps" | "visualizers" | "execution", key: string): GameState => {
   if (path === "valueExpression") {
     return {
       ...state,
@@ -23,6 +23,18 @@ const withUnlock = (state: GameState, path: "valueExpression" | "slotOperators" 
         ...state.unlocks,
         slotOperators: {
           ...state.unlocks.slotOperators,
+          [key]: true,
+        },
+      },
+    };
+  }
+  if (path === "unaryOperators") {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        unaryOperators: {
+          ...state.unlocks.unaryOperators,
           [key]: true,
         },
       },
@@ -93,20 +105,21 @@ export const runKeyUnlocksTests = (): void => {
   assert.equal(isKeyUnlocked(base, "1"), false, "value-expression key starts locked");
   assert.equal(isKeyUnlocked(base, "+"), false, "slot-operator key starts locked");
   assert.equal(isKeyUnlocked(base, "C"), false, "utility key starts locked");
+  assert.equal(isKeyUnlocked(base, "++"), false, "unary-operator key starts locked");
   assert.equal(isKeyUnlocked(base, "\u2190"), false, "backspace utility key starts locked");
   assert.equal(isKeyUnlocked(base, "M+"), false, "memory key starts locked");
   assert.equal(isKeyUnlocked(base, "\u23EF"), false, "step key starts locked");
   assert.equal(isKeyUnlocked(base, "GRAPH"), false, "visualizer key starts locked");
   assert.equal(isKeyUnlocked(base, "CIRCLE"), true, "circle visualizer key starts unlocked");
-  assert.equal(isKeyUnlocked(base, "="), false, "execution key starts locked");
-  assert.equal(isKeyUnlocked(base, "++"), true, "default increment key remains unlocked");
-  assert.equal(isKeyUnlocked(base, "--"), false, "default decrement key starts locked");
+  assert.equal(isKeyUnlocked(base, "="), true, "execution key starts unlocked");
 
   const valueUnlocked = withUnlock(base, "valueExpression", "1");
   assert.equal(isKeyUnlocked(valueUnlocked, "1"), true, "value-expression unlock is routed correctly");
 
   const slotUnlocked = withUnlock(base, "slotOperators", "+");
   assert.equal(isKeyUnlocked(slotUnlocked, "+"), true, "slot-operator unlock is routed correctly");
+  const unaryUnlocked = withUnlock(base, "unaryOperators", "++");
+  assert.equal(isKeyUnlocked(unaryUnlocked, "++"), true, "unary-operator unlock is routed correctly");
 
   const utilityUnlocked = withUnlock(base, "utilities", "C");
   assert.equal(isKeyUnlocked(utilityUnlocked, "C"), true, "utility unlock is routed correctly");

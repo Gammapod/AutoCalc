@@ -25,7 +25,7 @@ export const runButtonBehaviorTests = (): void => {
 
   const toggleCell: KeyCell = {
     kind: "key",
-    key: "NEG",
+    key: "1",
     behavior: { type: "toggle_flag", flag: "sticky.negate" },
   };
   assert.deepEqual(

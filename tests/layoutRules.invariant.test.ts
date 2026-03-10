@@ -21,7 +21,7 @@ const withTwoByTwoKeypad = (state: GameState): GameState => ({
       { kind: "placeholder", area: "empty" },
       { kind: "placeholder", area: "empty" },
       { kind: "key", key: "1" },
-      { kind: "key", key: "++" },
+      { kind: "key", key: "=" },
     ],
     storageLayout: [{ kind: "key", key: "\u23EF" }, ...state.ui.storageLayout.slice(1)],
   },

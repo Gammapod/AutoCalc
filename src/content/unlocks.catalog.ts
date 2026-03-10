@@ -71,16 +71,6 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetLabel: "-",
   },
   {
-    id: "unlock_decrement_on_decrement_run_2",
-    description: "Reverse direction.",
-    predicate: { type: "roll_ends_with_incrementing_run", length: 2, step: -1n },
-    effect: { type: "unlock_execution", key: "--" },
-    once: true,
-    domainNodeId: "NN",
-    targetNodeId: "Ut_exec_decrement",
-    targetLabel: "--",
-  },
-  {
     id: "unlock_4_on_total_at_least_40",
     description: "4 tens.",
     predicate: { type: "total_at_least", value: 40n },
@@ -129,16 +119,6 @@ export const unlockCatalog: UnlockDefinition[] = [
     domainNodeId: "NR",
     targetNodeId: "Umemory_variable_cycle_unlock",
     targetLabel: "\u03B1,\u03B2,\u03B3",
-  },
-  {
-    id: "unlock_neg_on_alt_sign_abs_run_7",
-    description: "Flip the sign for a bit.",
-    predicate: { type: "roll_ends_with_alternating_sign_constant_abs_run", length: 7 },
-    effect: { type: "unlock_digit", key: "NEG" },
-    once: true,
-    domainNodeId: "NZ",
-    targetNodeId: "Ineg_unlock",
-    targetLabel: "NEG",
   },
   {
     id: "unlock_mul_on_constant_step_gt1_run_7",

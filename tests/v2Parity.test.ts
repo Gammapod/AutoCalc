@@ -28,7 +28,7 @@ export const runV2ParityTests = (): void => {
     { type: "PRESS_KEY", key: "1" },
     { type: "PRESS_KEY", key: "=" },
     { type: "PRESS_KEY", key: "=" },
-    { type: "PRESS_KEY", key: "NEG" },
+    { type: "PRESS_KEY", key: "1" },
     { type: "PRESS_KEY", key: "CE" },
     { type: "MOVE_KEY_SLOT", fromIndex: 1, toIndex: 0 },
     { type: "SWAP_KEY_SLOTS", firstIndex: 0, secondIndex: 1 },

@@ -1,8 +1,6 @@
 import { unlockCatalog } from "../content/unlocks.catalog.js";
-import { addInt, isInteger } from "../infra/math/rationalEngine.js";
+import { isInteger } from "../infra/math/rationalEngine.js";
 import {
-  calculatorValueToExpression,
-  calculatorValueToRational,
   clampRationalToBoundary,
   calculatorValueToDisplayString,
   computeOverflowBoundary,
@@ -15,11 +13,10 @@ import {
   toNanCalculatorValue,
   toRationalCalculatorValue,
 } from "./calculatorValue.js";
-import { expressionToDisplayString, intExpr, parseExpressionOrNull, slotOperandToExpression } from "./expression.js";
+import { expressionToDisplayString, parseExpressionOrNull, slotOperandToExpression } from "./expression.js";
 import { buildSymbolicExpression, evaluateSymbolicExpression, executeSlotsValue } from "./engine.js";
 import {
   applyDigitInput,
-  applyNegateInput,
   applyOperatorInput,
   finalizeDrafting,
   fromCalculator,
@@ -31,9 +28,9 @@ import {
   CHECKLIST_UNLOCK_ID,
   OVERFLOW_ERROR_SEEN_ID,
 } from "./state.js";
-import { isDigitKey, isOperatorKey } from "./buttonRegistry.js";
+import { isDigitKey, isOperatorKey, isUnaryOperatorKey } from "./buttonRegistry.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
-import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, ExpressionConstant, GameState, Key, RationalValue, RollEntry, SlotOperator } from "./types.js";
+import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, ExpressionConstant, GameState, Key, RationalValue, RollEntry, SlotOperator, UnaryOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 import { applyMemoryAdjust, cycleMemoryVariable, isMemoryKey, resolveMemoryRecallDigit } from "./memoryController.js";
 
@@ -103,6 +100,46 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
     return state;
   }
 
+  return applyUnlocks(withBuilderPatchApplied(state, nextPatch), unlockCatalog);
+};
+
+const toUnaryOperatorMapping = (key: UnaryOperator): { operator: SlotOperator; operandInput: string; isNegative: boolean } => {
+  if (key === "++") {
+    return { operator: "+", operandInput: "1", isNegative: false };
+  }
+  if (key === "--") {
+    return { operator: "-", operandInput: "1", isNegative: false };
+  }
+  return { operator: "*", operandInput: "1", isNegative: true };
+};
+
+const applyUnaryOperator = (state: GameState, key: UnaryOperator): GameState => {
+  if (!state.unlocks.unaryOperators[key]) {
+    return state;
+  }
+  const unary = toUnaryOperatorMapping(key);
+  const builder = fromCalculator(state.calculator);
+  const nextBuilder = applyOperatorInput(builder, unary.operator, {
+    maxSlots: state.unlocks.maxSlots,
+    maxOperandDigits: 1,
+  });
+  if (!nextBuilder.draftingSlot) {
+    return state;
+  }
+  const nextPatch = toCalculatorPatch({
+    operationSlots: nextBuilder.operationSlots,
+    draftingSlot: {
+      ...nextBuilder.draftingSlot,
+      operandInput: unary.operandInput,
+      isNegative: unary.isNegative,
+    },
+  });
+  if (
+    nextPatch.operationSlots === state.calculator.operationSlots
+    && nextPatch.draftingSlot === state.calculator.draftingSlot
+  ) {
+    return state;
+  }
   return applyUnlocks(withBuilderPatchApplied(state, nextPatch), unlockCatalog);
 };
 
@@ -208,61 +245,6 @@ const applyDigitValue = (state: GameState, digit: Digit): GameState => {
   return applyUnlocks(withNextTotal, unlockCatalog);
 };
 
-const applyNegate = (state: GameState): GameState => {
-  if (!state.unlocks.valueCompose.NEG && !state.unlocks.valueExpression.NEG) {
-    return state;
-  }
-
-  if (state.calculator.rollEntries.length > 0) {
-    return state;
-  }
-
-  if (
-    (state.calculator.draftingSlot && isNaturalDivisorOperator(state.calculator.draftingSlot.operator))
-    || isNaturalDivisorOperator(state.calculator.operationSlots[state.calculator.operationSlots.length - 1]?.operator ?? "")
-  ) {
-    return state;
-  }
-
-  const builder = fromCalculator(state.calculator);
-  const nextBuilder = applyNegateInput(builder);
-  const nextPatch = toCalculatorPatch(nextBuilder);
-  if (
-    nextPatch.operationSlots !== state.calculator.operationSlots
-    || nextPatch.draftingSlot !== state.calculator.draftingSlot
-  ) {
-    return applyUnlocks(withBuilderPatchApplied(state, nextPatch), unlockCatalog);
-  }
-
-  if (!isRationalCalculatorValue(state.calculator.total)) {
-    return state;
-  }
-
-  if (state.calculator.total.value.num === 0n) {
-    const withPendingZeroSign: GameState = {
-      ...state,
-      calculator: {
-        ...state.calculator,
-        pendingNegativeTotal: !state.calculator.pendingNegativeTotal,
-      },
-    };
-    return applyUnlocks(withPendingZeroSign, unlockCatalog);
-  }
-
-  const withNegatedTotal: GameState = {
-    ...state,
-    calculator: {
-      ...state.calculator,
-      total: toRationalCalculatorValue({
-        ...state.calculator.total.value,
-        num: -state.calculator.total.value.num,
-      }),
-      pendingNegativeTotal: false,
-    },
-  };
-  return applyUnlocks(withNegatedTotal, unlockCatalog);
-};
-
 const finalizeDraftingSlot = (state: GameState): GameState => {
   const builder = fromCalculator(state.calculator);
   const finalizedBuilder = finalizeDrafting(builder);
@@ -347,39 +329,6 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
       errorCode: NAN_INPUT_ERROR_CODE,
       errorKind: "nan_input",
     };
-  }
-
-  if (execKey === "++") {
-    if (isRationalCalculatorValue(currentTotal)) {
-      const incremented = addInt(currentTotal.value, 1n);
-      return applyOverflowPolicy(incremented, state.unlocks.maxTotalDigits);
-    }
-    const expr = calculatorValueToExpression(currentTotal);
-    if (!expr) {
-      return {
-        nextTotal: toNanCalculatorValue(),
-        errorCode: NAN_INPUT_ERROR_CODE,
-        errorKind: "nan_input",
-      };
-    }
-    const symbolicValue = toExpressionCalculatorValue({ type: "binary", op: "add", left: expr, right: intExpr(1n) });
-    return toSymbolicExecution(calculatorValueToDisplayString(symbolicValue));
-  }
-  if (execKey === "--") {
-    if (isRationalCalculatorValue(currentTotal)) {
-      const decremented = addInt(currentTotal.value, -1n);
-      return applyOverflowPolicy(decremented, state.unlocks.maxTotalDigits);
-    }
-    const expr = calculatorValueToExpression(currentTotal);
-    if (!expr) {
-      return {
-        nextTotal: toNanCalculatorValue(),
-        errorCode: NAN_INPUT_ERROR_CODE,
-        errorKind: "nan_input",
-      };
-    }
-    const symbolicValue = toExpressionCalculatorValue({ type: "binary", op: "sub", left: expr, right: intExpr(1n) });
-    return toSymbolicExecution(calculatorValueToDisplayString(symbolicValue));
   }
 
   const execution = executeSlotsValue(currentTotal, state.calculator.operationSlots);
@@ -471,56 +420,6 @@ const applyEquals = (state: GameState): GameState => {
   };
 
   const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
-  return applyUnlocks(withOverflowMarker, unlockCatalog);
-};
-
-const applyIncrement = (state: GameState): GameState => {
-  if (!state.unlocks.execution["++"]) {
-    return state;
-  }
-
-  const shouldCaptureSeed = state.calculator.rollEntries.length === 0 && state.calculator.seedSnapshot === undefined;
-  const evaluation = evaluateExecutionOutcome(state, "++");
-  const nextEntry = toRollEntry(evaluation);
-
-  const withIncrementedTotal: GameState = {
-    ...state,
-    calculator: {
-      ...state.calculator,
-      total: evaluation.nextTotal,
-      ...(shouldCaptureSeed ? { seedSnapshot: state.calculator.total } : {}),
-      pendingNegativeTotal: false,
-      rollEntries: [...state.calculator.rollEntries, nextEntry],
-    },
-  };
-
-  const withOverflowMarker =
-    evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withIncrementedTotal) : withIncrementedTotal;
-  return applyUnlocks(withOverflowMarker, unlockCatalog);
-};
-
-const applyDecrement = (state: GameState): GameState => {
-  if (!state.unlocks.execution["--"]) {
-    return state;
-  }
-
-  const shouldCaptureSeed = state.calculator.rollEntries.length === 0 && state.calculator.seedSnapshot === undefined;
-  const evaluation = evaluateExecutionOutcome(state, "--");
-  const nextEntry = toRollEntry(evaluation);
-
-  const withDecrementedTotal: GameState = {
-    ...state,
-    calculator: {
-      ...state.calculator,
-      total: evaluation.nextTotal,
-      ...(shouldCaptureSeed ? { seedSnapshot: state.calculator.total } : {}),
-      pendingNegativeTotal: false,
-      rollEntries: [...state.calculator.rollEntries, nextEntry],
-    },
-  };
-
-  const withOverflowMarker =
-    evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withDecrementedTotal) : withDecrementedTotal;
   return applyUnlocks(withOverflowMarker, unlockCatalog);
 };
 
@@ -704,13 +603,17 @@ const applyUndo = (state: GameState): GameState => {
 const isDigit = (key: Key): key is Digit => isDigitKey(key) && isNumericDigit(key);
 const isValueAtomDigit = (key: Key): key is Key => isDigitKey(key);
 const isOperator = (key: Key): key is SlotOperator => isOperatorKey(key);
+const isUnaryOperator = (key: Key): key is UnaryOperator => isUnaryOperatorKey(key);
 
 const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
-  if (state.calculator.rollEntries.length === 0 || !isOperator(key)) {
+  if (state.calculator.rollEntries.length === 0 || (!isOperator(key) && !isUnaryOperator(key))) {
     return state;
   }
 
-  if (!state.unlocks.slotOperators[key]) {
+  if (isOperator(key) && !state.unlocks.slotOperators[key]) {
+    return state;
+  }
+  if (isUnaryOperator(key) && !state.unlocks.unaryOperators[key]) {
     return state;
   }
   return clearOperationEntry(state);
@@ -758,20 +661,18 @@ export const applyKeyAction = (state: GameState, key: Key): GameState => {
       return nextState;
     },
     apply_operator: (nextState, currentKey) => (isOperator(currentKey) ? applyOperator(nextState, currentKey) : nextState),
+    apply_unary_operator: (nextState, currentKey) => (isUnaryOperator(currentKey) ? applyUnaryOperator(nextState, currentKey) : nextState),
     apply_execute: (nextState) => nextState,
     apply_utility: (nextState) => nextState,
     apply_visualizer_noop: (nextState) => nextState,
     apply_toggle_noop: (nextState) => nextState,
     apply_noop: (nextState) => nextState,
     apply_memory: (nextState, currentKey) => applyMemoryKeyAction(nextState, currentKey),
-    apply_negate: (nextState) => applyNegate(nextState),
     apply_clear_all: (nextState) => applyC(nextState),
     apply_clear_entry: (nextState) => applyCE(nextState),
     apply_backspace: (nextState) => applyBackspace(nextState),
     apply_undo: (nextState) => applyUnlocks(applyUndo(nextState), unlockCatalog),
     apply_equals: (nextState) => applyEquals(nextState),
-    apply_increment: (nextState) => applyIncrement(nextState),
-    apply_decrement: (nextState) => applyDecrement(nextState),
   };
 
   const handlerId = resolveKeyActionHandlerId(key);

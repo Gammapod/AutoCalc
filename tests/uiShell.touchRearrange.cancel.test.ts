@@ -9,7 +9,7 @@ const buildCancelState = (): GameState => {
     { kind: "placeholder", area: "empty" },
     { kind: "placeholder", area: "empty" },
     { kind: "placeholder", area: "empty" },
-    { kind: "key", key: "++" },
+    { kind: "key", key: "=" },
   ];
   return {
     ...base,

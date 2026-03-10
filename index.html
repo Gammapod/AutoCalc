@@ -1340,6 +1340,14 @@
         color: #ffffff;
       }
 
+      .key.key--unary-operator {
+        border-color: var(--key-slot-operator-stroke);
+        background:
+          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, #d7dde4 80%, #bcc6d1 100%),
+          linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
+        color: #ffffff;
+      }
+
       .key--group-utility {
         border-color: var(--key-utility-stroke);
         background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
@@ -1398,6 +1406,12 @@
 
       .key.key--toggle-active.key--group-slot_operator:not(:disabled) {
         background: linear-gradient(180deg, var(--key-slot-operator-bottom), var(--key-slot-operator-top));
+      }
+
+      .key.key--toggle-active.key--unary-operator:not(:disabled) {
+        background:
+          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, #c2cbd5 80%, #e0e5eb 100%),
+          linear-gradient(180deg, var(--key-slot-operator-bottom), var(--key-slot-operator-top));
       }
 
       .key.key--toggle-active.key--group-utility:not(:disabled) {

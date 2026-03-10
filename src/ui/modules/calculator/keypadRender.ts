@@ -1,5 +1,6 @@
 import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../../../domain/keypadLayoutModel.js";
+import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
 import type { Action, GameState, Key, KeyCell } from "../../../domain/types.js";
 import { bindDraggableCell, bindDropTargetCell } from "../input/dragDrop.js";
 import { bindQuickTapPressFeedback, shouldSuppressClick } from "../input/pressFeedback.js";
@@ -7,35 +8,6 @@ import { buildKeyButtonAction, formatKeyCellLabel, isToggleFlagActive } from "..
 import { getKeyVisualGroup } from "./dom.js";
 import { setKeyButtonLabel } from "./keyLabelFit.js";
 import { readToggleAnimation, queueToggleAnimation } from "./unlockTracking.js";
-
-const SLOT_REJECT_BLINK_CLASS = "display--slot-reject-blink";
-
-const isNaturalDivisorOperator = (operator: string): boolean => operator === "#" || operator === "\u27E1";
-
-const isRejectedValueComposeOnNaturalDivisor = (state: GameState, key: Key): boolean => {
-  if (key !== "NEG") {
-    return false;
-  }
-  const draftingSlot = state.calculator.draftingSlot;
-  if (draftingSlot) {
-    return isNaturalDivisorOperator(draftingSlot.operator);
-  }
-  const lastSlot = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
-  if (!lastSlot) {
-    return false;
-  }
-  return isNaturalDivisorOperator(lastSlot.operator);
-};
-
-const triggerOperationSlotRejectBlink = (root: Element): void => {
-  const slotDisplay = root.querySelector<HTMLElement>("[data-slot]");
-  if (!slotDisplay) {
-    return;
-  }
-  slotDisplay.classList.remove(SLOT_REJECT_BLINK_CLASS);
-  void slotDisplay.offsetWidth;
-  slotDisplay.classList.add(SLOT_REJECT_BLINK_CLASS);
-};
 
 const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => {
   const slotLabel = document.createElement("span");
@@ -98,8 +70,8 @@ export const renderKeypadCells = (
     button.type = "button";
     button.className = "key key--draggable";
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    if (cell.key === "NEG") {
-      button.classList.add("key--value-modifier");
+    if (getButtonDefinition(cell.key)?.unlockGroup === "unaryOperators") {
+      button.classList.add("key--unary-operator");
     }
     if (options.newlyUnlockedKeys.has(cell.key)) {
       button.classList.add("key--unlock-animate");
@@ -129,10 +101,6 @@ export const renderKeypadCells = (
         return;
       }
       if (shouldSuppressClick(root)) {
-        return;
-      }
-      if (isRejectedValueComposeOnNaturalDivisor(state, cell.key)) {
-        triggerOperationSlotRejectBlink(root);
         return;
       }
       queueToggleAnimation(root, state, cell as KeyCell);

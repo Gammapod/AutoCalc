@@ -78,34 +78,28 @@ const createAvailabilityReader = (
 
 const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolean): CapabilityContext => {
   const hasEqualsKey = isAvailable("=");
-  const hasIncrementKey = isAvailable("++");
-  const hasDecrementKey = isAvailable("--");
   const hasPauseKey = isAvailable("\u23EF");
-  const hasAnyExecutorUnlocked = isKeyUnlocked(state, "=") || isKeyUnlocked(state, "++") || isKeyUnlocked(state, "--");
-  const executeActivation = hasEqualsKey || hasIncrementKey || hasDecrementKey || (hasPauseKey && hasAnyExecutorUnlocked);
+  const hasAnyExecutorUnlocked = isKeyUnlocked(state, "=");
+  const executeActivation = hasEqualsKey || (hasPauseKey && hasAnyExecutorUnlocked);
   const hasPlus = isAvailable("+");
   const hasMinus = isAvailable("-");
-  const hasNeg = isAvailable("NEG");
   const hasZero = isAvailable("0");
   const hasOne = isAvailable("1");
-  const hasSomeDigit = [
-    ...Object.keys(state.unlocks.valueAtoms),
-    ...Object.keys(state.unlocks.valueExpression),
-  ].some((key) => isAvailable(key as Key));
+  const hasSomeValueAtom = Object.keys(state.unlocks.valueAtoms).some((key) => isAvailable(key as Key));
   const hasSomeOperator = ["+", "-", "*", "/", "#", "\u27E1"].some((key) => isAvailable(key as Key));
   const allocatorReturnPress = (state.allocatorReturnPressCount ?? 0) >= 1;
   const allocatorAllocatePress = (state.allocatorAllocatePressCount ?? 0) >= 1;
 
-  const stepPlusOne = isAvailable("++") || (executeActivation && hasPlus && hasOne);
-  const stepMinusOne = hasDecrementKey || (executeActivation && hasMinus && hasOne) || (executeActivation && hasPlus && hasNeg && hasOne);
+  const stepPlusOne = executeActivation && hasPlus && hasOne;
+  const stepMinusOne = executeActivation && hasMinus && hasOne;
   const resetToZero = isAvailable("C") || isAvailable("UNDO");
-  const formOperatorPlusOperand = hasSomeOperator && hasSomeDigit;
+  const formOperatorPlusOperand = hasSomeOperator && hasSomeValueAtom;
   const rollGrowth = executeActivation && (formOperatorPlusOperand || stepPlusOne || stepMinusOne);
   const rollEqualRun =
     executeActivation &&
-    (hasIncrementKey || (hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable("*") && hasOne) || (isAvailable("/") && hasOne));
+    ((hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable("*") && hasOne) || (isAvailable("/") && hasOne));
   const rollIncrementingRun = stepPlusOne;
-  const rollAlternatingSignConstantAbs = executeActivation && hasPlus && hasNeg && hasSomeDigit;
+  const rollAlternatingSignConstantAbs = false;
   const rollConstantStepRun = executeActivation && formOperatorPlusOperand;
   const divisionByZeroError = executeActivation && isAvailable("/") && hasZero;
   const euclidDivisionOperator = isAvailable("#");

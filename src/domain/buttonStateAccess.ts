@@ -8,7 +8,7 @@ import type { GameState } from "./types.js";
 
 const withValueExpressionMirror = (
   state: GameState,
-  patch: Partial<GameState["unlocks"]["valueAtoms"] & GameState["unlocks"]["valueCompose"]>,
+  patch: Partial<GameState["unlocks"]["valueAtoms"]>,
 ): GameState => ({
   ...state,
   unlocks: {
@@ -19,12 +19,7 @@ const withValueExpressionMirror = (
         Object.entries(patch).filter(([key]) => Object.prototype.hasOwnProperty.call(state.unlocks.valueAtoms, key)),
       ),
     },
-    valueCompose: {
-      ...state.unlocks.valueCompose,
-      ...Object.fromEntries(
-        Object.entries(patch).filter(([key]) => Object.prototype.hasOwnProperty.call(state.unlocks.valueCompose, key)),
-      ),
-    },
+    valueCompose: state.unlocks.valueCompose,
     valueExpression: {
       ...state.unlocks.valueExpression,
       ...patch,
@@ -41,12 +36,11 @@ export const isButtonUnlocked = (state: GameState, key: ButtonKey): boolean => {
     const typedKey = key as ButtonKeyByUnlockGroup<"valueAtoms">;
     return Boolean(state.unlocks.valueAtoms[typedKey] || state.unlocks.valueExpression[typedKey]);
   }
-  if (definition.unlockGroup === "valueCompose") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"valueCompose">;
-    return Boolean(state.unlocks.valueCompose[typedKey] || state.unlocks.valueExpression[typedKey]);
-  }
   if (definition.unlockGroup === "slotOperators") {
     return state.unlocks.slotOperators[key as ButtonKeyByUnlockGroup<"slotOperators">];
+  }
+  if (definition.unlockGroup === "unaryOperators") {
+    return state.unlocks.unaryOperators[key as ButtonKeyByUnlockGroup<"unaryOperators">];
   }
   if (definition.unlockGroup === "utilities") {
     return state.unlocks.utilities[key as ButtonKeyByUnlockGroup<"utilities">];
@@ -75,13 +69,6 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
     }
     return withValueExpressionMirror(state, { [typedKey]: unlocked });
   }
-  if (definition.unlockGroup === "valueCompose") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"valueCompose">;
-    if (state.unlocks.valueCompose[typedKey] === unlocked) {
-      return state;
-    }
-    return withValueExpressionMirror(state, { [typedKey]: unlocked });
-  }
   if (definition.unlockGroup === "slotOperators") {
     const typedKey = key as ButtonKeyByUnlockGroup<"slotOperators">;
     if (state.unlocks.slotOperators[typedKey] === unlocked) {
@@ -93,6 +80,22 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
         ...state.unlocks,
         slotOperators: {
           ...state.unlocks.slotOperators,
+          [typedKey]: unlocked,
+        },
+      },
+    };
+  }
+  if (definition.unlockGroup === "unaryOperators") {
+    const typedKey = key as ButtonKeyByUnlockGroup<"unaryOperators">;
+    if (state.unlocks.unaryOperators[typedKey] === unlocked) {
+      return state;
+    }
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        unaryOperators: {
+          ...state.unlocks.unaryOperators,
           [typedKey]: unlocked,
         },
       },

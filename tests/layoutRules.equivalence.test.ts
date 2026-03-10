@@ -31,7 +31,7 @@ const createScenarioState = (): GameState => {
         { kind: "placeholder", area: "empty" },
         { kind: "key", key: "1" },
         { kind: "placeholder", area: "empty" },
-        { kind: "key", key: "++" },
+        { kind: "key", key: "=" },
         { kind: "placeholder", area: "empty" },
         { kind: "placeholder", area: "empty" },
       ],

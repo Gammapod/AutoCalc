@@ -36,6 +36,9 @@ export const isDigitKey = (key: ButtonKey): key is ButtonKeyByBehaviorKind<"digi
 export const isOperatorKey = (key: ButtonKey): key is ButtonKeyByBehaviorKind<"operator"> =>
   getButtonDefinition(key)?.behaviorKind === "operator";
 
+export const isUnaryOperatorKey = (key: ButtonKey): key is ButtonKeyByBehaviorKind<"unary_operator"> =>
+  getButtonDefinition(key)?.behaviorKind === "unary_operator";
+
 export const isExecutionKey = (key: ButtonKey): key is ButtonKeyByBehaviorKind<"execute"> =>
   getButtonDefinition(key)?.behaviorKind === "execute";
 

@@ -4,24 +4,23 @@ import { buttonRegistry } from "./buttonRegistry.js";
 export type KeyActionHandlerId =
   | "apply_digit"
   | "apply_operator"
+  | "apply_unary_operator"
   | "apply_execute"
   | "apply_utility"
   | "apply_visualizer_noop"
   | "apply_toggle_noop"
   | "apply_noop"
   | "apply_memory"
-  | "apply_negate"
   | "apply_clear_all"
   | "apply_clear_entry"
   | "apply_backspace"
   | "apply_undo"
-  | "apply_equals"
-  | "apply_increment"
-  | "apply_decrement";
+  | "apply_equals";
 
 const behaviorHandlerByKind: Record<ButtonBehaviorKind, KeyActionHandlerId> = {
   digit: "apply_digit",
   operator: "apply_operator",
+  unary_operator: "apply_unary_operator",
   execute: "apply_execute",
   utility: "apply_utility",
   visualizer: "apply_visualizer_noop",
@@ -30,7 +29,6 @@ const behaviorHandlerByKind: Record<ButtonBehaviorKind, KeyActionHandlerId> = {
 };
 
 const overrideHandlerById: Record<ButtonHandlerOverrideId, KeyActionHandlerId> = {
-  negate_total_or_drafting: "apply_negate",
   utility_clear_all: "apply_clear_all",
   utility_clear_entry: "apply_clear_entry",
   utility_backspace: "apply_backspace",
@@ -40,8 +38,7 @@ const overrideHandlerById: Record<ButtonHandlerOverrideId, KeyActionHandlerId> =
   memory_adjust_plus: "apply_memory",
   memory_adjust_minus: "apply_memory",
   execute_equals: "apply_equals",
-  execute_increment: "apply_increment",
-  execute_decrement: "apply_decrement",
+  unary_operator_insert_pair: "apply_unary_operator",
 };
 
 export const resolveKeyActionHandlerId = (key: ButtonKey): KeyActionHandlerId => {

@@ -20,13 +20,14 @@ export const OPERATION_SLOTS_MAX = 4;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
-const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["++"];
+const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["="];
 
 type UnlockGroup = Exclude<ButtonUnlockGroup, "none">;
 type UnlockGroupRecord<B extends UnlockGroup> =
   B extends "valueAtoms" ? GameState["unlocks"]["valueAtoms"]
     : B extends "valueCompose" ? GameState["unlocks"]["valueCompose"]
     : B extends "slotOperators" ? GameState["unlocks"]["slotOperators"]
+      : B extends "unaryOperators" ? GameState["unlocks"]["unaryOperators"]
       : B extends "utilities" ? GameState["unlocks"]["utilities"]
         : B extends "memory" ? GameState["unlocks"]["memory"]
           : B extends "steps" ? GameState["unlocks"]["steps"]
@@ -119,14 +120,14 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "6" },
   { kind: "key", key: "e" },
   { kind: "key", key: "+" },
+  { kind: "key", key: "++" },
+  { kind: "key", key: "--" },
+  { kind: "key", key: "-n" },
   { kind: "key", key: "1" },
   { kind: "key", key: "2" },
   { kind: "key", key: "3" },
-  { kind: "key", key: "=" },
   { kind: "key", key: "0" },
-  { kind: "key", key: "--" },
-  { kind: "key", key: "++" },
-  { kind: "key", key: "NEG" },
+  { kind: "key", key: "=" },
   { kind: "key", key: "\u23EF", behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
 ];
 
@@ -165,6 +166,7 @@ export const initialState = (): GameState => {
       valueCompose,
       valueExpression: combineValueExpressionUnlocks(valueAtoms, valueCompose),
       slotOperators: buildUnlockRecord("slotOperators"),
+      unaryOperators: buildUnlockRecord("unaryOperators"),
       utilities: buildUnlockRecord("utilities"),
       memory: buildUnlockRecord("memory"),
       steps: buildUnlockRecord("steps"),

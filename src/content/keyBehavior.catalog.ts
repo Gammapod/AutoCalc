@@ -6,15 +6,13 @@ export type UnlockPathPolicy = "catalog" | "none_planned";
 export type KeyPrimaryExpectationKind =
   | "digit_sets_drafting_operand"
   | "operator_starts_drafting"
-  | "neg_toggles_pending_sign"
+  | "unary_operator_inserts_pair"
   | "c_resets_calculator"
   | "ce_clears_entry"
   | "backspace_deletes_last_input"
   | "undo_pops_roll"
   | "graph_counts_only"
   | "equals_executes_drafted_plus_one"
-  | "increment_increases_total"
-  | "decrement_decreases_total"
   | "pause_counts_only"
   | "memory_recall_sets_input"
   | "memory_adjusts_allocator";
@@ -22,15 +20,13 @@ export type KeyPrimaryExpectationKind =
 export type KeyEdgeExpectationKind =
   | "digit_replaces_full_operand_digit"
   | "operator_replaces_empty_drafting_operator"
-  | "neg_toggles_drafting_sign"
+  | "unary_operator_clears_active_roll_then_inserts_pair"
   | "c_checklist_recorded_once"
   | "ce_preserves_total_when_clearing"
   | "backspace_noop_when_nothing_to_delete"
   | "undo_noop_when_roll_empty"
   | "graph_does_not_mutate_calculator_state"
   | "equals_division_by_zero_sets_nan"
-  | "increment_clears_pending_negative"
-  | "decrement_clears_pending_negative"
   | "pause_does_not_mutate_calculator_state"
   | "memory_recall_noop_on_active_roll"
   | "memory_adjust_noop_without_budget_or_bounds";
@@ -59,6 +55,14 @@ const op = (key: Key): KeyBehaviorSpec => ({
   edgeCaseExpectation: "operator_replaces_empty_drafting_operator",
 });
 
+const unary = (key: Key): KeyBehaviorSpec => ({
+  key,
+  lockModel: "unlockable",
+  unlockPathPolicy: "none_planned",
+  primaryExpectation: "unary_operator_inserts_pair",
+  edgeCaseExpectation: "unary_operator_clears_active_roll_then_inserts_pair",
+});
+
 export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   d("0"),
   d("1"),
@@ -72,19 +76,15 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   d("9"),
   d("pi"),
   d("e"),
-  {
-    key: "NEG",
-    lockModel: "unlockable",
-    unlockPathPolicy: "none_planned",
-    primaryExpectation: "neg_toggles_pending_sign",
-    edgeCaseExpectation: "neg_toggles_drafting_sign",
-  },
   op("+"),
   op("-"),
   op("*"),
   op("/"),
   op("#"),
   op("\u27E1"),
+  unary("++"),
+  unary("--"),
+  unary("-n"),
   {
     key: "C",
     lockModel: "unlockable",
@@ -177,23 +177,9 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   },
   {
     key: "=",
-    lockModel: "unlockable",
-    unlockPathPolicy: "catalog",
+    lockModel: "always_unlocked",
     primaryExpectation: "equals_executes_drafted_plus_one",
     edgeCaseExpectation: "equals_division_by_zero_sets_nan",
-  },
-  {
-    key: "++",
-    lockModel: "always_unlocked",
-    primaryExpectation: "increment_increases_total",
-    edgeCaseExpectation: "increment_clears_pending_negative",
-  },
-  {
-    key: "--",
-    lockModel: "unlockable",
-    unlockPathPolicy: "catalog",
-    primaryExpectation: "decrement_decreases_total",
-    edgeCaseExpectation: "decrement_clears_pending_negative",
   },
   {
     key: "\u23EF",

@@ -24,7 +24,6 @@ import type {
   PlaceholderCell,
   Slot,
   UnlockState,
-  ValueExpressionKey,
   MemoryVariable,
 } from "../../domain/types.js";
 
@@ -47,10 +46,11 @@ export type SerializableStateV1 = {
     storageLayout?: KeyCell[];
   };
   unlocks?: Partial<UnlockState> & {
-    digits?: Partial<Record<Exclude<ValueExpressionKey, "NEG">, boolean>>;
+    digits?: Partial<Record<"0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "pi" | "e", boolean>>;
     valueExpression?: Partial<UnlockState["valueExpression"]>;
     slotOperators?: Partial<UnlockState["slotOperators"]>;
-    utilities?: Partial<Record<"C" | "CE" | "UNDO" | "\u2190" | "GRAPH" | "\u23EF" | "NEG", boolean>>;
+    unaryOperators?: Partial<UnlockState["unaryOperators"]>;
+    utilities?: Partial<Record<"C" | "CE" | "UNDO" | "\u2190" | "GRAPH" | "\u23EF", boolean>>;
     memory?: Partial<UnlockState["memory"]>;
     visualizers?: Partial<UnlockState["visualizers"]>;
     execution?: Partial<UnlockState["execution"]>;
@@ -221,16 +221,18 @@ const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN|[A-Za-z0-9_()
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
 const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
-const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "pi", "e", "NEG"] as const;
+const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "pi", "e"] as const;
 const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190"] as const;
 const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] as const;
 const STEP_KEY_VALUES = ["\u23EF"] as const;
 const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "CIRCLE", "\u03BB", "ALG"] as const;
-const EXEC_KEY_VALUES = ["=", "++", "--"] as const;
+const EXEC_KEY_VALUES = ["="] as const;
+const UNARY_OPERATOR_KEY_VALUES = ["++", "--", "-n"] as const;
 const MEMORY_VARIABLE_VALUES: readonly MemoryVariable[] = ["α", "β", "γ"];
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
   ...SLOT_OPERATOR_VALUES,
+  ...UNARY_OPERATOR_KEY_VALUES,
   ...UTILITY_KEY_VALUES,
   ...MEMORY_KEY_VALUES,
   ...STEP_KEY_VALUES,
@@ -484,19 +486,16 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
   const sourceValueExpression = source?.valueExpression ?? {};
   const sourceValueAtoms = source?.valueAtoms ?? {};
   const sourceValueCompose = source?.valueCompose ?? {};
-  const legacyNegUtility = source?.utilities?.NEG;
+  const sourceUnaryOperators = source?.unaryOperators ?? {};
   const legacyValueExpressionFromDigits = Object.fromEntries(
-    Object.keys(defaults.valueExpression)
-      .filter((key) => key !== "NEG")
-      .map((digit) => [digit, sourceDigits[digit as keyof typeof sourceDigits]]),
-  ) as Partial<Record<Exclude<ValueExpressionKey, "NEG">, boolean>>;
+    Object.keys(defaults.valueExpression).map((digit) => [digit, sourceDigits[digit as keyof typeof sourceDigits]]),
+  );
   const mergedValueExpression = {
     ...defaults.valueExpression,
     ...legacyValueExpressionFromDigits,
     ...sourceValueAtoms,
     ...sourceValueCompose,
     ...sourceValueExpression,
-    ...(typeof legacyNegUtility === "boolean" ? { NEG: legacyNegUtility } : {}),
   };
   const normalizedValueAtoms = {
     ...defaults.valueAtoms,
@@ -521,6 +520,7 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
       ...normalizedValueCompose,
     },
     slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
+    unaryOperators: { ...defaults.unaryOperators, ...sourceUnaryOperators },
     utilities: { ...defaults.utilities, ...(source?.utilities ?? {}) },
     memory: { ...defaults.memory, ...(source?.memory ?? {}) },
     steps: {
@@ -549,7 +549,6 @@ const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
   const normalized = [...(layout ?? defaultKeyLayout())];
 
   const mappings: Array<{ key: Key; area: PlaceholderCell["area"] }> = [
-    { key: "NEG", area: "negate" },
     { key: "/", area: "div" },
     { key: "⟡", area: "mod" },
     { key: "*", area: "mul" },
@@ -1010,6 +1009,7 @@ export const validateSerializableStateV3 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueCompose), unlocks.valueCompose) ||
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
+    !hasValidBooleans(Object.keys(defaults.unaryOperators), unlocks.unaryOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
     !hasValidBooleans(Object.keys(defaults.memory), unlocks.memory) ||
     !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||
@@ -1066,6 +1066,7 @@ export const validateSerializableStateV4 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueCompose), unlocks.valueCompose) ||
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
+    !hasValidBooleans(Object.keys(defaults.unaryOperators), unlocks.unaryOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
     !hasValidBooleans(Object.keys(defaults.memory), unlocks.memory) ||
     !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||
@@ -1130,6 +1131,7 @@ export const validateSerializableStateV5 = (state: unknown): state is Serializab
     !hasValidBooleans(Object.keys(defaults.valueCompose), unlocks.valueCompose) ||
     !hasValidBooleans(Object.keys(defaults.valueExpression), unlocks.valueExpression) ||
     !hasValidBooleans(Object.keys(defaults.slotOperators), unlocks.slotOperators) ||
+    !hasValidBooleans(Object.keys(defaults.unaryOperators), unlocks.unaryOperators) ||
     !hasValidBooleans(Object.keys(defaults.utilities), unlocks.utilities) ||
     !hasValidBooleans(Object.keys(defaults.memory), unlocks.memory) ||
     !hasValidBooleans(Object.keys(defaults.steps), unlocks.steps) ||

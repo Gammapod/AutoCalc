@@ -8,6 +8,7 @@ import {
 export type KeyRuntimeUnlockBucket =
   | "valueExpression"
   | "slotOperators"
+  | "unaryOperators"
   | "utilities"
   | "memory"
   | "steps"
@@ -32,6 +33,9 @@ const toRuntimeUnlockBucket = (entry: KeyCatalogEntry): KeyRuntimeUnlockBucket =
   }
   if (entry.unlockGroup === "slotOperators") {
     return "slotOperators";
+  }
+  if (entry.unlockGroup === "unaryOperators") {
+    return "unaryOperators";
   }
   if (entry.unlockGroup === "utilities") {
     return "utilities";

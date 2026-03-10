@@ -139,11 +139,11 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     const heightAfterTallGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
     assert.equal(heightAfterTallGrowth > heightAtBaseline, true, "desktop min-height grows once rows exceed 2-row baseline");
 
-    const keyButton = harness.root.querySelector<HTMLButtonElement>(".key[data-key='++']");
+    const keyButton = harness.root.querySelector<HTMLButtonElement>(".key[data-key='=']");
     assert.ok(keyButton, "calculator key exists after desktop render");
     click(keyButton as HTMLButtonElement);
     assert.equal(
-      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === "++"),
+      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === "="),
       true,
       "clicking a rendered key dispatches PRESS_KEY action on desktop shell",
     );

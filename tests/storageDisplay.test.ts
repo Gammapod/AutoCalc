@@ -57,7 +57,7 @@ export const runStorageDisplayTests = (): void => {
       ...orderedState.ui,
       storageLayout: [
         { kind: "key", key: "1" },
-        { kind: "key", key: "++" },
+        { kind: "key", key: "=" },
         null,
         { kind: "key", key: "+" },
         { kind: "key", key: "CE" },

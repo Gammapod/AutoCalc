@@ -128,19 +128,6 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     },
   },
   {
-    id: "legacy.negates_drafting_operand",
-    description: "NEG toggles drafting sign and digit uses signed drafting operand.",
-    tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(base, ["+", "NEG", "1"]),
-    keySequence: ["+", "NEG", "1"],
-    expectedProjection: {
-      operationSlots: [],
-      draftingSlot: { operator: "+", operandInput: "1", isNegative: true },
-      roll: [],
-      keyPressCounts: { "+": 1, NEG: 1, "1": 1 },
-    },
-  },
-  {
     id: "legacy.equals_clears_empty_drafting_slot",
     description: "Executing with half-filled slot drops drafting slot and executes committed slots only.",
     tags: ["legacy_contract", "target_spec"],
@@ -192,31 +179,6 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
       draftingSlot: null,
       roll: [],
       keyPressCounts: { "2": 1 },
-    },
-  },
-  {
-    id: "target.neg_toggles_current_filled_slot_sign",
-    description: "Desired: NEG toggles sign on current filled slot operand.",
-    tags: ["target_spec"],
-    initialState: withUnlockedKeys(
-      {
-        ...base,
-        calculator: {
-          ...base.calculator,
-          total: r(0n),
-          operationSlots: [{ operator: "+", operand: 2n }],
-          draftingSlot: null,
-        },
-      },
-      ["NEG"],
-    ),
-    keySequence: ["NEG"],
-    targetProjection: {
-      total: r(0n),
-      operationSlots: [{ operator: "+", operand: -2n }],
-      draftingSlot: null,
-      roll: [],
-      keyPressCounts: { NEG: 1 },
     },
   },
   {

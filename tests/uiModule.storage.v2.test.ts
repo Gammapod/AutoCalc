@@ -29,6 +29,29 @@ export const runUiModuleStorageV2Tests = (): void => {
       true,
       "storage module renders storage slots",
     );
+
+    const unaryStorageCell = { kind: "key", key: "++" as const } as const;
+    const unaryState = {
+      ...state,
+      ui: {
+        ...state.ui,
+        storageLayout: [unaryStorageCell, ...state.ui.storageLayout.slice(1)],
+      },
+      unlocks: {
+        ...state.unlocks,
+        maxSlots: 1,
+        unaryOperators: {
+          ...state.unlocks.unaryOperators,
+          "++": true,
+        },
+      },
+    };
+    renderStorageV2Module(harness.root, unaryState, noopDispatch, {
+      inputBlocked: false,
+    });
+    const unaryButton = harness.root.querySelector<HTMLButtonElement>("[data-storage-keys] button[data-key='++']");
+    assert.equal(unaryButton?.classList.contains("key--group-slot_operator"), true, "storage unary key uses operator group styling");
+    assert.equal(unaryButton?.classList.contains("key--unary-operator"), true, "storage unary key receives unary stripe class");
   } finally {
     harness.teardown();
   }

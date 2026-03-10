@@ -190,7 +190,7 @@ export const runDragDropBehaviorTests = (): void => {
         { kind: "placeholder", area: "empty" },
         { kind: "placeholder", area: "empty" },
         { kind: "placeholder", area: "empty" },
-        { kind: "key", key: "++" },
+        { kind: "key", key: "=" },
       ],
       storageLayout: [{ kind: "key", key: "\u23EF" }, { kind: "key", key: "1" }, ...base.ui.storageLayout.slice(2)],
     },

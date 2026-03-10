@@ -8,7 +8,7 @@ const CONTENT_DRILL_CATALOG: UnlockDefinition[] = [
   {
     id: "content_drill_unlock_9_on_increment_3",
     description: "Content drill: unlock 9 after three increments.",
-    predicate: { type: "key_press_count_at_least", key: "++", count: 3 },
+    predicate: { type: "key_press_count_at_least", key: "=", count: 3 },
     effect: { type: "unlock_digit", key: "9" },
     once: true,
     domainNodeId: "NN",
@@ -27,9 +27,9 @@ const runActions = (actions: Action[]) => {
 
 export const runContentDrillUnlockExtensionTests = (): void => {
   const before = runActions([
-    { type: "PRESS_KEY", key: "++" },
-    { type: "PRESS_KEY", key: "++" },
-    { type: "PRESS_KEY", key: "++" },
+    { type: "PRESS_KEY", key: "=" },
+    { type: "PRESS_KEY", key: "=" },
+    { type: "PRESS_KEY", key: "=" },
   ]);
 
   assert.equal(before.unlocks.valueExpression["9"], false, "drill key remains locked before applying drill catalog");

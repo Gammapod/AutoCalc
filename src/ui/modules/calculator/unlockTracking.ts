@@ -13,12 +13,15 @@ const buildUnlockSnapshot = (state: GameState): Record<Key, boolean> => {
     snapshot[key as Key] = unlocked;
   }
   for (const [key, unlocked] of Object.entries(state.unlocks.valueCompose)) {
-    snapshot[key as Key] = unlocked;
+    snapshot[key as Key] = Boolean(unlocked);
   }
   for (const [key, unlocked] of Object.entries(state.unlocks.valueExpression)) {
     snapshot[key as Key] = unlocked;
   }
   for (const [key, unlocked] of Object.entries(state.unlocks.slotOperators)) {
+    snapshot[key as Key] = unlocked;
+  }
+  for (const [key, unlocked] of Object.entries(state.unlocks.unaryOperators)) {
     snapshot[key as Key] = unlocked;
   }
   for (const [key, unlocked] of Object.entries(state.unlocks.utilities)) {

@@ -17,6 +17,7 @@ export const runButtonRegistryContractTests = (): void => {
     ...Object.keys(state.unlocks.valueAtoms),
     ...Object.keys(state.unlocks.valueCompose),
     ...Object.keys(state.unlocks.slotOperators),
+    ...Object.keys(state.unlocks.unaryOperators),
     ...Object.keys(state.unlocks.utilities),
     ...Object.keys(state.unlocks.memory),
     ...Object.keys(state.unlocks.steps),

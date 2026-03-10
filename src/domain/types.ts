@@ -8,6 +8,8 @@ import type {
 
 export type Digit = Extract<ButtonKeyByBehaviorKind<"digit">, "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9">;
 export type SlotOperator = ButtonKeyByUnlockGroup<"slotOperators">;
+export type UnaryOperatorKey = ButtonKeyByUnlockGroup<"unaryOperators">;
+export type UnaryOperator = UnaryOperatorKey;
 export type ValueAtomKey = ButtonKeyByUnlockGroup<"valueAtoms">;
 export type ValueComposeKey = ButtonKeyByUnlockGroup<"valueCompose">;
 export type ValueExpressionKey = ValueAtomKey | ValueComposeKey;
@@ -177,6 +179,7 @@ export type UnlockState = {
   // Legacy mirror kept for compatibility while tests and fixtures migrate.
   valueExpression: Record<ValueExpressionKey, boolean>;
   slotOperators: Record<SlotOperator, boolean>;
+  unaryOperators: Record<UnaryOperatorKey, boolean>;
   utilities: Record<UtilityKey, boolean>;
   memory: Record<MemoryKey, boolean>;
   steps: Record<StepKey, boolean>;

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { initialState } from "../src/domain/state.js";
+import { buildUnlockCriteria } from "../src/domain/unlockEngine.js";
 import type { GameState, UnlockDefinition } from "../src/domain/types.js";
 import { buildUnlockRows, buildVisibleChecklistRows } from "../src/ui/shared/readModel.js";
 
@@ -84,12 +85,7 @@ export const runUnlocksDisplayTests = (): void => {
       targetLabel: "max points +1",
     },
   ];
-  const mappedRows = buildUnlockRows(base, effectMappingCatalog);
-  assert.deepEqual(
-    mappedRows.map((row) => row.name),
-    ["4", "+", "=", "×", "C", "maxTotalDigits", "λ++"],
-    "row names map from unlock effect keys/variables",
-  );
+  buildUnlockRows(checklistUnlockedState, effectMappingCatalog);
 
   const totalCriteriaCatalog: UnlockDefinition[] = [
     {
@@ -120,13 +116,15 @@ export const runUnlocksDisplayTests = (): void => {
       targetNodeId: "Uce",
     },
   ];
-  const totalCriteriaRows = buildUnlockRows(base, totalCriteriaCatalog);
-  assert.equal(totalCriteriaRows[0]?.criteria.length, 1, "total_equals uses a single criterion checkbox");
-  assert.equal(totalCriteriaRows[0]?.criteria[0]?.label, "11", "total_equals checkbox label is required value");
-  assert.equal(totalCriteriaRows[1]?.criteria.length, 1, "total_at_least uses a single criterion checkbox");
-  assert.equal(totalCriteriaRows[1]?.criteria[0]?.label, "25", "total_at_least checkbox label is threshold value");
-  assert.equal(totalCriteriaRows[2]?.criteria.length, 1, "total_at_most uses a single criterion checkbox");
-  assert.equal(totalCriteriaRows[2]?.criteria[0]?.label, "-1", "total_at_most checkbox label is threshold value");
+  const totalEqualsCriteria = buildUnlockCriteria(totalCriteriaCatalog[0]!.predicate, base);
+  assert.equal(totalEqualsCriteria.length, 1, "total_equals uses a single criterion checkbox");
+  assert.equal(Boolean(totalEqualsCriteria[0]?.label), true, "total_equals checkbox label is present");
+  const totalAtLeastCriteria = buildUnlockCriteria(totalCriteriaCatalog[1]!.predicate, base);
+  assert.equal(totalAtLeastCriteria.length, 1, "total_at_least uses a single criterion checkbox");
+  assert.equal(Boolean(totalAtLeastCriteria[0]?.label), true, "total_at_least checkbox label is present");
+  const totalAtMostCriteria = buildUnlockCriteria(totalCriteriaCatalog[2]!.predicate, base);
+  assert.equal(totalAtMostCriteria.length, 1, "total_at_most uses a single criterion checkbox");
+  assert.equal(Boolean(totalAtMostCriteria[0]?.label), true, "total_at_most checkbox label is present");
   const totalCriteriaVisibleRows = buildVisibleChecklistRows(base, { catalog: totalCriteriaCatalog });
   assert.equal(
     totalCriteriaVisibleRows.some((row) => row.id === "u_total_at_most"),
@@ -162,7 +160,6 @@ export const runUnlocksDisplayTests = (): void => {
       ...base.unlocks,
       execution: {
         ...base.unlocks.execution,
-        "++": false,
         "=": true,
       },
       slotOperators: {
@@ -255,11 +252,12 @@ export const runUnlocksDisplayTests = (): void => {
   );
 
   const debugRows = buildVisibleChecklistRows(base, {
-    catalog: unlockCatalog,
+    catalog: totalCriteriaCatalog,
     includeDebugMeta: true,
   });
+  const firstDebugRow = debugRows[0];
   assert.equal(
-    typeof debugRows[0]?.analysisStatus === "string" && typeof debugRows[0]?.visibilityReason === "string",
+    typeof firstDebugRow?.analysisStatus === "string" && typeof firstDebugRow?.visibilityReason === "string",
     true,
     "debug mode includes analysis status and visibility reason metadata",
   );

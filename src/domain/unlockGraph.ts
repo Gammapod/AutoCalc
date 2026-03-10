@@ -96,13 +96,10 @@ const collectContributorKeys = (sufficiency: FunctionSufficiencySpec): Key[] => 
 
 const defineFunctionRule = (input: Omit<FunctionRule, "isSatisfied" | "sufficiency"> & { sufficiency: FunctionSufficiencySpec }): FunctionRule => {
   const normalizedSufficiency = normalizeSufficiency(input.sufficiency);
-  if (normalizedSufficiency.length === 0) {
-    throw new Error(`Function rule ${input.id} must define at least one non-empty sufficient clause`);
-  }
   return {
     ...input,
     sufficiency: normalizedSufficiency,
-    isSatisfied: (keys) => evaluateSufficiency(keys, normalizedSufficiency),
+    isSatisfied: (keys) => normalizedSufficiency.length > 0 && evaluateSufficiency(keys, normalizedSufficiency),
   };
 };
 
@@ -788,7 +785,7 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
 
 export const filterUnlockGraphToIncomingUnlockKeys = (
   graph: UnlockGraph,
-  alwaysIncludeKeys: Key[] = ["++"],
+  alwaysIncludeKeys: Key[] = [],
 ): UnlockGraph => {
   const alwaysInclude = new Set(alwaysIncludeKeys);
   const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
@@ -864,6 +861,11 @@ export const deriveUnlockedKeysFromState = (state: GameState): Key[] => {
     }
   }
   for (const [key, unlocked] of Object.entries(state.unlocks.slotOperators)) {
+    if (unlocked) {
+      keys.push(key as Key);
+    }
+  }
+  for (const [key, unlocked] of Object.entries(state.unlocks.unaryOperators)) {
     if (unlocked) {
       keys.push(key as Key);
     }

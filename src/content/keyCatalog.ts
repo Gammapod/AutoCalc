@@ -2,6 +2,7 @@ export type KeyUnlockGroup =
   | "valueAtoms"
   | "valueCompose"
   | "slotOperators"
+  | "unaryOperators"
   | "utilities"
   | "memory"
   | "steps"
@@ -9,7 +10,7 @@ export type KeyUnlockGroup =
   | "execution"
   | "none";
 
-export type KeyBehaviorKind = "digit" | "operator" | "execute" | "utility" | "visualizer" | "toggle" | "noop";
+export type KeyBehaviorKind = "digit" | "operator" | "unary_operator" | "execute" | "utility" | "visualizer" | "toggle" | "noop";
 
 export type KeyInputFamily =
   | "atom_digit"
@@ -25,7 +26,6 @@ export type KeyInputFamily =
 export type KeyValueRole = "none" | "literal" | "constant" | "unary_compose" | "binary_compose";
 
 export type KeyHandlerOverrideId =
-  | "negate_total_or_drafting"
   | "utility_clear_all"
   | "utility_clear_entry"
   | "utility_backspace"
@@ -35,15 +35,13 @@ export type KeyHandlerOverrideId =
   | "memory_adjust_plus"
   | "memory_adjust_minus"
   | "execute_equals"
-  | "execute_increment"
-  | "execute_decrement";
+  | "unary_operator_insert_pair";
 
 export type KeyTrait =
   | "counts_press"
   | "can_execute"
   | "can_change_total"
   | "can_form_slot"
-  | "can_toggle_sign"
   | "can_divide"
   | "can_euclid_divide"
   | "can_remainder"
@@ -84,13 +82,15 @@ export const keyCatalog = [
   { key: "9", category: "value_expression", unlockGroup: "valueAtoms", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit", inputFamily: "atom_digit", valueRole: "literal", traits: withBaseTraits(["is_digit"]) },
   { key: "pi", category: "value_expression", unlockGroup: "valueAtoms", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit", inputFamily: "atom_constant", valueRole: "constant", traits: withBaseTraits(["is_digit"]) },
   { key: "e", category: "value_expression", unlockGroup: "valueAtoms", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "digit", inputFamily: "atom_constant", valueRole: "constant", traits: withBaseTraits(["is_digit"]) },
-  { key: "NEG", category: "value_expression", unlockGroup: "valueCompose", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_toggle_sign"]), handlerOverrideId: "negate_total_or_drafting" },
   { key: "+", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot"]) },
   { key: "-", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot"]) },
   { key: "*", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot"]) },
   { key: "/", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_divide"]) },
   { key: "#", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_euclid_divide"]) },
   { key: "\u27E1", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_remainder"]) },
+  { key: "++", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_insert_pair" },
+  { key: "--", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_insert_pair" },
+  { key: "-n", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_insert_pair" },
   { key: "C", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits(["can_reset"]), handlerOverrideId: "utility_clear_all" },
   { key: "CE", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "utility_clear_entry" },
   { key: "\u2190", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "utility_backspace" },
@@ -105,9 +105,7 @@ export const keyCatalog = [
   { key: "CIRCLE", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "circle" },
   { key: "\u03BB", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "eigen_allocator" },
   { key: "ALG", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "algebraic" },
-  { key: "=", category: "execution", unlockGroup: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute", "can_change_total"]), handlerOverrideId: "execute_equals" },
-  { key: "++", category: "execution", unlockGroup: "execution", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute", "can_change_total"]), handlerOverrideId: "execute_increment" },
-  { key: "--", category: "execution", unlockGroup: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute", "can_change_total"]), handlerOverrideId: "execute_decrement" },
+  { key: "=", category: "execution", unlockGroup: "execution", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute", "can_change_total"]), handlerOverrideId: "execute_equals" },
 ] as const satisfies readonly KeyCatalogEntry[];
 
 export type KeyCatalogRecord = (typeof keyCatalog)[number];

@@ -36,6 +36,9 @@ const applyUnlockAll = (state: GameState): GameState => {
       slotOperators: Object.fromEntries(
         Object.keys(withProjectedControl.unlocks.slotOperators).map((operator) => [operator, true]),
       ) as GameState["unlocks"]["slotOperators"],
+      unaryOperators: Object.fromEntries(
+        Object.keys(withProjectedControl.unlocks.unaryOperators).map((operator) => [operator, true]),
+      ) as GameState["unlocks"]["unaryOperators"],
       utilities: Object.fromEntries(
         Object.keys(withProjectedControl.unlocks.utilities).map((utility) => [utility, true]),
       ) as GameState["unlocks"]["utilities"],
