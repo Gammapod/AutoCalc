@@ -644,6 +644,10 @@
         display: none;
       }
 
+      .v2-factorization-panel {
+        display: none;
+      }
+
       .v2-total-panel {
         display: none;
       }
@@ -2100,6 +2104,35 @@
         pointer-events: auto;
       }
 
+      body[data-ui-shell="mobile"] .v2-factorization-panel,
+      body[data-ui-shell="desktop"] .v2-factorization-panel {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        height: var(--v2-visualizer-window-height);
+        overflow: hidden;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: #b4f1d3;
+        flex-direction: column;
+        justify-content: flex-start;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="factorization"] .v2-factorization-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="factorization"] .v2-factorization-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
       body[data-ui-shell="mobile"] .v2-total-panel,
       body[data-ui-shell="desktop"] .v2-total-panel {
         display: flex;
@@ -2399,6 +2432,28 @@
         color: #ff8f7f;
       }
 
+      body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-table,
+      body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-table {
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row,
+      body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-row {
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: clamp(0.66rem, 1.8vw, 0.82rem);
+        line-height: 1.3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        margin-bottom: 2px;
+      }
+
+      body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--placeholder,
+      body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-row--placeholder {
+        color: #f2cf57;
+      }
+
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher .grapher-screen,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher .grapher-screen {
         height: 100%;
@@ -2423,6 +2478,8 @@
         body[data-ui-shell="desktop"] .v2-eigen-allocator-panel,
         body[data-ui-shell="mobile"] .v2-algebraic-panel,
         body[data-ui-shell="desktop"] .v2-algebraic-panel,
+        body[data-ui-shell="mobile"] .v2-factorization-panel,
+        body[data-ui-shell="desktop"] .v2-factorization-panel,
         body[data-ui-shell="mobile"] .v2-feed-panel,
         body[data-ui-shell="desktop"] .v2-feed-panel {
           transition-duration: 1ms;
@@ -2664,6 +2721,7 @@
                         </div>
                       </section>
                       <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                      <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                       <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
                       <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                       <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>

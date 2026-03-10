@@ -156,6 +156,13 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
   },
   {
+    key: "𝚷𝑝^𝑒",
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
     key: "CIRCLE",
     lockModel: "always_unlocked",
     primaryExpectation: "graph_counts_only",

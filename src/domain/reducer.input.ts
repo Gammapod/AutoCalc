@@ -33,6 +33,7 @@ import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionH
 import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, ExpressionConstant, GameState, Key, RationalValue, RollEntry, SlotOperator, UnaryOperator } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 import { applyMemoryAdjust, cycleMemoryVariable, isMemoryKey, resolveMemoryRecallDigit } from "./memoryController.js";
+import { getRollYPrimeFactorization } from "./rollDerived.js";
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
 const incrementKeyPressCount = (state: GameState, key: Key): GameState => ({
@@ -384,19 +385,23 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
   };
 };
 
-const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => ({
-  y: evaluation.nextTotal,
-  ...(evaluation.euclidRemainder && !evaluation.errorCode ? { remainder: evaluation.euclidRemainder } : {}),
-  ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
-  ...(evaluation.errorCode && evaluation.errorKind
-    ? {
-      error: {
-        code: evaluation.errorCode,
-        kind: evaluation.errorKind,
-      },
-    }
-    : {}),
-});
+const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
+  const factorization = getRollYPrimeFactorization(evaluation.nextTotal);
+  return {
+    y: evaluation.nextTotal,
+    ...(evaluation.euclidRemainder && !evaluation.errorCode ? { remainder: evaluation.euclidRemainder } : {}),
+    ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
+    ...(factorization ? { factorization } : {}),
+    ...(evaluation.errorCode && evaluation.errorKind
+      ? {
+        error: {
+          code: evaluation.errorCode,
+          kind: evaluation.errorKind,
+        },
+      }
+      : {}),
+  };
+};
 
 const applyEquals = (state: GameState): GameState => {
   if (!state.unlocks.execution["="]) {

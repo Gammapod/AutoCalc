@@ -127,6 +127,9 @@ export const formatKeyLabel = (key: Key): string => {
   if (key === "CIRCLE") {
     return "\u25EF";
   }
+  if (key === "𝚷𝑝^𝑒") {
+    return "𝚷𝑝ᵉ";
+  }
   if (key === "-n") {
     return "\u00B1";
   }

@@ -1,18 +1,7 @@
-import type { CalculatorValue, RationalValue, RollEntry } from "./types.js";
+import type { CalculatorValue, PrimeFactorTerm, RationalPrimeFactorization, RationalValue, RollEntry } from "./types.js";
 import { expressionToAlgebriteString } from "./expression.js";
 
 export type RollValueDomain = "\u2205" | "\u2115" | "\u2124" | "\u211A";
-
-export type PrimeFactorTerm = {
-  prime: bigint;
-  exponent: number;
-};
-
-export type RationalPrimeFactorization = {
-  sign: -1 | 1;
-  numerator: PrimeFactorTerm[];
-  denominator: PrimeFactorTerm[];
-};
 
 export type RollEntryDerived = {
   x: number;
@@ -93,7 +82,7 @@ export const getRollYPrimeFactorization = (value: CalculatorValue): RationalPrim
   value.kind === "rational" ? getRationalPrimeFactorization(value.value) : undefined;
 
 export const getDerivedRollEntry = (entry: RollEntry, x: number): RollEntryDerived => {
-  const primeFactorization = getRollYPrimeFactorization(entry.y);
+  const primeFactorization = entry.factorization ?? getRollYPrimeFactorization(entry.y);
   return {
     x,
     y: entry.y,

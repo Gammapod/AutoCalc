@@ -64,4 +64,14 @@ export const runRollDerivedTests = (): void => {
   const derived = getDerivedRollEntries([{ y: r(2n) }, { y: r(3n, 2n) }]);
   assert.equal(derived[0].x, 0, "first derived entry uses x index 0");
   assert.equal(derived[1].x, 1, "second derived entry uses x index 1");
+
+  const storedFactorizationEntry: RollEntry = {
+    y: r(12n),
+    factorization: { sign: 1, numerator: [{ prime: 3n, exponent: 1 }], denominator: [] },
+  };
+  assert.deepEqual(
+    getDerivedRollEntry(storedFactorizationEntry, 0).primeFactorization,
+    { sign: 1, numerator: [{ prime: 3n, exponent: 1 }], denominator: [] },
+    "derived roll entry prefers stored factorization payload over runtime derivation",
+  );
 };

@@ -48,6 +48,7 @@ import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorag
 import { runUiModuleStorageV2Tests } from "./uiModule.storage.v2.test.js";
 import { runUiModuleInputV2Tests } from "./uiModule.input.v2.test.js";
 import { runUiModuleAlgebraicRendererV2Tests } from "./uiModule.algebraicRenderer.v2.test.js";
+import { runUiModuleFactorizationRendererV2Tests } from "./uiModule.factorizationRenderer.v2.test.js";
 import { runUiLayoutEngineTests } from "./uiLayoutEngine.test.js";
 import { runUiMotionCoordinatorTests } from "./uiMotionCoordinator.test.js";
 import { runUiCueLifecycleTests } from "./uiCueLifecycle.test.js";
@@ -130,6 +131,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/storage-v2", runUiModuleStorageV2Tests],
   ["ui-module/input-v2", runUiModuleInputV2Tests],
   ["ui-module/algebraic-renderer-v2", runUiModuleAlgebraicRendererV2Tests],
+  ["ui-module/factorization-renderer-v2", runUiModuleFactorizationRendererV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/circle-visualizer-v2", runUiModuleCircleVisualizerV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],

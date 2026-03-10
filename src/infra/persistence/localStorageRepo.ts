@@ -4,8 +4,9 @@ import { isRationalCalculatorValue, toExpressionCalculatorValue, toNanCalculator
 import { expressionToDisplayString, parseExpressionOrThrow } from "../../domain/expression.js";
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, sanitizeLambdaControl, withLegacyAllocatorFallback } from "../../domain/lambdaControl.js";
+import { getRollYPrimeFactorization } from "../../domain/rollDerived.js";
 import { isValidSchemaVersion, migrateToLatest, type SerializableStateV14, type SerializableSlot } from "./migrations.js";
-import type { GameState } from "../../domain/types.js";
+import type { GameState, PrimeFactorTerm, RationalPrimeFactorization } from "../../domain/types.js";
 
 type SavePayload = {
   schemaVersion: number;
@@ -68,6 +69,73 @@ const deserializeCalculatorValue = (value: string): GameState["calculator"]["tot
       return toExpressionCalculatorValue(expression);
     })();
 
+const serializePrimeFactorTerms = (terms: PrimeFactorTerm[]): Array<{ prime: string; exponent: number }> =>
+  terms.map((term) => ({ prime: term.prime.toString(), exponent: term.exponent }));
+
+const serializeFactorization = (
+  factorization: RationalPrimeFactorization | undefined,
+): { sign: -1 | 1; numerator: Array<{ prime: string; exponent: number }>; denominator: Array<{ prime: string; exponent: number }> } | undefined =>
+  factorization
+    ? {
+        sign: factorization.sign,
+        numerator: serializePrimeFactorTerms(factorization.numerator),
+        denominator: serializePrimeFactorTerms(factorization.denominator),
+      }
+    : undefined;
+
+const parsePrimeFactorTerms = (value: unknown): PrimeFactorTerm[] | null => {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  const terms: PrimeFactorTerm[] = [];
+  for (const term of value) {
+    const candidate = term as Record<string, unknown>;
+    if (
+      typeof term !== "object" ||
+      term === null ||
+      !("prime" in candidate) ||
+      !("exponent" in candidate) ||
+      typeof candidate.prime !== "string" ||
+      typeof candidate.exponent !== "number" ||
+      !Number.isInteger(candidate.exponent) ||
+      candidate.exponent <= 0
+    ) {
+      return null;
+    }
+    try {
+      const prime = BigInt(candidate.prime);
+      if (prime < 2n) {
+        return null;
+      }
+      terms.push({ prime, exponent: candidate.exponent });
+    } catch {
+      return null;
+    }
+  }
+  return terms;
+};
+
+const parseSerializableFactorization = (value: unknown): RationalPrimeFactorization | undefined => {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+  const maybe = value as Record<string, unknown>;
+  const sign = maybe.sign;
+  if (sign !== -1 && sign !== 1) {
+    return undefined;
+  }
+  const numerator = parsePrimeFactorTerms(maybe.numerator);
+  const denominator = parsePrimeFactorTerms(maybe.denominator);
+  if (!numerator || !denominator) {
+    return undefined;
+  }
+  return {
+    sign,
+    numerator,
+    denominator,
+  };
+};
+
 const toSerializableState = (state: GameState): SerializableStateLatest => {
   const lambdaControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
   return ({
@@ -89,6 +157,7 @@ const toSerializableState = (state: GameState): SerializableStateLatest => {
             },
           }
         : {}),
+      ...(entry.factorization ? { factorization: serializeFactorization(entry.factorization) } : {}),
     })),
     operationSlots: state.calculator.operationSlots.map<SerializableSlot>((slot) => ({
       operator: slot.operator,
@@ -153,20 +222,26 @@ const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameSta
       : undefined,
     pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
     singleDigitInitialTotalEntry: payloadState.calculator.singleDigitInitialTotalEntry ?? false,
-    rollEntries: payloadState.calculator.rollEntries.map((entry) => ({
-      y: deserializeCalculatorValue(entry.y),
-      ...(entry.remainder ? { remainder: parseRational(entry.remainder) } : {}),
-      ...(entry.error ? { error: { code: entry.error.code, kind: entry.error.kind } } : {}),
-      ...(entry.symbolic
-        ? {
-            symbolic: {
-              exprText: entry.symbolic.exprText,
-              truncated: entry.symbolic.truncated,
-              renderText: entry.symbolic.renderText,
-            },
-          }
-        : {}),
-    })),
+    rollEntries: payloadState.calculator.rollEntries.map((entry) => {
+      const y = deserializeCalculatorValue(entry.y);
+      const serializedFactorization = parseSerializableFactorization((entry as Record<string, unknown>).factorization);
+      const factorization = serializedFactorization ?? getRollYPrimeFactorization(y);
+      return {
+        y,
+        ...(entry.remainder ? { remainder: parseRational(entry.remainder) } : {}),
+        ...(entry.error ? { error: { code: entry.error.code, kind: entry.error.kind } } : {}),
+        ...(entry.symbolic
+          ? {
+              symbolic: {
+                exprText: entry.symbolic.exprText,
+                truncated: entry.symbolic.truncated,
+                renderText: entry.symbolic.renderText,
+              },
+            }
+          : {}),
+        ...(factorization ? { factorization } : {}),
+      };
+    }),
     operationSlots: payloadState.calculator.operationSlots.map((slot) => ({
       operator: slot.operator,
       operand: (() => {

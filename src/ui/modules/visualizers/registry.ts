@@ -7,6 +7,10 @@ import {
   renderEigenAllocatorVisualizerPanel,
 } from "./eigenAllocatorRenderer.js";
 import { clearAlgebraicVisualizerPanel, renderAlgebraicVisualizerPanel } from "./algebraicRenderer.js";
+import {
+  clearFactorizationVisualizerPanel,
+  renderFactorizationVisualizerPanel,
+} from "./factorizationRenderer.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -20,6 +24,11 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     id: "feed",
     render: renderFeedVisualizerPanel,
     clear: clearFeedVisualizerPanel,
+  },
+  {
+    id: "factorization",
+    render: renderFactorizationVisualizerPanel,
+    clear: clearFactorizationVisualizerPanel,
   },
   {
     id: "circle",

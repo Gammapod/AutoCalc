@@ -121,6 +121,7 @@ const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void =
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
+  const factorizationPanel = root.querySelector<HTMLElement>("[data-v2-factorization-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const eigenAllocatorPanel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
@@ -140,6 +141,9 @@ const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void =
   }
   if (totalPanel) {
     totalPanel.setAttribute("aria-hidden", "true");
+  }
+  if (factorizationPanel) {
+    factorizationPanel.setAttribute("aria-hidden", "true");
   }
   if (circlePanel) {
     circlePanel.setAttribute("aria-hidden", "true");
@@ -166,6 +170,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
+  const factorizationPanel = root.querySelector<HTMLElement>("[data-v2-factorization-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const eigenAllocatorPanel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
@@ -197,6 +202,9 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   }
   if (totalPanel) {
     totalPanel.setAttribute("aria-hidden", activePanel === "total" ? "false" : "true");
+  }
+  if (factorizationPanel) {
+    factorizationPanel.setAttribute("aria-hidden", activePanel === "factorization" ? "false" : "true");
   }
   if (circlePanel) {
     circlePanel.setAttribute("aria-hidden", activePanel === "circle" ? "false" : "true");

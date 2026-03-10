@@ -145,6 +145,17 @@ export type SymbolicRollPayload = {
   renderText: string;
 };
 
+export type PrimeFactorTerm = {
+  prime: bigint;
+  exponent: number;
+};
+
+export type RationalPrimeFactorization = {
+  sign: -1 | 1;
+  numerator: PrimeFactorTerm[];
+  denominator: PrimeFactorTerm[];
+};
+
 export type RollEntry = {
   y: CalculatorValue;
   remainder?: RationalValue;
@@ -153,6 +164,7 @@ export type RollEntry = {
     kind: ExecutionErrorKind;
   };
   symbolic?: SymbolicRollPayload;
+  factorization?: RationalPrimeFactorization;
 };
 
 export type RollDomainType = "natural" | "non_positive_integer" | "rational_non_integer";

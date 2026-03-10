@@ -119,6 +119,7 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(afterEquals.calculator.seedSnapshot, r(0n), "first equals captures pre-roll seed snapshot");
   assert.deepEqual(afterEquals.calculator.total, r(0n), "equals with no operations keeps total unchanged");
   assert.deepEqual(afterEquals.calculator.rollEntries, re(r(0n)), "equals appends current total to roll");
+  assert.equal(afterEquals.calculator.rollEntries[0]?.factorization, undefined, "zero roll result omits factorization payload");
   const afterSecondEquals = applyKeyAction(afterEquals, "=");
   assert.deepEqual(afterSecondEquals.calculator.seedSnapshot, r(0n), "subsequent equals preserve original seed snapshot");
 
@@ -178,6 +179,11 @@ export const runReducerInputTests = (): void => {
     afterModuloExecution.calculator.rollEntries.at(-1)?.remainder,
     { num: 2n, den: 1n },
     "modulo execution records the modulo component as roll remainder",
+  );
+  assert.deepEqual(
+    afterModuloExecution.calculator.rollEntries.at(-1)?.factorization,
+    { sign: 1, numerator: [{ prime: 2n, exponent: 1 }], denominator: [] },
+    "rational roll result stores factorization payload",
   );
 
   const symbolicPiCancellationSource: GameState = {

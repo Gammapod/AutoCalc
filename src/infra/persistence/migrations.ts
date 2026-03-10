@@ -205,6 +205,11 @@ export type SerializableRollEntryV13 = {
     truncated: boolean;
     renderText: string;
   };
+  factorization?: {
+    sign: -1 | 1;
+    numerator: Array<{ prime: string; exponent: number }>;
+    denominator: Array<{ prime: string; exponent: number }>;
+  };
 };
 
 export type SerializableStateV13 = Omit<SerializableStateV12, "calculator"> & {
@@ -225,7 +230,7 @@ const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "pi", "e"] as const;
 const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190"] as const;
 const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] as const;
 const STEP_KEY_VALUES = ["\u23EF"] as const;
-const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "CIRCLE", "\u03BB", "ALG"] as const;
+const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "𝚷𝑝^𝑒", "CIRCLE", "\u03BB", "ALG"] as const;
 const EXEC_KEY_VALUES = ["="] as const;
 const UNARY_OPERATOR_KEY_VALUES = ["++", "--", "-n"] as const;
 const MEMORY_VARIABLE_VALUES: readonly MemoryVariable[] = ["α", "β", "γ"];
@@ -315,6 +320,7 @@ const normalizeActiveVisualizer = (value: unknown, flags: Record<string, boolean
     value === "total" ||
     value === "graph" ||
     value === "feed" ||
+    value === "factorization" ||
     value === "circle" ||
     value === "algebraic" ||
     value === "eigen_allocator"
@@ -950,7 +956,7 @@ const toSerializableInitialV12 = (): SerializableStateV12 => migrateV11ToV12(toS
 const toSerializableInitialV13 = (): SerializableStateV13 => migrateV12ToV13(toSerializableInitialV12());
 const toSerializableInitialV14 = (): SerializableStateV14 => migrateV13ToV14(toSerializableInitialV13());
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 =>
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 =>
   version === 1 ||
   version === 2 ||
   version === 3 ||
@@ -965,7 +971,8 @@ export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4
   version === 12 ||
   version === 13 ||
   version === 14 ||
-  version === 15;
+  version === 15 ||
+  version === 16;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -1181,12 +1188,31 @@ const isSerializableSymbolicRollPayload = (
   isString(value.renderText) &&
   value.renderText.length <= 160;
 
+const isSerializablePrimeFactorTerm = (
+  value: unknown,
+): value is NonNullable<SerializableRollEntryV13["factorization"]>["numerator"][number] =>
+  isObject(value) &&
+  isRationalString(value.prime) &&
+  isInteger(value.exponent) &&
+  value.exponent > 0;
+
+const isSerializableFactorizationPayload = (
+  value: unknown,
+): value is NonNullable<SerializableRollEntryV13["factorization"]> =>
+  isObject(value) &&
+  (value.sign === -1 || value.sign === 1) &&
+  Array.isArray(value.numerator) &&
+  value.numerator.every(isSerializablePrimeFactorTerm) &&
+  Array.isArray(value.denominator) &&
+  value.denominator.every(isSerializablePrimeFactorTerm);
+
 const isSerializableRollEntryV13 = (value: unknown): value is SerializableRollEntryV13 =>
   isObject(value) &&
   isCalculatorValueString(value.y) &&
   (value.remainder === undefined || isRationalString(value.remainder)) &&
   (value.error === undefined || isRollErrorEntry({ ...value.error, rollIndex: 0 })) &&
-  (value.symbolic === undefined || isSerializableSymbolicRollPayload(value.symbolic));
+  (value.symbolic === undefined || isSerializableSymbolicRollPayload(value.symbolic)) &&
+  (value.factorization === undefined || isSerializableFactorizationPayload(value.factorization));
 
 export const validateSerializableStateV7 = (state: unknown): state is SerializableStateV7 => {
   if (!isObject(state) || !isObject(state.calculator) || !isObject(state.ui) || !isObject(state.unlocks)) {
@@ -1659,7 +1685,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     };
     return validateSerializableStateV13(normalizedV13) ? migrateV13ToV14(normalizedV13) : null;
   }
-  if (schemaVersion === 14 || schemaVersion === 15) {
+  if (schemaVersion === 14 || schemaVersion === 15 || schemaVersion === 16) {
     const asV14 = state as SerializableStateV14;
     const buttonFlags = withDefaultButtonFlags(normalizeButtonFlags(asV14.ui?.buttonFlags));
     const normalizedV14: SerializableStateV14 = {

@@ -94,6 +94,15 @@ export const runPersistenceTests = (): void => {
   assert.ok(loaded, "saved payload hydrates");
   assert.deepEqual(loaded?.calculator.total, r(12n), "round-trip total");
   assert.deepEqual(loaded?.calculator.seedSnapshot, r(9n), "round-trip seed snapshot");
+  assert.deepEqual(
+    loaded?.calculator.rollEntries[0]?.factorization,
+    {
+      sign: 1,
+      numerator: [{ prime: 11n, exponent: 1 }],
+      denominator: [],
+    },
+    "round-trip persists/backfills roll-entry factorization payload",
+  );
   assert.deepEqual(loaded?.keyPressCounts, { "+": 3, "=": 2 }, "round-trip key press counters");
   assert.equal(loaded?.allocatorReturnPressCount, 2, "round-trip allocator RETURN press counter");
   assert.equal(loaded?.allocatorAllocatePressCount, 3, "round-trip allocator Allocate press counter");
@@ -430,6 +439,52 @@ export const runPersistenceTests = (): void => {
     Object.keys(legacyV13ValueExpressionOnly.state?.unlocks.valueCompose ?? {}).length,
     0,
     "v13 valueExpression compose keys are removed from current runtime",
+  );
+
+  const legacyV15MissingFactorization = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: 15,
+      savedAt: Date.now(),
+      state: {
+        calculator: {
+          total: "6/35",
+          pendingNegativeTotal: false,
+          singleDigitInitialTotalEntry: false,
+          rollEntries: [{ y: "6/35" }, { y: "NaN" }],
+          operationSlots: [],
+          draftingSlot: null,
+        },
+        ui: {
+          keyLayout: initialState().ui.keyLayout,
+          keypadCells: initialState().ui.keypadCells,
+          storageLayout: initialState().ui.storageLayout,
+          keypadColumns: 1,
+          keypadRows: 1,
+          activeVisualizer: "total",
+          memoryVariable: "Î±",
+          buttonFlags: {},
+        },
+        keyPressCounts: {},
+        unlocks: initialState().unlocks,
+        completedUnlockIds: [],
+        allocatorReturnPressCount: 0,
+        allocatorAllocatePressCount: 0,
+        allocator: {
+          maxPoints: 0,
+          allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
+        },
+      },
+    }),
+  );
+  assert.ok(legacyV15MissingFactorization.state, "v15 payload without factorization hydrates");
+  assert.deepEqual(
+    legacyV15MissingFactorization.state?.calculator.rollEntries[0]?.factorization,
+    {
+      sign: 1,
+      numerator: [{ prime: 2n, exponent: 1 }, { prime: 3n, exponent: 1 }],
+      denominator: [{ prime: 5n, exponent: 1 }, { prime: 7n, exponent: 1 }],
+    },
+    "missing factorization payload is backfilled during load normalization",
   );
 
   const badJson = loadFromRawSave("{");

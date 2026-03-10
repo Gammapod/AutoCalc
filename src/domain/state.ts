@@ -4,7 +4,7 @@ import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl } from "./lambdaControl.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 15;
+export const SAVE_SCHEMA_VERSION = 16;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
@@ -102,6 +102,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "M\u2192" },
   { kind: "key", key: "\u03B1,\u03B2,\u03B3" },
   { kind: "key", key: "FEED" },
+  { kind: "key", key: "𝚷𝑝^𝑒" },
   { kind: "key", key: "CIRCLE" },
   { kind: "key", key: "GRAPH" },
   { kind: "key", key: "ALG" },
