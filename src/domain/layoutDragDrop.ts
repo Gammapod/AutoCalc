@@ -10,9 +10,8 @@ export const classifyDropAction = (
   state: GameState,
   source: DragTarget,
   destination: DragTarget,
-  options: { interactionMode?: "calculator" | "modify" } = {},
 ): LayoutDropAction | null => {
-  const decision = evaluateLayoutDrop(state, source, destination, options);
+  const decision = evaluateLayoutDrop(state, source, destination);
   return decision.allowed ? decision.action : null;
 };
 

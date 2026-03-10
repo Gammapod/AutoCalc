@@ -1,13 +1,12 @@
 import { emitCueTelemetry } from "./cueTelemetry.js";
 
-export type CueKind = "unlock_reveal" | "allocator_increase" | "mode_transition";
+export type CueKind = "unlock_reveal" | "allocator_increase";
 
 export type CuePhase = "start" | "cue_visible" | "state_apply" | "settle" | "done" | "cancelled";
 
 export type CueLifecycleRequest = {
   kind: CueKind;
   target?: "calculator" | "storage";
-  nextMode?: "calculator" | "modify";
 };
 
 export type CueLifecycleHooks = {
@@ -64,7 +63,6 @@ export const runCueLifecycle = async (
       ...(durationMs !== undefined ? { durationMs } : {}),
       metadata: {
         ...(request.target ? { target: request.target } : {}),
-        ...(request.nextMode ? { nextMode: request.nextMode } : {}),
       },
     });
     hooks.onPhase?.(phase);
@@ -99,33 +97,15 @@ export const runCueLifecycle = async (
 
 export type CueLifecycleCoordinator = {
   run: (request: CueLifecycleRequest, deps: CueLifecycleDeps, hooks?: CueLifecycleHooks) => Promise<boolean>;
-  getState: () => { inFlightCueKind: CueKind | null; pendingCancellationToken: number };
+  getState: () => { inFlightCueKind: CueKind | null };
 };
 
 export const createCueLifecycleCoordinator = (): CueLifecycleCoordinator => {
   let inFlightCueKind: CueKind | null = null;
-  let pendingCancellationToken = 0;
   let queue: Promise<boolean> = Promise.resolve(true);
 
   const run: CueLifecycleCoordinator["run"] = async (request, deps, hooks = {}) => {
-    if (request.kind === "mode_transition") {
-      pendingCancellationToken += 1;
-    }
-    const enqueueToken = pendingCancellationToken;
-
     queue = queue.then(async () => {
-      if (request.kind !== "mode_transition" && enqueueToken !== pendingCancellationToken) {
-        emitCueTelemetry({
-          cueKind: request.kind,
-          phase: "cancelled",
-          atMs: typeof performance !== "undefined" ? performance.now() : Date.now(),
-          metadata: {
-            reason: "superseded_by_mode_transition",
-          },
-        });
-        hooks.onPhase?.("cancelled");
-        return false;
-      }
       inFlightCueKind = request.kind;
       try {
         await runCueLifecycle(request, deps, hooks);
@@ -146,7 +126,6 @@ export const createCueLifecycleCoordinator = (): CueLifecycleCoordinator => {
     run,
     getState: () => ({
       inFlightCueKind,
-      pendingCancellationToken,
     }),
   };
 };

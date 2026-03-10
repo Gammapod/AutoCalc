@@ -36,7 +36,6 @@ type Runtime = {
   ghostEl: HTMLElement | null;
   lastKnownState: GameState | null;
   dispatch: ((action: Action) => unknown) | null;
-  interactionMode: "calculator" | "modify";
   pressTimer: TimerHandle | null;
   suppressClicksUntilMs: number;
 };
@@ -95,7 +94,6 @@ export const createTouchRearrangeController = (options: TouchRearrangeOptions = 
     ghostEl: null,
     lastKnownState: null,
     dispatch: null,
-    interactionMode: "calculator",
     pressTimer: null,
     suppressClicksUntilMs: 0,
   };
@@ -150,11 +148,9 @@ export const createTouchRearrangeController = (options: TouchRearrangeOptions = 
   const syncContext = (
     state: GameState,
     dispatch: (action: Action) => unknown,
-    interactionMode: "calculator" | "modify" = "calculator",
   ): void => {
     runtime.lastKnownState = state;
     runtime.dispatch = dispatch;
-    runtime.interactionMode = interactionMode;
   };
 
   const startPress = (
@@ -216,9 +212,7 @@ export const createTouchRearrangeController = (options: TouchRearrangeOptions = 
       return;
     }
 
-    const action = classifyDropAction(runtime.lastKnownState, runtime.source, target, {
-      interactionMode: runtime.interactionMode,
-    });
+    const action = classifyDropAction(runtime.lastKnownState, runtime.source, target);
     runtime.hoverTarget = target;
     runtime.hoverAction = action;
     runtime.hoverElement = targetElement;

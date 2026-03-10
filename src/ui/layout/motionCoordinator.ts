@@ -36,20 +36,11 @@ export const resolveLayoutMotionIntent = (
   next: CalculatorLayoutSnapshot,
   options: {
     reduceMotion: boolean;
-    modeChanged: boolean;
   },
 ): MotionIntent => {
   if (options.reduceMotion) {
     return {
       kind: "none",
-      forCalculatorId: next.id,
-      keypadGrowDirection: "",
-    };
-  }
-
-  if (options.modeChanged) {
-    return {
-      kind: "mode_transition",
       forCalculatorId: next.id,
       keypadGrowDirection: "",
     };

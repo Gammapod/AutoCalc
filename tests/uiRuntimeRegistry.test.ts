@@ -33,12 +33,10 @@ export const runUiRuntimeRegistryTests = (): void => {
   const harnessB = installDomHarness("http://localhost:4173/index.html");
   try {
     render(harnessA.root, initialState(), noopDispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     render(harnessB.root, initialState(), noopDispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const runtimeAfterA = getOrCreateRuntime(harnessA.root);
     const runtimeAfterB = getOrCreateRuntime(harnessB.root);
@@ -93,3 +91,4 @@ export const runUiRuntimeRegistryTests = (): void => {
     );
   }
 };
+

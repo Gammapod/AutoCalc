@@ -49,8 +49,7 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
   try {
     try {
       renderer.render(state, dispatch, {
-        interactionMode: "calculator",
-        inputBlocked: false,
+                inputBlocked: false,
       });
     } catch {
       // Renderer module mount contracts are validated by dedicated module tests.
@@ -61,19 +60,17 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
 
     try {
       renderer.render(state, dispatch, {
-        interactionMode: "modify",
-        inputBlocked: false,
+                inputBlocked: false,
       });
     } catch {
       // Renderer module mount contracts are validated by dedicated module tests.
     }
-    assert.equal(getAttr(playArea, "data-desktop-mode"), "modify", "desktop mode reflects modify state");
-    assert.equal(getAttr(playArea, "data-allocator-reveal"), null, "allocator remains static in modify mode");
+    assert.equal(getAttr(playArea, "data-desktop-mode"), "calculator", "desktop mode remains calculator");
+    assert.equal(getAttr(playArea, "data-allocator-reveal"), null, "allocator remains static");
 
     try {
       renderer.render(state, dispatch, {
-        interactionMode: "calculator",
-        inputBlocked: false,
+                inputBlocked: false,
       });
     } catch {
       // Renderer module mount contracts are validated by dedicated module tests.
@@ -84,3 +81,4 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
     renderer.dispose();
   }
 };
+

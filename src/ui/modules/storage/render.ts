@@ -1,5 +1,4 @@
 import type { Action, GameState, KeyCell } from "../../../domain/types.js";
-import type { InteractionMode } from "../../../app/interactionRuntime.js";
 import { STORAGE_COLUMNS } from "../../../domain/state.js";
 import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
@@ -180,7 +179,6 @@ export const renderStorageV2Module = (
   state: GameState,
   dispatch: (action: Action) => unknown,
   options: {
-    interactionMode: InteractionMode;
     inputBlocked: boolean;
     newlyUnlockedKeys?: Set<string>;
   },
@@ -190,7 +188,7 @@ export const renderStorageV2Module = (
     throw new Error("Storage UI mount point is missing.");
   }
   const storageSortControlsEl = root.querySelector<HTMLElement>("[data-storage-sort-controls]");
-  const storageLocked = options.inputBlocked || options.interactionMode === "calculator";
+  const storageLocked = options.inputBlocked;
   const runtimeState = getStorageModuleState(root);
   const currentSnapshot: Record<string, boolean> = {
     ...state.unlocks.valueAtoms,

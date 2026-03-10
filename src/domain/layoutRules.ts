@@ -5,7 +5,6 @@ import type { GameState, Key, LayoutSurface } from "./types.js";
 export type LayoutDropAction = "move" | "swap";
 
 export type LayoutRuleReason =
-  | "interaction_mode_blocks_storage"
   | "same_source_destination"
   | "invalid_source"
   | "invalid_destination"
@@ -149,18 +148,10 @@ export const evaluateLayoutDrop = (
   source: LayoutTarget,
   destination: LayoutTarget,
   options: {
-    interactionMode?: "calculator" | "modify";
     enforceUnlockedKeypadDestination?: boolean;
   } = {},
 ): LayoutRuleDecision => {
-  const interactionMode = options.interactionMode;
   const enforceUnlockedKeypadDestination = options.enforceUnlockedKeypadDestination ?? true;
-  if (
-    interactionMode === "calculator"
-    && (source.surface === "storage" || destination.surface === "storage")
-  ) {
-    return { allowed: false, reason: "interaction_mode_blocks_storage" };
-  }
   if (source.surface === destination.surface && source.index === destination.index) {
     return { allowed: false, reason: "same_source_destination" };
   }

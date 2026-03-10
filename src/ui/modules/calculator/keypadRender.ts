@@ -61,7 +61,6 @@ export const renderKeypadCells = (
   state: GameState,
   dispatch: (action: Action) => unknown,
   options: {
-    interactionMode: string;
     calculatorKeysLocked: boolean;
     newlyUnlockedKeys: Set<Key>;
     bindUnlockAnimationLock: (element: HTMLElement) => void;
@@ -127,9 +126,6 @@ export const renderKeypadCells = (
 
     button.addEventListener("click", () => {
       if (button.disabled) {
-        return;
-      }
-      if (options.interactionMode !== "calculator") {
         return;
       }
       if (shouldSuppressClick(root)) {

@@ -19,7 +19,7 @@ export const runUiCueTelemetryTests = async (): Promise<void> => {
   });
   try {
     await runCueLifecycle(
-      { kind: "mode_transition", target: "calculator", nextMode: "modify" },
+      { kind: "allocator_increase", target: "calculator" },
       createDeps(),
     );
   } finally {
@@ -36,39 +36,18 @@ export const runUiCueTelemetryTests = async (): Promise<void> => {
   assert.equal(typeof doneEvent?.durationMs === "number", true, "done telemetry includes duration");
 
   resetCueTelemetryForTests();
-  const cancelled: CueTelemetryEvent[] = [];
-  const unsubscribeCancelled = subscribeCueTelemetry((event) => {
-    cancelled.push(event);
+  const sequenced: CueTelemetryEvent[] = [];
+  const unsubscribeSequenced = subscribeCueTelemetry((event) => {
+    sequenced.push(event);
   });
   try {
     const coordinator = createCueLifecycleCoordinator();
-    const first = coordinator.run(
-      { kind: "allocator_increase", target: "storage" },
-      {
-        ...createDeps(),
-        awaitMotionSettled: async () => {
-          await new Promise<void>((resolve) => {
-            globalThis.setTimeout(resolve, 30);
-          });
-        },
-      },
-    );
-    const second = coordinator.run(
-      { kind: "mode_transition", target: "calculator", nextMode: "calculator" },
-      createDeps(),
-    );
-    const third = coordinator.run(
-      { kind: "unlock_reveal", target: "storage" },
-      createDeps(),
-    );
-    await Promise.all([first, second, third]);
+    await Promise.all([
+      coordinator.run({ kind: "allocator_increase", target: "storage" }, createDeps()),
+      coordinator.run({ kind: "unlock_reveal", target: "storage" }, createDeps()),
+    ]);
   } finally {
-    unsubscribeCancelled();
+    unsubscribeSequenced();
   }
-
-  assert.equal(
-    cancelled.some((event) => event.phase === "cancelled"),
-    true,
-    "telemetry captures cancellation events",
-  );
+  assert.equal(sequenced.some((event) => event.phase === "done"), true, "telemetry captures coordinator lifecycle events");
 };

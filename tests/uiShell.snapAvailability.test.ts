@@ -6,12 +6,12 @@ import type { GameState } from "../src/domain/types.js";
 export const runUiShellSnapAvailabilityTests = (): void => {
   const baseline = initialState();
   const baselineModel = buildShellViewModel(baseline);
-  assert.deepEqual(baselineModel.availableSnaps, ["middle"], "default shell exposes middle snap only");
-  const baselineModifyModel = buildShellViewModel(baseline, "modify");
+  assert.deepEqual(baselineModel.availableSnaps, ["middle", "bottom"], "default shell exposes storage snap when available");
+  const baselineModifyModel = buildShellViewModel(baseline);
   assert.deepEqual(
     baselineModifyModel.availableSnaps,
     ["middle", "bottom"],
-    "modify mode always exposes bottom snap for allocator/storage view",
+    "bottom snap is always available in shell model",
   );
 
   const withStorage: GameState = {
@@ -25,9 +25,9 @@ export const runUiShellSnapAvailabilityTests = (): void => {
     },
   };
   const withStorageModel = buildShellViewModel(withStorage);
-  assert.deepEqual(withStorageModel.availableSnaps, ["middle"], "calculator mode keeps bottom snap blocked");
+  assert.deepEqual(withStorageModel.availableSnaps, ["middle", "bottom"], "storage unlock keeps bottom snap available");
 
-  const withStorageModifyModel = buildShellViewModel(withStorage, "modify");
+  const withStorageModifyModel = buildShellViewModel(withStorage);
   assert.deepEqual(withStorageModifyModel.availableSnaps, ["middle", "bottom"], "storage unlock adds bottom snap");
 
   assert.deepEqual(

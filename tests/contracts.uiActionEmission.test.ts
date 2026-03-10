@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import type { KeyCell } from "../src/domain/types.js";
-import { resolveAllocatorModeAction } from "../src/app/allocatorModeAction.js";
 import {
   buildKeyButtonAction,
   buildLayoutDropDispatchAction,
@@ -60,25 +59,14 @@ export const runContractsUiActionEmissionTests = (): void => {
     "drag swap emits SWAP_LAYOUT_CELLS action",
   );
 
-  assert.deepEqual(
-    resolveAllocatorModeAction("calculator"),
-    { type: "ALLOCATOR_ALLOCATE_PRESSED" },
-    "calculator mode emits allocate transition action",
-  );
-  assert.deepEqual(
-    resolveAllocatorModeAction("modify"),
-    { type: "ALLOCATOR_RETURN_PRESSED" },
-    "modify mode emits return transition action",
-  );
-
   assert.equal(
-    resolveCalculatorKeysLocked("modify", false, "desktop"),
+    resolveCalculatorKeysLocked(false),
     false,
-    "desktop modify mode keeps keypad interactive for drag",
+    "desktop keeps keypad interactive",
   );
   assert.equal(
-    resolveCalculatorKeysLocked("modify", false, "mobile"),
-    true,
-    "mobile modify mode keeps keypad locked",
+    resolveCalculatorKeysLocked(false),
+    false,
+    "mobile keeps keypad interactive",
   );
 };

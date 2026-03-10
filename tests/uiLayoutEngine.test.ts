@@ -8,8 +8,7 @@ const buildInput = (overrides: Partial<LayoutEngineInput> = {}): LayoutEngineInp
     heightPx: 900,
   },
   shellMode: "desktop",
-  interactionMode: "calculator",
-  inputBlocked: false,
+    inputBlocked: false,
   gapPx: 10,
   measuredVerticalChromePx: 260,
   calculatorInstances: [
@@ -121,3 +120,4 @@ export const runUiLayoutEngineTests = (): void => {
   assert.ok(first && second, "multi-calculator snapshots are generated");
   assert.equal((second?.body.widthPx ?? 0) > (first?.body.widthPx ?? 0), true, "instances are independently sized");
 };
+

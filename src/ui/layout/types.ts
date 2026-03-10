@@ -1,7 +1,5 @@
 export type UiShellLayoutMode = "desktop" | "mobile";
 
-export type InteractionLayoutMode = "calculator" | "modify";
-
 export type WorkbenchViewportModel = {
   activeCalculatorId: string;
   order: string[];
@@ -33,7 +31,6 @@ export type LayoutEngineInput = {
     heightPx: number;
   };
   shellMode: UiShellLayoutMode;
-  interactionMode: InteractionLayoutMode;
   inputBlocked: boolean;
   gapPx: number;
   measuredVerticalChromePx: number | null;
@@ -74,7 +71,6 @@ export type LayoutInvariants = {
 export type CalculatorLayoutSnapshot = {
   id: string;
   shellMode: UiShellLayoutMode;
-  interactionMode: InteractionLayoutMode;
   inputBlocked: boolean;
   body: CalculatorBodySnapshot;
   keypad: KeypadGeometrySnapshot;
@@ -98,8 +94,7 @@ export type MotionIntentKind =
   | "none"
   | "keypad_grow_row"
   | "keypad_grow_col"
-  | "keypad_grow_both"
-  | "mode_transition";
+  | "keypad_grow_both";
 
 export type MotionIntent = {
   kind: MotionIntentKind;

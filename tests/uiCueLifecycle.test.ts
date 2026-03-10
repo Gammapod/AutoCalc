@@ -50,7 +50,7 @@ export const runUiCueLifecycleTests = async (): Promise<void> => {
   const phaseEvents: CuePhase[] = [];
   const events: string[] = [];
   await runCueLifecycle(
-    { kind: "mode_transition", target: "calculator", nextMode: "modify" },
+    { kind: "allocator_increase", target: "calculator" },
     createDeps(events),
     {
       onPhase: (phase) => {
@@ -92,8 +92,9 @@ export const runUiCueLifecycleTests = async (): Promise<void> => {
   );
 
   const coordinator = createCueLifecycleCoordinator();
-  const cancelledPhases: CuePhase[] = [];
-  const completedPhases: CuePhase[] = [];
+  const firstPhases: CuePhase[] = [];
+  const secondPhases: CuePhase[] = [];
+  const thirdPhases: CuePhase[] = [];
   const serializedEvents: string[] = [];
 
   const first = coordinator.run(
@@ -106,13 +107,13 @@ export const runUiCueLifecycleTests = async (): Promise<void> => {
     },
     {
       onPhase: (phase) => {
-        cancelledPhases.push(phase);
+        firstPhases.push(phase);
       },
     },
   );
 
   const second = coordinator.run(
-    { kind: "mode_transition", target: "calculator", nextMode: "calculator" },
+    { kind: "allocator_increase", target: "calculator" },
     {
       ...createDeps(serializedEvents),
       phaseTimeoutMs: {
@@ -121,7 +122,7 @@ export const runUiCueLifecycleTests = async (): Promise<void> => {
     },
     {
       onPhase: (phase) => {
-        completedPhases.push(phase);
+        secondPhases.push(phase);
       },
     },
   );
@@ -131,7 +132,7 @@ export const runUiCueLifecycleTests = async (): Promise<void> => {
     createDeps(serializedEvents),
     {
       onPhase: (phase) => {
-        cancelledPhases.push(phase);
+        thirdPhases.push(phase);
       },
     },
   );
@@ -139,13 +140,13 @@ export const runUiCueLifecycleTests = async (): Promise<void> => {
   await Promise.all([first, second, third]);
 
   assert.equal(
-    cancelledPhases.includes("cancelled"),
+    firstPhases.includes("done"),
     true,
-    "lower-priority cue enqueued before mode transition can be cancelled",
+    "first cue completes through lifecycle",
   );
   assert.equal(
-    completedPhases.includes("done"),
+    secondPhases.includes("done") && thirdPhases.includes("done"),
     true,
-    "mode transition completes through lifecycle",
+    "queued cues complete through lifecycle",
   );
 };

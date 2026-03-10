@@ -6,10 +6,8 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
 };
 
 export const resolveCalculatorKeysLocked = (
-  interactionMode: "calculator" | "modify",
   inputBlocked: boolean,
-  uiShell: string | null,
 ): boolean => {
-  const isDesktopShell = uiShell === "desktop";
-  return inputBlocked || (interactionMode === "modify" && !isDesktopShell);
+  return inputBlocked;
 };
+

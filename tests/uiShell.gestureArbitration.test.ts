@@ -14,12 +14,12 @@ import type { GameState } from "../src/domain/types.js";
 export const runUiShellGestureArbitrationTests = (): void => {
   const base = initialState();
   const middleOnly = buildShellViewModel(base);
-  assert.equal(clampSnapToAvailable("bottom", middleOnly), "middle", "missing bottom snap clamps to middle");
-  assert.equal(getAdjacentSnap("middle", middleOnly, "up"), null, "no upward adjacent snap when only middle is available");
+  assert.equal(clampSnapToAvailable("bottom", middleOnly), "bottom", "bottom snap remains available");
+  assert.equal(getAdjacentSnap("middle", middleOnly, "up"), null, "middle has no upward adjacent snap");
   assert.equal(
     resolveSnapFromDrag("middle", middleOnly, 240, 0),
-    "middle",
-    "drag settles to middle when no alternate snap exists",
+    "bottom",
+    "drag settles to bottom on downward drag",
   );
 
   const stateWithStorage: GameState = {
@@ -32,9 +32,9 @@ export const runUiShellGestureArbitrationTests = (): void => {
       },
     },
   };
-  const model = buildShellViewModel(stateWithStorage, "modify");
+  const model = buildShellViewModel(stateWithStorage);
   const controller = createShellController();
-  controller.sync(stateWithStorage, "modify");
+  controller.sync(stateWithStorage);
 
   assert.equal(getAdjacentSnap("middle", model, "down"), "bottom", "middle can move down to bottom");
   assert.equal(getAdjacentSnap("middle", model, "up"), null, "middle has no upward snap in two-snap mode");

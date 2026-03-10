@@ -5,7 +5,6 @@ import type { CalculatorLayoutSnapshot } from "../src/ui/layout/types.js";
 const makeSnapshot = (columns: number, rows: number): CalculatorLayoutSnapshot => ({
   id: "primary",
   shellMode: "desktop",
-  interactionMode: "calculator",
   inputBlocked: false,
   body: {
     widthPx: 100,
@@ -37,38 +36,28 @@ const makeSnapshot = (columns: number, rows: number): CalculatorLayoutSnapshot =
 export const runUiMotionCoordinatorTests = (): void => {
   const none = resolveLayoutMotionIntent(null, makeSnapshot(4, 2), {
     reduceMotion: false,
-    modeChanged: false,
   });
   assert.equal(none.kind, "none", "first snapshot emits no grow motion");
 
   const row = resolveLayoutMotionIntent(makeSnapshot(4, 2), makeSnapshot(4, 3), {
     reduceMotion: false,
-    modeChanged: false,
   });
   assert.equal(row.kind, "keypad_grow_row", "row growth emits row motion");
   assert.equal(row.keypadGrowDirection, "row", "row growth direction is row");
 
   const column = resolveLayoutMotionIntent(makeSnapshot(4, 2), makeSnapshot(5, 2), {
     reduceMotion: false,
-    modeChanged: false,
   });
   assert.equal(column.kind, "keypad_grow_col", "column growth emits column motion");
 
   const both = resolveLayoutMotionIntent(makeSnapshot(4, 2), makeSnapshot(5, 3), {
     reduceMotion: false,
-    modeChanged: false,
   });
   assert.equal(both.kind, "keypad_grow_both", "combined growth emits combined motion");
 
-  const modeTransition = resolveLayoutMotionIntent(makeSnapshot(4, 2), makeSnapshot(4, 2), {
-    reduceMotion: false,
-    modeChanged: true,
-  });
-  assert.equal(modeTransition.kind, "mode_transition", "mode change emits mode transition");
-
   const reduced = resolveLayoutMotionIntent(makeSnapshot(4, 2), makeSnapshot(5, 3), {
     reduceMotion: true,
-    modeChanged: false,
   });
   assert.equal(reduced.kind, "none", "reduced motion suppresses grow intents");
 };
+

@@ -3,22 +3,22 @@ import { resolveCalculatorKeysLocked } from "../src/ui/modules/calculatorStorage
 
 export const runUiModuleCalculatorStorageV2Tests = (): void => {
   assert.equal(
-    resolveCalculatorKeysLocked("modify", false, "desktop"),
+    resolveCalculatorKeysLocked(false),
     false,
-    "desktop modify mode keeps keypad buttons interactive for drag operations",
+    "desktop keeps keypad buttons interactive",
   );
   assert.equal(
-    resolveCalculatorKeysLocked("modify", false, "mobile"),
-    true,
-    "mobile modify mode keeps keypad buttons locked",
+    resolveCalculatorKeysLocked(false),
+    false,
+    "mobile keeps keypad buttons interactive",
   );
   assert.equal(
-    resolveCalculatorKeysLocked("calculator", false, "desktop"),
+    resolveCalculatorKeysLocked(false),
     false,
     "calculator mode keeps keypad buttons available",
   );
   assert.equal(
-    resolveCalculatorKeysLocked("calculator", true, "desktop"),
+    resolveCalculatorKeysLocked(true),
     true,
     "input blocking overrides shell-specific keypad behavior",
   );

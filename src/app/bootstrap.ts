@@ -4,9 +4,7 @@ import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js
 import { playProgrammaticKeyPressFeedback } from "../ui/modules/input/pressFeedback.js";
 import { createShellRenderer } from "../ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
-import { createResetCalculatorState } from "../domain/reducer.stateBuilders.js";
 import { createInteractionRuntime } from "./interactionRuntime.js";
-import { resolveAllocatorModeAction } from "./allocatorModeAction.js";
 import {
   createAutoEqualsScheduler,
   normalizeLoadedStateForRuntime,
@@ -14,7 +12,6 @@ import {
 import { createCueLifecycleCoordinator } from "../ui/layout/cueLifecycle.js";
 import { subscribeCueTelemetry } from "../ui/layout/cueTelemetry.js";
 import { createAllocatorCueCoordinator, getAllocatorIncreaseFromUnlocks } from "./allocatorCueCoordinator.js";
-import { createModeTransitionCoordinator } from "./modeTransitionCoordinator.js";
 import { createUnlockRevealCoordinator, createUnlockTracker } from "./unlockCueCoordinator.js";
 import { resolveBootstrapUiRefs } from "./ui/bootstrapUiRefs.js";
 import { createBootstrapUiController } from "./ui/bootstrapUiController.js";
@@ -64,7 +61,7 @@ const bootState =
     };
   })();
 const store = createStore(bootState);
-const interactionRuntime = createInteractionRuntime("calculator");
+const interactionRuntime = createInteractionRuntime();
 
 type DispatchOptions = {
   internal?: boolean;
@@ -102,7 +99,6 @@ document.body.setAttribute("data-ui-shell", uiShellMode);
 
 const renderApp = (state: GameState): void => {
   shellRenderer.render(state, dispatchWithRuntimeGate, {
-    interactionMode: interactionRuntime.getMode(),
     inputBlocked: interactionRuntime.isInputBlocked(),
   });
 };
@@ -122,46 +118,6 @@ const renderAndPersistState = (state: GameState): void => {
 };
 
 const cueCoordinator = createCueLifecycleCoordinator();
-const modeTransitionCoordinator = createModeTransitionCoordinator({
-  cueCoordinator,
-  playShellCue: async (target) => {
-    await shellRenderer.playTransitionCue(target);
-  },
-  setInputBlocked: (blocked) => {
-    interactionRuntime.setInputBlocked(blocked);
-  },
-  redraw,
-  setMode: (mode) => {
-    interactionRuntime.setMode(mode);
-  },
-  resetForModifyMode: () => {
-    const state = store.getState();
-    dispatchWithRuntimeGate(
-      {
-        type: "HYDRATE_SAVE",
-        state: {
-          ...state,
-          calculator: createResetCalculatorState(),
-        },
-      },
-      { internal: true },
-    );
-  },
-  focusModifyMode: () => {
-    shellRenderer.forceActiveView({
-      snapId: "bottom",
-      includeTransition: true,
-    });
-  },
-  focusCalculatorMode: () => {
-    shellRenderer.forceActiveView({
-      snapId: "middle",
-      middlePanelId: "calculator",
-      includeTransition: true,
-    });
-  },
-});
-
 const unlockRevealCoordinator = createUnlockRevealCoordinator({
   cueCoordinator,
   playShellCue: async (target) => {
@@ -209,26 +165,12 @@ const unsubscribeCueTelemetry =
 const unsubscribe = createStoreSubscriptionCoordinator(store, {
   autoEqualsScheduler,
   unlockTracker,
-  modeTransitionCoordinator,
   allocatorCueCoordinator,
   unlockRevealCoordinator,
   getAllocatorIncreaseFromUnlocks,
   renderAndPersistState,
   initialState: store.getState(),
 });
-
-const activateAllocatorReset = async (): Promise<void> => {
-  if (interactionRuntime.isInputBlocked()) {
-    return;
-  }
-  if (interactionRuntime.getMode() === "calculator") {
-    dispatchWithRuntimeGate(resolveAllocatorModeAction("calculator"));
-    await modeTransitionCoordinator.runModeTransition("modify");
-    return;
-  }
-  dispatchWithRuntimeGate(resolveAllocatorModeAction("modify"));
-  await modeTransitionCoordinator.runModeTransition("calculator");
-};
 
 uiController = createBootstrapUiController({
   refs: uiRefs,
@@ -237,8 +179,6 @@ uiController = createBootstrapUiController({
   document,
   getState: () => store.getState(),
   isInputBlocked: () => interactionRuntime.isInputBlocked(),
-  getInteractionMode: () => interactionRuntime.getMode(),
-  onAllocatorModeActivate: activateAllocatorReset,
   onResetRun: createResetRunHandler(store, storageRepo),
   onUnlockAll: () => {
     store.dispatch({ type: "UNLOCK_ALL" });

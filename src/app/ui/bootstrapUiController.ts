@@ -1,7 +1,5 @@
 import { KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../../domain/state.js";
 import type { GameState } from "../../domain/types.js";
-import { createAllocatorResetHoldController } from "../allocatorResetHoldController.js";
-import type { InteractionMode } from "../interactionRuntime.js";
 import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
 
 type UiShellMode = "mobile" | "desktop";
@@ -13,8 +11,6 @@ type BootstrapUiControllerDeps = {
   document: Document;
   getState: () => GameState;
   isInputBlocked: () => boolean;
-  getInteractionMode: () => InteractionMode;
-  onAllocatorModeActivate: () => Promise<void>;
   onResetRun: () => void;
   onUnlockAll: () => void;
   onSetKeypadDimensions: (columns: number, rows: number) => void;
@@ -59,8 +55,6 @@ export const createBootstrapUiController = ({
   document,
   getState,
   isInputBlocked,
-  getInteractionMode,
-  onAllocatorModeActivate,
   onResetRun,
   onUnlockAll,
   onSetKeypadDimensions,
@@ -103,8 +97,6 @@ export const createBootstrapUiController = ({
     refs.keypadWidthInput.value = state.ui.keypadColumns.toString();
     refs.keypadHeightInput.value = state.ui.keypadRows.toString();
     refs.debugMaxPointsInput.value = state.lambdaControl.maxPoints.toString();
-    refs.allocatorResetButton.disabled = isInputBlocked();
-    refs.allocatorResetButton.textContent = getInteractionMode() === "calculator" ? "Modify Layout" : "Return";
 
     const serializedRollState = state.calculator.rollEntries.map((entry, index) => ({
       x: index,
@@ -119,12 +111,6 @@ export const createBootstrapUiController = ({
     }));
     refs.debugRollStateEl.textContent = JSON.stringify(serializedRollState, null, 2);
   };
-
-  const allocatorResetHoldController = createAllocatorResetHoldController({
-    button: refs.allocatorResetButton,
-    isInputBlocked,
-    onActivated: onAllocatorModeActivate,
-  });
 
   listen(refs.debugToggle, "change", syncDebugMenuVisibility);
 
@@ -165,7 +151,6 @@ export const createBootstrapUiController = ({
   return {
     syncUi,
     dispose: () => {
-      allocatorResetHoldController.dispose();
       for (const cleanup of cleanupListeners.splice(0)) {
         cleanup();
       }

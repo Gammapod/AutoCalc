@@ -16,8 +16,8 @@ const appendChecklistQuickstartGuide = (container: Element): void => {
   listEl.className = "debug-guide-list";
   listEl.innerHTML = `
     <li>Make calculations to unlock more convenient calculator keys.</li>
-    <li>Hold down "MODIFY CALCULATOR" for 1.5 seconds to edit calculator.</li>
-    <li>Drag+Drop keys to rearrange and modify layout.</li>
+    <li>Use unlocks and keypad growth controls in the debug panel to expand your machine.</li>
+    <li>Drag+Drop keys to rearrange layout at any time.</li>
     <li>
       Allocator can change:
       <ul class="debug-guide-sublist">

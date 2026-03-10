@@ -70,7 +70,6 @@ const buildCalculatorSnapshot = (
   return {
     id: config.id,
     shellMode: input.shellMode,
-    interactionMode: input.interactionMode,
     inputBlocked: input.inputBlocked,
     body: {
       widthPx: resolvedBodyWidth,

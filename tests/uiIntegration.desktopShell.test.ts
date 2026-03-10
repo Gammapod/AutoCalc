@@ -18,22 +18,19 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     const renderer = createShellRenderer(harness.root, { mode: "desktop" });
 
     renderer.render(initialState(), dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const playArea = harness.root.querySelector<HTMLElement>(".play-area");
     assert.equal(playArea?.getAttribute("data-desktop-shell"), "true", "desktop shell marker is applied");
     assert.equal(playArea?.getAttribute("data-desktop-mode"), "calculator", "desktop mode starts in calculator");
 
     renderer.render(initialState(), dispatch, {
-      interactionMode: "modify",
-      inputBlocked: false,
+            inputBlocked: false,
     });
-    assert.equal(playArea?.getAttribute("data-desktop-mode"), "modify", "desktop mode updates during orchestration");
+    assert.equal(playArea?.getAttribute("data-desktop-mode"), "calculator", "desktop mode remains calculator");
 
     renderer.render(initialState(), dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const calcBody = harness.root.querySelector<HTMLElement>(".calc");
     const keys = harness.root.querySelector<HTMLElement>("[data-keys]");
@@ -71,8 +68,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     harness.root.setAttribute("data-visualizer-width-mode", "fixed");
     harness.root.setAttribute("data-visualizer-width-px", "333");
     renderer.render(initialState(), dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     assert.equal(
       calcBody?.style.getPropertyValue("--desktop-visualizer-width"),
@@ -102,8 +98,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     const heightAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
     const baselineState = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 2 });
     renderer.render(baselineState, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const widthAtBaseline = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
     const heightAtBaseline = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
@@ -118,8 +113,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
 
     const grown = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 3 });
     renderer.render(grown, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     assert.equal(keys?.dataset.keypadGrow ?? "", "", "desktop suppresses keypad-only grow animation marker");
     assert.equal(
@@ -134,15 +128,13 @@ export const runUiIntegrationDesktopShellTests = (): void => {
 
     const wide = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 2 });
     renderer.render(wide, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const widthAfterWideGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
     assert.equal(widthAfterWideGrowth > widthAtBaseline, true, "desktop width grows once columns exceed 4-column minimum-width baseline");
     const tall = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 3 });
     renderer.render(tall, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const heightAfterTallGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
     assert.equal(heightAfterTallGrowth > heightAtBaseline, true, "desktop min-height grows once rows exceed 2-row baseline");
@@ -161,3 +153,4 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     harness.teardown();
   }
 };
+

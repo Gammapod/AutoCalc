@@ -12,8 +12,7 @@ export const runUiModuleStorageV2Tests = (): void => {
   try {
     const state = initialState();
     renderStorageV2Module(harness.root, state, noopDispatch, {
-      interactionMode: "modify",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const storage = harness.root.querySelector<HTMLElement>("[data-storage-keys]");
     const sortControls = harness.root.querySelector<HTMLElement>("[data-storage-sort-controls]");
@@ -49,3 +48,4 @@ export const runUiModuleStorageV2Tests = (): void => {
     "storage wrapper file removed",
   );
 };
+

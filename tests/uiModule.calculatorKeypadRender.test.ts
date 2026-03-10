@@ -23,8 +23,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     };
 
     renderKeypadCells(harness.root, keysEl, state, dispatch, {
-      interactionMode: "calculator",
-      calculatorKeysLocked: false,
+            calculatorKeysLocked: false,
       newlyUnlockedKeys: new Set(),
       bindUnlockAnimationLock: () => {},
     });
@@ -57,8 +56,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
 
     keysEl.innerHTML = "";
     renderKeypadCells(harness.root, keysEl, rejectState, dispatch, {
-      interactionMode: "calculator",
-      calculatorKeysLocked: false,
+            calculatorKeysLocked: false,
       newlyUnlockedKeys: new Set(),
       bindUnlockAnimationLock: () => {},
     });
@@ -72,3 +70,4 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     harness.teardown();
   }
 };
+

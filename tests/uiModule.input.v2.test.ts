@@ -70,8 +70,7 @@ export const runUiModuleInputV2Tests = (): void => {
   const harness = installDomHarness("http://localhost:4173/index.html");
   try {
     renderInputV2Module(harness.root, state, noopDispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
   } finally {
     harness.teardown();
@@ -99,3 +98,4 @@ export const runUiModuleInputV2Tests = (): void => {
 
   resetInputLockStateForTests();
 };
+

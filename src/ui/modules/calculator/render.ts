@@ -1,7 +1,6 @@
 import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../../../domain/keypadLayoutModel.js";
 import type { Action, GameState, Key, KeyCell } from "../../../domain/types.js";
-import type { InteractionMode } from "../../../app/interactionRuntime.js";
 import { buildStepBodyHighlightRegions, resolveStepBodyHighlightRects } from "../../stepHighlight.js";
 import { resolveLayoutMotionIntent } from "../../layout/motionCoordinator.js";
 import { beginMotionCycle, completeMotionCycle } from "../../layout/motionLifecycleBridge.js";
@@ -56,7 +55,6 @@ export const renderCalculatorV2Module = (
   state: GameState,
   dispatch: (action: Action) => unknown,
   options: {
-    interactionMode: InteractionMode;
     inputBlocked: boolean;
   },
 ): void => {
@@ -70,15 +68,9 @@ export const renderCalculatorV2Module = (
     throw new Error("Calculator UI mount points are missing.");
   }
 
-  const interactionMode = options.interactionMode;
   const inputBlocked = options.inputBlocked;
-  const calculatorKeysLocked = resolveCalculatorKeysLocked(
-    interactionMode,
-    inputBlocked,
-    document.body.getAttribute("data-ui-shell"),
-  );
+  const calculatorKeysLocked = resolveCalculatorKeysLocked(inputBlocked);
   if (root instanceof HTMLElement) {
-    root.dataset.interactionMode = interactionMode;
     root.dataset.inputBlocked = inputBlocked ? "true" : "false";
   }
 
@@ -136,12 +128,10 @@ export const renderCalculatorV2Module = (
           calcBodyEl,
           columns: state.ui.keypadColumns,
           rows: state.ui.keypadRows,
-          interactionMode,
           inputBlocked,
         })
       : null;
 
-  const modeChanged = runtime.previousInteractionMode !== null && runtime.previousInteractionMode !== interactionMode;
   const layoutMotionToken = beginMotionCycle("layout", CALC_GROW_MAX_DURATION_MS + INPUT_LOCK_FALLBACK_BUFFER_MS);
   let layoutMotionCompleted = false;
   const completeLayoutMotion = (): void => {
@@ -156,7 +146,6 @@ export const renderCalculatorV2Module = (
     currentSnapshot
       ? resolveLayoutMotionIntent(runtime.previousSnapshot, currentSnapshot, {
           reduceMotion: shouldReduceMotion(),
-          modeChanged,
         })
       : {
           kind: "none" as const,
@@ -212,7 +201,6 @@ export const renderCalculatorV2Module = (
 
   const stepBodyHighlights = buildStepBodyHighlightRegions(state);
   renderKeypadCells(root, keysEl, state, dispatch, {
-    interactionMode,
     calculatorKeysLocked,
     newlyUnlockedKeys,
     bindUnlockAnimationLock: (element) => {
@@ -240,7 +228,7 @@ export const renderCalculatorV2Module = (
     });
   }
   runtime.previousSnapshot = currentSnapshot;
-  runtime.previousInteractionMode = interactionMode;
 
   clearToggleAnimations(root);
 };
+

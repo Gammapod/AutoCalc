@@ -7,10 +7,10 @@ export const runUiShellFallbackControlsTests = (): void => {
   const base = initialState();
   const controller = createShellController();
   const modelMiddleOnly = buildShellViewModel(base);
-  controller.sync(base, "calculator");
+  controller.sync(base);
 
   assert.equal(controller.canSnapUp(modelMiddleOnly), false, "up control disabled when only middle exists");
-  assert.equal(controller.canSnapDown(modelMiddleOnly), false, "down control disabled when only middle exists");
+  assert.equal(controller.canSnapDown(modelMiddleOnly), true, "down control enabled when bottom snap exists");
 
   const withStorage: GameState = {
     ...base,
@@ -22,8 +22,8 @@ export const runUiShellFallbackControlsTests = (): void => {
       },
     },
   };
-  const modelWithStorage = buildShellViewModel(withStorage, "modify");
-  controller.sync(withStorage, "modify");
+  const modelWithStorage = buildShellViewModel(withStorage);
+  controller.sync(withStorage);
   assert.equal(controller.canSnapDown(modelWithStorage), true, "down control enabled when bottom snap is available");
   controller.moveSnap(modelWithStorage, "down");
   assert.equal(controller.runtime.activeSnapId, "bottom", "down control action moves to bottom");

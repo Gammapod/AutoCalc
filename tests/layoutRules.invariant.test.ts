@@ -67,16 +67,15 @@ export const runLayoutRulesInvariantTests = (): void => {
     "step key cannot swap into keypad bottom row",
   );
 
-  const storageBlockedInCalculatorMode = evaluateLayoutDrop(
+  const storageAllowedWithoutModeGate = evaluateLayoutDrop(
     base,
     { surface: "storage", index: 0 },
     { surface: "keypad", index: 0 },
-    { interactionMode: "calculator" },
   );
   assert.deepEqual(
-    storageBlockedInCalculatorMode,
-    { allowed: false, reason: "interaction_mode_blocks_storage" },
-    "calculator mode blocks storage drag/drop",
+    storageAllowedWithoutModeGate,
+    { allowed: true, action: "move" },
+    "storage drag/drop remains available regardless of interaction mode",
   );
 
   const malformedStorageState: GameState = {
@@ -104,3 +103,4 @@ export const runLayoutRulesInvariantTests = (): void => {
     "step highlight region includes step key slot and slot below it",
   );
 };
+

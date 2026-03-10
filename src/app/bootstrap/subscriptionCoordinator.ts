@@ -8,10 +8,6 @@ type UnlockTracker = {
   hasNewUnlock: (state: GameState) => boolean;
 };
 
-type ModeTransitionCoordinator = {
-  isModeTransitionInFlight: () => boolean;
-};
-
 type AllocatorCueCoordinator = {
   runAllocatorIncreaseCue: () => Promise<void>;
 };
@@ -25,7 +21,6 @@ export const createStoreSubscriptionCoordinator = (
   options: {
     autoEqualsScheduler: AutoEqualsScheduler;
     unlockTracker: UnlockTracker;
-    modeTransitionCoordinator: ModeTransitionCoordinator;
     allocatorCueCoordinator: AllocatorCueCoordinator;
     unlockRevealCoordinator: UnlockRevealCoordinator;
     getAllocatorIncreaseFromUnlocks: (previous: GameState, latest: GameState) => number;
@@ -43,7 +38,7 @@ export const createStoreSubscriptionCoordinator = (
     const hasNewUnlock = options.unlockTracker.hasNewUnlock(latest);
     const maxPointIncreaseFromUnlocks = options.getAllocatorIncreaseFromUnlocks(previous, latest);
 
-    if (!options.modeTransitionCoordinator.isModeTransitionInFlight() && (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock)) {
+    if (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock) {
       if (maxPointIncreaseFromUnlocks > 0) {
         void (async () => {
           await options.allocatorCueCoordinator.runAllocatorIncreaseCue();

@@ -31,8 +31,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
   try {
     const renderer = createShellRenderer(harness.root, { mode: "mobile" });
     renderer.render(withStorage, dispatch, {
-      interactionMode: "modify",
-      inputBlocked: false,
+            inputBlocked: false,
     });
 
     const shellRoot = harness.root.querySelector<HTMLElement>("[data-v2-shell-root='true']");
@@ -53,8 +52,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     );
 
     renderer.render(withStorage, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const host = harness.root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
     const withGraph: GameState = {
@@ -79,12 +77,10 @@ export const runUiIntegrationMobileShellTests = (): void => {
       },
     };
     renderer.render(withGraph, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     renderer.render(withFeed, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const feedPanel = harness.root.querySelector<HTMLElement>("[data-v2-feed-panel]");
     assert.ok(feedPanel, "feed panel is mounted");
@@ -100,8 +96,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       },
     };
     renderer.render(withFeedTable, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     assert.equal(
       feedPanel?.textContent?.includes("  X  |"),
@@ -136,8 +131,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       },
     };
     renderer.render(withFeedNoVisibleRemainder, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     assert.equal(
       feedPanel?.querySelector(".v2-feed-r-col"),
@@ -145,12 +139,10 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "feed panel hides r column when no visible row includes remainder",
     );
     renderer.render(withGraph, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     renderer.render(withTotal, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     assert.equal(
       host?.dataset.v2VisualizerTransition,
@@ -183,8 +175,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       },
     };
     renderer.render(withErrorTotal, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const domainIndicatorWithError = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
     const remainderDisplayWithError = totalPanel?.querySelector<HTMLElement>(".total-remainder-display");
@@ -217,8 +208,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       },
     };
     renderer.render(withRemainderTotal, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const domainIndicatorWithRemainder = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
     const remainderDisplayWithRemainder = totalPanel?.querySelector<HTMLElement>(".total-remainder-display");
@@ -248,8 +238,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       },
     };
     renderer.render(withNanTotal, dispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const domainIndicatorWithNan = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
     assert.equal(domainIndicatorWithNan?.textContent, "∅", "domain indicator shows null-set symbol when total is NaN");
@@ -273,6 +262,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     harness.teardown();
   }
 };
+
 
 
 

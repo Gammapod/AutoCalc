@@ -1,5 +1,4 @@
 import type { Action, GameState } from "../domain/types.js";
-import type { InteractionMode } from "../app/interactionRuntime.js";
 import { createShellController } from "./shellController.js";
 import type { SnapId } from "./shellModel.js";
 import { createTouchRearrangeController } from "./touchRearrangeController.js";
@@ -30,7 +29,6 @@ export type ShellRenderer = {
 };
 
 export type ShellRenderOptions = {
-  interactionMode?: InteractionMode;
   inputBlocked?: boolean;
 };
 
@@ -84,7 +82,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     drawerDragTarget: DrawerDragTarget | null;
     latestState: GameState | null;
     latestDispatch: ((action: Action) => unknown) | null;
-    latestInteractionMode: InteractionMode;
     latestInputBlocked: boolean;
     pointerSession: PointerSession | null;
   } = {
@@ -95,7 +92,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     drawerDragTarget: null,
     latestState: null,
     latestDispatch: null,
-    latestInteractionMode: "calculator",
     latestInputBlocked: false,
     pointerSession: null,
   };
@@ -212,7 +208,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   };
 
   const syncControlDisabledState = (refs: ShellRefs, state: GameState): void => {
-    const model = controller.sync(state, runtimeState.latestInteractionMode);
+    const model = controller.sync(state);
     const gesturesBlocked = touchRearrange.isGestureBlocked() || runtimeState.latestInputBlocked;
     refs.controlsUp.disabled = gesturesBlocked || !controller.canSnapUp(model);
     refs.controlsDown.disabled = gesturesBlocked || !controller.canSnapDown(model);
@@ -227,7 +223,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
   };
 
   const syncSnapAndUi = (refs: ShellRefs, state: GameState, includeTransition: boolean): void => {
-    refs.shell.dataset.v2InteractionMode = runtimeState.latestInteractionMode;
     refs.shell.dataset.v2InputBlocked = runtimeState.latestInputBlocked ? "true" : "false";
     syncControlDisabledState(refs, state);
     setMenuModuleClass(refs);
@@ -285,7 +280,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     if (!refs || !state) {
       return;
     }
-    const model = controller.sync(state, runtimeState.latestInteractionMode);
+    const model = controller.sync(state);
     controller.moveSnap(model, "up");
     syncSnapAndUi(refs, state, true);
   };
@@ -299,7 +294,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     if (!refs || !state) {
       return;
     }
-    const model = controller.sync(state, runtimeState.latestInteractionMode);
+    const model = controller.sync(state);
     controller.moveSnap(model, "down");
     syncSnapAndUi(refs, state, true);
   };
@@ -331,14 +326,12 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     dispatch: (action: Action) => unknown,
     options: ShellRenderOptions = {},
   ): void => {
-    runtimeState.latestInteractionMode = options.interactionMode ?? "calculator";
     runtimeState.latestInputBlocked = options.inputBlocked ?? false;
     runtimeState.latestState = state;
     runtimeState.latestDispatch = dispatch;
-    touchRearrange.syncContext(state, dispatch, runtimeState.latestInteractionMode);
+    touchRearrange.syncContext(state, dispatch);
     const refs = ensureShellRefs();
     renderCalculatorStorageV2Module(root, state, dispatch, {
-      interactionMode: runtimeState.latestInteractionMode,
       inputBlocked: runtimeState.latestInputBlocked,
     });
     renderVisualizerHost(root, state);
@@ -358,7 +351,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     if (options.bottomPanelId) {
       controller.setBottomPanel(options.bottomPanelId);
     }
-    const model = controller.sync(state, runtimeState.latestInteractionMode);
+    const model = controller.sync(state);
     if (options.snapId) {
       controller.setSnap(model, options.snapId);
     }
@@ -385,7 +378,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     refsCache = null;
     runtimeState.latestState = null;
     runtimeState.latestDispatch = null;
-    runtimeState.latestInteractionMode = "calculator";
     runtimeState.latestInputBlocked = false;
     returnFocusEl = null;
   };
@@ -402,7 +394,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     runtimeState.dragDeltaY = 0;
     runtimeState.drawerDragActive = false;
     runtimeState.drawerDragDeltaX = 0;
-    runtimeState.latestInteractionMode = "calculator";
     runtimeState.latestInputBlocked = false;
     runtimeState.pointerSession = null;
     returnFocusEl = null;

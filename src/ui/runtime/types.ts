@@ -1,12 +1,10 @@
 import type { Action, GameState } from "../../domain/types.js";
-import type { InteractionMode } from "../../app/interactionRuntime.js";
 
 export type UiModuleContext = {
   root: Element;
   dispatch: (action: Action) => unknown;
   getState: () => GameState;
   options: {
-    interactionMode: InteractionMode;
     inputBlocked: boolean;
   };
 };

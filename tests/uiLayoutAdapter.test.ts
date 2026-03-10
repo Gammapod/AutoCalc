@@ -28,8 +28,7 @@ export const runUiLayoutAdapterTests = (): void => {
         rows: dimension.rows,
       });
       renderModule(harness.root, state, noopDispatch, {
-        interactionMode: "calculator",
-        inputBlocked: false,
+                inputBlocked: false,
       });
       const keys = harness.root.querySelector<HTMLElement>("[data-keys]");
       const calc = harness.root.querySelector<HTMLElement>(".calc");
@@ -60,8 +59,7 @@ export const runUiLayoutAdapterTests = (): void => {
     harness.document.body.setAttribute("data-ui-shell", "desktop");
     const state = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 2 });
     renderModule(harness.root, state, noopDispatch, {
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     const keys = harness.root.querySelector<HTMLElement>("[data-keys]");
     const calc = harness.root.querySelector<HTMLElement>(".calc");
@@ -72,8 +70,7 @@ export const runUiLayoutAdapterTests = (): void => {
       calcBodyEl: calc,
       columns: 4,
       rows: 2,
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
 
     applyDesktopLayoutSnapshot(keys, calc, snapshot);
@@ -94,8 +91,7 @@ export const runUiLayoutAdapterTests = (): void => {
       calcBodyEl: calc,
       columns: 4,
       rows: 2,
-      interactionMode: "calculator",
-      inputBlocked: false,
+            inputBlocked: false,
     });
     assert.equal(
       fixedInput.calculatorInstances[0]?.visualizerWidthMode,
@@ -111,3 +107,4 @@ export const runUiLayoutAdapterTests = (): void => {
     harness.teardown();
   }
 };
+

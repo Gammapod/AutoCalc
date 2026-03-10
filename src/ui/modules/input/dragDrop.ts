@@ -167,12 +167,7 @@ export const bindDraggableCell = (
       return;
     }
     if (element instanceof HTMLButtonElement && element.disabled) {
-      const appRoot = element.closest<HTMLElement>("#app");
-      const interactionMode = appRoot?.dataset.interactionMode;
-      const canDragFromLockedKeypad = interactionMode === "modify" && source.surface === "keypad";
-      if (!canDragFromLockedKeypad) {
-        return;
-      }
+      return;
     }
     const currentState = getInputModuleState(root);
     clearDragSession(root);
@@ -220,4 +215,3 @@ export const bindDropTargetCell = (element: HTMLElement, surface: LayoutSurface,
   element.dataset.layoutSurface = surface;
   element.dataset.layoutIndex = index.toString();
 };
-

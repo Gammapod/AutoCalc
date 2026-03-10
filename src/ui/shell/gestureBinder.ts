@@ -2,7 +2,6 @@ import { canStartTouchRearrange, shouldCloseMenuFromSwipe } from "../shellGestur
 import { createShellController } from "../shellController.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "../touchRearrangeController.js";
 import type { Action, GameState, Key, LayoutSurface } from "../../domain/types.js";
-import type { InteractionMode } from "../../app/interactionRuntime.js";
 import type { DrawerDragTarget, PointerSession, ShellRefs } from "./types.js";
 
 type RuntimeState = {
@@ -13,7 +12,6 @@ type RuntimeState = {
   drawerDragTarget: DrawerDragTarget | null;
   latestState: GameState | null;
   latestDispatch: ((action: Action) => unknown) | null;
-  latestInteractionMode: InteractionMode;
   latestInputBlocked: boolean;
   pointerSession: PointerSession | null;
 };
@@ -165,9 +163,6 @@ export const bindShellGestures = (args: {
     ) {
       const resolved = resolveTouchSourceFromEvent(runtime.latestState, pointerEvent.target);
       if (resolved) {
-        if (runtime.latestInteractionMode === "calculator" && resolved.source.surface === "storage") {
-          return;
-        }
         touchRearrange.startPress(pointerEvent.pointerId, pointerEvent.clientX, pointerEvent.clientY, resolved.source, resolved.element);
         args.syncViewportTouchAction(refs);
       }
@@ -205,7 +200,7 @@ export const bindShellGestures = (args: {
       return;
     }
     if (runtime.latestState && runtime.latestDispatch) {
-      touchRearrange.syncContext(runtime.latestState, runtime.latestDispatch, runtime.latestInteractionMode);
+      touchRearrange.syncContext(runtime.latestState, runtime.latestDispatch);
     }
     touchRearrange.move(pointerEvent.pointerId, pointerEvent.clientX, pointerEvent.clientY, (x, y) => {
       const hovered = document.elementFromPoint(x, y) as HTMLElement | null;
@@ -311,7 +306,7 @@ export const bindShellGestures = (args: {
     const velocityX = (pointerEvent.clientX - runtime.pointerSession.lastX) / elapsed;
     const velocityY = (pointerEvent.clientY - runtime.pointerSession.lastY) / elapsed;
     if (runtime.dragActive) {
-      const model = controller.sync(state, runtime.latestInteractionMode);
+      const model = controller.sync(state);
       controller.settleFromDrag(model, runtime.dragDeltaY, velocityY);
     }
     if (runtime.drawerDragActive && runtime.drawerDragTarget === "middle") {

@@ -19,7 +19,7 @@ export const runBootstrapBoundaryTests = (): void => {
     "[data-debug-apply-max-points]",
     "[data-debug-roll-state]",
     "[data-debug-toggle-ui-shell]",
-    "[data-mode-toggle]",
+    "[data-allocator-action]",
   ];
 
   for (const selector of bannedSelectors) {

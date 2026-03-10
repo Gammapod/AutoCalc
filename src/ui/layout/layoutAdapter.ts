@@ -2,7 +2,6 @@ import { computeLayoutSnapshot, getActiveCalculatorSnapshot } from "./layoutEngi
 import type {
   CalculatorInstanceLayoutConfig,
   CalculatorLayoutSnapshot,
-  InteractionLayoutMode,
   LayoutEngineInput,
   WorkbenchViewportModel,
 } from "./types.js";
@@ -74,7 +73,6 @@ export type BuildSingleInstanceLayoutInputParams = {
   calcBodyEl: HTMLElement | null;
   columns: number;
   rows: number;
-  interactionMode: InteractionLayoutMode;
   inputBlocked: boolean;
 };
 
@@ -84,7 +82,6 @@ export const buildSingleInstanceLayoutInput = ({
   calcBodyEl,
   columns,
   rows,
-  interactionMode,
   inputBlocked,
 }: BuildSingleInstanceLayoutInputParams): LayoutEngineInput => {
   const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
@@ -129,7 +126,6 @@ export const buildSingleInstanceLayoutInput = ({
       heightPx: viewportHeight,
     },
     shellMode: isDesktopShellContext(root) ? "desktop" : "mobile",
-    interactionMode,
     inputBlocked,
     gapPx,
     measuredVerticalChromePx,

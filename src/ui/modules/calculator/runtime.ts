@@ -1,6 +1,6 @@
 import { getOrCreateRuntime } from "../../runtime/registry.js";
 import type { UiModuleRuntime } from "../../runtime/types.js";
-import type { CalculatorLayoutSnapshot, InteractionLayoutMode } from "../../layout/types.js";
+import type { CalculatorLayoutSnapshot } from "../../layout/types.js";
 
 export type CalculatorModuleState = {
   pendingToggleAnimationByFlag: Record<string, "on" | "off">;
@@ -10,7 +10,6 @@ export type CalculatorModuleState = {
 
 export type CalculatorLayoutRuntimeState = {
   previousSnapshot: CalculatorLayoutSnapshot | null;
-  previousInteractionMode: InteractionLayoutMode | null;
 };
 
 const createCalculatorModuleState = (): CalculatorModuleState => ({
@@ -21,7 +20,6 @@ const createCalculatorModuleState = (): CalculatorModuleState => ({
 
 const createCalculatorLayoutRuntimeState = (): CalculatorLayoutRuntimeState => ({
   previousSnapshot: null,
-  previousInteractionMode: null,
 });
 
 export const getCalculatorModuleRuntime = (root: Element): UiModuleRuntime =>
@@ -42,7 +40,6 @@ export const getCalculatorModuleState = (root: Element): CalculatorModuleState =
     const layoutRuntime = runtime.state.calculatorLayoutRuntimeState as CalculatorLayoutRuntimeState | undefined;
     if (layoutRuntime) {
       layoutRuntime.previousSnapshot = null;
-      layoutRuntime.previousInteractionMode = null;
     }
     runtime.state.calculatorModuleState = createCalculatorModuleState();
     runtime.state.calculatorLayoutRuntimeState = createCalculatorLayoutRuntimeState();
@@ -54,7 +51,6 @@ export const getCalculatorModuleState = (root: Element): CalculatorModuleState =
     const layoutRuntime = runtime.state.calculatorLayoutRuntimeState as CalculatorLayoutRuntimeState | undefined;
     if (layoutRuntime) {
       layoutRuntime.previousSnapshot = null;
-      layoutRuntime.previousInteractionMode = null;
     }
   };
   return created;

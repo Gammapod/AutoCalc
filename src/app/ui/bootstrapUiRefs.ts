@@ -12,7 +12,6 @@ export type BootstrapUiRefs = {
   applyMaxPointsButton: HTMLButtonElement;
   debugRollStateEl: HTMLElement;
   toggleUiShellLink: HTMLAnchorElement;
-  allocatorResetButton: HTMLButtonElement;
 };
 
 export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
@@ -29,7 +28,6 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
   const applyMaxPointsButton = doc.querySelector<HTMLButtonElement>("[data-debug-apply-max-points]");
   const debugRollStateEl = doc.querySelector<HTMLElement>("[data-debug-roll-state]");
   const toggleUiShellLink = doc.querySelector<HTMLAnchorElement>("[data-debug-toggle-ui-shell]");
-  const allocatorResetButton = doc.querySelector<HTMLButtonElement>("[data-mode-toggle]");
 
   if (
     !debugToggle ||
@@ -44,8 +42,7 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     !debugMaxPointsInput ||
     !applyMaxPointsButton ||
     !debugRollStateEl ||
-    !toggleUiShellLink ||
-    !allocatorResetButton
+    !toggleUiShellLink
   ) {
     throw new Error("Required UI controls are missing.");
   }
@@ -64,6 +61,5 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     applyMaxPointsButton,
     debugRollStateEl,
     toggleUiShellLink,
-    allocatorResetButton,
   };
 };
