@@ -286,17 +286,19 @@ const analyzeAllocatorAllocatePressCountAtLeast: PredicateAnalyzer<AllocatorAllo
 
 const analyzeOperationEquals: PredicateAnalyzer<OperationEqualsPredicate> = (predicate, state) => {
   const slots = getOperationSnapshot(state.calculator, predicate.includeDrafting ?? true);
-  const operandText = (operand: typeof slots[number]["operand"]): string =>
-    typeof operand === "bigint" ? operand.toString() : expressionToDisplayString(slotOperandToExpression(operand));
+  const slotText = (slot: typeof slots[number]): string =>
+    slot.kind === "unary"
+      ? slot.operator
+      : `${slot.operator}:${typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand))}`;
   const isMet =
     slots.length === predicate.slots.length &&
     slots.every(
       (slot, index) =>
-        slot.operator === predicate.slots[index].operator && operandText(slot.operand) === operandText(predicate.slots[index].operand),
+        slotText(slot) === slotText(predicate.slots[index]),
     );
 
-  const requiredTokens = predicate.slots.flatMap((slot) => [slot.operator, operandText(slot.operand)]);
-  const currentTokens = slots.flatMap((slot) => [slot.operator, operandText(slot.operand)]);
+  const requiredTokens = predicate.slots.map(slotText);
+  const currentTokens = slots.map(slotText);
   return {
     isMet,
     criteria: requiredTokens.map((token, index) => ({
@@ -334,13 +336,13 @@ const analyzeOperationFirstEuclidEquivalentModulo: PredicateAnalyzer<OperationFi
 ) => {
   const slots = getOperationSnapshot(state.calculator, false);
   const firstSlot = slots[0] ?? null;
-  const firstIsEuclid = firstSlot?.operator === "#";
+  const firstIsEuclid = firstSlot != null && "operand" in firstSlot && firstSlot.operator === "#";
 
   let evaluationsSucceeded = false;
   let resultMatchesModuloBaseline = false;
   if (firstIsEuclid) {
     const combined = executeSlotsValue(state.calculator.total, slots);
-    const baseline = executeSlotsValue(state.calculator.total, [{ operator: "\u27E1", operand: firstSlot.operand }]);
+    const baseline = executeSlotsValue(state.calculator.total, [{ kind: "binary", operator: "\u27E1", operand: firstSlot.operand }]);
     evaluationsSucceeded = combined.ok && baseline.ok;
     if (combined.ok && baseline.ok) {
       resultMatchesModuloBaseline = calculatorValueToDisplayString(combined.total) === calculatorValueToDisplayString(baseline.total);

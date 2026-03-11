@@ -6,7 +6,7 @@ import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, sanitizeLambdaControl, withLegacyAllocatorFallback } from "../../domain/lambdaControl.js";
 import { getRollYPrimeFactorization } from "../../domain/rollDerived.js";
 import { isValidSchemaVersion, migrateToLatest, type SerializableStateV14, type SerializableSlot } from "./migrations.js";
-import type { GameState, PrimeFactorTerm, RationalPrimeFactorization } from "../../domain/types.js";
+import type { BinarySlotOperator, GameState, PrimeFactorTerm, RationalPrimeFactorization, UnarySlotOperator } from "../../domain/types.js";
 
 type SavePayload = {
   schemaVersion: number;
@@ -136,6 +136,11 @@ const parseSerializableFactorization = (value: unknown): RationalPrimeFactorizat
   };
 };
 
+const UNARY_SLOT_OPERATORS = new Set<UnarySlotOperator>(["++", "--", "-n", "\u03C3", "\u03C6", "\u03A9"]);
+const isUnarySlotOperator = (value: string): value is UnarySlotOperator => UNARY_SLOT_OPERATORS.has(value as UnarySlotOperator);
+const BINARY_SLOT_OPERATORS = new Set<BinarySlotOperator>(["+", "-", "*", "/", "#", "\u27E1", "\u21BA", "\u2A51", "\u2A52"]);
+const isBinarySlotOperator = (value: string): value is BinarySlotOperator => BINARY_SLOT_OPERATORS.has(value as BinarySlotOperator);
+
 const toSerializableState = (state: GameState): SerializableStateLatest => {
   const lambdaControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
   return ({
@@ -160,8 +165,11 @@ const toSerializableState = (state: GameState): SerializableStateLatest => {
       ...(entry.factorization ? { factorization: serializeFactorization(entry.factorization) } : {}),
     })),
     operationSlots: state.calculator.operationSlots.map<SerializableSlot>((slot) => ({
+      kind: slot.kind,
       operator: slot.operator,
-      operand: typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slot.operand),
+      ...(slot.kind === "binary"
+        ? { operand: typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slot.operand) }
+        : {}),
     })),
     draftingSlot: state.calculator.draftingSlot,
   },
@@ -242,16 +250,27 @@ const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameSta
         ...(factorization ? { factorization } : {}),
       };
     }),
-    operationSlots: payloadState.calculator.operationSlots.map((slot) => ({
-      operator: slot.operator,
-      operand: (() => {
-        const expression = parseExpressionOrThrow(slot.operand);
-        if (expression.type === "int_literal") {
-          return expression.value;
-        }
-        return expression;
-      })(),
-    })),
+    operationSlots: payloadState.calculator.operationSlots.map((slot) => {
+      if (slot.kind === "unary" && isUnarySlotOperator(slot.operator)) {
+        return {
+          kind: "unary" as const,
+          operator: slot.operator,
+        };
+      }
+      const operator = isBinarySlotOperator(slot.operator) ? slot.operator : "+";
+      const operandText = slot.operand ?? "0";
+      return {
+        kind: "binary" as const,
+        operator,
+        operand: (() => {
+          const expression = parseExpressionOrThrow(operandText);
+          if (expression.type === "int_literal") {
+            return expression.value;
+          }
+          return expression;
+        })(),
+      };
+    }),
     draftingSlot: payloadState.calculator.draftingSlot,
   },
   ui: {

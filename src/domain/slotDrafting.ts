@@ -1,10 +1,10 @@
 import { parseExpressionOrNull } from "./expression.js";
-import type { CalculatorState, DraftingSlot, Slot } from "./types.js";
+import type { BinarySlot, CalculatorState, DraftingSlot, Slot } from "./types.js";
 
 const DIGITS_ONLY_RE = /^\d+$/;
 const isNaturalDivisorOperator = (operator: DraftingSlot["operator"]): boolean => operator === "#" || operator === "\u27E1";
 
-export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): Slot | null => {
+export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): BinarySlot | null => {
   if (draftingSlot.operandInput === "") {
     return null;
   }
@@ -16,6 +16,7 @@ export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): Slot | null
   if (DIGITS_ONLY_RE.test(normalizedInput)) {
     const magnitude = BigInt(normalizedInput);
     return {
+      kind: "binary",
       operator: draftingSlot.operator,
       operand: isNaturalDivisorOperator(draftingSlot.operator)
         ? magnitude
@@ -30,6 +31,7 @@ export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): Slot | null
     return null;
   }
   return {
+    kind: "binary",
     operator: draftingSlot.operator,
     operand: draftingSlot.isNegative
       ? { type: "unary", op: "neg", arg: parsedExpression }

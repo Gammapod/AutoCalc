@@ -421,7 +421,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     ),
     keySequence: ["-"],
     targetProjection: {
-      operationSlots: [{ operator: "+", operand: 1n }],
+      operationSlots: [{ kind: "binary", operator: "+", operand: 1n }],
       draftingSlot: null,
       keyPressCounts: { "-": 1 },
     },

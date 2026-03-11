@@ -159,13 +159,8 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   if (kind === "unary_operator_inserts_pair") {
     const state = unlockKey(initialState(), key);
     const next = applyKeyAction(state, key);
-    if (key === "++") {
-      assert.deepEqual(next.calculator.draftingSlot, { operator: "+", operandInput: "1", isNegative: false }, "++ inserts [+ 1] drafting pair");
-    } else if (key === "--") {
-      assert.deepEqual(next.calculator.draftingSlot, { operator: "-", operandInput: "1", isNegative: false }, "-- inserts [- 1] drafting pair");
-    } else {
-      assert.deepEqual(next.calculator.draftingSlot, { operator: "*", operandInput: "1", isNegative: true }, "-n inserts [* -1] drafting pair");
-    }
+    assert.equal(next.calculator.draftingSlot, null, `${key} does not create binary drafting state`);
+    assert.deepEqual(next.calculator.operationSlots.at(-1), { kind: "unary", operator: key }, `${key} appends unary slot`);
     return;
   }
 
@@ -390,13 +385,8 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     );
     const next = applyKeyAction(state, key);
     assert.equal(next.calculator.rollEntries.length, 0, "unary operator clears active roll before insertion");
-    if (key === "++") {
-      assert.deepEqual(next.calculator.draftingSlot, { operator: "+", operandInput: "1", isNegative: false }, "++ inserts [+ 1] after clear");
-    } else if (key === "--") {
-      assert.deepEqual(next.calculator.draftingSlot, { operator: "-", operandInput: "1", isNegative: false }, "-- inserts [- 1] after clear");
-    } else {
-      assert.deepEqual(next.calculator.draftingSlot, { operator: "*", operandInput: "1", isNegative: true }, "-n inserts [* -1] after clear");
-    }
+    assert.equal(next.calculator.draftingSlot, null, "unary operator keeps drafting cleared after active-roll preprocess");
+    assert.deepEqual(next.calculator.operationSlots, [{ kind: "unary", operator: key }], "unary operator appends unary slot after clear");
     return;
   }
 

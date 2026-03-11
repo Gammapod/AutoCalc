@@ -137,7 +137,7 @@ Goal: remove checklist-first progression UX and replace it with contextual hints
 
 # Post-v0.7.0
 
-## Milestone 5: Visualizer Fit Contract (Planned)
+## Milestone 5: Visualizer Fit Contract
 
 Goal: enforce a minimum visualizer window contract so every visualizer layout is guaranteed to render fully inside bounded dimensions.
 

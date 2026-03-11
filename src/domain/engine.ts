@@ -1,13 +1,139 @@
 import { addInt, divInt, mulInt, subInt } from "../infra/math/rationalEngine.js";
 import { euclideanDivide } from "../infra/math/euclideanEngine.js";
 import { parseSimplifiedTextToExactRational, simplifyExpressionToText } from "../infra/math/symbolicAdapter.js";
-import { calculatorValueToExpression, isRationalCalculatorValue, toExpressionCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue } from "./calculatorValue.js";
+import { calculatorValueToExpression, isRationalCalculatorValue, toExpressionCalculatorValue, toRationalCalculatorValue } from "./calculatorValue.js";
 import { expressionToDisplayString, intExpr, normalizeExpression, slotOperandToExpression } from "./expression.js";
-import type { CalculatorValue, ExpressionValue, RationalValue, Slot } from "./types.js";
+import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, Slot } from "./types.js";
 
 export type ExecuteSlotsResult =
   | { ok: true; total: RationalValue; euclidRemainder?: RationalValue }
-  | { ok: false; reason: "division_by_zero" | "unsupported_symbolic" };
+  | { ok: false; reason: "division_by_zero" | "nan_input" | "unsupported_symbolic" };
+
+const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);
+
+const gcdBigInt = (left: bigint, right: bigint): bigint => {
+  let a = absBigInt(left);
+  let b = absBigInt(right);
+  while (b !== 0n) {
+    const remainder = a % b;
+    a = b;
+    b = remainder;
+  }
+  return a;
+};
+
+const lcmBigInt = (left: bigint, right: bigint): bigint => {
+  const a = absBigInt(left);
+  const b = absBigInt(right);
+  if (a === 0n || b === 0n) {
+    return 0n;
+  }
+  return (a / gcdBigInt(a, b)) * b;
+};
+
+const rotateLeftDigits = (value: bigint, amount: bigint): bigint => {
+  const sign = value < 0n ? -1n : 1n;
+  const digits = absBigInt(value).toString();
+  const length = BigInt(digits.length);
+  if (length <= 1n) {
+    return value;
+  }
+  const normalized = Number((((amount % length) + length) % length));
+  if (normalized === 0) {
+    return value;
+  }
+  const rotated = `${digits.slice(normalized)}${digits.slice(0, normalized)}`;
+  const magnitude = BigInt(rotated);
+  return sign < 0n ? -magnitude : magnitude;
+};
+
+const factorCountWithMultiplicity = (value: bigint): bigint => {
+  let remaining = absBigInt(value);
+  if (remaining < 2n) {
+    return 0n;
+  }
+  let count = 0n;
+  while (remaining % 2n === 0n) {
+    remaining /= 2n;
+    count += 1n;
+  }
+  let candidate = 3n;
+  while (candidate * candidate <= remaining) {
+    while (remaining % candidate === 0n) {
+      remaining /= candidate;
+      count += 1n;
+    }
+    candidate += 2n;
+  }
+  if (remaining > 1n) {
+    count += 1n;
+  }
+  return count;
+};
+
+const phiBigInt = (value: bigint): bigint => {
+  let remaining = absBigInt(value);
+  let result = remaining;
+  if (remaining < 2n) {
+    return remaining;
+  }
+  if (remaining % 2n === 0n) {
+    while (remaining % 2n === 0n) {
+      remaining /= 2n;
+    }
+    result -= result / 2n;
+  }
+  let candidate = 3n;
+  while (candidate * candidate <= remaining) {
+    if (remaining % candidate === 0n) {
+      while (remaining % candidate === 0n) {
+        remaining /= candidate;
+      }
+      result -= result / candidate;
+    }
+    candidate += 2n;
+  }
+  if (remaining > 1n) {
+    result -= result / remaining;
+  }
+  return result;
+};
+
+const sigmaBigInt = (value: bigint): bigint => {
+  const target = absBigInt(value);
+  if (target < 1n) {
+    return 0n;
+  }
+  let remaining = target;
+  let result = 1n;
+
+  let exponent = 0n;
+  while (remaining % 2n === 0n) {
+    remaining /= 2n;
+    exponent += 1n;
+  }
+  if (exponent > 0n) {
+    result *= ((2n ** (exponent + 1n)) - 1n) / (2n - 1n);
+  }
+
+  let candidate = 3n;
+  while (candidate * candidate <= remaining) {
+    exponent = 0n;
+    while (remaining % candidate === 0n) {
+      remaining /= candidate;
+      exponent += 1n;
+    }
+    if (exponent > 0n) {
+      result *= ((candidate ** (exponent + 1n)) - 1n) / (candidate - 1n);
+    }
+    candidate += 2n;
+  }
+
+  if (remaining > 1n) {
+    result *= ((remaining ** 2n) - 1n) / (remaining - 1n);
+  }
+  return result;
+};
 
 export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsResult => {
   if (slots.length === 0) {
@@ -17,10 +143,44 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
   let nextTotal = total;
   let lastEuclidModComponent: RationalValue | undefined;
   let endsWithEuclidLikeOperator = false;
+
   for (const slot of slots) {
+    if (slot.kind === "unary") {
+      if (nextTotal.den !== 1n) {
+        return { ok: false, reason: "nan_input" };
+      }
+      if (slot.operator === "++") {
+        nextTotal = addInt(nextTotal, 1n);
+      } else if (slot.operator === "--") {
+        nextTotal = subInt(nextTotal, 1n);
+      } else if (slot.operator === "-n") {
+        nextTotal = mulInt(nextTotal, -1n);
+      } else if (slot.operator === "\u03C3") {
+        if (nextTotal.num === 0n) {
+          return { ok: false, reason: "nan_input" };
+        }
+        nextTotal = { num: sigmaBigInt(nextTotal.num), den: 1n };
+      } else if (slot.operator === "\u03C6") {
+        if (nextTotal.num === 0n) {
+          return { ok: false, reason: "nan_input" };
+        }
+        nextTotal = { num: phiBigInt(nextTotal.num), den: 1n };
+      } else if (slot.operator === "\u03A9") {
+        if (nextTotal.num === 0n) {
+          return { ok: false, reason: "nan_input" };
+        }
+        nextTotal = { num: factorCountWithMultiplicity(nextTotal.num), den: 1n };
+      } else {
+        return { ok: false, reason: "unsupported_symbolic" };
+      }
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+
     if (typeof slot.operand !== "bigint") {
       return { ok: false, reason: "unsupported_symbolic" };
     }
+
     if (slot.operator === "+") {
       nextTotal = addInt(nextTotal, slot.operand);
       endsWithEuclidLikeOperator = false;
@@ -54,7 +214,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       endsWithEuclidLikeOperator = true;
       continue;
     }
-    if (slot.operator === "⟡") {
+    if (slot.operator === "\u27E1") {
       const euclidean = euclideanDivide(nextTotal, slot.operand);
       if (!euclidean.ok) {
         return euclidean;
@@ -62,6 +222,30 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       nextTotal = euclidean.remainder;
       lastEuclidModComponent = euclidean.remainder;
       endsWithEuclidLikeOperator = true;
+      continue;
+    }
+    if (slot.operator === "\u21BA") {
+      if (nextTotal.den !== 1n) {
+        return { ok: false, reason: "nan_input" };
+      }
+      nextTotal = { num: rotateLeftDigits(nextTotal.num, slot.operand), den: 1n };
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (slot.operator === "\u2A51") {
+      if (nextTotal.den !== 1n) {
+        return { ok: false, reason: "nan_input" };
+      }
+      nextTotal = { num: gcdBigInt(nextTotal.num, slot.operand), den: 1n };
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (slot.operator === "\u2A52") {
+      if (nextTotal.den !== 1n) {
+        return { ok: false, reason: "nan_input" };
+      }
+      nextTotal = { num: lcmBigInt(nextTotal.num, slot.operand), den: 1n };
+      endsWithEuclidLikeOperator = false;
       continue;
     }
     throw new Error(`Unsupported operator: ${slot.operator}`);
@@ -75,7 +259,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
 
 const applyBinaryExpression = (
   left: ExpressionValue,
-  operator: Slot["operator"],
+  operator: BinarySlotOperator,
   right: ExpressionValue,
 ): ExpressionValue | null => {
   if (operator === "+") {
@@ -95,7 +279,7 @@ const applyBinaryExpression = (
 
 const applyBinaryExpressionRaw = (
   left: ExpressionValue,
-  operator: Slot["operator"],
+  operator: BinarySlotOperator,
   right: ExpressionValue,
 ): ExpressionValue | null => {
   if (operator === "+") {
@@ -130,7 +314,10 @@ export const buildSymbolicExpression = (total: CalculatorValue, slots: Slot[]): 
     return { ok: false, reason: "nan_input" };
   }
   for (const slot of slots) {
-    if (slot.operator === "#" || slot.operator === "\u27E1") {
+    if (!("operand" in slot)) {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
+    if (slot.operator === "#" || slot.operator === "\u27E1" || slot.operator === "\u21BA" || slot.operator === "\u2A51" || slot.operator === "\u2A52") {
       return { ok: false, reason: "unsupported_symbolic" };
     }
     const right = typeof slot.operand === "bigint" ? intExpr(slot.operand) : slotOperandToExpression(slot.operand);
@@ -194,7 +381,7 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
 
   const canUsePureRationalPath =
     isRationalCalculatorValue(total)
-    && slots.every((slot) => typeof slot.operand === "bigint");
+    && slots.every((slot) => slot.kind === "unary" || typeof slot.operand === "bigint");
   if (canUsePureRationalPath) {
     const executed = executeSlots(total.value, slots);
     if (!executed.ok) {
@@ -213,7 +400,10 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
   }
 
   for (const slot of slots) {
-    if (slot.operator === "#" || slot.operator === "\u27E1") {
+    if (!("operand" in slot)) {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
+    if (slot.operator === "#" || slot.operator === "\u27E1" || slot.operator === "\u21BA" || slot.operator === "\u2A51" || slot.operator === "\u2A52") {
       return { ok: false, reason: "unsupported_symbolic" };
     }
     const right = typeof slot.operand === "bigint" ? intExpr(slot.operand) : slotOperandToExpression(slot.operand);

@@ -38,7 +38,7 @@ const overrideHandlerById: Record<ButtonHandlerOverrideId, KeyActionHandlerId> =
   memory_adjust_plus: "apply_memory",
   memory_adjust_minus: "apply_memory",
   execute_equals: "apply_equals",
-  unary_operator_insert_pair: "apply_unary_operator",
+  unary_operator_commit_slot: "apply_unary_operator",
 };
 
 export const resolveKeyActionHandlerId = (key: ButtonKey): KeyActionHandlerId => {

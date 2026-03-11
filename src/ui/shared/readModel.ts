@@ -10,6 +10,8 @@ import type {
   GameState,
   Key,
   RollEntry,
+  BinarySlot,
+  Slot,
   SlotOperator,
   UnlockDefinition,
   UnlockEffect,
@@ -108,12 +110,22 @@ const isEuclidLiteralOperator = (operator: SlotOperator): boolean => operator ==
 const formatAlgebraicOperator = (operator: SlotOperator): string =>
   isEuclidLiteralOperator(operator) ? operator : formatOperatorForDisplay(operator);
 
+const formatUnarySlotOperator = (operator: Extract<Slot, { kind: "unary" }>["operator"]): string => {
+  if (operator === "-n") {
+    return "\u00B1";
+  }
+  if (operator === "--") {
+    return "\u2212\u2212";
+  }
+  return operator;
+};
+
 export const formatKeyLabel = (key: Key): string => {
   if (key === "pi") {
     return "\u03C0";
   }
   if (key === "UNDO") {
-    return "\u21BA";
+    return "\u2936";
   }
   if (key === "\u23EF") {
     return "\u25BA";
@@ -134,10 +146,10 @@ export const formatKeyLabel = (key: Key): string => {
     return "\u00B1";
   }
   if (key === "--") {
-    return "\u2212 \u2212";
+    return "\u2212\u2212";
   }
   if (key === "++") {
-    return "+ +";
+    return "++";
   }
   if (key === "*" || key === "/") {
     return formatOperatorForDisplay(key);
@@ -177,7 +189,9 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   }
 
   const filledTokens = state.calculator.operationSlots.map(
-    (slot) => `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand))} ]`,
+    (slot) => slot.kind === "unary"
+      ? `[ ${formatUnarySlotOperator(slot.operator)} ]`
+      : `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand))} ]`,
   );
   if (state.calculator.draftingSlot) {
     const operand = state.calculator.draftingSlot.operandInput
@@ -223,7 +237,7 @@ const normalizeDraftOperandText = (drafting: NonNullable<GameState["calculator"]
   return { value: signedValue, incomplete: false };
 };
 
-const toExpressionOperandText = (operand: GameState["calculator"]["operationSlots"][number]["operand"]): string =>
+const toExpressionOperandText = (operand: BinarySlot["operand"]): string =>
   typeof operand === "bigint" ? operand.toString() : expressionToDisplayString(slotOperandToExpression(operand));
 
 export const buildFunctionRecurrenceDisplay = (
@@ -235,6 +249,12 @@ export const buildFunctionRecurrenceDisplay = (
   let containsEuclidLiteral = false;
 
   for (const slot of state.calculator.operationSlots) {
+    if (!("operand" in slot)) {
+      const unaryDisplay = formatUnarySlotOperator(slot.operator);
+      displayAccumulator = `(${displayAccumulator} ${unaryDisplay})`;
+      expressionAccumulator = `(${expressionAccumulator}${slot.operator})`;
+      continue;
+    }
     const operandText = toExpressionOperandText(slot.operand);
     const displayOperator = formatAlgebraicOperator(slot.operator);
     displayAccumulator = `(${displayAccumulator} ${displayOperator} ${operandText})`;

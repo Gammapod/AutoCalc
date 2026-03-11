@@ -28,8 +28,9 @@ import type {
 } from "../../domain/types.js";
 
 export type SerializableSlot = {
+  kind?: "binary" | "unary";
   operator: Slot["operator"];
-  operand: string;
+  operand?: string;
 };
 
 export type SerializableStateV1 = {
@@ -223,8 +224,10 @@ export type SerializableStateV14 = SerializableStateV13;
 
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN|[A-Za-z0-9_()+\-*/\s]+)$/;
-const SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡"];
-const DRAFTING_OPERATOR_VALUES = SLOT_OPERATOR_VALUES;
+const BINARY_SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡", "\u21BA", "\u2A51", "\u2A52"];
+const UNARY_SLOT_OPERATOR_VALUES: Slot["operator"][] = ["++", "--", "-n", "\u03C3", "\u03C6", "\u03A9"];
+const SLOT_OPERATOR_VALUES: Slot["operator"][] = [...BINARY_SLOT_OPERATOR_VALUES, ...UNARY_SLOT_OPERATOR_VALUES];
+const DRAFTING_OPERATOR_VALUES = BINARY_SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "pi", "e"] as const;
 const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190"] as const;
@@ -232,7 +235,7 @@ const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] a
 const STEP_KEY_VALUES = ["\u23EF"] as const;
 const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "𝚷𝑝^𝑒", "CIRCLE", "\u03BB", "ALG"] as const;
 const EXEC_KEY_VALUES = ["="] as const;
-const UNARY_OPERATOR_KEY_VALUES = ["++", "--", "-n"] as const;
+const UNARY_OPERATOR_KEY_VALUES = ["++", "--", "-n", "\u03C3", "\u03C6", "\u03A9"] as const;
 const MEMORY_VARIABLE_VALUES: readonly MemoryVariable[] = ["α", "β", "γ"];
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
@@ -274,6 +277,10 @@ const isRationalString = (value: unknown): value is string => isString(value) &&
 const isCalculatorValueString = (value: unknown): value is string => isString(value) && CALCULATOR_VALUE_RE.test(value);
 const isSlotOperator = (value: unknown): value is Slot["operator"] =>
   isString(value) && SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
+const isBinarySlotOperator = (value: unknown): value is Slot["operator"] =>
+  isString(value) && BINARY_SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
+const isUnarySlotOperator = (value: unknown): value is Slot["operator"] =>
+  isString(value) && UNARY_SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
 const isKnownKey = (value: unknown): value is Key => isString(value) && KEY_VALUES.includes(value as Key);
 const isMemoryVariable = (value: unknown): value is MemoryVariable =>
   isString(value) && MEMORY_VARIABLE_VALUES.includes(value as MemoryVariable);
@@ -380,12 +387,17 @@ const hasOnlyKnownKeypadCells = (cells: unknown): cells is KeypadCellRecord[] =>
 
 const isDraftingSlot = (value: unknown): value is DraftingSlot =>
   isObject(value) &&
-  isSlotOperator(value.operator) &&
+  isBinarySlotOperator(value.operator) &&
   isString(value.operandInput) &&
   isBoolean(value.isNegative);
 
 const isSerializableSlot = (value: unknown): value is SerializableSlot =>
-  isObject(value) && isSlotOperator(value.operator) && isString(value.operand);
+  isObject(value) &&
+  isSlotOperator(value.operator) &&
+  (
+    (value.kind === "unary" && isUnarySlotOperator(value.operator) && value.operand === undefined)
+    || ((value.kind === undefined || value.kind === "binary") && isBinarySlotOperator(value.operator) && isString(value.operand))
+  );
 
 const defaultUnlocks = (): UnlockState => initialState().unlocks;
 
@@ -956,7 +968,7 @@ const toSerializableInitialV12 = (): SerializableStateV12 => migrateV11ToV12(toS
 const toSerializableInitialV13 = (): SerializableStateV13 => migrateV12ToV13(toSerializableInitialV12());
 const toSerializableInitialV14 = (): SerializableStateV14 => migrateV13ToV14(toSerializableInitialV13());
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 =>
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 =>
   version === 1 ||
   version === 2 ||
   version === 3 ||
@@ -972,7 +984,8 @@ export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4
   version === 13 ||
   version === 14 ||
   version === 15 ||
-  version === 16;
+  version === 16 ||
+  version === 17;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -1685,7 +1698,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     };
     return validateSerializableStateV13(normalizedV13) ? migrateV13ToV14(normalizedV13) : null;
   }
-  if (schemaVersion === 14 || schemaVersion === 15 || schemaVersion === 16) {
+  if (schemaVersion === 14 || schemaVersion === 15 || schemaVersion === 16 || schemaVersion === 17) {
     const asV14 = state as SerializableStateV14;
     const buttonFlags = withDefaultButtonFlags(normalizeButtonFlags(asV14.ui?.buttonFlags));
     const normalizedV14: SerializableStateV14 = {

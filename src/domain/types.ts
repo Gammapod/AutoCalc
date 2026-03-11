@@ -7,9 +7,11 @@ import type {
 } from "./buttonRegistry.js";
 
 export type Digit = Extract<ButtonKeyByBehaviorKind<"digit">, "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9">;
-export type SlotOperator = ButtonKeyByUnlockGroup<"slotOperators">;
+export type BinarySlotOperator = ButtonKeyByUnlockGroup<"slotOperators">;
 export type UnaryOperatorKey = ButtonKeyByUnlockGroup<"unaryOperators">;
 export type UnaryOperator = UnaryOperatorKey;
+export type UnarySlotOperator = UnaryOperator;
+export type SlotOperator = BinarySlotOperator | UnarySlotOperator;
 export type ValueAtomKey = ButtonKeyByUnlockGroup<"valueAtoms">;
 export type ValueComposeKey = ButtonKeyByUnlockGroup<"valueCompose">;
 export type ValueExpressionKey = ValueAtomKey | ValueComposeKey;
@@ -61,10 +63,18 @@ export type ToggleFlagButtonBehavior = {
 
 export type KeyButtonBehavior = PressKeyButtonBehavior | ToggleFlagButtonBehavior;
 
-export type Slot = {
-  operator: SlotOperator;
+export type BinarySlot = {
+  kind?: "binary";
+  operator: BinarySlotOperator;
   operand: SlotOperand;
 };
+
+export type UnarySlot = {
+  kind: "unary";
+  operator: UnarySlotOperator;
+};
+
+export type Slot = BinarySlot | UnarySlot;
 
 export type RationalValue = {
   num: bigint;
@@ -170,7 +180,7 @@ export type RollEntry = {
 export type RollDomainType = "natural" | "non_positive_integer" | "rational_non_integer";
 
 export type DraftingSlot = {
-  operator: SlotOperator;
+  operator: BinarySlotOperator;
   operandInput: string;
   isNegative: boolean;
 };

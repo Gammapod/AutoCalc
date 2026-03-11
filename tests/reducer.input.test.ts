@@ -138,13 +138,51 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(lockedUnaryNoOp, initialState(), "locked unary key is a no-op");
 
   const unaryPlus = applyKeyAction(fullyUnlocked, "++");
-  assert.deepEqual(unaryPlus.calculator.draftingSlot, { operator: "+", operandInput: "1", isNegative: false }, "++ inserts [+ 1] drafting pair");
+  assert.deepEqual(unaryPlus.calculator.operationSlots, [{ kind: "unary", operator: "++" }], "++ appends unary slot");
+  assert.equal(unaryPlus.calculator.draftingSlot, null, "++ does not create drafting slot");
 
   const unaryMinus = applyKeyAction(fullyUnlocked, "--");
-  assert.deepEqual(unaryMinus.calculator.draftingSlot, { operator: "-", operandInput: "1", isNegative: false }, "-- inserts [- 1] drafting pair");
+  assert.deepEqual(unaryMinus.calculator.operationSlots, [{ kind: "unary", operator: "--" }], "-- appends unary slot");
 
   const unaryNegate = applyKeyAction(fullyUnlocked, "-n");
-  assert.deepEqual(unaryNegate.calculator.draftingSlot, { operator: "*", operandInput: "1", isNegative: true }, "-n inserts [* -1] drafting pair");
+  assert.deepEqual(unaryNegate.calculator.operationSlots, [{ kind: "unary", operator: "-n" }], "-n appends unary slot");
+
+  const unaryAfterFilledDrafting = applyKeyAction(
+    applyKeyAction(
+      applyKeyAction(fullyUnlocked, "5"),
+      "-",
+    ),
+    "2",
+  );
+  const unaryAfterFilledDraftingResult = applyKeyAction(unaryAfterFilledDrafting, "++");
+  assert.deepEqual(
+    unaryAfterFilledDraftingResult.calculator.operationSlots,
+    [{ kind: "binary", operator: "-", operand: 2n }, { kind: "unary", operator: "++" }],
+    "unary after filled draft commits binary draft first, then appends unary slot",
+  );
+  assert.equal(unaryAfterFilledDraftingResult.calculator.draftingSlot, null, "unary after filled draft clears drafting slot");
+
+  const unaryAfterEmptyDrafting = applyKeyAction(
+    applyKeyAction(fullyUnlocked, "5"),
+    "-",
+  );
+  const unaryAfterEmptyDraftingResult = applyKeyAction(unaryAfterEmptyDrafting, "++");
+  assert.deepEqual(
+    unaryAfterEmptyDraftingResult.calculator.operationSlots,
+    [{ kind: "unary", operator: "++" }],
+    "unary after empty draft discards draft and appends unary slot",
+  );
+  const digitAfterUnaryWithNoDraft = applyKeyAction(unaryAfterEmptyDraftingResult, "2");
+  assert.deepEqual(
+    digitAfterUnaryWithNoDraft.calculator.total,
+    r(5n),
+    "digit after unary without drafting does not edit seed total",
+  );
+  assert.deepEqual(
+    digitAfterUnaryWithNoDraft.calculator.operationSlots,
+    [{ kind: "unary", operator: "++" }],
+    "digit after unary without drafting keeps unary slot unchanged",
+  );
 
   const activeRollUnarySource: GameState = {
     ...fullyUnlocked,
@@ -159,9 +197,9 @@ export const runReducerInputTests = (): void => {
   const activeRollUnary = applyKeyAction(activeRollUnarySource, "++");
   assert.equal(activeRollUnary.calculator.rollEntries.length, 0, "unary key clears active roll before insertion");
   assert.deepEqual(
-    activeRollUnary.calculator.draftingSlot,
-    { operator: "+", operandInput: "1", isNegative: false },
-    "unary key applies insertion after roll clear",
+    activeRollUnary.calculator.operationSlots,
+    [{ kind: "unary", operator: "++" }],
+    "unary key appends unary slot after roll clear",
   );
 
   const moduloExecutionSource: GameState = {
@@ -185,6 +223,84 @@ export const runReducerInputTests = (): void => {
     { sign: 1, numerator: [{ prime: 2n, exponent: 1 }], denominator: [] },
     "rational roll result stores factorization payload",
   );
+
+  const rotateExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(12345n),
+      operationSlots: [{ operator: "\u21BA", operand: -2n }],
+    },
+  };
+  const afterRotateExecution = applyKeyAction(rotateExecutionSource, "=");
+  assert.deepEqual(afterRotateExecution.calculator.total, r(45123n), "rotate-left supports negative shift as right rotation");
+
+  const gcdExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(12n),
+      operationSlots: [{ operator: "\u2A51", operand: 18n }],
+    },
+  };
+  const afterGcdExecution = applyKeyAction(gcdExecutionSource, "=");
+  assert.deepEqual(afterGcdExecution.calculator.total, r(6n), "gcd operator returns greatest common divisor");
+
+  const lcmExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(12n),
+      operationSlots: [{ operator: "\u2A52", operand: 18n }],
+    },
+  };
+  const afterLcmExecution = applyKeyAction(lcmExecutionSource, "=");
+  assert.deepEqual(afterLcmExecution.calculator.total, r(36n), "lcm operator returns least common multiple");
+
+  const sigmaExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(6n),
+      operationSlots: [{ kind: "unary", operator: "\u03C3" }],
+    },
+  };
+  const afterSigmaExecution = applyKeyAction(sigmaExecutionSource, "=");
+  assert.deepEqual(afterSigmaExecution.calculator.total, r(12n), "sigma unary returns sum of divisors");
+
+  const phiExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(13n),
+      operationSlots: [{ kind: "unary", operator: "\u03C6" }],
+    },
+  };
+  const afterPhiExecution = applyKeyAction(phiExecutionSource, "=");
+  assert.deepEqual(afterPhiExecution.calculator.total, r(12n), "phi unary returns Euler totient");
+
+  const omegaExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(153n),
+      operationSlots: [{ kind: "unary", operator: "\u03A9" }],
+    },
+  };
+  const afterOmegaExecution = applyKeyAction(omegaExecutionSource, "=");
+  assert.deepEqual(afterOmegaExecution.calculator.total, r(3n), "omega unary returns prime factors with multiplicity");
+
+  const sigmaZeroExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(0n),
+      operationSlots: [{ kind: "unary", operator: "\u03C3" }],
+    },
+  };
+  const afterSigmaZeroExecution = applyKeyAction(sigmaZeroExecutionSource, "=");
+  assert.deepEqual(afterSigmaZeroExecution.calculator.total, toNanCalculatorValue(), "sigma at zero returns NaN");
+  assert.equal(afterSigmaZeroExecution.calculator.rollEntries.at(-1)?.error?.code, "NaN", "sigma at zero records NaN input error");
 
   const symbolicPiCancellationSource: GameState = {
     ...fullyUnlocked,

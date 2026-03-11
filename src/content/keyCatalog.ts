@@ -35,7 +35,7 @@ export type KeyHandlerOverrideId =
   | "memory_adjust_plus"
   | "memory_adjust_minus"
   | "execute_equals"
-  | "unary_operator_insert_pair";
+  | "unary_operator_commit_slot";
 
 export type KeyTrait =
   | "counts_press"
@@ -45,6 +45,9 @@ export type KeyTrait =
   | "can_divide"
   | "can_euclid_divide"
   | "can_remainder"
+  | "can_rotate_digits"
+  | "can_gcd"
+  | "can_lcm"
   | "can_reset"
   | "can_undo"
   | "is_digit"
@@ -88,9 +91,15 @@ export const keyCatalog = [
   { key: "/", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_divide"]) },
   { key: "#", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_euclid_divide"]) },
   { key: "\u27E1", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_remainder"]) },
-  { key: "++", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_insert_pair" },
-  { key: "--", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_insert_pair" },
-  { key: "-n", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_insert_pair" },
+  { key: "\u21BA", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_rotate_digits"]) },
+  { key: "\u2A51", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_gcd"]) },
+  { key: "\u2A52", category: "slot_operator", unlockGroup: "slotOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "operator", inputFamily: "operator_slot", valueRole: "none", traits: withBaseTraits(["can_form_slot", "can_lcm"]) },
+  { key: "++", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_commit_slot" },
+  { key: "--", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_commit_slot" },
+  { key: "-n", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_commit_slot" },
+  { key: "\u03C3", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_commit_slot" },
+  { key: "\u03C6", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_commit_slot" },
+  { key: "\u03A9", category: "unary_operator", unlockGroup: "unaryOperators", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "unary_operator", inputFamily: "compose_unary", valueRole: "unary_compose", traits: withBaseTraits(["can_form_slot"]), handlerOverrideId: "unary_operator_commit_slot" },
   { key: "C", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits(["can_reset"]), handlerOverrideId: "utility_clear_all" },
   { key: "CE", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "utility_clear_entry" },
   { key: "\u2190", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "utility_backspace" },

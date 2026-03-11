@@ -30,7 +30,20 @@ import {
 } from "./state.js";
 import { isDigitKey, isOperatorKey, isUnaryOperatorKey } from "./buttonRegistry.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
-import type { Digit, ErrorCode, ExecKey, ExecutionErrorKind, ExpressionConstant, GameState, Key, RationalValue, RollEntry, SlotOperator, UnaryOperator } from "./types.js";
+import type {
+  BinarySlotOperator,
+  Digit,
+  ErrorCode,
+  ExecKey,
+  ExecutionErrorKind,
+  ExpressionConstant,
+  GameState,
+  Key,
+  RationalValue,
+  RollEntry,
+  BinarySlot,
+  UnaryOperator,
+} from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 import { applyMemoryAdjust, cycleMemoryVariable, isMemoryKey, resolveMemoryRecallDigit } from "./memoryController.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
@@ -83,7 +96,7 @@ const withBuilderPatchApplied = (
   },
 });
 
-const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
+const applyOperator = (state: GameState, operator: BinarySlotOperator): GameState => {
   if (!state.unlocks.slotOperators[operator]) {
     return state;
   }
@@ -104,37 +117,35 @@ const applyOperator = (state: GameState, operator: SlotOperator): GameState => {
   return applyUnlocks(withBuilderPatchApplied(state, nextPatch), unlockCatalog);
 };
 
-const toUnaryOperatorMapping = (key: UnaryOperator): { operator: SlotOperator; operandInput: string; isNegative: boolean } => {
-  if (key === "++") {
-    return { operator: "+", operandInput: "1", isNegative: false };
-  }
-  if (key === "--") {
-    return { operator: "-", operandInput: "1", isNegative: false };
-  }
-  return { operator: "*", operandInput: "1", isNegative: true };
-};
-
 const applyUnaryOperator = (state: GameState, key: UnaryOperator): GameState => {
   if (!state.unlocks.unaryOperators[key]) {
     return state;
   }
-  const unary = toUnaryOperatorMapping(key);
-  const builder = fromCalculator(state.calculator);
-  const nextBuilder = applyOperatorInput(builder, unary.operator, {
-    maxSlots: state.unlocks.maxSlots,
-    maxOperandDigits: 1,
-  });
-  if (!nextBuilder.draftingSlot) {
+  let baseOperationSlots = state.calculator.operationSlots;
+  let nextDraftingSlot = state.calculator.draftingSlot;
+
+  if (state.calculator.draftingSlot) {
+    if (state.calculator.draftingSlot.operandInput !== "") {
+      const committedDraft = finalizeDrafting(fromCalculator(state.calculator));
+      if (committedDraft.draftingSlot !== null) {
+        return state;
+      }
+      baseOperationSlots = committedDraft.operationSlots;
+      nextDraftingSlot = null;
+    } else {
+      // Unary slots are terminal/committed entries, so an empty binary draft is discarded.
+      nextDraftingSlot = null;
+    }
+  }
+
+  if (baseOperationSlots.length >= state.unlocks.maxSlots) {
     return state;
   }
-  const nextPatch = toCalculatorPatch({
-    operationSlots: nextBuilder.operationSlots,
-    draftingSlot: {
-      ...nextBuilder.draftingSlot,
-      operandInput: unary.operandInput,
-      isNegative: unary.isNegative,
-    },
-  });
+
+  const nextPatch = {
+    operationSlots: [...baseOperationSlots, { kind: "unary" as const, operator: key }],
+    draftingSlot: nextDraftingSlot,
+  };
   if (
     nextPatch.operationSlots === state.calculator.operationSlots
     && nextPatch.draftingSlot === state.calculator.draftingSlot
@@ -176,11 +187,12 @@ const applyConstantValue = (state: GameState, constant: ExpressionConstant): Gam
   if (builder.operationSlots.length > 0) {
     const operationSlots = [...builder.operationSlots];
     const slotIndex = operationSlots.length - 1;
-    if (isNaturalDivisorOperator(operationSlots[slotIndex].operator)) {
+    const target = operationSlots[slotIndex];
+    if (target.kind !== "binary" || isNaturalDivisorOperator(target.operator)) {
       return state;
     }
     operationSlots[slotIndex] = {
-      ...operationSlots[slotIndex],
+      ...target,
       operand: constant === "e" ? { type: "constant", value: "e" } : { type: "constant", value: "pi" },
     };
     return applyUnlocks(withBuilderPatchApplied(state, { operationSlots, draftingSlot: null }), unlockCatalog);
@@ -220,6 +232,9 @@ const applyDigitValue = (state: GameState, digit: Digit): GameState => {
     || nextPatch.draftingSlot !== state.calculator.draftingSlot
   ) {
     return applyUnlocks(withBuilderPatchApplied(state, nextPatch), unlockCatalog);
+  }
+  if (state.calculator.draftingSlot !== null || state.calculator.operationSlots.length > 0) {
+    return state;
   }
 
   const nextTotalMagnitudeInput = getNextTotalMagnitudeInput(state, digit);
@@ -294,8 +309,12 @@ const toSymbolicExecution = (exprText: string, renderText: string = exprText): E
 const buildBuilderExpressionSignature = (slots: GameState["calculator"]["operationSlots"]): string => {
   let signature = "f_n(x)";
   for (const slot of slots) {
-    const operand = typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand));
-    signature = `(${signature}${slot.operator}${operand})`;
+    if (slot.kind === "unary") {
+      signature = `(${signature}${slot.operator})`;
+    } else {
+      const operand = typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand));
+      signature = `(${signature}${slot.operator}${operand})`;
+    }
   }
   return signature;
 };
@@ -467,7 +486,7 @@ const applyBackspace = (state: GameState): GameState => {
     return state;
   }
 
-  const slotToDrafting = (slot: { operator: SlotOperator; operand: GameState["calculator"]["operationSlots"][number]["operand"] }) => {
+  const slotToDrafting = (slot: BinarySlot) => {
     if (typeof slot.operand === "bigint") {
       return {
         operator: slot.operator,
@@ -523,6 +542,15 @@ const applyBackspace = (state: GameState): GameState => {
 
     if (state.calculator.operationSlots.length > 0) {
       const priorCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
+      if (!("operand" in priorCommitted)) {
+        return applyUnlocks(
+          withBuilderPatchApplied(state, {
+            operationSlots: state.calculator.operationSlots.slice(0, -1),
+            draftingSlot: null,
+          }),
+          unlockCatalog,
+        );
+      }
       return applyUnlocks(
         withBuilderPatchApplied(state, {
           operationSlots: state.calculator.operationSlots.slice(0, -1),
@@ -543,6 +571,15 @@ const applyBackspace = (state: GameState): GameState => {
 
   if (state.calculator.operationSlots.length > 0) {
     const lastCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
+    if (!("operand" in lastCommitted)) {
+      return applyUnlocks(
+        withBuilderPatchApplied(state, {
+          operationSlots: state.calculator.operationSlots.slice(0, -1),
+          draftingSlot: null,
+        }),
+        unlockCatalog,
+      );
+    }
     const restoredDrafting = slotToDrafting(lastCommitted);
     const trimmedInput = /^\d+$/.test(restoredDrafting.operandInput) ? restoredDrafting.operandInput.slice(0, -1) : "";
     return applyUnlocks(
@@ -607,7 +644,7 @@ const applyUndo = (state: GameState): GameState => {
 
 const isDigit = (key: Key): key is Digit => isDigitKey(key) && isNumericDigit(key);
 const isValueAtomDigit = (key: Key): key is Key => isDigitKey(key);
-const isOperator = (key: Key): key is SlotOperator => isOperatorKey(key);
+const isOperator = (key: Key): key is BinarySlotOperator => isOperatorKey(key);
 const isUnaryOperator = (key: Key): key is UnaryOperator => isUnaryOperatorKey(key);
 
 const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {

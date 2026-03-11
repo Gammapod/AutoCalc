@@ -1,6 +1,6 @@
 import { toCommittedDraftingSlot } from "./slotDrafting.js";
 import { slotOperandToExpression } from "./expression.js";
-import type { CalculatorState, Digit, DraftingSlot, Slot, SlotOperator } from "./types.js";
+import type { BinarySlot, BinarySlotOperator, CalculatorState, Digit, DraftingSlot, Slot } from "./types.js";
 
 export type FunctionBuilderState = {
   operationSlots: Slot[];
@@ -12,7 +12,7 @@ export type FunctionBuilderLimits = {
   maxOperandDigits: number;
 };
 
-const isNaturalDivisorOperator = (operator: SlotOperator): boolean => operator === "#" || operator === "\u27E1";
+const isNaturalDivisorOperator = (operator: BinarySlotOperator): boolean => operator === "#" || operator === "\u27E1";
 
 const withDigit = (source: string, digit: Digit): string => {
   if (source === "0") {
@@ -38,7 +38,7 @@ export const toCalculatorPatch = (
 
 export const applyOperatorInput = (
   builder: FunctionBuilderState,
-  operator: SlotOperator,
+  operator: BinarySlotOperator,
   limits: FunctionBuilderLimits,
 ): FunctionBuilderState => {
   const draftingSlot = builder.draftingSlot;
@@ -131,6 +131,9 @@ export const applyDigitInput = (
   const nextMagnitude = BigInt(digit);
   const slotIndex = builder.operationSlots.length - 1;
   const currentSlot = builder.operationSlots[slotIndex];
+  if (!("operand" in currentSlot)) {
+    return builder;
+  }
   const nextOperand =
     isNaturalDivisorOperator(currentSlot.operator)
       ? nextMagnitude
@@ -172,6 +175,9 @@ export const applyNegateInput = (builder: FunctionBuilderState): FunctionBuilder
 
   const slotIndex = builder.operationSlots.length - 1;
   const currentSlot = builder.operationSlots[slotIndex];
+  if (!("operand" in currentSlot)) {
+    return builder;
+  }
   if (isNaturalDivisorOperator(currentSlot.operator)) {
     return builder;
   }
@@ -179,7 +185,7 @@ export const applyNegateInput = (builder: FunctionBuilderState): FunctionBuilder
     return builder;
   }
   const operationSlots = [...builder.operationSlots];
-  const nextOperand: Slot["operand"] =
+  const nextOperand: BinarySlot["operand"] =
     typeof currentSlot.operand === "bigint"
       ? -currentSlot.operand
       : (currentSlot.operand.type === "unary" && currentSlot.operand.op === "neg")
