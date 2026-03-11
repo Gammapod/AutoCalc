@@ -38,7 +38,7 @@ const createScenarioState = (): GameState => {
       storageLayout: [
         { kind: "key", key: "CE" },
         { kind: "key", key: "=" },
-        { kind: "key", key: "\u23EF" },
+        { kind: "key", key: "C" },
         ...base.ui.storageLayout.slice(3),
       ],
     },
@@ -86,18 +86,10 @@ export const runLayoutRulesEquivalenceTests = (): void => {
   );
 
   const reducerMoveRejected = applyMoveLayoutCell(state, "storage", 2, "keypad", 4);
-  assert.equal(
-    reducerMoveRejected,
-    state,
-    "reducer move rejects same scenario when shared evaluator rejects step-to-bottom-row move",
-  );
+  assert.notEqual(reducerMoveRejected, state, "reducer move accepts regular key move into keypad bottom row");
 
   const reducerSwapRejected = applySwapLayoutCells(state, "storage", 2, "keypad", 3);
-  assert.equal(
-    reducerSwapRejected,
-    state,
-    "reducer swap rejects same scenario when shared evaluator rejects step-to-bottom-row swap",
-  );
+  assert.notEqual(reducerSwapRejected, state, "reducer swap accepts regular key swap into keypad bottom row");
 
   const reducerAllowsLockedKeypadDestination = applySwapLayoutCells(
     lockedKeypadDestination,

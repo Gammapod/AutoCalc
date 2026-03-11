@@ -108,7 +108,6 @@ export const runKeyUnlocksTests = (): void => {
   assert.equal(isKeyUnlocked(base, "++"), false, "unary-operator key starts locked");
   assert.equal(isKeyUnlocked(base, "\u2190"), false, "backspace utility key starts locked");
   assert.equal(isKeyUnlocked(base, "M+"), false, "memory key starts locked");
-  assert.equal(isKeyUnlocked(base, "\u23EF"), false, "step key starts locked");
   assert.equal(isKeyUnlocked(base, "GRAPH"), false, "visualizer key starts locked");
   assert.equal(isKeyUnlocked(base, "CIRCLE"), true, "circle visualizer key starts unlocked");
   assert.equal(isKeyUnlocked(base, "="), true, "execution key starts unlocked");
@@ -125,9 +124,6 @@ export const runKeyUnlocksTests = (): void => {
   assert.equal(isKeyUnlocked(utilityUnlocked, "C"), true, "utility unlock is routed correctly");
   const backspaceUnlocked = withUnlock(base, "utilities", "\u2190");
   assert.equal(isKeyUnlocked(backspaceUnlocked, "\u2190"), true, "backspace utility unlock is routed correctly");
-
-  const stepUnlocked = withUnlock(base, "steps", "\u23EF");
-  assert.equal(isKeyUnlocked(stepUnlocked, "\u23EF"), true, "step unlock is routed correctly");
 
   const memoryUnlocked = withUnlock(base, "memory", "M+");
   assert.equal(isKeyUnlocked(memoryUnlocked, "M+"), true, "memory unlock is routed correctly");

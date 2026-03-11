@@ -3,6 +3,7 @@ export {
 } from "./input/dragDrop.js";
 import { keyToVisualizerId } from "../../domain/buttonRegistry.js";
 import type { Action, GameState, KeyButtonBehavior, KeyCell, VisualizerId } from "../../domain/types.js";
+import { AUTO_EQUALS_FLAG } from "../../domain/state.js";
 import { formatKeyLabel } from "../shared/readModel.js";
 
 const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
@@ -40,9 +41,14 @@ export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => 
   return behavior.type === "toggle_flag" ? getButtonFlag(state, behavior.flag) : false;
 };
 
+export const isAutoEqualsToggleCell = (cell: KeyCell): boolean => {
+  const behavior = getKeyButtonBehavior(cell);
+  return behavior.type === "toggle_flag" && behavior.flag === AUTO_EQUALS_FLAG;
+};
+
 export const formatKeyCellLabel = (state: GameState, cell: KeyCell): string => {
-  if (cell.key === "\u23EF") {
-    return isToggleFlagActive(state, cell) ? "\u275A\u275A" : "\u25BA";
+  if (isAutoEqualsToggleCell(cell)) {
+    return isToggleFlagActive(state, cell) ? "\u275A\u275A" : "\u25B6";
   }
   return formatKeyLabel(cell.key);
 };

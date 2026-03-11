@@ -1,8 +1,7 @@
 import { AUTO_EQUALS_FLAG } from "../domain/state.js";
-import { keyToVisualizerId } from "../domain/buttonRegistry.js";
 import { getOperationSnapshot } from "../domain/slotDrafting.js";
 import { getAutoEqualsRateMultiplier as getLambdaAutoEqualsRateMultiplier } from "../domain/lambdaControl.js";
-import type { ExecKey, GameState, Key, KeyCell, Store, VisualizerId } from "../domain/types.js";
+import type { ExecKey, GameState, Key, Store } from "../domain/types.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
 export const AUTO_EQUALS_POINT_BONUS = 0.01;
@@ -20,8 +19,7 @@ export type AutoEqualsSchedulerOptions = {
   dispatchAction?: (
     action:
       | { type: "PRESS_KEY"; key: Key }
-      | { type: "TOGGLE_FLAG"; flag: string }
-      | { type: "TOGGLE_VISUALIZER"; visualizer: VisualizerId },
+      | { type: "TOGGLE_FLAG"; flag: string },
   ) => void;
   onAutoKeyActivated?: (key: Key) => void;
 };
@@ -34,7 +32,6 @@ const defaultTimers: TimerApi = {
 const isAutoEqualsEnabled = (state: GameState): boolean => Boolean(state.ui.buttonFlags[AUTO_EQUALS_FLAG]);
 const hasValidEquation = (state: GameState): boolean => getOperationSnapshot(state.calculator).length > 0;
 const EXECUTOR_KEYS: readonly ExecKey[] = ["="];
-const PLAY_PAUSE_KEY = "\u23EF";
 
 const getAutoEqualsRateMultiplier = (state: GameState): number => {
   return getLambdaAutoEqualsRateMultiplier(state.lambdaControl);
@@ -54,44 +51,12 @@ const getInstalledExecutorKey = (state: GameState): ExecKey | null => {
   return null;
 };
 
-const getDefaultVisualizerForCell = (cell: KeyCell): VisualizerId | null => keyToVisualizerId(cell.key);
-
-const resolveCellAction = (
-  cell: KeyCell,
-):
-  | { type: "PRESS_KEY"; key: Key }
-  | { type: "TOGGLE_FLAG"; flag: string }
-  | { type: "TOGGLE_VISUALIZER"; visualizer: VisualizerId } => {
-  if (cell.behavior?.type === "toggle_flag") {
-    return { type: "TOGGLE_FLAG", flag: cell.behavior.flag };
-  }
-  const defaultVisualizer = getDefaultVisualizerForCell(cell);
-  if (defaultVisualizer) {
-    return { type: "TOGGLE_VISUALIZER", visualizer: defaultVisualizer };
-  }
-  return { type: "PRESS_KEY", key: cell.key };
-};
-
 type AutoActionPlan = {
-  action:
-    | { type: "PRESS_KEY"; key: Key }
-    | { type: "TOGGLE_FLAG"; flag: string }
-    | { type: "TOGGLE_VISUALIZER"; visualizer: VisualizerId };
+  action: { type: "PRESS_KEY"; key: Key };
   key: Key;
 };
 
 const getAutoActionPlan = (state: GameState): AutoActionPlan | null => {
-  const columns = Math.max(1, state.ui.keypadColumns || 1);
-  const playPauseIndex = state.ui.keyLayout.findIndex((cell) => cell.kind === "key" && cell.key === PLAY_PAUSE_KEY);
-  if (playPauseIndex >= 0) {
-    const belowIndex = playPauseIndex + columns;
-    if (belowIndex >= 0 && belowIndex < state.ui.keyLayout.length) {
-      const belowCell = state.ui.keyLayout[belowIndex];
-      if (belowCell.kind === "key") {
-        return { action: resolveCellAction(belowCell), key: belowCell.key };
-      }
-    }
-  }
   const fallbackExecutorKey = getInstalledExecutorKey(state);
   return fallbackExecutorKey ? { action: { type: "PRESS_KEY", key: fallbackExecutorKey }, key: fallbackExecutorKey } : null;
 };

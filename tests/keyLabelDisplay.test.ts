@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { formatKeyCellLabel } from "../src/ui/modules/calculatorStorageCore.js";
 import { formatKeyLabel } from "../src/ui/shared/readModel.js";
-import { initialState } from "../src/domain/state.js";
-import type { GameState, KeyCell } from "../src/domain/types.js";
+import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 
 export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel("*"), "\u00D7", "mul key label renders as \u00D7");
@@ -11,7 +10,6 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel("\u27E1"), "\u27E1", "modulo key label renders as \u27E1");
   assert.equal(formatKeyLabel("UNDO"), "\u2936", "undo key label renders as \u2936");
   assert.equal(formatKeyLabel("\u2190"), "\u2190", "backspace key label remains left arrow");
-  assert.equal(formatKeyLabel("\u23EF"), "\u25BA", "play/pause key defaults to play icon");
   assert.equal(formatKeyLabel("+"), "+", "plus key label remains +");
   assert.equal(formatKeyLabel("="), "=", "equals key label remains =");
   assert.equal(formatKeyLabel("1"), "1", "digit label remains literal");
@@ -20,22 +18,20 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel("CIRCLE"), "\u25EF", "CIRCLE key label renders as open circle");
 
   const base = initialState();
-  const pauseToggleCell: KeyCell = {
-    kind: "key",
-    key: "\u23EF",
-    behavior: { type: "toggle_flag", flag: "execution.pause" },
-  };
-  assert.equal(formatKeyCellLabel(base, pauseToggleCell), "\u25BA", "untoggled play/pause key renders play icon");
+  const equalsCell = { kind: "key", key: "=" } as const;
+  assert.equal(formatKeyCellLabel(base, equalsCell), "=", "cell label delegates to key label rendering");
 
-  const toggled: GameState = {
+  const autoEqualsToggleCell = { kind: "key", key: "=", behavior: { type: "toggle_flag" as const, flag: AUTO_EQUALS_FLAG } } as const;
+  assert.equal(formatKeyCellLabel(base, autoEqualsToggleCell), "\u25B6", "auto-equals toggle key renders play icon while off");
+  const withAutoOn = {
     ...base,
     ui: {
       ...base.ui,
       buttonFlags: {
         ...base.ui.buttonFlags,
-        "execution.pause": true,
+        [AUTO_EQUALS_FLAG]: true,
       },
     },
   };
-  assert.equal(formatKeyCellLabel(toggled, pauseToggleCell), "\u275A\u275A", "toggled play/pause key renders pause icon");
+  assert.equal(formatKeyCellLabel(withAutoOn, autoEqualsToggleCell), "\u275A\u275A", "auto-equals toggle key renders pause icon while on");
 };

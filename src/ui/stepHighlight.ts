@@ -13,20 +13,8 @@ export type StepBodyHighlightRect = {
 };
 
 export const buildStepBodyHighlightRegions = (state: GameState): StepBodyHighlightRegion[] => {
-  const regions: StepBodyHighlightRegion[] = [];
-  const columns = Math.max(1, state.ui.keypadColumns || 1);
-  for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
-    const cell = state.ui.keyLayout[index];
-    if (cell.kind !== "key" || cell.key !== "\u23EF") {
-      continue;
-    }
-    const belowIndex = index + columns;
-    regions.push({
-      topIndex: index,
-      bottomIndex: belowIndex < state.ui.keyLayout.length ? belowIndex : index,
-    });
-  }
-  return regions;
+  void state;
+  return [];
 };
 
 export const resolveStepBodyHighlightRects = (

@@ -13,7 +13,6 @@ export type KeyPrimaryExpectationKind =
   | "undo_pops_roll"
   | "graph_counts_only"
   | "equals_executes_drafted_plus_one"
-  | "pause_counts_only"
   | "memory_recall_sets_input"
   | "memory_adjusts_allocator";
 
@@ -27,7 +26,6 @@ export type KeyEdgeExpectationKind =
   | "undo_noop_when_roll_empty"
   | "graph_does_not_mutate_calculator_state"
   | "equals_division_by_zero_sets_nan"
-  | "pause_does_not_mutate_calculator_state"
   | "memory_recall_noop_on_active_roll"
   | "memory_adjust_noop_without_budget_or_bounds";
 
@@ -193,12 +191,5 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     lockModel: "always_unlocked",
     primaryExpectation: "equals_executes_drafted_plus_one",
     edgeCaseExpectation: "equals_division_by_zero_sets_nan",
-  },
-  {
-    key: "\u23EF",
-    lockModel: "unlockable",
-    unlockPathPolicy: "none_planned",
-    primaryExpectation: "pause_counts_only",
-    edgeCaseExpectation: "pause_does_not_mutate_calculator_state",
   },
 ];

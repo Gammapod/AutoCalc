@@ -75,18 +75,6 @@ const unlockKey = (state: GameState, key: Key): GameState => {
       },
     };
   }
-  if (key === "\u23EF") {
-    return {
-      ...state,
-      unlocks: {
-        ...state.unlocks,
-        steps: {
-          ...state.unlocks.steps,
-          [key]: true,
-        },
-      },
-    };
-  }
   if (key === "GRAPH" || key === "FEED" || key === "CIRCLE" || key === "\u03BB") {
     return {
       ...state,

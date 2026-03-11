@@ -23,49 +23,33 @@ const withTwoByTwoKeypad = (state: GameState): GameState => ({
       { kind: "key", key: "1" },
       { kind: "key", key: "=" },
     ],
-    storageLayout: [{ kind: "key", key: "\u23EF" }, ...state.ui.storageLayout.slice(1)],
+    storageLayout: [{ kind: "key", key: "C" }, ...state.ui.storageLayout.slice(1)],
   },
 });
 
 export const runLayoutRulesInvariantTests = (): void => {
   const base = withTwoByTwoKeypad(initialState());
 
-  const stepMoveToBottomRow = evaluateLayoutDrop(
+  const moveToBottomRow = evaluateLayoutDrop(
     base,
     { surface: "storage", index: 0 },
     { surface: "keypad", index: 2 },
   );
-  assert.deepEqual(
-    stepMoveToBottomRow,
-    { allowed: false, reason: "step_bottom_row_forbidden" },
-    "step key cannot move into keypad bottom row",
-  );
+  assert.deepEqual(moveToBottomRow, { allowed: true, action: "swap" }, "keys can swap into keypad bottom row");
 
-  const stepMoveToTopRow = evaluateLayoutDrop(
+  const moveToTopRow = evaluateLayoutDrop(
     base,
     { surface: "storage", index: 0 },
     { surface: "keypad", index: 0 },
   );
-  assert.deepEqual(stepMoveToTopRow, { allowed: true, action: "move" }, "step key can move into non-bottom keypad rows");
+  assert.deepEqual(moveToTopRow, { allowed: true, action: "move" }, "keys can move into top row");
 
-  const withStepOnTopRow: GameState = {
-    ...base,
-    ui: {
-      ...base.ui,
-      keyLayout: [{ kind: "key", key: "\u23EF" }, base.ui.keyLayout[1], base.ui.keyLayout[2], base.ui.keyLayout[3]],
-      storageLayout: [{ kind: "key", key: "C" }, ...base.ui.storageLayout.slice(1)],
-    },
-  };
-  const stepSwapToBottomRow = evaluateLayoutDrop(
-    withStepOnTopRow,
-    { surface: "keypad", index: 0 },
-    { surface: "keypad", index: 2 },
+  const swapIntoBottomRow = evaluateLayoutDrop(
+    base,
+    { surface: "storage", index: 0 },
+    { surface: "keypad", index: 3 },
   );
-  assert.deepEqual(
-    stepSwapToBottomRow,
-    { allowed: false, reason: "step_bottom_row_forbidden" },
-    "step key cannot swap into keypad bottom row",
-  );
+  assert.deepEqual(swapIntoBottomRow, { allowed: true, action: "swap" }, "keys can swap into keypad bottom row");
 
   const storageAllowedWithoutModeGate = evaluateLayoutDrop(
     base,
@@ -96,11 +80,6 @@ export const runLayoutRulesInvariantTests = (): void => {
     "storage interactions reject malformed storage geometry",
   );
 
-  const stepHighlights = buildStepBodyHighlightRegions(withStepOnTopRow);
-  assert.deepEqual(
-    stepHighlights,
-    [{ topIndex: 0, bottomIndex: 2 }],
-    "step highlight region includes step key slot and slot below it",
-  );
+  const stepHighlights = buildStepBodyHighlightRegions(base);
+  assert.deepEqual(stepHighlights, [], "no step highlight regions are generated without a step key");
 };
-

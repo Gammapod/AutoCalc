@@ -1,6 +1,6 @@
 import { isKeyUnlocked } from "./keyUnlocks.js";
-import { KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS, STORAGE_COLUMNS } from "./state.js";
-import type { GameState, Key, LayoutSurface } from "./types.js";
+import { STORAGE_COLUMNS } from "./state.js";
+import type { GameState, LayoutSurface } from "./types.js";
 
 export type LayoutDropAction = "move" | "swap";
 
@@ -8,7 +8,6 @@ export type LayoutRuleReason =
   | "same_source_destination"
   | "invalid_source"
   | "invalid_destination"
-  | "step_bottom_row_forbidden"
   | "storage_geometry_invalid";
 
 export type LayoutRuleDecision =
@@ -21,8 +20,6 @@ export type LayoutTarget = {
 };
 
 type Occupancy = "key" | "empty" | "invalid";
-
-const isStepKey = (key: Key): boolean => key === "\u23EF";
 
 export const isStorageLayoutValid = (storageLayout: Array<GameState["ui"]["storageLayout"][number]>): boolean =>
   storageLayout.length > 0 && storageLayout.length % STORAGE_COLUMNS === 0;
@@ -57,51 +54,6 @@ const getCellOccupancy = (
     return "empty";
   }
   return "key";
-};
-
-const getKeyAtTarget = (state: GameState, target: LayoutTarget): Key | null => {
-  if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {
-    return null;
-  }
-  if (target.surface === "keypad") {
-    const cell = state.ui.keyLayout[target.index];
-    if (!cell || cell.kind !== "key") {
-      return null;
-    }
-    return cell.key;
-  }
-  const slot = state.ui.storageLayout[target.index];
-  return slot?.key ?? null;
-};
-
-const isBottomRowKeypadIndex = (state: GameState, index: number): boolean => {
-  const columns = Math.max(1, state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS);
-  const rows = Math.max(1, state.ui.keypadRows || KEYPAD_DEFAULT_ROWS);
-  const bottomRowStart = (rows - 1) * columns;
-  return index >= bottomRowStart && index < bottomRowStart + columns;
-};
-
-const violatesStepBottomRowRule = (
-  state: GameState,
-  source: LayoutTarget,
-  destination: LayoutTarget,
-  action: LayoutDropAction,
-): boolean => {
-  const sourceKey = getKeyAtTarget(state, source);
-  if (!sourceKey) {
-    return true;
-  }
-  if (destination.surface === "keypad" && isStepKey(sourceKey) && isBottomRowKeypadIndex(state, destination.index)) {
-    return true;
-  }
-  if (action !== "swap") {
-    return false;
-  }
-  const destinationKey = getKeyAtTarget(state, destination);
-  if (!destinationKey) {
-    return true;
-  }
-  return source.surface === "keypad" && isStepKey(destinationKey) && isBottomRowKeypadIndex(state, source.index);
 };
 
 const isStorageDropGeometryValid = (
@@ -164,9 +116,6 @@ export const evaluateLayoutDrop = (
     return { allowed: false, reason: "invalid_destination" };
   }
   const action: LayoutDropAction = destinationOccupancy === "key" ? "swap" : "move";
-  if (violatesStepBottomRowRule(state, source, destination, action)) {
-    return { allowed: false, reason: "step_bottom_row_forbidden" };
-  }
   if (!isStorageDropGeometryValid(state, source, destination, action)) {
     return { allowed: false, reason: "storage_geometry_invalid" };
   }

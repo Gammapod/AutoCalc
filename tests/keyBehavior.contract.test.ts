@@ -261,14 +261,6 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "pause_counts_only") {
-    const state = unlockKey(initialState(), "\u23EF");
-    const next = applyKeyAction(state, "\u23EF");
-    assert.equal(next.keyPressCounts["\u23EF"] ?? 0, 1, "play/pause should count key press when unlocked");
-    assert.deepEqual(next.calculator, state.calculator, "play/pause should not mutate calculator state");
-    return;
-  }
-
   if (kind === "memory_recall_sets_input") {
     let state = unlockKey(initialState(), "M→");
     state = unlockKey(state, "α,β,γ");
@@ -484,23 +476,6 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     const next = applyKeyAction(state, "=");
     assert.deepEqual(next.calculator.total, toNanCalculatorValue(), "division by zero should set total to NaN");
     assert.equal(next.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero should record error code");
-    return;
-  }
-
-  if (kind === "pause_does_not_mutate_calculator_state") {
-    const state = unlockKey(
-      {
-        ...initialState(),
-        calculator: {
-          ...initialState().calculator,
-          total: r(5n),
-          rollEntries: re(r(5n)),
-        },
-      },
-      "\u23EF",
-    );
-    const next = applyKeyAction(state, "\u23EF");
-    assert.deepEqual(next.calculator, state.calculator, "play/pause should not mutate calculator state");
     return;
   }
 

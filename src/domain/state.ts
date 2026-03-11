@@ -21,6 +21,8 @@ export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
 const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["="];
+const isDefaultDrawerExecutionCell = (cell: LayoutCell): cell is KeyCell =>
+  cell.kind === "key" && DEFAULT_KEYPAD_KEYS.includes(cell.key) && !cell.behavior;
 
 type UnlockGroup = Exclude<ButtonUnlockGroup, "none">;
 type UnlockGroupRecord<B extends UnlockGroup> =
@@ -55,7 +57,7 @@ const combineValueExpressionUnlocks = (
 
 export const defaultStorageKeys = (): KeyCell[] =>
   defaultKeyLayout()
-    .filter((cell): cell is KeyCell => cell.kind === "key" && !DEFAULT_KEYPAD_KEYS.includes(cell.key))
+    .filter((cell): cell is KeyCell => cell.kind === "key" && !isDefaultDrawerExecutionCell(cell))
     .map((cell) => ({ ...cell }));
 
 export const defaultStorageLayout = (): Array<KeyCell | null> => {
@@ -135,7 +137,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "3" },
   { kind: "key", key: "0" },
   { kind: "key", key: "=" },
-  { kind: "key", key: "\u23EF", behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
+  { kind: "key", key: "=", behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
 ];
 
 export const initialState = (): GameState => {

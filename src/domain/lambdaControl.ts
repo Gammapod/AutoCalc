@@ -221,8 +221,8 @@ export const getEffectiveMaxTotalDigits = (control: LambdaControl): number =>
   clampInteger(1 + getLambdaDerivedValues(control).deltaEffective, TOTAL_DIGITS_MIN, TOTAL_DIGITS_MAX);
 
 export const getAutoEqualsRateMultiplier = (control: LambdaControl): number => {
-  const epsilon = Math.max(0, toNumber(getLambdaDerivedValues(control).epsilonEffective));
-  return Math.pow(EPSILON_RATE_BASE, epsilon);
+  const delta = Math.max(0, getLambdaDerivedValues(control).deltaEffective);
+  return Math.pow(EPSILON_RATE_BASE, delta);
 };
 
 export const buildAllocatorSnapshot = (control: LambdaControl): AllocatorState => {

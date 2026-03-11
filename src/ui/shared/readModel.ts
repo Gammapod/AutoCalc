@@ -127,9 +127,6 @@ export const formatKeyLabel = (key: Key): string => {
   if (key === "UNDO") {
     return "\u2936";
   }
-  if (key === "\u23EF") {
-    return "\u25BA";
-  }
   if (key === "#") {
     return "#/\u27E1";
   }
@@ -166,9 +163,6 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   }
   if (isOperatorKey(key)) {
     return "slot_operator";
-  }
-  if (key === "\u23EF") {
-    return "step";
   }
   if (key === "C" || key === "CE" || key === "UNDO" || key === "\u2190") {
     return "utility";

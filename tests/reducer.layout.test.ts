@@ -214,7 +214,7 @@ export const runReducerLayoutTests = (): void => {
   const firstEmptyKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
   assert.ok(executionKeypadIndex >= 0, "baseline keypad includes an execution key");
   assert.ok(firstStorageEmptyIndex >= 0, "baseline storage includes at least one empty slot");
-  assert.equal(firstStorageExecutionIndex, -1, "baseline storage does not include execution keys by default");
+  assert.ok(firstStorageExecutionIndex >= 0, "baseline storage includes an additional execution key by default");
   assert.ok(firstStorageNonExecutionIndex >= 0, "baseline storage includes a non-execution key");
   assert.ok(firstEmptyKeypadIndex >= 0, "baseline keypad includes an empty slot");
 
@@ -341,60 +341,6 @@ export const runReducerLayoutTests = (): void => {
     allowedFormerBottomRightSwap,
     toKeypadMove,
     "swapping non-execution into former bottom-right is now allowed",
-  );
-
-  const stepRuleState = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 2 });
-  const stepStorageIndex = stepRuleState.ui.storageLayout.findIndex((cell) => cell?.key === "\u23EF");
-  const bottomRowStart = (stepRuleState.ui.keypadRows - 1) * stepRuleState.ui.keypadColumns;
-  const bottomRowStepBlockedIndex = stepRuleState.ui.keyLayout.findIndex(
-    (cell, index) => index >= bottomRowStart && cell.kind === "placeholder",
-  );
-  const topRowStepAllowedIndex = stepRuleState.ui.keyLayout.findIndex(
-    (cell, index) => index < bottomRowStart && cell.kind === "placeholder",
-  );
-  assert.ok(stepStorageIndex >= 0, "baseline storage includes step key");
-  assert.ok(bottomRowStepBlockedIndex >= 0, "step rule test has an empty bottom-row keypad slot");
-  assert.ok(topRowStepAllowedIndex >= 0, "step rule test has an empty non-bottom keypad slot");
-
-  const bottomRowStepBlocked = reducer(stepRuleState, {
-    type: "MOVE_LAYOUT_CELL",
-    fromSurface: "storage",
-    fromIndex: stepStorageIndex,
-    toSurface: "keypad",
-    toIndex: bottomRowStepBlockedIndex,
-  });
-  assert.equal(bottomRowStepBlocked, stepRuleState, "step key cannot be moved into keypad bottom row");
-
-  const topRowStepAllowed = reducer(stepRuleState, {
-    type: "MOVE_LAYOUT_CELL",
-    fromSurface: "storage",
-    fromIndex: stepStorageIndex,
-    toSurface: "keypad",
-    toIndex: topRowStepAllowedIndex,
-  });
-  assert.equal(
-    topRowStepAllowed.ui.keyLayout[topRowStepAllowedIndex]?.kind === "key"
-      ? topRowStepAllowed.ui.keyLayout[topRowStepAllowedIndex].key
-      : null,
-    "\u23EF",
-    "step key can be moved into a non-bottom keypad row",
-  );
-
-  const bottomRowKeyIndex = topRowStepAllowed.ui.keyLayout.findIndex(
-    (cell, index) => index >= bottomRowStart && cell.kind === "key",
-  );
-  assert.ok(bottomRowKeyIndex >= 0, "step rule test has a bottom-row keypad key for swap");
-  const blockedStepSwapToBottomRow = reducer(topRowStepAllowed, {
-    type: "SWAP_LAYOUT_CELLS",
-    fromSurface: "keypad",
-    fromIndex: topRowStepAllowedIndex,
-    toSurface: "keypad",
-    toIndex: bottomRowKeyIndex,
-  });
-  assert.equal(
-    blockedStepSwapToBottomRow,
-    topRowStepAllowed,
-    "step key cannot be swapped into keypad bottom row",
   );
 
   const filledStorage = {

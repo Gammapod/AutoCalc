@@ -80,9 +80,7 @@ const createAvailabilityReader = (
 
 const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolean): CapabilityContext => {
   const hasEqualsKey = isAvailable("=");
-  const hasPauseKey = isAvailable("\u23EF");
-  const hasAnyExecutorUnlocked = isKeyUnlocked(state, "=");
-  const executeActivation = hasEqualsKey || (hasPauseKey && hasAnyExecutorUnlocked);
+  const executeActivation = hasEqualsKey;
   const hasPlus = isAvailable("+");
   const hasMinus = isAvailable("-");
   const hasZero = isAvailable("0");

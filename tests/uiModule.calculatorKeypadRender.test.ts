@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { installDomHarness } from "./helpers/domHarness.js";
-import { initialState } from "../src/domain/state.js";
+import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import { renderKeypadCells } from "../src/ui/modules/calculator/keypadRender.js";
 import type { Action, GameState } from "../src/domain/types.js";
 
@@ -60,6 +60,26 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     assert.ok(oneButton, "renders configured single key");
     oneButton?.click();
     assert.equal(dispatches.length, 2, "single-key click dispatches normally");
+
+    const withAutoEqualsOn: GameState = {
+      ...singleKeyState,
+      ui: {
+        ...singleKeyState.ui,
+        buttonFlags: {
+          ...singleKeyState.ui.buttonFlags,
+          [AUTO_EQUALS_FLAG]: true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, withAutoEqualsOn, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const autoOffButton = keysEl.querySelector<HTMLButtonElement>("button[data-key='1']");
+    autoOffButton?.click();
+    assert.equal(dispatches.length, 4, "non-toggle key press dispatches auto-off toggle plus key press while auto-equals is active");
 
     const unaryState: GameState = {
       ...initialState(),
