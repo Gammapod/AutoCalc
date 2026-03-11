@@ -5,3 +5,6 @@ release/
 node_modules/.package-lock.json
 AutoCalc.zip
 git.history
+AutoCalc-*-win-*-portable.exe
+AutoCalc-*-win-*-portable.exe.sha256
+design_refs.zip
