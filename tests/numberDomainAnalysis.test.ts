@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { analyzeNumberDomains } from "../src/domain/analysis.js";
+import { analyzeNumberDomains, analyzeUnlockSpecRows } from "../src/domain/analysis.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { initialState } from "../src/domain/state.js";
-import type { GameState } from "../src/domain/types.js";
+import type { GameState, UnlockDefinition } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 
@@ -171,5 +171,114 @@ export const runNumberDomainAnalysisTests = (): void => {
     highPositiveReport.reasoning.some((line) => line.includes("canReachZero")),
     true,
     "reasoning includes canReachZero when integers are false",
+  );
+
+  const unaryIncrementOnly: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      unaryOperators: {
+        ...base.unlocks.unaryOperators,
+        "++": true,
+      },
+      execution: {
+        ...base.unlocks.execution,
+        "=": true,
+      },
+    },
+  };
+  const unaryIncrementCatalog: UnlockDefinition[] = [
+    {
+      id: "fixture_total_at_least",
+      description: "fixture",
+      predicate: { type: "total_at_least", value: 1n },
+      effect: { type: "unlock_digit", key: "1" },
+      once: true,
+      domainNodeId: "NN",
+      targetNodeId: "fixture",
+    },
+  ];
+  const unaryIncrementRows = analyzeUnlockSpecRows(unaryIncrementOnly, { useAllUnlockedKeys: true }, unaryIncrementCatalog);
+  assert.equal(unaryIncrementRows[0]?.status, "possible", "unary ++ plus execute satisfies step_plus_one capability");
+
+  const unaryDecrementOnly: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      unaryOperators: {
+        ...base.unlocks.unaryOperators,
+        "--": true,
+      },
+      execution: {
+        ...base.unlocks.execution,
+        "=": true,
+      },
+    },
+  };
+  const unaryDecrementCatalog: UnlockDefinition[] = [
+    {
+      id: "fixture_total_at_most",
+      description: "fixture",
+      predicate: { type: "total_at_most", value: -1n },
+      effect: { type: "unlock_digit", key: "1" },
+      once: true,
+      domainNodeId: "NN",
+      targetNodeId: "fixture",
+    },
+  ];
+  const unaryDecrementRows = analyzeUnlockSpecRows(unaryDecrementOnly, { useAllUnlockedKeys: true }, unaryDecrementCatalog);
+  assert.equal(unaryDecrementRows[0]?.status, "possible", "unary -- plus execute satisfies step_minus_one capability");
+
+  const unaryNegateOnly: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      unaryOperators: {
+        ...base.unlocks.unaryOperators,
+        "-n": true,
+      },
+      execution: {
+        ...base.unlocks.execution,
+        "=": true,
+      },
+    },
+  };
+  const alternatingSignCatalog: UnlockDefinition[] = [
+    {
+      id: "fixture_alt_sign",
+      description: "fixture",
+      predicate: { type: "roll_ends_with_alternating_sign_constant_abs_run", length: 3 },
+      effect: { type: "unlock_digit", key: "1" },
+      once: true,
+      domainNodeId: "NN",
+      targetNodeId: "fixture",
+    },
+  ];
+  const alternatingRows = analyzeUnlockSpecRows(unaryNegateOnly, { useAllUnlockedKeys: true }, alternatingSignCatalog);
+  assert.equal(
+    alternatingRows[0]?.status,
+    "possible",
+    "unary -n plus execute makes alternating-sign constant-abs capability available",
+  );
+
+  const unaryOnlyBinaryFormCatalog: UnlockDefinition[] = [
+    {
+      id: "fixture_roll_contains_value",
+      description: "fixture",
+      predicate: {
+        type: "roll_contains_value",
+        value: 1n,
+      },
+      effect: { type: "unlock_digit", key: "1" },
+      once: true,
+      domainNodeId: "NN",
+      targetNodeId: "fixture",
+    },
+  ];
+  const unaryOnlyRows = analyzeUnlockSpecRows(unaryIncrementOnly, { useAllUnlockedKeys: true }, unaryOnlyBinaryFormCatalog);
+  assert.equal(
+    unaryOnlyRows[0]?.status,
+    "blocked",
+    "form_operator_plus_operand stays binary-only when only unary operators are unlocked",
   );
 };

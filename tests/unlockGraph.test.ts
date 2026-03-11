@@ -105,9 +105,7 @@ export const runUnlockGraphTests = (): void => {
   const functionNodes = graph.nodes.filter((node) => node.type === "function");
   for (const functionNode of functionNodes) {
     const incomingSufficient = graph.edges.some((edge) => edge.type === "sufficient" && edge.to === functionNode.id);
-    if (functionNode.id !== "fn.roll_alternating_sign_constant_abs") {
-      assert.equal(incomingSufficient, true, `function ${functionNode.id} should have at least one sufficient incoming edge`);
-    }
+    assert.equal(incomingSufficient, true, `function ${functionNode.id} should have at least one sufficient incoming edge`);
   }
   const edgeSignatures = new Set<string>();
   for (const edge of graph.edges) {
@@ -178,9 +176,8 @@ export const runUnlockGraphTests = (): void => {
       targetNodeId: "fixture",
     },
   ];
-  assert.throws(
+  assert.doesNotThrow(
     () => buildUnlockGraph(todoSpecCatalog, startingKeys),
-    /Predicate capability spec is TODO/,
-    "unlock graph should fail fast when catalog uses TODO capability specs",
+    "unlock graph should build when non-catalog predicate specs are concrete",
   );
 };

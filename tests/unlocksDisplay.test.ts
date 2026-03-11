@@ -128,8 +128,8 @@ export const runUnlocksDisplayTests = (): void => {
   const totalCriteriaVisibleRows = buildVisibleChecklistRows(base, { catalog: totalCriteriaCatalog });
   assert.equal(
     totalCriteriaVisibleRows.some((row) => row.id === "u_total_at_most"),
-    true,
-    "TODO capability rows remain visible by checklist policy",
+    false,
+    "blocked rows from concrete capability specs are hidden by checklist policy",
   );
 
   const difficultScopeCatalog: UnlockDefinition[] = [
@@ -253,6 +253,7 @@ export const runUnlocksDisplayTests = (): void => {
 
   const debugRows = buildVisibleChecklistRows(base, {
     catalog: totalCriteriaCatalog,
+    visibilityPolicy: { hideBlocked: false },
     includeDebugMeta: true,
   });
   const firstDebugRow = debugRows[0];

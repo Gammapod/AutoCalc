@@ -33,6 +33,7 @@ export type CapabilityId =
   | "step_minus_one"
   | "reset_to_zero"
   | "form_operator_plus_operand"
+  | "unary_slot_commit"
   | "press_target_key"
   | "allocator_return_press"
   | "allocator_allocate_press"
@@ -71,8 +72,6 @@ export type CatalogPredicateCapabilityEntry = {
   spec: PredicateCapabilitySpec | null;
   todo: boolean;
 };
-
-const TODO_NOTES = "TODO: add concrete capability spec and fixtures when this predicate enters unlockCatalog.";
 
 export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = {
   total_equals: {
@@ -321,15 +320,39 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
   },
   total_at_most: {
     predicateType: "total_at_most",
-    necessary: [],
-    sufficientSets: [],
-    notes: TODO_NOTES,
+    necessary: [
+      { capability: "step_minus_one", reason: "Need a decrementing step to reach lower-or-equal thresholds." },
+    ],
+    sufficientSets: [
+      {
+        id: "total_at_most_via_decrement",
+        allOf: ["step_minus_one"],
+        rationale: "Repeated -1 reaches or stays below any finite upper bound from an integer anchor.",
+      },
+    ],
   },
   operation_equals: {
     predicateType: "operation_equals",
-    necessary: [],
-    sufficientSets: [],
-    notes: TODO_NOTES,
+    necessary: [
+      { capability: "execute_activation", reason: "Operation matching is meaningful in executable function-chain context." },
+    ],
+    sufficientSets: [
+      {
+        id: "operation_equals_via_binary_slots",
+        allOf: ["execute_activation", "form_operator_plus_operand"],
+        rationale: "Binary operator+operand construction can realize binary target slot chains.",
+      },
+      {
+        id: "operation_equals_via_unary_slots",
+        allOf: ["execute_activation", "unary_slot_commit"],
+        rationale: "Unary slot commit capability can realize unary target slot chains.",
+      },
+      {
+        id: "operation_equals_via_mixed_slots",
+        allOf: ["execute_activation", "form_operator_plus_operand", "unary_slot_commit"],
+        rationale: "Combined binary and unary slot construction can realize mixed slot chains.",
+      },
+    ],
   },
   roll_ends_with_sequence: {
     predicateType: "roll_ends_with_sequence",
@@ -347,9 +370,17 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
   },
   roll_length_at_least: {
     predicateType: "roll_length_at_least",
-    necessary: [],
-    sufficientSets: [],
-    notes: TODO_NOTES,
+    necessary: [
+      { capability: "execute_activation", reason: "Roll length only increases via execution." },
+      { capability: "roll_growth", reason: "Need an executable function chain to append repeated entries." },
+    ],
+    sufficientSets: [
+      {
+        id: "roll_length_at_least_via_roll_growth",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "With roll growth capability, repeated executions can reach any finite minimum length.",
+      },
+    ],
   },
 };
 
@@ -370,5 +401,5 @@ export const deriveCatalogPredicateCapabilitySpecs = (
       spec,
       todo: isTodoSpec(spec),
     };
-  }).filter((entry) => entry.usedInCatalog || entry.todo);
+  });
 };

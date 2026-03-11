@@ -6,6 +6,7 @@ import {
 } from "./predicateCapabilitySpec.js";
 import { isRationalCalculatorValue } from "./calculatorValue.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
+import { isOperatorKey, isUnaryOperatorKey } from "./buttonRegistry.js";
 import type { GameState, Key, LayoutCell, UnlockDefinition, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 
@@ -40,6 +41,7 @@ type CapabilityContext = {
   stepPlusOne: boolean;
   stepMinusOne: boolean;
   resetToZero: boolean;
+  unarySlotCommit: boolean;
   allocatorReturnPress: boolean;
   allocatorAllocatePress: boolean;
   formOperatorPlusOperand: boolean;
@@ -86,21 +88,30 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
   const hasZero = isAvailable("0");
   const hasOne = isAvailable("1");
   const hasSomeValueAtom = Object.keys(state.unlocks.valueAtoms).some((key) => isAvailable(key as Key));
-  const hasSomeOperator = ["+", "-", "*", "/", "#", "\u27E1"].some((key) => isAvailable(key as Key));
+  const hasSomeBinaryOperator = Object.keys(state.unlocks.slotOperators)
+    .filter((key): key is Key => isOperatorKey(key as Key))
+    .some((key) => isAvailable(key));
+  const hasSomeUnaryOperator = Object.keys(state.unlocks.unaryOperators)
+    .filter((key): key is Key => isUnaryOperatorKey(key as Key))
+    .some((key) => isAvailable(key));
   const allocatorReturnPress = (state.allocatorReturnPressCount ?? 0) >= 1;
   const allocatorAllocatePress = (state.allocatorAllocatePressCount ?? 0) >= 1;
+  const hasUnaryIncrement = isAvailable("++");
+  const hasUnaryDecrement = isAvailable("--");
+  const hasUnaryNegate = isAvailable("-n");
 
-  const stepPlusOne = executeActivation && hasPlus && hasOne;
-  const stepMinusOne = executeActivation && hasMinus && hasOne;
+  const stepPlusOne = executeActivation && ((hasPlus && hasOne) || hasUnaryIncrement);
+  const stepMinusOne = executeActivation && ((hasMinus && hasOne) || hasUnaryDecrement);
   const resetToZero = isAvailable("C") || isAvailable("UNDO");
-  const formOperatorPlusOperand = hasSomeOperator && hasSomeValueAtom;
+  const unarySlotCommit = hasSomeUnaryOperator;
+  const formOperatorPlusOperand = hasSomeBinaryOperator && hasSomeValueAtom;
   const rollGrowth = executeActivation && (formOperatorPlusOperand || stepPlusOne || stepMinusOne);
   const rollEqualRun =
     executeActivation &&
     ((hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable("*") && hasOne) || (isAvailable("/") && hasOne));
   const rollIncrementingRun = stepPlusOne;
-  const rollAlternatingSignConstantAbs = false;
-  const rollConstantStepRun = executeActivation && formOperatorPlusOperand;
+  const rollAlternatingSignConstantAbs = executeActivation && hasUnaryNegate;
+  const rollConstantStepRun = executeActivation && (formOperatorPlusOperand || hasUnaryIncrement || hasUnaryDecrement);
   const divisionByZeroError = executeActivation && isAvailable("/") && hasZero;
   const euclidDivisionOperator = isAvailable("#");
 
@@ -109,6 +120,7 @@ const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolea
     stepPlusOne,
     stepMinusOne,
     resetToZero,
+    unarySlotCommit,
     allocatorReturnPress,
     allocatorAllocatePress,
     formOperatorPlusOperand,
@@ -142,6 +154,9 @@ const resolveCapability = (
   }
   if (capability === "form_operator_plus_operand") {
     return caps.formOperatorPlusOperand;
+  }
+  if (capability === "unary_slot_commit") {
+    return caps.unarySlotCommit;
   }
   if (capability === "roll_growth") {
     return caps.rollGrowth;

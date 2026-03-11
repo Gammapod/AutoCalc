@@ -1,6 +1,6 @@
 # Path to v0.7.0
 
-Last updated: 2026-03-10  
+Last updated: 2026-03-11  
 Scope: Forward-looking roadmap for the v0.7.0 pivot.  
 Note: Existing design refs remain unchanged; this document defines the new direction.
 
@@ -49,8 +49,9 @@ Goal: establish a new function model before introducing additional operators.
 - Implemented with `-n` as the `NEG` equivalent.
 - Unary staging rules are active: `++ -> [ + 1 ]`, `-- -> [ - 1 ]`, `-n -> [ * -1 ]`.
 - Milestone 1 behavior and test criteria are satisfied.
+- Later consolidated by Milestone 2 into true unary slots (`[ ++ ]`, `[ −− ]`, `[ ± ]`) with immediate unary slot commit.
 
-## Milestone 2: New Operators
+## Milestone 2: New Operators (Done - 2026-03-11)
 
 Goal: introduce a first wave of integer-focused operations and key behaviors.
 
@@ -62,25 +63,23 @@ Goal: introduce a first wave of integer-focused operations and key behaviors.
 - Keep behavior deterministic and compatible with existing overflow/error rules.
 - Prioritize integer-domain semantics for values under `10^12` while preserving rational handling where needed.
 
-### Candidate Operation Set
+### Implemented Operation Set
 
-- Digit transforms: shift-left, reverse-digits, sort-digits.
-- Digit reductions: digit-sum, digit-square-sum.
-- Integer dynamics: Collatz step.
-- Prime navigation: next-prime, previous-prime.
-- Number-theory transform: divisor-count.
-
-### Complexity Notes (from current review)
-
-- Low: shift-left, reverse-digits, sort-digits, digit-sum, digit-square-sum.
-- Medium: Collatz, divisor-count.
-- Medium-high: next/previous-prime.
+- Binary: `↺` (rotate digits), `⩑` (GCD), `⩒` (LCM).
+- Unary: `++`, `--`, `-n`/`±`, `σ`, `φ`, `Ω`.
+- Integer-domain policy implemented for number-theory operators with NaN/error behavior on invalid inputs (including zero policy for `σ`, `φ`, `Ω`).
 
 ### Exit Criteria
 
 - Key taxonomy updated to support both operator and unary/execution placement for new functions.
 - Reducer/engine behavior implemented with test coverage for edge cases (`0`, negatives, boundaries, overflow).
 - Unlock predicates/effects updated so new keys integrate into progression without checklist dependency.
+
+### Completion Note
+
+- Implemented true unary slots (`[ op ]`) with immediate unary commit semantics.
+- Added integer-focused operators: `↺`, `⩑`, `⩒`, `σ`, `φ`, `Ω`, plus unary display updates for `++`, `−−`, `±`.
+- Completed capability/spec analysis tightening (Option 2): unary-aware capability model, `unary_slot_commit`, and concrete specs for all predicate types (no TODO stubs).
 
 ## Milestone 3: New Visualizer (Done - 2026-03-10)
 
@@ -113,6 +112,8 @@ Goal: add a number-theory visualizer centered on factorization and integer prope
 - Visualizer renders factorization from stored roll payload with explicit non-factorable placeholder handling.
 - Current UX variant shows only the most recent roll entry factorization (latest-only view).
 
+# Post-v0.7.0
+
 ## Milestone 4: Replace Checklist
 
 Goal: remove checklist-first progression UX and replace it with contextual hints inside the calculator experience.
@@ -131,11 +132,9 @@ Goal: remove checklist-first progression UX and replace it with contextual hints
 
 ### Exit Criteria
 
-- Checklist panel removed from active UX path for v0.7.0.
+- Checklist panel removed from active UX path.
 - Predicate-to-hint mapping defined for current unlock catalog.
 - UI and behavior tests updated for hint rendering and checklist removal.
-
-# Post-v0.7.0
 
 ## Milestone 5: Visualizer Fit Contract
 

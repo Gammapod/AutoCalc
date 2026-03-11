@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import {
+  ALL_PREDICATE_TYPES,
   deriveCatalogPredicateCapabilitySpecs,
   getPredicateCapabilitySpec,
   type CapabilityId,
@@ -45,6 +46,18 @@ const unlockKey = (state: GameState, key: Key): GameState => {
         ...state.unlocks,
         slotOperators: {
           ...state.unlocks.slotOperators,
+          [key]: true,
+        },
+      },
+    };
+  }
+  if (key === "++" || key === "--" || key === "-n" || key === "\u03C3" || key === "\u03C6" || key === "\u03A9") {
+    return {
+      ...state,
+      unlocks: {
+        ...state.unlocks,
+        unaryOperators: {
+          ...state.unlocks.unaryOperators,
           [key]: true,
         },
       },
@@ -391,11 +404,19 @@ export const runPredicateCapabilitySpecTests = (): void => {
     );
   }
 
-  const warnOnlyTodoTypes = derived
-    .filter((entry) => entry.todo && !entry.usedInCatalog)
-    .map((entry) => entry.predicateType);
-  if (warnOnlyTodoTypes.length > 0) {
-    console.warn(`WARN predicate capability TODO stubs (not in catalog yet): ${warnOnlyTodoTypes.join(", ")}`);
+  for (const predicateType of ALL_PREDICATE_TYPES) {
+    const spec = getPredicateCapabilitySpec(predicateType);
+    assert.ok(spec, `missing capability spec for predicate type: ${predicateType}`);
+    assert.equal(
+      Boolean(spec.notes?.startsWith("TODO:")),
+      false,
+      `predicate type ${predicateType} must not use TODO capability notes`,
+    );
+    assert.ok(spec.necessary.length > 0, `predicate type ${predicateType} must declare necessary capabilities`);
+    assert.ok(
+      spec.sufficientSets.length > 0,
+      `predicate type ${predicateType} must declare at least one sufficient capability set`,
+    );
   }
 
   for (const predicateType of catalogPredicateTypes) {

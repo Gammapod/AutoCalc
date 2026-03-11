@@ -1,4 +1,5 @@
 import { keyCatalog } from "../content/keyCatalog.js";
+import { isOperatorKey, isUnaryOperatorKey } from "./buttonRegistry.js";
 import type { Key } from "./types.js";
 import type { CapabilityId } from "./predicateCapabilitySpec.js";
 
@@ -19,7 +20,12 @@ const keysWithTrait = (trait: string): Key[] =>
 
 const operatorKeys = (): Key[] =>
   keyCatalog
-    .filter((entry) => entry.unlockGroup === "slotOperators")
+    .filter((entry) => isOperatorKey(entry.key as Key))
+    .map((entry) => entry.key as Key);
+
+const unaryOperatorKeys = (): Key[] =>
+  keyCatalog
+    .filter((entry) => isUnaryOperatorKey(entry.key as Key))
     .map((entry) => entry.key as Key);
 
 const hasKey = (key: string): key is Key => keyCatalog.some((entry) => entry.key === key);
@@ -47,6 +53,7 @@ const clause = (...keys: Array<Key | null>): Key[] => keys.filter((key): key is 
 export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProviderSpec[] => {
   const executeKeys = keysWithTrait("can_execute");
   const operatorKeysList = operatorKeys();
+  const unaryOperatorKeysList = unaryOperatorKeys();
   const plusKey = hasKey("+") ? "+" : null;
   const minusKey = hasKey("-") ? "-" : null;
   const oneKey = hasKey("1") ? "1" : null;
@@ -58,14 +65,20 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
   const euclidKey = hasKey("#") ? "#" : null;
   const piKey = hasKey("pi") ? "pi" : null;
   const eKey = hasKey("e") ? "e" : null;
+  const unaryIncrementKey = hasKey("++") ? "++" : null;
+  const unaryDecrementKey = hasKey("--") ? "--" : null;
+  const unaryNegateKey = hasKey("-n") ? "-n" : null;
 
   const operatorClauses = operatorKeysList.map((operator) => [operator]);
+  const unaryClauses = unaryOperatorKeysList.map((operator) => [operator]);
   const executeActivationClauses = executeKeys.map((key) => [key]);
   const stepPlusClauses = uniqueClauses([
     ...(equalsKey && plusKey && oneKey ? [clause(equalsKey, plusKey, oneKey)] : []),
+    ...(equalsKey && unaryIncrementKey ? [clause(equalsKey, unaryIncrementKey)] : []),
   ]);
   const stepMinusClauses = uniqueClauses([
     ...(equalsKey && minusKey && oneKey ? [clause(equalsKey, minusKey, oneKey)] : []),
+    ...(equalsKey && unaryDecrementKey ? [clause(equalsKey, unaryDecrementKey)] : []),
   ]);
   const resetClauses = uniqueClauses([
     ...(clearKey ? [clause(clearKey)] : []),
@@ -87,7 +100,9 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
     ...(equalsKey && plusKey && oneKey ? [clause(equalsKey, plusKey, oneKey)] : []),
   ]);
 
-  const rollAlternatingSignClauses = uniqueClauses([]);
+  const rollAlternatingSignClauses = uniqueClauses([
+    ...(equalsKey && unaryNegateKey ? [clause(equalsKey, unaryNegateKey)] : []),
+  ]);
 
   const rollConstantStepClauses = uniqueClauses([
     ...(equalsKey
@@ -98,6 +113,8 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
           ...(divideKey ? [clause(equalsKey, divideKey)] : []),
           ...(euclidKey ? [clause(equalsKey, euclidKey)] : []),
           ...(hasKey("\u27E1") ? [clause(equalsKey, "\u27E1")] : []),
+          ...(unaryIncrementKey ? [clause(equalsKey, unaryIncrementKey)] : []),
+          ...(unaryDecrementKey ? [clause(equalsKey, unaryDecrementKey)] : []),
         ]
       : []),
   ]);
@@ -142,8 +159,14 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
     {
       id: "fn.form_operator_plus_operand",
       label: "form_operator_plus_operand",
-      rule: "at least one operator key and at least one value atom/composer are unlocked",
+      rule: "at least one binary operator key and at least one value atom/composer are unlocked",
       sufficiency: operatorClauses,
+    },
+    {
+      id: "fn.unary_slot_commit",
+      label: "unary_slot_commit",
+      rule: "at least one unary operator key is unlocked",
+      sufficiency: unaryClauses,
     },
     {
       id: "fn.roll_growth",
@@ -214,6 +237,7 @@ export const buildCapabilityToProviderIndex = (
   step_minus_one: ["fn.step_minus_one"],
   reset_to_zero: ["fn.reset_to_zero"],
   form_operator_plus_operand: ["fn.form_operator_plus_operand"],
+  unary_slot_commit: ["fn.unary_slot_commit"],
   allocator_return_press: ["fn.allocator_return_press"],
   allocator_allocate_press: ["fn.allocator_allocate_press"],
   roll_growth: ["fn.roll_growth"],
