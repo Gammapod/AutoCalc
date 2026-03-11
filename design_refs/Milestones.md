@@ -1,118 +1,4 @@
-# Path to v0.7.0
-
-Last updated: 2026-03-11  
-Scope: Forward-looking roadmap for the v0.7.0 pivot.  
-Note: Existing design refs remain unchanged; this document defines the new direction.
-
-## Pivot Summary
-
-v0.7.0 pivots AutoCalc toward integer-first number theory gameplay.
-
-- Algebraic-expression expansion (and related constants/functions such as `pi`, `e`, `i`, `ln`, trig) is put on hold for this release cycle.
-- Progression focus shifts to integer/rational transformations and number-theory insight.
-- Roll output should become richer by capturing factorization context for results.
-- Unlock UX shifts from a separate checklist panel to in-calculator contextual hints.
-
-## Milestone 1: Function Definition Refactor (Done - 2026-03-10)
-
-Goal: establish a new function model before introducing additional operators.
-
-### Direction
-
-- Relabel existing slot operators (`+`, `-`, `*`, `/`, `#`, `⟡`) as `binary operators`.
-- Relabel value-expression transforms (currently `NEG` / `-n`) as `unary operators`.
-- Redefine `++` and `--` as unary operators.
-- Re-implement unary operator handling so unary inputs are converted into operator-operand slot entries instead of direct execution or direct digit/total mutation.
-
-### Unary Conversion Rules
-
-- `++` enters `[ + 1 ]`.
-- `--` enters `[ - 1 ]`.
-- `-n` enters `[ * -1 ]`.
-
-### Behavioral Contract
-
-- Unary operators do not alter already-entered digits.
-- Unary operators do not execute immediately.
-- Unary operators do not append to roll by themselves.
-- Unary operators only stage operation-slot input (operator + operand pair), then normal execution flow (`=`) handles evaluation and roll effects.
-
-### Exit Criteria
-
-- Type/key taxonomy updated to represent `binary operators` and `unary operators`.
-- `NEG`, `++`, and `--` all follow the new unary staging path.
-- Existing binary operators preserve behavior.
-- Tests cover unary-to-slot conversion and ensure no direct execution/roll side effects on unary keypress.
-
-### Completion Note
-
-- Implemented with `-n` as the `NEG` equivalent.
-- Unary staging rules are active: `++ -> [ + 1 ]`, `-- -> [ - 1 ]`, `-n -> [ * -1 ]`.
-- Milestone 1 behavior and test criteria are satisfied.
-- Later consolidated by Milestone 2 into true unary slots (`[ ++ ]`, `[ −− ]`, `[ ± ]`) with immediate unary slot commit.
-
-## Milestone 2: New Operators (Done - 2026-03-11)
-
-Goal: introduce a first wave of integer-focused operations and key behaviors.
-
-### Direction
-
-- Add new math actions split across:
-- operator-slot keys (participate in drafted operation chains), and
-- unary/execution-style keys (apply directly to current total).
-- Keep behavior deterministic and compatible with existing overflow/error rules.
-- Prioritize integer-domain semantics for values under `10^12` while preserving rational handling where needed.
-
-### Implemented Operation Set
-
-- Binary: `↺` (rotate digits), `⩑` (GCD), `⩒` (LCM).
-- Unary: `++`, `--`, `-n`/`±`, `σ`, `φ`, `Ω`.
-- Integer-domain policy implemented for number-theory operators with NaN/error behavior on invalid inputs (including zero policy for `σ`, `φ`, `Ω`).
-
-### Exit Criteria
-
-- Key taxonomy updated to support both operator and unary/execution placement for new functions.
-- Reducer/engine behavior implemented with test coverage for edge cases (`0`, negatives, boundaries, overflow).
-- Unlock predicates/effects updated so new keys integrate into progression without checklist dependency.
-
-### Completion Note
-
-- Implemented true unary slots (`[ op ]`) with immediate unary commit semantics.
-- Added integer-focused operators: `↺`, `⩑`, `⩒`, `σ`, `φ`, `Ω`, plus unary display updates for `++`, `−−`, `±`.
-- Completed capability/spec analysis tightening (Option 2): unary-aware capability model, `unary_slot_commit`, and concrete specs for all predicate types (no TODO stubs).
-
-## Milestone 3: New Visualizer (Done - 2026-03-10)
-
-Goal: add a number-theory visualizer centered on factorization and integer properties.
-
-### Direction
-
-- Visualizer should surface:
-- prime factorization for integer roll outputs,
-- numerator/denominator prime factorizations for rational outputs,
-- related number-theory properties (as scoped during implementation).
-- Treat this as an insight tool that supports future unlock discovery and operator learning.
-
-### Data Model Expectations
-
-- Roll derivation should compute/store factorization metadata for each roll entry where defined.
-- Integer `0` handling should be explicit (factorization undefined/special-cased).
-- Rational signs and denominator normalization should be consistently represented.
-
-### Exit Criteria
-
-- New visualizer module registered and toggleable like existing visualizers.
-- Read model exposes stable factorization payloads.
-- Rendering handles normal, error, and non-factorable cases without UI regressions.
-
-### Completion Note
-
-- Added new visualizer key and panel (`𝚷𝑝^𝑒`, displayed as `𝚷𝑝ᵉ`).
-- Factorization payload is now persisted on roll entries and backfilled on load for older schema saves.
-- Visualizer renders factorization from stored roll payload with explicit non-factorable placeholder handling.
-- Current UX variant shows only the most recent roll entry factorization (latest-only view).
-
-# Post-v0.7.0
+# Path to v0.8.0
 
 ## Milestone 4: Replace Checklist
 
@@ -166,9 +52,38 @@ Goal: enforce a minimum visualizer window contract so every visualizer layout is
 - Horizontal clipping/overflow is prevented by design for text panels.
 - Contract tests cover all registered visualizers for fit-policy compliance.
 
+## Milestone 6: Unlock Rule Systematization (Design)
+
+Goal: define a regular, generalizable unlock-criteria framework for each key type so progression authoring is consistent and scalable.
+
+### Direction
+
+- Define per-key-type unlock rule templates (for example: value atoms, binary operators, unary operators, utilities, execution keys, visualizers, memory/allocator controls).
+- Standardize criterion dimensions (difficulty bands, target shape, proof-of-understanding signals, anti-grind constraints).
+- Formalize reusable predicate patterns and mapping rules from key type to allowable predicate families.
+- Document exception handling policy (when custom one-off criteria are allowed and how they are justified).
+
+### Deliverables
+
+- A design spec that enumerates key types and their canonical unlock-rule templates.
+- A predicate-template matrix showing allowed/recommended criteria patterns by key type.
+- Authoring guidelines with worked examples for at least one key from each key type.
+- A review checklist used to validate new unlock definitions against the framework.
+
+### Exit Criteria
+
+- Every current key type has documented, regular unlock-rule guidance.
+- New unlock authoring can be done by applying templates rather than inventing bespoke rules.
+- At least one full pass over current unlock catalog confirms criteria can be classified against the new framework.
+- Milestone is considered Done when regular, generalizable rules for unlock criteria exist for each key type.
+
 ## Cross-Milestone Guardrails
 
 - Existing docs remain as historical/current-state references until superseded later.
 - Prioritize backward-safe changes to persistence and migrations.
 - Maintain reducer parity and deterministic execution semantics across shells.
 - Keep contract tests current as source of truth during the transition.
+
+# Post-v0.8.0
+
+(nothing planned yet)
