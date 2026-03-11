@@ -83,6 +83,25 @@ export const runUiLayoutAdapterTests = (): void => {
     clearDesktopSizingVars(keys, calc);
     assert.equal(calc.style.getPropertyValue("--desktop-calc-width"), "", "desktop sizing vars can be cleared");
 
+    const defaultInput = buildSingleInstanceLayoutInput({
+      root: harness.root,
+      keysEl: keys,
+      calcBodyEl: calc,
+      columns: 4,
+      rows: 2,
+            inputBlocked: false,
+    });
+    assert.equal(
+      defaultInput.calculatorInstances[0]?.visualizerWidthMode,
+      "fixed",
+      "layout adapter defaults visualizer width mode to fixed",
+    );
+    assert.equal(
+      defaultInput.calculatorInstances[0]?.visualizerWidthPx,
+      460,
+      "layout adapter defaults visualizer width token to 460px",
+    );
+
     harness.root.setAttribute("data-visualizer-width-mode", "fixed");
     harness.root.setAttribute("data-visualizer-width-px", "333");
     const fixedInput = buildSingleInstanceLayoutInput({

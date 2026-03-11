@@ -80,6 +80,7 @@ import { runUiShellMenuA11yTests } from "./uiShell.menuA11y.test.js";
 import { runUiModuleCalculatorMotionTests } from "./uiModule.calculatorMotion.test.js";
 import { runUiModuleCalculatorKeypadRenderTests } from "./uiModule.calculatorKeypadRender.test.js";
 import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
+import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -162,6 +163,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-shell/menu-a11y", runUiShellMenuA11yTests],
   ["ui-module/calculator-motion", runUiModuleCalculatorMotionTests],
   ["ui-module/calculator-keypad-render", runUiModuleCalculatorKeypadRenderTests],
+  ["ui/visualizer-fit-contract", runUiVisualizerFitContractTests],
   ["ui/complexity-gate", runUiComplexityGateTests],
 ];
 

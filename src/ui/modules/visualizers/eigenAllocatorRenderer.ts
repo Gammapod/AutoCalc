@@ -63,6 +63,18 @@ ${alphaEntry}&0&0&0&0\\
 `;
 };
 
+const buildCompactAllocatorSummary = (state: GameState): string => {
+  const derived = getLambdaDerivedValues(state.lambdaControl);
+  const epsilon = toDisplayString(derived.epsilonEffective);
+  return [
+    `alpha=${state.lambdaControl.alpha.toString()}`,
+    `beta=${state.lambdaControl.beta.toString()}`,
+    `gamma=${state.lambdaControl.gamma.toString()}`,
+    `delta=${derived.deltaEffective.toString()}`,
+    `epsilon=${epsilon}`,
+  ].join(" | ");
+};
+
 export const clearEigenAllocatorVisualizerPanel = (root: Element): void => {
   const panel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
   if (!panel) {
@@ -96,11 +108,14 @@ export const renderEigenAllocatorVisualizerPanel = (root: Element, state: GameSt
         displayMode: true,
         throwOnError: false,
       });
+      if (equation.clientWidth > 0 && equation.scrollWidth > equation.clientWidth) {
+        equation.textContent = buildCompactAllocatorSummary(state);
+      }
     } catch {
-      equation.textContent = "lambda control";
+      equation.textContent = buildCompactAllocatorSummary(state);
     }
   } else {
-    equation.textContent = "lambda control";
+    equation.textContent = buildCompactAllocatorSummary(state);
   }
   panel.appendChild(equation);
 };

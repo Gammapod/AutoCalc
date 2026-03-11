@@ -113,6 +113,12 @@ export const runUiIntegrationMobileShellTests = (): void => {
       1,
       "feed panel marks error rows in red",
     );
+    const dividerLine = feedPanel?.querySelectorAll<HTMLElement>(".v2-feed-table-line")[1];
+    assert.equal(
+      /-{20,}/.test(dividerLine?.textContent ?? ""),
+      false,
+      "feed divider line does not emit oversized y-column padding dashes",
+    );
     const withFeedNoVisibleRemainder: GameState = {
       ...withFeed,
       calculator: {

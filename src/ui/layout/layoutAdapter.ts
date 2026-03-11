@@ -8,6 +8,7 @@ import type {
 
 const DEFAULT_CALCULATOR_INSTANCE_ID = "primary";
 const DEFAULT_GAP_PX = 10;
+const DEFAULT_VISUALIZER_WIDTH_PX = 460;
 
 const parsePxValue = (value: string, fallback: number): number => {
   const parsed = Number.parseFloat(value);
@@ -48,8 +49,21 @@ const resolveVisualizerWidthConfig = (
       visualizerWidthPx,
     };
   }
+  if (visualizerWidthMode === "fixed") {
+    return {
+      visualizerWidthMode: "fixed",
+      visualizerWidthPx: DEFAULT_VISUALIZER_WIDTH_PX,
+    };
+  }
+  if (visualizerWidthPx !== undefined) {
+    return {
+      visualizerWidthMode: "fixed",
+      visualizerWidthPx,
+    };
+  }
   return {
-    visualizerWidthMode: "coupled",
+    visualizerWidthMode: "fixed",
+    visualizerWidthPx: DEFAULT_VISUALIZER_WIDTH_PX,
   };
 };
 

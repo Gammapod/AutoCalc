@@ -35,6 +35,17 @@ const appendBuilderRow = (panel: HTMLElement, functionText: string, seedText: st
   panel.appendChild(row);
 };
 
+const appendTruncationIndicator = (panel: HTMLElement): void => {
+  if (typeof document === "undefined") {
+    return;
+  }
+  const marker = document.createElement("div");
+  marker.className = "v2-algebraic-truncated";
+  marker.textContent = "...";
+  marker.setAttribute("aria-label", "Visualizer content compacted to fit");
+  panel.appendChild(marker);
+};
+
 export const clearAlgebraicVisualizerPanel = (root: Element): void => {
   const panel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
   if (!panel) {
@@ -79,4 +90,7 @@ export const renderAlgebraicVisualizerPanel = (root: Element, state: GameState):
     equation.textContent = model.mainLine;
   }
   panel.appendChild(equation);
+  if (model.mainLine.length > 120 || model.recurrenceLine.length > 90) {
+    appendTruncationIndicator(panel);
+  }
 };

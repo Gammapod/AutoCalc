@@ -62,7 +62,10 @@
         --device-width: clamp(300px, 38vw, 420px);
         --v2-storage-peek: clamp(120px, 18dvh, 180px);
         --v2-feed-visible-rows: 7;
+        --v2-visualizer-fixed-width: 460px;
+        --v2-visualizer-scale: 1;
         --v2-visualizer-window-height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
+        --v2-visualizer-effective-height: calc(var(--v2-visualizer-window-height) * var(--v2-visualizer-scale));
         --allocator-surface-top: #8e96a3;
         --allocator-surface-bottom: #6a7281;
         --allocator-surface-stroke: #4e5665;
@@ -999,9 +1002,9 @@
           grid-template-rows 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
       }
 
-      /* Visualizer is currently body-coupled; keep a dedicated width token for future decoupling. */
+      body[data-ui-shell="mobile"] [data-display-window],
       body[data-ui-shell="desktop"] [data-display-window] {
-        width: min(100%, var(--desktop-visualizer-width));
+        width: min(100%, calc(var(--v2-visualizer-fixed-width) * var(--v2-visualizer-scale)));
         margin-inline: auto;
       }
 
@@ -2030,7 +2033,8 @@
         display: block;
         position: relative;
         margin-bottom: 8px;
-        height: var(--v2-visualizer-window-height);
+        width: 100%;
+        height: var(--v2-visualizer-effective-height);
         opacity: 1;
         transform: translateY(0);
         transform-origin: top center;
@@ -2053,7 +2057,7 @@
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"],
       body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"] {
-        height: var(--v2-visualizer-lock-height, var(--v2-visualizer-window-height));
+        height: var(--v2-visualizer-lock-height, var(--v2-visualizer-effective-height));
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
@@ -2061,7 +2065,7 @@
         position: absolute;
         inset: 0;
         margin-bottom: 0;
-        height: var(--v2-visualizer-window-height);
+        height: var(--v2-visualizer-effective-height);
         opacity: 0;
         transform: translateY(16px);
         pointer-events: none;
@@ -2072,7 +2076,7 @@
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
-        max-height: var(--v2-visualizer-window-height);
+        max-height: var(--v2-visualizer-effective-height);
         transform: translateY(0);
         opacity: 1;
         pointer-events: auto;
@@ -2091,7 +2095,7 @@
         display: flex;
         position: absolute;
         inset: 0;
-        height: var(--v2-visualizer-window-height);
+        height: var(--v2-visualizer-effective-height);
         overflow: hidden;
         padding: 8px 10px;
         border: 0;
@@ -2102,7 +2106,7 @@
         color: #b4f1d3;
         flex-direction: column;
         justify-content: flex-start;
-        white-space: pre;
+        white-space: pre-wrap;
         opacity: 0;
         transform: translateY(16px);
         pointer-events: none;
@@ -2123,7 +2127,7 @@
         display: flex;
         position: absolute;
         inset: 0;
-        height: var(--v2-visualizer-window-height);
+        height: var(--v2-visualizer-effective-height);
         overflow: hidden;
         padding: 8px 10px;
         border: 0;
@@ -2236,7 +2240,7 @@
       body[data-ui-shell="desktop"] .v2-algebraic-equation {
         width: 100%;
         max-width: 100%;
-        overflow-x: auto;
+        overflow-x: hidden;
         overflow-y: hidden;
         text-align: center;
         color: #b4f1d3;
@@ -2300,7 +2304,7 @@
       body[data-ui-shell="mobile"] .v2-eigen-equation,
       body[data-ui-shell="desktop"] .v2-eigen-equation {
         width: 100%;
-        overflow-x: auto;
+        overflow-x: hidden;
         overflow-y: hidden;
         text-align: center;
         color: #b4f1d3;
@@ -2434,6 +2438,7 @@
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-left-col {
         min-width: 0;
         overflow: hidden;
+        overflow-wrap: anywhere;
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-r-col,
@@ -2450,7 +2455,7 @@
       body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-table {
         width: 100%;
         height: 100%;
-        overflow-y: auto;
+        overflow-y: hidden;
       }
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row,
@@ -2461,6 +2466,42 @@
         white-space: normal;
         overflow-wrap: anywhere;
         margin-bottom: 2px;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-feed-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-feed-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-factorization-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-factorization-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-algebraic-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-algebraic-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-eigen-allocator-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-eigen-allocator-panel {
+        overflow: hidden;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-feed-table-line,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-feed-table-line,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-factorization-row,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-factorization-row,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-builder-function,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-builder-function,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-builder-seed,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-builder-seed,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-equation,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-equation,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-eigen-equation,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-eigen-equation {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-equation .katex-display,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-equation .katex-display,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-eigen-equation .katex-display,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-eigen-equation .katex-display {
+        max-width: 100%;
+        overflow: hidden;
       }
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--placeholder,

@@ -15,6 +15,10 @@ type VisualizerHostRuntime = {
 
 const TRANSITION_DURATION_MS = 220;
 const LOCK_HEIGHT_VAR = "--v2-visualizer-lock-height";
+const SCALE_VAR = "--v2-visualizer-scale";
+const FIXED_WIDTH_VAR = "--v2-visualizer-fixed-width";
+const FIXED_WIDTH_PX = 460;
+const VIEWPORT_PADDING_PX = 32;
 
 const createHostRuntime = (): VisualizerHostRuntime => ({
   previousActivePanel: "total",
@@ -118,6 +122,7 @@ const resolveTransitionPhase = (
 
 const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void => {
   const host = root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
+  const displayWindow = root.querySelector<HTMLElement>("[data-display-window]");
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
@@ -132,6 +137,13 @@ const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void =
     host.dataset.v2VisualizerTo = "total";
     host.setAttribute("aria-hidden", "true");
     releaseSwapLock(runtime, host);
+    host.dataset.v2FitKind = "";
+    host.dataset.v2FitOverflow = "";
+    host.dataset.v2FitMaxLines = "";
+  }
+  if (displayWindow) {
+    displayWindow.style.removeProperty(SCALE_VAR);
+    displayWindow.style.removeProperty(FIXED_WIDTH_VAR);
   }
   if (graphDevice) {
     graphDevice.setAttribute("aria-hidden", "true");
@@ -156,6 +168,114 @@ const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void =
   }
 };
 
+const resolveHostScale = (): number => {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+  const availableWidth = Math.max(1, window.innerWidth - VIEWPORT_PADDING_PX);
+  return Math.min(1, availableWidth / FIXED_WIDTH_PX);
+};
+
+const applyHostScale = (root: Element): void => {
+  const scale = resolveHostScale();
+  const displayWindow = root.querySelector<HTMLElement>("[data-display-window]");
+  if (!displayWindow) {
+    return;
+  }
+  displayWindow.style.setProperty(SCALE_VAR, scale.toFixed(4));
+};
+
+const applyHostWidthToken = (root: Element, state: GameState): void => {
+  const displayWindow = root.querySelector<HTMLElement>("[data-display-window]");
+  if (!displayWindow) {
+    return;
+  }
+  const widthToken = state.ui.keypadColumns <= 4
+    ? "var(--desktop-calc-width)"
+    : `${FIXED_WIDTH_PX.toString()}px`;
+  displayWindow.style.setProperty(FIXED_WIDTH_VAR, widthToken);
+};
+
+const applyFitContractState = (host: HTMLElement | null, panel: VisualizerHostPanel): void => {
+  if (!host || panel === "total") {
+    if (host) {
+      host.dataset.v2FitKind = "";
+      host.dataset.v2FitOverflow = "";
+      host.dataset.v2FitMaxLines = "";
+    }
+    return;
+  }
+  const module = VISUALIZER_REGISTRY.find((entry) => entry.id === panel);
+  if (!module) {
+    host.dataset.v2FitKind = "";
+    host.dataset.v2FitOverflow = "";
+    host.dataset.v2FitMaxLines = "";
+    return;
+  }
+  host.dataset.v2FitKind = module.fit.kind;
+  host.dataset.v2FitOverflow = module.fit.overflow;
+  host.dataset.v2FitMaxLines = module.fit.budget.maxLines?.toString() ?? "";
+};
+
+const shouldRunDevFitDiagnostics = (): boolean => {
+  if (typeof location === "undefined") {
+    return false;
+  }
+  return location.hostname === "localhost" || location.hostname === "127.0.0.1";
+};
+
+const resolvePanelElement = (root: Element, panel: VisualizerHostPanel): HTMLElement | null => {
+  if (panel === "total") {
+    return root.querySelector<HTMLElement>("[data-v2-total-panel]");
+  }
+  if (panel === "graph") {
+    return root.querySelector<HTMLElement>("[data-grapher-device]");
+  }
+  if (panel === "feed") {
+    return root.querySelector<HTMLElement>("[data-v2-feed-panel]");
+  }
+  if (panel === "factorization") {
+    return root.querySelector<HTMLElement>("[data-v2-factorization-panel]");
+  }
+  if (panel === "circle") {
+    return root.querySelector<HTMLElement>("[data-v2-circle-panel]");
+  }
+  if (panel === "eigen_allocator") {
+    return root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
+  }
+  if (panel === "algebraic") {
+    return root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
+  }
+  return null;
+};
+
+const runDevFitDiagnostics = (root: Element, panel: VisualizerHostPanel): void => {
+  if (!shouldRunDevFitDiagnostics() || panel === "total") {
+    return;
+  }
+  const module = VISUALIZER_REGISTRY.find((entry) => entry.id === panel);
+  if (!module || module.fit.overflow !== "forbid_scroll") {
+    return;
+  }
+  const panelEl = resolvePanelElement(root, panel);
+  if (!panelEl) {
+    return;
+  }
+  const hasHorizontalOverflow = panelEl.scrollWidth > panelEl.clientWidth;
+  const hasVerticalOverflow = panelEl.scrollHeight > panelEl.clientHeight;
+  if (hasHorizontalOverflow || hasVerticalOverflow) {
+    console.warn("[visualizer-fit] active panel exceeded fit bounds", {
+      panel,
+      hasHorizontalOverflow,
+      hasVerticalOverflow,
+      clientWidth: panelEl.clientWidth,
+      scrollWidth: panelEl.scrollWidth,
+      clientHeight: panelEl.clientHeight,
+      scrollHeight: panelEl.scrollHeight,
+    });
+  }
+};
+
 export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPanel => {
   const active = state.ui.activeVisualizer;
   if (active === "total") {
@@ -166,6 +286,8 @@ export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPa
 
 export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const runtime = getHostRuntime(root);
+  applyHostWidthToken(root, state);
+  applyHostScale(root);
   const host = root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
@@ -175,6 +297,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const eigenAllocatorPanel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
   const activePanel = resolveActiveVisualizerPanel(state);
+  applyFitContractState(host, activePanel);
   const transitionPhase = resolveTransitionPhase(runtime.previousActivePanel, activePanel);
   const previousPanel = runtime.previousActivePanel;
 
@@ -223,6 +346,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
       panel.clear(root);
     }
   }
+  runDevFitDiagnostics(root, activePanel);
 
   runtime.previousActivePanel = activePanel;
 };

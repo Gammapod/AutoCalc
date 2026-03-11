@@ -59,30 +59,14 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       true,
       "desktop render sets calculated minimum body height",
     );
+    const lowColumnVisualizerWidthToken = harness.root
+      .querySelector<HTMLElement>("[data-display-window]")
+      ?.style.getPropertyValue("--v2-visualizer-fixed-width");
     assert.equal(
-      calcBody?.style.getPropertyValue("--desktop-visualizer-width"),
-      calcBody?.style.getPropertyValue("--desktop-calc-width"),
-      "desktop visualizer width is coupled to body width token",
+      lowColumnVisualizerWidthToken,
+      "var(--desktop-calc-width)",
+      "when columns are <= 4, visualizer width follows calculator width token",
     );
-
-    harness.root.setAttribute("data-visualizer-width-mode", "fixed");
-    harness.root.setAttribute("data-visualizer-width-px", "333");
-    renderer.render(initialState(), dispatch, {
-            inputBlocked: false,
-    });
-    assert.equal(
-      calcBody?.style.getPropertyValue("--desktop-visualizer-width"),
-      "333.00px",
-      "desktop visualizer width can be decoupled via fixed width config",
-    );
-    assert.equal(
-      calcBody?.style.getPropertyValue("--desktop-visualizer-width")
-        !== calcBody?.style.getPropertyValue("--desktop-calc-width"),
-      true,
-      "fixed visualizer width differs from calculated body width when configured",
-    );
-    harness.root.removeAttribute("data-visualizer-width-mode");
-    harness.root.removeAttribute("data-visualizer-width-px");
     assert.equal(
       keys?.style.gridTemplateRows.includes("minmax(var(--desktop-key-height), 1fr)"),
       true,
@@ -130,6 +114,12 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     renderer.render(wide, dispatch, {
             inputBlocked: false,
     });
+    const displayWindow = harness.root.querySelector<HTMLElement>("[data-display-window]");
+    assert.equal(
+      displayWindow?.style.getPropertyValue("--v2-visualizer-fixed-width"),
+      "460px",
+      "once columns exceed 4, visualizer switches to fixed visualizer width token",
+    );
     const widthAfterWideGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
     assert.equal(widthAfterWideGrowth > widthAtBaseline, true, "desktop width grows once columns exceed 4-column minimum-width baseline");
     const tall = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 3 });

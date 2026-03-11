@@ -69,6 +69,12 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     ["graph", "feed", "factorization", "circle", "eigen_allocator", "algebraic"],
     "visualizer registry preserves graph/feed/factorization/circle order with eigen allocator and algebraic support",
   );
+  for (const module of VISUALIZER_REGISTRY) {
+    assert.equal(module.fit.overflow, "forbid_scroll", `${module.id} visualizer forbids scroll fallback`);
+    assert.equal(module.fit.budget.topPx > 0, true, `${module.id} fit budget top is positive`);
+    assert.equal(module.fit.budget.bodyPx > 0, true, `${module.id} fit budget body is positive`);
+    assert.equal(module.fit.budget.bottomPx > 0, true, `${module.id} fit budget bottom is positive`);
+  }
 
   const withGraphOn: GameState = {
     ...base,
@@ -134,6 +140,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   clearVisualizerHost(missingRoot as unknown as Element);
 
   const renderHost = createFakeElement();
+  const renderDisplayWindow = createFakeElement();
   const renderGraphDevice = createFakeElement();
   const renderFeedPanel = createFakeElement();
   const renderFactorizationPanel = createFakeElement();
@@ -150,6 +157,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     querySelector: (selector: string) => {
       if (selector === "[data-v2-visualizer-host]") {
         return renderHost as unknown as Element;
+      }
+      if (selector === "[data-display-window]") {
+        return renderDisplayWindow as unknown as Element;
       }
       if (selector === "[data-grapher-device]") {
         return renderGraphDevice as unknown as Element;
@@ -176,7 +186,15 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     },
   };
   renderVisualizerHost(renderRoot as unknown as Element, withGraphOn);
+  assert.equal(
+    renderDisplayWindow.attributes["style:--v2-visualizer-fixed-width"],
+    "var(--desktop-calc-width)",
+    "host uses calc-width token when keypad columns are <= 4",
+  );
+  assert.equal(renderDisplayWindow.attributes["style:--v2-visualizer-scale"], "1.0000", "host applies default scale token");
   assert.equal(renderHost.dataset.v2VisualizerPanel, "graph", "host data state tracks active graph panel");
+  assert.equal(renderHost.dataset.v2FitKind, "plot_scale_clip", "host exposes active fit kind");
+  assert.equal(renderHost.dataset.v2FitOverflow, "forbid_scroll", "host exposes active overflow contract");
   assert.equal(renderHost.dataset.v2VisualizerFrom, "total", "host tracks previous panel");
   assert.equal(renderHost.dataset.v2VisualizerTo, "graph", "host tracks next panel");
   assert.equal(renderHost.dataset.v2VisualizerTransition, "enter", "total to graph is enter transition");
@@ -201,6 +219,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     },
   };
   renderVisualizerHost(renderRoot as unknown as Element, withFeedOn);
+  assert.equal(renderHost.dataset.v2FitKind, "text_wrap_clamp", "feed activates text-wrap fit strategy");
   assert.equal(renderHost.dataset.v2VisualizerTransition, "swap", "graph to feed is swap transition");
   assert.equal(renderHost.attributes["data-v2-visualizer-height-lock"], "true", "swap applies temporary height lock");
 

@@ -19,7 +19,6 @@ const padLeft = (text: string, width: number): string => {
 
 const buildDivider = (width: number): string => "-".repeat(width);
 const FEED_VISIBLE_ROWS = 7;
-const FEED_Y_DIVIDER_FILL_WIDTH = 256;
 
 const appendFeedTableLine = (
   table: HTMLElement,
@@ -72,7 +71,7 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   feedPanel.setAttribute("aria-hidden", "false");
 
   const headerLeft = `${padCenter("X", view.xWidth)}|${padCenter("Y", view.yWidth)}`;
-  const dividerLeft = `${buildDivider(view.xWidth)}|${buildDivider(Math.max(view.yWidth, FEED_Y_DIVIDER_FILL_WIDTH))}`;
+  const dividerLeft = `${buildDivider(view.xWidth)}|${buildDivider(view.yWidth)}`;
   const headerR = view.showRColumn ? `|${padCenter("r", view.rWidth)}` : null;
   const dividerR = view.showRColumn ? `|${buildDivider(view.rWidth)}` : null;
   const plainLines: string[] = [buildPlainFeedTableLine(headerLeft, headerR), buildPlainFeedTableLine(dividerLeft, dividerR)];
