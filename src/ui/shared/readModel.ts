@@ -17,7 +17,7 @@ import type {
   UnlockEffect,
 } from "../../domain/types.js";
 
-export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "memory" | "step" | "visualizers" | "execution";
+export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "memory" | "step" | "settings" | "visualizers" | "execution";
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
 
@@ -166,6 +166,9 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   }
   if (key === "C" || key === "CE" || key === "UNDO" || key === "\u2190") {
     return "utility";
+  }
+  if (getButtonDefinition(key)?.category === "settings") {
+    return "settings";
   }
   if (getButtonDefinition(key)?.category === "memory") {
     return "memory";

@@ -26,6 +26,7 @@ import { isKeyUnlocked } from "./keyUnlocks.js";
 import { clearOperationEntry, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import {
   CHECKLIST_UNLOCK_ID,
+  DELTA_RANGE_CLAMP_FLAG,
   OVERFLOW_ERROR_SEEN_ID,
 } from "./state.js";
 import { isDigitKey, isOperatorKey, isUnaryOperatorKey } from "./buttonRegistry.js";
@@ -319,8 +320,22 @@ const buildBuilderExpressionSignature = (slots: GameState["calculator"]["operati
   return signature;
 };
 
-const applyOverflowPolicy = (value: RationalValue, maxDigits: number): EvaluatedExecution => {
+const euclideanModuloBigInt = (value: bigint, modulus: bigint): bigint => {
+  if (modulus <= 0n) {
+    throw new Error("Modulus must be positive.");
+  }
+  const remainder = value % modulus;
+  return remainder < 0n ? remainder + modulus : remainder;
+};
+
+const applyOverflowPolicy = (value: RationalValue, maxDigits: number, state: GameState): EvaluatedExecution => {
+  const deltaRangeWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
   const boundary = computeOverflowBoundary(maxDigits);
+  if (deltaRangeWrapEnabled && value.den === 1n) {
+    const ringWidth = boundary * 2n;
+    const wrapped = euclideanModuloBigInt(value.num + boundary, ringWidth) - boundary;
+    return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
+  }
   if (!exceedsMagnitudeBoundary(value, boundary)) {
     return { nextTotal: toRationalCalculatorValue(value) };
   }
@@ -389,7 +404,7 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
     if (!rationalized) {
       return toSymbolicExecution(expressionKey, symbolicText);
     }
-    const overflowChecked = applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits);
+    const overflowChecked = applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, state);
     return {
       ...overflowChecked,
       symbolic: toSymbolicPayload(expressionKey, symbolicText),
@@ -397,7 +412,7 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
     };
   }
 
-  const overflowChecked = applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits);
+  const overflowChecked = applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, state);
   return {
     ...overflowChecked,
     euclidRemainder: execution.euclidRemainder,

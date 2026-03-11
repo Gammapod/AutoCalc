@@ -35,6 +35,9 @@
         --key-utility-top: #d55f5f;
         --key-utility-bottom: #a84040;
         --key-utility-stroke: #6e2424;
+        --key-settings-top: #e0b249;
+        --key-settings-bottom: #ba8828;
+        --key-settings-stroke: #7c5610;
         --key-memory-top: #8f66b7;
         --key-memory-bottom: #6f4897;
         --key-memory-stroke: #472c63;
@@ -981,6 +984,11 @@
         font-variant-numeric: tabular-nums;
       }
 
+      .slot-display__delta-wrap {
+        color: var(--key-settings-top);
+        font-weight: 700;
+      }
+
       [data-keys] {
         margin-top: 14px;
         display: grid;
@@ -1134,6 +1142,11 @@
       .storage-sort-button[data-storage-sort-group="utility"] {
         background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
         color: #fff7f7;
+      }
+
+      .storage-sort-button[data-storage-sort-group="settings"] {
+        background: linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
+        color: #fffaf0;
       }
 
       .storage-sort-button[data-storage-sort-group="step"] {
@@ -1367,6 +1380,12 @@
         color: #ffffff;
       }
 
+      .key--group-settings {
+        border-color: var(--key-settings-stroke);
+        background: linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
+        color: #ffffff;
+      }
+
       .key--group-step {
         border-color: var(--key-step-stroke);
         background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
@@ -1403,7 +1422,7 @@
         filter: none;
       }
 
-      .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
+      .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-settings):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
         background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
       }
 
@@ -1427,6 +1446,10 @@
 
       .key.key--toggle-active.key--group-memory:not(:disabled) {
         background: linear-gradient(180deg, var(--key-memory-bottom), var(--key-memory-top));
+      }
+
+      .key.key--toggle-active.key--group-settings:not(:disabled) {
+        background: linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
       }
 
       .key.key--toggle-active.key--group-step:not(:disabled) {

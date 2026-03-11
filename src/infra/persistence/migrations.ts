@@ -230,7 +230,7 @@ const SLOT_OPERATOR_VALUES: Slot["operator"][] = [...BINARY_SLOT_OPERATOR_VALUES
 const DRAFTING_OPERATOR_VALUES = BINARY_SLOT_OPERATOR_VALUES;
 const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "pi", "e"] as const;
-const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190"] as const;
+const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190", "\u27E1[-\u{1D6FF}, \u{1D6FF})"] as const;
 const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] as const;
 const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "𝚷𝑝^𝑒", "CIRCLE", "\u03BB", "ALG"] as const;
 const EXEC_KEY_VALUES = ["="] as const;

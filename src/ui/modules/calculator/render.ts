@@ -16,7 +16,7 @@ import {
 } from "../calculatorStorageCore.js";
 import { getKeyVisualGroup, resolveCalculatorKeysLocked } from "./dom.js";
 import {
-  buildOperationSlotDisplay,
+  buildOperationSlotDisplayModel,
   buildRollViewModel,
   getRollLineClassName,
 } from "./viewModel.js";
@@ -77,7 +77,17 @@ export const renderCalculatorV2Module = (
   const newlyUnlockedKeys = getNewlyUnlockedKeys(root, state);
 
   renderTotalDisplay(totalEl, state);
-  slotEl.textContent = buildOperationSlotDisplay(state);
+  const slotDisplay = buildOperationSlotDisplayModel(state);
+  slotEl.textContent = "";
+  const slotBase = document.createElement("span");
+  slotBase.textContent = slotDisplay.base;
+  slotEl.appendChild(slotBase);
+  if (slotDisplay.deltaWrapSuffix) {
+    const deltaWrap = document.createElement("span");
+    deltaWrap.className = "slot-display__delta-wrap";
+    deltaWrap.textContent = slotDisplay.deltaWrapSuffix;
+    slotEl.appendChild(deltaWrap);
+  }
 
   const rollView = buildRollViewModel(state.calculator.rollEntries);
   const rollVisible = isFeedRollVisible(state);

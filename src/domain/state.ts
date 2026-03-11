@@ -9,6 +9,7 @@ export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
 export const AUTO_EQUALS_FLAG = "execution.pause";
+export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";
 export const KEYPAD_DEFAULT_COLUMNS = 1;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
@@ -103,6 +104,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: "M\u2013" },
   { kind: "key", key: "M\u2192" },
   { kind: "key", key: "\u03B1,\u03B2,\u03B3" },
+  { kind: "key", key: "\u27E1[-\u{1D6FF}, \u{1D6FF})", behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
   { kind: "key", key: "FEED" },
   { kind: "key", key: "𝚷𝑝^𝑒" },
   { kind: "key", key: "CIRCLE" },

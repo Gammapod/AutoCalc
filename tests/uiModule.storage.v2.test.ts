@@ -20,7 +20,7 @@ export const runUiModuleStorageV2Tests = (): void => {
     assert.ok(sortControls, "storage module renders sort controls mount");
     assert.equal(
       sortControls?.querySelectorAll(".storage-sort-button").length,
-      7,
+      8,
       "storage module renders all storage sort segments",
     );
     assert.equal(storage?.dataset.storageVisible, "true", "storage module marks storage as visible");

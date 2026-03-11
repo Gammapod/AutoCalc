@@ -10,7 +10,7 @@ Purpose: Record cross-system color and unlock-language guidelines for future con
 - Digit/constant keys are white. Unlock rule is intentionally unresolved; current direction is to tie digit unlocks to demonstrated number-theory understanding for that digit, but details are hazy.
 - Green is the default color of displayed results/visualizations. Green is also the color of execution keys. A single conceptual unlock rule for execution keys and new visualizations is still unresolved.
 - Red is the visualizer error color. Red is also the color of utility keys, which represent meta-operation/input-control actions on the calculator. A utility-specific unlock rule has not been decided on.
-- Yellow is the visualizer color for remainder, modulo, and cycles more broadly.
+- Yellow is the visualizer color for remainder, modulo, and cycles. The ⟡ symbol represents the modulo operator, and also indicates cycles more broadly.
 - Visualizer keys are blue. Unlock rule is intentionally unresolved; direction is to unlock visualizers when they can reveal deeper insight into upcoming unlock requirements.
 - Purple represents meta-progression. Memory keys are purple and upgrade the calculator itself. Anything related to eigenvalues or the control matrix should render purple in visualizers.
 

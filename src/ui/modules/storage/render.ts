@@ -23,6 +23,7 @@ const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: ReturnType<typeof get
   { label: "\u{1D45B}", group: "value_expression", ariaLabel: "Value expression keys" },
   { label: "\u2A02", group: "slot_operator", ariaLabel: "Operator keys" },
   { label: "\u23CF", group: "utility", ariaLabel: "Utility keys" },
+  { label: "\u2699", group: "settings", ariaLabel: "Settings keys" },
   { label: "M", group: "memory", ariaLabel: "Memory keys" },
   { label: "\u25B6", group: "step", ariaLabel: "Step keys" },
   { label: "\u2191__", group: "visualizers", ariaLabel: "Visualizer keys" },
