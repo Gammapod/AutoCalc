@@ -59,6 +59,7 @@ const utilitySet = new Set<UtilityKey>([
   KEY_ID.util_backspace,
   KEY_ID.util_undo,
   KEY_ID.toggle_delta_range_clamp,
+  KEY_ID.toggle_mod_zero_to_delta,
 ]);
 
 const visualizerSet = new Set<VisualizerKey>([

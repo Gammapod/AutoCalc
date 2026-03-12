@@ -37,6 +37,7 @@ export const KEY_ID = {
   memory_adjust_minus: "memory_adjust_minus",
   memory_recall: "memory_recall",
   toggle_delta_range_clamp: "toggle_delta_range_clamp",
+  toggle_mod_zero_to_delta: "toggle_mod_zero_to_delta",
   viz_graph: "viz_graph",
   viz_feed: "viz_feed",
   viz_factorization: "viz_factorization",
@@ -86,7 +87,8 @@ export type UtilityKeyId =
   | typeof KEY_ID.util_clear_entry
   | typeof KEY_ID.util_backspace
   | typeof KEY_ID.util_undo
-  | typeof KEY_ID.toggle_delta_range_clamp;
+  | typeof KEY_ID.toggle_delta_range_clamp
+  | typeof KEY_ID.toggle_mod_zero_to_delta;
 export type VisualizerKeyId =
   | typeof KEY_ID.viz_graph
   | typeof KEY_ID.viz_feed
@@ -136,8 +138,8 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["\u21BA", { keyId: KEY_ID.op_rotate_left, buttonFace: "\u21BA", operatorInlineFace: "\u21BA", operatorSlotFace: "\u21BA", operatorAlgebraicFace: "\u21BA" }],
   ["\u2A51", { keyId: KEY_ID.op_gcd, buttonFace: "\u2A51", operatorInlineFace: "\u2A51", operatorSlotFace: "\u2A51", operatorAlgebraicFace: "\u2A51" }],
   ["\u2A52", { keyId: KEY_ID.op_lcm, buttonFace: "\u2A52", operatorInlineFace: "\u2A52", operatorSlotFace: "\u2A52", operatorAlgebraicFace: "\u2A52" }],
-  ["++", { keyId: KEY_ID.unary_inc, buttonFace: "++", operatorInlineFace: "++", operatorSlotFace: "++", operatorAlgebraicFace: "++" }],
-  ["--", { keyId: KEY_ID.unary_dec, buttonFace: "\u2212\u2212", operatorInlineFace: "\u2212\u2212", operatorSlotFace: "\u2212\u2212", operatorAlgebraicFace: "\u2212\u2212" }],
+  ["++", { keyId: KEY_ID.unary_inc, buttonFace: "+ +", operatorInlineFace: "++", operatorSlotFace: "+ 1", operatorAlgebraicFace: "++" }],
+  ["--", { keyId: KEY_ID.unary_dec, buttonFace: "\u2212 \u2212", operatorInlineFace: "\u2212\u2212", operatorSlotFace: "\u2212 1", operatorAlgebraicFace: "\u2212\u2212" }],
   ["-n", { keyId: KEY_ID.unary_neg, buttonFace: "\u00B1", operatorInlineFace: "\u00B1", operatorSlotFace: "\u00B1", operatorAlgebraicFace: "\u00B1" }],
   ["\u03C3", { keyId: KEY_ID.unary_sigma, buttonFace: "\u03C3", operatorInlineFace: "\u03C3", operatorSlotFace: "\u03C3", operatorAlgebraicFace: "\u03C3" }],
   ["\u03C6", { keyId: KEY_ID.unary_phi, buttonFace: "\u03C6", operatorInlineFace: "\u03C6", operatorSlotFace: "\u03C6", operatorAlgebraicFace: "\u03C6" }],
@@ -151,6 +153,7 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["M\u2013", { keyId: KEY_ID.memory_adjust_minus, buttonFace: "M\u2013" }],
   ["M\u2192", { keyId: KEY_ID.memory_recall, buttonFace: "M\u2192" }],
   ["\u27E1[-\u{1D6FF}, \u{1D6FF})", { keyId: KEY_ID.toggle_delta_range_clamp, buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
+  ["\u27E1[0, \u{1D6FF})", { keyId: KEY_ID.toggle_mod_zero_to_delta, buttonFace: "\u27E1[0, \u{1D6FF})" }],
   ["GRAPH", { keyId: KEY_ID.viz_graph, buttonFace: "GRAPH" }],
   ["FEED", { keyId: KEY_ID.viz_feed, buttonFace: "FEED" }],
   [FACTORIZATION_LEGACY_KEY, { keyId: KEY_ID.viz_factorization, buttonFace: "\u{1D6B7}\u{1D45D}\u{1D49}" }],

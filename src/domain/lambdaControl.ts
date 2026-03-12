@@ -64,7 +64,7 @@ export const getLambdaSpentPoints = (control: LambdaControl): number => control.
 export const getLambdaUnusedPoints = (control: LambdaControl): number => control.maxPoints - getLambdaSpentPoints(control);
 
 export const deriveDelta = (control: Pick<LambdaControl, "alpha" | "beta" | "gamma">): number =>
-  control.gamma + Math.floor(control.alpha / 2) + Math.floor(control.beta / 2);
+  control.gamma + Math.floor((control.alpha + control.beta) / 2);
 
 export const deriveEpsilon = (
   control: Pick<LambdaControl, "alpha" | "beta" | "gamma">,

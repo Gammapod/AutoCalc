@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { applyLifecycleAction } from "../src/domain/reducer.lifecycle.js";
-import { initialState } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState } from "../src/domain/types.js";
 
@@ -46,6 +46,15 @@ export const runReducerLifecycleTests = (): void => {
 
   const blankNoop = reducer(base, { type: "TOGGLE_FLAG", flag: "   " });
   assert.equal(blankNoop, base, "blank flag names are ignored");
+
+  const deltaOn = reducer(base, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
+  assert.equal(deltaOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range settings toggle turns on");
+  const modOn = reducer(deltaOn, { type: "TOGGLE_FLAG", flag: MOD_ZERO_TO_DELTA_FLAG });
+  assert.equal(Boolean(modOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]), false, "mod-range toggle clears delta-range toggle");
+  assert.equal(modOn.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG], true, "mod-range settings toggle turns on");
+  const deltaBackOn = reducer(modOn, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
+  assert.equal(deltaBackOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range toggle can be re-enabled");
+  assert.equal(Boolean(deltaBackOn.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]), false, "delta-range toggle clears mod-range toggle");
 
   const graphOn = reducer(base, { type: "TOGGLE_VISUALIZER", visualizer: "graph" });
   assert.equal(graphOn.ui.activeVisualizer, "graph", "GRAPH visualizer toggles on");

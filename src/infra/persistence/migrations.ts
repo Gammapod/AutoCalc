@@ -272,6 +272,7 @@ const UTILITY_KEY_VALUES = [
   KEY_ID.util_undo,
   KEY_ID.util_backspace,
   KEY_ID.toggle_delta_range_clamp,
+  KEY_ID.toggle_mod_zero_to_delta,
 ] as const;
 const MEMORY_KEY_VALUES = [
   KEY_ID.memory_cycle_variable,

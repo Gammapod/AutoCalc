@@ -27,6 +27,7 @@ import { clearOperationEntry, createResetCalculatorState } from "./reducer.state
 import {
   CHECKLIST_UNLOCK_ID,
   DELTA_RANGE_CLAMP_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
   OVERFLOW_ERROR_SEEN_ID,
 } from "./state.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
@@ -354,7 +355,12 @@ const euclideanModuloBigInt = (value: bigint, modulus: bigint): bigint => {
 
 const applyOverflowPolicy = (value: RationalValue, maxDigits: number, state: GameState): EvaluatedExecution => {
   const deltaRangeWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
+  const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
   const boundary = computeOverflowBoundary(maxDigits);
+  if (modZeroToDeltaEnabled && value.den === 1n) {
+    const wrapped = euclideanModuloBigInt(value.num, boundary);
+    return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
+  }
   if (deltaRangeWrapEnabled && value.den === 1n) {
     const ringWidth = boundary * 2n;
     const wrapped = euclideanModuloBigInt(value.num + boundary, ringWidth) - boundary;

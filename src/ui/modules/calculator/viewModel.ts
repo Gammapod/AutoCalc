@@ -1,5 +1,5 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
-import { DELTA_RANGE_CLAMP_FLAG } from "../../../domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../../../domain/state.js";
 import type { CalculatorValue, CalculatorState, GameState, RollEntry } from "../../../domain/types.js";
 import {
   buildOperationSlotDisplay as buildOperationSlotDisplayShared,
@@ -133,7 +133,8 @@ export const buildRollViewModel = (rollEntries: RollEntry[]): RollViewModel => {
 export const getRollLineClassName = (row: RollRow): string =>
   row.remainder || row.errorCode ? "roll-line roll-line--with-remainder" : "roll-line";
 
-const DELTA_WRAP_SUFFIX = " -> [ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]";
+const DELTA_WRAP_SUFFIX = " -> [ + \u{1D6FF} \u27E1 2\u{1D6FF} \u2212 \u{1D6FF} ]";
+const MOD_ZERO_TO_DELTA_SUFFIX = " -> [ \u27E1 \u{1D6FF} ]";
 
 export type OperationSlotDisplayModel = {
   base: string;
@@ -142,13 +143,21 @@ export type OperationSlotDisplayModel = {
 
 export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotDisplayModel => {
   const base = buildOperationSlotDisplayShared(state);
-  if (!Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG])) {
-    return { base, deltaWrapSuffix: null };
+  const deltaWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
+  const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
+  if (modZeroToDeltaEnabled) {
+    if (base === "(no operation slots)") {
+      return { base: "[ \u27E1 \u{1D6FF} ]", deltaWrapSuffix: null };
+    }
+    return { base, deltaWrapSuffix: MOD_ZERO_TO_DELTA_SUFFIX };
   }
-  if (base === "(no operation slots)") {
-    return { base: "[ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", deltaWrapSuffix: null };
+  if (deltaWrapEnabled) {
+    if (base === "(no operation slots)") {
+      return { base: "[ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", deltaWrapSuffix: null };
+    }
+    return { base, deltaWrapSuffix: DELTA_WRAP_SUFFIX };
   }
-  return { base, deltaWrapSuffix: DELTA_WRAP_SUFFIX };
+  return { base, deltaWrapSuffix: null };
 };
 
 export const buildOperationSlotDisplay = (state: GameState): string => {

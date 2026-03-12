@@ -2,7 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
-import { DELTA_RANGE_CLAMP_FLAG, initialState } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 
@@ -151,6 +151,20 @@ export const runReducerInputTests = (): void => {
   };
   const afterUpperEdgeWrap = applyKeyAction(wrapAtUpperEdgeSource, "=");
   assert.deepEqual(afterUpperEdgeWrap.calculator.total, r(-99n), "delta-wrap toggle maps 98 + 1 to -99 for maxDigits=2");
+
+  const modWrapSource: GameState = {
+    ...overflowSource,
+    ui: {
+      ...overflowSource.ui,
+      buttonFlags: {
+        ...overflowSource.ui.buttonFlags,
+        [MOD_ZERO_TO_DELTA_FLAG]: true,
+      },
+    },
+  };
+  const afterModWrap = applyKeyAction(modWrapSource, "=");
+  assert.deepEqual(afterModWrap.calculator.total, r(1n), "mod-wrap toggle maps 100 to 1 for maxDigits=2");
+  assert.equal(afterModWrap.calculator.rollEntries.at(-1)?.error, undefined, "mod-wrap path does not emit overflow error");
 
   const equalsSource = initialState();
   const afterEquals = applyKeyAction(equalsSource, "=");

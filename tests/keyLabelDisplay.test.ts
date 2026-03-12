@@ -17,6 +17,7 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(k("=")), "=", "equals key label remains =");
   assert.equal(formatKeyLabel(k("1")), "1", "digit label remains literal");
   assert.equal(formatKeyLabel(k("FEED")), "FEED", "FEED key label remains FEED");
+  assert.equal(formatKeyLabel(k("\u27E1[0, \u{1D6FF})")), "\u27E1[0, \u{1D6FF})", "mod-range settings key label renders canonical face");
   assert.equal(formatKeyLabel(KEY_ID.viz_factorization), "𝚷𝑝ᵉ", "factorization visualizer key label renders superscript e");
   assert.equal(formatKeyLabel(k("CIRCLE")), "\u25EF", "CIRCLE key label renders as open circle");
 

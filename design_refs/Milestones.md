@@ -1,6 +1,6 @@
 # Path to v0.8.0
 
-## Milestone 4: Replace Checklist
+## Milestone: Replace Checklist
 
 Goal: remove checklist-first progression UX and replace it with contextual hints inside the calculator experience.
 
@@ -22,37 +22,7 @@ Goal: remove checklist-first progression UX and replace it with contextual hints
 - Predicate-to-hint mapping defined for current unlock catalog.
 - UI and behavior tests updated for hint rendering and checklist removal.
 
-## Milestone 5: Visualizer Fit Contract
-
-Goal: enforce a minimum visualizer window contract so every visualizer layout is guaranteed to render fully inside bounded dimensions.
-
-### Direction
-
-- Introduce global visualizer window constraints (minimum width + fixed/contracted height tokens).
-- Define per-visualizer safe-area layout budgets (title/body/footer or equivalent regions).
-- Require panel-specific overflow policies:
-- text-based visualizers wrap within bounds (no horizontal clipping/scroll),
-- plot-based visualizers scale/clip to viewport bounds deterministically.
-- Add shared host/module contract hooks so each visualizer declares and follows a fit strategy.
-
-### Test/Validation Strategy
-
-- Add contract-level tests for structure/class/overflow policy enforcement in current CI stack.
-- Add optional runtime diagnostics (dev-only) to warn on out-of-bounds rendering.
-- Defer strict pixel-fit validation (real browser metrics) until UX-polish phase test harness is introduced.
-
-### Complexity Note
-
-- Estimated complexity: **7.5-8.5 / 10** (higher than Milestone 3 due to cross-visualizer refactor scope).
-
-### Exit Criteria
-
-- Minimum visualizer window tokens are defined and consumed by all visualizer panels.
-- Each visualizer module declares a fit strategy and renders within host contract bounds.
-- Horizontal clipping/overflow is prevented by design for text panels.
-- Contract tests cover all registered visualizers for fit-policy compliance.
-
-## Milestone 6: Unlock Rule Systematization (Design)
+## Milestone: Unlock Rule Systematization (Design)
 
 Goal: define a regular, generalizable unlock-criteria framework for each key type so progression authoring is consistent and scalable.
 
