@@ -2,6 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { MAX_ROLL_ENTRIES } from "../src/domain/rollEntries.js";
 import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
@@ -177,6 +178,31 @@ export const runReducerInputTests = (): void => {
   assert.equal(afterEquals.calculator.rollEntries[1]?.factorization, undefined, "zero roll result omits factorization payload");
   const afterSecondEquals = applyKeyAction(afterEquals, "=");
   assert.deepEqual(afterSecondEquals.calculator.rollEntries[0]?.y, r(0n), "subsequent equals preserve seed at index 0");
+
+  let longRollState: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(0n),
+      operationSlots: [{ operator: op("+"), operand: 1n }],
+    },
+  };
+  const rollIterations = MAX_ROLL_ENTRIES + 5;
+  for (let index = 0; index < rollIterations; index += 1) {
+    longRollState = applyKeyAction(longRollState, "=");
+  }
+  assert.equal(longRollState.calculator.rollEntries.length, MAX_ROLL_ENTRIES, "roll pruning caps total entry count");
+  assert.deepEqual(longRollState.calculator.rollEntries[0]?.y, r(0n), "roll pruning keeps seed row untouched");
+  assert.deepEqual(
+    longRollState.calculator.rollEntries[1]?.y,
+    r(7n),
+    "roll pruning drops oldest step rows once cap is exceeded",
+  );
+  assert.deepEqual(
+    longRollState.calculator.rollEntries.at(-1)?.y,
+    r(BigInt(rollIterations)),
+    "roll pruning preserves most recent step row",
+  );
 
   const activeRollDigitNoOp: GameState = {
     ...fullyUnlocked,

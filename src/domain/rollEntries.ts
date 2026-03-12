@@ -1,5 +1,8 @@
 import type { CalculatorValue, RationalValue, RollEntry } from "./types.js";
 
+export const MAX_ROLL_ENTRIES = 5000;
+export const MAX_ROLL_STEP_ROWS = MAX_ROLL_ENTRIES - 1;
+
 export const isSeedIndex = (index: number): boolean => index === 0;
 
 export const getSeedRow = (rollEntries: RollEntry[]): RollEntry | undefined => rollEntries[0];
@@ -30,7 +33,16 @@ export const createRollEntry = (
 export const appendSeedIfMissing = (rollEntries: RollEntry[], seed: CalculatorValue): RollEntry[] =>
   rollEntries.length === 0 ? [createRollEntry(seed)] : rollEntries;
 
-export const appendStepRow = (rollEntries: RollEntry[], entry: RollEntry): RollEntry[] => [...rollEntries, entry];
+export const appendStepRow = (rollEntries: RollEntry[], entry: RollEntry): RollEntry[] => {
+  const next = [...rollEntries, entry];
+  if (next.length <= MAX_ROLL_ENTRIES) {
+    return next;
+  }
+
+  const seed = next[0];
+  const prunedSteps = next.slice(-(MAX_ROLL_STEP_ROWS));
+  return [seed, ...prunedSteps];
+};
 
 export const toStepCount = (rollEntries: RollEntry[]): number => Math.max(0, rollEntries.length - 1);
 
@@ -99,4 +111,3 @@ export const calculatorValueEquals = (left: CalculatorValue, right: CalculatorVa
   }
   return false;
 };
-
