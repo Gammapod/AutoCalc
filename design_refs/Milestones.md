@@ -56,4 +56,82 @@ Goal: define a regular, generalizable unlock-criteria framework for each key typ
 
 # Post-v0.8.0
 
-(nothing planned yet)
+## Milestone: Consolidated Mobile/Desktop UI Policy
+
+Goal: convert directional shell sizing guidance into one testable policy for mobile and desktop behavior.
+
+### Direction
+
+- Define a single policy doc for cross-shell sizing rules and constraints.
+- Separate "current implementation" statements from "target state" statements.
+- Convert accepted target rules into measurable UI acceptance criteria.
+
+### Exit Criteria
+
+- A single mobile/desktop policy exists with unambiguous current vs target labels.
+- All accepted target rules have corresponding test or verification criteria.
+- Superseded policy fragments are removed from archived docs and review backlog.
+
+## Milestone: Consolidated Visualizer Policy
+
+Goal: define a concrete visualizer policy with current behavior and staged future contracts.
+
+### Direction
+
+- Document current visualizer behavior and host constraints as implemented.
+- Define staged additions for future visualizer-host capabilities.
+- Tie each staged capability to parity and test expectations.
+
+### Exit Criteria
+
+- Current visualizer contract is documented and testable.
+- Future contract items are split into explicit phases with ownership.
+- Review-flag visualizer items are resolved or retired.
+
+## Milestone: Multiple Calculators
+
+Goal: scope multi-calculator progression into implementable phases.
+
+### Direction
+
+- Define v1 domain model and persistence impact for more than one calculator.
+- Stage rollout from read-only surfaces to one unlockable second calculator.
+- Defer specialist variants until onboarding and complexity targets are validated.
+
+### Exit Criteria
+
+- Phase plan exists with clear boundaries and prerequisite contracts.
+- v1 success metrics and risks are documented.
+- Review-flag multi-calculator items are no longer undecided.
+
+## Milestone: Consolidated UX Policy
+
+Goal: unify color/interaction language into a current-state plus target-state UX policy.
+
+### Direction
+
+- Capture currently implemented visual semantics separately from proposed language.
+- Remove unresolved placeholders from active guidelines and track as planned work.
+- Ensure policy terms are consistent across UX and game design docs.
+
+### Exit Criteria
+
+- UX policy distinguishes implemented vs planned semantics clearly.
+- Conflicting or duplicate color/meaning rules are removed.
+- Review-flag UX-language items are resolved or retired.
+
+## Milestone: Consolidated Unlock Policy
+
+Goal: define a testable unlock-framework policy for key families.
+
+### Direction
+
+- Establish unlock criteria templates per key family.
+- Define allowed predicate patterns and exception rules.
+- Provide authoring guidance that maps templates to concrete unlock definitions.
+
+### Exit Criteria
+
+- Key-family unlock framework is documented with concrete templates.
+- New unlock authoring can follow policy without bespoke rule invention.
+- Review-flag unlock-language placeholders are resolved.
