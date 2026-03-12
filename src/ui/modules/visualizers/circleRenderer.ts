@@ -1,4 +1,5 @@
 import type { GameState } from "../../../domain/types.js";
+import { getStepRows } from "../../../domain/rollEntries.js";
 import {
   detectResidueWheelSpec,
   projectRadialPoints,
@@ -96,7 +97,12 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
 
   if (residueWheelSpec) {
     appendResidueWheelSlices(svg, residueWheelSpec.modulusNumber);
-    const projected = projectResidueWheelPoints(state.calculator.rollEntries, residueWheelSpec, CENTER, PLOT_RADIUS);
+    const projected = projectResidueWheelPoints(
+      getStepRows(state.calculator.rollEntries),
+      residueWheelSpec,
+      CENTER,
+      PLOT_RADIUS,
+    );
     for (const segment of projected.segments) {
       appendTraceSegment(svg, segment);
     }

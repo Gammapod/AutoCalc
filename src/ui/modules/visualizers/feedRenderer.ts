@@ -1,6 +1,5 @@
 import type { GameState } from "../../../domain/types.js";
 import { buildFeedTableViewModel } from "../../shared/readModel.js";
-import { resolveFeedSeedSnapshot } from "./seedSnapshot.js";
 
 const padCenter = (text: string, width: number): string => {
   const visibleText = text.length > width ? text.slice(0, width) : text;
@@ -63,7 +62,6 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   }
 
   const view = buildFeedTableViewModel(
-    resolveFeedSeedSnapshot(state),
     state.calculator.rollEntries,
     state.unlocks.maxTotalDigits,
   );

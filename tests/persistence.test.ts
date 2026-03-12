@@ -46,8 +46,7 @@ export const runPersistenceTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(12n),
-      seedSnapshot: r(9n),
-      rollEntries: re(r(11n), r(12n)),
+      rollEntries: re(r(9n), r(11n), r(12n)),
     },
     keyPressCounts: keyCounts([["+", 3], ["=", 2]]),
     allocatorReturnPressCount: 2,
@@ -94,9 +93,9 @@ export const runPersistenceTests = (): void => {
   const loaded = repo.load();
   assert.ok(loaded, "saved payload hydrates");
   assert.deepEqual(loaded?.calculator.total, r(12n), "round-trip total");
-  assert.deepEqual(loaded?.calculator.seedSnapshot, r(9n), "round-trip seed snapshot");
+  assert.deepEqual(loaded?.calculator.rollEntries[0]?.y, r(9n), "round-trip preserves seed row at index 0");
   assert.deepEqual(
-    loaded?.calculator.rollEntries[0]?.factorization,
+    loaded?.calculator.rollEntries[1]?.factorization,
     {
       sign: 1,
       numerator: [{ prime: 11n, exponent: 1 }],
@@ -148,7 +147,7 @@ export const runPersistenceTests = (): void => {
   );
   assert.ok(legacyV1.state, "legacy payload hydrates");
   assert.deepEqual(legacyV1.state, initialState(), "legacy payload is hard-reset to current initial state");
-  assert.equal(legacyV1.state?.calculator.seedSnapshot, undefined, "legacy payload defaults seed snapshot to undefined");
+  assert.equal(legacyV1.state?.calculator.rollEntries.length, 0, "legacy payload defaults to empty roll");
 
   const legacyV5 = loadFromRawSave(
     JSON.stringify({
@@ -479,7 +478,7 @@ export const runPersistenceTests = (): void => {
   );
   assert.ok(legacyV15MissingFactorization.state, "v15 payload without factorization hydrates");
   assert.deepEqual(
-    legacyV15MissingFactorization.state?.calculator.rollEntries[0]?.factorization,
+    legacyV15MissingFactorization.state?.calculator.rollEntries[1]?.factorization,
     {
       sign: 1,
       numerator: [{ prime: 2n, exponent: 1 }, { prime: 3n, exponent: 1 }],

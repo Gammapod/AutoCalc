@@ -1,6 +1,6 @@
 import type { GameState } from "../../domain/types.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
-import { resolveGraphSeedSnapshot } from "./visualizers/seedSnapshot.js";
+import { toStepCount } from "../../domain/rollEntries.js";
 import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
 
 type GraphDataset = {
@@ -220,10 +220,9 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     return;
   }
 
-  const graphSeedSnapshot = resolveGraphSeedSnapshot(state);
-  const points = buildGraphPoints(state.calculator.rollEntries, graphSeedSnapshot);
-  const hasPoints = isGraphRenderable(state.calculator.rollEntries, graphSeedSnapshot);
-  const options = buildGraphOptions(hasPoints, points, state.calculator.rollEntries.length, state.unlocks.maxTotalDigits);
+  const points = buildGraphPoints(state.calculator.rollEntries);
+  const hasPoints = isGraphRenderable(state.calculator.rollEntries);
+  const options = buildGraphOptions(hasPoints, points, toStepCount(state.calculator.rollEntries), state.unlocks.maxTotalDigits);
   const pointBackgroundColor = points.map((point) => {
     if (point.kind === "remainder") {
       return "#ffd84d";

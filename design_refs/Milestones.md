@@ -21,6 +21,8 @@ Goal: land prerequisite plumbing so orbit-analysis can be implemented without cr
 - Persistence schema and migrations support the analysis container with backward-safe defaults.
 - Contract tests cover index mapping and deterministic analysis update ordering.
 - `design_refs/Implementation Details.md` reflects the current implementation after refactor.
+- Raw roll results and diagnostics stored within one list
+- Roll exposed in debug menu, with a "copy to clipboard" button
 
 ## Milestone: Roll Orbit Analysis Foundation
 

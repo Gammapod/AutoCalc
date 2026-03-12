@@ -168,12 +168,15 @@ export const runReducerInputTests = (): void => {
 
   const equalsSource = initialState();
   const afterEquals = applyKeyAction(equalsSource, "=");
-  assert.deepEqual(afterEquals.calculator.seedSnapshot, r(0n), "first equals captures pre-roll seed snapshot");
   assert.deepEqual(afterEquals.calculator.total, r(0n), "equals with no operations keeps total unchanged");
-  assert.deepEqual(afterEquals.calculator.rollEntries, re(r(0n)), "equals appends current total to roll");
-  assert.equal(afterEquals.calculator.rollEntries[0]?.factorization, undefined, "zero roll result omits factorization payload");
+  assert.deepEqual(
+    afterEquals.calculator.rollEntries.map((entry) => entry.y),
+    [r(0n), r(0n)],
+    "equals stores seed then first step in roll",
+  );
+  assert.equal(afterEquals.calculator.rollEntries[1]?.factorization, undefined, "zero roll result omits factorization payload");
   const afterSecondEquals = applyKeyAction(afterEquals, "=");
-  assert.deepEqual(afterSecondEquals.calculator.seedSnapshot, r(0n), "subsequent equals preserve original seed snapshot");
+  assert.deepEqual(afterSecondEquals.calculator.rollEntries[0]?.y, r(0n), "subsequent equals preserve seed at index 0");
 
   const activeRollDigitNoOp: GameState = {
     ...fullyUnlocked,
@@ -263,7 +266,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterModuloExecution = applyKeyAction(moduloExecutionSource, "=");
-  assert.deepEqual(afterModuloExecution.calculator.seedSnapshot, r(10n), "first equals captures current seed snapshot");
+  assert.deepEqual(afterModuloExecution.calculator.rollEntries[0]?.y, r(10n), "first equals stores current seed at index 0");
   assert.deepEqual(afterModuloExecution.calculator.total, r(2n), "modulo execution sets total to the modulo component");
   assert.deepEqual(
     afterModuloExecution.calculator.rollEntries.at(-1)?.remainder,
@@ -439,28 +442,29 @@ export const runReducerInputTests = (): void => {
     ...fullyUnlocked,
     calculator: {
       ...fullyUnlocked.calculator,
-      seedSnapshot: r(7n),
       total: r(9n),
       rollEntries: re(r(9n)),
     },
   };
   const afterCe = applyKeyAction(clearSeedSource, "CE");
-  assert.equal(afterCe.calculator.seedSnapshot, undefined, "CE clears seed snapshot");
+  assert.equal(afterCe.calculator.rollEntries.length, 0, "CE clears roll entries");
+  assert.equal(afterCe.calculator.rollAnalysis.stopReason, "none", "CE resets roll analysis state");
 
   const afterC = applyKeyAction(clearSeedSource, "C");
-  assert.equal(afterC.calculator.seedSnapshot, undefined, "C clears seed snapshot");
+  assert.equal(afterC.calculator.rollEntries.length, 0, "C clears roll entries");
+  assert.equal(afterC.calculator.rollAnalysis.stopReason, "none", "C resets roll analysis state");
 
   const undoSource: GameState = {
     ...fullyUnlocked,
     calculator: {
       ...fullyUnlocked.calculator,
-      seedSnapshot: r(5n),
       total: r(6n),
-      rollEntries: re(r(6n)),
+      rollEntries: re(r(5n), r(6n)),
     },
   };
   const afterUndo = applyKeyAction(undoSource, "UNDO");
-  assert.deepEqual(afterUndo.calculator.seedSnapshot, r(5n), "UNDO keeps seed snapshot when roll becomes empty");
+  assert.deepEqual(afterUndo.calculator.total, r(5n), "UNDO restores prior trajectory value");
+  assert.deepEqual(afterUndo.calculator.rollEntries, re(r(5n)), "UNDO removes last step and keeps seed row");
 
   const memoryCycleLocked = initialState();
   const afterLockedMemoryCycle = applyKeyAction(memoryCycleLocked, "α,β,γ");

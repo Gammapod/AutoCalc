@@ -89,8 +89,8 @@ export const runUiIntegrationMobileShellTests = (): void => {
       ...withFeed,
       calculator: {
         ...withFeed.calculator,
-        seedSnapshot: r(9n),
         rollEntries: [
+          { y: r(9n) },
           { y: r(10n), remainder: { num: 1n, den: 2n } },
           { y: r(11n), error: { code: "n/0", kind: "division_by_zero" } },
         ],
@@ -124,8 +124,8 @@ export const runUiIntegrationMobileShellTests = (): void => {
       ...withFeed,
       calculator: {
         ...withFeed.calculator,
-        seedSnapshot: r(1n),
         rollEntries: [
+          { y: r(1n) },
           { y: r(2n), remainder: { num: 1n, den: 2n } },
           { y: r(3n) },
           { y: r(4n) },

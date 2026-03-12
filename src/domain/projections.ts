@@ -18,11 +18,7 @@ export type DomainReadModel = {
 };
 
 export const buildReadModel = (state: GameState): DomainReadModel => ({
-  // Match grapher seed semantics: prefer captured seed, else current total before first roll entry.
-  graphPoints: buildGraphPoints(
-    state.calculator.rollEntries,
-    state.calculator.seedSnapshot ?? (state.calculator.rollEntries.length === 0 ? state.calculator.total : undefined),
-  ),
+  graphPoints: buildGraphPoints(state.calculator.rollEntries),
   totalDisplay: calculatorValueToDisplayString(state.calculator.total),
   rollView: buildRollViewModel(state.calculator.rollEntries),
   slotView: buildOperationSlotDisplay(state),

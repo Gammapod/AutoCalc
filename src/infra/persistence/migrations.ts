@@ -1027,7 +1027,7 @@ const toSerializableInitialV12 = (): SerializableStateV12 => migrateV11ToV12(toS
 const toSerializableInitialV13 = (): SerializableStateV13 => migrateV12ToV13(toSerializableInitialV12());
 const toSerializableInitialV14 = (): SerializableStateV14 => migrateV13ToV14(toSerializableInitialV13());
 
-export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 =>
+export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 =>
   version === 1 ||
   version === 2 ||
   version === 3 ||
@@ -1044,7 +1044,8 @@ export const isValidSchemaVersion = (version: unknown): version is 1 | 2 | 3 | 4
   version === 14 ||
   version === 15 ||
   version === 16 ||
-  version === 17;
+  version === 17 ||
+  version === 18;
 
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 => {
   if (!isObject(state)) {
@@ -1757,7 +1758,7 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
     };
     return validateSerializableStateV13(normalizedV13) ? migrateV13ToV14(normalizedV13) : null;
   }
-  if (schemaVersion === 14 || schemaVersion === 15 || schemaVersion === 16 || schemaVersion === 17) {
+  if (schemaVersion === 14 || schemaVersion === 15 || schemaVersion === 16 || schemaVersion === 17 || schemaVersion === 18) {
     const asV14 = state as SerializableStateV14;
     const buttonFlags = withDefaultButtonFlags(normalizeButtonFlags(asV14.ui?.buttonFlags));
     const normalizedV14: SerializableStateV14 = {

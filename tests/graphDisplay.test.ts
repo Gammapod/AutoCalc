@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable } from "../src/ui/modules/visualizers/graphModel.js";
-import type { CalculatorValue, RollEntry } from "../src/domain/types.js";
+import type { RollEntry } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
   kind: "rational",
@@ -12,10 +12,9 @@ const e = (y: RollEntry["y"], patch: Partial<RollEntry> = {}): RollEntry => ({ y
 export const runGraphDisplayTests = (): void => {
   assert.deepEqual(buildGraphPoints([]), [], "empty roll returns no graph points");
   assert.equal(isGraphRenderable([]), false, "empty roll is not graph-renderable");
-  const seed: CalculatorValue = r(13n);
 
   assert.deepEqual(
-    buildGraphPoints([e(r(5n)), e(r(-2n)), e(r(99n))], seed),
+    buildGraphPoints([e(r(13n)), e(r(5n)), e(r(-2n)), e(r(99n))]),
     [
       { x: 0, y: 13, kind: "seed", hasError: false },
       { x: 1, y: 5, kind: "roll", hasError: false },
@@ -24,10 +23,10 @@ export const runGraphDisplayTests = (): void => {
     ],
     "graph points include seed at x=0 and roll entries at x=index+1",
   );
-  assert.equal(isGraphRenderable([e(r(5n))], seed), true, "non-empty rational roll is graph-renderable");
+  assert.equal(isGraphRenderable([e(r(13n)), e(r(5n))]), true, "non-empty rational roll is graph-renderable");
 
   const huge = 9007199254740993n;
-  const hugePoint = buildGraphPoints([e(r(huge))])[0];
+  const hugePoint = buildGraphPoints([e(r(0n)), e(r(huge))])[1];
   assert.equal(hugePoint.x, 1, "large values still map to roll index+1");
   assert.equal(
     Number.isSafeInteger(hugePoint.y),
@@ -36,6 +35,7 @@ export const runGraphDisplayTests = (): void => {
   );
 
   const mixedWithNaN = buildGraphPoints([
+    e(r(0n)),
     e(r(7n)),
     e({ kind: "nan" }),
     e(r(8n), { error: { code: "x\u2209[-R,R]", kind: "overflow" } }),
@@ -44,6 +44,7 @@ export const runGraphDisplayTests = (): void => {
   assert.deepEqual(
     mixedWithNaN,
     [
+      { x: 0, y: 0, kind: "seed", hasError: false },
       { x: 1, y: 7, kind: "roll", hasError: false },
       { x: 3, y: 8, kind: "roll", hasError: true },
       { x: 4, y: 1.5, kind: "remainder", hasError: false },
@@ -52,6 +53,7 @@ export const runGraphDisplayTests = (): void => {
   );
 
   const withDuplicateErrorCodes = buildGraphPoints([
+    e(r(0n)),
     e(r(1n)),
     e(r(2n), { error: { code: "x\u2209[-R,R]", kind: "overflow" } }),
     e(r(3n), { error: { code: "x\u2209[-R,R]", kind: "overflow" } }),
@@ -60,6 +62,7 @@ export const runGraphDisplayTests = (): void => {
   assert.deepEqual(
     withDuplicateErrorCodes,
     [
+      { x: 0, y: 0, kind: "seed", hasError: false },
       { x: 1, y: 1, kind: "roll", hasError: false },
       { x: 2, y: 2, kind: "roll", hasError: true },
       { x: 3, y: 3, kind: "roll", hasError: true },
@@ -69,6 +72,7 @@ export const runGraphDisplayTests = (): void => {
   );
 
   const withNonConsecutiveDuplicates = buildGraphPoints([
+    e(r(0n)),
     e(r(1n), { error: { code: "n/0", kind: "division_by_zero" } }),
     e(r(2n)),
     e(r(3n), { error: { code: "n/0", kind: "division_by_zero" } }),
@@ -76,6 +80,7 @@ export const runGraphDisplayTests = (): void => {
   assert.deepEqual(
     withNonConsecutiveDuplicates,
     [
+      { x: 0, y: 0, kind: "seed", hasError: false },
       { x: 1, y: 1, kind: "roll", hasError: true },
       { x: 2, y: 2, kind: "roll", hasError: false },
       { x: 3, y: 3, kind: "roll", hasError: true },

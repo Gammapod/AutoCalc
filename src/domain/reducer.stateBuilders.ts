@@ -6,18 +6,24 @@ export const createClearedOperationCalculatorState = (
   calculator: GameState["calculator"],
 ): GameState["calculator"] => ({
   ...calculator,
-  seedSnapshot: undefined,
   rollEntries: [],
+  rollAnalysis: {
+    stopReason: "none",
+    cycle: null,
+  },
   operationSlots: [],
   draftingSlot: null,
 });
 
 export const createResetCalculatorState = (): GameState["calculator"] => ({
   total: { kind: "rational", value: fromBigInt(0n) },
-  seedSnapshot: undefined,
   pendingNegativeTotal: false,
   singleDigitInitialTotalEntry: true,
   rollEntries: [],
+  rollAnalysis: {
+    stopReason: "none",
+    cycle: null,
+  },
   operationSlots: [],
   draftingSlot: null,
 });

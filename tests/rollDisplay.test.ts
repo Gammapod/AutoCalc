@@ -115,13 +115,13 @@ export const runRollDisplayTests = (): void => {
   );
 
   assert.deepEqual(
-    buildFeedTableRows(r(42n), []),
+    buildFeedTableRows([e(r(42n))]),
     [{ x: 0, yText: "42", hasRemainder: false, hasError: false }],
     "feed table renders seed-only row",
   );
 
   assert.deepEqual(
-    buildFeedTableRows(r(42n), [e(r(50n))]),
+    buildFeedTableRows([e(r(42n)), e(r(50n))]),
     [
       { x: 0, yText: "42", hasRemainder: false, hasError: false },
       { x: 1, yText: "50", hasRemainder: false, hasError: false },
@@ -129,7 +129,8 @@ export const runRollDisplayTests = (): void => {
     "feed table appends first calculation row after seed",
   );
 
-  const feedWithErrorRows = buildFeedTableRows(r(10n), [
+  const feedWithErrorRows = buildFeedTableRows([
+    e(r(10n)),
     e(r(11n), { error: { code: "n/0", kind: "division_by_zero" } }),
     e(r(12n), { error: { code: "n/0", kind: "division_by_zero" } }),
   ]);
@@ -144,8 +145,8 @@ export const runRollDisplayTests = (): void => {
   );
 
   const feedWindowWithRemainder = buildFeedTableViewModel(
-    r(1n),
     [
+      e(r(1n)),
       e(r(2n)),
       e(r(3n)),
       e(r(4n)),
@@ -163,8 +164,8 @@ export const runRollDisplayTests = (): void => {
   assert.equal(feedWindowWithRemainder.rWidth, 5, "feed r column width is fixed at five");
 
   const feedWindowWithoutVisibleRemainder = buildFeedTableViewModel(
-    r(1n),
     [
+      e(r(1n)),
       e(r(2n), { remainder: rv(1n, 2n) }),
       e(r(3n)),
       e(r(4n)),

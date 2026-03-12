@@ -5,7 +5,7 @@ import { buildAllocatorSnapshot, createDefaultLambdaControl } from "./lambdaCont
 import { KEY_ID, toKeyId } from "./keyPresentation.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 17;
+export const SAVE_SCHEMA_VERSION = 18;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
@@ -153,10 +153,13 @@ export const initialState = (): GameState => {
   return {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
-      seedSnapshot: undefined,
       pendingNegativeTotal: false,
       singleDigitInitialTotalEntry: false,
       rollEntries: [],
+      rollAnalysis: {
+        stopReason: "none",
+        cycle: null,
+      },
       operationSlots: [],
       draftingSlot: null,
     },

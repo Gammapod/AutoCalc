@@ -1,4 +1,4 @@
-import type { CalculatorValue, RollEntry } from "../../domain/types.js";
+import type { RollEntry } from "../../domain/types.js";
 import {
   buildGraphPoints as buildGraphPointsCanonical,
   isGraphRenderable,
@@ -22,7 +22,6 @@ export type GraphPoint = {
 
 export const buildGraphPoints = (
   rollEntries: RollEntry[],
-  seedSnapshot?: CalculatorValue,
-): GraphPoint[] => buildGraphPointsCanonical(rollEntries, seedSnapshot);
+): GraphPoint[] => buildGraphPointsCanonical(rollEntries);
 
 export const isGraphVisible = (rollEntries: RollEntry[]): boolean => isGraphRenderable(rollEntries);

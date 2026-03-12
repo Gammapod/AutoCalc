@@ -16,6 +16,7 @@ import {
 } from "../../domain/keyPresentation.js";
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../domain/analysis.js";
 import { buildUnlockCriteria } from "../../domain/unlockEngine.js";
+import { getSeedRow, getStepRows } from "../../domain/rollEntries.js";
 import type {
   CalculatorValue,
   GameState,
@@ -183,8 +184,8 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
 };
 
 const resolveSeedValueForAlgebra = (state: GameState): CalculatorValue | null => {
-  if (state.calculator.rollEntries.length > 0 && state.calculator.seedSnapshot) {
-    return state.calculator.seedSnapshot;
+  if (state.calculator.rollEntries.length > 0) {
+    return getSeedRow(state.calculator.rollEntries)?.y ?? null;
   }
 
   const noSeedEnteredYet =
@@ -315,20 +316,21 @@ const calculatorValueToFeedText = (value: CalculatorValue): string =>
   calculatorValueToDisplayString(value);
 
 export const buildFeedTableRows = (
-  seedSnapshot: CalculatorValue | undefined,
   rollEntries: RollEntry[],
 ): FeedTableRow[] => {
   const rows: FeedTableRow[] = [];
-  if (seedSnapshot !== undefined) {
+  const seedRow = getSeedRow(rollEntries);
+  if (seedRow) {
     rows.push({
       x: 0,
-      yText: calculatorValueToFeedText(seedSnapshot),
+      yText: calculatorValueToFeedText(seedRow.y),
       hasRemainder: false,
       hasError: false,
     });
   }
-  for (let index = 0; index < rollEntries.length; index += 1) {
-    const entry = rollEntries[index];
+  const stepRows = getStepRows(rollEntries);
+  for (let index = 0; index < stepRows.length; index += 1) {
+    const entry = stepRows[index];
     const hasError = Boolean(entry.error);
     const hasRemainder = Boolean(entry.remainder) && !hasError;
     rows.push({
@@ -343,11 +345,10 @@ export const buildFeedTableRows = (
 };
 
 export const buildFeedTableViewModel = (
-  seedSnapshot: CalculatorValue | undefined,
   rollEntries: RollEntry[],
   unlockedTotalDigits: number = 1,
 ): FeedTableViewModel => {
-  const rows = buildFeedTableRows(seedSnapshot, rollEntries);
+  const rows = buildFeedTableRows(rollEntries);
   const visibleRows = rows.slice(-FEED_MAX_VISIBLE_ROWS);
   const showRColumn = visibleRows.some((row) => row.hasRemainder);
   const yWidth = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));

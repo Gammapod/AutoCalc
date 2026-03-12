@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "../src/ui/modules/visualizers/graphModel.js";
-import type { CalculatorValue, RollEntry } from "../src/domain/types.js";
+import type { RollEntry } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
   kind: "rational",
@@ -10,9 +10,8 @@ const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: big
 const e = (y: RollEntry["y"], patch: Partial<RollEntry> = {}): RollEntry => ({ y, ...patch });
 
 export const runLegacyGraphRenderModelTests = (): void => {
-  const seed: CalculatorValue = r(4n);
   assert.deepEqual(
-    buildGraphPoints([e(r(8n)), e(r(-3n), { remainder: { num: 5n, den: 2n } })], seed),
+    buildGraphPoints([e(r(4n)), e(r(8n)), e(r(-3n), { remainder: { num: 5n, den: 2n } })]),
     [
       { x: 0, y: 4, kind: "seed", hasError: false },
       { x: 1, y: 8, kind: "roll", hasError: false },

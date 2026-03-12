@@ -1,5 +1,6 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
-import type { CalculatorValue, RollEntry } from "../../../domain/types.js";
+import { getSeedRow, getStepRows } from "../../../domain/rollEntries.js";
+import type { RollEntry } from "../../../domain/types.js";
 
 export type GraphPoint = {
   x: number;
@@ -13,19 +14,20 @@ const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 
 export const buildGraphPoints = (
   rollEntries: RollEntry[],
-  seedSnapshot?: CalculatorValue,
 ): GraphPoint[] => {
   const points: GraphPoint[] = [];
-  if (seedSnapshot && isRationalCalculatorValue(seedSnapshot)) {
+  const seed = getSeedRow(rollEntries)?.y;
+  if (seed && isRationalCalculatorValue(seed)) {
     points.push({
       x: 0,
-      y: Number(seedSnapshot.value.num) / Number(seedSnapshot.value.den),
+      y: Number(seed.value.num) / Number(seed.value.den),
       kind: "seed",
       hasError: false,
     });
   }
-  for (let index = 0; index < rollEntries.length; index += 1) {
-    const entry = rollEntries[index];
+  const stepRows = getStepRows(rollEntries);
+  for (let index = 0; index < stepRows.length; index += 1) {
+    const entry = stepRows[index];
     const x = index + 1;
     const value = entry.y;
     if (!isRationalCalculatorValue(value)) {
@@ -72,5 +74,5 @@ export const buildGraphXWindow = (maxXIndex: number): { min: number; max: number
   return { min: maxXIndex - (GRAPH_WINDOW_SIZE - 1), max: maxXIndex };
 };
 
-export const isGraphRenderable = (rollEntries: RollEntry[], seedSnapshot?: CalculatorValue): boolean =>
-  buildGraphPoints(rollEntries, seedSnapshot).length > 0;
+export const isGraphRenderable = (rollEntries: RollEntry[]): boolean =>
+  buildGraphPoints(rollEntries).length > 0;

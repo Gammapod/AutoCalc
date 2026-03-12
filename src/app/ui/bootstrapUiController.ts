@@ -39,6 +39,16 @@ const serializeRationalForDebug = (value: { num: bigint; den: bigint }): { num: 
   den: value.den.toString(),
 });
 
+const serializeCalculatorValueForDebug = (value: GameState["calculator"]["total"]):
+  | { kind: "nan" }
+  | { kind: "rational"; value: { num: string; den: string } }
+  | { kind: "expr"; value: string } =>
+  value.kind === "nan"
+    ? { kind: "nan" }
+    : value.kind === "rational"
+      ? { kind: "rational", value: serializeRationalForDebug(value.value) }
+      : { kind: "expr", value: JSON.stringify(value.value) };
+
 const getOppositeUiShellMode = (mode: UiShellMode): UiShellMode =>
   mode === "mobile" ? "desktop" : "mobile";
 
@@ -100,16 +110,23 @@ export const createBootstrapUiController = ({
 
     const serializedRollState = state.calculator.rollEntries.map((entry, index) => ({
       x: index,
-      y:
-        entry.y.kind === "nan"
-          ? { kind: "nan" as const }
-          : entry.y.kind === "rational"
-            ? { kind: "rational" as const, value: serializeRationalForDebug(entry.y.value) }
-            : { kind: "expr" as const, value: JSON.stringify(entry.y.value) },
+      y: serializeCalculatorValueForDebug(entry.y),
       ...(entry.remainder ? { remainder: serializeRationalForDebug(entry.remainder) } : {}),
       ...(entry.error ? { error: entry.error } : {}),
+      d1: entry.d1 ? serializeRationalForDebug(entry.d1) : null,
+      d2: entry.d2 ? serializeRationalForDebug(entry.d2) : null,
+      r1: entry.r1 ? serializeRationalForDebug(entry.r1) : null,
+      seedMinus1Y: entry.seedMinus1Y ? serializeCalculatorValueForDebug(entry.seedMinus1Y) : null,
+      seedPlus1Y: entry.seedPlus1Y ? serializeCalculatorValueForDebug(entry.seedPlus1Y) : null,
     }));
-    refs.debugRollStateEl.textContent = JSON.stringify(serializedRollState, null, 2);
+    refs.debugRollStateEl.textContent = JSON.stringify(
+      {
+        rollEntries: serializedRollState,
+        rollAnalysis: state.calculator.rollAnalysis,
+      },
+      null,
+      2,
+    );
   };
 
   listen(refs.debugToggle, "change", syncDebugMenuVisibility);

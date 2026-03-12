@@ -22,6 +22,16 @@ import {
   fromCalculator,
   toCalculatorPatch,
 } from "./functionBuilder.js";
+import {
+  addIntToRational,
+  appendSeedIfMissing,
+  appendStepRow,
+  createRollEntry,
+  divRational,
+  getXk,
+  subRational,
+  calculatorValueEquals,
+} from "./rollEntries.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
 import { clearOperationEntry, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import {
@@ -451,8 +461,7 @@ const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): Evaluated
 
 const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
   const factorization = getRollYPrimeFactorization(evaluation.nextTotal);
-  return {
-    y: evaluation.nextTotal,
+  return createRollEntry(evaluation.nextTotal, {
     ...(evaluation.euclidRemainder && !evaluation.errorCode ? { remainder: evaluation.euclidRemainder } : {}),
     ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
     ...(factorization ? { factorization } : {}),
@@ -464,6 +473,181 @@ const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
         },
       }
       : {}),
+  });
+};
+
+const isDiagnosticRationalValue = (
+  value: GameState["calculator"]["total"],
+): value is Extract<GameState["calculator"]["total"], { kind: "rational" }> => value.kind === "rational";
+
+const computePeerStepValue = (
+  previousPeer: GameState["calculator"]["total"],
+  operationSlots: GameState["calculator"]["operationSlots"],
+): GameState["calculator"]["total"] | null => {
+  if (previousPeer.kind !== "rational") {
+    return null;
+  }
+  const executed = executeSlotsValue(previousPeer, operationSlots);
+  if (!executed.ok || executed.total.kind !== "rational") {
+    return null;
+  }
+  return executed.total;
+};
+
+const withRollDiagnosticsApplied = (
+  base: GameState,
+  operationSlots: GameState["calculator"]["operationSlots"],
+): GameState => {
+  const rollEntries = [...base.calculator.rollEntries];
+  const nextIndex = rollEntries.length - 1;
+  if (nextIndex < 1) {
+    return base;
+  }
+  if (base.calculator.rollAnalysis.stopReason !== "none") {
+    return base;
+  }
+
+  const current = rollEntries[nextIndex];
+  const previous = rollEntries[nextIndex - 1];
+  if (!current || !previous) {
+    return base;
+  }
+
+  const currentX = getXk(rollEntries, nextIndex);
+  const previousX = getXk(rollEntries, nextIndex - 1);
+  if (!currentX || !previousX || !isDiagnosticRationalValue(currentX) || !isDiagnosticRationalValue(previousX) || current.error) {
+    return {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollAnalysis: {
+          ...base.calculator.rollAnalysis,
+          stopReason: "invalid",
+        },
+      },
+    };
+  }
+
+  const seed = getXk(rollEntries, 0);
+  if (!seed || !isDiagnosticRationalValue(seed)) {
+    return {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollAnalysis: {
+          ...base.calculator.rollAnalysis,
+          stopReason: "invalid",
+        },
+      },
+    };
+  }
+
+  const cycleMatchIndex = rollEntries
+    .slice(0, nextIndex)
+    .findIndex((entry) => calculatorValueEquals(entry.y, current.y));
+  if (cycleMatchIndex >= 0) {
+    return {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: {
+            i: cycleMatchIndex,
+            j: nextIndex,
+            transientLength: cycleMatchIndex,
+            periodLength: nextIndex - cycleMatchIndex,
+          },
+        },
+      },
+    };
+  }
+
+  const d1 = subRational(currentX.value, previousX.value);
+  let d2: typeof current.d2 = null;
+  if (nextIndex >= 2) {
+    const previousD1 = previous.d1;
+    if (!previousD1) {
+      return {
+        ...base,
+        calculator: {
+          ...base.calculator,
+          rollAnalysis: {
+            ...base.calculator.rollAnalysis,
+            stopReason: "invalid",
+          },
+        },
+      };
+    }
+    d2 = subRational(d1, previousD1);
+  }
+
+  const r1 = divRational(currentX.value, previousX.value);
+  if (!r1) {
+    return {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollAnalysis: {
+          ...base.calculator.rollAnalysis,
+          stopReason: "invalid",
+        },
+      },
+    };
+  }
+
+  const previousPeerMinus =
+    nextIndex === 1
+      ? toRationalCalculatorValue(addIntToRational(seed.value, -1n))
+      : (previous.seedMinus1Y ?? null);
+  const previousPeerPlus =
+    nextIndex === 1
+      ? toRationalCalculatorValue(addIntToRational(seed.value, 1n))
+      : (previous.seedPlus1Y ?? null);
+
+  if (!previousPeerMinus || !previousPeerPlus) {
+    return {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollAnalysis: {
+          ...base.calculator.rollAnalysis,
+          stopReason: "invalid",
+        },
+      },
+    };
+  }
+
+  const seedMinus1Y = computePeerStepValue(previousPeerMinus, operationSlots);
+  const seedPlus1Y = computePeerStepValue(previousPeerPlus, operationSlots);
+  if (!seedMinus1Y || !seedPlus1Y) {
+    return {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollAnalysis: {
+          ...base.calculator.rollAnalysis,
+          stopReason: "invalid",
+        },
+      },
+    };
+  }
+
+  rollEntries[nextIndex] = {
+    ...current,
+    d1,
+    d2,
+    r1,
+    seedMinus1Y,
+    seedPlus1Y,
+  };
+
+  return {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries,
+    },
   };
 };
 
@@ -474,20 +658,21 @@ const applyEquals = (state: GameState): GameState => {
   }
 
   const finalized = finalizeDraftingSlot(state);
-  const shouldCaptureSeed = finalized.calculator.rollEntries.length === 0 && finalized.calculator.seedSnapshot === undefined;
   const evaluation = evaluateExecutionOutcome(finalized, equalsKey);
   const nextEntry = toRollEntry(evaluation);
+  const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
+  const nextRollEntries = appendStepRow(withSeed, nextEntry);
 
-  const withRoll: GameState = {
+  const withRollBase: GameState = {
     ...finalized,
     calculator: {
       ...finalized.calculator,
       total: evaluation.nextTotal,
-      ...(shouldCaptureSeed ? { seedSnapshot: finalized.calculator.total } : {}),
       pendingNegativeTotal: false,
-      rollEntries: [...finalized.calculator.rollEntries, nextEntry],
+      rollEntries: nextRollEntries,
     },
   };
+  const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
 
   const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
   return applyUnlocks(withOverflowMarker, unlockCatalog);
@@ -682,6 +867,10 @@ const applyUndo = (state: GameState): GameState => {
       ...state.calculator,
       total: nextTotal,
       rollEntries: nextRollEntries,
+      rollAnalysis: {
+        stopReason: "none",
+        cycle: null,
+      },
       pendingNegativeTotal: false,
       singleDigitInitialTotalEntry: nextRollEntries.length === 0,
     },

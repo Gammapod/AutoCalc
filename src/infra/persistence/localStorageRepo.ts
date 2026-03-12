@@ -6,6 +6,7 @@ import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, sanitizeLambdaControl, withLegacyAllocatorFallback } from "../../domain/lambdaControl.js";
 import { getRollYPrimeFactorization } from "../../domain/rollDerived.js";
 import { isBinaryOperatorKeyId, isUnaryOperatorId, KEY_ID } from "../../domain/keyPresentation.js";
+import { createRollEntry } from "../../domain/rollEntries.js";
 import { isValidSchemaVersion, migrateToLatest, type SerializableStateV14, type SerializableSlot } from "./migrations.js";
 import type { BinarySlotOperator, GameState, PrimeFactorTerm, RationalPrimeFactorization, UnarySlotOperator } from "../../domain/types.js";
 
@@ -145,13 +146,17 @@ const toSerializableState = (state: GameState): SerializableStateLatest => {
   return ({
   calculator: {
     total: serializeCalculatorValue(state.calculator.total),
-    ...(state.calculator.seedSnapshot ? { seedSnapshot: serializeCalculatorValue(state.calculator.seedSnapshot) } : {}),
     pendingNegativeTotal: state.calculator.pendingNegativeTotal,
     singleDigitInitialTotalEntry: state.calculator.singleDigitInitialTotalEntry,
     rollEntries: state.calculator.rollEntries.map((entry) => ({
       y: serializeCalculatorValue(entry.y),
       ...(entry.remainder ? { remainder: toDisplayString(entry.remainder) } : {}),
       ...(entry.error ? { error: { ...entry.error, rollIndex: 0 } } : {}),
+      d1: entry.d1 ? toDisplayString(entry.d1) : null,
+      d2: entry.d2 ? toDisplayString(entry.d2) : null,
+      r1: entry.r1 ? toDisplayString(entry.r1) : null,
+      seedMinus1Y: entry.seedMinus1Y ? serializeCalculatorValue(entry.seedMinus1Y) : null,
+      seedPlus1Y: entry.seedPlus1Y ? serializeCalculatorValue(entry.seedPlus1Y) : null,
       ...(entry.symbolic
         ? {
             symbolic: {
@@ -163,6 +168,7 @@ const toSerializableState = (state: GameState): SerializableStateLatest => {
         : {}),
       ...(entry.factorization ? { factorization: serializeFactorization(entry.factorization) } : {}),
     })),
+    rollAnalysis: state.calculator.rollAnalysis,
     operationSlots: state.calculator.operationSlots.map<SerializableSlot>((slot) => ({
       kind: slot.kind,
       operator: slot.operator,
@@ -200,10 +206,55 @@ const toSerializableState = (state: GameState): SerializableStateLatest => {
         : {}),
     },
   },
-});
+}) as SerializableStateLatest;
 };
 
-const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameState => {
+const isStopReason = (value: unknown): value is GameState["calculator"]["rollAnalysis"]["stopReason"] =>
+  value === "none" || value === "invalid" || value === "cycle";
+
+const parseLegacySeedSnapshot = (payloadState: SerializableStateLatest): GameState["calculator"]["total"] | null => {
+  const raw = (payloadState.calculator as unknown as { seedSnapshot?: unknown }).seedSnapshot;
+  if (typeof raw !== "string") {
+    return null;
+  }
+  return deserializeCalculatorValue(raw);
+};
+
+const parseRollAnalysis = (payloadState: SerializableStateLatest): GameState["calculator"]["rollAnalysis"] => {
+  const raw = (payloadState.calculator as unknown as { rollAnalysis?: unknown }).rollAnalysis;
+  if (typeof raw !== "object" || raw === null) {
+    return { stopReason: "none", cycle: null };
+  }
+  const candidate = raw as {
+    stopReason?: unknown;
+    cycle?: { i?: unknown; j?: unknown; transientLength?: unknown; periodLength?: unknown } | null;
+  };
+  const stopReason = isStopReason(candidate.stopReason) ? candidate.stopReason : "none";
+  const cycleRaw = candidate.cycle;
+  if (
+    !cycleRaw ||
+    typeof cycleRaw.i !== "number" ||
+    typeof cycleRaw.j !== "number" ||
+    typeof cycleRaw.transientLength !== "number" ||
+    typeof cycleRaw.periodLength !== "number"
+  ) {
+    return { stopReason, cycle: null };
+  }
+  return {
+    stopReason,
+    cycle: {
+      i: cycleRaw.i,
+      j: cycleRaw.j,
+      transientLength: cycleRaw.transientLength,
+      periodLength: cycleRaw.periodLength,
+    },
+  };
+};
+
+const fromSerializableStateV3 = (
+  payloadState: SerializableStateLatest,
+  sourceSchemaVersion: number,
+): GameState => {
   const lambdaInput = payloadState.lambdaControl
     ? {
         maxPoints: payloadState.lambdaControl.maxPoints,
@@ -221,20 +272,18 @@ const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameSta
       }
     : createDefaultLambdaControl();
   const lambdaControl = sanitizeLambdaControl(lambdaInput);
-  return {
-    calculator: {
-    total: deserializeCalculatorValue(payloadState.calculator.total),
-    seedSnapshot: payloadState.calculator.seedSnapshot
-      ? deserializeCalculatorValue(payloadState.calculator.seedSnapshot)
-      : undefined,
-    pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
-    singleDigitInitialTotalEntry: payloadState.calculator.singleDigitInitialTotalEntry ?? false,
-    rollEntries: payloadState.calculator.rollEntries.map((entry) => {
-      const y = deserializeCalculatorValue(entry.y);
-      const serializedFactorization = parseSerializableFactorization((entry as Record<string, unknown>).factorization);
-      const factorization = serializedFactorization ?? getRollYPrimeFactorization(y);
-      return {
-        y,
+  const migratedRollEntries = payloadState.calculator.rollEntries.map((entry) => {
+    const y = deserializeCalculatorValue(entry.y);
+    const serializedFactorization = parseSerializableFactorization((entry as Record<string, unknown>).factorization);
+    const factorization = serializedFactorization ?? getRollYPrimeFactorization(y);
+    const raw = entry as Record<string, unknown>;
+    const d1 = typeof raw.d1 === "string" ? parseRational(raw.d1) : null;
+    const d2 = typeof raw.d2 === "string" ? parseRational(raw.d2) : null;
+    const r1 = typeof raw.r1 === "string" ? parseRational(raw.r1) : null;
+    const seedMinus1Y = typeof raw.seedMinus1Y === "string" ? deserializeCalculatorValue(raw.seedMinus1Y) : null;
+    const seedPlus1Y = typeof raw.seedPlus1Y === "string" ? deserializeCalculatorValue(raw.seedPlus1Y) : null;
+    return {
+      ...createRollEntry(y, {
         ...(entry.remainder ? { remainder: parseRational(entry.remainder) } : {}),
         ...(entry.error ? { error: { code: entry.error.code, kind: entry.error.kind } } : {}),
         ...(entry.symbolic
@@ -247,8 +296,29 @@ const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameSta
             }
           : {}),
         ...(factorization ? { factorization } : {}),
-      };
-    }),
+      }),
+      d1,
+      d2,
+      r1,
+      seedMinus1Y,
+      seedPlus1Y,
+    };
+  });
+  const legacySeedSnapshot = parseLegacySeedSnapshot(payloadState);
+  const rollEntries = migratedRollEntries.length === 0
+    ? []
+    : sourceSchemaVersion >= 18
+      ? migratedRollEntries
+      : legacySeedSnapshot
+        ? [createRollEntry(legacySeedSnapshot), ...migratedRollEntries]
+        : [createRollEntry(migratedRollEntries[0].y), ...migratedRollEntries];
+  return {
+    calculator: {
+    total: deserializeCalculatorValue(payloadState.calculator.total),
+    pendingNegativeTotal: payloadState.calculator.pendingNegativeTotal,
+    singleDigitInitialTotalEntry: payloadState.calculator.singleDigitInitialTotalEntry ?? false,
+    rollEntries,
+    rollAnalysis: parseRollAnalysis(payloadState),
     operationSlots: payloadState.calculator.operationSlots.map((slot) => {
       if (slot.kind === "unary" && isUnarySlotOperator(slot.operator)) {
         return {
@@ -347,7 +417,7 @@ export const loadFromRawSave = (raw: string | null): LoadResult => {
   }
 
   try {
-    return { state: fromSerializableStateV3(migrated), reason: null };
+    return { state: fromSerializableStateV3(migrated, payload.schemaVersion), reason: null };
   } catch {
     return { state: null, reason: LoadFailureReason.DeserializeFailed };
   }

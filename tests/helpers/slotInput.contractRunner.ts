@@ -16,12 +16,23 @@ export type SlotInputScenarioResult = {
 };
 
 const projectState = (state: GameState): SlotInputStateProjection => ({
+  // Contract projections preserve legacy "roll means post-seed trajectory" semantics.
+  // Runtime stores seed at index 0.
+  // For compatibility, project only post-seed rows when a seeded trajectory is present.
+  // A single-row roll is projected as-is to avoid dropping legacy one-step fixtures.
+  ...(() => {
+    const projectedRows = state.calculator.rollEntries.length <= 1
+      ? state.calculator.rollEntries
+      : state.calculator.rollEntries.slice(1);
+    return {
+      roll: projectedRows.map((entry) => entry.y),
+      rollErrors: projectedRows.flatMap((entry, rollIndex) =>
+        entry.error ? [{ rollIndex, code: entry.error.code, kind: entry.error.kind }] : []),
+    };
+  })(),
   total: state.calculator.total,
   operationSlots: state.calculator.operationSlots,
   draftingSlot: state.calculator.draftingSlot,
-  roll: state.calculator.rollEntries.map((entry) => entry.y),
-  rollErrors: state.calculator.rollEntries.flatMap((entry, rollIndex) =>
-    entry.error ? [{ rollIndex, code: entry.error.code, kind: entry.error.kind }] : []),
   keyPressCounts: state.keyPressCounts,
 });
 

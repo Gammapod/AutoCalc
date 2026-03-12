@@ -187,6 +187,23 @@ export type RollEntry = {
   };
   symbolic?: SymbolicRollPayload;
   factorization?: RationalPrimeFactorization;
+  d1?: RationalValue | null;
+  d2?: RationalValue | null;
+  r1?: RationalValue | null;
+  seedMinus1Y?: CalculatorValue | null;
+  seedPlus1Y?: CalculatorValue | null;
+};
+
+export type RollCycleMetadata = {
+  i: number;
+  j: number;
+  transientLength: number;
+  periodLength: number;
+};
+
+export type RollAnalysisState = {
+  stopReason: "none" | "invalid" | "cycle";
+  cycle: RollCycleMetadata | null;
 };
 
 export type RollDomainType = "natural" | "non_positive_integer" | "rational_non_integer";
@@ -199,10 +216,10 @@ export type DraftingSlot = {
 
 export type CalculatorState = {
   total: CalculatorValue;
-  seedSnapshot?: CalculatorValue;
   pendingNegativeTotal: boolean;
   singleDigitInitialTotalEntry: boolean;
   rollEntries: RollEntry[];
+  rollAnalysis: RollAnalysisState;
   operationSlots: Slot[];
   draftingSlot: DraftingSlot | null;
 };
