@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import {
@@ -11,23 +12,20 @@ import {
   shouldSuppressClickForTests,
 } from "../src/ui/modules/input/pressFeedback.js";
 import type { GameState, KeyCell } from "../src/domain/types.js";
+import { k, keyCell } from "./support/keyCompat.js";
 
 export const runButtonBehaviorTests = (): void => {
   resetInputLockStateForTests();
   const base = initialState();
-  const pressCell: KeyCell = { kind: "key", key: "+" };
+  const pressCell: KeyCell = keyCell("+");
   assert.deepEqual(
     buildKeyButtonAction(base, pressCell),
-    { type: "PRESS_KEY", key: "+" },
+    { type: "PRESS_KEY", key: k("+") },
     "default button behavior dispatches PRESS_KEY",
   );
   assert.equal(isToggleFlagActive(base, pressCell), false, "press behavior never reports toggle-active");
 
-  const toggleCell: KeyCell = {
-    kind: "key",
-    key: "1",
-    behavior: { type: "toggle_flag", flag: "sticky.negate" },
-  };
+  const toggleCell: KeyCell = keyCell("1", { type: "toggle_flag", flag: "sticky.negate" });
   assert.deepEqual(
     buildKeyButtonAction(base, toggleCell),
     { type: "TOGGLE_FLAG", flag: "sticky.negate" },
@@ -47,19 +45,19 @@ export const runButtonBehaviorTests = (): void => {
   };
   assert.equal(isToggleFlagActive(withToggleFlag, toggleCell), true, "toggle is active when its flag is set");
 
-  const feedToggleCell: KeyCell = { kind: "key", key: "FEED" };
+  const feedToggleCell: KeyCell = keyCell("FEED");
   assert.deepEqual(
     buildKeyButtonAction(base, feedToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key dispatches visualizer toggle action",
   );
-  const circleToggleCell: KeyCell = { kind: "key", key: "CIRCLE" };
+  const circleToggleCell: KeyCell = keyCell("CIRCLE");
   assert.deepEqual(
     buildKeyButtonAction(base, circleToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
     "CIRCLE key dispatches visualizer toggle action",
   );
-  const eigenAllocatorToggleCell: KeyCell = { kind: "key", key: "\u03BB" };
+  const eigenAllocatorToggleCell: KeyCell = keyCell("\u03BB");
   assert.deepEqual(
     buildKeyButtonAction(base, eigenAllocatorToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" },
@@ -92,3 +90,4 @@ export const runButtonBehaviorTests = (): void => {
 
   resetInputLockStateForTests();
 };
+

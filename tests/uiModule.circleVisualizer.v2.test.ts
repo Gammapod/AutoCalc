@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import {
@@ -22,8 +23,8 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
     calculator: {
       ...base.calculator,
       operationSlots: [
-        { operator: "+", operand: 4n },
-        { operator: "\u27E1", operand: 3n },
+        { operator: op("+"), operand: 4n },
+        { operator: op("\u27E1"), operand: 3n },
       ],
     },
   };
@@ -37,8 +38,8 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
     calculator: {
       ...withFinalMod.calculator,
       operationSlots: [
-        { operator: "+", operand: 4n },
-        { operator: "\u27E1", operand: 1n },
+        { operator: op("+"), operand: 4n },
+        { operator: op("\u27E1"), operand: 1n },
       ],
     },
   };
@@ -49,8 +50,8 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
     calculator: {
       ...withFinalMod.calculator,
       operationSlots: [
-        { operator: "\u27E1", operand: 3n },
-        { operator: "+", operand: 1n },
+        { operator: op("\u27E1"), operand: 3n },
+        { operator: op("+"), operand: 1n },
       ],
     },
   };
@@ -61,8 +62,8 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
     calculator: {
       ...withFinalMod.calculator,
       operationSlots: [
-        { operator: "/", operand: 2n },
-        { operator: "\u27E1", operand: 3n },
+        { operator: op("/"), operand: 2n },
+        { operator: op("\u27E1"), operand: 3n },
       ],
     },
   };
@@ -166,3 +167,5 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
     "negative radial y values project opposite equivalent positive y values",
   );
 };
+
+

@@ -5,6 +5,7 @@ import { expressionToDisplayString, parseExpressionOrThrow } from "../../domain/
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, sanitizeLambdaControl, withLegacyAllocatorFallback } from "../../domain/lambdaControl.js";
 import { getRollYPrimeFactorization } from "../../domain/rollDerived.js";
+import { isBinaryOperatorKeyId, isUnaryOperatorId, KEY_ID } from "../../domain/keyPresentation.js";
 import { isValidSchemaVersion, migrateToLatest, type SerializableStateV14, type SerializableSlot } from "./migrations.js";
 import type { BinarySlotOperator, GameState, PrimeFactorTerm, RationalPrimeFactorization, UnarySlotOperator } from "../../domain/types.js";
 
@@ -136,10 +137,8 @@ const parseSerializableFactorization = (value: unknown): RationalPrimeFactorizat
   };
 };
 
-const UNARY_SLOT_OPERATORS = new Set<UnarySlotOperator>(["++", "--", "-n", "\u03C3", "\u03C6", "\u03A9"]);
-const isUnarySlotOperator = (value: string): value is UnarySlotOperator => UNARY_SLOT_OPERATORS.has(value as UnarySlotOperator);
-const BINARY_SLOT_OPERATORS = new Set<BinarySlotOperator>(["+", "-", "*", "/", "#", "\u27E1", "\u21BA", "\u2A51", "\u2A52"]);
-const isBinarySlotOperator = (value: string): value is BinarySlotOperator => BINARY_SLOT_OPERATORS.has(value as BinarySlotOperator);
+const isUnarySlotOperator = (value: string): value is UnarySlotOperator => isUnaryOperatorId(value as never);
+const isBinarySlotOperator = (value: string): value is BinarySlotOperator => isBinaryOperatorKeyId(value as never);
 
 const toSerializableState = (state: GameState): SerializableStateLatest => {
   const lambdaControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
@@ -257,7 +256,7 @@ const fromSerializableStateV3 = (payloadState: SerializableStateLatest): GameSta
           operator: slot.operator,
         };
       }
-      const operator = isBinarySlotOperator(slot.operator) ? slot.operator : "+";
+      const operator = isBinarySlotOperator(slot.operator) ? slot.operator : KEY_ID.op_add;
       const operandText = slot.operand ?? "0";
       return {
         kind: "binary" as const,
@@ -370,3 +369,4 @@ export const createLocalStorageRepo = (storage: KeyValueStorage) => ({
     storage.removeItem(SAVE_KEY);
   },
 });
+

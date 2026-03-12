@@ -1,5 +1,6 @@
 import { getButtonDefinition, type ButtonBehaviorKind, type ButtonHandlerOverrideId, type ButtonKey } from "./buttonRegistry.js";
 import { buttonRegistry } from "./buttonRegistry.js";
+import { resolveKeyId, toLegacyKey, type KeyLike } from "./keyPresentation.js";
 
 export type KeyActionHandlerId =
   | "apply_digit"
@@ -41,8 +42,8 @@ const overrideHandlerById: Record<ButtonHandlerOverrideId, KeyActionHandlerId> =
   unary_operator_commit_slot: "apply_unary_operator",
 };
 
-export const resolveKeyActionHandlerId = (key: ButtonKey): KeyActionHandlerId => {
-  const definition = getButtonDefinition(key);
+export const resolveKeyActionHandlerId = (key: KeyLike): KeyActionHandlerId => {
+  const definition = getButtonDefinition(toLegacyKey(resolveKeyId(key)));
   if (!definition) {
     return "apply_noop";
   }

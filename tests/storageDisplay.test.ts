@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import {
   buildStorageRenderOrder,
@@ -21,11 +22,11 @@ export const runStorageDisplayTests = (): void => {
     ui: {
       ...base.ui,
       storageLayout: [
-        { kind: "key", key: "+" },
-        { kind: "key", key: "1" },
+        { kind: "key", key: k("+") },
+        { kind: "key", key: k("1") },
         null,
-        { kind: "key", key: "3" },
-        { kind: "key", key: "CE" },
+        { kind: "key", key: k("3") },
+        { kind: "key", key: k("CE") },
         ...base.ui.storageLayout.slice(5),
       ],
     },
@@ -37,8 +38,8 @@ export const runStorageDisplayTests = (): void => {
       },
       valueExpression: {
         ...base.unlocks.valueExpression,
-        "1": true,
-        "3": true,
+        [k("1")]: true,
+        [k("3")]: true,
       },
     },
   };
@@ -56,11 +57,11 @@ export const runStorageDisplayTests = (): void => {
     ui: {
       ...orderedState.ui,
       storageLayout: [
-        { kind: "key", key: "1" },
-        { kind: "key", key: "=" },
+        { kind: "key", key: k("1") },
+        { kind: "key", key: k("=") },
         null,
-        { kind: "key", key: "+" },
-        { kind: "key", key: "CE" },
+        { kind: "key", key: k("+") },
+        { kind: "key", key: k("CE") },
         ...orderedState.ui.storageLayout.slice(5),
       ],
       buttonFlags: {
@@ -114,3 +115,7 @@ export const runStorageDisplayTests = (): void => {
     "switching segments toggles target on and prior segment off",
   );
 };
+
+
+
+

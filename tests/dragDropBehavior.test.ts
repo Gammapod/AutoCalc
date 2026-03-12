@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { classifyDropAction, shouldStartDragFromDelta } from "../src/domain/layoutDragDrop.js";
@@ -18,7 +19,7 @@ export const runDragDropBehaviorTests = (): void => {
       },
       valueExpression: {
         ...base.unlocks.valueExpression,
-        "1": true,
+        [k("1")]: true,
       },
     },
     ui: {
@@ -32,7 +33,7 @@ export const runDragDropBehaviorTests = (): void => {
       ],
       keypadColumns: 5,
       keypadRows: 1,
-      storageLayout: [{ kind: "key", key: "1" }, ...base.ui.storageLayout.slice(1)],
+      storageLayout: [{ kind: "key", key: k("1") }, ...base.ui.storageLayout.slice(1)],
     },
   };
 
@@ -49,13 +50,13 @@ export const runDragDropBehaviorTests = (): void => {
       ...withStorageKey.unlocks,
       valueExpression: {
         ...withStorageKey.unlocks.valueExpression,
-        "2": true,
+        [k("2")]: true,
       },
     },
     ui: {
       ...withStorageKey.ui,
       keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
-        index === 3 ? ({ kind: "key", key: "2" } as const) : cell,
+        index === 3 ? ({ kind: "key", key: k("2") } as const) : cell,
       ),
     },
   };
@@ -83,12 +84,12 @@ export const runDragDropBehaviorTests = (): void => {
       ...withStorageKey.unlocks,
       execution: {
         ...withStorageKey.unlocks.execution,
-        "=": true,
+        [k("=")]: true,
       },
     },
     ui: {
       ...withStorageKey.ui,
-      storageLayout: [{ kind: "key", key: "=" }, ...withStorageKey.ui.storageLayout.slice(1)],
+      storageLayout: [{ kind: "key", key: k("=") }, ...withStorageKey.ui.storageLayout.slice(1)],
     },
   };
   const allowedAdditionalExecutionMove = classifyDropAction(
@@ -108,7 +109,7 @@ export const runDragDropBehaviorTests = (): void => {
       ...withExecutionStorageKey.unlocks,
       execution: {
         ...withExecutionStorageKey.unlocks.execution,
-        "=": true,
+        [k("=")]: true,
       },
     },
     ui: {
@@ -154,7 +155,7 @@ export const runDragDropBehaviorTests = (): void => {
     ui: {
       ...withStorageKey.ui,
       keyLayout: withStorageKey.ui.keyLayout.map((cell, index) =>
-        index === 3 ? ({ kind: "key", key: "+" } as const) : cell,
+        index === 3 ? ({ kind: "key", key: k("+") } as const) : cell,
       ),
     },
   };
@@ -166,3 +167,6 @@ export const runDragDropBehaviorTests = (): void => {
   assert.equal(lockedTargetAction, null, "locked keys are not valid drop targets");
 
 };
+
+
+

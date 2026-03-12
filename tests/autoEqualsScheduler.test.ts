@@ -1,8 +1,10 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "../src/app/autoEqualsScheduler.js";
 import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState, Key, Store } from "../src/domain/types.js";
+import { execution, k, op, executionUnlockPatch } from "./support/keyCompat.js";
 
 type TimerHandle = ReturnType<typeof setInterval>;
 
@@ -97,7 +99,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   scheduler.sync(store.getState());
   assert.equal(countExecutorPresses(store.actions), 1, "toggling on dispatches immediate executor press once");
-  assert.equal(countExecutorPressesForKey(store.actions, "="), 1, "fallback path presses first installed execution key");
+  assert.equal(countExecutorPressesForKey(store.actions, execution("=")), 1, "fallback path presses first installed execution key");
   assert.equal(timers.setCalls, 1, "toggling on creates one interval");
   assert.equal(timers.setMsHistory[0], 1000, "default speed starts at one executor press per second");
   assert.equal(timers.activeCount(), 1, "interval remains active while on");
@@ -117,8 +119,8 @@ export const runAutoEqualsSchedulerTests = (): void => {
 
   timers.tick();
   assert.equal(countExecutorPresses(store.actions), 2, "each interval tick dispatches executor");
-  assert.equal(countExecutorPressesForKey(store.actions, "="), 2, "tick continues pressing =");
-  assert.deepEqual(autoActivatedKeys, ["=", "="], "scheduler reports activated keys for press animation hooks");
+  assert.equal(countExecutorPressesForKey(store.actions, execution("=")), 2, "tick continues pressing =");
+  assert.deepEqual(autoActivatedKeys, [execution("="), execution("=")], "scheduler reports activated keys for press animation hooks");
   assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "successful = execution keeps toggle on");
   assert.equal(timers.activeCount(), 1, "successful = execution keeps interval active");
 
@@ -126,14 +128,14 @@ export const runAutoEqualsSchedulerTests = (): void => {
     ...initialState(),
     calculator: {
       ...initialState().calculator,
-      operationSlots: [{ operator: "+", operand: 1n }],
+      operationSlots: [{ operator: op("+"), operand: 1n }],
     },
     completedUnlockIds: ["unlock_allocator_point_on_first_natural_result"],
     unlocks: {
       ...initialState().unlocks,
       execution: {
         ...initialState().unlocks.execution,
-        "=": true,
+        ...executionUnlockPatch([["=", true]]),
       },
     },
   };
@@ -143,14 +145,14 @@ export const runAutoEqualsSchedulerTests = (): void => {
   validStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   validScheduler.sync(validStore.getState());
   assert.equal(
-    countExecutorPressesForKey(validStore.actions, "="),
+    countExecutorPressesForKey(validStore.actions, execution("=")),
     1,
     "valid equations still trigger immediate equals when toggled on",
   );
   validTimers.tick();
   validTimers.tick();
   assert.equal(
-    countExecutorPressesForKey(validStore.actions, "="),
+    countExecutorPressesForKey(validStore.actions, execution("=")),
     3,
     "valid equations keep auto-equals running past the second attempt",
   );
@@ -162,7 +164,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
       ...initialState().unlocks,
       execution: {
         ...initialState().unlocks.execution,
-        "=": false,
+        ...executionUnlockPatch([["=", false]]),
       },
     },
   };
@@ -172,7 +174,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   invalidStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   invalidScheduler.sync(invalidStore.getState());
   assert.equal(
-    countExecutorPressesForKey(invalidStore.actions, "="),
+    countExecutorPressesForKey(invalidStore.actions, execution("=")),
     1,
     "invalid equals path still attempts immediate = press once",
   );
@@ -183,7 +185,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   );
   invalidTimers.tick();
   assert.equal(
-    countExecutorPressesForKey(invalidStore.actions, "="),
+    countExecutorPressesForKey(invalidStore.actions, execution("=")),
     2,
     "invalid equals path performs second attempt on first interval tick",
   );
@@ -242,3 +244,4 @@ export const runAutoEqualsSchedulerTests = (): void => {
   assert.equal(Boolean(normalized.ui.buttonFlags[AUTO_EQUALS_FLAG]), false, "runtime load clears auto-equals flag");
   assert.equal(Boolean(normalized.ui.buttonFlags["another.flag"]), true, "runtime load preserves other flags");
 };
+

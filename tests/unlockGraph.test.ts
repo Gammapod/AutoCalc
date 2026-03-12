@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { initialState } from "../src/domain/state.js";
@@ -11,6 +12,7 @@ import {
   formatUnlockGraphMermaid,
   formatUnlockGraphReport,
 } from "../src/domain/unlockGraph.js";
+import { execution, k, valueExpr } from "./support/keyCompat.js";
 
 export const runUnlockGraphTests = (): void => {
   const startingKeys = deriveUnlockedKeysFromState(initialState());
@@ -40,11 +42,11 @@ export const runUnlockGraphTests = (): void => {
 
   const analysis = analyzeUnlockGraph(unlockCatalog, startingKeys);
   assert.ok(
-    analysis.unlockedKeysReached.includes("="),
+    analysis.unlockedKeysReached.includes(execution("=")),
     "analysis should include the = key in reached unlock set",
   );
   assert.ok(
-    analysis.unreachableKeys.includes("1"),
+    analysis.unreachableKeys.includes(valueExpr("1")),
     "analysis should include keys with no unlock path as unreachable under current sufficiency rules",
   );
   assert.equal(Array.isArray(analysis.reachedEffectTargets), true, "analysis should include effect-target reachability data");
@@ -170,7 +172,7 @@ export const runUnlockGraphTests = (): void => {
       id: "todo_predicate_fixture",
       description: "fixture",
       predicate: { type: "total_at_most", value: 1n },
-      effect: { type: "unlock_digit", key: "1" },
+      effect: { type: "unlock_digit", key: valueExpr("1") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture",
@@ -181,3 +183,4 @@ export const runUnlockGraphTests = (): void => {
     "unlock graph should build when non-catalog predicate specs are concrete",
   );
 };
+

@@ -1,9 +1,10 @@
-import { addInt, divInt, mulInt, subInt } from "../infra/math/rationalEngine.js";
+﻿import { addInt, divInt, mulInt, subInt } from "../infra/math/rationalEngine.js";
 import { euclideanDivide } from "../infra/math/euclideanEngine.js";
 import { parseSimplifiedTextToExactRational, simplifyExpressionToText } from "../infra/math/symbolicAdapter.js";
 import { calculatorValueToExpression, isRationalCalculatorValue, toExpressionCalculatorValue, toRationalCalculatorValue } from "./calculatorValue.js";
 import { expressionToDisplayString, intExpr, normalizeExpression, slotOperandToExpression } from "./expression.js";
 import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, Slot } from "./types.js";
+import { isUnsupportedSymbolicOperatorKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 
 export type ExecuteSlotsResult =
   | { ok: true; total: RationalValue; euclidRemainder?: RationalValue }
@@ -149,23 +150,23 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       if (nextTotal.den !== 1n) {
         return { ok: false, reason: "nan_input" };
       }
-      if (slot.operator === "++") {
+      if (resolveKeyId(slot.operator) === KEY_ID.unary_inc) {
         nextTotal = addInt(nextTotal, 1n);
-      } else if (slot.operator === "--") {
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_dec) {
         nextTotal = subInt(nextTotal, 1n);
-      } else if (slot.operator === "-n") {
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_neg) {
         nextTotal = mulInt(nextTotal, -1n);
-      } else if (slot.operator === "\u03C3") {
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_sigma) {
         if (nextTotal.num === 0n) {
           return { ok: false, reason: "nan_input" };
         }
         nextTotal = { num: sigmaBigInt(nextTotal.num), den: 1n };
-      } else if (slot.operator === "\u03C6") {
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_phi) {
         if (nextTotal.num === 0n) {
           return { ok: false, reason: "nan_input" };
         }
         nextTotal = { num: phiBigInt(nextTotal.num), den: 1n };
-      } else if (slot.operator === "\u03A9") {
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_omega) {
         if (nextTotal.num === 0n) {
           return { ok: false, reason: "nan_input" };
         }
@@ -181,22 +182,22 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       return { ok: false, reason: "unsupported_symbolic" };
     }
 
-    if (slot.operator === "+") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_add) {
       nextTotal = addInt(nextTotal, slot.operand);
       endsWithEuclidLikeOperator = false;
       continue;
     }
-    if (slot.operator === "-") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_sub) {
       nextTotal = subInt(nextTotal, slot.operand);
       endsWithEuclidLikeOperator = false;
       continue;
     }
-    if (slot.operator === "*") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_mul) {
       nextTotal = mulInt(nextTotal, slot.operand);
       endsWithEuclidLikeOperator = false;
       continue;
     }
-    if (slot.operator === "/") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_div) {
       if (slot.operand === 0n) {
         return { ok: false, reason: "division_by_zero" };
       }
@@ -204,7 +205,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       endsWithEuclidLikeOperator = false;
       continue;
     }
-    if (slot.operator === "#") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_euclid_div) {
       const euclidean = euclideanDivide(nextTotal, slot.operand);
       if (!euclidean.ok) {
         return euclidean;
@@ -214,7 +215,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       endsWithEuclidLikeOperator = true;
       continue;
     }
-    if (slot.operator === "\u27E1") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_mod) {
       const euclidean = euclideanDivide(nextTotal, slot.operand);
       if (!euclidean.ok) {
         return euclidean;
@@ -224,7 +225,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       endsWithEuclidLikeOperator = true;
       continue;
     }
-    if (slot.operator === "\u21BA") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_rotate_left) {
       if (nextTotal.den !== 1n) {
         return { ok: false, reason: "nan_input" };
       }
@@ -232,7 +233,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       endsWithEuclidLikeOperator = false;
       continue;
     }
-    if (slot.operator === "\u2A51") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_gcd) {
       if (nextTotal.den !== 1n) {
         return { ok: false, reason: "nan_input" };
       }
@@ -240,7 +241,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       endsWithEuclidLikeOperator = false;
       continue;
     }
-    if (slot.operator === "\u2A52") {
+    if (resolveKeyId(slot.operator) === KEY_ID.op_lcm) {
       if (nextTotal.den !== 1n) {
         return { ok: false, reason: "nan_input" };
       }
@@ -262,16 +263,16 @@ const applyBinaryExpression = (
   operator: BinarySlotOperator,
   right: ExpressionValue,
 ): ExpressionValue | null => {
-  if (operator === "+") {
+  if (resolveKeyId(operator) === KEY_ID.op_add) {
     return normalizeExpression({ type: "binary", op: "add", left, right });
   }
-  if (operator === "-") {
+  if (resolveKeyId(operator) === KEY_ID.op_sub) {
     return normalizeExpression({ type: "binary", op: "sub", left, right });
   }
-  if (operator === "*") {
+  if (resolveKeyId(operator) === KEY_ID.op_mul) {
     return normalizeExpression({ type: "binary", op: "mul", left, right });
   }
-  if (operator === "/") {
+  if (resolveKeyId(operator) === KEY_ID.op_div) {
     return normalizeExpression({ type: "binary", op: "div", left, right });
   }
   return null;
@@ -282,16 +283,16 @@ const applyBinaryExpressionRaw = (
   operator: BinarySlotOperator,
   right: ExpressionValue,
 ): ExpressionValue | null => {
-  if (operator === "+") {
+  if (resolveKeyId(operator) === KEY_ID.op_add) {
     return { type: "binary", op: "add", left, right };
   }
-  if (operator === "-") {
+  if (resolveKeyId(operator) === KEY_ID.op_sub) {
     return { type: "binary", op: "sub", left, right };
   }
-  if (operator === "*") {
+  if (resolveKeyId(operator) === KEY_ID.op_mul) {
     return { type: "binary", op: "mul", left, right };
   }
-  if (operator === "/") {
+  if (resolveKeyId(operator) === KEY_ID.op_div) {
     return { type: "binary", op: "div", left, right };
   }
   return null;
@@ -317,7 +318,7 @@ export const buildSymbolicExpression = (total: CalculatorValue, slots: Slot[]): 
     if (!("operand" in slot)) {
       return { ok: false, reason: "unsupported_symbolic" };
     }
-    if (slot.operator === "#" || slot.operator === "\u27E1" || slot.operator === "\u21BA" || slot.operator === "\u2A51" || slot.operator === "\u2A52") {
+    if (isUnsupportedSymbolicOperatorKeyId(slot.operator)) {
       return { ok: false, reason: "unsupported_symbolic" };
     }
     const right = typeof slot.operand === "bigint" ? intExpr(slot.operand) : slotOperandToExpression(slot.operand);
@@ -403,7 +404,7 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
     if (!("operand" in slot)) {
       return { ok: false, reason: "unsupported_symbolic" };
     }
-    if (slot.operator === "#" || slot.operator === "\u27E1" || slot.operator === "\u21BA" || slot.operator === "\u2A51" || slot.operator === "\u2A52") {
+    if (isUnsupportedSymbolicOperatorKeyId(slot.operator)) {
       return { ok: false, reason: "unsupported_symbolic" };
     }
     const right = typeof slot.operand === "bigint" ? intExpr(slot.operand) : slotOperandToExpression(slot.operand);
@@ -416,3 +417,4 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
 
   return { ok: true, total: toExpressionCalculatorValue(currentExpression) };
 };
+

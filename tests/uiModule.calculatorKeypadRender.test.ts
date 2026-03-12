@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { installDomHarness } from "./helpers/domHarness.js";
 import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
@@ -37,7 +38,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
       ...initialState(),
       ui: {
         ...initialState().ui,
-        keyLayout: [{ kind: "key", key: "1" as const }],
+        keyLayout: [{ kind: "key", key: k("1") }],
         keypadColumns: 1,
         keypadRows: 1,
       },
@@ -45,7 +46,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
         ...initialState().unlocks,
         valueExpression: {
           ...initialState().unlocks.valueExpression,
-          "1": true,
+          [k("1")]: true,
         },
       },
     };
@@ -56,7 +57,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
       newlyUnlockedKeys: new Set(),
       bindUnlockAnimationLock: () => {},
     });
-    const oneButton = keysEl.querySelector<HTMLButtonElement>("button[data-key='1']");
+    const oneButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("1")}']`);
     assert.ok(oneButton, "renders configured single key");
     oneButton?.click();
     assert.equal(dispatches.length, 2, "single-key click dispatches normally");
@@ -77,7 +78,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
       newlyUnlockedKeys: new Set(),
       bindUnlockAnimationLock: () => {},
     });
-    const autoOffButton = keysEl.querySelector<HTMLButtonElement>("button[data-key='1']");
+    const autoOffButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("1")}']`);
     autoOffButton?.click();
     assert.equal(dispatches.length, 4, "non-toggle key press dispatches auto-off toggle plus key press while auto-equals is active");
 
@@ -85,7 +86,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
       ...initialState(),
       ui: {
         ...initialState().ui,
-        keyLayout: [{ kind: "key", key: "++" as const }],
+        keyLayout: [{ kind: "key", key: k("++") }],
         keypadColumns: 1,
         keypadRows: 1,
       },
@@ -94,7 +95,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
         maxSlots: 1,
         unaryOperators: {
           ...initialState().unlocks.unaryOperators,
-          "++": true,
+          [k("++")]: true,
         },
       },
     };
@@ -104,11 +105,15 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
       newlyUnlockedKeys: new Set(),
       bindUnlockAnimationLock: () => {},
     });
-    const unaryButton = keysEl.querySelector<HTMLButtonElement>("button[data-key='++']");
+    const unaryButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("++")}']`);
     assert.equal(unaryButton?.classList.contains("key--group-slot_operator"), true, "unary key uses operator color group");
     assert.equal(unaryButton?.classList.contains("key--unary-operator"), true, "unary key receives unary stripe class");
   } finally {
     harness.teardown();
   }
 };
+
+
+
+
 

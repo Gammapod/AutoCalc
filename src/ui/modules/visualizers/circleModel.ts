@@ -1,5 +1,6 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import type { GameState, RollEntry } from "../../../domain/types.js";
+import { KEY_ID } from "../../../domain/keyPresentation.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "./graphModel.js";
 import { resolveGraphSeedSnapshot } from "./seedSnapshot.js";
 
@@ -56,7 +57,7 @@ export const detectResidueWheelSpec = (state: GameState): ResidueWheelSpec | nul
   }
 
   const lastSlot = state.calculator.operationSlots[slotCount - 1];
-  if (lastSlot.operator !== "\u27E1") {
+  if (lastSlot.operator !== KEY_ID.op_mod) {
     return null;
   }
   if (typeof lastSlot.operand !== "bigint") {
@@ -67,7 +68,7 @@ export const detectResidueWheelSpec = (state: GameState): ResidueWheelSpec | nul
   }
 
   // Keep wheel mode limited to integer-preserving slot chains.
-  if (state.calculator.operationSlots.some((slot) => slot.operator === "/")) {
+  if (state.calculator.operationSlots.some((slot) => slot.operator === KEY_ID.op_div)) {
     return null;
   }
 

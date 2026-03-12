@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -43,7 +44,7 @@ export const runUiModuleInputV2Tests = (): void => {
       ],
       keypadColumns: 5,
       keypadRows: 1,
-      storageLayout: [{ kind: "key", key: "1" } as const, ...state.ui.storageLayout.slice(1)],
+      storageLayout: [{ kind: "key", key: k("1") } as const, ...state.ui.storageLayout.slice(1)],
     },
   };
   const action = classifyDropAction(
@@ -98,4 +99,6 @@ export const runUiModuleInputV2Tests = (): void => {
 
   resetInputLockStateForTests();
 };
+
+
 

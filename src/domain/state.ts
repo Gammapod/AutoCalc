@@ -2,6 +2,7 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl } from "./lambdaControl.js";
+import { KEY_ID, toKeyId } from "./keyPresentation.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 17;
@@ -21,7 +22,7 @@ export const OPERATION_SLOTS_MAX = 4;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
-const DEFAULT_KEYPAD_KEYS: readonly Key[] = ["="];
+const DEFAULT_KEYPAD_KEYS: readonly Key[] = [KEY_ID.exec_equals];
 const isDefaultDrawerExecutionCell = (cell: LayoutCell): cell is KeyCell =>
   cell.kind === "key" && DEFAULT_KEYPAD_KEYS.includes(cell.key) && !cell.behavior;
 
@@ -29,13 +30,13 @@ type UnlockGroup = Exclude<ButtonUnlockGroup, "none">;
 type UnlockGroupRecord<B extends UnlockGroup> =
   B extends "valueAtoms" ? GameState["unlocks"]["valueAtoms"]
     : B extends "valueCompose" ? GameState["unlocks"]["valueCompose"]
-    : B extends "slotOperators" ? GameState["unlocks"]["slotOperators"]
-      : B extends "unaryOperators" ? GameState["unlocks"]["unaryOperators"]
-      : B extends "utilities" ? GameState["unlocks"]["utilities"]
-        : B extends "memory" ? GameState["unlocks"]["memory"]
-          : B extends "steps" ? GameState["unlocks"]["steps"]
-            : B extends "visualizers" ? GameState["unlocks"]["visualizers"]
-              : GameState["unlocks"]["execution"];
+      : B extends "slotOperators" ? GameState["unlocks"]["slotOperators"]
+        : B extends "unaryOperators" ? GameState["unlocks"]["unaryOperators"]
+          : B extends "utilities" ? GameState["unlocks"]["utilities"]
+            : B extends "memory" ? GameState["unlocks"]["memory"]
+              : B extends "steps" ? GameState["unlocks"]["steps"]
+                : B extends "visualizers" ? GameState["unlocks"]["visualizers"]
+                  : GameState["unlocks"]["execution"];
 
 const buildUnlockRecord = <B extends UnlockGroup>(group: B): UnlockGroupRecord<B> => {
   const record: Record<string, boolean> = {};
@@ -43,7 +44,7 @@ const buildUnlockRecord = <B extends UnlockGroup>(group: B): UnlockGroupRecord<B
     if (entry.unlockGroup !== group) {
       continue;
     }
-    record[entry.key] = entry.defaultUnlocked;
+    record[toKeyId(entry.key)] = entry.defaultUnlocked;
   }
   return record as UnlockGroupRecord<B>;
 };
@@ -96,50 +97,50 @@ export const defaultDrawerKeyLayout = (
 export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "graph" },
   { kind: "placeholder", area: "empty" },
-  { kind: "key", key: "CE" },
-  { kind: "key", key: "\u2190" },
-  { kind: "key", key: "UNDO" },
-  { kind: "key", key: "C" },
-  { kind: "key", key: "M+" },
-  { kind: "key", key: "M\u2013" },
-  { kind: "key", key: "M\u2192" },
-  { kind: "key", key: "\u03B1,\u03B2,\u03B3" },
-  { kind: "key", key: "\u27E1[-\u{1D6FF}, \u{1D6FF})", behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
-  { kind: "key", key: "FEED" },
-  { kind: "key", key: "𝚷𝑝^𝑒" },
-  { kind: "key", key: "CIRCLE" },
-  { kind: "key", key: "GRAPH" },
-  { kind: "key", key: "ALG" },
-  { kind: "key", key: "\u03BB" },
-  { kind: "key", key: "/" },
-  { kind: "key", key: "\u27E1" },
-  { kind: "key", key: "\u21BA" },
-  { kind: "key", key: "\u2A51" },
-  { kind: "key", key: "\u2A52" },
-  { kind: "key", key: "#" },
-  { kind: "key", key: "*" },
-  { kind: "key", key: "7" },
-  { kind: "key", key: "8" },
-  { kind: "key", key: "9" },
-  { kind: "key", key: "pi" },
-  { kind: "key", key: "-" },
-  { kind: "key", key: "4" },
-  { kind: "key", key: "5" },
-  { kind: "key", key: "6" },
-  { kind: "key", key: "e" },
-  { kind: "key", key: "+" },
-  { kind: "key", key: "++" },
-  { kind: "key", key: "--" },
-  { kind: "key", key: "-n" },
-  { kind: "key", key: "\u03C3" },
-  { kind: "key", key: "\u03C6" },
-  { kind: "key", key: "\u03A9" },
-  { kind: "key", key: "1" },
-  { kind: "key", key: "2" },
-  { kind: "key", key: "3" },
-  { kind: "key", key: "0" },
-  { kind: "key", key: "=" },
-  { kind: "key", key: "=", behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
+  { kind: "key", key: KEY_ID.util_clear_entry },
+  { kind: "key", key: KEY_ID.util_backspace },
+  { kind: "key", key: KEY_ID.util_undo },
+  { kind: "key", key: KEY_ID.util_clear_all },
+  { kind: "key", key: KEY_ID.memory_adjust_plus },
+  { kind: "key", key: KEY_ID.memory_adjust_minus },
+  { kind: "key", key: KEY_ID.memory_recall },
+  { kind: "key", key: KEY_ID.memory_cycle_variable },
+  { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
+  { kind: "key", key: KEY_ID.viz_feed },
+  { kind: "key", key: KEY_ID.viz_factorization },
+  { kind: "key", key: KEY_ID.viz_circle },
+  { kind: "key", key: KEY_ID.viz_graph },
+  { kind: "key", key: KEY_ID.viz_algebraic },
+  { kind: "key", key: KEY_ID.viz_eigen_allocator },
+  { kind: "key", key: KEY_ID.op_div },
+  { kind: "key", key: KEY_ID.op_mod },
+  { kind: "key", key: KEY_ID.op_rotate_left },
+  { kind: "key", key: KEY_ID.op_gcd },
+  { kind: "key", key: KEY_ID.op_lcm },
+  { kind: "key", key: KEY_ID.op_euclid_div },
+  { kind: "key", key: KEY_ID.op_mul },
+  { kind: "key", key: KEY_ID.digit_7 },
+  { kind: "key", key: KEY_ID.digit_8 },
+  { kind: "key", key: KEY_ID.digit_9 },
+  { kind: "key", key: KEY_ID.const_pi },
+  { kind: "key", key: KEY_ID.op_sub },
+  { kind: "key", key: KEY_ID.digit_4 },
+  { kind: "key", key: KEY_ID.digit_5 },
+  { kind: "key", key: KEY_ID.digit_6 },
+  { kind: "key", key: KEY_ID.const_e },
+  { kind: "key", key: KEY_ID.op_add },
+  { kind: "key", key: KEY_ID.unary_inc },
+  { kind: "key", key: KEY_ID.unary_dec },
+  { kind: "key", key: KEY_ID.unary_neg },
+  { kind: "key", key: KEY_ID.unary_sigma },
+  { kind: "key", key: KEY_ID.unary_phi },
+  { kind: "key", key: KEY_ID.unary_omega },
+  { kind: "key", key: KEY_ID.digit_1 },
+  { kind: "key", key: KEY_ID.digit_2 },
+  { kind: "key", key: KEY_ID.digit_3 },
+  { kind: "key", key: KEY_ID.digit_0 },
+  { kind: "key", key: KEY_ID.exec_equals },
+  { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
 ];
 
 export const initialState = (): GameState => {
@@ -192,4 +193,3 @@ export const initialState = (): GameState => {
     completedUnlockIds: [],
   };
 };
-

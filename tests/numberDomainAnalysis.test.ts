@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { analyzeNumberDomains, analyzeUnlockSpecRows } from "../src/domain/analysis.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
@@ -33,20 +34,19 @@ export const runNumberDomainAnalysisTests = (): void => {
       ...base.unlocks,
       valueExpression: {
         ...base.unlocks.valueExpression,
-        "1": true,
+        ...valueExpressionUnlockPatch([["1", true]]),
       },
       slotOperators: {
         ...base.unlocks.slotOperators,
-        "+": true,
-        "-": true,
+        ...slotOperatorUnlockPatch([["+", true], ["-", true]]),
       },
       utilities: {
         ...base.unlocks.utilities,
-        C: true,
+        ...utilityUnlockPatch([["C", true]]),
       },
       execution: {
         ...base.unlocks.execution,
-        "=": true,
+        ...executionUnlockPatch([["=", true]]),
       },
     },
   };
@@ -123,15 +123,15 @@ export const runNumberDomainAnalysisTests = (): void => {
       ...base.unlocks,
       valueExpression: {
         ...base.unlocks.valueExpression,
-        "1": true,
+        ...valueExpressionUnlockPatch([["1", true]]),
       },
       slotOperators: {
         ...base.unlocks.slotOperators,
-        "-": true,
+        ...slotOperatorUnlockPatch([["-", true]]),
       },
       execution: {
         ...base.unlocks.execution,
-        "=": true,
+        ...executionUnlockPatch([["=", true]]),
       },
     },
   };
@@ -179,11 +179,11 @@ export const runNumberDomainAnalysisTests = (): void => {
       ...base.unlocks,
       unaryOperators: {
         ...base.unlocks.unaryOperators,
-        "++": true,
+        [uop("++")]: true,
       },
       execution: {
         ...base.unlocks.execution,
-        "=": true,
+        ...executionUnlockPatch([["=", true]]),
       },
     },
   };
@@ -192,7 +192,7 @@ export const runNumberDomainAnalysisTests = (): void => {
       id: "fixture_total_at_least",
       description: "fixture",
       predicate: { type: "total_at_least", value: 1n },
-      effect: { type: "unlock_digit", key: "1" },
+      effect: { type: "unlock_digit", key: valueExpr("1") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture",
@@ -207,11 +207,11 @@ export const runNumberDomainAnalysisTests = (): void => {
       ...base.unlocks,
       unaryOperators: {
         ...base.unlocks.unaryOperators,
-        "--": true,
+        [uop("--")]: true,
       },
       execution: {
         ...base.unlocks.execution,
-        "=": true,
+        ...executionUnlockPatch([["=", true]]),
       },
     },
   };
@@ -220,7 +220,7 @@ export const runNumberDomainAnalysisTests = (): void => {
       id: "fixture_total_at_most",
       description: "fixture",
       predicate: { type: "total_at_most", value: -1n },
-      effect: { type: "unlock_digit", key: "1" },
+      effect: { type: "unlock_digit", key: valueExpr("1") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture",
@@ -235,11 +235,11 @@ export const runNumberDomainAnalysisTests = (): void => {
       ...base.unlocks,
       unaryOperators: {
         ...base.unlocks.unaryOperators,
-        "-n": true,
+        [uop("-n")]: true,
       },
       execution: {
         ...base.unlocks.execution,
-        "=": true,
+        ...executionUnlockPatch([["=", true]]),
       },
     },
   };
@@ -248,7 +248,7 @@ export const runNumberDomainAnalysisTests = (): void => {
       id: "fixture_alt_sign",
       description: "fixture",
       predicate: { type: "roll_ends_with_alternating_sign_constant_abs_run", length: 3 },
-      effect: { type: "unlock_digit", key: "1" },
+      effect: { type: "unlock_digit", key: valueExpr("1") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture",
@@ -269,7 +269,7 @@ export const runNumberDomainAnalysisTests = (): void => {
         type: "roll_contains_value",
         value: 1n,
       },
-      effect: { type: "unlock_digit", key: "1" },
+      effect: { type: "unlock_digit", key: valueExpr("1") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture",
@@ -282,3 +282,4 @@ export const runNumberDomainAnalysisTests = (): void => {
     "form_operator_plus_operand stays binary-only when only unary operators are unlocked",
   );
 };
+

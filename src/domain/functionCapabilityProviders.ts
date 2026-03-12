@@ -1,6 +1,7 @@
 import { keyCatalog } from "../content/keyCatalog.js";
-import { isOperatorKey, isUnaryOperatorKey } from "./buttonRegistry.js";
+
 import type { Key } from "./types.js";
+import { isBinaryOperatorKeyId, isUnaryOperatorId, KEY_ID, toKeyId } from "./keyPresentation.js";
 import type { CapabilityId } from "./predicateCapabilitySpec.js";
 
 export type SufficientClause = readonly Key[];
@@ -16,19 +17,19 @@ export type FunctionCapabilityProviderSpec = {
 const keysWithTrait = (trait: string): Key[] =>
   keyCatalog
     .filter((entry) => entry.traits.includes(trait as never))
-    .map((entry) => entry.key as Key);
+     .map((entry) => toKeyId(entry.key));
 
 const operatorKeys = (): Key[] =>
   keyCatalog
-    .filter((entry) => isOperatorKey(entry.key as Key))
-    .map((entry) => entry.key as Key);
+    .filter((entry) => isBinaryOperatorKeyId(toKeyId(entry.key)))
+     .map((entry) => toKeyId(entry.key));
 
 const unaryOperatorKeys = (): Key[] =>
   keyCatalog
-    .filter((entry) => isUnaryOperatorKey(entry.key as Key))
-    .map((entry) => entry.key as Key);
+    .filter((entry) => isUnaryOperatorId(toKeyId(entry.key)))
+     .map((entry) => toKeyId(entry.key));
 
-const hasKey = (key: string): key is Key => keyCatalog.some((entry) => entry.key === key);
+const hasKey = (key: Key): boolean => keyCatalog.some((entry) => toKeyId(entry.key) === key);
 
 const uniqueClauses = (clauses: Array<Array<Key | string>>): Key[][] => {
   const seen = new Set<string>();
@@ -54,20 +55,20 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
   const executeKeys = keysWithTrait("can_execute");
   const operatorKeysList = operatorKeys();
   const unaryOperatorKeysList = unaryOperatorKeys();
-  const plusKey = hasKey("+") ? "+" : null;
-  const minusKey = hasKey("-") ? "-" : null;
-  const oneKey = hasKey("1") ? "1" : null;
-  const equalsKey = hasKey("=") ? "=" : null;
-  const clearKey = hasKey("C") ? "C" : null;
-  const undoKey = hasKey("UNDO") ? "UNDO" : null;
-  const divideKey = hasKey("/") ? "/" : null;
-  const zeroKey = hasKey("0") ? "0" : null;
-  const euclidKey = hasKey("#") ? "#" : null;
-  const piKey = hasKey("pi") ? "pi" : null;
-  const eKey = hasKey("e") ? "e" : null;
-  const unaryIncrementKey = hasKey("++") ? "++" : null;
-  const unaryDecrementKey = hasKey("--") ? "--" : null;
-  const unaryNegateKey = hasKey("-n") ? "-n" : null;
+  const plusKey = hasKey(KEY_ID.op_add) ? KEY_ID.op_add : null;
+  const minusKey = hasKey(KEY_ID.op_sub) ? KEY_ID.op_sub : null;
+  const oneKey = hasKey(KEY_ID.digit_1) ? KEY_ID.digit_1 : null;
+  const equalsKey = hasKey(KEY_ID.exec_equals) ? KEY_ID.exec_equals : null;
+  const clearKey = hasKey(KEY_ID.util_clear_all) ? KEY_ID.util_clear_all : null;
+  const undoKey = hasKey(KEY_ID.util_undo) ? KEY_ID.util_undo : null;
+  const divideKey = hasKey(KEY_ID.op_div) ? KEY_ID.op_div : null;
+  const zeroKey = hasKey(KEY_ID.digit_0) ? KEY_ID.digit_0 : null;
+  const euclidKey = hasKey(KEY_ID.op_euclid_div) ? KEY_ID.op_euclid_div : null;
+  const piKey = hasKey(KEY_ID.const_pi) ? KEY_ID.const_pi : null;
+  const eKey = hasKey(KEY_ID.const_e) ? KEY_ID.const_e : null;
+  const unaryIncrementKey = hasKey(KEY_ID.unary_inc) ? KEY_ID.unary_inc : null;
+  const unaryDecrementKey = hasKey(KEY_ID.unary_dec) ? KEY_ID.unary_dec : null;
+  const unaryNegateKey = hasKey(KEY_ID.unary_neg) ? KEY_ID.unary_neg : null;
 
   const operatorClauses = operatorKeysList.map((operator) => [operator]);
   const unaryClauses = unaryOperatorKeysList.map((operator) => [operator]);
@@ -92,7 +93,7 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
   const rollEqualRunClauses = uniqueClauses([
     ...(equalsKey && plusKey ? [clause(equalsKey, plusKey)] : []),
     ...(equalsKey && minusKey ? [clause(equalsKey, minusKey)] : []),
-    ...(equalsKey && hasKey("*") ? [clause(equalsKey, "*")] : []),
+    ...(equalsKey && hasKey(KEY_ID.op_mul) ? [clause(equalsKey, KEY_ID.op_mul)] : []),
     ...(equalsKey && divideKey ? [clause(equalsKey, divideKey)] : []),
   ]);
 
@@ -109,10 +110,10 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
       ? [
           ...(plusKey ? [clause(equalsKey, plusKey)] : []),
           ...(minusKey ? [clause(equalsKey, minusKey)] : []),
-          ...(hasKey("*") ? [clause(equalsKey, "*")] : []),
+          ...(hasKey(KEY_ID.op_mul) ? [clause(equalsKey, KEY_ID.op_mul)] : []),
           ...(divideKey ? [clause(equalsKey, divideKey)] : []),
           ...(euclidKey ? [clause(equalsKey, euclidKey)] : []),
-          ...(hasKey("\u27E1") ? [clause(equalsKey, "\u27E1")] : []),
+          ...(hasKey(KEY_ID.op_mod) ? [clause(equalsKey, KEY_ID.op_mod)] : []),
           ...(unaryIncrementKey ? [clause(equalsKey, unaryIncrementKey)] : []),
           ...(unaryDecrementKey ? [clause(equalsKey, unaryDecrementKey)] : []),
         ]
@@ -251,3 +252,5 @@ export const buildCapabilityToProviderIndex = (
 });
 
 export const capabilityToFunctionProviderIds = buildCapabilityToProviderIndex(staticFunctionCapabilityProviders);
+
+

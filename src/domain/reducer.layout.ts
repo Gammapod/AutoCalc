@@ -17,6 +17,7 @@ import {
   evaluateLayoutDrop,
 } from "./layoutRules.js";
 import { keyToVisualizerId } from "./buttonRegistry.js";
+import { resolveKeyId, toLegacyKey } from "./keyPresentation.js";
 import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface, VisualizerId } from "./types.js";
 
 export { isStorageLayoutValid } from "./layoutRules.js";
@@ -213,7 +214,7 @@ const clearButtonFlag = (state: GameState, flag: string): GameState => {
 };
 
 const visualizerFromKey = (key: KeyCell["key"]): VisualizerId | null => {
-  return keyToVisualizerId(key);
+  return keyToVisualizerId(toLegacyKey(resolveKeyId(key)));
 };
 
 const clearToggleFlagWhenLeavingKeypad = (
@@ -428,4 +429,5 @@ export const applyUpgradeKeypadColumn = (state: GameState): GameState => {
   const resizedCells = resizeAnchored(getCurrentKeypadCells(state), upgradedColumns, currentRows);
   return withKeypadState(state, resizedCells, upgradedColumns, currentRows);
 };
+
 

@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { classifyDropAction as classifyDomainDropAction } from "../src/domain/layoutDragDrop.js";
 import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
@@ -15,12 +16,11 @@ const createScenarioState = (): GameState => {
       ...base.unlocks,
       valueExpression: {
         ...base.unlocks.valueExpression,
-        "1": true,
+        [k("1")]: true,
       },
       utilities: {
         ...base.unlocks.utilities,
-        C: true,
-        CE: true,
+        ...utilityUnlockPatch([["C", true], ["CE", true]]),
       },
     },
     ui: {
@@ -29,16 +29,16 @@ const createScenarioState = (): GameState => {
       keypadRows: 2,
       keyLayout: [
         { kind: "placeholder", area: "empty" },
-        { kind: "key", key: "1" },
+        { kind: "key", key: k("1") },
         { kind: "placeholder", area: "empty" },
-        { kind: "key", key: "=" },
+        { kind: "key", key: k("=") },
         { kind: "placeholder", area: "empty" },
         { kind: "placeholder", area: "empty" },
       ],
       storageLayout: [
-        { kind: "key", key: "CE" },
-        { kind: "key", key: "=" },
-        { kind: "key", key: "C" },
+        { kind: "key", key: k("CE") },
+        { kind: "key", key: k("=") },
+        { kind: "key", key: k("C") },
         ...base.ui.storageLayout.slice(3),
       ],
     },
@@ -71,12 +71,12 @@ export const runLayoutRulesEquivalenceTests = (): void => {
       ...state.unlocks,
       slotOperators: {
         ...state.unlocks.slotOperators,
-        "+": false,
+        [k("+")]: false,
       },
     },
     ui: {
       ...state.ui,
-      keyLayout: state.ui.keyLayout.map((cell, index) => (index === 1 ? { kind: "key", key: "+" } : cell)),
+      keyLayout: state.ui.keyLayout.map((cell, index) => (index === 1 ? { kind: "key", key: k("+") } : cell)),
     },
   };
   assertClassifierParity(
@@ -116,3 +116,6 @@ export const runLayoutRulesEquivalenceTests = (): void => {
     "shared evaluator with reducer policy agrees with reducer acceptance",
   );
 };
+
+
+

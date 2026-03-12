@@ -1,6 +1,9 @@
+import "../support/keyCompat.runtime.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../../src/domain/calculatorValue.js";
+import { resolveKeyId, type KeyLike } from "../../src/domain/keyPresentation.js";
 import { initialState } from "../../src/domain/state.js";
-import type { ErrorCode, ExecutionErrorKind, GameState, Key, RollEntry } from "../../src/domain/types.js";
+import type { BinarySlotOperator, ErrorCode, ExecutionErrorKind, GameState, KeyInput, RollEntry } from "../../src/domain/types.js";
+import { keyCounts, op } from "../support/keyCompat.js";
 
 export type SlotInputScenarioTag = "legacy_contract" | "target_spec";
 
@@ -10,7 +13,7 @@ export type SlotInputStateProjection = {
   draftingSlot?: GameState["calculator"]["draftingSlot"];
   roll?: GameState["calculator"]["total"][];
   rollErrors?: Array<{ rollIndex: number; code: ErrorCode; kind: ExecutionErrorKind }>;
-  keyPressCounts?: Partial<Record<Key, number>>;
+  keyPressCounts?: Partial<Record<KeyLike, number>>;
 };
 
 export type SlotInputScenario = {
@@ -18,7 +21,7 @@ export type SlotInputScenario = {
   description: string;
   tags: readonly SlotInputScenarioTag[];
   initialState: GameState;
-  keySequence: readonly Key[];
+  keySequence: readonly KeyInput[];
   expectedProjection?: SlotInputStateProjection;
   targetProjection?: SlotInputStateProjection;
 };
@@ -26,23 +29,63 @@ export type SlotInputScenario = {
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
-const withUnlockedKeys = (state: GameState, keys: readonly Key[]): GameState => {
+const ensureKeyOnKeypad = (state: GameState, key: KeyInput): GameState => {
+  const keyId = resolveKeyId(key);
+  if (state.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === keyId)) {
+    return state;
+  }
+  const placeholderIndex = state.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
+  if (placeholderIndex >= 0) {
+    return {
+      ...state,
+      ui: {
+        ...state.ui,
+        keyLayout: state.ui.keyLayout.map((cell, index) =>
+          index === placeholderIndex ? { kind: "key", key: keyId } : cell),
+      },
+    };
+  }
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      keyLayout: [...state.ui.keyLayout, { kind: "key", key: keyId }],
+      keypadColumns: state.ui.keypadColumns + 1,
+      keypadRows: 1,
+    },
+  };
+};
+
+const withUnlockedKeys = (state: GameState, keys: readonly KeyInput[]): GameState => {
   let next = state;
   for (const key of keys) {
-    if (key in next.unlocks.valueExpression) {
+    const keyId = resolveKeyId(key);
+    if (keyId in next.unlocks.valueAtoms || keyId in next.unlocks.valueCompose || keyId in next.unlocks.valueExpression) {
       next = {
         ...next,
         unlocks: {
           ...next.unlocks,
+          valueAtoms: keyId in next.unlocks.valueAtoms
+            ? {
+              ...next.unlocks.valueAtoms,
+              [keyId]: true,
+            }
+            : next.unlocks.valueAtoms,
+          valueCompose: keyId in next.unlocks.valueCompose
+            ? {
+              ...next.unlocks.valueCompose,
+              [keyId]: true,
+            }
+            : next.unlocks.valueCompose,
           valueExpression: {
             ...next.unlocks.valueExpression,
-            [key]: true,
+            [keyId]: true,
           },
         },
       };
       continue;
     }
-    if (key in next.unlocks.slotOperators) {
+    if (keyId in next.unlocks.slotOperators) {
       next = {
         ...next,
         unlocks: {
@@ -50,63 +93,91 @@ const withUnlockedKeys = (state: GameState, keys: readonly Key[]): GameState => 
           maxSlots: Math.max(next.unlocks.maxSlots, 1),
           slotOperators: {
             ...next.unlocks.slotOperators,
-            [key]: true,
+            [keyId]: true,
           },
         },
       };
       continue;
     }
-    if (key in next.unlocks.utilities) {
+    if (keyId in next.unlocks.utilities) {
       next = {
         ...next,
         unlocks: {
           ...next.unlocks,
           utilities: {
             ...next.unlocks.utilities,
-            [key]: true,
+            [keyId]: true,
           },
         },
       };
       continue;
     }
-    if (key in next.unlocks.steps) {
+    if (keyId in next.unlocks.unaryOperators) {
+      next = {
+        ...next,
+        unlocks: {
+          ...next.unlocks,
+          maxSlots: Math.max(next.unlocks.maxSlots, 1),
+          unaryOperators: {
+            ...next.unlocks.unaryOperators,
+            [keyId]: true,
+          },
+        },
+      };
+      continue;
+    }
+    if (keyId in next.unlocks.memory) {
+      next = {
+        ...next,
+        unlocks: {
+          ...next.unlocks,
+          memory: {
+            ...next.unlocks.memory,
+            [keyId]: true,
+          },
+        },
+      };
+      continue;
+    }
+    if (keyId in next.unlocks.steps) {
       next = {
         ...next,
         unlocks: {
           ...next.unlocks,
           steps: {
             ...next.unlocks.steps,
-            [key]: true,
+            [keyId]: true,
           },
         },
       };
       continue;
     }
-    if (key in next.unlocks.visualizers) {
+    if (keyId in next.unlocks.visualizers) {
       next = {
         ...next,
         unlocks: {
           ...next.unlocks,
           visualizers: {
             ...next.unlocks.visualizers,
-            [key]: true,
+            [keyId]: true,
           },
         },
       };
       continue;
     }
-    if (key in next.unlocks.execution) {
+    if (keyId in next.unlocks.execution) {
       next = {
         ...next,
         unlocks: {
           ...next.unlocks,
           execution: {
             ...next.unlocks.execution,
-            [key]: true,
+            [keyId]: true,
           },
         },
       };
     }
+    next = ensureKeyOnKeypad(next, keyId);
   }
   return next;
 };
@@ -122,9 +193,9 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["+", "1"],
     expectedProjection: {
       operationSlots: [],
-      draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
+      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
       roll: [],
-      keyPressCounts: { "+": 1, "1": 1 },
+      keyPressCounts: keyCounts([["+", 1], ["1", 1]]),
     },
   },
   {
@@ -138,7 +209,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
       draftingSlot: null,
       total: r(0n),
       roll: [r(0n)],
-      keyPressCounts: { "+": 1, "=": 1 },
+      keyPressCounts: keyCounts([["+", 1], ["=", 1]]),
     },
     targetProjection: {
       draftingSlot: null,
@@ -152,8 +223,8 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["+", "-"],
     targetProjection: {
       operationSlots: [],
-      draftingSlot: { operator: "-", operandInput: "", isNegative: false },
-      keyPressCounts: { "+": 1, "-": 1 },
+      draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
+      keyPressCounts: keyCounts([["+", 1], ["-", 1]]),
     },
   },
   {
@@ -166,7 +237,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(0n),
-          operationSlots: [{ operator: "+", operand: 1n }],
+          operationSlots: [{ operator: op("+"), operand: 1n }],
           draftingSlot: null,
         },
       },
@@ -175,10 +246,10 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["2"],
     targetProjection: {
       total: r(0n),
-      operationSlots: [{ operator: "+", operand: 2n }],
+      operationSlots: [{ operator: op("+"), operand: 2n }],
       draftingSlot: null,
       roll: [],
-      keyPressCounts: { "2": 1 },
+      keyPressCounts: keyCounts([["2", 1]]),
     },
   },
   {
@@ -189,9 +260,9 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["+", "1", "2"],
     targetProjection: {
       operationSlots: [],
-      draftingSlot: { operator: "+", operandInput: "2", isNegative: false },
+      draftingSlot: { operator: op("+"), operandInput: "2", isNegative: false },
       roll: [],
-      keyPressCounts: { "+": 1, "1": 1, "2": 1 },
+      keyPressCounts: keyCounts([["+", 1], ["1", 1], ["2", 1]]),
     },
   },
   {
@@ -216,9 +287,9 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     targetProjection: {
       total: r(3n),
       operationSlots: [],
-      draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
+      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
       roll: [],
-      keyPressCounts: { "+": 1, "1": 2 },
+      keyPressCounts: keyCounts([["+", 1], ["1", 2]]),
     },
   },
   {
@@ -245,7 +316,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
       operationSlots: [],
       draftingSlot: null,
       roll: [],
-      keyPressCounts: { "1": 1, "2": 1 },
+      keyPressCounts: keyCounts([["1", 1], ["2", 1]]),
     },
   },
   {
@@ -259,8 +330,8 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           ...base.calculator,
           total: r(7n),
           rollEntries: re(r(5n), r(7n)),
-          operationSlots: [{ operator: "-", operand: 2n }],
-          draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
+          operationSlots: [{ operator: op("-"), operand: 2n }],
+          draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
         },
       },
       ["CE"],
@@ -271,7 +342,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
       roll: [],
       operationSlots: [],
       draftingSlot: null,
-      keyPressCounts: { CE: 1 },
+      keyPressCounts: keyCounts([["CE", 1]]),
     },
   },
   {
@@ -289,8 +360,8 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           ...base.calculator,
           total: r(10n),
           operationSlots: [
-            { operator: "-", operand: 2n },
-            { operator: "*", operand: 3n },
+            { operator: op("-"), operand: 2n },
+            { operator: op("*"), operand: 3n },
           ],
         },
       },
@@ -300,11 +371,11 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     expectedProjection: {
       total: r(24n),
       operationSlots: [
-        { operator: "-", operand: 2n },
-        { operator: "*", operand: 3n },
+        { operator: op("-"), operand: 2n },
+        { operator: op("*"), operand: 3n },
       ],
       roll: [r(24n)],
-      keyPressCounts: { "=": 1 },
+      keyPressCounts: keyCounts([["=", 1]]),
     },
   },
   {
@@ -317,7 +388,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(10n),
-          operationSlots: [{ operator: "/", operand: 0n }],
+          operationSlots: [{ operator: op("/"), operand: 0n }],
         },
       },
       ["="],
@@ -327,7 +398,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
       total: toNanCalculatorValue(),
       roll: [toNanCalculatorValue()],
       rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
-      keyPressCounts: { "=": 1 },
+      keyPressCounts: keyCounts([["=", 1]]),
     },
   },
   {
@@ -344,7 +415,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(99n),
-          operationSlots: [{ operator: "+", operand: 1n }],
+          operationSlots: [{ operator: op("+"), operand: 1n }],
         },
       },
       ["="],
@@ -353,7 +424,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     expectedProjection: {
       total: r(99n),
       rollErrors: [{ rollIndex: 0, code: "x∉[-R,R]", kind: "overflow" }],
-      keyPressCounts: { "=": 1 },
+      keyPressCounts: keyCounts([["=", 1]]),
     },
   },
   {
@@ -377,7 +448,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
       roll: [r(5n)],
       operationSlots: [],
       draftingSlot: null,
-      keyPressCounts: {},
+      keyPressCounts: keyCounts([]),
     },
   },
   {
@@ -391,7 +462,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           ...base.calculator,
           total: r(5n),
           rollEntries: re(r(5n)),
-          operationSlots: [{ operator: "+", operand: 2n }],
+          operationSlots: [{ operator: op("+"), operand: 2n }],
         },
       },
       ["-"],
@@ -401,8 +472,8 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
       total: r(5n),
       roll: [],
       operationSlots: [],
-      draftingSlot: { operator: "-", operandInput: "", isNegative: false },
-      keyPressCounts: { "-": 1 },
+      draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
+      keyPressCounts: keyCounts([["-", 1]]),
     },
   },
   {
@@ -414,20 +485,21 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         ...base,
         calculator: {
           ...base.calculator,
-          draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
+          draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
         },
       },
       ["-"],
     ),
     keySequence: ["-"],
     targetProjection: {
-      operationSlots: [{ kind: "binary", operator: "+", operand: 1n }],
+      operationSlots: [{ kind: "binary", operator: op("+"), operand: 1n }],
       draftingSlot: null,
-      keyPressCounts: { "-": 1 },
+      keyPressCounts: keyCounts([["-", 1]]),
     },
   },
 ];
 
 export const getSlotInputScenariosByTag = (tag: SlotInputScenarioTag): SlotInputScenario[] =>
   slotInputScenarios.filter((scenario) => scenario.tags.includes(tag));
+
 

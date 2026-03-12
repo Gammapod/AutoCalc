@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
 import { initialState } from "../src/domain/state.js";
@@ -10,7 +11,7 @@ const withTwoByTwoKeypad = (state: GameState): GameState => ({
     ...state.unlocks,
     valueExpression: {
       ...state.unlocks.valueExpression,
-      "1": true,
+      [k("1")]: true,
     },
   },
   ui: {
@@ -20,10 +21,10 @@ const withTwoByTwoKeypad = (state: GameState): GameState => ({
     keyLayout: [
       { kind: "placeholder", area: "empty" },
       { kind: "placeholder", area: "empty" },
-      { kind: "key", key: "1" },
-      { kind: "key", key: "=" },
+      { kind: "key", key: k("1") },
+      { kind: "key", key: k("=") },
     ],
-    storageLayout: [{ kind: "key", key: "C" }, ...state.ui.storageLayout.slice(1)],
+    storageLayout: [{ kind: "key", key: k("C") }, ...state.ui.storageLayout.slice(1)],
   },
 });
 
@@ -83,3 +84,6 @@ export const runLayoutRulesInvariantTests = (): void => {
   const stepHighlights = buildStepBodyHighlightRegions(base);
   assert.deepEqual(stepHighlights, [], "no step highlight regions are generated without a step key");
 };
+
+
+

@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
@@ -17,7 +18,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: "+", operandInput: "", isNegative: false },
+      draftingSlot: { operator: op("+"), operandInput: "", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(draftingOperatorOnly), "[ + _ ]", "drafting slot shows operator before operand");
@@ -30,7 +31,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: "+", operandInput: "", isNegative: true },
+      draftingSlot: { operator: op("+"), operandInput: "", isNegative: true },
     },
   };
   assert.equal(
@@ -47,7 +48,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
+      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(draftingWithOperand), "[ + 1 ]", "drafting slot shows operand when provided");
@@ -60,7 +61,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: "*", operandInput: "", isNegative: false },
+      draftingSlot: { operator: op("*"), operandInput: "", isNegative: false },
     },
   };
   assert.equal(
@@ -77,7 +78,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: "+", operandInput: "1", isNegative: true },
+      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: true },
     },
   };
   assert.equal(
@@ -94,7 +95,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: "+", operand: 1n }],
+      operationSlots: [{ operator: op("+"), operand: 1n }],
     },
   };
   assert.equal(
@@ -111,8 +112,8 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: "+", operand: 1n }],
-      draftingSlot: { operator: "-", operandInput: "", isNegative: false },
+      operationSlots: [{ operator: op("+"), operand: 1n }],
+      draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
     },
   };
   assert.equal(
@@ -138,8 +139,8 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: "+", operand: 1n }],
-      draftingSlot: { operator: "-", operandInput: "", isNegative: false },
+      operationSlots: [{ operator: op("+"), operand: 1n }],
+      draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(overflowState), "[ + 1 ]", "overflow state truncates display to max slot capacity");
@@ -158,7 +159,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...projectedCapacity,
     calculator: {
       ...projectedCapacity.calculator,
-      operationSlots: [{ operator: "+", operand: 1n }],
+      operationSlots: [{ operator: op("+"), operand: 1n }],
     },
   };
   assert.equal(
@@ -175,7 +176,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: "*", operand: 2n }],
+      operationSlots: [{ operator: op("*"), operand: 2n }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedMultiply), "[ \u00D7 2 ]", "committed multiply slot renders operator as \u00D7");
@@ -188,7 +189,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: "#", operand: 3n }],
+      operationSlots: [{ operator: op("#"), operand: 3n }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedEuclidean), "[ # 3 ]", "committed euclidean slot renders operator as #");
@@ -201,10 +202,12 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: "\u27E1", operand: 3n }],
+      operationSlots: [{ operator: op("\u27E1"), operand: 3n }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedModulo), "[ \u2662 3 ]", "committed modulo slot renders operator as \u2662");
 };
+
+
 
 

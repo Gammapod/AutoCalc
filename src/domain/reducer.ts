@@ -16,6 +16,7 @@ import { applyToggleFlag } from "./reducer.flags.js";
 import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyUnlocks } from "./unlocks.js";
+import { resolveKeyId } from "./keyPresentation.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import {
   adjustAxis,
@@ -61,7 +62,7 @@ const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): Game
 
 const reduceLegacy = (state: GameState, action: Action): GameState => {
   if (action.type === "PRESS_KEY") {
-    return applyKeyAction(state, action.key);
+    return applyKeyAction(state, resolveKeyId(action.key));
   }
 
   const lifecycleHandled = applyLifecycleAction(state, action);

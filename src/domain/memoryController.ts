@@ -1,14 +1,15 @@
-import type { Digit, GameState, Key, MemoryVariable } from "./types.js";
+﻿import type { Digit, GameState, Key, MemoryVariable } from "./types.js";
 import { adjustAxis, withLegacyAllocatorFallback } from "./lambdaControl.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
+import { isMemoryKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 
-const MEMORY_VARIABLE_CYCLE: readonly MemoryVariable[] = ["α", "β", "γ"];
+const MEMORY_VARIABLE_CYCLE: readonly MemoryVariable[] = ["\u03B1", "\u03B2", "\u03B3"];
 
 const memoryVariableToAxis = (memoryVariable: MemoryVariable): "alpha" | "beta" | "gamma" => {
-  if (memoryVariable === "α") {
+  if (memoryVariable === "\u03B1") {
     return "alpha";
   }
-  if (memoryVariable === "β") {
+  if (memoryVariable === "\u03B2") {
     return "beta";
   }
   return "gamma";
@@ -19,8 +20,7 @@ const readSelectedMemoryValue = (state: GameState): number => {
   return state.lambdaControl[axis];
 };
 
-export const isMemoryKey = (key: Key): boolean =>
-  key === "α,β,γ" || key === "M+" || key === "M–" || key === "M→";
+export const isMemoryKey = (key: Key): boolean => isMemoryKeyId(key);
 
 export const cycleMemoryVariable = (state: GameState): GameState => {
   const currentIndex = MEMORY_VARIABLE_CYCLE.indexOf(state.ui.memoryVariable);
@@ -53,3 +53,8 @@ export const applyMemoryAdjust = (state: GameState, delta: 1 | -1): GameState =>
   }
   return applyAllocatorRuntimeProjection(state, nextControl);
 };
+
+export const isMemoryCycleKey = (key: Key): boolean => resolveKeyId(key) === KEY_ID.memory_cycle_variable;
+export const isMemoryRecallKey = (key: Key): boolean => resolveKeyId(key) === KEY_ID.memory_recall;
+export const isMemoryPlusKey = (key: Key): boolean => resolveKeyId(key) === KEY_ID.memory_adjust_plus;
+export const isMemoryMinusKey = (key: Key): boolean => resolveKeyId(key) === KEY_ID.memory_adjust_minus;

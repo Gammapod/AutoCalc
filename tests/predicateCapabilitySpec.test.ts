@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
@@ -12,7 +13,7 @@ import { capabilityToFunctionProviderIds, staticFunctionCapabilityProviders } fr
 import { reducer } from "../src/domain/reducer.js";
 import { initialState, LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID } from "../src/domain/state.js";
 import { evaluateUnlockPredicate } from "../src/domain/unlockEngine.js";
-import type { GameState, Key, RollEntry, UnlockPredicate } from "../src/domain/types.js";
+import type { GameState, Key, KeyInput, RollEntry, UnlockPredicate } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
@@ -23,66 +24,67 @@ type ProofFixture = {
   sufficientSetId: string;
   predicate: UnlockPredicate;
   buildInitialState: () => GameState;
-  script: Key[];
+  script: KeyInput[];
 };
 
-const unlockKey = (state: GameState, key: Key): GameState => {
-  if (/^\d$/.test(key) || key === "1") {
+const unlockKey = (state: GameState, key: KeyInput): GameState => {
+  const keyId = k(key);
+  if (keyId in state.unlocks.valueExpression) {
     return {
       ...state,
       unlocks: {
         ...state.unlocks,
         valueExpression: {
           ...state.unlocks.valueExpression,
-          [key]: true,
+          [keyId]: true,
         },
       },
     };
   }
-  if (key === "+" || key === "-" || key === "*" || key === "/" || key === "#" || key === "\u27E1") {
+  if (keyId in state.unlocks.slotOperators) {
     return {
       ...state,
       unlocks: {
         ...state.unlocks,
         slotOperators: {
           ...state.unlocks.slotOperators,
-          [key]: true,
+          [keyId]: true,
         },
       },
     };
   }
-  if (key === "++" || key === "--" || key === "-n" || key === "\u03C3" || key === "\u03C6" || key === "\u03A9") {
+  if (keyId in state.unlocks.unaryOperators) {
     return {
       ...state,
       unlocks: {
         ...state.unlocks,
         unaryOperators: {
           ...state.unlocks.unaryOperators,
-          [key]: true,
+          [keyId]: true,
         },
       },
     };
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "\u2190") {
+  if (keyId in state.unlocks.utilities) {
     return {
       ...state,
       unlocks: {
         ...state.unlocks,
         utilities: {
           ...state.unlocks.utilities,
-          [key]: true,
+          [keyId]: true,
         },
       },
     };
   }
-  if (key === "GRAPH" || key === "FEED" || key === "CIRCLE" || key === "\u03BB") {
+  if (keyId in state.unlocks.visualizers) {
     return {
       ...state,
       unlocks: {
         ...state.unlocks,
         visualizers: {
           ...state.unlocks.visualizers,
-          [key]: true,
+          [keyId]: true,
         },
       },
     };
@@ -93,16 +95,16 @@ const unlockKey = (state: GameState, key: Key): GameState => {
       ...state.unlocks,
       execution: {
         ...state.unlocks.execution,
-        [key]: true,
+        [keyId]: true,
       },
     },
   };
 };
 
-const buildStateWithUnlockedKeys = (keys: Key[]): GameState =>
+const buildStateWithUnlockedKeys = (keys: KeyInput[]): GameState =>
   keys.reduce((state, key) => unlockKey(state, key), initialState());
 
-const runScript = (state: GameState, script: Key[]): GameState =>
+const runScript = (state: GameState, script: KeyInput[]): GameState =>
   script.reduce((nextState, key) => reducer(nextState, { type: "PRESS_KEY", key }), state);
 
 const withTwoDigitRange = (state: GameState): GameState =>
@@ -186,7 +188,7 @@ const proofFixtures: ProofFixture[] = [
             r(0n),
             r(0n),
           ),
-          operationSlots: [{ operator: "+", operand: 0n }],
+          operationSlots: [{ operator: op("+"), operand: 0n }],
           draftingSlot: null,
         },
       };
@@ -212,7 +214,7 @@ const proofFixtures: ProofFixture[] = [
             r(4n),
             r(5n),
           ),
-          operationSlots: [{ operator: "+", operand: 1n }],
+          operationSlots: [{ operator: op("+"), operand: 1n }],
           draftingSlot: null,
         },
       };
@@ -257,7 +259,7 @@ const proofFixtures: ProofFixture[] = [
       calculator: {
         ...initialState().calculator,
         total: r(10n),
-        operationSlots: [{ operator: "#", operand: 4n }],
+        operationSlots: [{ operator: op("#"), operand: 4n }],
       },
     }),
     script: [],
@@ -280,7 +282,7 @@ const proofFixtures: ProofFixture[] = [
     id: "proof_key_press_count_plus_once",
     predicateType: "key_press_count_at_least",
     sufficientSetId: "key_press_count_by_pressing_key",
-    predicate: { type: "key_press_count_at_least", key: "+", count: 1 },
+    predicate: { type: "key_press_count_at_least", key: k("+"), count: 1 },
     buildInitialState: () => buildStateWithUnlockedKeys(["+"]),
     script: ["+"],
   },
@@ -459,3 +461,4 @@ export const runPredicateCapabilitySpecTests = (): void => {
     );
   }
 };
+

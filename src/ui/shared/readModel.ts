@@ -2,7 +2,18 @@ import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
 import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js";
 import { expressionToDisplayString, slotOperandToExpression } from "../../domain/expression.js";
-import { getButtonDefinition, isDigitKey, isOperatorKey, isVisualizerKey } from "../../domain/buttonRegistry.js";
+import { getButtonDefinition } from "../../domain/buttonRegistry.js";
+import {
+  getKeyButtonFaceLabel,
+  getOperatorAlgebraicFaceLabel,
+  getOperatorInlineFaceLabel,
+  getOperatorSlotFaceLabel,
+  isBinaryOperatorKeyId,
+  isDigitKeyId,
+  KEY_ID,
+  resolveKeyId,
+  toLegacyKey,
+} from "../../domain/keyPresentation.js";
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../domain/analysis.js";
 import { buildUnlockCriteria } from "../../domain/unlockEngine.js";
 import type {
@@ -100,80 +111,44 @@ const hasAnyKeyPress = (state: GameState): boolean =>
   Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
-  operator === "*" ? "\u00D7" : operator === "/" ? "\u00F7" : operator;
+  getOperatorInlineFaceLabel(operator);
 
 export const formatOperatorForOperationSlotDisplay = (operator: SlotOperator): string =>
-  operator === "\u27E1" ? "\u2662" : formatOperatorForDisplay(operator);
+  getOperatorSlotFaceLabel(operator);
 
-const isEuclidLiteralOperator = (operator: SlotOperator): boolean => operator === "#" || operator === "\u27E1";
+const isEuclidLiteralOperator = (operator: SlotOperator): boolean => {
+  const operatorId = resolveKeyId(operator);
+  return operatorId === KEY_ID.op_euclid_div || operatorId === KEY_ID.op_mod;
+};
 
 const formatAlgebraicOperator = (operator: SlotOperator): string =>
-  isEuclidLiteralOperator(operator) ? operator : formatOperatorForDisplay(operator);
+  getOperatorAlgebraicFaceLabel(operator);
 
-const formatUnarySlotOperator = (operator: Extract<Slot, { kind: "unary" }>["operator"]): string => {
-  if (operator === "-n") {
-    return "\u00B1";
-  }
-  if (operator === "--") {
-    return "\u2212\u2212";
-  }
-  return operator;
-};
+const formatUnarySlotOperator = (operator: Extract<Slot, { kind: "unary" }>["operator"]): string =>
+  getOperatorSlotFaceLabel(operator);
 
-export const formatKeyLabel = (key: Key): string => {
-  if (key === "pi") {
-    return "\u03C0";
-  }
-  if (key === "UNDO") {
-    return "\u2936";
-  }
-  if (key === "#") {
-    return "#/\u27E1";
-  }
-  if (key === "\u27E1") {
-    return "\u27E1";
-  }
-  if (key === "CIRCLE") {
-    return "\u25EF";
-  }
-  if (key === "𝚷𝑝^𝑒") {
-    return "𝚷𝑝ᵉ";
-  }
-  if (key === "-n") {
-    return "\u00B1";
-  }
-  if (key === "--") {
-    return "\u2212\u2212";
-  }
-  if (key === "++") {
-    return "++";
-  }
-  if (key === "*" || key === "/") {
-    return formatOperatorForDisplay(key);
-  }
-  return key;
-};
+export const formatKeyLabel = (key: Key): string => getKeyButtonFaceLabel(key);
 
 export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
-  if (isDigitKey(key)) {
+  if (isDigitKeyId(key)) {
     return "value_expression";
   }
-  if (getButtonDefinition(key)?.unlockGroup === "unaryOperators") {
+  if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.unlockGroup === "unaryOperators") {
     return "slot_operator";
   }
-  if (isOperatorKey(key)) {
+  if (isBinaryOperatorKeyId(key)) {
     return "slot_operator";
   }
-  if (key === "C" || key === "CE" || key === "UNDO" || key === "\u2190") {
+  if (key === KEY_ID.util_clear_all || key === KEY_ID.util_clear_entry || key === KEY_ID.util_undo || key === KEY_ID.util_backspace) {
     return "utility";
   }
-  if (getButtonDefinition(key)?.category === "settings") {
+  if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.category === "settings") {
     return "settings";
   }
-  if (getButtonDefinition(key)?.category === "memory") {
+  if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.category === "memory") {
     return "memory";
   }
-  if (isVisualizerKey(key)) {
+  if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.behaviorKind === "visualizer") {
     return "visualizers";
   }
   return "execution";
@@ -606,4 +581,7 @@ export const buildUnlockRows = (
   const completed = visible.filter((row) => row.state === "completed");
   return [...pending, ...completed];
 };
+
+
+
 

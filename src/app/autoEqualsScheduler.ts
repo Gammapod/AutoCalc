@@ -2,6 +2,7 @@ import { AUTO_EQUALS_FLAG } from "../domain/state.js";
 import { getOperationSnapshot } from "../domain/slotDrafting.js";
 import { getAutoEqualsRateMultiplier as getLambdaAutoEqualsRateMultiplier } from "../domain/lambdaControl.js";
 import type { ExecKey, GameState, Key, Store } from "../domain/types.js";
+import { KEY_ID } from "../domain/keyPresentation.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
 export const AUTO_EQUALS_POINT_BONUS = 0.01;
@@ -31,7 +32,7 @@ const defaultTimers: TimerApi = {
 
 const isAutoEqualsEnabled = (state: GameState): boolean => Boolean(state.ui.buttonFlags[AUTO_EQUALS_FLAG]);
 const hasValidEquation = (state: GameState): boolean => getOperationSnapshot(state.calculator).length > 0;
-const EXECUTOR_KEYS: readonly ExecKey[] = ["="];
+const EXECUTOR_KEYS: readonly ExecKey[] = [KEY_ID.exec_equals];
 
 const getAutoEqualsRateMultiplier = (state: GameState): number => {
   return getLambdaAutoEqualsRateMultiplier(state.lambdaControl);
@@ -117,7 +118,7 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
     }
 
     const autoAction = autoPlan.action;
-    const validEquation = autoAction.type === "PRESS_KEY" && autoAction.key === "=" ? hasValidEquation(beforeAttempt) : true;
+    const validEquation = autoAction.type === "PRESS_KEY" && autoAction.key === KEY_ID.exec_equals ? hasValidEquation(beforeAttempt) : true;
     dispatchAction(autoAction);
     onAutoKeyActivated(autoPlan.key);
     const afterAttempt = store.getState();

@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { createTouchRearrangeController } from "../src/ui/renderAdapter.js";
@@ -17,7 +18,7 @@ const buildRearrangeState = (): GameState => {
     { kind: "placeholder", area: "empty" },
     { kind: "placeholder", area: "empty" },
     { kind: "placeholder", area: "empty" },
-    { kind: "key", key: "=" },
+    { kind: "key", key: k("=") },
   ];
   return {
     ...base,
@@ -29,11 +30,11 @@ const buildRearrangeState = (): GameState => {
       },
       utilities: {
         ...base.unlocks.utilities,
-        CE: true,
+        [utility("CE")]: true,
       },
       valueExpression: {
         ...base.unlocks.valueExpression,
-        "1": true,
+        [k("1")]: true,
       },
     },
     ui: {
@@ -53,7 +54,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     moveActions.push(action);
     return action;
   });
-  moveController.startPress(1, 30, 40, { surface: "storage", index: 0, key: "CE" }, null);
+  moveController.startPress(1, 30, 40, { surface: "storage", index: 0, key: k("CE") }, null);
   moveController.forceActivateCarryForTests();
   moveController.move(1, 60, 70, () => ({
     target: { surface: "keypad", index: 0 },
@@ -72,10 +73,10 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     ui: {
       ...buildRearrangeState().ui,
       keyLayout: [
-        { kind: "key", key: "1" },
+        { kind: "key", key: k("1") },
         { kind: "placeholder", area: "empty" },
         { kind: "placeholder", area: "empty" },
-        { kind: "key", key: "=" },
+        { kind: "key", key: k("=") },
       ],
     },
   };
@@ -85,7 +86,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     swapActions.push(action);
     return action;
   });
-  swapController.startPress(2, 30, 40, { surface: "storage", index: 0, key: "CE" }, null);
+  swapController.startPress(2, 30, 40, { surface: "storage", index: 0, key: k("CE") }, null);
   swapController.forceActivateCarryForTests();
   swapController.move(2, 60, 70, () => ({
     target: { surface: "keypad", index: 0 },
@@ -99,4 +100,8 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     "swap dispatch uses existing reducer action",
   );
 };
+
+
+
+
 

@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
@@ -22,7 +23,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_digit",
       description: "digit",
       predicate: { type: "total_equals", value: 1n },
-      effect: { type: "unlock_digit", key: "4" },
+      effect: { type: "unlock_digit", key: valueExpr("4") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Idigits",
@@ -31,7 +32,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_slot_op",
       description: "slot op",
       predicate: { type: "total_equals", value: 1n },
-      effect: { type: "unlock_slot_operator", key: "+" },
+      effect: { type: "unlock_slot_operator", key: slotOp("+") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Oplus",
@@ -40,7 +41,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_exec",
       description: "exec",
       predicate: { type: "total_equals", value: 1n },
-      effect: { type: "unlock_execution", key: "=" },
+      effect: { type: "unlock_execution", key: execution("=") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Ut_exec_eq",
@@ -50,7 +51,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_slot_op_mul",
       description: "slot op mul",
       predicate: { type: "total_equals", value: 1n },
-      effect: { type: "unlock_slot_operator", key: "*" },
+      effect: { type: "unlock_slot_operator", key: slotOp("*") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Omul",
@@ -59,7 +60,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_utility",
       description: "utility",
       predicate: { type: "total_equals", value: 1n },
-      effect: { type: "unlock_utility", key: "C" },
+      effect: { type: "unlock_utility", key: utility("C") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Uc",
@@ -92,7 +93,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_total_eq",
       description: "total eq",
       predicate: { type: "total_equals", value: 11n },
-      effect: { type: "unlock_digit", key: "4" },
+      effect: { type: "unlock_digit", key: valueExpr("4") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Idigits",
@@ -101,7 +102,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_total_at_least",
       description: "total at least",
       predicate: { type: "total_at_least", value: 25n },
-      effect: { type: "unlock_slot_operator", key: "-" },
+      effect: { type: "unlock_slot_operator", key: slotOp("-") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Ominus",
@@ -110,7 +111,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_total_at_most",
       description: "total at most",
       predicate: { type: "total_at_most", value: -1n },
-      effect: { type: "unlock_utility", key: "CE" },
+      effect: { type: "unlock_utility", key: utility("CE") },
       once: true,
       domainNodeId: "NZ",
       targetNodeId: "Uce",
@@ -137,7 +138,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_normal_scope",
       description: "normal scope row",
       predicate: { type: "total_at_least", value: 2n },
-      effect: { type: "unlock_digit", key: "4" },
+      effect: { type: "unlock_digit", key: valueExpr("4") },
       once: true,
       difficulty: "normal",
       domainNodeId: "NN",
@@ -147,7 +148,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_difficult_scope",
       description: "difficult scope row",
       predicate: { type: "total_at_least", value: 2n },
-      effect: { type: "unlock_slot_operator", key: "\u27E1" },
+      effect: { type: "unlock_slot_operator", key: slotOp("\u27E1") },
       once: true,
       difficulty: "difficult",
       domainNodeId: "NZ",
@@ -160,15 +161,15 @@ export const runUnlocksDisplayTests = (): void => {
       ...base.unlocks,
       execution: {
         ...base.unlocks.execution,
-        "=": true,
+        [k("=")]: true,
       },
       slotOperators: {
         ...base.unlocks.slotOperators,
-        "+": true,
+        [k("+")]: true,
       },
       valueExpression: {
         ...base.unlocks.valueExpression,
-        "1": true,
+        [k("1")]: true,
       },
     },
   };
@@ -263,3 +264,7 @@ export const runUnlocksDisplayTests = (): void => {
     "debug mode includes analysis status and visibility reason metadata",
   );
 };
+
+
+
+

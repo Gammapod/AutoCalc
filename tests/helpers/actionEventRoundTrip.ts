@@ -1,3 +1,4 @@
+import "../support/keyCompat.runtime.js";
 import { initialState } from "../../src/domain/state.js";
 import type { Action } from "../../src/domain/types.js";
 import type { DomainEvent } from "../../src/domain/events.js";
@@ -6,7 +7,7 @@ import { actionFromEvent, eventFromAction } from "../../src/domain/events.js";
 export const buildActionFixtures = (): Action[] => {
   const state = initialState();
   return [
-    { type: "PRESS_KEY", key: "1" },
+    { type: "PRESS_KEY", key: k("1") },
     { type: "RESET_RUN" },
     { type: "HYDRATE_SAVE", state },
     { type: "UNLOCK_ALL" },
@@ -33,3 +34,5 @@ export const buildDomainEventFixtures = (): DomainEvent[] => buildActionFixtures
 export const roundTripAction = (action: Action): Action => actionFromEvent(eventFromAction(action));
 
 export const roundTripEvent = (event: DomainEvent): DomainEvent => eventFromAction(actionFromEvent(event));
+
+

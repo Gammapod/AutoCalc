@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import type { KeyCell } from "../src/domain/types.js";
@@ -6,11 +7,12 @@ import {
   buildLayoutDropDispatchAction,
   resolveCalculatorKeysLocked,
 } from "../src/ui/modules/calculatorStorageCore.js";
+import { k, keyCell } from "./support/keyCompat.js";
 
 export const runContractsUiActionEmissionTests = (): void => {
   const state = initialState();
 
-  const graphCell: KeyCell = { kind: "key", key: "GRAPH" };
+  const graphCell: KeyCell = keyCell("GRAPH");
   const graphAction = buildKeyButtonAction(state, graphCell);
   assert.deepEqual(
     graphAction,
@@ -18,14 +20,14 @@ export const runContractsUiActionEmissionTests = (): void => {
     "GRAPH key emits visualizer toggle action",
   );
 
-  const feedCell: KeyCell = { kind: "key", key: "FEED" };
+  const feedCell: KeyCell = keyCell("FEED");
   const feedAction = buildKeyButtonAction(state, feedCell);
   assert.deepEqual(
     feedAction,
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key emits visualizer toggle action",
   );
-  const circleCell: KeyCell = { kind: "key", key: "CIRCLE" };
+  const circleCell: KeyCell = keyCell("CIRCLE");
   const circleAction = buildKeyButtonAction(state, circleCell);
   assert.deepEqual(
     circleAction,
@@ -33,9 +35,9 @@ export const runContractsUiActionEmissionTests = (): void => {
     "CIRCLE key emits visualizer toggle action",
   );
 
-  const digitCell: KeyCell = { kind: "key", key: "1" };
+  const digitCell: KeyCell = keyCell("1");
   const digitAction = buildKeyButtonAction(state, digitCell);
-  assert.deepEqual(digitAction, { type: "PRESS_KEY", key: "1" }, "digit key emits press action");
+  assert.deepEqual(digitAction, { type: "PRESS_KEY", key: k("1") }, "digit key emits press action");
 
   const moveAction = buildLayoutDropDispatchAction(
     { surface: "keypad", index: 1 },
@@ -70,3 +72,4 @@ export const runContractsUiActionEmissionTests = (): void => {
     "mobile keeps keypad interactive",
   );
 };
+

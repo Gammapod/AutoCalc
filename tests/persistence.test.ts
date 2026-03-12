@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import {
@@ -48,7 +49,7 @@ export const runPersistenceTests = (): void => {
       seedSnapshot: r(9n),
       rollEntries: re(r(11n), r(12n)),
     },
-    keyPressCounts: { "+": 3, "=": 2 },
+    keyPressCounts: keyCounts([["+", 3], ["=", 2]]),
     allocatorReturnPressCount: 2,
     allocatorAllocatePressCount: 3,
     allocator: {
@@ -74,8 +75,8 @@ export const runPersistenceTests = (): void => {
     unlocks: {
       ...base.unlocks,
       uiUnlocks: { storageVisible: true },
-      visualizers: { ...base.unlocks.visualizers, FEED: true },
-      execution: { ...base.unlocks.execution, "=": true },
+      visualizers: { ...base.unlocks.visualizers, [visualizer("FEED")]: true },
+      execution: { ...base.unlocks.execution, [k("=")]: true },
     },
     ui: {
       ...base.ui,
@@ -103,7 +104,7 @@ export const runPersistenceTests = (): void => {
     },
     "round-trip persists/backfills roll-entry factorization payload",
   );
-  assert.deepEqual(loaded?.keyPressCounts, { "+": 3, "=": 2 }, "round-trip key press counters");
+  assert.deepEqual(loaded?.keyPressCounts, keyCounts([["+", 3], ["=", 2]]), "round-trip key press counters");
   assert.equal(loaded?.allocatorReturnPressCount, 2, "round-trip allocator RETURN press counter");
   assert.equal(loaded?.allocatorAllocatePressCount, 3, "round-trip allocator Allocate press counter");
   assert.deepEqual(
@@ -126,7 +127,7 @@ export const runPersistenceTests = (): void => {
     "round-trip canonical lambda control",
   );
   assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
-  assert.equal(loaded?.unlocks.visualizers.FEED, true, "round-trip FEED visualizer unlock");
+  assert.equal(loaded?.unlocks.visualizers[visualizer("FEED")], true, "round-trip FEED visualizer unlock");
   assert.equal(loaded?.ui.activeVisualizer, "feed", "round-trip active visualizer");
 
   const legacyV1 = loadFromRawSave(
@@ -416,7 +417,7 @@ export const runPersistenceTests = (): void => {
           keyPressCounts: {},
           unlocks: {
             ...initialState().unlocks,
-            valueExpression: { ...initialState().unlocks.valueExpression, NEG: true, "1": true },
+            valueExpression: { ...initialState().unlocks.valueExpression, NEG: true, [k("1")]: true },
           },
           completedUnlockIds: [],
           allocatorReturnPressCount: 0,
@@ -431,7 +432,7 @@ export const runPersistenceTests = (): void => {
   );
   assert.ok(legacyV13ValueExpressionOnly.state, "v13 payload hydrates under v14 runtime");
   assert.equal(
-    legacyV13ValueExpressionOnly.state?.unlocks.valueAtoms["1"],
+    legacyV13ValueExpressionOnly.state?.unlocks.valueAtoms[valueExpr("1")],
     true,
     "v13 valueExpression digit maps to split valueAtoms unlocks",
   );
@@ -579,3 +580,6 @@ export const runPersistenceTests = (): void => {
     "overspent legacy allocator payload is ignored in favor of reset lambda control",
   );
 };
+
+
+

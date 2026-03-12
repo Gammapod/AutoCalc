@@ -1,29 +1,41 @@
 import type {
   ButtonCategory,
-  ButtonKey,
-  ButtonKeyByBehaviorKind,
-  ButtonKeyByUnlockGroup,
   ButtonVisualizerId,
 } from "./buttonRegistry.js";
+import type {
+  BinaryOperatorKeyId,
+  DigitKeyId,
+  ExecKeyId,
+  KeyId,
+  KeyLike,
+  MemoryKeyId,
+  UtilityKeyId,
+  UnaryOperatorKeyId,
+  ValueAtomKeyId,
+  VisualizerKeyId,
+} from "./keyPresentation.js";
 
-export type Digit = Extract<ButtonKeyByBehaviorKind<"digit">, "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9">;
-export type BinarySlotOperator = ButtonKeyByUnlockGroup<"slotOperators">;
-export type UnaryOperatorKey = ButtonKeyByUnlockGroup<"unaryOperators">;
+
+export type Digit = DigitKeyId;
+export type BinarySlotOperator = BinaryOperatorKeyId;
+export type UnaryOperatorKey = UnaryOperatorKeyId;
 export type UnaryOperator = UnaryOperatorKey;
 export type UnarySlotOperator = UnaryOperator;
 export type SlotOperator = BinarySlotOperator | UnarySlotOperator;
-export type ValueAtomKey = ButtonKeyByUnlockGroup<"valueAtoms">;
-export type ValueComposeKey = ButtonKeyByUnlockGroup<"valueCompose">;
+export type ValueAtomKey = ValueAtomKeyId;
+export type ValueComposeKey = never;
 export type ValueExpressionKey = ValueAtomKey | ValueComposeKey;
-export type UtilityKey = ButtonKeyByUnlockGroup<"utilities">;
-export type MemoryKey = ButtonKeyByUnlockGroup<"memory">;
-export type StepKey = ButtonKeyByUnlockGroup<"steps">;
-export type VisualizerKey = ButtonKeyByUnlockGroup<"visualizers">;
+export type UtilityKey = UtilityKeyId;
+export type MemoryKey = MemoryKeyId;
+export type StepKey = never;
+export type VisualizerKey = VisualizerKeyId;
 export type VisualizerId = ButtonVisualizerId;
 export type ActiveVisualizer = "total" | VisualizerId;
 export type MemoryVariable = "α" | "β" | "γ";
-export type ExecKey = ButtonKeyByUnlockGroup<"execution">;
-export type Key = ButtonKey;
+export type ExecKey = ExecKeyId;
+export type Key = KeyId;
+export type CanonicalKeyId = KeyId;
+export type KeyInput = KeyLike;
 export type KeyCategory = ButtonCategory;
 export type KeyCell = {
   kind: "key";
@@ -494,7 +506,7 @@ export type GameState = {
 
 export type PressKeyAction = {
   type: "PRESS_KEY";
-  key: Key;
+  key: KeyInput;
 };
 
 export type ResetRunAction = {
@@ -646,5 +658,9 @@ export type Store = {
   dispatch: (action: Action) => Action;
   subscribe: (subscriber: (state: GameState) => void) => () => void;
 };
+
+
+
+
 
 

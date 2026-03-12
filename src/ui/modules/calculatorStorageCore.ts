@@ -2,6 +2,7 @@ export {
   buildLayoutDropDispatchAction,
 } from "./input/dragDrop.js";
 import { keyToVisualizerId } from "../../domain/buttonRegistry.js";
+import { resolveKeyId, toLegacyKey } from "../../domain/keyPresentation.js";
 import type { Action, GameState, KeyButtonBehavior, KeyCell, VisualizerId } from "../../domain/types.js";
 import { AUTO_EQUALS_FLAG } from "../../domain/state.js";
 import { formatKeyLabel } from "../shared/readModel.js";
@@ -13,7 +14,7 @@ const getButtonFlag = (state: GameState, flag: string): boolean => {
 };
 
 const visualizerForKey = (key: KeyCell["key"]): VisualizerId | null => {
-  return keyToVisualizerId(key);
+  return keyToVisualizerId(toLegacyKey(resolveKeyId(key)));
 };
 
 export const getToggleAnimationIdForCell = (cell: KeyCell): string | null => {
@@ -66,3 +67,6 @@ export const buildKeyButtonAction = (state: GameState, cell: KeyCell): Action =>
 };
 
 export { resolveCalculatorKeysLocked } from "./calculator/dom.js";
+
+
+

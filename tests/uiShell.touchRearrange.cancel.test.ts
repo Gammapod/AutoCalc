@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { createTouchRearrangeController } from "../src/ui/renderAdapter.js";
@@ -9,7 +10,7 @@ const buildCancelState = (): GameState => {
     { kind: "placeholder", area: "empty" },
     { kind: "placeholder", area: "empty" },
     { kind: "placeholder", area: "empty" },
-    { kind: "key", key: "=" },
+    { kind: "key", key: k("=") },
   ];
   return {
     ...base,
@@ -21,7 +22,7 @@ const buildCancelState = (): GameState => {
       },
       utilities: {
         ...base.unlocks.utilities,
-        CE: true,
+        [utility("CE")]: true,
       },
     },
     ui: {
@@ -41,11 +42,14 @@ export const runUiShellTouchRearrangeCancelTests = (): void => {
     dispatched.push(action);
     return action;
   });
-  controller.startPress(1, 20, 30, { surface: "storage", index: 0, key: "CE" }, null);
+  controller.startPress(1, 20, 30, { surface: "storage", index: 0, key: k("CE") }, null);
   controller.forceActivateCarryForTests();
   controller.move(1, 70, 80, () => ({ target: null, targetElement: null }));
   const result = controller.end(1);
   assert.equal(result, "canceled", "dropping without a valid target cancels to origin");
   assert.equal(dispatched.length, 0, "canceling does not dispatch move/swap actions");
 };
+
+
+
 

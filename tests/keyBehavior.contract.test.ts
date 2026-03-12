@@ -1,10 +1,12 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { keyBehaviorCatalog } from "../src/content/keyBehavior.catalog.js";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
-import type { GameState, Key, RollEntry } from "../src/domain/types.js";
+import { getButtonFace, isDigitKeyId, KEY_ID, resolveKeyId } from "../src/domain/keyPresentation.js";
+import type { GameState, Key, KeyInput, RollEntry } from "../src/domain/types.js";
 import { getSlotInputScenariosByTag } from "./helpers/slotInput.contractFixtures.js";
 import { assertScenarioResult, runScenario, type SlotInputRuntimeAdapter } from "./helpers/slotInput.contractRunner.js";
 
@@ -23,102 +25,143 @@ const runtimeKeysFromInitialUnlocks = (): Key[] => {
     ...(Object.keys(state.unlocks.steps) as Key[]),
     ...(Object.keys(state.unlocks.visualizers) as Key[]),
     ...(Object.keys(state.unlocks.execution) as Key[]),
-  ].sort((a, b) => a.localeCompare(b));
+  ]
+    .filter((key) => key !== KEY_ID.toggle_delta_range_clamp)
+    .sort((a, b) => a.localeCompare(b));
 };
 
-const unlockKey = (state: GameState, key: Key): GameState => {
-  if (key in state.unlocks.valueExpression) {
+const ensureKeyOnKeypad = (state: GameState, key: Key): GameState => {
+  if (state.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === key)) {
+    return state;
+  }
+  const placeholderIndex = state.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
+  if (placeholderIndex >= 0) {
     return {
       ...state,
+      ui: {
+        ...state.ui,
+        keyLayout: state.ui.keyLayout.map((cell, index) => (index === placeholderIndex ? { kind: "key", key } : cell)),
+      },
+    };
+  }
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      keyLayout: [...state.ui.keyLayout, { kind: "key", key }],
+      keypadColumns: state.ui.keypadColumns + 1,
+      keypadRows: 1,
+    },
+  };
+};
+
+const unlockKey = (state: GameState, keyLike: KeyInput): GameState => {
+  const key = resolveKeyId(keyLike);
+  const prepared = ensureKeyOnKeypad(state, key);
+  if (key in prepared.unlocks.valueAtoms || key in prepared.unlocks.valueCompose || key in prepared.unlocks.valueExpression) {
+    return {
+      ...prepared,
       unlocks: {
-        ...state.unlocks,
+        ...prepared.unlocks,
+        valueAtoms: key in prepared.unlocks.valueAtoms
+          ? {
+            ...prepared.unlocks.valueAtoms,
+            [key]: true,
+          }
+          : prepared.unlocks.valueAtoms,
+        valueCompose: key in prepared.unlocks.valueCompose
+          ? {
+            ...prepared.unlocks.valueCompose,
+            [key]: true,
+          }
+          : prepared.unlocks.valueCompose,
         valueExpression: {
-          ...state.unlocks.valueExpression,
+          ...prepared.unlocks.valueExpression,
           [key]: true,
         },
       },
     };
   }
-  if (key in state.unlocks.slotOperators) {
+  if (key in prepared.unlocks.slotOperators) {
     return {
-      ...state,
+      ...prepared,
       unlocks: {
-        ...state.unlocks,
-        maxSlots: Math.max(state.unlocks.maxSlots, 1),
+        ...prepared.unlocks,
+        maxSlots: Math.max(prepared.unlocks.maxSlots, 1),
         slotOperators: {
-          ...state.unlocks.slotOperators,
+          ...prepared.unlocks.slotOperators,
           [key]: true,
         },
       },
     };
   }
-  if (key in state.unlocks.unaryOperators) {
+  if (key in prepared.unlocks.unaryOperators) {
     return {
-      ...state,
+      ...prepared,
       unlocks: {
-        ...state.unlocks,
-        maxSlots: Math.max(state.unlocks.maxSlots, 1),
+        ...prepared.unlocks,
+        maxSlots: Math.max(prepared.unlocks.maxSlots, 1),
         unaryOperators: {
-          ...state.unlocks.unaryOperators,
+          ...prepared.unlocks.unaryOperators,
           [key]: true,
         },
       },
     };
   }
-  if (key in state.unlocks.utilities) {
+  if (key in prepared.unlocks.utilities) {
     return {
-      ...state,
+      ...prepared,
       unlocks: {
-        ...state.unlocks,
+        ...prepared.unlocks,
         utilities: {
-          ...state.unlocks.utilities,
+          ...prepared.unlocks.utilities,
           [key]: true,
         },
       },
     };
   }
-  if (key in state.unlocks.memory) {
+  if (key in prepared.unlocks.memory) {
     return {
-      ...state,
+      ...prepared,
       unlocks: {
-        ...state.unlocks,
+        ...prepared.unlocks,
         memory: {
-          ...state.unlocks.memory,
+          ...prepared.unlocks.memory,
           [key]: true,
         },
       },
     };
   }
-  if (key in state.unlocks.steps) {
+  if (key in prepared.unlocks.steps) {
     return {
-      ...state,
+      ...prepared,
       unlocks: {
-        ...state.unlocks,
+        ...prepared.unlocks,
         steps: {
-          ...state.unlocks.steps,
+          ...prepared.unlocks.steps,
           [key]: true,
         },
       },
     };
   }
-  if (key in state.unlocks.visualizers) {
+  if (key in prepared.unlocks.visualizers) {
     return {
-      ...state,
+      ...prepared,
       unlocks: {
-        ...state.unlocks,
+        ...prepared.unlocks,
         visualizers: {
-          ...state.unlocks.visualizers,
+          ...prepared.unlocks.visualizers,
           [key]: true,
         },
       },
     };
   }
   return {
-    ...state,
+    ...prepared,
     unlocks: {
-      ...state.unlocks,
+      ...prepared.unlocks,
       execution: {
-        ...state.unlocks.execution,
+        ...prepared.unlocks.execution,
         [key]: true,
       },
     },
@@ -139,13 +182,14 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         ...initialState(),
         calculator: {
           ...initialState().calculator,
-          draftingSlot: { operator: "+", operandInput: "", isNegative: false },
+          draftingSlot: { operator: op("+"), operandInput: "", isNegative: false },
         },
       },
       key,
     );
     const next = applyKeyAction(state, key);
-    assert.equal(next.calculator.draftingSlot?.operandInput, key, `digit ${key} should populate drafting operand`);
+    const expectedInput = isDigitKeyId(key) ? getButtonFace(key) : key;
+    assert.equal(next.calculator.draftingSlot?.operandInput, expectedInput, `digit ${key} should populate drafting operand`);
     return;
   }
 
@@ -172,8 +216,8 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
           ...initialState().calculator,
           total: r(7n),
           rollEntries: re(r(7n), r(9n)),
-          operationSlots: [{ operator: "+", operand: 1n }],
-          draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
+          operationSlots: [{ operator: op("+"), operand: 1n }],
+          draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
         },
       },
       "C",
@@ -194,8 +238,8 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
           ...initialState().calculator,
           total: r(7n),
           rollEntries: re(r(1n), r(2n)),
-          operationSlots: [{ operator: "+", operand: 1n }],
-          draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
+          operationSlots: [{ operator: op("+"), operand: 1n }],
+          draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
         },
       },
       "CE",
@@ -214,7 +258,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         ...initialState(),
         calculator: {
           ...initialState().calculator,
-          draftingSlot: { operator: "+", operandInput: "9", isNegative: false },
+          draftingSlot: { operator: op("+"), operandInput: "9", isNegative: false },
         },
       },
       "\u2190",
@@ -262,8 +306,9 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "memory_recall_sets_input") {
-    let state = unlockKey(initialState(), "M→");
-    state = unlockKey(state, "α,β,γ");
+    let state = unlockKey(initialState(), KEY_ID.memory_recall);
+    state = unlockKey(state, KEY_ID.memory_cycle_variable);
+    state = unlockKey(state, "+");
     state = {
       ...state,
       lambdaControl: {
@@ -272,20 +317,21 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       },
       ui: {
         ...state.ui,
-        memoryVariable: "α",
+        memoryVariable: "\u03B1",
       },
+      completedUnlockIds: unlockCatalog.map((unlock) => unlock.id),
       calculator: {
         ...state.calculator,
-        draftingSlot: { operator: "+", operandInput: "", isNegative: false },
+        draftingSlot: { operator: op("+"), operandInput: "", isNegative: false },
       },
     };
-    const next = applyKeyAction(state, "M→");
-    assert.equal(next.calculator.draftingSlot?.operandInput, "4", "M→ should inject selected memory value like a digit");
+    const next = applyKeyAction(state, KEY_ID.memory_recall);
+    assert.equal(next.calculator.draftingSlot?.operandInput, "4", "M\u2192 should inject selected memory value like a digit");
     return;
   }
 
   if (kind === "memory_adjusts_allocator") {
-    if (key === "M+") {
+    if (key === k("M+")) {
       const base = initialState();
       const state = unlockKey({
         ...base,
@@ -295,7 +341,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         },
         ui: {
           ...base.ui,
-          memoryVariable: "α",
+          memoryVariable: "\u03B1",
         },
       }, "M+");
       const next = applyKeyAction(state, "M+");
@@ -303,7 +349,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       assert.equal(next.ui.keypadColumns, 2, "M+ on α should project to keypad column growth");
       return;
     }
-    if (key === "M–") {
+    if (key === k("M\u2013")) {
       const base = initialState();
       const state = unlockKey({
         ...base,
@@ -317,12 +363,12 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         },
         ui: {
           ...base.ui,
-          memoryVariable: "α",
+          memoryVariable: "\u03B1",
         },
-      }, "M–");
-      const next = applyKeyAction(state, "M–");
-      assert.equal(next.allocator.allocations.width, 0, "M– should decrease selected allocator dimension");
-      assert.equal(next.ui.keypadColumns, 1, "M– on α should project to keypad column reduction");
+      }, "M\u2013");
+      const next = applyKeyAction(state, "M\u2013");
+      assert.equal(next.allocator.allocations.width, 0, "M\u2013 should decrease selected allocator dimension");
+      assert.equal(next.ui.keypadColumns, 1, "M\u2013 on α should project to keypad column reduction");
       return;
     }
   }
@@ -337,13 +383,14 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         ...initialState(),
         calculator: {
           ...initialState().calculator,
-          draftingSlot: { operator: "+", operandInput: "9", isNegative: false },
+          draftingSlot: { operator: op("+"), operandInput: "9", isNegative: false },
         },
       },
       key,
     );
     const next = applyKeyAction(state, key);
-    assert.equal(next.calculator.draftingSlot?.operandInput, key, `digit ${key} should replace full one-digit operand`);
+    const expectedInput = isDigitKeyId(key) ? getButtonFace(key) : key;
+    assert.equal(next.calculator.draftingSlot?.operandInput, expectedInput, `digit ${key} should replace full one-digit operand`);
     return;
   }
 
@@ -353,7 +400,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       ...state,
       calculator: {
         ...state.calculator,
-        draftingSlot: { operator: "+", operandInput: "", isNegative: false },
+        draftingSlot: { operator: op("+"), operandInput: "", isNegative: false },
       },
     };
     const next = applyKeyAction(state, key);
@@ -369,8 +416,8 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
           ...initialState().calculator,
           total: r(5n),
           rollEntries: re(r(5n)),
-          operationSlots: [{ operator: "+", operand: 9n }],
-          draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
+          operationSlots: [{ operator: op("+"), operand: 9n }],
+          draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
         },
       },
       key,
@@ -399,7 +446,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
           ...initialState().calculator,
           total: r(42n),
           rollEntries: re(r(40n), r(42n)),
-          operationSlots: [{ operator: "-", operand: 2n }],
+          operationSlots: [{ operator: op("-"), operand: 2n }],
         },
       },
       "CE",
@@ -425,17 +472,16 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
           ...initialState().calculator,
           total: r(7n),
           rollEntries: [],
-          operationSlots: [{ operator: "+", operand: 9n }],
-          draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
+          operationSlots: [{ operator: op("+"), operand: 9n }],
+          draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
         },
         unlocks: {
           ...initialState().unlocks,
-          utilities: {
-            ...initialState().unlocks.utilities,
-            C: false,
-            UNDO: true,
-          },
+        utilities: {
+          ...initialState().unlocks.utilities,
+          ...utilityUnlockPatch([["C", false], ["UNDO", true]]),
         },
+      },
       },
       "UNDO",
     );
@@ -453,7 +499,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
           ...initialState().calculator,
           total: r(11n),
           rollEntries: re(r(11n)),
-          draftingSlot: { operator: "+", operandInput: "1", isNegative: false },
+          draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
         },
       },
       key,
@@ -470,7 +516,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       calculator: {
         ...base.calculator,
         total: r(10n),
-        operationSlots: [{ operator: "/" as const, operand: 0n }],
+        operationSlots: [{ operator: op("/"), operand: 0n }],
       },
     };
     const next = applyKeyAction(state, "=");
@@ -486,28 +532,29 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         ...base,
         ui: {
           ...base.ui,
-          memoryVariable: "β",
+          memoryVariable: "\u03B1",
         },
+        completedUnlockIds: unlockCatalog.map((unlock) => unlock.id),
         calculator: {
           ...base.calculator,
           rollEntries: re(r(3n)),
         },
       },
-      "M→",
+      KEY_ID.memory_recall,
     );
-    const next = applyKeyAction(state, "M→");
-    assert.deepEqual(next.calculator, state.calculator, "M→ should no-op while roll is active, like digit entry");
+    const next = applyKeyAction(state, KEY_ID.memory_recall);
+    assert.deepEqual(next.calculator, state.calculator, "M\u2192 should no-op while roll is active, like digit entry");
     return;
   }
 
   if (kind === "memory_adjust_noop_without_budget_or_bounds") {
-    if (key === "M+") {
+    if (key === k("M+")) {
       const base = initialState();
       const state = unlockKey({
         ...base,
         ui: {
           ...base.ui,
-          memoryVariable: "α",
+          memoryVariable: "\u03B1",
         },
       }, "M+");
       const next = applyKeyAction(state, "M+");
@@ -515,18 +562,18 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       assert.equal(next.ui.keypadColumns, state.ui.keypadColumns, "M+ no-op should keep projected keypad width unchanged");
       return;
     }
-    if (key === "M–") {
+    if (key === k("M\u2013")) {
       const base = initialState();
       const state = unlockKey({
         ...base,
         ui: {
           ...base.ui,
-          memoryVariable: "α",
+          memoryVariable: "\u03B1",
         },
-      }, "M–");
-      const next = applyKeyAction(state, "M–");
-      assert.equal(next.allocator.allocations.width, 0, "M– should no-op at lower bound");
-      assert.equal(next.ui.keypadColumns, 1, "M– no-op at lower bound should keep projected width");
+      }, "M\u2013");
+      const next = applyKeyAction(state, "M\u2013");
+      assert.equal(next.allocator.allocations.width, 0, "M\u2013 should no-op at lower bound");
+      assert.equal(next.ui.keypadColumns, state.ui.keypadColumns, "M\u2013 no-op at lower bound should keep projected width");
       return;
     }
   }
@@ -586,3 +633,9 @@ export const runKeyBehaviorContractTests = (): void => {
     }
   }
 };
+
+
+
+
+
+

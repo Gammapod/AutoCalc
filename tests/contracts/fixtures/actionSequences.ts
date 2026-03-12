@@ -1,3 +1,4 @@
+import "../../support/keyCompat.runtime.js";
 import type { Action } from "../../../src/domain/types.js";
 
 export type ActionSequenceFixture = {
@@ -9,19 +10,19 @@ export const LONG_TRACE_FIXTURES: ActionSequenceFixture[] = [
   {
     id: "visualizer-and-layout-mix",
     actions: [
-      { type: "PRESS_KEY", key: "GRAPH" },
-      { type: "PRESS_KEY", key: "GRAPH" },
-      { type: "PRESS_KEY", key: "FEED" },
-      { type: "PRESS_KEY", key: "FEED" },
+      { type: "PRESS_KEY", key: k("GRAPH") },
+      { type: "PRESS_KEY", key: k("GRAPH") },
+      { type: "PRESS_KEY", key: k("FEED") },
+      { type: "PRESS_KEY", key: k("FEED") },
       { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 3 },
       { type: "UPGRADE_KEYPAD_COLUMN" },
       { type: "UPGRADE_KEYPAD_ROW" },
       { type: "MOVE_LAYOUT_CELL", fromSurface: "keypad", fromIndex: 0, toSurface: "storage", toIndex: 0 },
       { type: "SWAP_LAYOUT_CELLS", fromSurface: "storage", fromIndex: 0, toSurface: "keypad", toIndex: 1 },
-      { type: "PRESS_KEY", key: "1" },
-      { type: "PRESS_KEY", key: "+" },
-      { type: "PRESS_KEY", key: "1" },
-      { type: "PRESS_KEY", key: "=" },
+      { type: "PRESS_KEY", key: k("1") },
+      { type: "PRESS_KEY", key: k("+") },
+      { type: "PRESS_KEY", key: k("1") },
+      { type: "PRESS_KEY", key: k("=") },
     ],
   },
   {
@@ -44,17 +45,19 @@ export const LONG_TRACE_FIXTURES: ActionSequenceFixture[] = [
     id: "unlock-and-reset-mix",
     actions: [
       { type: "UNLOCK_ALL" },
-      { type: "PRESS_KEY", key: "1" },
-      { type: "PRESS_KEY", key: "1" },
-      { type: "PRESS_KEY", key: "=" },
-      { type: "PRESS_KEY", key: "C" },
-      { type: "PRESS_KEY", key: "1" },
-      { type: "PRESS_KEY", key: "+" },
-      { type: "PRESS_KEY", key: "1" },
-      { type: "PRESS_KEY", key: "=" },
-      { type: "PRESS_KEY", key: "UNDO" },
-      { type: "PRESS_KEY", key: "CE" },
+      { type: "PRESS_KEY", key: k("1") },
+      { type: "PRESS_KEY", key: k("1") },
+      { type: "PRESS_KEY", key: k("=") },
+      { type: "PRESS_KEY", key: k("C") },
+      { type: "PRESS_KEY", key: k("1") },
+      { type: "PRESS_KEY", key: k("+") },
+      { type: "PRESS_KEY", key: k("1") },
+      { type: "PRESS_KEY", key: k("=") },
+      { type: "PRESS_KEY", key: k("UNDO") },
+      { type: "PRESS_KEY", key: k("CE") },
       { type: "RESET_ALLOCATOR_DEVICE" },
     ],
   },
 ];
+
+

@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
@@ -17,15 +18,15 @@ export const runReducerLayoutTests = (): void => {
   const baselineLayout = baseline.ui.keyLayout;
   assert.deepEqual(
     baselineLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
-    ["="],
+    [k("=")],
     "default keypad starts as 1x1 with ++ in bottom-right slot",
   );
   assert.ok(
-    baseline.ui.storageLayout.some((cell) => cell?.key === "1"),
+    baseline.ui.storageLayout.some((cell) => cell?.key === k("1")),
     "default storage includes 1 key",
   );
   assert.ok(
-    baseline.ui.storageLayout.some((cell) => cell?.key === "+"),
+    baseline.ui.storageLayout.some((cell) => cell?.key === k("+")),
     "default storage includes + key",
   );
 
@@ -59,7 +60,7 @@ export const runReducerLayoutTests = (): void => {
     toIndex: emptyKeypadIndex,
   });
   assert.equal(toKeypadMove.ui.keyLayout[emptyKeypadIndex]?.kind, "key", "storage key can move onto empty keypad slot");
-  assert.equal(toKeypadMove.ui.keyLayout[emptyKeypadIndex]?.key, "CE", "moved storage key lands in keypad destination slot");
+  assert.equal(toKeypadMove.ui.keyLayout[emptyKeypadIndex]?.key, utility("CE"), "moved storage key lands in keypad destination slot");
   assert.equal(toKeypadMove.ui.storageLayout[0], null, "moving from storage clears source storage slot");
 
   const backToStorage = reducer(toKeypadMove, {
@@ -74,7 +75,7 @@ export const runReducerLayoutTests = (): void => {
     "placeholder",
     "moving keypad key to storage clears keypad source",
   );
-  assert.equal(backToStorage.ui.storageLayout[0]?.key, "CE", "moving keypad key to storage fills storage destination");
+  assert.equal(backToStorage.ui.storageLayout[0]?.key, utility("CE"), "moving keypad key to storage fills storage destination");
 
   const ceLockedWithEntryState: GameState = {
     ...baselineWithSpace,
@@ -82,15 +83,15 @@ export const runReducerLayoutTests = (): void => {
       ...baselineWithSpace.calculator,
       total: r(7n),
       rollEntries: [{ y: r(7n), remainder: rv(1n) }],
-      operationSlots: [{ operator: "+", operand: 3n }],
-      draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
+      operationSlots: [{ operator: op("+"), operand: 3n }],
+      draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
     },
     unlocks: {
       ...baselineWithSpace.unlocks,
       utilities: {
         ...baselineWithSpace.unlocks.utilities,
-        C: true,
-        CE: false,
+        [utility("C")]: true,
+        [utility("CE")]: false,
       },
     },
   };
@@ -141,7 +142,7 @@ export const runReducerLayoutTests = (): void => {
     "cross-surface move clears drafting slot via CE-style clear entry",
   );
 
-  const graphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "GRAPH");
+  const graphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === visualizer("GRAPH"));
   assert.ok(graphStorageIndex >= 0, "baseline storage includes GRAPH key");
   const graphMovedToKeypad = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
@@ -186,7 +187,7 @@ export const runReducerLayoutTests = (): void => {
     toSurface: "keypad",
     toIndex: emptyKeypadIndex,
   });
-  const cStorageIndex = storagePrepared.ui.storageLayout.findIndex((cell) => cell?.key === "C");
+  const cStorageIndex = storagePrepared.ui.storageLayout.findIndex((cell) => cell?.key === utility("C"));
   assert.ok(cStorageIndex >= 0, "storage includes C key for cross-surface swap");
   const swapAcross = reducer(storagePrepared, {
     type: "SWAP_LAYOUT_CELLS",
@@ -195,21 +196,21 @@ export const runReducerLayoutTests = (): void => {
     toSurface: "storage",
     toIndex: cStorageIndex,
   });
-  assert.equal(swapAcross.ui.storageLayout[cStorageIndex]?.key, "CE", "swap across surfaces places keypad key into storage");
+  assert.equal(swapAcross.ui.storageLayout[cStorageIndex]?.key, utility("CE"), "swap across surfaces places keypad key into storage");
   assert.equal(
     swapAcross.ui.keyLayout[emptyKeypadIndex]?.kind,
     "key",
     "swap across surfaces keeps keypad destination occupied",
   );
-  assert.equal(swapAcross.ui.keyLayout[emptyKeypadIndex]?.key, "C", "swap across surfaces places storage key into keypad");
+  assert.equal(swapAcross.ui.keyLayout[emptyKeypadIndex]?.key, utility("C"), "swap across surfaces places storage key into keypad");
 
   const executionKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex(
-    (cell) => cell.kind === "key" && cell.key === "=",
+    (cell) => cell.kind === "key" && cell.key === k("="),
   );
   const firstStorageEmptyIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell === null);
-  const firstStorageExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "=");
+  const firstStorageExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === k("="));
   const firstStorageNonExecutionIndex = baselineWithSpace.ui.storageLayout.findIndex(
-    (cell) => !!cell && cell.key !== "=",
+    (cell) => !!cell && cell.key !== k("="),
   );
   const firstEmptyKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
   assert.ok(executionKeypadIndex >= 0, "baseline keypad includes an execution key");
@@ -232,7 +233,7 @@ export const runReducerLayoutTests = (): void => {
   );
   assert.equal(
     validExecutionMoveOutToStorage.ui.storageLayout[firstStorageEmptyIndex]?.key,
-    "=",
+    k("="),
     "moving execution key out of keypad places it into storage",
   );
 
@@ -281,7 +282,7 @@ export const runReducerLayoutTests = (): void => {
     );
   }
 
-  const swapGraphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "GRAPH");
+  const swapGraphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === visualizer("GRAPH"));
   assert.ok(swapGraphStorageIndex >= 0, "baseline storage includes GRAPH key for swap test");
   const graphOnKeypadForSwap = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
@@ -291,7 +292,7 @@ export const runReducerLayoutTests = (): void => {
     toIndex: emptyKeypadIndex,
   });
   const graphOnKeypadSwappedFlag = reducer(graphOnKeypadForSwap, { type: "TOGGLE_VISUALIZER", visualizer: "graph" });
-  const swapStorageTargetIndex = graphOnKeypadSwappedFlag.ui.storageLayout.findIndex((cell) => cell?.key === "C");
+  const swapStorageTargetIndex = graphOnKeypadSwappedFlag.ui.storageLayout.findIndex((cell) => cell?.key === utility("C"));
   assert.ok(swapStorageTargetIndex >= 0, "storage includes C key for GRAPH swap target");
   const graphSwappedOut = reducer(graphOnKeypadSwappedFlag, {
     type: "SWAP_LAYOUT_CELLS",
@@ -306,7 +307,7 @@ export const runReducerLayoutTests = (): void => {
     "swapping active GRAPH off keypad resets active visualizer to total",
   );
 
-  const feedStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === "FEED");
+  const feedStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === visualizer("FEED"));
   assert.ok(feedStorageIndex >= 0, "baseline storage includes FEED key");
   const feedMovedToKeypad = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
@@ -347,7 +348,7 @@ export const runReducerLayoutTests = (): void => {
     ...baseline,
     ui: {
       ...baseline.ui,
-      storageLayout: Array.from({ length: 8 }, () => ({ kind: "key" as const, key: "1" as const })),
+      storageLayout: Array.from({ length: 8 }, () => ({ kind: "key" as const, key: k("1") })),
     },
   };
   const expandStorage = reducer(filledStorage, {
@@ -433,26 +434,30 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(resizedBigger.ui.keypadRows, 4, "set keypad dimensions updates rows");
   assert.equal(resizedBigger.ui.keyLayout.length, 20, "resizing up appends placeholder slots");
   assert.ok(resizedBigger.ui.keyLayout.slice(0, 19).every((cell) => cell.kind === "placeholder"), "top/left growth is placeholder");
-  assert.equal(resizedBigger.ui.keyLayout[19]?.kind === "key" ? resizedBigger.ui.keyLayout[19].key : null, "=", "++ stays bottom-right");
+  assert.equal(resizedBigger.ui.keyLayout[19]?.kind === "key" ? resizedBigger.ui.keyLayout[19].key : null, k("="), "++ stays bottom-right");
 
   const resizedSmaller = reducer(resizedBigger, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 2 });
   assert.equal(resizedSmaller.ui.keyLayout.length, 6, "resizing down truncates layout tail");
   assert.equal(resizedSmaller.ui.keypadColumns, 3, "resizing down updates columns");
   assert.equal(resizedSmaller.ui.keypadRows, 2, "resizing down updates rows");
   assert.ok(resizedSmaller.ui.keyLayout.slice(0, 5).every((cell) => cell.kind === "placeholder"), "shrink drops top/left first");
-  assert.equal(resizedSmaller.ui.keyLayout[5]?.kind === "key" ? resizedSmaller.ui.keyLayout[5].key : null, "=", "++ remains bottom-right anchored after shrink");
+  assert.equal(resizedSmaller.ui.keyLayout[5]?.kind === "key" ? resizedSmaller.ui.keyLayout[5].key : null, k("="), "++ remains bottom-right anchored after shrink");
 
   const shrinkWithOccupiedRemovedSlotSource = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 1 });
+  const ceStorageIndexForShrink = shrinkWithOccupiedRemovedSlotSource.ui.storageLayout.findIndex(
+    (cell) => cell?.key === utility("CE"),
+  );
+  assert.ok(ceStorageIndexForShrink >= 0, "setup: storage includes CE key for shrink removal test");
   const shrinkRemovedSlotOccupied = reducer(shrinkWithOccupiedRemovedSlotSource, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
-    fromIndex: 0,
+    fromIndex: ceStorageIndexForShrink,
     toSurface: "keypad",
     toIndex: 0,
   });
   assert.equal(
     shrinkRemovedSlotOccupied.ui.keyLayout[0]?.kind === "key" ? shrinkRemovedSlotOccupied.ui.keyLayout[0].key : null,
-    "CE",
+    utility("CE"),
     "setup: removable slot is occupied before shrink",
   );
   const shrinkEvacuated = reducer(shrinkRemovedSlotOccupied, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 1 });
@@ -461,19 +466,19 @@ export const runReducerLayoutTests = (): void => {
     "placeholder",
     "shrinking clears removed keypad slot from keypad surface",
   );
-  assert.equal(shrinkEvacuated.ui.storageLayout[0]?.key, "CE", "key from removed slot is moved into storage");
+  assert.equal(shrinkEvacuated.ui.storageLayout[0]?.key, utility("CE"), "key from removed slot is moved into storage");
 
   const fullStorageBeforeShrink: GameState = {
     ...shrinkRemovedSlotOccupied,
     ui: {
       ...shrinkRemovedSlotOccupied.ui,
-      storageLayout: Array.from({ length: 8 }, () => ({ kind: "key" as const, key: "1" as const })),
+      storageLayout: Array.from({ length: 8 }, () => ({ kind: "key" as const, key: k("1") })),
     },
   };
   const shrinkWithFullStorage = reducer(fullStorageBeforeShrink, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 1 });
   assert.equal(shrinkWithFullStorage.ui.storageLayout.length, 16, "shrink evacuation expands storage when no empty slot exists");
   assert.ok(
-    shrinkWithFullStorage.ui.storageLayout.some((cell) => cell?.key === "CE"),
+    shrinkWithFullStorage.ui.storageLayout.some((cell) => cell?.key === utility("CE")),
     "shrink evacuation preserves removed key even when storage was full",
   );
 
@@ -481,19 +486,19 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(clampedResize.ui.keypadColumns, 8, "columns clamp to max bound");
   assert.equal(clampedResize.ui.keypadRows, 1, "rows clamp to min bound");
   assert.ok(clampedResize.ui.keyLayout.slice(0, 7).every((cell) => cell.kind === "placeholder"), "column growth adds new columns on the left");
-  assert.equal(clampedResize.ui.keyLayout[7]?.kind === "key" ? clampedResize.ui.keyLayout[7].key : null, "=", "++ stays right anchored");
+  assert.equal(clampedResize.ui.keyLayout[7]?.kind === "key" ? clampedResize.ui.keyLayout[7].key : null, k("="), "++ stays right anchored");
 
   const upgradedRow = reducer(baseline, { type: "UPGRADE_KEYPAD_ROW" });
   assert.equal(upgradedRow.ui.keypadRows, 2, "row upgrade increases rows by one");
   assert.equal(upgradedRow.ui.keyLayout.length, 2, "row upgrade creates a second keypad slot");
   assert.equal(upgradedRow.ui.keyLayout[0]?.kind, "placeholder", "row upgrade pushes keys down");
-  assert.equal(upgradedRow.ui.keyLayout[1]?.kind === "key" ? upgradedRow.ui.keyLayout[1].key : null, "=", "row upgrade preserves ++ anchor");
+  assert.equal(upgradedRow.ui.keyLayout[1]?.kind === "key" ? upgradedRow.ui.keyLayout[1].key : null, k("="), "row upgrade preserves ++ anchor");
 
   const upgradedColumn = reducer(baseline, { type: "UPGRADE_KEYPAD_COLUMN" });
   assert.equal(upgradedColumn.ui.keypadColumns, 2, "column upgrade increases columns by one");
   assert.equal(upgradedColumn.ui.keyLayout.length, 2, "column upgrade creates a second keypad slot");
   assert.equal(upgradedColumn.ui.keyLayout[0]?.kind, "placeholder", "column upgrade pushes keys right");
-  assert.equal(upgradedColumn.ui.keyLayout[1]?.kind === "key" ? upgradedColumn.ui.keyLayout[1].key : null, "=", "column upgrade preserves ++ anchor");
+  assert.equal(upgradedColumn.ui.keyLayout[1]?.kind === "key" ? upgradedColumn.ui.keyLayout[1].key : null, k("="), "column upgrade preserves ++ anchor");
 
   const atMaxRows = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: baseline.ui.keypadColumns, rows: 8 });
   const noOpUpgradeRow = reducer(atMaxRows, { type: "UPGRADE_KEYPAD_ROW" });
@@ -509,6 +514,7 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.equal(noopResize, baseline, "unchanged dimensions are a no-op");
 };
+
 
 
 

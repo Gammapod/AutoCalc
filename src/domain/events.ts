@@ -1,7 +1,7 @@
-import type { Action, GameState, Key, LambdaControl, VisualizerId } from "./types.js";
+import type { Action, GameState, KeyInput, LambdaControl, VisualizerId } from "./types.js";
 
 export type DomainEvent =
-  | { type: "KeyPressed"; key: Key }
+  | { type: "KeyPressed"; key: KeyInput }
   | { type: "RunResetRequested" }
   | { type: "SaveHydrated"; state: GameState }
   | { type: "UnlockAllRequested" }

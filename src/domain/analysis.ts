@@ -6,8 +6,9 @@ import {
 } from "./predicateCapabilitySpec.js";
 import { isRationalCalculatorValue } from "./calculatorValue.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
-import { isOperatorKey, isUnaryOperatorKey } from "./buttonRegistry.js";
+
 import type { GameState, Key, LayoutCell, UnlockDefinition, UnlockPredicate } from "./types.js";
+import { isBinaryOperatorKeyId, isUnaryOperatorId, KEY_ID } from "./keyPresentation.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 
 export type NumberDomainAnalysisOptions = {
@@ -79,39 +80,39 @@ const createAvailabilityReader = (
 };
 
 const computeCapabilities = (state: GameState, isAvailable: (key: Key) => boolean): CapabilityContext => {
-  const hasEqualsKey = isAvailable("=");
+  const hasEqualsKey = isAvailable(KEY_ID.exec_equals);
   const executeActivation = hasEqualsKey;
-  const hasPlus = isAvailable("+");
-  const hasMinus = isAvailable("-");
-  const hasZero = isAvailable("0");
-  const hasOne = isAvailable("1");
+  const hasPlus = isAvailable(KEY_ID.op_add);
+  const hasMinus = isAvailable(KEY_ID.op_sub);
+  const hasZero = isAvailable(KEY_ID.digit_0);
+  const hasOne = isAvailable(KEY_ID.digit_1);
   const hasSomeValueAtom = Object.keys(state.unlocks.valueAtoms).some((key) => isAvailable(key as Key));
   const hasSomeBinaryOperator = Object.keys(state.unlocks.slotOperators)
-    .filter((key): key is Key => isOperatorKey(key as Key))
+     .filter((key): key is Key => isBinaryOperatorKeyId(key as Key))
     .some((key) => isAvailable(key));
   const hasSomeUnaryOperator = Object.keys(state.unlocks.unaryOperators)
-    .filter((key): key is Key => isUnaryOperatorKey(key as Key))
+     .filter((key): key is Key => isUnaryOperatorId(key as Key))
     .some((key) => isAvailable(key));
   const allocatorReturnPress = (state.allocatorReturnPressCount ?? 0) >= 1;
   const allocatorAllocatePress = (state.allocatorAllocatePressCount ?? 0) >= 1;
-  const hasUnaryIncrement = isAvailable("++");
-  const hasUnaryDecrement = isAvailable("--");
-  const hasUnaryNegate = isAvailable("-n");
+  const hasUnaryIncrement = isAvailable(KEY_ID.unary_inc);
+  const hasUnaryDecrement = isAvailable(KEY_ID.unary_dec);
+  const hasUnaryNegate = isAvailable(KEY_ID.unary_neg);
 
   const stepPlusOne = executeActivation && ((hasPlus && hasOne) || hasUnaryIncrement);
   const stepMinusOne = executeActivation && ((hasMinus && hasOne) || hasUnaryDecrement);
-  const resetToZero = isAvailable("C") || isAvailable("UNDO");
+  const resetToZero = isAvailable(KEY_ID.util_clear_all) || isAvailable(KEY_ID.util_undo);
   const unarySlotCommit = hasSomeUnaryOperator;
   const formOperatorPlusOperand = hasSomeBinaryOperator && hasSomeValueAtom;
   const rollGrowth = executeActivation && (formOperatorPlusOperand || stepPlusOne || stepMinusOne);
   const rollEqualRun =
     executeActivation &&
-    ((hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable("*") && hasOne) || (isAvailable("/") && hasOne));
+    ((hasPlus && hasZero) || (hasMinus && hasZero) || (isAvailable(KEY_ID.op_mul) && hasOne) || (isAvailable(KEY_ID.op_div) && hasOne));
   const rollIncrementingRun = stepPlusOne;
   const rollAlternatingSignConstantAbs = executeActivation && hasUnaryNegate;
   const rollConstantStepRun = executeActivation && (formOperatorPlusOperand || hasUnaryIncrement || hasUnaryDecrement);
-  const divisionByZeroError = executeActivation && isAvailable("/") && hasZero;
-  const euclidDivisionOperator = isAvailable("#");
+  const divisionByZeroError = executeActivation && isAvailable(KEY_ID.op_div) && hasZero;
+  const euclidDivisionOperator = isAvailable(KEY_ID.op_euclid_div);
 
   return {
     executeActivation,
@@ -272,7 +273,7 @@ export const analyzeNumberDomains = (
   const plusStep = caps.stepPlusOne;
   const minusStep = caps.stepMinusOne;
   const canResetToZero = caps.resetToZero;
-  const hasDigitOne = isAvailable("1");
+  const hasDigitOne = isAvailable(KEY_ID.digit_1);
   const anchorIntegerExists = currentIsInteger || canResetToZero;
 
   const canReachOne =
@@ -311,3 +312,5 @@ export const analyzeNumberDomains = (
     unlockSpecAnalysis: analyzeUnlockSpecRows(state, options, unlockCatalog),
   };
 };
+
+

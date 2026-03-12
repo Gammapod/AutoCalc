@@ -1,8 +1,9 @@
 import { parseExpressionOrNull } from "./expression.js";
 import type { BinarySlot, CalculatorState, DraftingSlot, Slot } from "./types.js";
+import { isNaturalDivisorOperatorKeyId } from "./keyPresentation.js";
 
 const DIGITS_ONLY_RE = /^\d+$/;
-const isNaturalDivisorOperator = (operator: DraftingSlot["operator"]): boolean => operator === "#" || operator === "\u27E1";
+const isNaturalDivisorOperator = (operator: DraftingSlot["operator"]): boolean => isNaturalDivisorOperatorKeyId(operator);
 
 export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): BinarySlot | null => {
   if (draftingSlot.operandInput === "") {

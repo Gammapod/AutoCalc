@@ -1,6 +1,7 @@
 import { toCommittedDraftingSlot } from "./slotDrafting.js";
 import { slotOperandToExpression } from "./expression.js";
 import type { BinarySlot, BinarySlotOperator, CalculatorState, Digit, DraftingSlot, Slot } from "./types.js";
+import { isNaturalDivisorOperatorKeyId } from "./keyPresentation.js";
 
 export type FunctionBuilderState = {
   operationSlots: Slot[];
@@ -12,7 +13,7 @@ export type FunctionBuilderLimits = {
   maxOperandDigits: number;
 };
 
-const isNaturalDivisorOperator = (operator: BinarySlotOperator): boolean => operator === "#" || operator === "\u27E1";
+const isNaturalDivisorOperator = (operator: BinarySlotOperator): boolean => isNaturalDivisorOperatorKeyId(operator);
 
 const withDigit = (source: string, digit: Digit): string => {
   if (source === "0") {

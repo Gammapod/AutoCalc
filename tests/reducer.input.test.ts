@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
@@ -14,17 +15,29 @@ export const runReducerInputTests = (): void => {
 
   const freshBootNoSaveState: GameState = {
     ...base,
+    ui: {
+      ...base.ui,
+      keyLayout: [keyCell("1"), keyCell("2"), keyCell("0")],
+      keypadColumns: 3,
+      keypadRows: 1,
+    },
     calculator: {
       ...base.calculator,
       singleDigitInitialTotalEntry: true,
     },
     unlocks: {
       ...base.unlocks,
+      valueAtoms: {
+        ...base.unlocks.valueAtoms,
+        [k("0")]: true,
+        [k("1")]: true,
+        [k("2")]: true,
+      },
       valueExpression: {
         ...base.unlocks.valueExpression,
-        "0": true,
-        "1": true,
-        "2": true,
+        [k("0")]: true,
+        [k("1")]: true,
+        [k("2")]: true,
       },
     },
   };
@@ -75,7 +88,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(10n),
-      operationSlots: [{ operator: "/", operand: 0n }],
+      operationSlots: [{ operator: op("/"), operand: 0n }],
     },
   };
   const afterDivByZero = applyKeyAction(divByZeroSource, "=");
@@ -103,7 +116,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(99n),
-      operationSlots: [{ operator: "+", operand: 1n }],
+      operationSlots: [{ operator: op("+"), operand: 1n }],
     },
   };
   const afterOverflow = applyKeyAction(overflowSource, "=");
@@ -133,7 +146,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...wrapSource.calculator,
       total: r(98n),
-      operationSlots: [{ operator: "+", operand: 1n }],
+      operationSlots: [{ operator: op("+"), operand: 1n }],
     },
   };
   const afterUpperEdgeWrap = applyKeyAction(wrapAtUpperEdgeSource, "=");
@@ -163,14 +176,14 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(lockedUnaryNoOp, initialState(), "locked unary key is a no-op");
 
   const unaryPlus = applyKeyAction(fullyUnlocked, "++");
-  assert.deepEqual(unaryPlus.calculator.operationSlots, [{ kind: "unary", operator: "++" }], "++ appends unary slot");
+  assert.deepEqual(unaryPlus.calculator.operationSlots, [{ kind: "unary", operator: uop("++") }], "++ appends unary slot");
   assert.equal(unaryPlus.calculator.draftingSlot, null, "++ does not create drafting slot");
 
   const unaryMinus = applyKeyAction(fullyUnlocked, "--");
-  assert.deepEqual(unaryMinus.calculator.operationSlots, [{ kind: "unary", operator: "--" }], "-- appends unary slot");
+  assert.deepEqual(unaryMinus.calculator.operationSlots, [{ kind: "unary", operator: uop("--") }], "-- appends unary slot");
 
   const unaryNegate = applyKeyAction(fullyUnlocked, "-n");
-  assert.deepEqual(unaryNegate.calculator.operationSlots, [{ kind: "unary", operator: "-n" }], "-n appends unary slot");
+  assert.deepEqual(unaryNegate.calculator.operationSlots, [{ kind: "unary", operator: uop("-n") }], "-n appends unary slot");
 
   const unaryAfterFilledDrafting = applyKeyAction(
     applyKeyAction(
@@ -182,7 +195,7 @@ export const runReducerInputTests = (): void => {
   const unaryAfterFilledDraftingResult = applyKeyAction(unaryAfterFilledDrafting, "++");
   assert.deepEqual(
     unaryAfterFilledDraftingResult.calculator.operationSlots,
-    [{ kind: "binary", operator: "-", operand: 2n }, { kind: "unary", operator: "++" }],
+    [{ kind: "binary", operator: op("-"), operand: 2n }, { kind: "unary", operator: uop("++") }],
     "unary after filled draft commits binary draft first, then appends unary slot",
   );
   assert.equal(unaryAfterFilledDraftingResult.calculator.draftingSlot, null, "unary after filled draft clears drafting slot");
@@ -194,7 +207,7 @@ export const runReducerInputTests = (): void => {
   const unaryAfterEmptyDraftingResult = applyKeyAction(unaryAfterEmptyDrafting, "++");
   assert.deepEqual(
     unaryAfterEmptyDraftingResult.calculator.operationSlots,
-    [{ kind: "unary", operator: "++" }],
+    [{ kind: "unary", operator: uop("++") }],
     "unary after empty draft discards draft and appends unary slot",
   );
   const digitAfterUnaryWithNoDraft = applyKeyAction(unaryAfterEmptyDraftingResult, "2");
@@ -205,7 +218,7 @@ export const runReducerInputTests = (): void => {
   );
   assert.deepEqual(
     digitAfterUnaryWithNoDraft.calculator.operationSlots,
-    [{ kind: "unary", operator: "++" }],
+    [{ kind: "unary", operator: uop("++") }],
     "digit after unary without drafting keeps unary slot unchanged",
   );
 
@@ -215,15 +228,15 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.calculator,
       total: r(5n),
       rollEntries: re(r(5n)),
-      operationSlots: [{ operator: "+", operand: 9n }],
-      draftingSlot: { operator: "-", operandInput: "2", isNegative: false },
+      operationSlots: [{ operator: op("+"), operand: 9n }],
+      draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
     },
   };
   const activeRollUnary = applyKeyAction(activeRollUnarySource, "++");
   assert.equal(activeRollUnary.calculator.rollEntries.length, 0, "unary key clears active roll before insertion");
   assert.deepEqual(
     activeRollUnary.calculator.operationSlots,
-    [{ kind: "unary", operator: "++" }],
+    [{ kind: "unary", operator: uop("++") }],
     "unary key appends unary slot after roll clear",
   );
 
@@ -232,7 +245,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(10n),
-      operationSlots: [{ operator: "\u27E1", operand: 4n }],
+      operationSlots: [{ operator: op("\u27E1"), operand: 4n }],
     },
   };
   const afterModuloExecution = applyKeyAction(moduloExecutionSource, "=");
@@ -254,7 +267,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(12345n),
-      operationSlots: [{ operator: "\u21BA", operand: -2n }],
+      operationSlots: [{ operator: op("\u21BA"), operand: -2n }],
     },
   };
   const afterRotateExecution = applyKeyAction(rotateExecutionSource, "=");
@@ -265,7 +278,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(12n),
-      operationSlots: [{ operator: "\u2A51", operand: 18n }],
+      operationSlots: [{ operator: op("\u2A51"), operand: 18n }],
     },
   };
   const afterGcdExecution = applyKeyAction(gcdExecutionSource, "=");
@@ -276,7 +289,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(12n),
-      operationSlots: [{ operator: "\u2A52", operand: 18n }],
+      operationSlots: [{ operator: op("\u2A52"), operand: 18n }],
     },
   };
   const afterLcmExecution = applyKeyAction(lcmExecutionSource, "=");
@@ -287,7 +300,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(6n),
-      operationSlots: [{ kind: "unary", operator: "\u03C3" }],
+      operationSlots: [{ kind: "unary", operator: uop("\u03C3") }],
     },
   };
   const afterSigmaExecution = applyKeyAction(sigmaExecutionSource, "=");
@@ -298,7 +311,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(13n),
-      operationSlots: [{ kind: "unary", operator: "\u03C6" }],
+      operationSlots: [{ kind: "unary", operator: uop("\u03C6") }],
     },
   };
   const afterPhiExecution = applyKeyAction(phiExecutionSource, "=");
@@ -309,7 +322,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(153n),
-      operationSlots: [{ kind: "unary", operator: "\u03A9" }],
+      operationSlots: [{ kind: "unary", operator: uop("\u03A9") }],
     },
   };
   const afterOmegaExecution = applyKeyAction(omegaExecutionSource, "=");
@@ -320,7 +333,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(0n),
-      operationSlots: [{ kind: "unary", operator: "\u03C3" }],
+      operationSlots: [{ kind: "unary", operator: uop("\u03C3") }],
     },
   };
   const afterSigmaZeroExecution = applyKeyAction(sigmaZeroExecutionSource, "=");
@@ -333,8 +346,8 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.calculator,
       total: r(0n),
       operationSlots: [
-        { operator: "+", operand: { type: "constant", value: "pi" } },
-        { operator: "-", operand: { type: "constant", value: "pi" } },
+        { operator: op("+"), operand: { type: "constant", value: "pi" } },
+        { operator: op("-"), operand: { type: "constant", value: "pi" } },
       ],
     },
   };
@@ -344,7 +357,7 @@ export const runReducerInputTests = (): void => {
   assert.ok(afterPiCancellation.calculator.rollEntries.at(-1)?.symbolic, "rational symbolic simplification records symbolic payload");
   assert.equal(
     afterPiCancellation.calculator.rollEntries.at(-1)?.symbolic?.exprText,
-    "((f_n(x)+pi)-pi)",
+    "((f_n(x)op_addpi)op_subpi)",
     "symbolic payload key tracks builder recurrence signature",
   );
 
@@ -354,8 +367,8 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.calculator,
       total: r(1n),
       operationSlots: [
-        { operator: "*", operand: { type: "constant", value: "e" } },
-        { operator: "/", operand: { type: "constant", value: "e" } },
+        { operator: op("*"), operand: { type: "constant", value: "e" } },
+        { operator: op("/"), operand: { type: "constant", value: "e" } },
       ],
     },
   };
@@ -369,7 +382,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(1n),
-      operationSlots: [{ operator: "+", operand: { type: "constant", value: "pi" } }],
+      operationSlots: [{ operator: op("+"), operand: { type: "constant", value: "pi" } }],
     },
   };
   const afterNonRationalSymbolic = applyKeyAction(symbolicNonRationalSource, "=");
@@ -397,14 +410,14 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked,
       calculator: {
         ...fullyUnlocked.calculator,
-        operationSlots: [{ operator: "#", operand: -4n }],
+        operationSlots: [{ operator: op("#"), operand: -4n }],
       },
     },
     "7",
   );
   assert.deepEqual(
     euclidDigitRewriteNormalizesSign.calculator.operationSlots,
-    [{ operator: "#", operand: 7n }],
+    [{ operator: op("#"), operand: 7n }],
     "digit rewrite on euclidean divisor always normalizes to natural number",
   );
 
@@ -445,7 +458,7 @@ export const runReducerInputTests = (): void => {
       ...initialState().unlocks,
       memory: {
         ...initialState().unlocks.memory,
-        "α,β,γ": true,
+        [k("α,β,γ")]: true,
       },
     },
   };
@@ -467,7 +480,7 @@ export const runReducerInputTests = (): void => {
       ...memoryPlusBase.unlocks,
       memory: {
         ...memoryPlusBase.unlocks.memory,
-        "M+": true,
+        [k("M+")]: true,
       },
     },
   };
@@ -495,7 +508,7 @@ export const runReducerInputTests = (): void => {
       ...memoryMinusBase.unlocks,
       memory: {
         ...memoryMinusBase.unlocks.memory,
-        "M–": true,
+        [k("M–")]: true,
       },
     },
     ui: {
@@ -516,7 +529,7 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.unlocks,
       utilities: {
         ...fullyUnlocked.unlocks.utilities,
-        "\u2190": true,
+        [k("\u2190")]: true,
       },
     },
   };
@@ -528,7 +541,7 @@ export const runReducerInputTests = (): void => {
     ...withBackspaceUnlocked,
     calculator: {
       ...withBackspaceUnlocked.calculator,
-      draftingSlot: { operator: "+", operandInput: "9", isNegative: false },
+      draftingSlot: { operator: op("+"), operandInput: "9", isNegative: false },
     },
   };
   const afterBackspaceDraftingDelete = applyKeyAction(backspaceDraftingDelete, "\u2190");
@@ -542,7 +555,7 @@ export const runReducerInputTests = (): void => {
     ...withBackspaceUnlocked,
     calculator: {
       ...withBackspaceUnlocked.calculator,
-      draftingSlot: { operator: "+", operandInput: "", isNegative: true },
+      draftingSlot: { operator: op("+"), operandInput: "", isNegative: true },
     },
   };
   const afterBackspaceDraftingNegFlag = applyKeyAction(backspaceDraftingNegFlag, "\u2190");
@@ -582,14 +595,14 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...withBackspaceUnlocked.calculator,
       total: r(4n),
-      operationSlots: [{ operator: "+", operand: 1n }],
-      draftingSlot: { operator: "-", operandInput: "3", isNegative: false },
+      operationSlots: [{ operator: op("+"), operand: 1n }],
+      draftingSlot: { operator: op("-"), operandInput: "3", isNegative: false },
     },
   };
   const afterWalk1 = applyKeyAction(backspaceFunctionWalkStart, "\u2190");
   assert.equal(afterWalk1.calculator.draftingSlot?.operandInput, "", "walk 1 clears trailing operand digit");
   const afterWalk2 = applyKeyAction(afterWalk1, "\u2190");
-  assert.equal(afterWalk2.calculator.draftingSlot?.operator, "+", "walk 2 removes current operator and restores previous slot operator");
+  assert.equal(afterWalk2.calculator.draftingSlot?.operator, op("+"), "walk 2 removes current operator and restores previous slot operator");
   assert.equal(afterWalk2.calculator.draftingSlot?.operandInput, "1", "walk 2 restores previous slot operand");
   const afterWalk3 = applyKeyAction(afterWalk2, "\u2190");
   assert.equal(afterWalk3.calculator.draftingSlot?.operandInput, "", "walk 3 clears restored operand digit");
@@ -598,5 +611,9 @@ export const runReducerInputTests = (): void => {
   const afterWalk5 = applyKeyAction(afterWalk4, "\u2190");
   assert.deepEqual(afterWalk5.calculator.total, r(0n), "walk 5 trims seed total value");
 };
+
+
+
+
 
 

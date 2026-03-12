@@ -29,7 +29,6 @@ import {
   DELTA_RANGE_CLAMP_FLAG,
   OVERFLOW_ERROR_SEEN_ID,
 } from "./state.js";
-import { isDigitKey, isOperatorKey, isUnaryOperatorKey } from "./buttonRegistry.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
 import type {
   BinarySlotOperator,
@@ -37,16 +36,36 @@ import type {
   ErrorCode,
   ExecKey,
   ExecutionErrorKind,
-  ExpressionConstant,
   GameState,
   Key,
+  KeyInput,
   RationalValue,
   RollEntry,
   BinarySlot,
   UnaryOperator,
 } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
-import { applyMemoryAdjust, cycleMemoryVariable, isMemoryKey, resolveMemoryRecallDigit } from "./memoryController.js";
+import {
+  applyMemoryAdjust,
+  cycleMemoryVariable,
+  isMemoryCycleKey,
+  isMemoryKey,
+  isMemoryMinusKey,
+  isMemoryPlusKey,
+  isMemoryRecallKey,
+  resolveMemoryRecallDigit,
+} from "./memoryController.js";
+import {
+  isBinaryOperatorKeyId,
+  isConstantKeyId,
+  isDigitKeyId,
+  isNaturalDivisorOperatorKeyId,
+  isUnaryOperatorId,
+  KEY_ID,
+  resolveKeyId,
+  toLegacyKey,
+  type ConstantKeyId,
+} from "./keyPresentation.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
@@ -64,7 +83,9 @@ const withDigit = (source: string, digit: Digit): string => {
   }
   return `${source}${digit}`;
 };
-const isNaturalDivisorOperator = (operator: string): boolean => operator === "#" || operator === "\u27E1";
+const isNaturalDivisorOperator = (operator: Key): boolean => isNaturalDivisorOperatorKeyId(operator);
+const toExpressionConstant = (constantKey: ConstantKeyId): "pi" | "e" =>
+  constantKey === KEY_ID.const_e ? "e" : "pi";
 
 const getMagnitudeText = (total: GameState["calculator"]["total"]): string => {
   if (!isRationalCalculatorValue(total) || !isInteger(total.value)) {
@@ -156,14 +177,17 @@ const applyUnaryOperator = (state: GameState, key: UnaryOperator): GameState => 
   return applyUnlocks(withBuilderPatchApplied(state, nextPatch), unlockCatalog);
 };
 
-const applyDigit = (state: GameState, digit: Digit): GameState => {
-  if (!state.unlocks.valueAtoms[digit] && !state.unlocks.valueExpression[digit]) {
+const applyDigit = (state: GameState, key: Key): GameState => {
+  if (!isDigitKeyId(key)) {
     return state;
   }
-  return applyDigitValue(state, digit);
+  if (!state.unlocks.valueAtoms[key] && !state.unlocks.valueExpression[key]) {
+    return state;
+  }
+  return applyDigitValue(state, toLegacyKey(key) as Digit);
 };
 
-const applyConstantValue = (state: GameState, constant: ExpressionConstant): GameState => {
+const applyConstantValue = (state: GameState, constant: ConstantKeyId): GameState => {
   if (!state.unlocks.valueAtoms[constant] && !state.unlocks.valueExpression[constant]) {
     return state;
   }
@@ -194,7 +218,7 @@ const applyConstantValue = (state: GameState, constant: ExpressionConstant): Gam
     }
     operationSlots[slotIndex] = {
       ...target,
-      operand: constant === "e" ? { type: "constant", value: "e" } : { type: "constant", value: "pi" },
+      operand: { type: "constant", value: toExpressionConstant(constant) },
     };
     return applyUnlocks(withBuilderPatchApplied(state, { operationSlots, draftingSlot: null }), unlockCatalog);
   }
@@ -208,7 +232,7 @@ const applyConstantValue = (state: GameState, constant: ExpressionConstant): Gam
       ...state,
       calculator: {
         ...state.calculator,
-        total: toExpressionCalculatorValue(constant === "e" ? { type: "constant", value: "e" } : { type: "constant", value: "pi" }),
+        total: toExpressionCalculatorValue({ type: "constant", value: toExpressionConstant(constant) }),
         pendingNegativeTotal: false,
         singleDigitInitialTotalEntry: false,
       },
@@ -438,13 +462,14 @@ const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
 };
 
 const applyEquals = (state: GameState): GameState => {
-  if (!state.unlocks.execution["="]) {
+  const equalsKey = KEY_ID.exec_equals;
+  if (!state.unlocks.execution[equalsKey]) {
     return state;
   }
 
   const finalized = finalizeDraftingSlot(state);
   const shouldCaptureSeed = finalized.calculator.rollEntries.length === 0 && finalized.calculator.seedSnapshot === undefined;
-  const evaluation = evaluateExecutionOutcome(finalized, "=");
+  const evaluation = evaluateExecutionOutcome(finalized, equalsKey);
   const nextEntry = toRollEntry(evaluation);
 
   const withRoll: GameState = {
@@ -463,7 +488,7 @@ const applyEquals = (state: GameState): GameState => {
 };
 
 const applyC = (state: GameState): GameState => {
-  if (!state.unlocks.utilities.C) {
+  if (!state.unlocks.utilities[KEY_ID.util_clear_all]) {
     return state;
   }
 
@@ -482,7 +507,7 @@ const applyC = (state: GameState): GameState => {
 const applyCECore = (state: GameState): GameState => clearOperationEntry(state);
 
 const applyCE = (state: GameState): GameState => {
-  if (!state.unlocks.utilities.CE) {
+  if (!state.unlocks.utilities[KEY_ID.util_clear_entry]) {
     return state;
   }
 
@@ -491,10 +516,10 @@ const applyCE = (state: GameState): GameState => {
 
 const NUMERIC_DIGIT_RE = /^[0-9]$/;
 const isNumericDigit = (key: string): key is Digit => NUMERIC_DIGIT_RE.test(key);
-const isValueAtomConstant = (key: Key): key is ExpressionConstant => key === "pi" || key === "e";
+const isValueAtomConstant = (key: Key): key is ConstantKeyId => isConstantKeyId(key);
 
 const applyBackspace = (state: GameState): GameState => {
-  if (!state.unlocks.utilities["\u2190"]) {
+  if (!state.unlocks.utilities[KEY_ID.util_backspace]) {
     return state;
   }
   if (state.calculator.rollEntries.length > 0) {
@@ -635,7 +660,7 @@ const applyBackspace = (state: GameState): GameState => {
 };
 
 const applyUndo = (state: GameState): GameState => {
-  if (!state.unlocks.utilities.UNDO) {
+  if (!state.unlocks.utilities[KEY_ID.util_undo]) {
     return state;
   }
 
@@ -657,10 +682,10 @@ const applyUndo = (state: GameState): GameState => {
   };
 };
 
-const isDigit = (key: Key): key is Digit => isDigitKey(key) && isNumericDigit(key);
-const isValueAtomDigit = (key: Key): key is Key => isDigitKey(key);
-const isOperator = (key: Key): key is BinarySlotOperator => isOperatorKey(key);
-const isUnaryOperator = (key: Key): key is UnaryOperator => isUnaryOperatorKey(key);
+const isDigit = (key: Key): boolean => isDigitKeyId(key);
+const isValueAtomDigit = (key: Key): key is Key => isDigitKeyId(key);
+const isOperator = (key: Key): key is BinarySlotOperator => isBinaryOperatorKeyId(key);
+const isUnaryOperator = (key: Key): key is UnaryOperator => isUnaryOperatorId(key);
 
 const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
   if (state.calculator.rollEntries.length === 0 || (!isOperator(key) && !isUnaryOperator(key))) {
@@ -680,22 +705,23 @@ const applyMemoryKeyAction = (state: GameState, key: Key): GameState => {
   if (!isMemoryKey(key) || !isKeyUnlocked(state, key)) {
     return state;
   }
-  if (key === "α,β,γ") {
+  if (isMemoryCycleKey(key)) {
     return cycleMemoryVariable(state);
   }
-  if (key === "M→") {
+  if (isMemoryRecallKey(key)) {
     return applyDigitValue(state, resolveMemoryRecallDigit(state));
   }
-  if (key === "M+") {
+  if (isMemoryPlusKey(key)) {
     return applyMemoryAdjust(state, 1);
   }
-  if (key === "M–") {
+  if (isMemoryMinusKey(key)) {
     return applyMemoryAdjust(state, -1);
   }
   return state;
 };
 
-export const applyKeyAction = (state: GameState, key: Key): GameState => {
+export const applyKeyAction = (state: GameState, keyLike: KeyInput): GameState => {
+  const key = resolveKeyId(keyLike);
   // Input precedence:
   // 1) active-roll digit keys are hard no-op
   // 2) active-roll operator keys clear current operation entry before handling

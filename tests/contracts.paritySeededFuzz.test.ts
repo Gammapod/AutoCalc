@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import type { Action } from "../src/domain/types.js";
@@ -8,13 +9,13 @@ import { PARITY_GOLDEN } from "./contracts/fixtures/parityGolden.js";
 import { stableSerialize } from "./helpers/stableSerialize.js";
 
 const ACTION_POOL: readonly Action[] = [
-  { type: "PRESS_KEY", key: "1" },
-  { type: "PRESS_KEY", key: "+" },
-  { type: "PRESS_KEY", key: "=" },
-  { type: "PRESS_KEY", key: "1" },
-  { type: "PRESS_KEY", key: "CE" },
-  { type: "PRESS_KEY", key: "GRAPH" },
-  { type: "PRESS_KEY", key: "FEED" },
+  { type: "PRESS_KEY", key: k("1") },
+  { type: "PRESS_KEY", key: k("+") },
+  { type: "PRESS_KEY", key: k("=") },
+  { type: "PRESS_KEY", key: k("1") },
+  { type: "PRESS_KEY", key: k("CE") },
+  { type: "PRESS_KEY", key: k("GRAPH") },
+  { type: "PRESS_KEY", key: k("FEED") },
   { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 3 },
   { type: "UPGRADE_KEYPAD_ROW" },
   { type: "UPGRADE_KEYPAD_COLUMN" },
@@ -63,3 +64,5 @@ const runSeed = (seed: number, steps: number): { state: string; readModel: strin
 export const runContractsParitySeededFuzzTests = (): void => {
   assert.ok(SEEDED_PARITY_RUNS.length > 0, "seeded parity fixtures remain registered");
 };
+
+

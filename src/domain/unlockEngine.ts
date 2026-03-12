@@ -4,6 +4,7 @@ import { executeSlotsValue } from "./engine.js";
 import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
 import { getOperationSnapshot } from "./slotDrafting.js";
 import { LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
+import { KEY_ID } from "./keyPresentation.js";
 import type {
   GameState,
   RollContainsDomainTypePredicate,
@@ -336,13 +337,13 @@ const analyzeOperationFirstEuclidEquivalentModulo: PredicateAnalyzer<OperationFi
 ) => {
   const slots = getOperationSnapshot(state.calculator, false);
   const firstSlot = slots[0] ?? null;
-  const firstIsEuclid = firstSlot != null && "operand" in firstSlot && firstSlot.operator === "#";
+  const firstIsEuclid = firstSlot != null && "operand" in firstSlot && firstSlot.operator === KEY_ID.op_euclid_div;
 
   let evaluationsSucceeded = false;
   let resultMatchesModuloBaseline = false;
   if (firstIsEuclid) {
     const combined = executeSlotsValue(state.calculator.total, slots);
-    const baseline = executeSlotsValue(state.calculator.total, [{ kind: "binary", operator: "\u27E1", operand: firstSlot.operand }]);
+    const baseline = executeSlotsValue(state.calculator.total, [{ kind: "binary", operator: KEY_ID.op_mod, operand: firstSlot.operand }]);
     evaluationsSucceeded = combined.ok && baseline.ok;
     if (combined.ok && baseline.ok) {
       resultMatchesModuloBaseline = calculatorValueToDisplayString(combined.total) === calculatorValueToDisplayString(baseline.total);

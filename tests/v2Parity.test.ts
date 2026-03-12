@@ -1,3 +1,4 @@
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
@@ -5,6 +6,7 @@ import type { Action, GameState } from "../src/domain/types.js";
 import { compareParity } from "../src/compat/parityHarness.js";
 import { executeCommand } from "../src/domain/commands.js";
 import { getCalculatorMode } from "../src/domain/modes.js";
+import { k, op } from "./support/keyCompat.js";
 
 const runSequence = (actions: Action[]): { legacy: GameState; v2: GameState } => {
   let legacy = initialState();
@@ -22,14 +24,14 @@ const runSequence = (actions: Action[]): { legacy: GameState; v2: GameState } =>
 
 export const runV2ParityTests = (): void => {
   const actions: Action[] = [
-    { type: "PRESS_KEY", key: "1" },
-    { type: "PRESS_KEY", key: "1" },
-    { type: "PRESS_KEY", key: "+" },
-    { type: "PRESS_KEY", key: "1" },
-    { type: "PRESS_KEY", key: "=" },
-    { type: "PRESS_KEY", key: "=" },
-    { type: "PRESS_KEY", key: "1" },
-    { type: "PRESS_KEY", key: "CE" },
+    { type: "PRESS_KEY", key: k("1") },
+    { type: "PRESS_KEY", key: k("1") },
+    { type: "PRESS_KEY", key: k("+") },
+    { type: "PRESS_KEY", key: k("1") },
+    { type: "PRESS_KEY", key: k("=") },
+    { type: "PRESS_KEY", key: k("=") },
+    { type: "PRESS_KEY", key: k("1") },
+    { type: "PRESS_KEY", key: k("CE") },
     { type: "MOVE_KEY_SLOT", fromIndex: 1, toIndex: 0 },
     { type: "SWAP_KEY_SLOTS", firstIndex: 0, secondIndex: 1 },
     { type: "SET_KEYPAD_DIMENSIONS", columns: 5, rows: 4 },
@@ -53,10 +55,12 @@ export const runV2ParityTests = (): void => {
   assert.equal(
     getCalculatorMode({
       ...initialState(),
-      calculator: { ...initialState().calculator, draftingSlot: { operator: "+", operandInput: "", isNegative: false } },
+      calculator: { ...initialState().calculator, draftingSlot: { operator: op("+"), operandInput: "", isNegative: false } },
     }),
     "drafting",
     "mode drafting with active drafting slot",
   );
   assert.equal(getCalculatorMode(v2), v2.calculator.rollEntries.length > 0 ? "rolled" : "idle", "rolled mode tracks roll presence");
 };
+
+

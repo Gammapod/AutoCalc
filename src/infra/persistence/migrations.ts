@@ -12,6 +12,14 @@ import {
 } from "../../domain/state.js";
 import { fromKeyLayoutArray } from "../../domain/keypadLayoutModel.js";
 import { resizeKeyLayout } from "../../domain/reducer.layout.js";
+import {
+  isBinaryOperatorKeyId,
+  isKeyId,
+  isLegacyKey,
+  isUnaryOperatorId,
+  KEY_ID,
+  resolveKeyId,
+} from "../../domain/keyPresentation.js";
 import type {
   ActiveVisualizer,
   DraftingSlot,
@@ -221,20 +229,73 @@ export type SerializableStateV13 = Omit<SerializableStateV12, "calculator"> & {
 };
 
 export type SerializableStateV14 = SerializableStateV13;
-
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN|[A-Za-z0-9_()+\-*/\s]+)$/;
-const BINARY_SLOT_OPERATOR_VALUES: Slot["operator"][] = ["+", "-", "*", "/", "#", "⟡", "\u21BA", "\u2A51", "\u2A52"];
-const UNARY_SLOT_OPERATOR_VALUES: Slot["operator"][] = ["++", "--", "-n", "\u03C3", "\u03C6", "\u03A9"];
+
+const BINARY_SLOT_OPERATOR_VALUES = [
+  KEY_ID.op_add,
+  KEY_ID.op_sub,
+  KEY_ID.op_mul,
+  KEY_ID.op_div,
+  KEY_ID.op_euclid_div,
+  KEY_ID.op_mod,
+  KEY_ID.op_rotate_left,
+  KEY_ID.op_gcd,
+  KEY_ID.op_lcm,
+] as const;
+const UNARY_SLOT_OPERATOR_VALUES = [
+  KEY_ID.unary_inc,
+  KEY_ID.unary_dec,
+  KEY_ID.unary_neg,
+  KEY_ID.unary_sigma,
+  KEY_ID.unary_phi,
+  KEY_ID.unary_omega,
+] as const;
 const SLOT_OPERATOR_VALUES: Slot["operator"][] = [...BINARY_SLOT_OPERATOR_VALUES, ...UNARY_SLOT_OPERATOR_VALUES];
 const DRAFTING_OPERATOR_VALUES = BINARY_SLOT_OPERATOR_VALUES;
-const DIGIT_VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
-const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, "pi", "e"] as const;
-const UTILITY_KEY_VALUES = ["C", "CE", "UNDO", "\u2190", "\u27E1[-\u{1D6FF}, \u{1D6FF})"] as const;
-const MEMORY_KEY_VALUES = ["\u03B1,\u03B2,\u03B3", "M+", "M\u2013", "M\u2192"] as const;
-const VISUALIZER_KEY_VALUES = ["GRAPH", "FEED", "𝚷𝑝^𝑒", "CIRCLE", "\u03BB", "ALG"] as const;
-const EXEC_KEY_VALUES = ["="] as const;
-const UNARY_OPERATOR_KEY_VALUES = ["++", "--", "-n", "\u03C3", "\u03C6", "\u03A9"] as const;
+const DIGIT_VALUES = [
+  KEY_ID.digit_0,
+  KEY_ID.digit_1,
+  KEY_ID.digit_2,
+  KEY_ID.digit_3,
+  KEY_ID.digit_4,
+  KEY_ID.digit_5,
+  KEY_ID.digit_6,
+  KEY_ID.digit_7,
+  KEY_ID.digit_8,
+  KEY_ID.digit_9,
+] as const;
+const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, KEY_ID.const_pi, KEY_ID.const_e] as const;
+const UTILITY_KEY_VALUES = [
+  KEY_ID.util_clear_all,
+  KEY_ID.util_clear_entry,
+  KEY_ID.util_undo,
+  KEY_ID.util_backspace,
+  KEY_ID.toggle_delta_range_clamp,
+] as const;
+const MEMORY_KEY_VALUES = [
+  KEY_ID.memory_cycle_variable,
+  KEY_ID.memory_adjust_plus,
+  KEY_ID.memory_adjust_minus,
+  KEY_ID.memory_recall,
+] as const;
+const VISUALIZER_KEY_VALUES = [
+  KEY_ID.viz_graph,
+  KEY_ID.viz_feed,
+  KEY_ID.viz_factorization,
+  KEY_ID.viz_circle,
+  KEY_ID.viz_eigen_allocator,
+  KEY_ID.viz_algebraic,
+] as const;
+const EXEC_KEY_VALUES = [KEY_ID.exec_equals] as const;
+const UNARY_OPERATOR_KEY_VALUES = [
+  KEY_ID.unary_inc,
+  KEY_ID.unary_dec,
+  KEY_ID.unary_neg,
+  KEY_ID.unary_sigma,
+  KEY_ID.unary_phi,
+  KEY_ID.unary_omega,
+] as const;
 const MEMORY_VARIABLE_VALUES: readonly MemoryVariable[] = ["α", "β", "γ"];
 const KEY_VALUES: readonly Key[] = [
   ...VALUE_EXPRESSION_KEY_VALUES,
@@ -274,12 +335,12 @@ const isInteger = (value: unknown): value is number => typeof value === "number"
 const isRationalString = (value: unknown): value is string => isString(value) && RATIONAL_RE.test(value);
 const isCalculatorValueString = (value: unknown): value is string => isString(value) && CALCULATOR_VALUE_RE.test(value);
 const isSlotOperator = (value: unknown): value is Slot["operator"] =>
-  isString(value) && SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
+  isString(value) && (isBinaryOperatorKeyId(value as never) || isUnaryOperatorId(value as never));
 const isBinarySlotOperator = (value: unknown): value is Slot["operator"] =>
-  isString(value) && BINARY_SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
+  isString(value) && isBinaryOperatorKeyId(value as never);
 const isUnarySlotOperator = (value: unknown): value is Slot["operator"] =>
-  isString(value) && UNARY_SLOT_OPERATOR_VALUES.includes(value as Slot["operator"]);
-const isKnownKey = (value: unknown): value is Key => isString(value) && KEY_VALUES.includes(value as Key);
+  isString(value) && isUnaryOperatorId(value as never);
+const isKnownKey = (value: unknown): value is Key => isString(value) && (isLegacyKey(value as never) || isKeyId(value as never));
 const isMemoryVariable = (value: unknown): value is MemoryVariable =>
   isString(value) && MEMORY_VARIABLE_VALUES.includes(value as MemoryVariable);
 const isBooleanRecord = (value: unknown): value is Record<string, boolean> =>
@@ -564,10 +625,10 @@ const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
   const normalized = [...(layout ?? defaultKeyLayout())];
 
   const mappings: Array<{ key: Key; area: PlaceholderCell["area"] }> = [
-    { key: "/", area: "div" },
-    { key: "⟡", area: "mod" },
-    { key: "*", area: "mul" },
-    { key: "#", area: "euclid_divmod" },
+    { key: KEY_ID.op_div, area: "div" },
+    { key: KEY_ID.op_mod, area: "mod" },
+    { key: KEY_ID.op_mul, area: "mul" },
+    { key: KEY_ID.op_euclid_div, area: "euclid_divmod" },
   ];
 
   for (const mapping of mappings) {
@@ -579,7 +640,7 @@ const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
       (cell) => cell.kind === "placeholder" && cell.area === mapping.area,
     );
     if (placeholderIndex >= 0) {
-      normalized[placeholderIndex] = { kind: "key", key: mapping.key };
+      normalized[placeholderIndex] = { kind: "key", key: resolveKeyId(mapping.key) };
     }
   }
 
@@ -1739,4 +1800,5 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
   }
   return null;
 };
+
 

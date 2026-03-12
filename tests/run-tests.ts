@@ -1,4 +1,5 @@
 import Algebrite from "algebrite";
+import * as keyCompat from "./support/keyCompat.js";
 import { runEngineTests } from "./engine.test.js";
 import { runReducerInputTests } from "./reducer.input.test.js";
 import { runReducerLayoutTests } from "./reducer.layout.test.js";
@@ -72,6 +73,9 @@ import { runUiIntegrationDesktopShellTests } from "./uiIntegration.desktopShell.
 import { runButtonRegistryContractTests } from "./buttonRegistry.contract.test.js";
 import { runKeyActionHandlersContractTests } from "./keyActionHandlers.contract.test.js";
 import { runKeyCatalogNormalizationTests } from "./keyCatalog.normalization.test.js";
+import { runKeyIdentityAdaptersTests } from "./keyIdentityAdapters.test.js";
+import { runDomainLegacySymbolGuardTests } from "./domainLegacySymbolGuard.test.js";
+import { runNoTsNoCheckGuardTests } from "./noTsNoCheckGuard.test.js";
 import { runBootstrapBoundaryTests } from "./bootstrapBoundary.test.js";
 import { runContentDrillUnlockExtensionTests } from "./contentDrill.unlockExtension.test.js";
 import { runUiShellRefsBuilderTests } from "./uiShell.refsBuilder.test.js";
@@ -156,6 +160,9 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/button-registry-contract", runButtonRegistryContractTests],
   ["domain/key-action-handlers-contract", runKeyActionHandlersContractTests],
   ["domain/key-catalog-normalization", runKeyCatalogNormalizationTests],
+  ["domain/key-identity-adapters", runKeyIdentityAdaptersTests],
+  ["domain/legacy-symbol-guard", runDomainLegacySymbolGuardTests],
+  ["contracts/no-ts-nocheck", runNoTsNoCheckGuardTests],
   ["app/bootstrap-boundary", runBootstrapBoundaryTests],
   ["content-drill/unlock-extension", runContentDrillUnlockExtensionTests],
   ["ui-shell/refs-builder", runUiShellRefsBuilderTests],
@@ -176,6 +183,8 @@ const testsToRun = testFilter ? tests.filter(([name]) => testFilter.test(name)) 
 (
   globalThis as typeof globalThis & { Algebrite?: unknown }
 ).Algebrite = Algebrite;
+
+Object.assign(globalThis, keyCompat);
 
 if (testsToRun.length === 0) {
   throw new Error(`No tests matched filter pattern: ${grepPattern}`);

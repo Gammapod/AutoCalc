@@ -2,9 +2,9 @@ import {
   buttonRegistry,
   getButtonDefinition,
   type ButtonKey,
-  type ButtonKeyByUnlockGroup,
 } from "./buttonRegistry.js";
-import type { GameState } from "./types.js";
+import { resolveKeyId, toKeyId, toLegacyKey, type KeyLike } from "./keyPresentation.js";
+import type { GameState, Key } from "./types.js";
 
 const withValueExpressionMirror = (
   state: GameState,
@@ -27,47 +27,54 @@ const withValueExpressionMirror = (
   },
 });
 
-export const isButtonUnlocked = (state: GameState, key: ButtonKey): boolean => {
-  const definition = getButtonDefinition(key);
+export const isButtonUnlocked = (state: GameState, key: KeyLike): boolean => {
+  const keyId = resolveKeyId(key);
+  const definition = getButtonDefinition(toLegacyKey(keyId));
   if (!definition) {
     return false;
   }
   if (definition.unlockGroup === "valueAtoms") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"valueAtoms">;
+    const typedKey = keyId as keyof GameState["unlocks"]["valueAtoms"];
     return Boolean(state.unlocks.valueAtoms[typedKey] || state.unlocks.valueExpression[typedKey]);
   }
   if (definition.unlockGroup === "slotOperators") {
-    return state.unlocks.slotOperators[key as ButtonKeyByUnlockGroup<"slotOperators">];
+    const typedKey = keyId as keyof GameState["unlocks"]["slotOperators"];
+    return Boolean(state.unlocks.slotOperators[typedKey]);
   }
   if (definition.unlockGroup === "unaryOperators") {
-    return state.unlocks.unaryOperators[key as ButtonKeyByUnlockGroup<"unaryOperators">];
+    const typedKey = keyId as keyof GameState["unlocks"]["unaryOperators"];
+    return Boolean(state.unlocks.unaryOperators[typedKey]);
   }
   if (definition.unlockGroup === "utilities") {
-    return state.unlocks.utilities[key as ButtonKeyByUnlockGroup<"utilities">];
+    const typedKey = keyId as keyof GameState["unlocks"]["utilities"];
+    return Boolean(state.unlocks.utilities[typedKey]);
   }
   if (definition.unlockGroup === "memory") {
-    return state.unlocks.memory[key as ButtonKeyByUnlockGroup<"memory">];
+    const typedKey = keyId as keyof GameState["unlocks"]["memory"];
+    return Boolean(state.unlocks.memory[typedKey]);
   }
   if (definition.unlockGroup === "visualizers") {
-    return state.unlocks.visualizers[key as ButtonKeyByUnlockGroup<"visualizers">];
+    const typedKey = keyId as keyof GameState["unlocks"]["visualizers"];
+    return Boolean(state.unlocks.visualizers[typedKey]);
   }
-  return state.unlocks.execution[key as ButtonKeyByUnlockGroup<"execution">];
+  return Boolean(state.unlocks.execution[keyId as keyof GameState["unlocks"]["execution"]]);
 };
 
-export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: boolean): GameState => {
-  const definition = getButtonDefinition(key);
+export const setButtonUnlocked = (state: GameState, key: KeyLike, unlocked: boolean): GameState => {
+  const keyId = resolveKeyId(key);
+  const definition = getButtonDefinition(toLegacyKey(keyId));
   if (!definition) {
     return state;
   }
   if (definition.unlockGroup === "valueAtoms") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"valueAtoms">;
+    const typedKey = keyId as keyof GameState["unlocks"]["valueAtoms"];
     if (state.unlocks.valueAtoms[typedKey] === unlocked) {
       return state;
     }
     return withValueExpressionMirror(state, { [typedKey]: unlocked });
   }
   if (definition.unlockGroup === "slotOperators") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"slotOperators">;
+    const typedKey = keyId as keyof GameState["unlocks"]["slotOperators"];
     if (state.unlocks.slotOperators[typedKey] === unlocked) {
       return state;
     }
@@ -83,7 +90,7 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
     };
   }
   if (definition.unlockGroup === "unaryOperators") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"unaryOperators">;
+    const typedKey = keyId as keyof GameState["unlocks"]["unaryOperators"];
     if (state.unlocks.unaryOperators[typedKey] === unlocked) {
       return state;
     }
@@ -99,7 +106,7 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
     };
   }
   if (definition.unlockGroup === "utilities") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"utilities">;
+    const typedKey = keyId as keyof GameState["unlocks"]["utilities"];
     if (state.unlocks.utilities[typedKey] === unlocked) {
       return state;
     }
@@ -115,7 +122,7 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
     };
   }
   if (definition.unlockGroup === "memory") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"memory">;
+    const typedKey = keyId as keyof GameState["unlocks"]["memory"];
     if (state.unlocks.memory[typedKey] === unlocked) {
       return state;
     }
@@ -131,7 +138,7 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
     };
   }
   if (definition.unlockGroup === "visualizers") {
-    const typedKey = key as ButtonKeyByUnlockGroup<"visualizers">;
+    const typedKey = keyId as keyof GameState["unlocks"]["visualizers"];
     if (state.unlocks.visualizers[typedKey] === unlocked) {
       return state;
     }
@@ -146,8 +153,8 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
       },
     };
   }
-  const typedKey = key as ButtonKeyByUnlockGroup<"execution">;
-  if (state.unlocks.execution[typedKey] === unlocked) {
+  const typedExecutionKey = keyId as keyof GameState["unlocks"]["execution"];
+  if (state.unlocks.execution[typedExecutionKey] === unlocked) {
     return state;
   }
   return {
@@ -156,13 +163,13 @@ export const setButtonUnlocked = (state: GameState, key: ButtonKey, unlocked: bo
       ...state.unlocks,
       execution: {
         ...state.unlocks.execution,
-        [typedKey]: unlocked,
+        [typedExecutionKey]: unlocked,
       },
     },
   };
 };
 
-export const iterUnlockedButtons = (state: GameState): ButtonKey[] =>
+export const iterUnlockedButtons = (state: GameState): Key[] =>
   buttonRegistry
     .filter((entry) => isButtonUnlocked(state, entry.key))
-    .map((entry) => entry.key);
+    .map((entry) => toKeyId(entry.key));
