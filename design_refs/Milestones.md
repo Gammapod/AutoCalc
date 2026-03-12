@@ -1,40 +1,92 @@
 # Path to v0.8.0 (roll analysis)
 
-## Milestone: Roll Orbit Analysis Foundation
+## Milestone: Roll Analysis Pre-Refactor
 
-Goal: make the roll a mathematically defined orbit tracker for user-created iterative functions.
+Goal: land prerequisite plumbing so orbit-analysis can be implemented without cross-cutting churn.
 
 ### Direction
 
-- Track the full trajectory `x_0, x_1, ..., x_n` of the active user-defined function from its chosen starting seed.
-- Track running extrema over the tracked prefix: `min_so_far(k) = min(x_0..x_k)` and `max_so_far(k) = max(x_0..x_k)`.
-- In parallel, track peer trajectories at the same step index for seeds `x_0 + 1` and `x_0 - 1` under the same function and rules.
-- For each new value `x_k` (`k >= 1`), track first-order delta `d1_k = x_k - x_{k-1}`, second-order delta `d2_k = d1_k - d1_{k-1}` (`k >= 2`), and ratio `r_k = x_k / x_{k-1}` when defined.
-- Detect first repeat in the primary trajectory and persist:
-- `transient_length = i`, where `i` is the first index of the repeated value.
-- `period_length = j - i`, where `j` is the second index (first repeat encounter) of that same value.
-- Growth-order/turbulence diagnostics are transient-only. When first repeat is detected at index `j`, diagnostics do not include step `j`.
-- Once a cycle is detected in the primary trajectory, stop collecting non-cycle diagnostics (running extrema, peer-seed comparison data, and growth-order metrics) for subsequent steps.
-- If no repeat occurs, continue tracking growth-order/turbulence diagnostics using a rolling window of only the most recent 10 primary-roll entries.
-- If any step raises an invalid-state error (for example divide-by-zero domain error, overflow, NaN/undefined value), halt all analysis after that step.
-
-### Mathematical/Design Constraints
-
-- Indexing must be explicit and consistent (`x_0` is the initial seed).
-- Repeat detection uses exact symbolic/rational equality; float/approximate-real comparison is out of scope by design.
-- Ratio handling and arithmetic evaluation must use exact-domain semantics; if a computation leaves the exact domain or produces an invalid state, analysis halts.
-- Stop-rule ordering must be deterministic: cycle detection is evaluated on each newly produced `x_k` before deciding whether to record optional diagnostics for step `k`.
-- The primary trajectory remains fully tracked even after cycle detection; only optional diagnostics halt.
+- Normalize roll indexing semantics so `x_0` is the seed everywhere.
+- Add a dedicated roll-analysis container in calculator state (separate from raw roll rows).
+- Centralize roll-analysis update sequencing so cycle/error stop rules are deterministic and tested.
+- Refactor reducer/persistence touchpoints needed to support analysis without changing core progression semantics.
+- Update `design_refs/Implementation Details.md` to match the post-refactor runtime contract.
 
 ### Exit Criteria
 
-- Roll state contains an ordered full primary trajectory for the active function run.
-- Roll state contains correct running min/max values for all pre-cycle tracked steps.
-- Roll state contains aligned peer-seed trajectories (`seed+1`, `seed-1`) for all pre-cycle tracked steps.
-- Roll state contains first-order deltas, second-order deltas, and ratios for all eligible transient steps; if no repeat occurs, this analysis is persisted only for the last 10 entries.
-- On first detected repeat, transient length and period length are stored using the index definitions above.
-- Post-cycle behavior is verified: primary trajectory continues, optional diagnostics stop beginning at repeat index `j`, and outputs are deterministic across runs.
-- Error behavior is verified: any invalid-state step terminates all further analysis updates.
+- A single canonical index mapping exists and is used by feed/graph/debug/read-model paths:
+- `x_0 = seedSnapshot`
+- `x_k (k >= 1) = rollEntries[k-1].y`
+- Calculator state includes an explicit analysis container for roll diagnostics and cycle metadata.
+- Persistence schema and migrations support the analysis container with backward-safe defaults.
+- Contract tests cover index mapping and deterministic analysis update ordering.
+- `design_refs/Implementation Details.md` reflects the current implementation after refactor.
+
+## Milestone: Roll Orbit Analysis Foundation
+
+Dependency: `Roll Analysis Pre-Refactor` must be completed first.
+
+Goal: make the roll a mathematically defined orbit tracker for user-created iterative functions.
+
+### Definitions
+
+- Primary trajectory:
+- `x_0` is the captured seed for the active run.
+- `x_k` for `k >= 1` is the `k`th post-seed execution result under the active function.
+- Per-step transient diagnostics row (`k >= 1`) includes:
+- `y_k = x_k` (row result / total / Y value)
+- `d1_k = x_k - x_{k-1}`
+- `d2_k = d1_k - d1_{k-1}` for `k >= 2`
+- `r1_k = x_k / x_{k-1}` (exact rational only)
+- `seed_minus_1_k` and `seed_plus_1_k` as peer results at step index `k` from seeds `x_0-1` and `x_0+1`
+- Cycle metadata:
+- first repeat indices `(i, j)` where `i < j`, `x_i = x_j`, `j` is the first repeat encounter
+- `transient_length = i`
+- `period_length = j - i`
+
+### Direction
+
+- Track the full primary trajectory `x_0, x_1, ..., x_n` for the active function run.
+- Detect first repeat in the primary trajectory using exact equality and persist `(transient_length, period_length)`.
+- Track transient diagnostics (`y`, `d1`, `d2`, `r1`, `seed-1`, `seed+1`) as a rolling window of the most recent 10 transient diagnostic rows.
+- Treat all diagnostics as transient-only:
+- when first repeat is detected at `x_j`, diagnostics do not include step `j`
+- diagnostics stop permanently for later steps
+- On any invalid-state error in primary or peer analysis (for example divide-by-zero, overflow, NaN/undefined, exact-domain escape), invalidate diagnostics and stop all further diagnostic tracking.
+- Primary trajectory tracking continues after cycle detection; diagnostics remain frozen.
+
+### Deterministic Stop-Rule Order
+
+For each newly produced `x_k`:
+
+1. Append/track `x_k` in the primary trajectory.
+2. Evaluate invalid-state conditions for this step; if invalid, mark diagnostics invalid and stop diagnostics (step `k` diagnostics are not recorded).
+3. Evaluate first-repeat on primary trajectory; if `x_k` is first repeat index `j`, persist cycle metadata and stop diagnostics (step `k` diagnostics are not recorded).
+4. If diagnostics are still active, compute and persist transient diagnostics for step `k` and evict oldest rows beyond the latest 10.
+
+### Mathematical/Design Constraints
+
+- Indexing is explicit and consistent:
+- `x_0` is seed, `x_k` (`k >= 1`) is the `k`th roll result.
+- Equality and arithmetic use exact rational semantics only.
+- Symbolic/algebraic equality and approximate-real comparisons are out of scope.
+- `r1_k` requires exact rational division; undefined/invalid ratio is an invalid-state event for diagnostics.
+- Memory cap policy applies only to transient diagnostics (rolling window of 10), not to primary trajectory.
+
+### Exit Criteria
+
+- Roll state contains full ordered primary trajectory for the active function run.
+- Roll analysis state contains transient diagnostic rows with fields:
+- `x index`, `y`, `d1`, `d2`, `r1`, `seed_minus_1`, `seed_plus_1`
+- Diagnostic rows follow exemption rules:
+- `d1` exempt at `k=0`
+- `d2` exempt at `k=0,1`
+- `r1` exempt at `k=0`
+- Diagnostic rows exclude repeat encounter index `j` and all post-cycle steps.
+- On first repeat, `transient_length` and `period_length` are persisted with the index definitions above.
+- On any invalid-state step, diagnostics are invalidated/stopped and no further diagnostic rows are recorded.
+- Rolling-window behavior is verified: on trajectories longer than 10 transient rows, only the latest 10 diagnostic rows are retained.
+- Determinism is verified across repeated runs and shell parity tests.
 
 ## Milestone: Roll Analysis Display Re-examination
 
@@ -52,7 +104,10 @@ Goal: re-evaluate how roll analysis is surfaced across visualizers and operation
 
 - Every visualizer has an explicit decision recorded: no roll-analysis display, transient-only display, cycle-only display, or both.
 - A concrete policy exists for transient vs cycle display behavior and is applied consistently across applicable visualizers.
+
+### Side-goals (implement if trivial, defer to new milestone if not)
 - The operation slots/function builder display has a documented roll-analysis display decision and rationale.
+- The default total visualizer shows 7-segment versions of null, NaN, rationals, and r= (for remainder display).
 
 # Post-v0.8.0
 
