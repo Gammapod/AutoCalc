@@ -1,47 +1,5 @@
-import type { PrimeFactorTerm } from "../../../domain/types.js";
 import type { GameState } from "../../../domain/types.js";
-
-const FACTORIZATION_PLACEHOLDER = "not factorable";
-const SUPERSCRIPT_DIGITS: Record<string, string> = {
-  "0": "⁰",
-  "1": "¹",
-  "2": "²",
-  "3": "³",
-  "4": "⁴",
-  "5": "⁵",
-  "6": "⁶",
-  "7": "⁷",
-  "8": "⁸",
-  "9": "⁹",
-};
-
-const toSuperscriptNumber = (value: number): string =>
-  value
-    .toString()
-    .split("")
-    .map((digit) => SUPERSCRIPT_DIGITS[digit] ?? digit)
-    .join("");
-
-const formatTerms = (terms: PrimeFactorTerm[]): string => {
-  if (terms.length === 0) {
-    return "1";
-  }
-  return terms
-    .map((term) => `${term.prime.toString()}${toSuperscriptNumber(term.exponent)}`)
-    .join(" × ");
-};
-
-const formatStoredFactorization = (entry: GameState["calculator"]["rollEntries"][number]): string => {
-  if (!entry.factorization) {
-    return FACTORIZATION_PLACEHOLDER;
-  }
-  const numerator = formatTerms(entry.factorization.numerator);
-  if (entry.factorization.denominator.length === 0) {
-    return `${entry.factorization.sign < 0 ? "-" : ""}${numerator}`;
-  }
-  const denominator = formatTerms(entry.factorization.denominator);
-  return `${entry.factorization.sign < 0 ? "-" : ""}(${numerator}) / (${denominator})`;
-};
+import { buildFactorizationPanelViewModel } from "../../shared/readModel.js";
 
 export const clearFactorizationVisualizerPanel = (root: Element): void => {
   const panel = root.querySelector<HTMLElement>("[data-v2-factorization-panel]");
@@ -60,22 +18,46 @@ export const renderFactorizationVisualizerPanel = (root: Element, state: GameSta
   panel.innerHTML = "";
   panel.setAttribute("aria-hidden", "false");
 
-  const latest = state.calculator.rollEntries.at(-1);
-  const rowText = latest ? formatStoredFactorization(latest) : FACTORIZATION_PLACEHOLDER;
+  const model = buildFactorizationPanelViewModel(state);
+  const hasLatestRollError = Boolean(state.calculator.rollEntries.at(-1)?.error);
+  const rows = [
+    { text: model.seedLabel, kind: "seed" as const, isCycle: false },
+    { text: model.currentLabel, kind: "current" as const, isCycle: false },
+    { text: model.growthLabel, kind: "growth" as const, isCycle: false },
+    ...(model.transientLabel ? [{ text: model.transientLabel, kind: "transient" as const, isCycle: true }] : []),
+    ...(model.cycleLabel ? [{ text: model.cycleLabel, kind: "cycle" as const, isCycle: true }] : []),
+  ];
 
   if (typeof document === "undefined") {
-    panel.textContent = rowText;
+    panel.textContent = rows.map((row) => row.text).join("\n");
     return;
   }
 
   const table = document.createElement("div");
   table.className = "v2-factorization-table";
-  const row = document.createElement("div");
-  row.className = "v2-factorization-row";
-  row.textContent = rowText;
-  if (rowText === FACTORIZATION_PLACEHOLDER) {
-    row.classList.add("v2-factorization-row--placeholder");
+  for (const rowView of rows) {
+    const row = document.createElement("div");
+    row.className = "v2-factorization-row";
+    if (rowView.kind === "current" && hasLatestRollError) {
+      row.classList.add("v2-factorization-row--error");
+    }
+    if (rowView.isCycle) {
+      row.classList.add("v2-factorization-row--cycle");
+    }
+    if (rowView.kind === "transient" || rowView.kind === "cycle") {
+      const equalsIndex = rowView.text.indexOf("=");
+      const valueText = equalsIndex >= 0 ? rowView.text.slice(equalsIndex + 1).trim() : "";
+      const base = document.createElement("span");
+      base.textContent = "f";
+      const superscript = document.createElement("sup");
+      superscript.textContent = rowView.kind === "transient" ? "\u03BC" : "\u27E1";
+      const suffix = document.createElement("span");
+      suffix.textContent = ` = ${valueText}`;
+      row.append(base, superscript, suffix);
+    } else {
+      row.textContent = rowView.text;
+    }
+    table.appendChild(row);
   }
-  table.appendChild(row);
   panel.appendChild(table);
 };
