@@ -154,6 +154,44 @@
         align-items: start;
       }
 
+      body[data-app-mode="sandbox"] {
+        --v2-storage-peek: 0px;
+      }
+
+      body[data-app-mode="sandbox"] .app-layout {
+        grid-template-columns: auto;
+      }
+
+      body[data-app-mode="sandbox"] .play-area {
+        justify-items: center;
+      }
+
+      body[data-app-mode="sandbox"] .storage,
+      body[data-app-mode="sandbox"] .checklist-shell,
+      body[data-app-mode="sandbox"] [data-v2-section="storage"],
+      body[data-app-mode="sandbox"] [data-v2-middle-panel="checklist"],
+      body[data-app-mode="sandbox"] [data-v2-drawer-panel="checklist"],
+      body[data-app-mode="sandbox"] .v2-shell-controls,
+      body[data-app-mode="sandbox"] .v2-menu {
+        display: none !important;
+      }
+
+      body[data-app-mode="sandbox"] .v2-middle-drawer-viewport,
+      body[data-app-mode="sandbox"] .v2-bottom-drawer-viewport {
+        --drawer-peek: 0px;
+        --drawer-gap: 0px;
+      }
+
+      body[data-app-mode="sandbox"] .v2-middle-drawer-panel[data-v2-middle-panel="calculator"] {
+        flex-basis: 100%;
+        width: 100%;
+      }
+
+      body[data-app-mode="sandbox"][data-ui-shell="mobile"] .v2-stack-section--calc {
+        height: 100dvh;
+        min-height: 100dvh;
+      }
+
       body[data-ui-shell="desktop"] {
         place-items: end center;
       }
@@ -2798,6 +2836,7 @@
         <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
         <button type="button" class="debug-action" data-debug-unlock-all>Unlock All</button>
         <a class="debug-action" data-debug-toggle-ui-shell href="#">Switch UI Shell</a>
+        <a class="debug-action" data-debug-toggle-app-mode href="#">Switch App Mode</a>
         <pre class="debug-report" data-debug-roll-state>[]</pre>
       </div>
     </section>

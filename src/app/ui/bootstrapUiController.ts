@@ -1,5 +1,6 @@
 import { KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../../domain/state.js";
 import type { GameState } from "../../domain/types.js";
+import type { AppMode } from "../appMode.js";
 import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
 
 type UiShellMode = "mobile" | "desktop";
@@ -7,6 +8,7 @@ type UiShellMode = "mobile" | "desktop";
 type BootstrapUiControllerDeps = {
   refs: BootstrapUiRefs;
   uiShellMode: UiShellMode;
+  appMode: AppMode;
   location: Location;
   document: Document;
   getState: () => GameState;
@@ -18,6 +20,7 @@ type BootstrapUiControllerDeps = {
   onUpgradeKeypadColumn: () => void;
   onSetAllocatorMaxPoints: (value: number) => void;
   onNavigateToUiShell: (url: string) => void;
+  onNavigateToAppMode: (url: string) => void;
 };
 
 const clampDimensionInput = (value: number, fallback: number): number => {
@@ -58,9 +61,18 @@ const getUiShellToggleUrl = (location: Location, mode: UiShellMode): string => {
   return url.toString();
 };
 
+const getOppositeAppMode = (mode: AppMode): AppMode => (mode === "game" ? "sandbox" : "game");
+
+const getAppModeToggleUrl = (location: Location, mode: AppMode): string => {
+  const url = new URL(location.href);
+  url.searchParams.set("mode", getOppositeAppMode(mode));
+  return url.toString();
+};
+
 export const createBootstrapUiController = ({
   refs,
   uiShellMode,
+  appMode,
   location,
   document,
   getState,
@@ -72,6 +84,7 @@ export const createBootstrapUiController = ({
   onUpgradeKeypadColumn,
   onSetAllocatorMaxPoints,
   onNavigateToUiShell,
+  onNavigateToAppMode,
 }: BootstrapUiControllerDeps): {
   syncUi: (state: GameState) => void;
   dispose: () => void;
@@ -101,9 +114,16 @@ export const createBootstrapUiController = ({
     refs.toggleUiShellLink.setAttribute("href", getUiShellToggleUrl(location, uiShellMode));
   };
 
+  const syncAppModeToggleLink = (): void => {
+    const targetMode = getOppositeAppMode(appMode);
+    refs.toggleAppModeLink.textContent = `Switch to ${targetMode === "sandbox" ? "Sandbox" : "Game"} Mode`;
+    refs.toggleAppModeLink.setAttribute("href", getAppModeToggleUrl(location, appMode));
+  };
+
   const syncUi = (state: GameState): void => {
     syncDebugMenuVisibility();
     syncUiShellToggleLink();
+    syncAppModeToggleLink();
     refs.keypadWidthInput.value = state.ui.keypadColumns.toString();
     refs.keypadHeightInput.value = state.ui.keypadRows.toString();
     refs.debugMaxPointsInput.value = state.lambdaControl.maxPoints.toString();
@@ -163,6 +183,11 @@ export const createBootstrapUiController = ({
   listen(refs.toggleUiShellLink, "click", (event) => {
     event.preventDefault();
     onNavigateToUiShell(getUiShellToggleUrl(location, uiShellMode));
+  });
+
+  listen(refs.toggleAppModeLink, "click", (event) => {
+    event.preventDefault();
+    onNavigateToAppMode(getAppModeToggleUrl(location, appMode));
   });
 
   return {

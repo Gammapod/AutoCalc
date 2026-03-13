@@ -17,6 +17,8 @@ import { resolveBootstrapUiRefs } from "./ui/bootstrapUiRefs.js";
 import { createBootstrapUiController } from "./ui/bootstrapUiController.js";
 import { createResetRunHandler, createStoreSubscriptionCoordinator } from "./bootstrap/subscriptionCoordinator.js";
 import type { Action, GameState } from "../domain/types.js";
+import { resolveAppMode } from "./appMode.js";
+import { createSandboxState } from "../domain/sandboxPreset.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -46,20 +48,27 @@ if (!root) {
 const uiRefs = resolveBootstrapUiRefs(document);
 
 const storageRepo = createLocalStorageRepo(window.localStorage);
-const loaded = storageRepo.load();
-const runtimeLoaded = normalizeLoadedStateForRuntime(loaded);
-const bootState =
-  runtimeLoaded ??
-  (() => {
-    const fresh = initialState();
-    return {
-      ...fresh,
-      calculator: {
-        ...fresh.calculator,
-        singleDigitInitialTotalEntry: true,
-      },
-    };
-  })();
+const importMetaEnv = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env;
+const processEnv = (globalThis as { process?: { env?: Record<string, unknown> } }).process?.env;
+const appMode = resolveAppMode(window.location, {
+  ...processEnv,
+  ...importMetaEnv,
+});
+const loaded = appMode === "game" ? storageRepo.load() : null;
+const runtimeLoaded = appMode === "game" ? normalizeLoadedStateForRuntime(loaded) : null;
+const bootState = runtimeLoaded ??
+  (appMode === "sandbox"
+    ? createSandboxState()
+    : (() => {
+      const fresh = initialState();
+      return {
+        ...fresh,
+        calculator: {
+          ...fresh.calculator,
+          singleDigitInitialTotalEntry: true,
+        },
+      };
+    })());
 const store = createStore(bootState);
 const interactionRuntime = createInteractionRuntime();
 
@@ -87,8 +96,6 @@ const autoEqualsScheduler = createAutoEqualsScheduler(store, {
   },
 });
 
-const importMetaEnv = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env;
-const processEnv = (globalThis as { process?: { env?: Record<string, unknown> } }).process?.env;
 const uiShellMode = resolveUiShellMode(window.location, {
   ...processEnv,
   ...importMetaEnv,
@@ -96,6 +103,7 @@ const uiShellMode = resolveUiShellMode(window.location, {
 
 const shellRenderer = createShellRenderer(root, { mode: uiShellMode });
 document.body.setAttribute("data-ui-shell", uiShellMode);
+document.body.setAttribute("data-app-mode", appMode);
 
 const renderApp = (state: GameState): void => {
   shellRenderer.render(state, dispatchWithRuntimeGate, {
@@ -114,7 +122,9 @@ const redraw = (): void => {
 const renderAndPersistState = (state: GameState): void => {
   renderApp(state);
   uiController?.syncUi(state);
-  storageRepo.save(state);
+  if (appMode === "game") {
+    storageRepo.save(state);
+  }
 };
 
 const cueCoordinator = createCueLifecycleCoordinator();
@@ -175,11 +185,16 @@ const unsubscribe = createStoreSubscriptionCoordinator(store, {
 uiController = createBootstrapUiController({
   refs: uiRefs,
   uiShellMode,
+  appMode,
   location: window.location,
   document,
   getState: () => store.getState(),
   isInputBlocked: () => interactionRuntime.isInputBlocked(),
-  onResetRun: createResetRunHandler(store, storageRepo),
+  onResetRun: appMode === "sandbox"
+    ? () => {
+      store.dispatch({ type: "HYDRATE_SAVE", state: createSandboxState() });
+    }
+    : createResetRunHandler(store, storageRepo),
   onUnlockAll: () => {
     store.dispatch({ type: "UNLOCK_ALL" });
   },
@@ -196,6 +211,9 @@ uiController = createBootstrapUiController({
     store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", value });
   },
   onNavigateToUiShell: (url) => {
+    window.location.assign(url);
+  },
+  onNavigateToAppMode: (url) => {
     window.location.assign(url);
   },
 });

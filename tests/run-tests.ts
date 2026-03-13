@@ -85,6 +85,8 @@ import { runUiModuleCalculatorMotionTests } from "./uiModule.calculatorMotion.te
 import { runUiModuleCalculatorKeypadRenderTests } from "./uiModule.calculatorKeypadRender.test.js";
 import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
+import { runAppModeResolverTests } from "./appMode.resolver.test.js";
+import { runSandboxPresetTests } from "./sandboxPreset.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -172,6 +174,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/calculator-keypad-render", runUiModuleCalculatorKeypadRenderTests],
   ["ui/visualizer-fit-contract", runUiVisualizerFitContractTests],
   ["ui/complexity-gate", runUiComplexityGateTests],
+  ["app/app-mode-resolver", runAppModeResolverTests],
+  ["domain/sandbox-preset", runSandboxPresetTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));
