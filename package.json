@@ -8,8 +8,9 @@
   "main": "electron/main.cjs",
   "productName": "AutoCalc",
   "scripts": {
+    "clean:dist": "node ./scripts/clean-dist.mjs",
     "build": "npm run build:web && npm run build:itch:zip",
-    "build:web": "tsc -p tsconfig.json && node ./scripts/generate-unlock-graph-report.mjs",
+    "build:web": "npm run clean:dist && tsc -p tsconfig.json && node ./scripts/generate-unlock-graph-report.mjs",
     "build:itch:zip": "node ./scripts/build-itch-zip.mjs",
     "build:mobile:webassets": "npm run build:web && node ./scripts/build-mobile-webassets.mjs",
     "mobile:android:sync": "npm run build:mobile:webassets && node ./scripts/mobile-android-sync.mjs",
