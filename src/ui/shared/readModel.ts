@@ -296,11 +296,11 @@ const resolveOrbitHeuristicState = (state: GameState): OrbitHeuristicState => {
     return "none";
   }
   const stepRows = getStepRows(state.calculator.rollEntries).slice(-HEURISTIC_HORIZON);
-  if (isChaosLikeHeuristic(stepRows)) {
-    return "chaos_like";
-  }
   if (isCycleLikelyHeuristic(stepRows, state.unlocks.maxTotalDigits)) {
     return "cycle_likely";
+  }
+  if (isChaosLikeHeuristic(stepRows)) {
+    return "chaos_like";
   }
   return "none";
 };

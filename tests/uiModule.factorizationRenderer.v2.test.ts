@@ -202,8 +202,8 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     ]);
     assert.equal(
       buildFactorizationPanelViewModel(bothHeuristicsState).growthLabel,
-      "O(f) = chaos?",
-      "chaos-like gating takes precedence when both chaos-like and cycle-likely conditions are satisfied",
+      "O(f) = cycle-likely",
+      "cycle-likely gating takes precedence when both chaos-like and cycle-likely conditions are satisfied",
     );
 
     const cycleFrozenState: GameState = {
