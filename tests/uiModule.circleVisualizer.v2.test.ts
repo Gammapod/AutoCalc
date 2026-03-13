@@ -1,12 +1,14 @@
-import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
+import { installDomHarness } from "./helpers/domHarness.js";
 import { initialState } from "../src/domain/state.js";
 import {
   detectResidueWheelSpec,
   projectRadialPoints,
   projectResidueWheelPoints,
   resolveCircleRenderMode,
+  toCanonicalWheelIndex,
 } from "../src/ui/modules/visualizers/circleModel.js";
+import { renderCircleVisualizerPanel } from "../src/ui/modules/visualizers/circleRenderer.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): RollEntry["y"] => ({
@@ -18,154 +20,170 @@ const e = (y: RollEntry["y"], patch: Partial<RollEntry> = {}): RollEntry => ({ y
 export const runUiModuleCircleVisualizerV2Tests = (): void => {
   const base = initialState();
 
-  const withFinalMod: GameState = {
+  const cycleWindowState: GameState = {
     ...base,
     calculator: {
       ...base.calculator,
-      operationSlots: [
-        { operator: op("+"), operand: 4n },
-        { operator: op("\u27E1"), operand: 3n },
+      rollEntries: [
+        e(r(0n)),
+        e(r(12n, 10n)),
+        e(r(28n, 10n)),
+        e(r(14n, 10n)),
+        e(r(36n, 10n)),
       ],
+      rollAnalysis: {
+        stopReason: "cycle",
+        cycle: {
+          i: 1,
+          j: 4,
+          transientLength: 1,
+          periodLength: 3,
+        },
+      },
     },
   };
-  const wheelSpec = detectResidueWheelSpec(withFinalMod);
-  assert.ok(wheelSpec, "final modulo slot enables residue-wheel mode");
-  assert.equal(wheelSpec?.modulus, 3n, "detected modulus matches final modulo operand");
-  assert.equal(resolveCircleRenderMode(withFinalMod), "residue_wheel", "render mode resolves to residue wheel");
+  const wheelSpec = detectResidueWheelSpec(cycleWindowState);
+  assert.ok(wheelSpec, "cycle stop reason enables residue-wheel mode");
+  assert.equal(wheelSpec?.wheelMin, 1, "wheel minimum uses floor(min) over cycle window");
+  assert.equal(wheelSpec?.wheelMaxExclusive, 4, "wheel maximum uses ceil(max) over cycle window");
+  assert.equal(wheelSpec?.span, 3, "wheel span matches maxExclusive - min");
+  assert.equal(resolveCircleRenderMode(cycleWindowState), "residue_wheel", "render mode resolves to residue wheel");
 
-  const withModOne: GameState = {
-    ...withFinalMod,
+  const constantCycle: GameState = {
+    ...cycleWindowState,
     calculator: {
-      ...withFinalMod.calculator,
-      operationSlots: [
-        { operator: op("+"), operand: 4n },
-        { operator: op("\u27E1"), operand: 1n },
-      ],
+      ...cycleWindowState.calculator,
+      rollEntries: [e(r(0n)), e(r(2n)), e(r(2n)), e(r(2n))],
+      rollAnalysis: {
+        stopReason: "cycle",
+        cycle: {
+          i: 1,
+          j: 3,
+          transientLength: 1,
+          periodLength: 2,
+        },
+      },
     },
   };
-  assert.equal(detectResidueWheelSpec(withModOne), null, "modulo one does not enable residue-wheel mode");
+  assert.equal(detectResidueWheelSpec(constantCycle), null, "constant cycle range does not enable residue-wheel mode");
+  assert.equal(resolveCircleRenderMode(constantCycle), "radial", "constant cycle remains in radial mode");
 
-  const withoutFinalMod: GameState = {
-    ...withFinalMod,
+  const nonCycleState: GameState = {
+    ...cycleWindowState,
     calculator: {
-      ...withFinalMod.calculator,
-      operationSlots: [
-        { operator: op("\u27E1"), operand: 3n },
-        { operator: op("+"), operand: 1n },
-      ],
+      ...cycleWindowState.calculator,
+      rollAnalysis: { stopReason: "none", cycle: null },
     },
   };
-  assert.equal(detectResidueWheelSpec(withoutFinalMod), null, "missing final modulo slot disables residue-wheel mode");
+  assert.equal(detectResidueWheelSpec(nonCycleState), null, "non-cycle roll analysis keeps radial mode");
 
-  const withDivideSlot: GameState = {
-    ...withFinalMod,
-    calculator: {
-      ...withFinalMod.calculator,
-      operationSlots: [
-        { operator: op("/"), operand: 2n },
-        { operator: op("\u27E1"), operand: 3n },
-      ],
-    },
-  };
-  assert.equal(
-    detectResidueWheelSpec(withDivideSlot),
-    null,
-    "slot chains containing division do not enable residue-wheel mode",
-  );
-
+  assert.equal(toCanonicalWheelIndex(-2, 3), 1, "canonical wheel index wraps negatives");
   const residueProjection = projectResidueWheelPoints(
-    [e(r(1n)), e(r(2n)), e(r(3n)), e(r(4n))],
-    { modulus: 3n, modulusNumber: 3 },
+    [
+      e(r(0n)),
+      e(r(12n, 10n)),
+      e(r(28n, 10n)),
+      e(r(14n, 10n)),
+      e(r(36n, 10n)),
+      e(r(47n, 10n)),
+      e(r(-11n, 10n)),
+      e(r(51n, 10n), { error: { code: "x\u2209[-R,R]", kind: "overflow" } }),
+      e(r(19n, 10n)),
+    ],
+    {
+      cycleStartIndex: 1,
+      cycleEndIndex: 4,
+      wheelMin: 1,
+      wheelMaxExclusive: 4,
+      span: 3,
+    },
     50,
     48,
   );
   assert.deepEqual(
     residueProjection.dots.map((dot) => dot.residue),
-    [1, 2, 0, 1],
-    "residue-wheel projection maps integer y values to canonical residues",
-  );
-
-  const negativeProjection = projectResidueWheelPoints(
-    [e(r(-1n)), e(r(-4n)), e(r(5n))],
-    { modulus: 3n, modulusNumber: 3 },
-    50,
-    48,
+    [0, 0, 1, 0],
+    "residue-wheel projection starts at entries after cycle index j and maps by canonical wheel index",
   );
   assert.deepEqual(
-    negativeProjection.dots.map((dot) => dot.residue),
-    [2, 2, 2],
-    "negative integer y values normalize to canonical non-negative residues",
+    residueProjection.dots.map((dot) => dot.hasError),
+    [false, false, true, false],
+    "wheel projection includes error points and tags them for rendering",
   );
-
-  const withInvalidEntries = projectResidueWheelPoints(
-    [
-      e(r(1n)),
-      e(r(2n), { error: { code: "x\u2209[-R,R]", kind: "overflow" } }),
-      e({ kind: "nan" }),
-      e(r(7n, 2n)),
-      e(r(2n)),
-    ],
-    { modulus: 3n, modulusNumber: 3 },
-    50,
-    48,
-  );
-  assert.deepEqual(
-    withInvalidEntries.dots.map((dot) => dot.residue),
-    [1, 2],
-    "invalid wheel entries are skipped and not rendered as residue points",
-  );
-  assert.deepEqual(
-    withInvalidEntries.segments.map((segment) => segment.length),
-    [1, 1],
-    "invalid wheel entries break line continuity into separate segments",
-  );
-
-  const triangleProjection = projectResidueWheelPoints(
-    [e(r(2n)), e(r(0n)), e(r(1n)), e(r(2n)), e(r(0n)), e(r(1n))],
-    { modulus: 3n, modulusNumber: 3 },
-    50,
-    48,
-  );
-  assert.equal(triangleProjection.segments.length, 1, "continuous cycle yields a single contiguous segment");
-  assert.equal(triangleProjection.segments[0].length, 6, "all valid cycle points participate in the trace");
-  assert.equal(
-    new Set(triangleProjection.dots.map((dot) => dot.residue)).size,
-    3,
-    "mod 3 cycle visits exactly three perimeter slices",
-  );
-  for (const dot of triangleProjection.dots) {
-    const distanceFromCenter = Math.hypot(dot.px - 50, dot.py - 50);
-    assert.ok(
-      Math.abs(distanceFromCenter - 48) < 1e-6,
-      "residue-wheel points lie on the perimeter radius",
-    );
-  }
-
-  const positiveRadial: GameState = {
-    ...base,
-    calculator: {
-      ...base.calculator,
-      rollEntries: [e(r(5n))],
-    },
-  };
-  const negativeRadial: GameState = {
-    ...base,
-    calculator: {
-      ...base.calculator,
-      rollEntries: [e(r(-5n))],
-    },
-  };
-  const positiveProjection = projectRadialPoints(positiveRadial, 50, 48);
-  const negativeRadialProjection = projectRadialPoints(negativeRadial, 50, 48);
-  assert.ok(positiveProjection.dots.length > 0, "radial projection includes the positive roll point");
-  assert.ok(negativeRadialProjection.dots.length > 0, "radial projection includes the negative roll point");
-  const positiveRollDot = positiveProjection.dots[positiveProjection.dots.length - 1];
-  const negativeRollDot = negativeRadialProjection.dots[negativeRadialProjection.dots.length - 1];
   assert.ok(
-    Math.abs(negativeRollDot.px - (100 - positiveRollDot.px)) < 1e-6 &&
-      Math.abs(negativeRollDot.py - (100 - positiveRollDot.py)) < 1e-6,
-    "negative radial y values project opposite equivalent positive y values",
+    residueProjection.segments.every((segment) => segment.length >= 1),
+    "wheel trace segments remain contiguous between error boundaries",
   );
+
+  const layeredState: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries: [
+        e(r(0n)),
+        e(r(1n)),
+        e(r(2n)),
+        e(r(3n)),
+        e(r(4n)),
+        e(r(5n)),
+      ],
+      rollAnalysis: {
+        stopReason: "cycle",
+        cycle: {
+          i: 1,
+          j: 3,
+          transientLength: 1,
+          periodLength: 2,
+        },
+      },
+    },
+  };
+  const fullRadial = projectRadialPoints(layeredState, 50, 48);
+  const cappedRadial = projectRadialPoints(layeredState, 50, 48, 3);
+  assert.ok(fullRadial.dots.length > cappedRadial.dots.length, "radial cap keeps history through cycle index j only");
+
+  const radialWithError: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries: [e(r(0n)), e(r(1n)), e(r(2n), { error: { code: "x\u2209[-R,R]", kind: "overflow" } }), e(r(3n))],
+    },
+  };
+  const radialErrorProjection = projectRadialPoints(radialWithError, 50, 48);
+  assert.deepEqual(
+    radialErrorProjection.segments.map((segment) => segment.length),
+    [2, 1],
+    "radial error points break the trace into separate segments",
+  );
+
+  const harness = installDomHarness();
+  try {
+    renderCircleVisualizerPanel(harness.root, {
+      ...layeredState,
+      calculator: {
+        ...layeredState.calculator,
+        rollEntries: [
+          ...layeredState.calculator.rollEntries,
+          e(r(6n), { error: { code: "x\u2209[-R,R]", kind: "overflow" } }),
+          e(r(7n)),
+        ],
+      },
+    });
+    const panel = harness.root.querySelector<HTMLElement>("[data-v2-circle-panel]");
+    assert.ok(panel, "expected circle panel mount");
+    if (!panel) {
+      return;
+    }
+    assert.equal(panel.dataset.v2CircleMode, "residue_wheel", "renderer tags panel with residue-wheel mode");
+    assert.equal(panel.querySelectorAll(".v2-circle-slice").length, 0, "renderer does not emit residue slices");
+    assert.ok(panel.querySelector(".v2-circle-point--radial"), "renderer keeps radial history points");
+    assert.ok(panel.querySelector(".v2-circle-point--wheel"), "renderer overlays wheel points for post-cycle entries");
+    assert.ok(panel.querySelector(".v2-circle-point--error"), "renderer marks plotted errors with error class");
+    assert.ok(panel.querySelector(".v2-circle-trace--radial"), "renderer emits radial trace layer");
+    assert.ok(panel.querySelector(".v2-circle-trace--wheel"), "renderer emits wheel trace layer");
+  } finally {
+    harness.teardown();
+  }
 };
 
 

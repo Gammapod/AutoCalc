@@ -1,5 +1,4 @@
 import type { GameState } from "../../../domain/types.js";
-import { getStepRows } from "../../../domain/rollEntries.js";
 import {
   detectResidueWheelSpec,
   projectRadialPoints,
@@ -21,32 +20,6 @@ const appendModeIndicator = (circlePanel: HTMLElement, mode: "radial" | "residue
   circlePanel.appendChild(indicator);
 };
 
-const appendResidueWheelSlices = (svg: SVGElement, modulusNumber: number): void => {
-  const labelRadius = PLOT_RADIUS + 5;
-  for (let residue = 0; residue < modulusNumber; residue += 1) {
-    const theta = (residue / modulusNumber) * Math.PI * 2;
-    const x2 = CENTER + Math.cos(theta) * PLOT_RADIUS;
-    const y2 = CENTER - Math.sin(theta) * PLOT_RADIUS;
-
-    const slice = document.createElementNS(SVG_NS, "line");
-    slice.setAttribute("class", "v2-circle-slice");
-    slice.setAttribute("x1", CENTER.toFixed(2));
-    slice.setAttribute("y1", CENTER.toFixed(2));
-    slice.setAttribute("x2", x2.toFixed(2));
-    slice.setAttribute("y2", y2.toFixed(2));
-    svg.appendChild(slice);
-
-    const label = document.createElementNS(SVG_NS, "text");
-    label.setAttribute("class", "v2-circle-slice-label");
-    label.setAttribute("x", (CENTER + Math.cos(theta) * labelRadius).toFixed(2));
-    label.setAttribute("y", (CENTER - Math.sin(theta) * labelRadius).toFixed(2));
-    label.setAttribute("text-anchor", "middle");
-    label.setAttribute("dominant-baseline", "middle");
-    label.textContent = residue.toString();
-    svg.appendChild(label);
-  }
-};
-
 export const clearCircleVisualizerPanel = (root: Element): void => {
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   if (!circlePanel) {
@@ -57,12 +30,12 @@ export const clearCircleVisualizerPanel = (root: Element): void => {
   circlePanel.setAttribute("aria-hidden", "true");
 };
 
-const appendTraceSegment = (svg: SVGElement, tracePoints: CircleSegment): void => {
+const appendTraceSegment = (svg: SVGElement, tracePoints: CircleSegment, className: string): void => {
   if (tracePoints.length < 2) {
     return;
   }
   const trace = document.createElementNS(SVG_NS, "polyline");
-  trace.setAttribute("class", "v2-circle-trace");
+  trace.setAttribute("class", className);
   trace.setAttribute("points", tracePoints.map((point) => `${point.px.toFixed(2)},${point.py.toFixed(2)}`).join(" "));
   svg.insertBefore(trace, svg.firstChild);
 };
@@ -95,31 +68,42 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
   centerDot.setAttribute("cy", CENTER.toString());
   centerDot.setAttribute("r", "1.2");
 
-  if (residueWheelSpec) {
-    appendResidueWheelSlices(svg, residueWheelSpec.modulusNumber);
-    const projected = projectResidueWheelPoints(
-      getStepRows(state.calculator.rollEntries),
-      residueWheelSpec,
-      CENTER,
-      PLOT_RADIUS,
+  const radialProjection = projectRadialPoints(
+    state,
+    CENTER,
+    PLOT_RADIUS,
+    residueWheelSpec ? residueWheelSpec.cycleEndIndex : null,
+  );
+  for (const segment of radialProjection.segments) {
+    appendTraceSegment(svg, segment, "v2-circle-trace v2-circle-trace--radial");
+  }
+  for (const point of radialProjection.dots) {
+    const dot = document.createElementNS(SVG_NS, "circle");
+    dot.setAttribute(
+      "class",
+      point.hasError
+        ? "v2-circle-point v2-circle-point--radial v2-circle-point--error"
+        : "v2-circle-point v2-circle-point--radial",
     );
+    dot.setAttribute("cx", point.px.toFixed(2));
+    dot.setAttribute("cy", point.py.toFixed(2));
+    dot.setAttribute("r", point.hasError ? "1.8" : "1.4");
+    svg.appendChild(dot);
+  }
+
+  if (residueWheelSpec) {
+    const projected = projectResidueWheelPoints(state.calculator.rollEntries, residueWheelSpec, CENTER, PLOT_RADIUS);
     for (const segment of projected.segments) {
-      appendTraceSegment(svg, segment);
+      appendTraceSegment(svg, segment, "v2-circle-trace v2-circle-trace--wheel");
     }
     for (const point of projected.dots) {
       const dot = document.createElementNS(SVG_NS, "circle");
-      dot.setAttribute("class", "v2-circle-point");
-      dot.setAttribute("cx", point.px.toFixed(2));
-      dot.setAttribute("cy", point.py.toFixed(2));
-      dot.setAttribute("r", "1.4");
-      svg.appendChild(dot);
-    }
-  } else {
-    const projected = projectRadialPoints(state, CENTER, PLOT_RADIUS);
-    appendTraceSegment(svg, projected.trace);
-    for (const point of projected.dots) {
-      const dot = document.createElementNS(SVG_NS, "circle");
-      dot.setAttribute("class", point.hasError ? "v2-circle-point v2-circle-point--error" : "v2-circle-point");
+      dot.setAttribute(
+        "class",
+        point.hasError
+          ? "v2-circle-point v2-circle-point--wheel v2-circle-point--error"
+          : "v2-circle-point v2-circle-point--wheel",
+      );
       dot.setAttribute("cx", point.px.toFixed(2));
       dot.setAttribute("cy", point.py.toFixed(2));
       dot.setAttribute("r", point.hasError ? "1.8" : "1.4");

@@ -1,14 +1,16 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { toStepCount } from "../../../domain/rollEntries.js";
 import type { GameState, RollEntry } from "../../../domain/types.js";
-import { KEY_ID } from "../../../domain/keyPresentation.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "./graphModel.js";
 
 export type CircleRenderMode = "radial" | "residue_wheel";
 
 export type ResidueWheelSpec = {
-  modulus: bigint;
-  modulusNumber: number;
+  cycleStartIndex: number;
+  cycleEndIndex: number;
+  wheelMin: number;
+  wheelMaxExclusive: number;
+  span: number;
 };
 
 export type CircleProjectedPoint = {
@@ -28,7 +30,7 @@ export type CircleSegment = Array<{ px: number; py: number }>;
 
 export type RadialProjection = {
   dots: CircleDot[];
-  trace: CircleSegment;
+  segments: CircleSegment[];
 };
 
 export type ResidueWheelDot = CircleDot & {
@@ -42,54 +44,62 @@ export type ResidueWheelProjection = {
 
 const FALLBACK_ANGULAR_STEP_COUNT = buildGraphXWindow(0).max;
 
-const isIntegerValue = (
-  entry: RollEntry,
-): entry is RollEntry & { y: { kind: "rational"; value: { num: bigint; den: bigint } } } =>
-  isRationalCalculatorValue(entry.y) && entry.y.value.den === 1n;
-
-export const toCanonicalResidueIndex = (value: bigint, modulus: bigint): bigint =>
-  ((value % modulus) + modulus) % modulus;
+const toFiniteEntryValue = (entry: RollEntry): number | null => {
+  if (!isRationalCalculatorValue(entry.y)) {
+    return null;
+  }
+  const value = Number(entry.y.value.num) / Number(entry.y.value.den);
+  return Number.isFinite(value) ? value : null;
+};
 
 export const detectResidueWheelSpec = (state: GameState): ResidueWheelSpec | null => {
-  const slotCount = state.calculator.operationSlots.length;
-  if (slotCount === 0) {
+  if (state.calculator.rollAnalysis.stopReason !== "cycle") {
     return null;
   }
-
-  const lastSlot = state.calculator.operationSlots[slotCount - 1];
-  if (lastSlot.operator !== KEY_ID.op_mod) {
+  const cycle = state.calculator.rollAnalysis.cycle;
+  if (!cycle || state.calculator.rollEntries.length === 0) {
     return null;
   }
-  if (typeof lastSlot.operand !== "bigint") {
+  const maxRollIndex = state.calculator.rollEntries.length - 1;
+  if (maxRollIndex < 0) {
     return null;
   }
-  if (lastSlot.operand <= 1n) {
+  const cycleStartIndex = Math.max(0, Math.min(maxRollIndex, cycle.i));
+  const cycleEndIndex = Math.max(cycleStartIndex, Math.min(maxRollIndex, cycle.j));
+  const cycleValues = state.calculator.rollEntries
+    .slice(cycleStartIndex, cycleEndIndex + 1)
+    .map((entry) => toFiniteEntryValue(entry))
+    .filter((value): value is number => value !== null);
+  if (cycleValues.length === 0) {
     return null;
   }
-
-  // Keep wheel mode limited to integer-preserving slot chains.
-  if (state.calculator.operationSlots.some((slot) => slot.operator === KEY_ID.op_div)) {
-    return null;
-  }
-
-  const modulusNumber = Number(lastSlot.operand);
-  if (!Number.isFinite(modulusNumber) || modulusNumber <= 1) {
+  const wheelMin = Math.floor(Math.min(...cycleValues));
+  const wheelMaxExclusive = Math.ceil(Math.max(...cycleValues));
+  const span = wheelMaxExclusive - wheelMin;
+  if (span <= 0) {
     return null;
   }
 
   return {
-    modulus: lastSlot.operand,
-    modulusNumber,
+    cycleStartIndex,
+    cycleEndIndex,
+    wheelMin,
+    wheelMaxExclusive,
+    span,
   };
 };
 
 export const resolveCircleRenderMode = (state: GameState): CircleRenderMode =>
   detectResidueWheelSpec(state) ? "residue_wheel" : "radial";
 
+export const toCanonicalWheelIndex = (valueIndex: number, span: number): number =>
+  ((valueIndex % span) + span) % span;
+
 export const projectRadialPoints = (
   state: GameState,
   center: number,
   radius: number,
+  maxXIndex: number | null = null,
 ): RadialProjection => {
   const points = buildGraphPoints(state.calculator.rollEntries);
   const xWindow = buildGraphXWindow(toStepCount(state.calculator.rollEntries));
@@ -97,10 +107,11 @@ export const projectRadialPoints = (
   const maxMagnitude = Math.max(Math.abs(yWindow.min), Math.abs(yWindow.max), 1);
   const angularStepCount = Math.max(1, FALLBACK_ANGULAR_STEP_COUNT);
   const dots: CircleDot[] = [];
-  const trace: CircleSegment = [];
+  const segments: CircleSegment[] = [];
+  let currentSegment: CircleSegment = [];
 
   for (const point of points) {
-    if (point.x < xWindow.min || point.x > xWindow.max) {
+    if (point.x < xWindow.min || point.x > xWindow.max || (maxXIndex !== null && point.x > maxXIndex)) {
       continue;
     }
     const ringIndex = point.x % angularStepCount;
@@ -110,10 +121,21 @@ export const projectRadialPoints = (
     const px = center + Math.cos(theta) * radial;
     const py = center - Math.sin(theta) * radial;
     dots.push({ px, py, hasError: point.hasError });
-    trace.push({ px, py });
+    if (point.hasError) {
+      if (currentSegment.length > 0) {
+        segments.push(currentSegment);
+      }
+      currentSegment = [];
+      continue;
+    }
+    currentSegment.push({ px, py });
   }
 
-  return { dots, trace };
+  if (currentSegment.length > 0) {
+    segments.push(currentSegment);
+  }
+
+  return { dots, segments };
 };
 
 export const projectResidueWheelPoints = (
@@ -122,20 +144,20 @@ export const projectResidueWheelPoints = (
   center: number,
   radius: number,
 ): ResidueWheelProjection => {
-  const xWindow = buildGraphXWindow(rollEntries.length);
+  const xWindow = buildGraphXWindow(Math.max(0, rollEntries.length - 1));
   const dots: ResidueWheelDot[] = [];
   const segments: CircleSegment[] = [];
   let currentSegment: CircleSegment = [];
 
-  for (let index = 0; index < rollEntries.length; index += 1) {
-    const x = index + 1;
+  for (let index = spec.cycleEndIndex + 1; index < rollEntries.length; index += 1) {
+    const x = index;
     if (x < xWindow.min || x > xWindow.max) {
       continue;
     }
 
     const entry = rollEntries[index];
-    const validPoint = isIntegerValue(entry) && !entry.error;
-    if (!validPoint) {
+    const entryValue = toFiniteEntryValue(entry);
+    if (entryValue === null) {
       if (currentSegment.length > 0) {
         segments.push(currentSegment);
       }
@@ -143,12 +165,21 @@ export const projectResidueWheelPoints = (
       continue;
     }
 
-    const residue = Number(toCanonicalResidueIndex(entry.y.value.num, spec.modulus));
-    const theta = (residue / spec.modulusNumber) * Math.PI * 2;
+    const valueIndex = Math.floor(entryValue) - spec.wheelMin;
+    const residue = toCanonicalWheelIndex(valueIndex, spec.span);
+    const theta = (residue / spec.span) * Math.PI * 2;
     const px = center + Math.cos(theta) * radius;
     const py = center - Math.sin(theta) * radius;
+    const hasError = Boolean(entry.error);
 
-    dots.push({ px, py, residue, hasError: false });
+    dots.push({ px, py, residue, hasError });
+    if (hasError) {
+      if (currentSegment.length > 0) {
+        segments.push(currentSegment);
+      }
+      currentSegment = [];
+      continue;
+    }
     currentSegment.push({ px, py });
   }
 

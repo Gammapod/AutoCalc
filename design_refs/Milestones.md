@@ -1,24 +1,3 @@
-# Path to v0.8.0 (roll analysis)
-
-## Milestone: Roll Analysis Display Re-examination
-
-Goal: re-evaluate how roll analysis is surfaced across visualizers and operation-building surfaces.
-
-### Direction
-
-- Re-examine each visualizer to determine whether and how it displays roll analysis.
-- Define display policy differences for transient-phase displays vs cycle-phase displays.
-- Re-examine the operation slots/function builder display for roll-analysis visibility and behavior.
-
-### Exit Criteria
-
-- Every visualizer has an explicit decision recorded: no roll-analysis display, transient-only display, cycle-only display, or both.
-- A concrete policy exists for transient vs cycle display behavior and is applied consistently across applicable visualizers.
-
-### Side-goals (implement if trivial, defer to new milestone if not)
-- The operation slots/function builder display has a documented roll-analysis display decision and rationale.
-- The default total visualizer shows 7-segment versions of null, NaN, rationals, and r= (for remainder display).
-
 # Post-v0.8.0
 
 ## Milestone: Multiple Calculators

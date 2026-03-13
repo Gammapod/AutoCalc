@@ -2404,6 +2404,10 @@
       body[data-ui-shell="mobile"] .v2-circle-trace,
       body[data-ui-shell="desktop"] .v2-circle-trace {
         fill: none;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-trace--radial,
+      body[data-ui-shell="desktop"] .v2-circle-trace--radial {
         stroke: rgba(188, 255, 214, 0.44);
         stroke-width: 0.9;
       }
@@ -2413,19 +2417,25 @@
         fill: rgba(188, 255, 214, 0.96);
       }
 
-      body[data-ui-shell="mobile"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-point,
-      body[data-ui-shell="desktop"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-point {
+      body[data-ui-shell="mobile"] .v2-circle-point--wheel,
+      body[data-ui-shell="desktop"] .v2-circle-point--wheel {
         fill: #f2cf57;
       }
 
-      body[data-ui-shell="mobile"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-trace,
-      body[data-ui-shell="desktop"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-trace {
+      body[data-ui-shell="mobile"] .v2-circle-trace--wheel,
+      body[data-ui-shell="desktop"] .v2-circle-trace--wheel {
         stroke: rgba(242, 207, 87, 0.74);
+        stroke-width: 0.9;
+      }
+
+      body[data-ui-shell="mobile"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-frame,
+      body[data-ui-shell="desktop"] .v2-circle-panel[data-v2-circle-mode="residue_wheel"] .v2-circle-frame {
+        stroke: rgba(242, 207, 87, 0.9);
       }
 
       body[data-ui-shell="mobile"] .v2-circle-point--error,
       body[data-ui-shell="desktop"] .v2-circle-point--error {
-        fill: #ffd18a;
+        fill: #ff5c5c;
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher,
