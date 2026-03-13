@@ -87,6 +87,10 @@ export const runUiIntegrationMobileShellTests = (): void => {
     assert.ok(feedPanel, "feed panel is mounted");
     const withFeedTable: GameState = {
       ...withFeed,
+      unlocks: {
+        ...withFeed.unlocks,
+        maxTotalDigits: 9,
+      },
       calculator: {
         ...withFeed.calculator,
         rollEntries: [
@@ -104,11 +108,25 @@ export const runUiIntegrationMobileShellTests = (): void => {
       true,
       "feed panel renders ascii table header",
     );
+    const headerLine = feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line");
     assert.equal(
-      feedPanel?.querySelectorAll(".v2-feed-r-col").length ? true : false,
-      true,
-      "feed panel renders yellow r column segments when a visible row has remainder",
+      headerLine?.textContent ?? "",
+      "  X  |     Y      |   r    ",
+      "feed panel header uses fixed ascii column widths for maxTotalDigits=9",
     );
+    assert.equal(
+      (feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line")?.textContent?.split("|").length ?? 0) >= 3,
+      true,
+      "feed panel renders an r column when a visible row has remainder",
+    );
+    const rSegment = feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line .v2-feed-r-col");
+    assert.equal(Boolean(rSegment), true, "feed panel renders r segment span when r column is visible");
+    assert.equal(rSegment?.textContent?.startsWith("|"), true, "r segment includes the yellow separator bar");
+    const firstNineLines = Array.from(feedPanel?.querySelectorAll<HTMLElement>(".v2-feed-table-line") ?? []).slice(0, 9);
+    const firstPipeColumns = firstNineLines.map((line) => (line.textContent ?? "").indexOf("|"));
+    const secondPipeColumns = firstNineLines.map((line) => (line.textContent ?? "").indexOf("|", firstPipeColumns[0]! + 1));
+    assert.equal(firstPipeColumns.every((index) => index === firstPipeColumns[0]), true, "first feed separator stays vertically aligned");
+    assert.equal(secondPipeColumns.every((index) => index === secondPipeColumns[0]), true, "r separator stays vertically aligned");
     assert.equal(
       feedPanel?.querySelectorAll(".v2-feed-row--error").length,
       1,
@@ -140,10 +158,16 @@ export const runUiIntegrationMobileShellTests = (): void => {
     renderer.render(withFeedNoVisibleRemainder, dispatch, {
             inputBlocked: false,
     });
+    const feedHeaderWithoutRemainder = feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line");
     assert.equal(
-      feedPanel?.querySelector(".v2-feed-r-col"),
-      null,
+      feedHeaderWithoutRemainder?.textContent?.split("|").length ?? 0,
+      2,
       "feed panel hides r column when no visible row includes remainder",
+    );
+    assert.equal(
+      feedPanel?.querySelector(".v2-feed-r-col") ?? null,
+      null,
+      "feed panel removes the r segment span when r column is hidden",
     );
     renderer.render(withGraph, dispatch, {
             inputBlocked: false,

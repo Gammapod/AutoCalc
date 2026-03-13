@@ -35,16 +35,18 @@ const appendFeedTableLine = (
   left.textContent = leftText;
   line.appendChild(left);
   if (rText !== null) {
-    const rSpan = document.createElement("span");
-    rSpan.className = "v2-feed-r-col";
-    rSpan.textContent = rText;
-    line.appendChild(rSpan);
+    const r = document.createElement("span");
+    r.className = "v2-feed-r-col";
+    r.textContent = rText;
+    line.appendChild(r);
   }
   table.appendChild(line);
 };
 
-const buildPlainFeedTableLine = (leftText: string, rText: string | null): string =>
-  `${leftText}${rText ?? ""}`;
+const buildPlainFeedTableLine = (leftText: string, rText: string | null): string => `${leftText}${rText ?? ""}`;
+
+const buildFeedXRowCell = (xText: string | null, width: number): string =>
+  xText === null ? " ".repeat(width) : `${padLeft(xText, Math.max(1, width - 1))} `;
 
 export const clearFeedVisualizerPanel = (root: Element): void => {
   const feedPanel = root.querySelector<HTMLElement>("[data-v2-feed-panel]");
@@ -76,8 +78,8 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   for (let index = 0; index < FEED_VISIBLE_ROWS; index += 1) {
     const row = view.rows[index];
     const rowLeft = row
-      ? `${padLeft(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
-      : `${" ".repeat(view.xWidth)}|${" ".repeat(view.yWidth)}`;
+      ? `${buildFeedXRowCell(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
+      : `${buildFeedXRowCell(null, view.xWidth)}|${" ".repeat(view.yWidth)}`;
     const rowR = view.showRColumn ? `|${padLeft(row?.rText ?? "", view.rWidth)}` : null;
     plainLines.push(buildPlainFeedTableLine(rowLeft, rowR));
   }
@@ -96,8 +98,8 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   for (let index = 0; index < FEED_VISIBLE_ROWS; index += 1) {
     const row = view.rows[index];
     const rowLeft = row
-      ? `${padLeft(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
-      : `${" ".repeat(view.xWidth)}|${" ".repeat(view.yWidth)}`;
+      ? `${buildFeedXRowCell(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
+      : `${buildFeedXRowCell(null, view.xWidth)}|${" ".repeat(view.yWidth)}`;
     const rowR = view.showRColumn ? `|${padLeft(row?.rText ?? "", view.rWidth)}` : null;
     appendFeedTableLine(
       table,

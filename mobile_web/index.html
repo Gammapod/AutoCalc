@@ -2440,23 +2440,23 @@
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-table-line,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-table-line {
         color: #b4f1d3;
-        display: block;
+        display: flex;
+        white-space: pre;
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-table-line--with-r,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-table-line--with-r {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 6ch;
+        display: flex;
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-left-col,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-left-col {
-        min-width: 0;
-        overflow: hidden;
+        white-space: pre;
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-r-col,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-r-col {
+        white-space: pre;
         color: #f2cf57;
       }
 

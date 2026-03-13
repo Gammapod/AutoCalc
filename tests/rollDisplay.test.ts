@@ -156,12 +156,14 @@ export const runRollDisplayTests = (): void => {
       e(r(8n), { remainder: rv(1n, 2n) }),
       e(r(9n)),
     ],
+    9,
   );
   assert.equal(feedWindowWithRemainder.rows.length, 7, "feed table keeps rolling window of seven rows");
   assert.equal(feedWindowWithRemainder.rows[0]?.x, 2, "feed table drops oldest rows when window exceeds seven");
   assert.equal(feedWindowWithRemainder.showRColumn, true, "feed table shows r column when visible rows contain remainder");
   assert.equal(feedWindowWithRemainder.xWidth, 5, "feed X column width is fixed at five");
-  assert.equal(feedWindowWithRemainder.rWidth, 5, "feed r column width is fixed at five");
+  assert.equal(feedWindowWithRemainder.yWidth, 12, "feed Y column width is max digits plus three padding chars");
+  assert.equal(feedWindowWithRemainder.rWidth, 8, "feed r column width is half max digits plus three padding chars");
 
   const feedWindowWithoutVisibleRemainder = buildFeedTableViewModel(
     [

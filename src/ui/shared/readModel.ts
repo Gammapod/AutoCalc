@@ -120,6 +120,8 @@ export type FactorizationPanelViewModel = {
 
 const FEED_MAX_VISIBLE_ROWS = 7;
 const FEED_FIXED_COLUMN_WIDTH = 5;
+const FEED_Y_COLUMN_PADDING_CHARS = 3;
+const FEED_R_COLUMN_PADDING_CHARS = 3;
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 const FACTORIZATION_EMPTY = "\u2205";
 const GROWTH_WINDOW_SIZE = 5;
@@ -745,13 +747,15 @@ export const buildFeedTableViewModel = (
   const rows = buildFeedTableRows(rollEntries);
   const visibleRows = rows.slice(-FEED_MAX_VISIBLE_ROWS);
   const showRColumn = visibleRows.some((row) => row.hasRemainder);
-  const yWidth = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
+  const unlockedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
+  const yWidth = unlockedDigits + FEED_Y_COLUMN_PADDING_CHARS;
+  const rWidth = Math.ceil(unlockedDigits / 2) + FEED_R_COLUMN_PADDING_CHARS;
   return {
     rows: visibleRows,
     showRColumn,
     xWidth: FEED_FIXED_COLUMN_WIDTH,
     yWidth,
-    rWidth: FEED_FIXED_COLUMN_WIDTH,
+    rWidth,
   };
 };
 
