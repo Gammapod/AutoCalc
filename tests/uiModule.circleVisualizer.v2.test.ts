@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { installDomHarness } from "./helpers/domHarness.js";
+import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../src/domain/state.js";
 import { initialState } from "../src/domain/state.js";
 import {
   detectResidueWheelSpec,
@@ -76,6 +77,37 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
     },
   };
   assert.equal(detectResidueWheelSpec(nonCycleState), null, "non-cycle roll analysis keeps radial mode");
+
+  const withModZeroToDelta: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      buttonFlags: {
+        [MOD_ZERO_TO_DELTA_FLAG]: true,
+      },
+    },
+  };
+  const modFlagSpec = detectResidueWheelSpec(withModZeroToDelta);
+  assert.ok(modFlagSpec, "mod-zero-to-delta flag enables wheel mode immediately");
+  assert.equal(resolveCircleRenderMode(withModZeroToDelta), "residue_wheel", "mod-zero-to-delta flag forces residue wheel mode");
+  assert.equal(modFlagSpec?.cycleEndIndex, -1, "mod-flag wheel starts at seed with no radial history segment");
+  assert.equal(modFlagSpec?.wheelMin, 0, "mod-zero-to-delta wheel starts at zero");
+  assert.equal(modFlagSpec?.wheelMaxExclusive, 9, "mod-zero-to-delta wheel upper bound follows delta boundary");
+
+  const withDeltaRange: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      buttonFlags: {
+        [DELTA_RANGE_CLAMP_FLAG]: true,
+      },
+    },
+  };
+  const deltaFlagSpec = detectResidueWheelSpec(withDeltaRange);
+  assert.ok(deltaFlagSpec, "delta-range flag enables wheel mode immediately");
+  assert.equal(resolveCircleRenderMode(withDeltaRange), "residue_wheel", "delta-range flag forces residue wheel mode");
+  assert.equal(deltaFlagSpec?.wheelMin, -9, "delta-range wheel lower bound is -delta");
+  assert.equal(deltaFlagSpec?.wheelMaxExclusive, 9, "delta-range wheel upper bound is +delta exclusive");
 
   assert.equal(toCanonicalWheelIndex(-2, 3), 1, "canonical wheel index wraps negatives");
   const residueProjection = projectResidueWheelPoints(
@@ -183,6 +215,33 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
     assert.ok(panel.querySelector(".v2-circle-trace--wheel"), "renderer emits wheel trace layer");
   } finally {
     harness.teardown();
+  }
+
+  const modFlagHarness = installDomHarness();
+  try {
+    renderCircleVisualizerPanel(modFlagHarness.root, {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollEntries: [e(r(0n)), e(r(5n)), e(r(11n)), e(r(2n), { error: { code: "x\u2209[-R,R]", kind: "overflow" } })],
+      },
+      ui: {
+        ...base.ui,
+        buttonFlags: {
+          [MOD_ZERO_TO_DELTA_FLAG]: true,
+        },
+      },
+    });
+    const panel = modFlagHarness.root.querySelector<HTMLElement>("[data-v2-circle-panel]");
+    assert.ok(panel, "expected circle panel mount for mod-flag render");
+    if (!panel) {
+      return;
+    }
+    assert.equal(panel.dataset.v2CircleMode, "residue_wheel", "mod-flag render stays in residue mode");
+    assert.equal(panel.querySelectorAll(".v2-circle-point--radial").length, 0, "mod-flag render suppresses radial points");
+    assert.ok(panel.querySelector(".v2-circle-point--wheel"), "mod-flag render emits wheel points from start");
+  } finally {
+    modFlagHarness.teardown();
   }
 };
 

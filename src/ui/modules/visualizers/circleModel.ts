@@ -1,6 +1,8 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
+import { computeOverflowBoundary } from "../../../domain/calculatorValue.js";
 import { toStepCount } from "../../../domain/rollEntries.js";
 import type { GameState, RollEntry } from "../../../domain/types.js";
+import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../../../domain/state.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "./graphModel.js";
 
 export type CircleRenderMode = "radial" | "residue_wheel";
@@ -53,6 +55,31 @@ const toFiniteEntryValue = (entry: RollEntry): number | null => {
 };
 
 export const detectResidueWheelSpec = (state: GameState): ResidueWheelSpec | null => {
+  const deltaRangeWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
+  const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
+  if (deltaRangeWrapEnabled || modZeroToDeltaEnabled) {
+    const boundary = Number(computeOverflowBoundary(state.unlocks.maxTotalDigits));
+    if (!Number.isFinite(boundary) || boundary <= 0) {
+      return null;
+    }
+    if (deltaRangeWrapEnabled) {
+      return {
+        cycleStartIndex: 0,
+        cycleEndIndex: -1,
+        wheelMin: -boundary,
+        wheelMaxExclusive: boundary,
+        span: boundary * 2,
+      };
+    }
+    return {
+      cycleStartIndex: 0,
+      cycleEndIndex: -1,
+      wheelMin: 0,
+      wheelMaxExclusive: boundary,
+      span: boundary,
+    };
+  }
+
   if (state.calculator.rollAnalysis.stopReason !== "cycle") {
     return null;
   }
@@ -144,17 +171,11 @@ export const projectResidueWheelPoints = (
   center: number,
   radius: number,
 ): ResidueWheelProjection => {
-  const xWindow = buildGraphXWindow(Math.max(0, rollEntries.length - 1));
   const dots: ResidueWheelDot[] = [];
   const segments: CircleSegment[] = [];
   let currentSegment: CircleSegment = [];
 
   for (let index = spec.cycleEndIndex + 1; index < rollEntries.length; index += 1) {
-    const x = index;
-    if (x < xWindow.min || x > xWindow.max) {
-      continue;
-    }
-
     const entry = rollEntries[index];
     const entryValue = toFiniteEntryValue(entry);
     if (entryValue === null) {
