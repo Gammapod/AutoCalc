@@ -1,6 +1,6 @@
 import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
-import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js";
+import { calculatorValueToDisplayString, computeOverflowBoundary } from "../../domain/calculatorValue.js";
 import { expressionToDisplayString, slotOperandToExpression } from "../../domain/expression.js";
 import { getButtonDefinition } from "../../domain/buttonRegistry.js";
 import {
@@ -106,6 +106,7 @@ export type AlgebraicViewModel = {
 };
 
 export type LocalGrowthOrder = "constant" | "linear" | "quadratic" | "exponential" | "radical" | "logarithmic" | "unknown";
+export type OrbitHeuristicState = "none" | "chaos_like" | "cycle_likely";
 
 export type FactorizationPanelViewModel = {
   seedLabel: string;
@@ -127,6 +128,10 @@ const EPSILON = 1e-12;
 const POWER_MIN_P = 0.05;
 const POWER_MAX_P = 0.95;
 const POWER_STEP = 0.05;
+const HEURISTIC_HORIZON = 12;
+const HEURISTIC_MIN_SAMPLES = 6;
+const HEURISTIC_MIN_COMPARISONS = 5;
+const CHAOS_DIVERGENCE_RATIO_THRESHOLD = 4;
 
 const isZeroRational = (value: CalculatorValue): boolean =>
   value.kind === "rational" && value.value.num === 0n && value.value.den === 1n;
@@ -213,6 +218,91 @@ const absRationalGreaterThanOne = (value: RationalValue): boolean => {
   const normalized = normalizeRational(value);
   const absNum = normalized.num < 0n ? -normalized.num : normalized.num;
   return absNum > normalized.den;
+};
+
+const toRationalNumber = (value: RationalValue): number => Number(value.num) / Number(value.den);
+
+const getChaosDivergenceSample = (entry: RollEntry): number | null => {
+  if (
+    entry.error
+    || entry.y.kind !== "rational"
+    || entry.seedMinus1Y?.kind !== "rational"
+    || entry.seedPlus1Y?.kind !== "rational"
+  ) {
+    return null;
+  }
+  const y = toRationalNumber(entry.y.value);
+  const seedMinus = toRationalNumber(entry.seedMinus1Y.value);
+  const seedPlus = toRationalNumber(entry.seedPlus1Y.value);
+  if (!Number.isFinite(y) || !Number.isFinite(seedMinus) || !Number.isFinite(seedPlus)) {
+    return null;
+  }
+  return (Math.abs(y - seedMinus) + Math.abs(seedPlus - y)) / 2;
+};
+
+const isChaosLikeHeuristic = (stepRows: RollEntry[]): boolean => {
+  const divergenceSamples = stepRows
+    .map((entry) => getChaosDivergenceSample(entry))
+    .filter((value): value is number => value !== null);
+  if (divergenceSamples.length < HEURISTIC_MIN_SAMPLES) {
+    return false;
+  }
+  const tail = divergenceSamples.slice(-HEURISTIC_MIN_SAMPLES);
+  const logTail = tail.map((value) => Math.log(Math.max(value, EPSILON)));
+  const comparisonAverages: number[] = [];
+  for (let index = 1; index < logTail.length; index += 1) {
+    comparisonAverages.push((logTail[index - 1] + logTail[index]) / 2);
+  }
+  if (comparisonAverages.length < HEURISTIC_MIN_COMPARISONS) {
+    return false;
+  }
+  for (let index = 1; index < comparisonAverages.length; index += 1) {
+    if (comparisonAverages[index] + EPSILON < comparisonAverages[index - 1]) {
+      return false;
+    }
+  }
+  const first = Math.max(tail[0], EPSILON);
+  const last = Math.max(tail[tail.length - 1], EPSILON);
+  return (last / first) >= CHAOS_DIVERGENCE_RATIO_THRESHOLD;
+};
+
+const isCycleLikelyHeuristic = (stepRows: RollEntry[], maxTotalDigits: number): boolean => {
+  if (stepRows.length < HEURISTIC_MIN_SAMPLES) {
+    return false;
+  }
+  const boundary = computeOverflowBoundary(maxTotalDigits);
+  const seen = new Set<string>();
+  let hasRepeat = false;
+  for (const entry of stepRows) {
+    if (entry.error || entry.y.kind !== "rational" || entry.y.value.den !== 1n) {
+      return false;
+    }
+    const value = entry.y.value.num;
+    const absValue = value < 0n ? -value : value;
+    if (absValue > boundary) {
+      return false;
+    }
+    const key = value.toString();
+    if (seen.has(key)) {
+      hasRepeat = true;
+    }
+    seen.add(key);
+  }
+  return hasRepeat;
+};
+
+const resolveOrbitHeuristicState = (state: GameState): OrbitHeuristicState => {
+  if (state.calculator.rollAnalysis.stopReason === "cycle") {
+    return "none";
+  }
+  const stepRows = getStepRows(state.calculator.rollEntries).slice(-HEURISTIC_HORIZON);
+  if (isChaosLikeHeuristic(stepRows)) {
+    return "chaos_like";
+  }
+  if (isCycleLikelyHeuristic(stepRows, state.unlocks.maxTotalDigits)) {
+    return "cycle_likely";
+  }
+  return "none";
 };
 
 type GrowthSample = {
@@ -392,7 +482,14 @@ export const buildFactorizationPanelViewModel = (state: GameState): Factorizatio
   const growthOrder = classifyLocalGrowthOrder(state);
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
   const cycleDetected = Boolean(cycle);
-  const growthLabel = cycleDetected ? `O(f_\u03BC) = ${growthOrder}` : `O(f) = ${growthOrder}`;
+  const orbitHeuristic = cycleDetected ? "none" : resolveOrbitHeuristicState(state);
+  const growthLabel = cycleDetected
+    ? `O(f_\u03BC) = ${growthOrder}`
+    : orbitHeuristic === "chaos_like"
+      ? "O(f) = chaos?"
+      : orbitHeuristic === "cycle_likely"
+        ? "O(f) = cycle-likely"
+        : `O(f) = ${growthOrder}`;
   return {
     seedLabel: buildSeedFactorizationLabel(state),
     currentLabel: buildCurrentFactorizationLabel(state),

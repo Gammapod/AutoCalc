@@ -16,19 +16,26 @@ const step = (
     d2,
     r1,
     factorization,
+    seedMinus1Y,
+    seedPlus1Y,
+    error,
   }: {
     d1: RationalValue;
     d2?: RationalValue | null;
     r1: RationalValue;
     factorization?: RollEntry["factorization"];
+    seedMinus1Y?: RollEntry["seedMinus1Y"];
+    seedPlus1Y?: RollEntry["seedPlus1Y"];
+    error?: RollEntry["error"];
   },
 ): RollEntry => ({
   y: r(y),
   d1,
   d2: d2 ?? null,
   r1,
-  seedMinus1Y: null,
-  seedPlus1Y: null,
+  seedMinus1Y: seedMinus1Y ?? null,
+  seedPlus1Y: seedPlus1Y ?? null,
+  ...(error ? { error } : {}),
   ...(factorization ? { factorization } : {}),
 });
 
@@ -154,6 +161,51 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     ]);
     assert.equal(buildFactorizationPanelViewModel(shortWindowState).growthOrder, "unknown", "fewer than five diagnostic samples resolves to unknown");
 
+    const cycleLikelyState = withRoll([
+      { y: r(3n) },
+      step(7n, { d1: rv(1n), d2: rv(1n), r1: rv(2n) }),
+      step(8n, { d1: rv(1n), d2: rv(1n), r1: rv(9n, 8n) }),
+      step(9n, { d1: rv(1n), d2: rv(1n), r1: rv(9n, 8n) }),
+      step(8n, { d1: rv(-1n), d2: rv(-2n), r1: rv(8n, 9n) }),
+      step(7n, { d1: rv(-1n), d2: rv(-2n), r1: rv(7n, 8n) }),
+      step(8n, { d1: rv(1n), d2: rv(2n), r1: rv(8n, 7n) }),
+    ]);
+    assert.equal(
+      buildFactorizationPanelViewModel(cycleLikelyState).growthLabel,
+      "O(f) = cycle-likely",
+      "integer bounded repeated horizon triggers cycle-likely gating",
+    );
+
+    const chaosLikeState = withRoll([
+      { y: r(0n) },
+      step(2n, { d1: rv(2n), d2: rv(0n), r1: rv(2n), seedMinus1Y: r(1n), seedPlus1Y: r(3n) }),
+      step(4n, { d1: rv(2n), d2: rv(0n), r1: rv(2n), seedMinus1Y: r(2n), seedPlus1Y: r(6n) }),
+      step(8n, { d1: rv(4n), d2: rv(2n), r1: rv(2n), seedMinus1Y: r(4n), seedPlus1Y: r(12n) }),
+      step(16n, { d1: rv(8n), d2: rv(4n), r1: rv(2n), seedMinus1Y: r(8n), seedPlus1Y: r(24n) }),
+      step(32n, { d1: rv(16n), d2: rv(8n), r1: rv(2n), seedMinus1Y: r(16n), seedPlus1Y: r(48n) }),
+      step(64n, { d1: rv(32n), d2: rv(16n), r1: rv(2n), seedMinus1Y: r(32n), seedPlus1Y: r(96n) }),
+    ]);
+    assert.equal(
+      buildFactorizationPanelViewModel(chaosLikeState).growthLabel,
+      "O(f) = chaos?",
+      "monotone divergence over the required horizon triggers chaos-like gating",
+    );
+
+    const bothHeuristicsState = withRoll([
+      { y: r(1n) },
+      step(5n, { d1: rv(1n), d2: rv(1n), r1: rv(1n), seedMinus1Y: r(4n), seedPlus1Y: r(6n) }),
+      step(6n, { d1: rv(1n), d2: rv(1n), r1: rv(1n), seedMinus1Y: r(4n), seedPlus1Y: r(8n) }),
+      step(5n, { d1: rv(-1n), d2: rv(-2n), r1: rv(1n), seedMinus1Y: r(1n), seedPlus1Y: r(9n) }),
+      step(6n, { d1: rv(1n), d2: rv(2n), r1: rv(1n), seedMinus1Y: r(-2n), seedPlus1Y: r(14n) }),
+      step(5n, { d1: rv(-1n), d2: rv(-2n), r1: rv(1n), seedMinus1Y: r(-11n), seedPlus1Y: r(21n) }),
+      step(6n, { d1: rv(1n), d2: rv(2n), r1: rv(1n), seedMinus1Y: r(-26n), seedPlus1Y: r(38n) }),
+    ]);
+    assert.equal(
+      buildFactorizationPanelViewModel(bothHeuristicsState).growthLabel,
+      "O(f) = chaos?",
+      "chaos-like gating takes precedence when both chaos-like and cycle-likely conditions are satisfied",
+    );
+
     const cycleFrozenState: GameState = {
       ...withRoll([
         { y: r(2n) },
@@ -190,6 +242,26 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     assert.equal(cycleModel.growthLabel, "O(f_\u03BC) = linear", "cycle state switches growth label to O(f_\u03BC)");
     assert.equal(cycleModel.transientLabel, "f^\u03BC = 2", "cycle state exposes transient length row");
     assert.equal(cycleModel.cycleLabel, "f^\u27E1 = 3", "cycle state exposes period length row");
+
+    const cycleBypassChaosState: GameState = {
+      ...chaosLikeState,
+      calculator: {
+        ...chaosLikeState.calculator,
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: {
+            i: 1,
+            j: 4,
+            transientLength: 1,
+            periodLength: 3,
+          },
+        },
+      },
+    };
+    const cycleBypassModel = buildFactorizationPanelViewModel(cycleBypassChaosState);
+    assert.match(cycleBypassModel.growthLabel, /^O\(f_\u03BC\) = /u, "cycle state bypasses non-cycle heuristic gates");
+    assert.equal(cycleBypassModel.growthLabel.includes("chaos?"), false, "cycle state does not display chaos? override");
+    assert.equal(cycleBypassModel.growthLabel.includes("cycle-likely"), false, "cycle state does not display cycle-likely override");
 
     const withRationalLatest = withRoll([
       {
