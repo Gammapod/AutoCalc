@@ -1,5 +1,3 @@
-# Post-v0.8.0
-
 ## Release v0.8.1
 
 ### Milestone: Independent Display + Keying Changes
