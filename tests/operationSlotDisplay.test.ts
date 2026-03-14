@@ -21,7 +21,7 @@ export const runOperationSlotDisplayTests = (): void => {
       draftingSlot: { operator: op("+"), operandInput: "", isNegative: false },
     },
   };
-  assert.equal(buildOperationSlotDisplay(draftingOperatorOnly), "[ + _ ]", "drafting slot shows operator before operand");
+  assert.equal(buildOperationSlotDisplay(draftingOperatorOnly), "_ [ + _ ]", "drafting slot shows operator before operand");
 
   const draftingOperatorOnlyNegative: GameState = {
     ...base,
@@ -36,7 +36,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(draftingOperatorOnlyNegative),
-    "[ + -_ ]",
+    "_ [ + -_ ]",
     "drafting slot shows sign marker when negated before operand entry",
   );
 
@@ -51,7 +51,7 @@ export const runOperationSlotDisplayTests = (): void => {
       draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
     },
   };
-  assert.equal(buildOperationSlotDisplay(draftingWithOperand), "[ + 1 ]", "drafting slot shows operand when provided");
+  assert.equal(buildOperationSlotDisplay(draftingWithOperand), "_ [ + 1 ]", "drafting slot shows operand when provided");
 
   const draftingMultiplyOperatorOnly: GameState = {
     ...base,
@@ -66,7 +66,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(draftingMultiplyOperatorOnly),
-    "[ \u00D7 _ ]",
+    "_ [ \u00D7 _ ]",
     "drafting multiply slot renders operator as \u00D7",
   );
 
@@ -83,7 +83,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(draftingWithNegativeOperand),
-    "[ + -1 ]",
+    "_ [ + -1 ]",
     "drafting slot prefixes operand with minus when negated",
   );
 
@@ -100,7 +100,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(committedWithExtraCapacity),
-    "[ + 1 ] -> [ _ _ ]",
+    "_ [ + 1 ] [ _ _ ]",
     "committed slot is followed by placeholder for remaining capacity",
   );
 
@@ -118,7 +118,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(committedAndDraftingWithExtraCapacity),
-    "[ + 1 ] -> [ - _ ] -> [ _ _ ]",
+    "_ [ + 1 ] [ - _ ] [ _ _ ]",
     "committed and drafting slots are padded with placeholders up to capacity",
   );
 
@@ -143,7 +143,7 @@ export const runOperationSlotDisplayTests = (): void => {
       draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
     },
   };
-  assert.equal(buildOperationSlotDisplay(overflowState), "[ + 1 ]", "overflow state truncates display to max slot capacity");
+  assert.equal(buildOperationSlotDisplay(overflowState), "_ [ + 1 ]", "overflow state truncates display to max slot capacity");
 
   const projectedCapacity = reducer(
     reducer(
@@ -164,7 +164,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(projectedDisplay),
-    "[ + 1 ] -> [ _ _ ] -> [ _ _ ]",
+    "_ [ + 1 ] [ _ _ ] [ _ _ ]",
     "display capacity follows allocator-projected max slot count",
   );
 
@@ -179,7 +179,7 @@ export const runOperationSlotDisplayTests = (): void => {
       operationSlots: [{ operator: op("*"), operand: 2n }],
     },
   };
-  assert.equal(buildOperationSlotDisplay(committedMultiply), "[ \u00D7 2 ]", "committed multiply slot renders operator as \u00D7");
+  assert.equal(buildOperationSlotDisplay(committedMultiply), "_ [ \u00D7 2 ]", "committed multiply slot renders operator as \u00D7");
 
   const committedEuclidean: GameState = {
     ...base,
@@ -192,7 +192,7 @@ export const runOperationSlotDisplayTests = (): void => {
       operationSlots: [{ operator: op("#"), operand: 3n }],
     },
   };
-  assert.equal(buildOperationSlotDisplay(committedEuclidean), "[ # 3 ]", "committed euclidean slot renders operator as #");
+  assert.equal(buildOperationSlotDisplay(committedEuclidean), "_ [ # 3 ]", "committed euclidean slot renders operator as #");
 
   const committedModulo: GameState = {
     ...base,
@@ -205,7 +205,7 @@ export const runOperationSlotDisplayTests = (): void => {
       operationSlots: [{ operator: op("\u27E1"), operand: 3n }],
     },
   };
-  assert.equal(buildOperationSlotDisplay(committedModulo), "[ \u2662 3 ]", "committed modulo slot renders operator as \u2662");
+  assert.equal(buildOperationSlotDisplay(committedModulo), "_ [ \u2662 3 ]", "committed modulo slot renders operator as \u2662");
 };
 
 

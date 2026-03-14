@@ -557,6 +557,17 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
     return "(no operation slots)";
   }
 
+  const noSeedEnteredYet =
+    isZeroRational(state.calculator.total)
+    && !state.calculator.pendingNegativeTotal
+    && state.calculator.rollEntries.length === 0
+    && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress(state));
+  const seedToken = state.calculator.rollEntries.length > 0
+    ? calculatorValueToDisplayString(getSeedRow(state.calculator.rollEntries)?.y ?? state.calculator.total)
+    : noSeedEnteredYet
+      ? "_"
+      : calculatorValueToDisplayString(state.calculator.total);
+
   const filledTokens = state.calculator.operationSlots.map(
     (slot) => slot.kind === "unary"
       ? `[ ${formatUnarySlotOperator(slot.operator)} ]`
@@ -576,7 +587,7 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
     tokens.push("[ _ _ ]");
   }
 
-  return tokens.join(" -> ");
+  return `${seedToken} ${tokens.join(" ")}`;
 };
 
 const resolveSeedValueForAlgebra = (state: GameState): CalculatorValue | null => {
@@ -791,7 +802,7 @@ export const buildRollViewModel = (
     const suffixLength = row.errorCode
       ? `Err: ${row.errorCode}`.length
       : row.remainder
-        ? `\u27E1= ${row.remainder}`.length
+        ? `r= ${row.remainder}`.length
         : 0;
     return Math.max(max, row.value.length, suffixLength);
   }, 0);

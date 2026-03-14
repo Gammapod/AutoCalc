@@ -83,6 +83,7 @@ import { runUiShellTransformsTests } from "./uiShell.transforms.test.js";
 import { runUiShellMenuA11yTests } from "./uiShell.menuA11y.test.js";
 import { runUiModuleCalculatorMotionTests } from "./uiModule.calculatorMotion.test.js";
 import { runUiModuleCalculatorKeypadRenderTests } from "./uiModule.calculatorKeypadRender.test.js";
+import { runUiModuleCalculatorSlotMarqueeTests } from "./uiModule.calculatorSlotMarquee.test.js";
 import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
@@ -172,6 +173,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-shell/menu-a11y", runUiShellMenuA11yTests],
   ["ui-module/calculator-motion", runUiModuleCalculatorMotionTests],
   ["ui-module/calculator-keypad-render", runUiModuleCalculatorKeypadRenderTests],
+  ["ui-module/calculator-slot-marquee", runUiModuleCalculatorSlotMarqueeTests],
   ["ui/visualizer-fit-contract", runUiVisualizerFitContractTests],
   ["ui/complexity-gate", runUiComplexityGateTests],
   ["app/app-mode-resolver", runAppModeResolverTests],

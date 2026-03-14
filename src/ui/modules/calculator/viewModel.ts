@@ -133,8 +133,8 @@ export const buildRollViewModel = (rollEntries: RollEntry[]): RollViewModel => {
 export const getRollLineClassName = (row: RollRow): string =>
   row.remainder || row.errorCode ? "roll-line roll-line--with-remainder" : "roll-line";
 
-const DELTA_WRAP_SUFFIX = " -> [ + \u{1D6FF} \u27E1 2\u{1D6FF} \u2212 \u{1D6FF} ]";
-const MOD_ZERO_TO_DELTA_SUFFIX = " -> [ \u27E1 \u{1D6FF} ]";
+const DELTA_WRAP_SUFFIX = " [ + \u{1D6FF} \u27E1 2\u{1D6FF} \u2212 \u{1D6FF} ]";
+const MOD_ZERO_TO_DELTA_SUFFIX = " [ \u27E1 \u{1D6FF} ]";
 
 export type OperationSlotDisplayModel = {
   base: string;

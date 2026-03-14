@@ -152,7 +152,7 @@ const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void =
     feedPanel.setAttribute("aria-hidden", "true");
   }
   if (totalPanel) {
-    totalPanel.setAttribute("aria-hidden", "true");
+    totalPanel.setAttribute("aria-hidden", "false");
   }
   if (factorizationPanel) {
     factorizationPanel.setAttribute("aria-hidden", "true");
@@ -324,7 +324,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
     feedPanel.setAttribute("aria-hidden", activePanel === "feed" ? "false" : "true");
   }
   if (totalPanel) {
-    totalPanel.setAttribute("aria-hidden", activePanel === "total" ? "false" : "true");
+    totalPanel.setAttribute("aria-hidden", "false");
   }
   if (factorizationPanel) {
     factorizationPanel.setAttribute("aria-hidden", activePanel === "factorization" ? "false" : "true");

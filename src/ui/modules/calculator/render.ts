@@ -21,9 +21,9 @@ import {
   getRollLineClassName,
 } from "./viewModel.js";
 import {
+  bindOrUpdateSlotMarquee,
   clearToggleAnimations,
   getCalculatorLayoutRuntimeState,
-  getCalculatorModuleState,
 } from "./runtime.js";
 import { ensureKeyLabelResizeListener, fitKeyLabelsInContainer } from "./keyLabelFit.js";
 import { renderTotalDisplay } from "./totalDisplay.js";
@@ -60,9 +60,9 @@ export const renderCalculatorV2Module = (
 ): void => {
   ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
-  const slotEl = root.querySelector("[data-slot]");
-  const rollEl = root.querySelector("[data-roll]");
-  const keysEl = root.querySelector("[data-keys]");
+  const slotEl = root.querySelector<HTMLElement>("[data-slot]");
+  const rollEl = root.querySelector<HTMLElement>("[data-roll]");
+  const keysEl = root.querySelector<HTMLElement>("[data-keys]");
 
   if (!totalEl || !slotEl || !rollEl || !keysEl) {
     throw new Error("Calculator UI mount points are missing.");
@@ -79,15 +79,26 @@ export const renderCalculatorV2Module = (
   renderTotalDisplay(totalEl, state);
   const slotDisplay = buildOperationSlotDisplayModel(state);
   slotEl.textContent = "";
+  const viewport = document.createElement("span");
+  viewport.className = "slot-display__viewport";
+  const track = document.createElement("span");
+  track.className = "slot-display__track";
   const slotBase = document.createElement("span");
   slotBase.textContent = slotDisplay.base;
-  slotEl.appendChild(slotBase);
+  track.appendChild(slotBase);
   if (slotDisplay.deltaWrapSuffix) {
     const deltaWrap = document.createElement("span");
     deltaWrap.className = "slot-display__delta-wrap";
     deltaWrap.textContent = slotDisplay.deltaWrapSuffix;
-    slotEl.appendChild(deltaWrap);
+    track.appendChild(deltaWrap);
   }
+  viewport.appendChild(track);
+  slotEl.appendChild(viewport);
+  const ellipsis = document.createElement("span");
+  ellipsis.className = "slot-display__ellipsis";
+  ellipsis.textContent = "\u2026";
+  slotEl.appendChild(ellipsis);
+  bindOrUpdateSlotMarquee(root, { slotEl, viewportEl: viewport, trackEl: track });
 
   const rollView = buildRollViewModel(state.calculator.rollEntries);
   const rollVisible = isFeedRollVisible(state);
@@ -120,7 +131,7 @@ export const renderCalculatorV2Module = (
     } else if (row.remainder) {
       const remainder = document.createElement("span");
       remainder.className = "roll-remainder";
-      remainder.textContent = `\u27E1= ${row.remainder}`;
+      remainder.textContent = `r= ${row.remainder}`;
       line.appendChild(remainder);
     }
 

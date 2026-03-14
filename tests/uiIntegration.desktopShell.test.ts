@@ -22,8 +22,10 @@ export const runUiIntegrationDesktopShellTests = (): void => {
             inputBlocked: false,
     });
     const playArea = harness.root.querySelector<HTMLElement>(".play-area");
+    const initialSlotDisplay = harness.root.querySelector<HTMLElement>("[data-slot]");
     assert.equal(playArea?.getAttribute("data-desktop-shell"), "true", "desktop shell marker is applied");
     assert.equal(playArea?.getAttribute("data-desktop-mode"), "calculator", "desktop mode starts in calculator");
+    assert.equal(initialSlotDisplay?.classList.contains("slot-display--marquee"), false, "desktop initial render does not marquee non-overflow slot text");
 
     renderer.render(initialState(), dispatch, {
             inputBlocked: false,

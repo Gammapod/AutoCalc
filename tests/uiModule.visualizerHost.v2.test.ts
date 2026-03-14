@@ -210,7 +210,11 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderEigenAllocatorPanel.attributes["aria-hidden"], "true", "inactive eigen allocator panel is hidden during graph render");
   assert.equal(renderAlgebraicPanel.innerHTML, "", "inactive algebraic panel is cleared during graph render");
   assert.equal(renderAlgebraicPanel.attributes["aria-hidden"], "true", "inactive algebraic panel is hidden during graph render");
-  assert.equal(renderTotalPanel.attributes["aria-hidden"], "true", "inactive total panel is hidden during graph render");
+  assert.equal(
+    renderTotalPanel.attributes["aria-hidden"],
+    "false",
+    "total panel remains mounted for always-visible memory/lambda row while graph is active",
+  );
   const withFeedOn: GameState = {
     ...withGraphOn,
     ui: {
@@ -281,7 +285,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(eigenAllocatorPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides eigen allocator panel");
   assert.equal(algebraicPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides algebraic panel");
   assert.equal(graphDevice.attributes["aria-hidden"], "true", "clearVisualizerHost hides graph panel");
-  assert.equal(totalPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides total panel");
+  assert.equal(totalPanel.attributes["aria-hidden"], "false", "clearVisualizerHost keeps total panel available for shared memory row");
   assert.equal(host.attributes["aria-hidden"], "true", "clearVisualizerHost hides host");
   assert.equal(host.dataset.v2VisualizerPanel, "total", "clearVisualizerHost resets host panel");
 
