@@ -536,7 +536,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (isBinaryOperatorKeyId(key)) {
     return "slot_operator";
   }
-  if (key === KEY_ID.util_clear_all || key === KEY_ID.util_clear_entry || key === KEY_ID.util_undo || key === KEY_ID.util_backspace) {
+  if (key === KEY_ID.util_clear_all || key === KEY_ID.util_undo || key === KEY_ID.util_backspace) {
     return "utility";
   }
   if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.category === "settings") {

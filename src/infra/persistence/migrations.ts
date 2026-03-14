@@ -268,7 +268,6 @@ const DIGIT_VALUES = [
 const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, KEY_ID.const_pi, KEY_ID.const_e] as const;
 const UTILITY_KEY_VALUES = [
   KEY_ID.util_clear_all,
-  KEY_ID.util_clear_entry,
   KEY_ID.util_undo,
   KEY_ID.util_backspace,
   KEY_ID.toggle_delta_range_clamp,
@@ -326,6 +325,9 @@ const MAX_SLOTS_MAX = 4;
 const MAX_TOTAL_DIGITS_MIN = 1;
 const MAX_TOTAL_DIGITS_MAX = 12;
 const ALLOCATOR_MIN = 0;
+const LEGACY_CE_KEY = "CE";
+const LEGACY_CE_KEY_ID = "util_clear_entry";
+const RETIRED_CE_UNLOCK_ID = "unlock_ce_on_first_division_by_zero";
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -342,6 +344,8 @@ const isBinarySlotOperator = (value: unknown): value is Slot["operator"] =>
 const isUnarySlotOperator = (value: unknown): value is Slot["operator"] =>
   isString(value) && isUnaryOperatorId(value as never);
 const isKnownKey = (value: unknown): value is Key => isString(value) && (isLegacyKey(value as never) || isKeyId(value as never));
+const isLegacyCeKey = (value: unknown): boolean =>
+  value === LEGACY_CE_KEY || value === LEGACY_CE_KEY_ID;
 const isMemoryVariable = (value: unknown): value is MemoryVariable =>
   isString(value) && MEMORY_VARIABLE_VALUES.includes(value as MemoryVariable);
 const isBooleanRecord = (value: unknown): value is Record<string, boolean> =>
@@ -432,6 +436,88 @@ const hasOnlyKnownStorageCells = (layout: unknown): layout is KeyCell[] =>
 const hasOnlyKnownStorageSlots = (layout: unknown): layout is Array<KeyCell | null> =>
   Array.isArray(layout) && layout.every((cell) => cell === null || (isObject(cell) && hasOnlyKnownStorageCells([cell])));
 
+const stripCeFromLayoutCells = (layout: unknown): LayoutCell[] | undefined => {
+  if (!Array.isArray(layout)) {
+    return undefined;
+  }
+  const next: LayoutCell[] = [];
+  for (const cell of layout) {
+    if (!isObject(cell) || !isString(cell.kind)) {
+      continue;
+    }
+    if (cell.kind === "placeholder" && isString(cell.area)) {
+      next.push({ kind: "placeholder", area: cell.area as PlaceholderCell["area"] });
+      continue;
+    }
+    if (cell.kind === "key" && isString(cell.key)) {
+      if (isLegacyCeKey(cell.key)) {
+        next.push({ kind: "placeholder", area: "empty" });
+        continue;
+      }
+      if (!isKnownKey(cell.key)) {
+        continue;
+      }
+      const behavior = isObject(cell.behavior) ? (cell.behavior as KeyCell["behavior"]) : undefined;
+      next.push({
+        kind: "key",
+        key: resolveKeyId(cell.key),
+        ...(behavior ? { behavior } : {}),
+      });
+    }
+  }
+  return next;
+};
+
+const stripCeFromStorageSlots = (layout: unknown): Array<KeyCell | null> | undefined => {
+  if (!Array.isArray(layout)) {
+    return undefined;
+  }
+  const next: Array<KeyCell | null> = [];
+  for (const cell of layout) {
+    if (cell === null) {
+      next.push(null);
+      continue;
+    }
+    if (!isObject(cell) || cell.kind !== "key" || !isString(cell.key)) {
+      continue;
+    }
+    if (isLegacyCeKey(cell.key)) {
+      next.push(null);
+      continue;
+    }
+    if (!isKnownKey(cell.key)) {
+      continue;
+    }
+    next.push({
+      kind: "key",
+      key: resolveKeyId(cell.key),
+      ...(isBoolean(cell.wide) ? { wide: cell.wide } : {}),
+      ...(isBoolean(cell.tall) ? { tall: cell.tall } : {}),
+      ...(isObject(cell.behavior) ? { behavior: cell.behavior as KeyCell["behavior"] } : {}),
+    });
+  }
+  return next;
+};
+
+const stripCeFromCompletedUnlockIds = (ids: unknown): string[] =>
+  Array.isArray(ids) ? ids.filter((id): id is string => isString(id) && id !== RETIRED_CE_UNLOCK_ID) : [];
+
+const stripCeFromKeyPressCounts = (counts: unknown): Partial<Record<Key, number>> => {
+  if (!isObject(counts)) {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(counts).filter(
+      ([key, value]) => !isLegacyCeKey(key) && isKnownKey(key) && isInteger(value) && value >= 0,
+    ).map(([key, value]) => [key as Key, value]),
+  );
+};
+
+const normalizeCompletedUnlockIds = (ids: unknown): string[] => stripCeFromCompletedUnlockIds(ids);
+
+const normalizeKeyPressCounts = (counts: unknown): Partial<Record<Key, number>> =>
+  stripCeFromKeyPressCounts(counts);
+
 const hasOnlyKnownKeypadCells = (cells: unknown): cells is KeypadCellRecord[] =>
   Array.isArray(cells) &&
   cells.every(
@@ -475,7 +561,8 @@ const normalizeKeypadLayoutForDimensions = (
   sourceColumns?: number,
   sourceRows?: number,
 ): LayoutCell[] => {
-  const normalizedLayout = hasOnlyKnownLayoutCells(layout) ? [...layout] : defaultDrawerKeyLayout(columns, rows);
+  const strippedLayout = stripCeFromLayoutCells(layout);
+  const normalizedLayout = hasOnlyKnownLayoutCells(strippedLayout) ? [...strippedLayout] : defaultDrawerKeyLayout(columns, rows);
   const fromColumns = sourceColumns ?? columns;
   const fromRows = sourceRows ?? rows;
   return resizeKeyLayout(normalizedLayout, fromColumns, fromRows, columns, rows);
@@ -485,13 +572,14 @@ const normalizeStorageSlots = (
   storageLayout: unknown,
   packedFallback: KeyCell[] = [],
 ): Array<KeyCell | null> => {
+  const strippedStorageLayout = stripCeFromStorageSlots(storageLayout);
   let packed: KeyCell[] = packedFallback;
-  if (hasOnlyKnownStorageCells(storageLayout)) {
-    packed = storageLayout;
+  if (hasOnlyKnownStorageCells(strippedStorageLayout)) {
+    packed = strippedStorageLayout;
   }
 
-  const nextSlots: Array<KeyCell | null> = hasOnlyKnownStorageSlots(storageLayout)
-    ? [...storageLayout]
+  const nextSlots: Array<KeyCell | null> = hasOnlyKnownStorageSlots(strippedStorageLayout)
+    ? [...strippedStorageLayout]
     : packed.map((cell) => ({ ...cell }));
 
   const normalizedLength = Math.max(
@@ -560,6 +648,9 @@ const normalizeUnlockCap = (value: unknown, fallback: number, min: number, max: 
 
 const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState => {
   const defaults = defaultUnlocks();
+  const sourceUtilities = { ...(source?.utilities ?? {}) } as Record<string, unknown>;
+  delete sourceUtilities.CE;
+  delete sourceUtilities[LEGACY_CE_KEY_ID];
   const sourceDigits = source?.digits ?? {};
   const sourceValueExpression = source?.valueExpression ?? {};
   const sourceValueAtoms = source?.valueAtoms ?? {};
@@ -599,7 +690,7 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
     },
     slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
     unaryOperators: { ...defaults.unaryOperators, ...sourceUnaryOperators },
-    utilities: { ...defaults.utilities, ...(source?.utilities ?? {}) },
+    utilities: { ...defaults.utilities, ...sourceUtilities },
     memory: { ...defaults.memory, ...(source?.memory ?? {}) },
     steps: {
       ...defaults.steps,
@@ -623,7 +714,8 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
 };
 
 const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
-  const normalized = [...(layout ?? defaultKeyLayout())];
+  const strippedLayout = stripCeFromLayoutCells(layout);
+  const normalized = [...(strippedLayout ?? defaultKeyLayout())];
 
   const mappings: Array<{ key: Key; area: PlaceholderCell["area"] }> = [
     { key: KEY_ID.op_div, area: "div" },
@@ -660,18 +752,19 @@ export const migrateV2ToV3 = (input: SerializableStateV2): SerializableStateV3 =
     draftingSlot: input.calculator?.draftingSlot ?? null,
   },
   ui: {
-    keyLayout: normalizeKeyLayout(input.ui?.keyLayout),
-    storageLayout: hasOnlyKnownStorageCells(input.ui?.storageLayout) ? input.ui.storageLayout : [],
+    keyLayout: normalizeKeyLayout(stripCeFromLayoutCells(input.ui?.keyLayout)),
+    storageLayout: (stripCeFromStorageSlots(input.ui?.storageLayout) ?? [])
+      .filter((cell): cell is KeyCell => cell !== null),
   },
   unlocks: normalizeUnlocks(input.unlocks),
-  completedUnlockIds: input.completedUnlockIds ?? [],
+  completedUnlockIds: normalizeCompletedUnlockIds(input.completedUnlockIds),
 });
 
 export const migrateV3ToV4 = (input: SerializableStateV3): SerializableStateV4 => ({
   ...input,
   ui: {
-    keyLayout: normalizeKeyLayout(input.ui.keyLayout),
-    storageLayout: normalizeStorageSlots(input.ui.storageLayout, input.ui.storageLayout),
+    keyLayout: normalizeKeyLayout(stripCeFromLayoutCells(input.ui.keyLayout)),
+    storageLayout: normalizeStorageSlots(stripCeFromStorageSlots(input.ui.storageLayout), input.ui.storageLayout),
   },
 });
 
@@ -738,7 +831,7 @@ export const migrateV5ToV6 = (input: SerializableStateV5, resetForLegacy: boolea
     ui: input.ui,
     keyPressCounts: {},
     unlocks: input.unlocks,
-    completedUnlockIds: input.completedUnlockIds,
+    completedUnlockIds: normalizeCompletedUnlockIds(input.completedUnlockIds),
   };
 };
 
@@ -864,9 +957,9 @@ export const migrateV6ToV7 = (input: SerializableStateV6): SerializableStateV7 =
     rollErrors: [],
   },
   ui: input.ui,
-  keyPressCounts: input.keyPressCounts,
+  keyPressCounts: normalizeKeyPressCounts(input.keyPressCounts),
   unlocks: input.unlocks,
-  completedUnlockIds: input.completedUnlockIds,
+  completedUnlockIds: normalizeCompletedUnlockIds(input.completedUnlockIds),
 });
 
 export const migrateV7ToV8 = (input: SerializableStateV7): SerializableStateV8 => ({
@@ -980,6 +1073,8 @@ export const migrateV12ToV13 = (input: SerializableStateV12): SerializableStateV
 export const migrateV13ToV14 = (input: SerializableStateV13): SerializableStateV14 => ({
   ...input,
   unlocks: normalizeUnlocks(input.unlocks),
+  keyPressCounts: normalizeKeyPressCounts(input.keyPressCounts),
+  completedUnlockIds: normalizeCompletedUnlockIds(input.completedUnlockIds),
 });
 
 const toSerializableInitialV10 = (): SerializableStateV10 => {
@@ -1489,20 +1584,15 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       ...asV6,
       ui: {
         ...asV6.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV6.ui?.keyLayout)
-          ? asV6.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV6.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV6.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV6.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV6.ui?.buttonFlags)),
       },
       unlocks: normalizeUnlocks(asV6.unlocks),
-      keyPressCounts: isObject(asV6.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV6.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV6.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV6.completedUnlockIds),
     };
     if (!validateSerializableStateV6(normalizedV6)) {
       return null;
@@ -1521,20 +1611,15 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       },
       ui: {
         ...asV7.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV7.ui?.keyLayout)
-          ? asV7.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV7.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV7.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV7.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV7.ui?.buttonFlags)),
       },
       unlocks: normalizeUnlocks(asV7.unlocks),
-      keyPressCounts: isObject(asV7.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV7.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV7.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV7.completedUnlockIds),
     };
     return validateSerializableStateV7(normalizedV7)
       ? migrateV13ToV14(migrateV12ToV13(migrateV11ToV12(migrateV10ToV11(migrateV9ToV10(migrateV8ToV9(migrateV7ToV8(normalizedV7)))))))
@@ -1550,20 +1635,15 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       },
       ui: {
         ...asV8.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV8.ui?.keyLayout)
-          ? asV8.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV8.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV8.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV8.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV8.ui?.buttonFlags)),
       },
       unlocks: normalizeUnlocks(asV8.unlocks),
-      keyPressCounts: isObject(asV8.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV8.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV8.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV8.completedUnlockIds),
       allocator: normalizeAllocatorV8(asV8.allocator),
     };
     return validateSerializableStateV8(normalizedV8)
@@ -1580,20 +1660,15 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       },
       ui: {
         ...asV9.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV9.ui?.keyLayout)
-          ? asV9.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV9.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV9.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV9.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV9.ui?.buttonFlags)),
       },
       unlocks: normalizeUnlocks(asV9.unlocks),
-      keyPressCounts: isObject(asV9.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV9.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV9.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV9.completedUnlockIds),
       allocator: normalizeAllocatorV9(asV9.allocator),
     };
     return validateSerializableStateV9(normalizedV9)
@@ -1610,20 +1685,15 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       },
       ui: {
         ...asV10.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV10.ui?.keyLayout)
-          ? asV10.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV10.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV10.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV10.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: withDefaultButtonFlags(normalizeButtonFlags(asV10.ui?.buttonFlags)),
       },
       unlocks: normalizeUnlocks(asV10.unlocks),
-      keyPressCounts: isObject(asV10.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV10.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV10.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV10.completedUnlockIds),
       allocatorReturnPressCount:
         isInteger(asV10.allocatorReturnPressCount) && asV10.allocatorReturnPressCount >= 0
           ? asV10.allocatorReturnPressCount
@@ -1649,8 +1719,8 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       },
       ui: {
         ...asV11.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV11.ui?.keyLayout)
-          ? asV11.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV11.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV11.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV11.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
@@ -1658,13 +1728,8 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         memoryVariable: normalizeMemoryVariable(asV11.ui?.memoryVariable),
       },
       unlocks: normalizeUnlocks(asV11.unlocks),
-      keyPressCounts: isObject(asV11.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV11.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV11.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV11.completedUnlockIds),
       allocatorReturnPressCount:
         isInteger(asV11.allocatorReturnPressCount) && asV11.allocatorReturnPressCount >= 0
           ? asV11.allocatorReturnPressCount
@@ -1688,8 +1753,8 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       },
       ui: {
         ...asV12.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV12.ui?.keyLayout)
-          ? asV12.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV12.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV12.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV12.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
@@ -1697,13 +1762,8 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         memoryVariable: normalizeMemoryVariable(asV12.ui?.memoryVariable),
       },
       unlocks: normalizeUnlocks(asV12.unlocks),
-      keyPressCounts: isObject(asV12.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV12.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV12.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV12.completedUnlockIds),
       allocatorReturnPressCount:
         isInteger(asV12.allocatorReturnPressCount) && asV12.allocatorReturnPressCount >= 0
           ? asV12.allocatorReturnPressCount
@@ -1730,8 +1790,8 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       },
       ui: {
         ...asV13.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV13.ui?.keyLayout)
-          ? asV13.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV13.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV13.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV13.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
@@ -1739,13 +1799,8 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         memoryVariable: normalizeMemoryVariable(asV13.ui?.memoryVariable),
       },
       unlocks: normalizeUnlocks(asV13.unlocks),
-      keyPressCounts: isObject(asV13.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV13.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV13.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV13.completedUnlockIds),
       allocatorReturnPressCount:
         isInteger(asV13.allocatorReturnPressCount) && asV13.allocatorReturnPressCount >= 0
           ? asV13.allocatorReturnPressCount
@@ -1772,8 +1827,8 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
       },
       ui: {
         ...asV14.ui,
-        keyLayout: hasOnlyKnownLayoutCells(asV14.ui?.keyLayout)
-          ? asV14.ui.keyLayout
+        keyLayout: hasOnlyKnownLayoutCells(stripCeFromLayoutCells(asV14.ui?.keyLayout))
+          ? stripCeFromLayoutCells(asV14.ui?.keyLayout) ?? defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)
           : defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
         storageLayout: normalizeStorageSlots(asV14.ui?.storageLayout ?? defaultStorageLayout()),
         buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
@@ -1781,13 +1836,8 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
         memoryVariable: normalizeMemoryVariable(asV14.ui?.memoryVariable),
       },
       unlocks: normalizeUnlocks(asV14.unlocks),
-      keyPressCounts: isObject(asV14.keyPressCounts)
-        ? Object.fromEntries(
-            Object.entries(asV14.keyPressCounts).filter(
-              ([key, value]) => isKnownKey(key) && isInteger(value) && value >= 0,
-            ),
-          )
-        : {},
+      keyPressCounts: normalizeKeyPressCounts(asV14.keyPressCounts),
+      completedUnlockIds: normalizeCompletedUnlockIds(asV14.completedUnlockIds),
       allocatorReturnPressCount:
         isInteger(asV14.allocatorReturnPressCount) && asV14.allocatorReturnPressCount >= 0
           ? asV14.allocatorReturnPressCount

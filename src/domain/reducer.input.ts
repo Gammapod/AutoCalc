@@ -695,16 +695,6 @@ const applyC = (state: GameState): GameState => {
   };
 };
 
-const applyCECore = (state: GameState): GameState => clearOperationEntry(state);
-
-const applyCE = (state: GameState): GameState => {
-  if (!state.unlocks.utilities[KEY_ID.util_clear_entry]) {
-    return state;
-  }
-
-  return applyCECore(state);
-};
-
 const NUMERIC_DIGIT_RE = /^[0-9]$/;
 const isNumericDigit = (key: string): key is Digit => NUMERIC_DIGIT_RE.test(key);
 const isValueAtomConstant = (key: Key): key is ConstantKeyId => isConstantKeyId(key);
@@ -947,7 +937,6 @@ export const applyKeyAction = (state: GameState, keyLike: KeyInput): GameState =
     apply_noop: (nextState) => nextState,
     apply_memory: (nextState, currentKey) => applyMemoryKeyAction(nextState, currentKey),
     apply_clear_all: (nextState) => applyC(nextState),
-    apply_clear_entry: (nextState) => applyCE(nextState),
     apply_backspace: (nextState) => applyBackspace(nextState),
     apply_undo: (nextState) => applyUnlocks(applyUndo(nextState), unlockCatalog),
     apply_equals: (nextState) => applyEquals(nextState),

@@ -20,7 +20,7 @@ const createScenarioState = (): GameState => {
       },
       utilities: {
         ...base.unlocks.utilities,
-        ...utilityUnlockPatch([["C", true], ["CE", true]]),
+        ...utilityUnlockPatch([["C", true], ["UNDO", true]]),
       },
     },
     ui: {
@@ -36,7 +36,7 @@ const createScenarioState = (): GameState => {
         { kind: "placeholder", area: "empty" },
       ],
       storageLayout: [
-        { kind: "key", key: k("CE") },
+        { kind: "key", key: k("UNDO") },
         { kind: "key", key: k("=") },
         { kind: "key", key: k("C") },
         ...base.ui.storageLayout.slice(3),

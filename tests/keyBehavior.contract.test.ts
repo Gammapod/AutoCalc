@@ -230,28 +230,6 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "ce_clears_entry") {
-    const state = unlockKey(
-      {
-        ...initialState(),
-        calculator: {
-          ...initialState().calculator,
-          total: r(7n),
-          rollEntries: re(r(1n), r(2n)),
-          operationSlots: [{ operator: op("+"), operand: 1n }],
-          draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
-        },
-      },
-      "CE",
-    );
-    const next = applyKeyAction(state, "CE");
-    assert.deepEqual(next.calculator.total, r(7n), "CE should preserve total");
-    assert.equal(next.calculator.rollEntries.length, 0, "CE should clear roll");
-    assert.equal(next.calculator.operationSlots.length, 0, "CE should clear slots");
-    assert.equal(next.calculator.draftingSlot, null, "CE should clear drafting slot");
-    return;
-  }
-
   if (kind === "backspace_deletes_last_input") {
     const state = unlockKey(
       {
@@ -435,25 +413,6 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     const twice = applyKeyAction(once, "C");
     const count = twice.completedUnlockIds.filter((id) => id === CHECKLIST_UNLOCK_ID).length;
     assert.equal(count, 1, "C should only record checklist unlock once");
-    return;
-  }
-
-  if (kind === "ce_preserves_total_when_clearing") {
-    const state = unlockKey(
-      {
-        ...initialState(),
-        calculator: {
-          ...initialState().calculator,
-          total: r(42n),
-          rollEntries: re(r(40n), r(42n)),
-          operationSlots: [{ operator: op("-"), operand: 2n }],
-        },
-      },
-      "CE",
-    );
-    const next = applyKeyAction(state, "CE");
-    assert.deepEqual(next.calculator.total, r(42n), "CE should preserve total");
-    assert.equal(next.calculator.rollEntries.length, 0, "CE should clear roll");
     return;
   }
 

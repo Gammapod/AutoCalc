@@ -98,7 +98,6 @@ export const defaultDrawerKeyLayout = (
 export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "placeholder", area: "graph" },
   { kind: "placeholder", area: "empty" },
-  { kind: "key", key: KEY_ID.util_clear_entry },
   { kind: "key", key: KEY_ID.util_backspace },
   { kind: "key", key: KEY_ID.util_undo },
   { kind: "key", key: KEY_ID.util_clear_all },

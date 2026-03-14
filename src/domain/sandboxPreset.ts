@@ -40,7 +40,6 @@ const SANDBOX_LAYOUT_ENTRIES: ReadonlyArray<{
   { row: 6, col: 5, cell: { kind: "key", key: KEY_ID.op_gcd } },
   { row: 6, col: 4, cell: { kind: "key", key: KEY_ID.util_undo } },
   { row: 6, col: 3, cell: { kind: "key", key: KEY_ID.util_backspace } },
-  { row: 6, col: 2, cell: { kind: "key", key: KEY_ID.util_clear_entry } },
   { row: 6, col: 1, cell: { kind: "key", key: KEY_ID.util_clear_all } },
 
   { row: 5, col: 5, cell: { kind: "key", key: KEY_ID.op_lcm } },

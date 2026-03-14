@@ -526,6 +526,48 @@ export const runPersistenceTests = (): void => {
   assert.ok(malformed.state, "invalid keyPressCounts payload still hydrates");
   assert.deepEqual(malformed.state?.keyPressCounts, {}, "invalid keyPressCounts are normalized away");
 
+  repo.save(initialState());
+  const serializedBaseline = storage.getItem(SAVE_KEY);
+  assert.ok(serializedBaseline, "serialized baseline exists for CE legacy migration test");
+  const ceLegacyPayload = JSON.parse(serializedBaseline ?? "{}");
+  ceLegacyPayload.state.ui.keyLayout = [{ kind: "key", key: "CE" }, ...ceLegacyPayload.state.ui.keyLayout.slice(1)];
+  ceLegacyPayload.state.ui.storageLayout = [{ kind: "key", key: "CE" }, ...ceLegacyPayload.state.ui.storageLayout.slice(1)];
+  ceLegacyPayload.state.keyPressCounts = { CE: 3, [utility("C")]: 1 };
+  ceLegacyPayload.state.completedUnlockIds = ["unlock_ce_on_first_division_by_zero", "unlock_equals_on_total_11"];
+  ceLegacyPayload.state.unlocks.utilities = {
+    ...ceLegacyPayload.state.unlocks.utilities,
+    CE: true,
+    [utility("C")]: true,
+  };
+  const ceBearingLegacy = loadFromRawSave(JSON.stringify(ceLegacyPayload));
+  assert.ok(ceBearingLegacy.state, "schema-18 payload with retired CE refs hydrates");
+  assert.equal(
+    ceBearingLegacy.state?.ui.keyLayout.some((cell) => cell.kind === "key" && String(cell.key) === "CE"),
+    false,
+    "retired CE keypad cells are removed during load normalization",
+  );
+  assert.equal(
+    ceBearingLegacy.state?.ui.storageLayout.some((cell) => cell?.kind === "key" && String(cell.key) === "CE"),
+    false,
+    "retired CE storage cells are removed during load normalization",
+  );
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(ceBearingLegacy.state?.keyPressCounts ?? {}, "CE"),
+    false,
+    "retired CE key press counters are removed during load normalization",
+  );
+  assert.equal(
+    ceBearingLegacy.state?.completedUnlockIds.includes("unlock_ce_on_first_division_by_zero"),
+    false,
+    "retired CE unlock id is removed during load normalization",
+  );
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(ceBearingLegacy.state?.unlocks.utilities ?? {}, "CE"),
+    false,
+    "retired CE utility unlock flag is removed during load normalization",
+  );
+  assert.equal(ceBearingLegacy.state?.unlocks.utilities[utility("C")], true, "non-CE utility unlock flags are preserved");
+
   const nanRoundTrip = {
     ...base,
     calculator: {

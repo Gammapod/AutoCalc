@@ -13,7 +13,7 @@ const ACTION_POOL: readonly Action[] = [
   { type: "PRESS_KEY", key: k("+") },
   { type: "PRESS_KEY", key: k("=") },
   { type: "PRESS_KEY", key: k("1") },
-  { type: "PRESS_KEY", key: k("CE") },
+  { type: "PRESS_KEY", key: k("C") },
   { type: "PRESS_KEY", key: k("GRAPH") },
   { type: "PRESS_KEY", key: k("FEED") },
   { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 3 },

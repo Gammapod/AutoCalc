@@ -22,7 +22,7 @@ const buildCancelState = (): GameState => {
       },
       utilities: {
         ...base.unlocks.utilities,
-        [utility("CE")]: true,
+        [utility("C")]: true,
       },
     },
     ui: {
@@ -42,7 +42,7 @@ export const runUiShellTouchRearrangeCancelTests = (): void => {
     dispatched.push(action);
     return action;
   });
-  controller.startPress(1, 20, 30, { surface: "storage", index: 0, key: k("CE") }, null);
+  controller.startPress(1, 20, 30, { surface: "storage", index: 0, key: k("C") }, null);
   controller.forceActivateCarryForTests();
   controller.move(1, 70, 80, () => ({ target: null, targetElement: null }));
   const result = controller.end(1);

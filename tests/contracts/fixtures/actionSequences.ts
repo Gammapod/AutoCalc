@@ -54,7 +54,7 @@ export const LONG_TRACE_FIXTURES: ActionSequenceFixture[] = [
       { type: "PRESS_KEY", key: k("1") },
       { type: "PRESS_KEY", key: k("=") },
       { type: "PRESS_KEY", key: k("UNDO") },
-      { type: "PRESS_KEY", key: k("CE") },
+      { type: "PRESS_KEY", key: k("C") },
       { type: "RESET_ALLOCATOR_DEVICE" },
     ],
   },

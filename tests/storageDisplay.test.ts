@@ -26,7 +26,7 @@ export const runStorageDisplayTests = (): void => {
         { kind: "key", key: k("1") },
         null,
         { kind: "key", key: k("3") },
-        { kind: "key", key: k("CE") },
+        { kind: "key", key: k("UNDO") },
         ...base.ui.storageLayout.slice(5),
       ],
     },
@@ -61,7 +61,7 @@ export const runStorageDisplayTests = (): void => {
         { kind: "key", key: k("=") },
         null,
         { kind: "key", key: k("+") },
-        { kind: "key", key: k("CE") },
+        { kind: "key", key: k("UNDO") },
         ...orderedState.ui.storageLayout.slice(5),
       ],
       buttonFlags: {

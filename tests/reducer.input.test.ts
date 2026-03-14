@@ -472,10 +472,6 @@ export const runReducerInputTests = (): void => {
       rollEntries: re(r(9n)),
     },
   };
-  const afterCe = applyKeyAction(clearSeedSource, "CE");
-  assert.equal(afterCe.calculator.rollEntries.length, 0, "CE clears roll entries");
-  assert.equal(afterCe.calculator.rollAnalysis.stopReason, "none", "CE resets roll analysis state");
-
   const afterC = applyKeyAction(clearSeedSource, "C");
   assert.equal(afterC.calculator.rollEntries.length, 0, "C clears roll entries");
   assert.equal(afterC.calculator.rollAnalysis.stopReason, "none", "C resets roll analysis state");

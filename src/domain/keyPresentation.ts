@@ -29,7 +29,6 @@ export const KEY_ID = {
   unary_phi: "unary_phi",
   unary_omega: "unary_omega",
   util_clear_all: "util_clear_all",
-  util_clear_entry: "util_clear_entry",
   util_backspace: "util_backspace",
   util_undo: "util_undo",
   memory_cycle_variable: "memory_cycle_variable",
@@ -84,7 +83,6 @@ export type MemoryKeyId =
   | typeof KEY_ID.memory_recall;
 export type UtilityKeyId =
   | typeof KEY_ID.util_clear_all
-  | typeof KEY_ID.util_clear_entry
   | typeof KEY_ID.util_backspace
   | typeof KEY_ID.util_undo
   | typeof KEY_ID.toggle_delta_range_clamp
@@ -145,7 +143,6 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["\u03C6", { keyId: KEY_ID.unary_phi, buttonFace: "\u03C6", operatorInlineFace: "\u03C6", operatorSlotFace: "\u03C6", operatorAlgebraicFace: "\u03C6" }],
   ["\u03A9", { keyId: KEY_ID.unary_omega, buttonFace: "\u03A9", operatorInlineFace: "\u03A9", operatorSlotFace: "\u03A9", operatorAlgebraicFace: "\u03A9" }],
   ["C", { keyId: KEY_ID.util_clear_all, buttonFace: "C" }],
-  ["CE", { keyId: KEY_ID.util_clear_entry, buttonFace: "CE" }],
   ["\u2190", { keyId: KEY_ID.util_backspace, buttonFace: "\u2190" }],
   ["UNDO", { keyId: KEY_ID.util_undo, buttonFace: "\u2936" }],
   ["\u03B1,\u03B2,\u03B3", { keyId: KEY_ID.memory_cycle_variable, buttonFace: "\u03B1,\u03B2,\u03B3" }],

@@ -50,34 +50,40 @@ export const runReducerLayoutTests = (): void => {
 
   const baselineWithSpace = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 1 });
   const emptyKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
+  const baselineCStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === utility("C"));
   assert.equal(emptyKeypadIndex, 0, "column growth adds new column on the left");
+  assert.ok(baselineCStorageIndex >= 0, "baseline storage includes C key");
 
   const toKeypadMove = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
-    fromIndex: 0,
+    fromIndex: baselineCStorageIndex,
     toSurface: "keypad",
     toIndex: emptyKeypadIndex,
   });
   assert.equal(toKeypadMove.ui.keyLayout[emptyKeypadIndex]?.kind, "key", "storage key can move onto empty keypad slot");
-  assert.equal(toKeypadMove.ui.keyLayout[emptyKeypadIndex]?.key, utility("CE"), "moved storage key lands in keypad destination slot");
-  assert.equal(toKeypadMove.ui.storageLayout[0], null, "moving from storage clears source storage slot");
+  assert.equal(toKeypadMove.ui.keyLayout[emptyKeypadIndex]?.key, utility("C"), "moved storage key lands in keypad destination slot");
+  assert.equal(toKeypadMove.ui.storageLayout[baselineCStorageIndex], null, "moving from storage clears source storage slot");
 
   const backToStorage = reducer(toKeypadMove, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "keypad",
     fromIndex: emptyKeypadIndex,
     toSurface: "storage",
-    toIndex: 0,
+    toIndex: baselineCStorageIndex,
   });
   assert.equal(
     backToStorage.ui.keyLayout[emptyKeypadIndex]?.kind,
     "placeholder",
     "moving keypad key to storage clears keypad source",
   );
-  assert.equal(backToStorage.ui.storageLayout[0]?.key, utility("CE"), "moving keypad key to storage fills storage destination");
+  assert.equal(
+    backToStorage.ui.storageLayout[baselineCStorageIndex]?.key,
+    utility("C"),
+    "moving keypad key to storage fills storage destination",
+  );
 
-  const ceLockedWithEntryState: GameState = {
+  const entryClearState: GameState = {
     ...baselineWithSpace,
     calculator: {
       ...baselineWithSpace.calculator,
@@ -91,11 +97,10 @@ export const runReducerLayoutTests = (): void => {
       utilities: {
         ...baselineWithSpace.unlocks.utilities,
         [utility("C")]: true,
-        [utility("CE")]: false,
       },
     },
   };
-  const sameSurfaceMoveNoCE = reducer(ceLockedWithEntryState, {
+  const sameSurfaceMoveNoEntryClear = reducer(entryClearState, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "keypad",
     fromIndex: 1,
@@ -103,43 +108,43 @@ export const runReducerLayoutTests = (): void => {
     toIndex: emptyKeypadIndex,
   });
   assert.deepEqual(
-    sameSurfaceMoveNoCE.calculator.total,
-    ceLockedWithEntryState.calculator.total,
-    "keypad-only move does not trigger CE-style clear entry",
+    sameSurfaceMoveNoEntryClear.calculator.total,
+    entryClearState.calculator.total,
+    "keypad-only move does not trigger entry-clear reset",
   );
-  assert.equal(sameSurfaceMoveNoCE.calculator.rollEntries.length, 1, "keypad-only move preserves roll");
+  assert.equal(sameSurfaceMoveNoEntryClear.calculator.rollEntries.length, 1, "keypad-only move preserves roll");
 
-  const acrossSurfaceMoveTriggersCEStyle = reducer(ceLockedWithEntryState, {
+  const acrossSurfaceMoveTriggersEntryClear = reducer(entryClearState, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
-    fromIndex: 0,
+    fromIndex: baselineCStorageIndex,
     toSurface: "keypad",
     toIndex: emptyKeypadIndex,
   });
   assert.deepEqual(
-    acrossSurfaceMoveTriggersCEStyle.calculator.total,
+    acrossSurfaceMoveTriggersEntryClear.calculator.total,
     r(7n),
-    "cross-surface move triggers CE-style clear entry and preserves total",
+    "cross-surface move triggers entry-clear reset and preserves total",
   );
   assert.equal(
-    acrossSurfaceMoveTriggersCEStyle.calculator.rollEntries.length <= ceLockedWithEntryState.calculator.rollEntries.length,
+    acrossSurfaceMoveTriggersEntryClear.calculator.rollEntries.length <= entryClearState.calculator.rollEntries.length,
     true,
     "cross-surface move does not increase roll length",
   );
   assert.equal(
-    acrossSurfaceMoveTriggersCEStyle.calculator.rollEntries.length,
+    acrossSurfaceMoveTriggersEntryClear.calculator.rollEntries.length,
     0,
-    "cross-surface move clears euclid remainders via CE-style clear entry",
+    "cross-surface move clears euclid remainders via entry-clear reset",
   );
   assert.equal(
-    acrossSurfaceMoveTriggersCEStyle.calculator.operationSlots.length,
+    acrossSurfaceMoveTriggersEntryClear.calculator.operationSlots.length,
     0,
-    "cross-surface move clears operation slots via CE-style clear entry",
+    "cross-surface move clears operation slots via entry-clear reset",
   );
   assert.equal(
-    acrossSurfaceMoveTriggersCEStyle.calculator.draftingSlot,
+    acrossSurfaceMoveTriggersEntryClear.calculator.draftingSlot,
     null,
-    "cross-surface move clears drafting slot via CE-style clear entry",
+    "cross-surface move clears drafting slot via entry-clear reset",
   );
 
   const graphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === visualizer("GRAPH"));
@@ -183,26 +188,26 @@ export const runReducerLayoutTests = (): void => {
   const storagePrepared = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
-    fromIndex: 0,
+    fromIndex: baselineCStorageIndex,
     toSurface: "keypad",
     toIndex: emptyKeypadIndex,
   });
-  const cStorageIndex = storagePrepared.ui.storageLayout.findIndex((cell) => cell?.key === utility("C"));
-  assert.ok(cStorageIndex >= 0, "storage includes C key for cross-surface swap");
+  const undoStorageIndex = storagePrepared.ui.storageLayout.findIndex((cell) => cell?.key === utility("UNDO"));
+  assert.ok(undoStorageIndex >= 0, "storage includes UNDO key for cross-surface swap");
   const swapAcross = reducer(storagePrepared, {
     type: "SWAP_LAYOUT_CELLS",
     fromSurface: "keypad",
     fromIndex: emptyKeypadIndex,
     toSurface: "storage",
-    toIndex: cStorageIndex,
+    toIndex: undoStorageIndex,
   });
-  assert.equal(swapAcross.ui.storageLayout[cStorageIndex]?.key, utility("CE"), "swap across surfaces places keypad key into storage");
+  assert.equal(swapAcross.ui.storageLayout[undoStorageIndex]?.key, utility("C"), "swap across surfaces places keypad key into storage");
   assert.equal(
     swapAcross.ui.keyLayout[emptyKeypadIndex]?.kind,
     "key",
     "swap across surfaces keeps keypad destination occupied",
   );
-  assert.equal(swapAcross.ui.keyLayout[emptyKeypadIndex]?.key, utility("C"), "swap across surfaces places storage key into keypad");
+  assert.equal(swapAcross.ui.keyLayout[emptyKeypadIndex]?.key, utility("UNDO"), "swap across surfaces places storage key into keypad");
 
   const executionKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex(
     (cell) => cell.kind === "key" && cell.key === k("="),
@@ -253,7 +258,7 @@ export const runReducerLayoutTests = (): void => {
   );
 
   if (firstStorageExecutionIndex >= 0) {
-    const acrossSurfaceSwapTriggersCEStyle = reducer(ceLockedWithEntryState, {
+    const acrossSurfaceSwapTriggersEntryClear = reducer(entryClearState, {
       type: "SWAP_LAYOUT_CELLS",
       fromSurface: "keypad",
       fromIndex: executionKeypadIndex,
@@ -261,24 +266,24 @@ export const runReducerLayoutTests = (): void => {
       toIndex: firstStorageExecutionIndex,
     });
     assert.deepEqual(
-      acrossSurfaceSwapTriggersCEStyle.calculator.total,
+      acrossSurfaceSwapTriggersEntryClear.calculator.total,
       r(7n),
-      "cross-surface swap triggers CE-style clear entry and preserves total",
+      "cross-surface swap triggers entry-clear reset and preserves total",
     );
     assert.equal(
-      acrossSurfaceSwapTriggersCEStyle.calculator.rollEntries.length <= ceLockedWithEntryState.calculator.rollEntries.length,
+      acrossSurfaceSwapTriggersEntryClear.calculator.rollEntries.length <= entryClearState.calculator.rollEntries.length,
       true,
       "cross-surface swap does not increase roll length",
     );
     assert.equal(
-      acrossSurfaceSwapTriggersCEStyle.calculator.operationSlots.length,
+      acrossSurfaceSwapTriggersEntryClear.calculator.operationSlots.length,
       0,
-      "cross-surface swap clears operation slots via CE-style clear entry",
+      "cross-surface swap clears operation slots via entry-clear reset",
     );
     assert.equal(
-      acrossSurfaceSwapTriggersCEStyle.calculator.draftingSlot,
+      acrossSurfaceSwapTriggersEntryClear.calculator.draftingSlot,
       null,
-      "cross-surface swap clears drafting slot via CE-style clear entry",
+      "cross-surface swap clears drafting slot via entry-clear reset",
     );
   }
 
@@ -372,7 +377,7 @@ export const runReducerLayoutTests = (): void => {
   const movedForInvariant = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
-    fromIndex: 0,
+    fromIndex: baselineCStorageIndex,
     toSurface: "keypad",
     toIndex: emptyKeypadIndex,
   });
@@ -389,7 +394,7 @@ export const runReducerLayoutTests = (): void => {
     );
   }
   for (let index = 0; index < baselineSnapshot.storage.length; index += 1) {
-    if (index === 0) {
+    if (index === baselineCStorageIndex) {
       continue;
     }
     assert.equal(
@@ -444,20 +449,20 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(resizedSmaller.ui.keyLayout[5]?.kind === "key" ? resizedSmaller.ui.keyLayout[5].key : null, k("="), "++ remains bottom-right anchored after shrink");
 
   const shrinkWithOccupiedRemovedSlotSource = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 1 });
-  const ceStorageIndexForShrink = shrinkWithOccupiedRemovedSlotSource.ui.storageLayout.findIndex(
-    (cell) => cell?.key === utility("CE"),
+  const cStorageIndexForShrink = shrinkWithOccupiedRemovedSlotSource.ui.storageLayout.findIndex(
+    (cell) => cell?.key === utility("C"),
   );
-  assert.ok(ceStorageIndexForShrink >= 0, "setup: storage includes CE key for shrink removal test");
+  assert.ok(cStorageIndexForShrink >= 0, "setup: storage includes C key for shrink removal test");
   const shrinkRemovedSlotOccupied = reducer(shrinkWithOccupiedRemovedSlotSource, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
-    fromIndex: ceStorageIndexForShrink,
+    fromIndex: cStorageIndexForShrink,
     toSurface: "keypad",
     toIndex: 0,
   });
   assert.equal(
     shrinkRemovedSlotOccupied.ui.keyLayout[0]?.kind === "key" ? shrinkRemovedSlotOccupied.ui.keyLayout[0].key : null,
-    utility("CE"),
+    utility("C"),
     "setup: removable slot is occupied before shrink",
   );
   const shrinkEvacuated = reducer(shrinkRemovedSlotOccupied, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 1 });
@@ -466,7 +471,10 @@ export const runReducerLayoutTests = (): void => {
     "placeholder",
     "shrinking clears removed keypad slot from keypad surface",
   );
-  assert.equal(shrinkEvacuated.ui.storageLayout[0]?.key, utility("CE"), "key from removed slot is moved into storage");
+  assert.ok(
+    shrinkEvacuated.ui.storageLayout.some((cell) => cell?.key === utility("C")),
+    "key from removed slot is moved into storage",
+  );
 
   const fullStorageBeforeShrink: GameState = {
     ...shrinkRemovedSlotOccupied,
@@ -478,7 +486,7 @@ export const runReducerLayoutTests = (): void => {
   const shrinkWithFullStorage = reducer(fullStorageBeforeShrink, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 1 });
   assert.equal(shrinkWithFullStorage.ui.storageLayout.length, 16, "shrink evacuation expands storage when no empty slot exists");
   assert.ok(
-    shrinkWithFullStorage.ui.storageLayout.some((cell) => cell?.key === utility("CE")),
+    shrinkWithFullStorage.ui.storageLayout.some((cell) => cell?.key === utility("C")),
     "shrink evacuation preserves removed key even when storage was full",
   );
 

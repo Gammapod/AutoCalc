@@ -111,10 +111,10 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_total_at_most",
       description: "total at most",
       predicate: { type: "total_at_most", value: -1n },
-      effect: { type: "unlock_utility", key: utility("CE") },
+      effect: { type: "unlock_utility", key: utility("UNDO") },
       once: true,
       domainNodeId: "NZ",
-      targetNodeId: "Uce",
+      targetNodeId: "Uundo",
     },
   ];
   const totalEqualsCriteria = buildUnlockCriteria(totalCriteriaCatalog[0]!.predicate, base);

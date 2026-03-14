@@ -55,7 +55,6 @@ export const keyCounts = (entries: Array<[KeyLike, number]>): Partial<Record<Key
 
 const utilitySet = new Set<UtilityKey>([
   KEY_ID.util_clear_all,
-  KEY_ID.util_clear_entry,
   KEY_ID.util_backspace,
   KEY_ID.util_undo,
   KEY_ID.toggle_delta_range_clamp,

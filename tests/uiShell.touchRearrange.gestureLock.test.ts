@@ -9,7 +9,7 @@ export const runUiShellTouchRearrangeGestureLockTests = (): void => {
   controller.syncContext(state, () => undefined);
 
   assert.equal(controller.isGestureBlocked(), false, "gesture lock is off in idle mode");
-  controller.startPress(1, 10, 10, { surface: "storage", index: 0, key: k("CE") }, null);
+  controller.startPress(1, 10, 10, { surface: "storage", index: 0, key: k("C") }, null);
   assert.equal(controller.isGestureBlocked(), false, "pressing mode does not lock shell gestures");
 
   controller.forceActivateCarryForTests();

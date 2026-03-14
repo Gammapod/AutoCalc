@@ -212,22 +212,10 @@ export const runReducerUnlockTests = (): void => {
     "* unlock id records once",
   );
 
-  const ceOnDivByZero = applyUnlocks(
-    {
-      ...initialState(),
-      calculator: {
-        ...initialState().calculator,
-        rollEntries: [{ y: r(0n), error: { code: "n/0", kind: "division_by_zero" } }],
-      },
-    },
-    unlockCatalog,
-  );
-  assert.equal(ceOnDivByZero.unlocks.utilities[utility("CE")], true, "CE unlocks on first divide-by-zero error");
-  const ceOnDivByZeroTwice = applyUnlocks(ceOnDivByZero, unlockCatalog);
   assert.equal(
-    ceOnDivByZeroTwice.completedUnlockIds.filter((id) => id === "unlock_ce_on_first_division_by_zero").length,
-    1,
-    "CE unlock id records once",
+    unlockCatalog.some((unlock) => unlock.id === "unlock_ce_on_first_division_by_zero"),
+    false,
+    "retired CE unlock is absent from catalog",
   );
 
   const hashSequenceUnlocked = applyUnlocks(

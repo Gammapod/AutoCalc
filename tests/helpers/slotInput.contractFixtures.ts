@@ -320,8 +320,8 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     },
   },
   {
-    id: "legacy.ce_clears_entry_preserves_total",
-    description: "CE clears roll/slots/drafting while preserving total.",
+    id: "legacy.c_resets_calculator",
+    description: "C clears roll/slots/drafting and resets total.",
     tags: ["legacy_contract"],
     initialState: withUnlockedKeys(
       {
@@ -334,15 +334,15 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
         },
       },
-      ["CE"],
+      ["C"],
     ),
-    keySequence: ["CE"],
+    keySequence: ["C"],
     expectedProjection: {
-      total: r(7n),
+      total: r(0n),
       roll: [],
       operationSlots: [],
       draftingSlot: null,
-      keyPressCounts: keyCounts([["CE", 1]]),
+      keyPressCounts: keyCounts([["C", 1]]),
     },
   },
   {

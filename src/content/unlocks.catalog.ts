@@ -109,7 +109,7 @@ export const unlockCatalog: UnlockDefinition[] = [
     once: true,
     domainNodeId: "NN",
     targetNodeId: "Umemory_minus_unlock",
-    targetLabel: "M–",
+    targetLabel: "Mï¿½",
   },
   {
     id: "unlock_memory_variable_cycle_on_first_overflow",
@@ -119,7 +119,7 @@ export const unlockCatalog: UnlockDefinition[] = [
     once: true,
     domainNodeId: "NR",
     targetNodeId: "Umemory_variable_cycle_unlock",
-    targetLabel: "a,ß,?",
+    targetLabel: "a,ï¿½,?",
   },
   {
     id: "unlock_mul_on_constant_step_gt1_run_7",
@@ -131,16 +131,7 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetNodeId: "Omul_unlock",
     targetLabel: "*",
   },
-  {
-    id: "unlock_ce_on_first_division_by_zero",
-    description: "NaN.",
-    predicate: { type: "division_by_zero_error_seen" },
-    effect: { type: "unlock_utility", key: KEY_ID.util_clear_entry },
-    once: true,
-    domainNodeId: "NA",
-    targetNodeId: "Uce_unlock_div_zero",
-    targetLabel: "CE",
-  },
+
   {
     id: "unlock_hash_on_exact_run_47_to_5_by_7",
     description: "How many times does 7 go into 47?\nAnd what's left?",

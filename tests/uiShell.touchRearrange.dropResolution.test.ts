@@ -30,7 +30,7 @@ const buildRearrangeState = (): GameState => {
       },
       utilities: {
         ...base.unlocks.utilities,
-        [utility("CE")]: true,
+        [utility("C")]: true,
       },
       valueExpression: {
         ...base.unlocks.valueExpression,
@@ -54,7 +54,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     moveActions.push(action);
     return action;
   });
-  moveController.startPress(1, 30, 40, { surface: "storage", index: 0, key: k("CE") }, null);
+  moveController.startPress(1, 30, 40, { surface: "storage", index: 0, key: k("C") }, null);
   moveController.forceActivateCarryForTests();
   moveController.move(1, 60, 70, () => ({
     target: { surface: "keypad", index: 0 },
@@ -86,7 +86,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     swapActions.push(action);
     return action;
   });
-  swapController.startPress(2, 30, 40, { surface: "storage", index: 0, key: k("CE") }, null);
+  swapController.startPress(2, 30, 40, { surface: "storage", index: 0, key: k("C") }, null);
   swapController.forceActivateCarryForTests();
   swapController.move(2, 60, 70, () => ({
     target: { surface: "keypad", index: 0 },
