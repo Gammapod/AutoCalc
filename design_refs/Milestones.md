@@ -1,4 +1,4 @@
-## Release v0.8.1
+## Release v0.8.1 (Shipped 2026-03-14)
 
 ### Milestone: Independent Display + Keying Changes
 
