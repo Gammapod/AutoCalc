@@ -1,6 +1,6 @@
-## Release v0.8.1 (Shipped 2026-03-14)
+# Release v0.8.1 (Shipped 2026-03-14)
 
-### Milestone: Independent Display + Keying Changes
+## Milestone: Independent Display + Keying Changes
 
 Goal: ship independent feature work (visualizer semantics/layout, CE removal, function-slot display rework) without introducing step-through execution state.
 
@@ -56,16 +56,16 @@ Goal: ship independent feature work (visualizer semantics/layout, CE removal, fu
 - Parity:
   - Refresh affected fixtures in `tests/contracts/fixtures/parityGolden.ts` and dependent parity tests.
 
-## Release v0.8.2
+# Release v0.8.2
 
-### Milestone: Step-Through Execution + Expansion Toggle
+## Milestone: Step-Through Execution + Expansion Toggle
 
-Goal: introduce step-wise execution (`step_through`) and per-step expansion view (`?`) as a coordinated execution-state upgrade.
+Goal: introduce step-wise execution (`step_through`) and per-step expansion view (`[ ??? ]`) as a coordinated execution-state upgrade.
 
 ### Scope
 
 - Feature set #2 (new execution key `step_through` with partial execution semantics).
-- Feature set #3 (new mutually exclusive settings toggle `?` that alters active slot rendering during step mode).
+- Feature set #3 (new mutually exclusive settings toggle `[ ??? ]` that alters active slot rendering during step mode).
 
 ### Deliverables
 
@@ -76,8 +76,8 @@ Goal: introduce step-wise execution (`step_through`) and per-step expansion view
   - Roll is not committed until final slot execution completes.
   - `=` after partial stepping executes only remaining slots (not full restart).
   - If and only if `step_through` is present on keypad, next operation slot is rendered in white.
-- Step expansion toggle (`?`) support:
-  - New yellow settings toggle keyface `?`.
+- Step expansion toggle (`[ ??? ]`) support:
+  - New yellow settings toggle keyface `[ ??? ]`.
   - Mutually exclusive with existing settings-toggle keys.
   - Effective only when `step_through` is present and a step target exists.
   - Shows per-operator alternate expansion for current white-highlighted slot.
@@ -88,7 +88,7 @@ Goal: introduce step-wise execution (`step_through`) and per-step expansion view
 - Step execution state is deterministic, resumable, and reset correctly by clear/layout transitions.
 - `=` continuation behavior after partial step execution is correct for all supported operator classes.
 - White-slot highlight rules are tied to keypad presence of `step_through`, not merely unlock state.
-- `?` toggle obeys settings mutual-exclusion rules and does not alter execution results, only rendering.
+- `[ ??? ]` toggle obeys settings mutual-exclusion rules and does not alter execution results, only rendering.
 - v0.8.1 behavior remains unchanged when `step_through` is absent.
 
 ### Test Matrix
@@ -104,10 +104,12 @@ Goal: introduce step-wise execution (`step_through`) and per-step expansion view
 - UI contracts:
   - Add slot display tests for inline substep replacement rendering.
   - Add visual state tests for white next-slot highlighting conditioned on keypad presence of `step_through`.
-  - Add toggle-render tests for `?` expansion switching on active step target.
+  - Add toggle-render tests for `[ ??? ]` expansion switching on active step target.
 - Integration/parity:
   - Add mobile/desktop interaction tests for repeated `step_through` presses and mixed `step_through` + `=` workflow.
   - Update parity fixtures and round-trip tests to include new step state and toggle flags.
+
+# Release v0.8.5
 
 ## Milestone: Multiple Calculators
 
@@ -125,7 +127,7 @@ Goal: scope multi-calculator progression into implementable phases.
 - v1 success metrics and risks are documented.
 - Review-flag multi-calculator items are no longer undecided.
 
-# Pre-launch (Path to v1.0.0)
+# Release v1.0.0
 
 ## Milestone: Unlock Rule Systematization (Design)
 
@@ -151,13 +153,6 @@ Goal: define a regular, generalizable unlock-criteria framework for each key typ
 - New unlock authoring can be done by applying templates rather than inventing bespoke rules.
 - At least one full pass over current unlock catalog confirms criteria can be classified against the new framework.
 - Milestone is considered Done when regular, generalizable rules for unlock criteria exist for each key type.
-
-## Cross-Milestone Guardrails
-
-- Existing docs remain as historical/current-state references until superseded later.
-- Prioritize backward-safe changes to persistence and migrations.
-- Maintain reducer parity and deterministic execution semantics across shells.
-- Keep contract tests current as source of truth during the transition.
 
 ## Milestone: Consolidated UX Policy
 
