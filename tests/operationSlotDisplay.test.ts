@@ -439,7 +439,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(steppedUnaryDecExpansion),
-    "5 [ \u2013 1 ]",
+    "5 [ + -1 ]",
     "inactive unary decrement target expands to en-dash subtraction by one",
   );
 

@@ -135,6 +135,11 @@ Goal: scope multi-calculator progression into implementable phases.
 ## Isolated Feature Backlog (Non-Milestone)
 
 Purpose: track implementable, self-contained features that do not require milestone framing.
+When implementing, every operator MUST have all of the following defined:
+- functionality
+- key face
+- operator slot face
+- expanded form
 
 ### Unary Operators
 
@@ -164,7 +169,7 @@ Purpose: track implementable, self-contained features that do not require milest
 
 ### Unary Predicate Operators
 
-- `Not (¬)` returns 1 if operand is 0, else 1.
+- `Not (¬)` returns 1 if operand is <= 0, else 0.
 
 # Release v1.0.0
 

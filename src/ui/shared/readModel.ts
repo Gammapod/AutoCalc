@@ -637,7 +637,7 @@ export const resolveStepExpansionText = (
       return "+ 1";
     }
     if (slot.operator === KEY_ID.unary_dec) {
-      return "\u2013 1";
+      return "+ -1";
     }
     if (slot.operator === KEY_ID.unary_neg) {
       return "\u00D7 -1";

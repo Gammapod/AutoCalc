@@ -1,68 +1,121 @@
 flowchart TD
 
-subgraph Inputs ["Value Expression"]
-    Ineg["±"]
-    Ifrac["a/b"]
-    Iroot["√"]
-    Iim["i"]
-    Ipi["π"]
-    Ie["e"]
-    Idigits["0-9"]
+%% subgraph Inputs ["Value Expression"]
+%%     Iim["i"]
+%%     Idigits["0-9"]
+%% end
+%% subgraph Utilities ["Utilities"]
+%%     Uc["C"]
+%%     Uce["CE"]
+%% end
+%% subgraph Expressable ["Expressable Values"]
+%%     NN["ℕ (1)"]
+%%     NZ["ℤ (-1)"]
+%%     NQ["ℚ (1/2)"]
+%%     NA["𝔸 (√2)"]
+%%     NR["ℝ (π)"]
+%%     NC["ℂ (√-1)"]
+%%     NN --> NZ --> NQ --> NA --> NR --> NC
+%% end
+
+subgraph Theory ["Number Theory"]
+    Tprime_expansion["∏ p^e"]
+    Tprime["p"]
+    Texponent["e"]
+    Tomega["Ω"]
+    %% Expanded form `[ Σe_p ]`
+    Ttotient["'φ"]
+    %% Expanded form `[ n × ∏(1-p^-1) ]`
+    Tdivisor_sum["σ"]
+    %% Expanded form `[ Σ( (d|n) × d) ]`
+    Tgcd["⋀"]
+    %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
+    Tlcm["⋁"]
+    %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`
+    Tmin["╤"]  
+    %% Expanded form `[ a×(b>a) + b×((a>b) + (a==b)) ]`
+    Tmax["╧"]
+    %% Expanded form `[a×(a>b) + b×((b>a) + (b==a))]`
+
+
+    Tprime_expansion --> Tprime
+    Tprime_expansion --> Texponent
+
+    Texponent --> Tomega
+
+    Tprime --> Ttotient
+
+    Tprime --> Tgcd
+    Texponent --> Tgcd
+    Tmax --> Tgcd
+
+    Tprime --> Tlcm
+    Texponent --> Tlcm
+    Tmin --> Tlcm
+
 end
-subgraph Utilities ["Utilities"]
-    Uc["C"]
-    Uce["CE"]
-end
 
-subgraph Operations ["Operations"]
-    Oinc["++"]
-    Oplus["\+"]
-    Ominus["−"]
-    Omul["×"]
-    Odiv["÷"]
-    Opow["^"]
-    Oeudiv["#/⟡"]
-    Omod["⟡"]
-    Olog["log(n)"]
-    Oroot["^(1/n)"]
+subgraph Arithmetic ["Arithmetic"]
+    Ainc["++"]
+    Aneg["±"]
+    Aminus["−"]
+    Aplus["\+"]
+    Amul["×"]
+    Adiv["÷"]
+    Apow["^"]
+    Aeudiv["#/⟡"]
+    %% Expanded form `[ a - (a ⟡ b) ÷ b ]`
+    Amod["⟡"]
+    %% Expanded form `[ a – (a ÷ b)]
+    Aabs["|n|"]
+    %% Expanded form `[ ¬n × n ]`
+    Afloor["⌊n⌋"]
+    %% Expanded form `[ (n # 1)  ]`
+    Aceil["⌈n⌉"]
+    %% Expanded form `[ (⌊n⌋ ++) ]`
 
-    Oinc -->|Iterate| Oplus
+    Ainc -->|Iterate| Aplus
+    Aplus -->|Iterate| Amul
+    Amul -->|Iterate| Apow
 
-    Oplus -->|Invert| Ominus
-    Oplus -->|Iterate| Omul
+    Aplus -->|Invert| Aminus
+    Amul -->|Invert| Adiv
 
-    Omul -->|Decompose| Oeudiv
-    Omul -->|Iterate| Opow
+    Aminus --> Amod
+    Adiv --> Amod
+    Amod --> Aeudiv
     
-    Oeudiv -->|Generalize| Odiv
-    Oeudiv -->|Remainder| Omod
+    Aeudiv --> Afloor
 
-    Opow -->|Invert| Oroot
-    Opow -->|Invert| Olog
+    Afloor --> Aceil
+
+    Amul --> Aabs
+    Amul --> Aneg
 end
 
-subgraph Expressable ["Expressable Values"]
-    NN["ℕ (1)"]
-    NZ["ℤ (-1)"]
-    NQ["ℚ (1/2)"]
-    NA["𝔸 (√2)"]
-    NR["ℝ (π)"]
-    NC["ℂ (√-1)"]
-
-    NN --> NZ --> NQ --> NA --> NR --> NC
+subgraph Logic ["Logical Predicates"]
+    Lnot["¬"]
+    %% Expanded form `[ 1 > n]`
+    Ldivides["|"]
+    %% Expanded form `[ (b ⟡ a) == 0 ]`
+    Lequals["=="]
+    %% Expanded form `a [ - b] [ ¬ ]`
+    Lgreater["\>"]
+    %% Expanded form `[ (a - b) == |a - b| ]
+    Lgreater --> Lnot --> Lequals --> Ldivides
 end
-
     
-Idigits --> NN
-
-Ineg --> NZ
-Ominus --> Ineg
-Odiv --> Ifrac
-Oroot --> Iroot
-Omod --> Ipi
-
-Ifrac --> NQ
-Iroot --> NA
-Ipi --> NR
-Ie --> NR
-Iim --> NC
+Apow --> Tprime_expansion
+Ldivides --> Tdivisor_sum
+Lequals --> Tmin
+Lequals --> Tmax
+Aminus --> Lgreater
+Amod --> Ldivides
+Lnot --> Aabs
+    %% 
+%% Idigits --> NN
+%% 
+%% Aneg --> NZ
+%% 
+%% Adiv --> NQ
+%% Iim --> NC
