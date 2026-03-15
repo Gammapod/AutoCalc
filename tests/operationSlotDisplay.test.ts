@@ -211,6 +211,50 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(buildOperationSlotDisplay(committedModulo), "_ [ \u2662 3 ]", "committed modulo slot renders operator as \u2662");
 
+  const committedGcd: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
+    calculator: {
+      ...base.calculator,
+      operationSlots: [{ operator: op("\u2A51"), operand: 3n }],
+    },
+  };
+  assert.equal(buildOperationSlotDisplay(committedGcd), "_ [ \u22C0 3 ]", "committed gcd slot renders operator as \u22C0");
+
+  const committedLcm: GameState = {
+    ...committedGcd,
+    calculator: {
+      ...committedGcd.calculator,
+      operationSlots: [{ operator: op("\u2A52"), operand: 3n }],
+    },
+  };
+  assert.equal(buildOperationSlotDisplay(committedLcm), "_ [ \u22C1 3 ]", "committed lcm slot renders operator as \u22C1");
+
+  const committedUnaryInc: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
+    calculator: {
+      ...base.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("++") }],
+    },
+  };
+  assert.equal(buildOperationSlotDisplay(committedUnaryInc), "_ [ ++ ]", "committed unary increment slot renders ++ token");
+
+  const committedUnaryDec: GameState = {
+    ...committedUnaryInc,
+    calculator: {
+      ...committedUnaryInc.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("--") }],
+    },
+  };
+  assert.equal(buildOperationSlotDisplay(committedUnaryDec), "_ [ \u2013 \u2013 ]", "committed unary decrement slot renders en-dash pair token");
+
   const steppedDisplay: GameState = {
     ...base,
     unlocks: {
@@ -240,8 +284,215 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(steppedDisplay),
-    "1 [ -> 3 ] [ 3 \u00D7 3 ]",
-    "active step session replaces executed slot and expands current step target",
+    "1 [ -> 3 ] [ +n +n ]",
+    "active step session replaces executed slot and applies bespoke multiply expansion on current step target",
+  );
+
+  const steppedAdditionExpansion: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 1,
+    },
+    ui: {
+      ...base.ui,
+      keyLayout: [{ kind: "key", key: k("\u25BB") }],
+      buttonFlags: {
+        ...base.ui.buttonFlags,
+        "settings.step_expansion": true,
+      },
+    },
+    calculator: {
+      ...base.calculator,
+      total: r(5n),
+      operationSlots: [{ operator: op("+"), operand: 3n }],
+      stepProgress: {
+        active: false,
+        seedTotal: null,
+        currentTotal: null,
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedAdditionExpansion),
+    "5 [ +1 +1 +1 ]",
+    "inactive step target applies bespoke addition expansion",
+  );
+
+  const steppedSubtractionExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      operationSlots: [{ operator: op("-"), operand: 3n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedSubtractionExpansion),
+    "5 [ \u20131 \u20131 \u20131 ]",
+    "inactive step target applies bespoke subtraction expansion using minus operator symbol",
+  );
+
+  const steppedDivisionExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      operationSlots: [{ operator: op("/"), operand: 3n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedDivisionExpansion),
+    "5 [ \u00D7(1/3) ]",
+    "inactive step target applies bespoke division expansion",
+  );
+
+  const steppedEuclideanExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      total: r(12n),
+      operationSlots: [{ operator: op("#"), operand: 5n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedEuclideanExpansion),
+    "12 [ (\u230An \u00F7 5\u230B, n \u2013 q) ]",
+    "inactive step target applies bespoke euclidean-division tuple expansion",
+  );
+
+  const steppedModuloExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      total: r(12n),
+      operationSlots: [{ operator: op("\u27E1"), operand: 5n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedModuloExpansion),
+    "12 [ n \u2013 (m \u00D7 \u230An \u00F7 m\u230B) ]",
+    "inactive step target applies bespoke modulo expansion",
+  );
+
+  const steppedRotateLeftExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      total: r(12n),
+      operationSlots: [{ operator: op("\u21BA"), operand: 3n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedRotateLeftExpansion),
+    "12 [ n <<< ]",
+    "inactive step target applies bespoke rotate-left expansion with repeated arrows",
+  );
+
+  const steppedGcdExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      total: r(12n),
+      operationSlots: [{ operator: op("\u2A51"), operand: 3n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedGcdExpansion),
+    "12 [ \u220Fp^(e_a \u2567 e_b) ]",
+    "inactive step target applies bespoke gcd expansion",
+  );
+
+  const steppedLcmExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      total: r(12n),
+      operationSlots: [{ operator: op("\u2A52"), operand: 3n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedLcmExpansion),
+    "12 [ \u220Fp^(e_a \u2564 e_b) ]",
+    "inactive step target applies bespoke lcm expansion",
+  );
+
+  const steppedUnaryIncExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("++") }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedUnaryIncExpansion),
+    "5 [ + 1 ]",
+    "inactive unary increment target expands to + 1",
+  );
+
+  const steppedUnaryDecExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("--") }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedUnaryDecExpansion),
+    "5 [ \u2013 1 ]",
+    "inactive unary decrement target expands to en-dash subtraction by one",
+  );
+
+  const steppedUnaryNegExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("-n") }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedUnaryNegExpansion),
+    "5 [ \u00D7 -1 ]",
+    "inactive unary negate target expands to multiply by negative one",
+  );
+
+  const steppedUnaryOmegaExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("\u03A9") }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedUnaryOmegaExpansion),
+    "5 [ \u03A3e_p ]",
+    "inactive unary omega target expands to prime-exponent sum",
+  );
+
+  const steppedUnaryPhiExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("\u03C6") }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedUnaryPhiExpansion),
+    "5 [ n \u00D7 \u220F(1-p^-1) ]",
+    "inactive unary totient target expands to n times Euler-product form",
+  );
+
+  const steppedUnarySigmaExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("\u03C3") }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedUnarySigmaExpansion),
+    "5 [ \u03A3( [d|n] \u00D7 d) ]",
+    "inactive unary divisor-sum target expands to divisor-indicator summation",
   );
 
   const expansionFallbackNoTarget: GameState = {
@@ -260,6 +511,7 @@ export const runOperationSlotDisplayTests = (): void => {
     "expansion toggle is a no-op when no valid step target exists",
   );
 };
+
 
 
 

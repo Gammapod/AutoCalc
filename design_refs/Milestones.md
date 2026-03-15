@@ -82,6 +82,11 @@ Goal: introduce step-wise execution (`step_through`) and per-step expansion view
   - Effective only when `step_through` is present and a step target exists.
   - Shows per-operator alternate expansion for current white-highlighted slot.
   - Expansion definitions are function/slot aware and operator-specific.
+  - Operator expansion map includes bespoke forms for:
+    - `+`, `-`, `×`, `÷`, `#`, `◇`, `↺`, `⋀`, `⋁`, `++`, `--`, `±`, `Ω`, `φ`, `σ`.
+  - Symbol policy in expansion rendering:
+    - subtraction operation uses `U+2013` en dash;
+    - negative sign uses ASCII hyphen-minus (`-`).
 
 ### Exit Criteria
 
@@ -126,6 +131,40 @@ Goal: scope multi-calculator progression into implementable phases.
 - Phase plan exists with clear boundaries and prerequisite contracts.
 - v1 success metrics and risks are documented.
 - Review-flag multi-calculator items are no longer undecided.
+
+## Isolated Feature Backlog (Non-Milestone)
+
+Purpose: track implementable, self-contained features that do not require milestone framing.
+
+### Unary Operators
+
+- `Collatz (Ctz)`: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
+- `Sort asc (▂▅▇d)`: reorder decimal digits of `n` in ascending order.
+- `Digit count (#d)`: return the count of decimal digits in `n`.
+- `Digit sum (∑d)`: return the sum of decimal digits in `n`.
+- `Digit^2 sum (∑d^2)`: return the sum of squared decimal digits in `n`.
+- `Mirror digits (⇋d)`: reverse decimal digit order of `n`.
+- `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
+- `Previous roll item (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
+- `Floor (⌊ _ ⌋)`: return greatest integer less than or equal to `n`.
+- `Ceiling (⌈ _ ⌉)`: return least integer greater than or equal to `n`.
+
+### Binary Operators
+
+- `Max (╧)`: return the larger of two operands.
+- `Min (╤)`: return the smaller of two operands.
+- `Specific digit (d_)`: return the digit at a specified position/index.
+- `Keep leftmost n`: keep only the leftmost `n` digits; discard the rest.
+- `Previous roll item (f(x-_))`: for current roll index `x`, return item value at relative offset `x-k` using second operand `k`.
+
+### Binary Predicate Operators
+
+- `Divides (|)`: returns 1 if left operand divides into right operand. Otherwise, 0.
+- `Equals (==)`: returns 1 if two operands are equal, else 0.
+
+### Unary Predicate Operators
+
+- `Not (¬)` returns 1 if operand is 0, else 1.
 
 # Release v1.0.0
 

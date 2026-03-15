@@ -57,8 +57,8 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     }
 
     const defaultModel = buildFactorizationPanelViewModel(initialState());
-    assert.equal(defaultModel.seedLabel, "f₀ = \u2205", "default seed zero renders as empty-set factorization");
-    assert.equal(defaultModel.currentLabel, "fₙ = \u2205", "default pre-roll current entry is empty-set placeholder");
+    assert.equal(defaultModel.seedLabel, "f\u2080 = \u2205", "default seed zero renders as empty-set factorization");
+    assert.equal(defaultModel.currentLabel, "f\u2099 = \u2205", "default pre-roll current entry is empty-set placeholder");
     assert.equal(defaultModel.growthOrder, "unknown", "default growth order is unknown before roll diagnostics exist");
 
     const preRollSeedState: GameState = {
@@ -69,7 +69,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       },
     };
     const preRollSeedModel = buildFactorizationPanelViewModel(preRollSeedState);
-    assert.match(preRollSeedModel.seedLabel, /f₀ = 2\u00B2 \u00D7 3\u00B9/u, "pre-roll seed factorization is derived from current total");
+    assert.match(preRollSeedModel.seedLabel, /f\u2080 = 2\u00B2 \u00D7 3\u00B9/u, "pre-roll seed factorization is derived from current total");
 
     const nanSeedState: GameState = {
       ...initialState(),
@@ -78,7 +78,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
         total: toNanCalculatorValue(),
       },
     };
-    assert.equal(buildFactorizationPanelViewModel(nanSeedState).seedLabel, "f₀ = \u2205", "NaN seed renders empty-set placeholder");
+    assert.equal(buildFactorizationPanelViewModel(nanSeedState).seedLabel, "f\u2080 = \u2205", "NaN seed renders empty-set placeholder");
 
     const linearState = withRoll([
       { y: r(2n) },
@@ -100,7 +100,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     const linearModel = buildFactorizationPanelViewModel(linearState);
     assert.equal(linearModel.growthOrder, "linear", "constant non-zero d1 over last five diagnostics resolves to linear");
     assert.equal(linearModel.growthLabel, "O(f) = linear", "non-cycle growth label uses O(f)");
-    assert.match(linearModel.currentLabel, /fₙ = 2\u00B2 \u00D7 3\u00B9/u, "f_n retains latest stored factorization rendering");
+    assert.match(linearModel.currentLabel, /f\u2099 = 2\u00B2 \u00D7 3\u00B9/u, "f_n retains latest stored factorization rendering");
 
     const constantState = withRoll([
       { y: r(9n) },
@@ -274,15 +274,15 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       },
     ]);
     renderFactorizationVisualizerPanel(harness.root, withRationalLatest);
-    assert.match(panel.textContent ?? "", /fₙ = -\(2\u00B9 \u00D7 3\u00B9\) \/ \(5\u00B9 \u00D7 7\u00B9\)/u, "rational latest factorization uses superscript exponent rendering");
+    assert.match(panel.textContent ?? "", /f\u2099 = -\(2\u00B9 \u00D7 3\u00B9\) \/ \(5\u00B9 \u00D7 7\u00B9\)/u, "rational latest factorization uses superscript exponent rendering");
 
     const missingPayloadNoDerive = withRoll([{ y: r(12n) }]);
     renderFactorizationVisualizerPanel(harness.root, missingPayloadNoDerive);
-    assert.match(panel.textContent ?? "", /fₙ = \u2205/u, "latest entry still reads stored factorization payload and does not derive at render time");
+    assert.match(panel.textContent ?? "", /f\u2099 = \u2205/u, "latest entry still reads stored factorization payload and does not derive at render time");
 
     renderFactorizationVisualizerPanel(harness.root, cycleFrozenState);
     assert.equal(panel.getAttribute("aria-hidden"), "false", "factorization panel renders visible");
-    assert.match(panel.textContent ?? "", /f₀ = 2\u00B9/u, "panel includes f_0 row");
+    assert.match(panel.textContent ?? "", /f\u2080 = 2\u00B9/u, "panel includes f_0 row");
     assert.match(panel.textContent ?? "", /O\(f_\u03BC\) = linear/u, "panel includes cycle growth label row");
     assert.match(panel.textContent ?? "", /f\u03BC = 2/u, "panel includes transient metadata row");
     assert.match(panel.textContent ?? "", /f\u27E1 = 3/u, "panel includes cycle metadata row");
@@ -305,7 +305,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     };
     renderFactorizationVisualizerPanel(harness.root, errorLatestState);
     const currentRow = panel.querySelectorAll(".v2-factorization-row")[1];
-    assert.ok(currentRow?.classList.contains("v2-factorization-row--error"), "fₙ row is highlighted as error when latest roll entry has an error");
+    assert.ok(currentRow?.classList.contains("v2-factorization-row--error"), "f\u2099 row is highlighted as error when latest roll entry has an error");
   } finally {
     harness.teardown();
   }

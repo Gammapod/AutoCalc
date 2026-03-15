@@ -1,6 +1,6 @@
 # AutoCalc UX Guidelines
 
-Last updated: 2026-03-12
+Last updated: 2026-03-14
 Scope: Current UX behavior that matches implemented runtime/UI behavior.
 
 ## 1. UX Invariants
@@ -33,3 +33,8 @@ Scope: Current UX behavior that matches implemented runtime/UI behavior.
 
 - This document reflects current behavior only.
 - Future-direction UX ideas that are not implemented belong in milestone planning or review flags, not here.
+
+## 6. Symbol Conventions
+
+- Use `U+2013` (en dash) for subtraction operation notation.
+- Use `-` (hyphen-minus) for negative sign notation.

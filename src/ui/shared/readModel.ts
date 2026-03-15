@@ -465,20 +465,20 @@ const buildSeedFactorizationLabel = (state: GameState): string => {
     ? state.calculator.rollEntries[0]?.y
     : state.calculator.total;
   if (!seedValue) {
-    return `f₀ = ${FACTORIZATION_EMPTY}`;
+    return `f\u2080 = ${FACTORIZATION_EMPTY}`;
   }
   if (seedValue.kind === "nan") {
-    return `f₀ = ${FACTORIZATION_EMPTY}`;
+    return `f\u2080 = ${FACTORIZATION_EMPTY}`;
   }
   if (seedValue.kind === "rational" && seedValue.value.num === 0n) {
-    return `f₀ = ${FACTORIZATION_EMPTY}`;
+    return `f\u2080 = ${FACTORIZATION_EMPTY}`;
   }
-  return `f₀ = ${formatFactorization(getRollYPrimeFactorization(seedValue))}`;
+  return `f\u2080 = ${formatFactorization(getRollYPrimeFactorization(seedValue))}`;
 };
 
 const buildCurrentFactorizationLabel = (state: GameState): string => {
   const latest = state.calculator.rollEntries.at(-1);
-  return `fₙ = ${formatFactorization(latest?.factorization)}`;
+  return `f\u2099 = ${formatFactorization(latest?.factorization)}`;
 };
 
 export const buildFactorizationPanelViewModel = (state: GameState): FactorizationPanelViewModel => {
@@ -524,6 +524,8 @@ const formatAlgebraicOperator = (operator: SlotOperator): string =>
 
 const formatUnarySlotOperator = (operator: Extract<Slot, { kind: "unary" }>["operator"]): string =>
   getOperatorSlotFaceLabel(operator);
+const formatUnarySlotToken = (operator: Extract<Slot, { kind: "unary" }>["operator"]): string =>
+  operator === KEY_ID.unary_dec ? "\u2013 \u2013" : formatUnarySlotOperator(operator);
 
 export const formatKeyLabel = (key: Key): string => getKeyButtonFaceLabel(key);
 
@@ -587,7 +589,7 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
     }
 
     let token = slot.kind === "unary"
-      ? `[ ${formatUnarySlotOperator(slot.operator)} ]`
+      ? `[ ${formatUnarySlotToken(slot.operator)} ]`
       : `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand))} ]`;
 
     if (expansionEnabled && stepTargetIndex === index) {
@@ -631,12 +633,68 @@ export const resolveStepExpansionText = (
   void context.nextSlotIndex;
   const current = calculatorValueToDisplayString(context.currentTotal);
   if (slot.kind === "unary") {
+    if (slot.operator === KEY_ID.unary_inc) {
+      return "+ 1";
+    }
+    if (slot.operator === KEY_ID.unary_dec) {
+      return "\u2013 1";
+    }
+    if (slot.operator === KEY_ID.unary_neg) {
+      return "\u00D7 -1";
+    }
+    if (slot.operator === KEY_ID.unary_omega) {
+      return "\u03A3e_p";
+    }
+    if (slot.operator === KEY_ID.unary_phi) {
+      return "n \u00D7 \u220F(1-p^-1)";
+    }
+    if (slot.operator === KEY_ID.unary_sigma) {
+      return "\u03A3( [d|n] \u00D7 d)";
+    }
     return `${formatUnarySlotOperator(slot.operator)}(${current})`;
+  }
+  if (slot.operator === KEY_ID.op_add && typeof slot.operand === "bigint") {
+    if (slot.operand > 0n) {
+      return Array.from({ length: Number(slot.operand) }, () => "+1").join(" ");
+    }
+    if (slot.operand < 0n) {
+      return Array.from({ length: Number(-slot.operand) }, () => "-1").join(" ");
+    }
+    return "0";
+  }
+  if (slot.operator === KEY_ID.op_sub && typeof slot.operand === "bigint") {
+    if (slot.operand > 0n) {
+      return Array.from({ length: Number(slot.operand) }, () => "\u20131").join(" ");
+    }
+    if (slot.operand < 0n) {
+      return Array.from({ length: Number(-slot.operand) }, () => "+1").join(" ");
+    }
+    return "0";
+  }
+  if (slot.operator === KEY_ID.op_mul && typeof slot.operand === "bigint" && slot.operand > 1n) {
+    return Array.from({ length: Number(slot.operand - 1n) }, () => "+n").join(" ");
+  }
+  if (slot.operator === KEY_ID.op_div && typeof slot.operand === "bigint" && slot.operand !== 0n) {
+    return `\u00D7(1/${slot.operand.toString()})`;
+  }
+  if (slot.operator === KEY_ID.op_rotate_left && typeof slot.operand === "bigint" && slot.operand > 0n) {
+    return `n ${"<".repeat(Number(slot.operand))}`;
+  }
+  if (slot.operator === KEY_ID.op_euclid_div && typeof slot.operand === "bigint") {
+    return `(\u230An \u00F7 ${slot.operand.toString()}\u230B, n \u2013 q)`;
+  }
+  if (slot.operator === KEY_ID.op_mod && typeof slot.operand === "bigint") {
+    return "n \u2013 (m \u00D7 \u230An \u00F7 m\u230B)";
+  }
+  if (slot.operator === KEY_ID.op_gcd && typeof slot.operand === "bigint") {
+    return "\u220Fp^(e_a \u2567 e_b)";
+  }
+  if (slot.operator === KEY_ID.op_lcm && typeof slot.operand === "bigint") {
+    return "\u220Fp^(e_a \u2564 e_b)";
   }
   const operand = typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand));
   return `${current} ${formatOperatorForOperationSlotDisplay(slot.operator)} ${operand}`;
 };
-
 const resolveSeedValueForAlgebra = (state: GameState): CalculatorValue | null => {
   if (state.calculator.rollEntries.length > 0) {
     return getSeedRow(state.calculator.rollEntries)?.y ?? null;
@@ -1038,6 +1096,7 @@ export const buildUnlockRows = (
   const completed = visible.filter((row) => row.state === "completed");
   return [...pending, ...completed];
 };
+
 
 
 
