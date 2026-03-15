@@ -14,6 +14,7 @@ import {
   resolveKeyId,
   toLegacyKey,
 } from "../../domain/keyPresentation.js";
+import { STEP_EXPANSION_FLAG } from "../../domain/state.js";
 import { analyzeUnlockSpecRows, type UnlockSpecStatus } from "../../domain/analysis.js";
 import { buildUnlockCriteria } from "../../domain/unlockEngine.js";
 import { getRollYPrimeFactorization } from "../../domain/rollDerived.js";
@@ -568,11 +569,39 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
       ? "_"
       : calculatorValueToDisplayString(state.calculator.total);
 
-  const filledTokens = state.calculator.operationSlots.map(
-    (slot) => slot.kind === "unary"
-      ? `[ ${formatUnarySlotOperator(slot.operator)} ]`
-      : `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand))} ]`,
+  const stepThroughOnKeypad = state.ui.keyLayout.some(
+    (cell) => cell.kind === "key" && cell.key === KEY_ID.exec_step_through,
   );
+  const stepProgress = state.calculator.stepProgress;
+  const stepTargetIndex =
+    stepThroughOnKeypad && state.calculator.operationSlots.length > 0
+      ? stepProgress.active
+        ? stepProgress.nextSlotIndex
+        : 0
+      : null;
+  const expansionEnabled = Boolean(state.ui.buttonFlags[STEP_EXPANSION_FLAG]);
+
+  const filledTokens = state.calculator.operationSlots.map((slot, index) => {
+    if (stepProgress.active && index < stepProgress.executedSlotResults.length) {
+      return `[ -> ${calculatorValueToDisplayString(stepProgress.executedSlotResults[index])} ]`;
+    }
+
+    let token = slot.kind === "unary"
+      ? `[ ${formatUnarySlotOperator(slot.operator)} ]`
+      : `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand))} ]`;
+
+    if (expansionEnabled && stepTargetIndex === index) {
+      const expansion = resolveStepExpansionText(slot, {
+        seedTotal: stepProgress.seedTotal ?? state.calculator.total,
+        currentTotal: stepProgress.currentTotal ?? state.calculator.total,
+        nextSlotIndex: stepProgress.active ? stepProgress.nextSlotIndex : 0,
+      });
+      if (expansion) {
+        token = `[ ${expansion} ]`;
+      }
+    }
+    return token;
+  });
   if (state.calculator.draftingSlot) {
     const operand = state.calculator.draftingSlot.operandInput
       ? `${state.calculator.draftingSlot.isNegative ? "-" : ""}${state.calculator.draftingSlot.operandInput}`
@@ -588,6 +617,24 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   }
 
   return `${seedToken} ${tokens.join(" ")}`;
+};
+
+export const resolveStepExpansionText = (
+  slot: Slot,
+  context: {
+    seedTotal: CalculatorValue;
+    currentTotal: CalculatorValue;
+    nextSlotIndex: number;
+  },
+): string | null => {
+  void context.seedTotal;
+  void context.nextSlotIndex;
+  const current = calculatorValueToDisplayString(context.currentTotal);
+  if (slot.kind === "unary") {
+    return `${formatUnarySlotOperator(slot.operator)}(${current})`;
+  }
+  const operand = typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand));
+  return `${current} ${formatOperatorForOperationSlotDisplay(slot.operator)} ${operand}`;
 };
 
 const resolveSeedValueForAlgebra = (state: GameState): CalculatorValue | null => {

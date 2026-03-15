@@ -2,6 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import type { Action, GameState, RollEntry } from "../src/domain/types.js";
+import { reducer } from "../src/domain/reducer.js";
 import { createShellRenderer } from "../src/ui/renderAdapter.js";
 import { click } from "./helpers/eventHarness.js";
 import { installDomHarness } from "./helpers/domHarness.js";
@@ -375,6 +376,62 @@ export const runUiIntegrationMobileShellTests = (): void => {
       dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("=")),
       true,
       "clicking a rendered key dispatches PRESS_KEY action",
+    );
+
+    const withStepKey: GameState = {
+      ...withStorage,
+      ui: {
+        ...withStorage.ui,
+        keyLayout: [{ kind: "key", key: k("\u25BB") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...withStorage.unlocks,
+        maxSlots: 2,
+      },
+      calculator: {
+        ...withStorage.calculator,
+        total: r(1n),
+        operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
+      },
+    };
+    renderer.render(withStepKey, dispatch, {
+            inputBlocked: false,
+    });
+    const stepTokenBefore = harness.root.querySelector<HTMLElement>("[data-slot] .slot-display__token--step-target");
+    assert.ok(stepTokenBefore, "slot token is highlighted when step key is present on keypad");
+    assert.equal(stepTokenBefore?.textContent?.includes("[ + 2 ]"), true, "inactive step target highlights first slot token");
+
+    const steppedOnce = reducer(withStepKey, { type: "PRESS_KEY", key: k("\u25BB") });
+    renderer.render(steppedOnce, dispatch, {
+            inputBlocked: false,
+    });
+    const stepTokenAfterOne = harness.root.querySelector<HTMLElement>("[data-slot] .slot-display__token--step-target");
+    assert.ok(stepTokenAfterOne, "slot token remains highlighted after first step-through");
+    assert.equal(stepTokenAfterOne?.textContent?.includes("[ \u00D7 3 ]"), true, "step target highlight moves to next slot token after one step");
+
+    const steppedThenEquals = reducer(steppedOnce, { type: "PRESS_KEY", key: k("=") });
+    assert.deepEqual(
+      steppedThenEquals.calculator.total,
+      r(9n),
+      "mixed step-through then equals continues remaining slots from partial cursor",
+    );
+
+    const withoutStepKey: GameState = {
+      ...steppedOnce,
+      ui: {
+        ...steppedOnce.ui,
+        keyLayout: [{ kind: "key", key: k("=") }],
+      },
+    };
+    renderer.render(withoutStepKey, dispatch, {
+            inputBlocked: false,
+    });
+    assert.equal(
+      harness.root.querySelector("[data-slot] .slot-display__token--step-target"),
+      null,
+      "slot token highlight is hidden when step key is absent from keypad",
     );
 
     renderer.dispose();

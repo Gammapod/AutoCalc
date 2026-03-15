@@ -57,6 +57,31 @@ type AutoActionPlan = {
   key: Key;
 };
 
+const stableSignature = (value: unknown): string => {
+  const seen = new WeakSet<object>();
+  const walk = (input: unknown): unknown => {
+    if (typeof input === "bigint") {
+      return { __bigint: input.toString() };
+    }
+    if (Array.isArray(input)) {
+      return input.map((entry) => walk(entry));
+    }
+    if (input && typeof input === "object") {
+      if (seen.has(input as object)) {
+        return "[Circular]";
+      }
+      seen.add(input as object);
+      const out: Record<string, unknown> = {};
+      for (const key of Object.keys(input as Record<string, unknown>).sort()) {
+        out[key] = walk((input as Record<string, unknown>)[key]);
+      }
+      return out;
+    }
+    return input;
+  };
+  return JSON.stringify(walk(value));
+};
+
 const getAutoActionPlan = (state: GameState): AutoActionPlan | null => {
   const fallbackExecutorKey = getInstalledExecutorKey(state);
   return fallbackExecutorKey ? { action: { type: "PRESS_KEY", key: fallbackExecutorKey }, key: fallbackExecutorKey } : null;
@@ -108,6 +133,7 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
 
   const dispatchAutoEqualsAttempt = (): void => {
     const beforeAttempt = store.getState();
+    const beforeSignature = stableSignature(beforeAttempt);
     const autoPlan = getAutoActionPlan(beforeAttempt);
     if (!autoPlan) {
       if (isAutoEqualsEnabled(beforeAttempt)) {
@@ -122,7 +148,7 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
     dispatchAction(autoAction);
     onAutoKeyActivated(autoPlan.key);
     const afterAttempt = store.getState();
-    if (afterAttempt !== beforeAttempt) {
+    if (stableSignature(afterAttempt) !== beforeSignature) {
       resetInvalidAttempts();
       return;
     }

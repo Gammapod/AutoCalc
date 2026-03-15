@@ -112,6 +112,11 @@ export const runReducerLayoutTests = (): void => {
     entryClearState.calculator.total,
     "keypad-only move does not trigger entry-clear reset",
   );
+  assert.equal(
+    sameSurfaceMoveNoEntryClear.calculator.stepProgress.active,
+    false,
+    "layout move clears active step session state",
+  );
   assert.equal(sameSurfaceMoveNoEntryClear.calculator.rollEntries.length, 1, "keypad-only move preserves roll");
 
   const acrossSurfaceMoveTriggersEntryClear = reducer(entryClearState, {
@@ -440,6 +445,22 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(resizedBigger.ui.keyLayout.length, 20, "resizing up appends placeholder slots");
   assert.ok(resizedBigger.ui.keyLayout.slice(0, 19).every((cell) => cell.kind === "placeholder"), "top/left growth is placeholder");
   assert.equal(resizedBigger.ui.keyLayout[19]?.kind === "key" ? resizedBigger.ui.keyLayout[19].key : null, k("="), "++ stays bottom-right");
+
+  const stepActiveResizeSource: GameState = {
+    ...baseline,
+    calculator: {
+      ...baseline.calculator,
+      stepProgress: {
+        active: true,
+        seedTotal: r(1n),
+        currentTotal: r(2n),
+        nextSlotIndex: 1,
+        executedSlotResults: [r(2n)],
+      },
+    },
+  };
+  const stepClearedOnResize = reducer(stepActiveResizeSource, { type: "SET_KEYPAD_DIMENSIONS", columns: 2, rows: 1 });
+  assert.equal(stepClearedOnResize.calculator.stepProgress.active, false, "keypad resize clears active step session");
 
   const resizedSmaller = reducer(resizedBigger, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 2 });
   assert.equal(resizedSmaller.ui.keyLayout.length, 6, "resizing down truncates layout tail");

@@ -59,6 +59,7 @@ const utilitySet = new Set<UtilityKey>([
   KEY_ID.util_undo,
   KEY_ID.toggle_delta_range_clamp,
   KEY_ID.toggle_mod_zero_to_delta,
+  KEY_ID.toggle_step_expansion,
 ]);
 
 const visualizerSet = new Set<VisualizerKey>([
@@ -100,7 +101,7 @@ export const memory = (keyLike: KeyLike): MemoryKey => {
 
 export const execution = (keyLike: KeyLike): ExecKey => {
   const keyId = resolveKeyId(keyLike);
-  if (keyId !== KEY_ID.exec_equals) {
+  if (keyId !== KEY_ID.exec_equals && keyId !== KEY_ID.exec_step_through) {
     throw new Error(`Expected execution key, received: ${keyLike}`);
   }
   return keyId;

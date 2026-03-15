@@ -179,6 +179,64 @@ export const runReducerInputTests = (): void => {
   const afterSecondEquals = applyKeyAction(afterEquals, "=");
   assert.deepEqual(afterSecondEquals.calculator.rollEntries[0]?.y, r(0n), "subsequent equals preserve seed at index 0");
 
+  const stepThroughSource: GameState = {
+    ...fullyUnlocked,
+    ui: {
+      ...fullyUnlocked.ui,
+      keyLayout: [{ kind: "key", key: k("\u25BB") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(1n),
+      operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
+    },
+  };
+  const afterFirstStep = applyKeyAction(stepThroughSource, "\u25BB");
+  assert.equal(afterFirstStep.calculator.stepProgress.active, true, "first step-through press starts step session");
+  assert.equal(afterFirstStep.calculator.stepProgress.nextSlotIndex, 1, "first step-through advances cursor by one slot");
+  assert.equal(afterFirstStep.calculator.rollEntries.length, 0, "intermediate step-through does not append roll entries");
+  assert.deepEqual(afterFirstStep.calculator.total, r(1n), "intermediate step-through leaves total unchanged");
+  assert.deepEqual(afterFirstStep.calculator.stepProgress.currentTotal, r(3n), "first step-through stores per-step result");
+
+  const afterSecondStep = applyKeyAction(afterFirstStep, "\u25BB");
+  assert.equal(afterSecondStep.calculator.stepProgress.active, false, "terminal step-through clears session");
+  assert.deepEqual(afterSecondStep.calculator.total, r(9n), "terminal step-through commits final total");
+  assert.equal(afterSecondStep.calculator.rollEntries.length, 2, "terminal step-through appends seed and final step exactly once");
+
+  const equalsFromPartial = applyKeyAction(afterFirstStep, "=");
+  assert.deepEqual(equalsFromPartial.calculator.total, r(9n), "equals during partial step continues from cursor");
+  assert.equal(equalsFromPartial.calculator.stepProgress.active, false, "equals from partial clears step session");
+
+  const absentStepKeyState: GameState = {
+    ...afterFirstStep,
+    ui: {
+      ...afterFirstStep.ui,
+      keyLayout: [{ kind: "key", key: k("=") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+  };
+  const afterAbsentStepKeyEquals = applyKeyAction(absentStepKeyState, "=");
+  assert.equal(afterAbsentStepKeyEquals.calculator.stepProgress.active, false, "session clears when step key is absent on keypad");
+
+  const stepNoSlots = applyKeyAction(
+    {
+      ...fullyUnlocked,
+      ui: {
+        ...fullyUnlocked.ui,
+        keyLayout: [{ kind: "key", key: k("\u25BB") }],
+      },
+      calculator: {
+        ...fullyUnlocked.calculator,
+        operationSlots: [],
+      },
+    },
+    "\u25BB",
+  );
+  assert.equal(stepNoSlots.calculator.stepProgress.active, false, "step-through with no slots is a no-op");
+
   let longRollState: GameState = {
     ...fullyUnlocked,
     calculator: {
@@ -482,11 +540,19 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.calculator,
       total: r(6n),
       rollEntries: re(r(5n), r(6n)),
+      stepProgress: {
+        active: true,
+        seedTotal: r(5n),
+        currentTotal: r(6n),
+        nextSlotIndex: 1,
+        executedSlotResults: [r(6n)],
+      },
     },
   };
   const afterUndo = applyKeyAction(undoSource, "UNDO");
   assert.deepEqual(afterUndo.calculator.total, r(5n), "UNDO restores prior trajectory value");
   assert.deepEqual(afterUndo.calculator.rollEntries, re(r(5n)), "UNDO removes last step and keeps seed row");
+  assert.equal(afterUndo.calculator.stepProgress.active, false, "UNDO cancels active step session");
 
   const memoryCycleLocked = initialState();
   const afterLockedMemoryCycle = applyKeyAction(memoryCycleLocked, "α,β,γ");
@@ -625,10 +691,18 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...withBackspaceUnlocked.calculator,
       rollEntries: re(r(1n)),
+      stepProgress: {
+        active: true,
+        seedTotal: r(1n),
+        currentTotal: r(2n),
+        nextSlotIndex: 1,
+        executedSlotResults: [r(2n)],
+      },
     },
   };
   const afterBackspaceActiveRollNoOp = applyKeyAction(backspaceActiveRollNoOp, "\u2190");
-  assert.deepEqual(afterBackspaceActiveRollNoOp.calculator, backspaceActiveRollNoOp.calculator, "backspace is no-op on active roll");
+  assert.equal(afterBackspaceActiveRollNoOp.calculator.stepProgress.active, false, "backspace cancels active step session");
+  assert.deepEqual(afterBackspaceActiveRollNoOp.calculator.rollEntries, backspaceActiveRollNoOp.calculator.rollEntries, "backspace remains no-op on active roll entries");
 
   const backspaceFunctionWalkStart: GameState = {
     ...withBackspaceUnlocked,

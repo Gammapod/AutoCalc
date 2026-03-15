@@ -177,6 +177,13 @@ const toSerializableState = (state: GameState): SerializableStateLatest => {
         : {}),
     })),
     draftingSlot: state.calculator.draftingSlot,
+    stepProgress: {
+      active: state.calculator.stepProgress.active,
+      seedTotal: state.calculator.stepProgress.seedTotal ? serializeCalculatorValue(state.calculator.stepProgress.seedTotal) : null,
+      currentTotal: state.calculator.stepProgress.currentTotal ? serializeCalculatorValue(state.calculator.stepProgress.currentTotal) : null,
+      nextSlotIndex: state.calculator.stepProgress.nextSlotIndex,
+      executedSlotResults: state.calculator.stepProgress.executedSlotResults.map((value) => serializeCalculatorValue(value)),
+    },
   },
   ui: {
     keyLayout: state.ui.keyLayout,
@@ -251,6 +258,65 @@ const parseRollAnalysis = (payloadState: SerializableStateLatest): GameState["ca
   };
 };
 
+const initialStepProgressState = (): GameState["calculator"]["stepProgress"] => ({
+  active: false,
+  seedTotal: null,
+  currentTotal: null,
+  nextSlotIndex: 0,
+  executedSlotResults: [],
+});
+
+const parseStepProgress = (
+  payloadState: SerializableStateLatest,
+  operationSlotCount: number,
+): GameState["calculator"]["stepProgress"] => {
+  const raw = (payloadState.calculator as unknown as { stepProgress?: unknown }).stepProgress;
+  if (typeof raw !== "object" || raw === null) {
+    return initialStepProgressState();
+  }
+  const candidate = raw as {
+    active?: unknown;
+    seedTotal?: unknown;
+    currentTotal?: unknown;
+    nextSlotIndex?: unknown;
+    executedSlotResults?: unknown;
+  };
+  if (typeof candidate.active !== "boolean") {
+    return initialStepProgressState();
+  }
+  if (typeof candidate.nextSlotIndex !== "number" || !Number.isInteger(candidate.nextSlotIndex)) {
+    return initialStepProgressState();
+  }
+  if (!Array.isArray(candidate.executedSlotResults) || !candidate.executedSlotResults.every((value) => typeof value === "string")) {
+    return initialStepProgressState();
+  }
+
+  const seedTotal = typeof candidate.seedTotal === "string" ? deserializeCalculatorValue(candidate.seedTotal) : null;
+  const currentTotal = typeof candidate.currentTotal === "string" ? deserializeCalculatorValue(candidate.currentTotal) : null;
+  const executedSlotResults = candidate.executedSlotResults.map((value) => deserializeCalculatorValue(value));
+
+  if (candidate.nextSlotIndex < 0 || candidate.nextSlotIndex > operationSlotCount) {
+    return initialStepProgressState();
+  }
+  if (executedSlotResults.length > operationSlotCount) {
+    return initialStepProgressState();
+  }
+  if (candidate.active && (seedTotal === null || currentTotal === null)) {
+    return initialStepProgressState();
+  }
+  if (candidate.active && candidate.nextSlotIndex === 0 && executedSlotResults.length > 0) {
+    return initialStepProgressState();
+  }
+
+  return {
+    active: candidate.active,
+    seedTotal,
+    currentTotal,
+    nextSlotIndex: candidate.nextSlotIndex,
+    executedSlotResults,
+  };
+};
+
 const fromSerializableStateV3 = (
   payloadState: SerializableStateLatest,
   sourceSchemaVersion: number,
@@ -312,6 +378,28 @@ const fromSerializableStateV3 = (
       : legacySeedSnapshot
         ? [createRollEntry(legacySeedSnapshot), ...migratedRollEntries]
         : [createRollEntry(migratedRollEntries[0].y), ...migratedRollEntries];
+  const operationSlots = payloadState.calculator.operationSlots.map((slot) => {
+    if (slot.kind === "unary" && isUnarySlotOperator(slot.operator)) {
+      return {
+        kind: "unary" as const,
+        operator: slot.operator,
+      };
+    }
+    const operator = isBinarySlotOperator(slot.operator) ? slot.operator : KEY_ID.op_add;
+    const operandText = slot.operand ?? "0";
+    return {
+      kind: "binary" as const,
+      operator,
+      operand: (() => {
+        const expression = parseExpressionOrThrow(operandText);
+        if (expression.type === "int_literal") {
+          return expression.value;
+        }
+        return expression;
+      })(),
+    };
+  });
+
   return {
     calculator: {
     total: deserializeCalculatorValue(payloadState.calculator.total),
@@ -319,28 +407,9 @@ const fromSerializableStateV3 = (
     singleDigitInitialTotalEntry: payloadState.calculator.singleDigitInitialTotalEntry ?? false,
     rollEntries,
     rollAnalysis: parseRollAnalysis(payloadState),
-    operationSlots: payloadState.calculator.operationSlots.map((slot) => {
-      if (slot.kind === "unary" && isUnarySlotOperator(slot.operator)) {
-        return {
-          kind: "unary" as const,
-          operator: slot.operator,
-        };
-      }
-      const operator = isBinarySlotOperator(slot.operator) ? slot.operator : KEY_ID.op_add;
-      const operandText = slot.operand ?? "0";
-      return {
-        kind: "binary" as const,
-        operator,
-        operand: (() => {
-          const expression = parseExpressionOrThrow(operandText);
-          if (expression.type === "int_literal") {
-            return expression.value;
-          }
-          return expression;
-        })(),
-      };
-    }),
+    operationSlots,
     draftingSlot: payloadState.calculator.draftingSlot,
+    stepProgress: parseStepProgress(payloadState, operationSlots.length),
   },
   ui: {
     keyLayout: payloadState.ui.keyLayout,

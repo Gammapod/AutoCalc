@@ -49,6 +49,51 @@ const STEP_BODY_HIGHLIGHT_CLASS = "keypad-step-body-highlight";
 
 const isFeedRollVisible = (state: GameState): boolean => state.ui.activeVisualizer === "feed";
 
+const appendSlotTrackBase = (
+  parent: HTMLElement,
+  base: string,
+  stepTargetTokenIndex: number | null,
+): void => {
+  if (stepTargetTokenIndex === null) {
+    const textNode = document.createElement("span");
+    textNode.textContent = base;
+    parent.appendChild(textNode);
+    return;
+  }
+
+  const tokenRegex = /\[[^\]]*\]/g;
+  let tokenIndex = 0;
+  let cursor = 0;
+  let match: RegExpExecArray | null = tokenRegex.exec(base);
+  while (match) {
+    const start = match.index;
+    const end = tokenRegex.lastIndex;
+    if (start > cursor) {
+      const textPrefix = document.createElement("span");
+      textPrefix.textContent = base.slice(cursor, start);
+      parent.appendChild(textPrefix);
+    }
+
+    const token = document.createElement("span");
+    token.className = "slot-display__token";
+    if (tokenIndex === stepTargetTokenIndex) {
+      token.classList.add("slot-display__token--step-target");
+    }
+    token.textContent = base.slice(start, end);
+    parent.appendChild(token);
+
+    tokenIndex += 1;
+    cursor = end;
+    match = tokenRegex.exec(base);
+  }
+
+  if (cursor < base.length) {
+    const textSuffix = document.createElement("span");
+    textSuffix.textContent = base.slice(cursor);
+    parent.appendChild(textSuffix);
+  }
+};
+
 
 export const renderCalculatorV2Module = (
   root: Element,
@@ -84,7 +129,7 @@ export const renderCalculatorV2Module = (
   const track = document.createElement("span");
   track.className = "slot-display__track";
   const slotBase = document.createElement("span");
-  slotBase.textContent = slotDisplay.base;
+  appendSlotTrackBase(slotBase, slotDisplay.base, slotDisplay.stepTargetTokenIndex);
   track.appendChild(slotBase);
   if (slotDisplay.deltaWrapSuffix) {
     const deltaWrap = document.createElement("span");

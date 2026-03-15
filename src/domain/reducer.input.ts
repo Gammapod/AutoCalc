@@ -33,7 +33,7 @@ import {
   calculatorValueEquals,
 } from "./rollEntries.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
-import { clearOperationEntry, createResetCalculatorState } from "./reducer.stateBuilders.js";
+import { clearOperationEntry, createInitialStepProgressState, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import {
   CHECKLIST_UNLOCK_ID,
   DELTA_RANGE_CLAMP_FLAG,
@@ -54,6 +54,7 @@ import type {
   RollEntry,
   BinarySlot,
   UnaryOperator,
+  Slot,
 } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 import {
@@ -651,14 +652,97 @@ const withRollDiagnosticsApplied = (
   };
 };
 
+const hasStepThroughOnKeypad = (state: GameState): boolean =>
+  state.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === KEY_ID.exec_step_through);
+
+const withClearedStepProgress = (state: GameState): GameState => ({
+  ...state,
+  calculator: {
+    ...state.calculator,
+    stepProgress: createInitialStepProgressState(),
+  },
+});
+
+const evaluateExecutionOutcomeForSlots = (
+  state: GameState,
+  execKey: ExecKey,
+  seedTotal: GameState["calculator"]["total"],
+  operationSlots: Slot[],
+): EvaluatedExecution => {
+  if (seedTotal.kind === "nan") {
+    return {
+      nextTotal: toNanCalculatorValue(),
+      errorCode: NAN_INPUT_ERROR_CODE,
+      errorKind: "nan_input",
+    };
+  }
+
+  const execution = executeSlotsValue(seedTotal, operationSlots);
+  if (!execution.ok) {
+    if (execution.reason === "unsupported_symbolic") {
+      return {
+        nextTotal: toNanCalculatorValue(),
+        errorCode: NAN_INPUT_ERROR_CODE,
+        errorKind: "nan_input",
+      };
+    }
+    return {
+      nextTotal: toNanCalculatorValue(),
+      errorCode: execution.reason === "division_by_zero" ? DIVISION_BY_ZERO_ERROR_CODE : NAN_INPUT_ERROR_CODE,
+      errorKind: execution.reason === "division_by_zero" ? "division_by_zero" : "nan_input",
+    };
+  }
+
+  if (!isRationalCalculatorValue(execution.total)) {
+    if (execution.total.kind !== "expr") {
+      return {
+        nextTotal: toNanCalculatorValue(),
+        errorCode: NAN_INPUT_ERROR_CODE,
+        errorKind: "nan_input",
+      };
+    }
+    const symbolicExpression = buildSymbolicExpression(seedTotal, operationSlots);
+    const expressionForEvaluation = symbolicExpression.ok ? symbolicExpression.expression : execution.total.value;
+    const expressionKey = buildBuilderExpressionSignature(operationSlots);
+    const symbolicEvaluation = evaluateSymbolicExpression(expressionForEvaluation);
+    const symbolicText = symbolicEvaluation.ok
+      ? symbolicEvaluation.value.simplifiedText
+      : symbolicEvaluation.simplifiedText;
+    if (!symbolicEvaluation.ok) {
+      return toSymbolicExecution(expressionKey, symbolicText);
+    }
+    const rationalized = symbolicEvaluation.value.rationalValue;
+    if (!rationalized) {
+      return toSymbolicExecution(expressionKey, symbolicText);
+    }
+    const overflowChecked = applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, state);
+    return {
+      ...overflowChecked,
+      symbolic: toSymbolicPayload(expressionKey, symbolicText),
+      ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
+    };
+  }
+
+  const overflowChecked = applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, state);
+  return {
+    ...overflowChecked,
+    euclidRemainder: execution.euclidRemainder,
+  };
+};
+
 const applyEquals = (state: GameState): GameState => {
   const equalsKey = KEY_ID.exec_equals;
   if (!state.unlocks.execution[equalsKey]) {
     return state;
   }
 
-  const finalized = finalizeDraftingSlot(state);
-  const evaluation = evaluateExecutionOutcome(finalized, equalsKey);
+  const finalized = withClearedStepProgress(finalizeDraftingSlot(state));
+  const evaluation = evaluateExecutionOutcomeForSlots(
+    finalized,
+    equalsKey,
+    finalized.calculator.total,
+    finalized.calculator.operationSlots,
+  );
   const nextEntry = toRollEntry(evaluation);
   const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
   const nextRollEntries = appendStepRow(withSeed, nextEntry);
@@ -674,6 +758,112 @@ const applyEquals = (state: GameState): GameState => {
   };
   const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
 
+  const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
+  return applyUnlocks(withOverflowMarker, unlockCatalog);
+};
+
+const applyEqualsFromStepProgress = (state: GameState): GameState => {
+  const equalsKey = KEY_ID.exec_equals;
+  if (!state.unlocks.execution[equalsKey]) {
+    return state;
+  }
+
+  const finalized = finalizeDraftingSlot(state);
+  const stepProgress = finalized.calculator.stepProgress;
+  if (!stepProgress.active || !stepProgress.currentTotal) {
+    return applyEquals(finalized);
+  }
+
+  const remainingSlots = finalized.calculator.operationSlots.slice(stepProgress.nextSlotIndex);
+  if (remainingSlots.length === 0) {
+    return withClearedStepProgress(finalized);
+  }
+
+  const evaluation = evaluateExecutionOutcomeForSlots(finalized, equalsKey, stepProgress.currentTotal, remainingSlots);
+  const nextEntry = toRollEntry(evaluation);
+  const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
+  const nextRollEntries = appendStepRow(withSeed, nextEntry);
+
+  const withRollBase: GameState = {
+    ...finalized,
+    calculator: {
+      ...finalized.calculator,
+      total: evaluation.nextTotal,
+      pendingNegativeTotal: false,
+      rollEntries: nextRollEntries,
+      stepProgress: createInitialStepProgressState(),
+    },
+  };
+  const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
+  const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
+  return applyUnlocks(withOverflowMarker, unlockCatalog);
+};
+
+const applyStepThrough = (state: GameState): GameState => {
+  const stepKey = KEY_ID.exec_step_through;
+  if (!state.unlocks.execution[stepKey]) {
+    return state;
+  }
+
+  const finalized = finalizeDraftingSlot(state);
+  if (finalized.calculator.operationSlots.length === 0) {
+    return withClearedStepProgress(finalized);
+  }
+
+  const priorProgress = finalized.calculator.stepProgress;
+  const stepProgress =
+    priorProgress.active && priorProgress.currentTotal
+      ? priorProgress
+      : {
+          active: true,
+          seedTotal: finalized.calculator.total,
+          currentTotal: finalized.calculator.total,
+          nextSlotIndex: 0,
+          executedSlotResults: [],
+        };
+
+  if (!stepProgress.currentTotal || stepProgress.nextSlotIndex >= finalized.calculator.operationSlots.length) {
+    return withClearedStepProgress(finalized);
+  }
+
+  const slot = finalized.calculator.operationSlots[stepProgress.nextSlotIndex];
+  const evaluation = evaluateExecutionOutcomeForSlots(finalized, stepKey, stepProgress.currentTotal, [slot]);
+  const nextResults = [...stepProgress.executedSlotResults, evaluation.nextTotal];
+  const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + 1 >= finalized.calculator.operationSlots.length;
+
+  if (!isTerminal) {
+    return applyUnlocks(
+      {
+        ...finalized,
+        calculator: {
+          ...finalized.calculator,
+          stepProgress: {
+            active: true,
+            seedTotal: stepProgress.seedTotal,
+            currentTotal: evaluation.nextTotal,
+            nextSlotIndex: stepProgress.nextSlotIndex + 1,
+            executedSlotResults: nextResults,
+          },
+        },
+      },
+      unlockCatalog,
+    );
+  }
+
+  const nextEntry = toRollEntry(evaluation);
+  const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
+  const nextRollEntries = appendStepRow(withSeed, nextEntry);
+  const withRollBase: GameState = {
+    ...finalized,
+    calculator: {
+      ...finalized.calculator,
+      total: evaluation.nextTotal,
+      pendingNegativeTotal: false,
+      rollEntries: nextRollEntries,
+      stepProgress: createInitialStepProgressState(),
+    },
+  };
+  const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
   const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
   return applyUnlocks(withOverflowMarker, unlockCatalog);
 };
@@ -700,11 +890,12 @@ const isNumericDigit = (key: string): key is Digit => NUMERIC_DIGIT_RE.test(key)
 const isValueAtomConstant = (key: Key): key is ConstantKeyId => isConstantKeyId(key);
 
 const applyBackspace = (state: GameState): GameState => {
+  const withClearedStep = withClearedStepProgress(state);
   if (!state.unlocks.utilities[KEY_ID.util_backspace]) {
-    return state;
+    return withClearedStep;
   }
-  if (state.calculator.rollEntries.length > 0) {
-    return state;
+  if (withClearedStep.calculator.rollEntries.length > 0) {
+    return withClearedStep;
   }
 
   const slotToDrafting = (slot: BinarySlot) => {
@@ -730,7 +921,7 @@ const applyBackspace = (state: GameState): GameState => {
     };
   };
 
-  const drafting = state.calculator.draftingSlot;
+  const drafting = withClearedStep.calculator.draftingSlot;
   if (drafting) {
     if (drafting.operandInput.length > 0) {
       const nextInput = /^\d+$/.test(drafting.operandInput) ? drafting.operandInput.slice(0, -1) : "";
@@ -738,8 +929,8 @@ const applyBackspace = (state: GameState): GameState => {
         return state;
       }
       return applyUnlocks(
-        withBuilderPatchApplied(state, {
-          operationSlots: state.calculator.operationSlots,
+        withBuilderPatchApplied(withClearedStep, {
+          operationSlots: withClearedStep.calculator.operationSlots,
           draftingSlot: {
             ...drafting,
             operandInput: nextInput,
@@ -750,8 +941,8 @@ const applyBackspace = (state: GameState): GameState => {
     }
     if (drafting.isNegative && drafting.operandInput.length === 0) {
       return applyUnlocks(
-        withBuilderPatchApplied(state, {
-          operationSlots: state.calculator.operationSlots,
+        withBuilderPatchApplied(withClearedStep, {
+          operationSlots: withClearedStep.calculator.operationSlots,
           draftingSlot: {
             ...drafting,
             isNegative: false,
@@ -761,20 +952,20 @@ const applyBackspace = (state: GameState): GameState => {
       );
     }
 
-    if (state.calculator.operationSlots.length > 0) {
-      const priorCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
+    if (withClearedStep.calculator.operationSlots.length > 0) {
+      const priorCommitted = withClearedStep.calculator.operationSlots[withClearedStep.calculator.operationSlots.length - 1];
       if (!("operand" in priorCommitted)) {
         return applyUnlocks(
-          withBuilderPatchApplied(state, {
-            operationSlots: state.calculator.operationSlots.slice(0, -1),
+          withBuilderPatchApplied(withClearedStep, {
+            operationSlots: withClearedStep.calculator.operationSlots.slice(0, -1),
             draftingSlot: null,
           }),
           unlockCatalog,
         );
       }
       return applyUnlocks(
-        withBuilderPatchApplied(state, {
-          operationSlots: state.calculator.operationSlots.slice(0, -1),
+        withBuilderPatchApplied(withClearedStep, {
+          operationSlots: withClearedStep.calculator.operationSlots.slice(0, -1),
           draftingSlot: slotToDrafting(priorCommitted),
         }),
         unlockCatalog,
@@ -782,20 +973,20 @@ const applyBackspace = (state: GameState): GameState => {
     }
 
     return applyUnlocks(
-      withBuilderPatchApplied(state, {
-        operationSlots: state.calculator.operationSlots,
+      withBuilderPatchApplied(withClearedStep, {
+        operationSlots: withClearedStep.calculator.operationSlots,
         draftingSlot: null,
       }),
       unlockCatalog,
     );
   }
 
-  if (state.calculator.operationSlots.length > 0) {
-    const lastCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
+  if (withClearedStep.calculator.operationSlots.length > 0) {
+    const lastCommitted = withClearedStep.calculator.operationSlots[withClearedStep.calculator.operationSlots.length - 1];
     if (!("operand" in lastCommitted)) {
       return applyUnlocks(
-        withBuilderPatchApplied(state, {
-          operationSlots: state.calculator.operationSlots.slice(0, -1),
+        withBuilderPatchApplied(withClearedStep, {
+          operationSlots: withClearedStep.calculator.operationSlots.slice(0, -1),
           draftingSlot: null,
         }),
         unlockCatalog,
@@ -804,8 +995,8 @@ const applyBackspace = (state: GameState): GameState => {
     const restoredDrafting = slotToDrafting(lastCommitted);
     const trimmedInput = /^\d+$/.test(restoredDrafting.operandInput) ? restoredDrafting.operandInput.slice(0, -1) : "";
     return applyUnlocks(
-      withBuilderPatchApplied(state, {
-        operationSlots: state.calculator.operationSlots.slice(0, -1),
+      withBuilderPatchApplied(withClearedStep, {
+        operationSlots: withClearedStep.calculator.operationSlots.slice(0, -1),
         draftingSlot: {
           ...restoredDrafting,
           operandInput: trimmedInput,
@@ -815,24 +1006,24 @@ const applyBackspace = (state: GameState): GameState => {
     );
   }
 
-  if (!isSeedEntryContext(state) || !isRationalCalculatorValue(state.calculator.total) || !isInteger(state.calculator.total.value)) {
-    return state;
+  if (!isSeedEntryContext(withClearedStep) || !isRationalCalculatorValue(withClearedStep.calculator.total) || !isInteger(withClearedStep.calculator.total.value)) {
+    return withClearedStep;
   }
-  const value = state.calculator.total.value;
+  const value = withClearedStep.calculator.total.value;
   const magnitudeText = value.num < 0n ? (-value.num).toString() : value.num.toString();
   const nextMagnitudeText = magnitudeText.length <= 1 ? "0" : magnitudeText.slice(0, -1);
   const nextMagnitude = BigInt(nextMagnitudeText);
   const shouldBeNegative = value.num < 0n;
   const nextNum = nextMagnitude === 0n ? 0n : shouldBeNegative ? -nextMagnitude : nextMagnitude;
   if (nextNum === value.num) {
-    return state;
+    return withClearedStep;
   }
 
   return applyUnlocks(
     {
-      ...state,
+      ...withClearedStep,
       calculator: {
-        ...state.calculator,
+        ...withClearedStep.calculator,
         total: toRationalCalculatorValue({ num: nextNum, den: 1n }),
       },
     },
@@ -841,20 +1032,21 @@ const applyBackspace = (state: GameState): GameState => {
 };
 
 const applyUndo = (state: GameState): GameState => {
+  const withClearedStep = withClearedStepProgress(state);
   if (!state.unlocks.utilities[KEY_ID.util_undo]) {
-    return state;
+    return withClearedStep;
   }
 
-  if (state.calculator.rollEntries.length === 0) {
-    return state;
+  if (withClearedStep.calculator.rollEntries.length === 0) {
+    return withClearedStep;
   }
 
-  const nextRollEntries = state.calculator.rollEntries.slice(0, -1);
+  const nextRollEntries = withClearedStep.calculator.rollEntries.slice(0, -1);
   const nextTotal = nextRollEntries[nextRollEntries.length - 1]?.y ?? createResetCalculatorState().total;
   return {
-    ...state,
+    ...withClearedStep,
     calculator: {
-      ...state.calculator,
+      ...withClearedStep.calculator,
       total: nextTotal,
       rollEntries: nextRollEntries,
       rollAnalysis: {
@@ -906,17 +1098,22 @@ const applyMemoryKeyAction = (state: GameState, key: Key): GameState => {
 };
 
 export const applyKeyAction = (state: GameState, keyLike: KeyInput): GameState => {
+  const stepAwareState = hasStepThroughOnKeypad(state) ? state : withClearedStepProgress(state);
   const key = resolveKeyId(keyLike);
   // Input precedence:
   // 1) active-roll digit keys are hard no-op
   // 2) active-roll operator keys clear current operation entry before handling
   // 3) normal key dispatch
-  if (state.calculator.rollEntries.length > 0 && isValueAtomDigit(key)) {
-    return state;
+  if (stepAwareState.calculator.rollEntries.length > 0 && isValueAtomDigit(key)) {
+    return stepAwareState;
   }
 
-  const preprocessed = preprocessForActiveRoll(state, key);
-  const keyed = isKeyUnlocked(preprocessed, key) ? incrementKeyPressCount(preprocessed, key) : preprocessed;
+  const preprocessed = preprocessForActiveRoll(stepAwareState, key);
+  const isUnlocked = isKeyUnlocked(preprocessed, key);
+  const keyed = isUnlocked ? incrementKeyPressCount(preprocessed, key) : preprocessed;
+  if (!isUnlocked) {
+    return keyed;
+  }
 
   const handlers: Record<KeyActionHandlerId, (nextState: GameState, currentKey: Key) => GameState> = {
     apply_digit: (nextState, currentKey) => {
@@ -939,7 +1136,10 @@ export const applyKeyAction = (state: GameState, keyLike: KeyInput): GameState =
     apply_clear_all: (nextState) => applyC(nextState),
     apply_backspace: (nextState) => applyBackspace(nextState),
     apply_undo: (nextState) => applyUnlocks(applyUndo(nextState), unlockCatalog),
-    apply_equals: (nextState) => applyEquals(nextState),
+    apply_equals: (nextState) => (
+      nextState.calculator.stepProgress.active ? applyEqualsFromStepProgress(nextState) : applyEquals(nextState)
+    ),
+    apply_step_through: (nextState) => applyStepThrough(nextState),
   };
 
   const handlerId = resolveKeyActionHandlerId(key);

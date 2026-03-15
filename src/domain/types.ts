@@ -214,6 +214,14 @@ export type DraftingSlot = {
   isNegative: boolean;
 };
 
+export type StepProgressState = {
+  active: boolean;
+  seedTotal: CalculatorValue | null;
+  currentTotal: CalculatorValue | null;
+  nextSlotIndex: number;
+  executedSlotResults: CalculatorValue[];
+};
+
 export type CalculatorState = {
   total: CalculatorValue;
   pendingNegativeTotal: boolean;
@@ -222,6 +230,7 @@ export type CalculatorState = {
   rollAnalysis: RollAnalysisState;
   operationSlots: Slot[];
   draftingSlot: DraftingSlot | null;
+  stepProgress: StepProgressState;
 };
 
 export type UnlockState = {

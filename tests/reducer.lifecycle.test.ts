@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { applyLifecycleAction } from "../src/domain/reducer.lifecycle.js";
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, STEP_EXPANSION_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState } from "../src/domain/types.js";
 
@@ -55,6 +55,10 @@ export const runReducerLifecycleTests = (): void => {
   const deltaBackOn = reducer(modOn, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
   assert.equal(deltaBackOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range toggle can be re-enabled");
   assert.equal(Boolean(deltaBackOn.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]), false, "delta-range toggle clears mod-range toggle");
+  const stepExpansionOn = reducer(deltaBackOn, { type: "TOGGLE_FLAG", flag: STEP_EXPANSION_FLAG });
+  assert.equal(stepExpansionOn.ui.buttonFlags[STEP_EXPANSION_FLAG], true, "step expansion toggle turns on");
+  assert.equal(Boolean(stepExpansionOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]), false, "step expansion clears delta-range toggle");
+  assert.equal(Boolean(stepExpansionOn.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]), false, "step expansion clears mod-range toggle");
 
   const graphOn = reducer(base, { type: "TOGGLE_VISUALIZER", visualizer: "graph" });
   assert.equal(graphOn.ui.activeVisualizer, "graph", "GRAPH visualizer toggles on");

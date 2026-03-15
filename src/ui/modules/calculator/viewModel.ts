@@ -139,25 +139,40 @@ const MOD_ZERO_TO_DELTA_SUFFIX = " [ \u27E1 \u{1D6FF} ]";
 export type OperationSlotDisplayModel = {
   base: string;
   deltaWrapSuffix: string | null;
+  stepTargetTokenIndex: number | null;
 };
 
 export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotDisplayModel => {
   const base = buildOperationSlotDisplayShared(state);
+  const stepThroughOnKeypad = state.ui.keyLayout.some(
+    (cell) => cell.kind === "key" && cell.key === "exec_step_through",
+  );
+  const stepTargetTokenIndex =
+    stepThroughOnKeypad && state.calculator.operationSlots.length > 0
+      ? state.calculator.stepProgress.active
+        ? (
+            state.calculator.stepProgress.nextSlotIndex >= 0
+            && state.calculator.stepProgress.nextSlotIndex < state.calculator.operationSlots.length
+              ? state.calculator.stepProgress.nextSlotIndex
+              : null
+          )
+        : 0
+      : null;
   const deltaWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
   const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
   if (modZeroToDeltaEnabled) {
     if (base === "(no operation slots)") {
-      return { base: "[ \u27E1 \u{1D6FF} ]", deltaWrapSuffix: null };
+      return { base: "[ \u27E1 \u{1D6FF} ]", deltaWrapSuffix: null, stepTargetTokenIndex };
     }
-    return { base, deltaWrapSuffix: MOD_ZERO_TO_DELTA_SUFFIX };
+    return { base, deltaWrapSuffix: MOD_ZERO_TO_DELTA_SUFFIX, stepTargetTokenIndex };
   }
   if (deltaWrapEnabled) {
     if (base === "(no operation slots)") {
-      return { base: "[ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", deltaWrapSuffix: null };
+      return { base: "[ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", deltaWrapSuffix: null, stepTargetTokenIndex };
     }
-    return { base, deltaWrapSuffix: DELTA_WRAP_SUFFIX };
+    return { base, deltaWrapSuffix: DELTA_WRAP_SUFFIX, stepTargetTokenIndex };
   }
-  return { base, deltaWrapSuffix: null };
+  return { base, deltaWrapSuffix: null, stepTargetTokenIndex };
 };
 
 export const buildOperationSlotDisplay = (state: GameState): string => {

@@ -13,7 +13,7 @@ import {
 } from "./reducer.layout.js";
 import { applyLifecycleAction } from "./reducer.lifecycle.js";
 import { applyToggleFlag } from "./reducer.flags.js";
-import { clearOperationEntry } from "./reducer.stateBuilders.js";
+import { clearOperationEntry, withStepProgressCleared } from "./reducer.stateBuilders.js";
 import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyUnlocks } from "./unlocks.js";
 import { resolveKeyId } from "./keyPresentation.js";
@@ -71,33 +71,44 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
   }
 
   if (action.type === "MOVE_KEY_SLOT") {
-    return applyMoveKeySlot(state, action.fromIndex, action.toIndex);
+    const moved = applyMoveKeySlot(state, action.fromIndex, action.toIndex);
+    return moved !== state ? withStepProgressCleared(moved) : moved;
   }
   if (action.type === "SWAP_KEY_SLOTS") {
-    return applySwapKeySlots(state, action.firstIndex, action.secondIndex);
+    const swapped = applySwapKeySlots(state, action.firstIndex, action.secondIndex);
+    return swapped !== state ? withStepProgressCleared(swapped) : swapped;
   }
   if (action.type === "MOVE_LAYOUT_CELL") {
     const moved = applyMoveLayoutCell(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
-    if (moved !== state && action.fromSurface !== action.toSurface) {
-      return clearOperationEntry(moved);
+    if (moved !== state) {
+      if (action.fromSurface !== action.toSurface) {
+        return clearOperationEntry(moved);
+      }
+      return withStepProgressCleared(moved);
     }
     return moved;
   }
   if (action.type === "SWAP_LAYOUT_CELLS") {
     const swapped = applySwapLayoutCells(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
-    if (swapped !== state && action.fromSurface !== action.toSurface) {
-      return clearOperationEntry(swapped);
+    if (swapped !== state) {
+      if (action.fromSurface !== action.toSurface) {
+        return clearOperationEntry(swapped);
+      }
+      return withStepProgressCleared(swapped);
     }
     return swapped;
   }
   if (action.type === "SET_KEYPAD_DIMENSIONS") {
-    return applySetKeypadDimensions(state, action.columns, action.rows);
+    const resized = applySetKeypadDimensions(state, action.columns, action.rows);
+    return resized !== state ? withStepProgressCleared(resized) : resized;
   }
   if (action.type === "UPGRADE_KEYPAD_ROW") {
-    return applyUpgradeKeypadRow(state);
+    const upgraded = applyUpgradeKeypadRow(state);
+    return upgraded !== state ? withStepProgressCleared(upgraded) : upgraded;
   }
   if (action.type === "UPGRADE_KEYPAD_COLUMN") {
-    return applyUpgradeKeypadColumn(state);
+    const upgraded = applyUpgradeKeypadColumn(state);
+    return upgraded !== state ? withStepProgressCleared(upgraded) : upgraded;
   }
   if (action.type === "TOGGLE_FLAG") {
     return applyToggleFlag(state, action.flag);

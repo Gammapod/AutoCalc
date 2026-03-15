@@ -27,6 +27,7 @@ const runtimeKeysFromInitialUnlocks = (): Key[] => {
     ...(Object.keys(state.unlocks.execution) as Key[]),
   ]
     .filter((key) => key !== KEY_ID.toggle_delta_range_clamp && key !== KEY_ID.toggle_mod_zero_to_delta)
+    .filter((key) => key !== KEY_ID.toggle_step_expansion && key !== KEY_ID.exec_step_through)
     .sort((a, b) => a.localeCompare(b));
 };
 

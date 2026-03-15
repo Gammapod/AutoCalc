@@ -12,6 +12,7 @@ export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_
 export const AUTO_EQUALS_FLAG = "execution.pause";
 export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";
 export const MOD_ZERO_TO_DELTA_FLAG = "settings.mod_zero_to_delta";
+export const STEP_EXPANSION_FLAG = "settings.step_expansion";
 export const KEYPAD_DEFAULT_COLUMNS = 1;
 export const KEYPAD_DEFAULT_ROWS = 1;
 export const KEYPAD_DIM_MIN = 1;
@@ -107,6 +108,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.memory_cycle_variable },
   { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
   { kind: "key", key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } },
+  { kind: "key", key: KEY_ID.toggle_step_expansion, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } },
   { kind: "key", key: KEY_ID.viz_feed },
   { kind: "key", key: KEY_ID.viz_factorization },
   { kind: "key", key: KEY_ID.viz_circle },
@@ -141,6 +143,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.digit_3 },
   { kind: "key", key: KEY_ID.digit_0 },
   { kind: "key", key: KEY_ID.exec_equals },
+  { kind: "key", key: KEY_ID.exec_step_through },
   { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
 ];
 
@@ -161,6 +164,13 @@ export const initialState = (): GameState => {
       },
       operationSlots: [],
       draftingSlot: null,
+      stepProgress: {
+        active: false,
+        seedTotal: null,
+        currentTotal: null,
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
     },
     lambdaControl,
     allocator: buildAllocatorSnapshot(lambdaControl),

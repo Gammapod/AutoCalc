@@ -4,6 +4,7 @@ import type { Action, GameState } from "./types.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { sanitizeLambdaControl } from "./lambdaControl.js";
 import { applyUnlockAllPreset } from "./lifecyclePresets.js";
+import { createInitialStepProgressState } from "./reducer.stateBuilders.js";
 
 export const applyLifecycleAction = (state: GameState, action: Action): GameState | null => {
   if (action.type === "RESET_RUN") {
@@ -22,7 +23,17 @@ export const applyLifecycleAction = (state: GameState, action: Action): GameStat
         ),
       },
     };
-    return applyAllocatorRuntimeProjection(withCells, sanitizeLambdaControl(withCells.lambdaControl));
+    const withStepProgress: GameState =
+      withCells.calculator.stepProgress === undefined
+        ? {
+            ...withCells,
+            calculator: {
+              ...withCells.calculator,
+              stepProgress: createInitialStepProgressState(),
+            },
+          }
+        : withCells;
+    return applyAllocatorRuntimeProjection(withStepProgress, sanitizeLambdaControl(withStepProgress.lambdaControl));
   }
   if (action.type === "UNLOCK_ALL") {
     return applyUnlockAllPreset(state);

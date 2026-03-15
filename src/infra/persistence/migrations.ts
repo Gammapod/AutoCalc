@@ -272,6 +272,7 @@ const UTILITY_KEY_VALUES = [
   KEY_ID.util_backspace,
   KEY_ID.toggle_delta_range_clamp,
   KEY_ID.toggle_mod_zero_to_delta,
+  KEY_ID.toggle_step_expansion,
 ] as const;
 const MEMORY_KEY_VALUES = [
   KEY_ID.memory_cycle_variable,
@@ -287,7 +288,7 @@ const VISUALIZER_KEY_VALUES = [
   KEY_ID.viz_eigen_allocator,
   KEY_ID.viz_algebraic,
 ] as const;
-const EXEC_KEY_VALUES = [KEY_ID.exec_equals] as const;
+const EXEC_KEY_VALUES = [KEY_ID.exec_equals, KEY_ID.exec_step_through] as const;
 const UNARY_OPERATOR_KEY_VALUES = [
   KEY_ID.unary_inc,
   KEY_ID.unary_dec,

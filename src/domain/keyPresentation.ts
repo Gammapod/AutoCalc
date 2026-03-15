@@ -37,6 +37,7 @@ export const KEY_ID = {
   memory_recall: "memory_recall",
   toggle_delta_range_clamp: "toggle_delta_range_clamp",
   toggle_mod_zero_to_delta: "toggle_mod_zero_to_delta",
+  toggle_step_expansion: "toggle_step_expansion",
   viz_graph: "viz_graph",
   viz_feed: "viz_feed",
   viz_factorization: "viz_factorization",
@@ -44,6 +45,7 @@ export const KEY_ID = {
   viz_eigen_allocator: "viz_eigen_allocator",
   viz_algebraic: "viz_algebraic",
   exec_equals: "exec_equals",
+  exec_step_through: "exec_step_through",
 } as const;
 
 export type KeyId = (typeof KEY_ID)[keyof typeof KEY_ID];
@@ -86,7 +88,8 @@ export type UtilityKeyId =
   | typeof KEY_ID.util_backspace
   | typeof KEY_ID.util_undo
   | typeof KEY_ID.toggle_delta_range_clamp
-  | typeof KEY_ID.toggle_mod_zero_to_delta;
+  | typeof KEY_ID.toggle_mod_zero_to_delta
+  | typeof KEY_ID.toggle_step_expansion;
 export type VisualizerKeyId =
   | typeof KEY_ID.viz_graph
   | typeof KEY_ID.viz_feed
@@ -94,7 +97,7 @@ export type VisualizerKeyId =
   | typeof KEY_ID.viz_circle
   | typeof KEY_ID.viz_eigen_allocator
   | typeof KEY_ID.viz_algebraic;
-export type ExecKeyId = typeof KEY_ID.exec_equals;
+export type ExecKeyId = typeof KEY_ID.exec_equals | typeof KEY_ID.exec_step_through;
 export type ValueAtomKeyId = DigitKeyId | ConstantKeyId;
 export type OperatorKeyId = BinaryOperatorKeyId | UnaryOperatorKeyId;
 
@@ -151,6 +154,7 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["M\u2192", { keyId: KEY_ID.memory_recall, buttonFace: "M\u2192" }],
   ["\u27E1[-\u{1D6FF}, \u{1D6FF})", { keyId: KEY_ID.toggle_delta_range_clamp, buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
   ["\u27E1[0, \u{1D6FF})", { keyId: KEY_ID.toggle_mod_zero_to_delta, buttonFace: "\u27E1[0, \u{1D6FF})" }],
+  ["[ ??? ]", { keyId: KEY_ID.toggle_step_expansion, buttonFace: "[ ??? ]" }],
   ["GRAPH", { keyId: KEY_ID.viz_graph, buttonFace: "GRAPH" }],
   ["FEED", { keyId: KEY_ID.viz_feed, buttonFace: "FEED" }],
   [FACTORIZATION_LEGACY_KEY, { keyId: KEY_ID.viz_factorization, buttonFace: "\u{1D6B7}\u{1D45D}\u{1D49}" }],
@@ -158,6 +162,7 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["\u03BB", { keyId: KEY_ID.viz_eigen_allocator, buttonFace: "\u03BB" }],
   ["ALG", { keyId: KEY_ID.viz_algebraic, buttonFace: "ALG" }],
   ["=", { keyId: KEY_ID.exec_equals, buttonFace: "=" }],
+  ["\u25BB", { keyId: KEY_ID.exec_step_through, buttonFace: "\u25BB" }],
 ]);
 
 const entries: KeyPresentation[] = buttonRegistry.map((entry) => {

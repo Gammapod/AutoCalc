@@ -128,6 +128,33 @@ export const runPersistenceTests = (): void => {
   assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
   assert.equal(loaded?.unlocks.visualizers[visualizer("FEED")], true, "round-trip FEED visualizer unlock");
   assert.equal(loaded?.ui.activeVisualizer, "feed", "round-trip active visualizer");
+  assert.equal(loaded?.calculator.stepProgress.active, false, "default step progress round-trips as inactive");
+
+  const withActiveStepProgress: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      operationSlots: [
+        { kind: "binary", operator: op("+"), operand: 2n },
+        { kind: "binary", operator: op("*"), operand: 3n },
+      ],
+      stepProgress: {
+        active: true,
+        seedTotal: r(1n),
+        currentTotal: r(3n),
+        nextSlotIndex: 1,
+        executedSlotResults: [r(3n)],
+      },
+    },
+  };
+  repo.save(withActiveStepProgress);
+  const loadedWithActiveStep = repo.load();
+  assert.ok(loadedWithActiveStep, "active step progress payload hydrates");
+  assert.deepEqual(
+    loadedWithActiveStep?.calculator.stepProgress,
+    withActiveStepProgress.calculator.stepProgress,
+    "valid step progress survives save/load round-trip",
+  );
 
   const legacyV1 = loadFromRawSave(
     JSON.stringify({
@@ -525,6 +552,31 @@ export const runPersistenceTests = (): void => {
   );
   assert.ok(malformed.state, "invalid keyPressCounts payload still hydrates");
   assert.deepEqual(malformed.state?.keyPressCounts, {}, "invalid keyPressCounts are normalized away");
+
+  repo.save(withActiveStepProgress);
+  const rawStepPayload = storage.getItem(SAVE_KEY);
+  assert.ok(rawStepPayload, "serialized payload exists for malformed stepProgress test");
+  const malformedStepPayload = JSON.parse(rawStepPayload ?? "{}");
+  malformedStepPayload.state.calculator.stepProgress = {
+    active: true,
+    seedTotal: "1",
+    currentTotal: "3",
+    nextSlotIndex: 99,
+    executedSlotResults: ["3"],
+  };
+  const malformedStepLoaded = loadFromRawSave(JSON.stringify(malformedStepPayload));
+  assert.ok(malformedStepLoaded.state, "malformed step payload still hydrates");
+  assert.deepEqual(
+    malformedStepLoaded.state?.calculator.stepProgress,
+    {
+      active: false,
+      seedTotal: null,
+      currentTotal: null,
+      nextSlotIndex: 0,
+      executedSlotResults: [],
+    },
+    "malformed step progress is strictly reset to inactive defaults",
+  );
 
   repo.save(initialState());
   const serializedBaseline = storage.getItem(SAVE_KEY);

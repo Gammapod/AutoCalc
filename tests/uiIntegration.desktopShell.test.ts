@@ -141,6 +141,46 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       "clicking a rendered key dispatches PRESS_KEY action on desktop shell",
     );
 
+    const withStepKey = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key" as const, key: k("\u25BB") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        maxSlots: 2,
+      },
+      calculator: {
+        ...initialState().calculator,
+        total: { kind: "rational" as const, value: { num: 1n, den: 1n } },
+        operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
+      },
+    };
+    renderer.render(withStepKey, dispatch, {
+            inputBlocked: false,
+    });
+    const stepTokenBefore = harness.root.querySelector<HTMLElement>("[data-slot] .slot-display__token--step-target");
+    assert.ok(stepTokenBefore, "desktop shell highlights slot token when step key is present");
+    assert.equal(stepTokenBefore?.textContent?.includes("[ + 2 ]"), true, "desktop highlight starts on first slot token");
+
+    const steppedOnce = reducer(withStepKey, { type: "PRESS_KEY", key: k("\u25BB") });
+    renderer.render(steppedOnce, dispatch, {
+            inputBlocked: false,
+    });
+    const stepTokenAfterOne = harness.root.querySelector<HTMLElement>("[data-slot] .slot-display__token--step-target");
+    assert.ok(stepTokenAfterOne, "desktop step highlight remains visible after one step");
+    assert.equal(stepTokenAfterOne?.textContent?.includes("[ \u00D7 3 ]"), true, "desktop highlight advances to next slot token");
+
+    const steppedThenEquals = reducer(steppedOnce, { type: "PRESS_KEY", key: k("=") });
+    assert.deepEqual(
+      steppedThenEquals.calculator.total,
+      { kind: "rational", value: { num: 9n, den: 1n } },
+      "desktop mixed step-through then equals continues from partial cursor",
+    );
+
     renderer.dispose();
   } finally {
     harness.teardown();
