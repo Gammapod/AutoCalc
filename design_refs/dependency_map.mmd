@@ -15,16 +15,21 @@ flowchart TD
 %%     NA["𝔸 (√2)"]
 %%     NR["ℝ (π)"]
 %%     NC["ℂ (√-1)"]
+%%     NP["ℙ (2)"]
 %%     NN --> NZ --> NQ --> NA --> NR --> NC
 %% end
 
 subgraph Theory ["Number Theory"]
-    Tprime_expansion["∏ p^e"]
+    Tprime_expansion["∏ ℙ^e"]
+    Tntop["ℙ(n)"]
+    %% Returns nth prime. ℙ(3) = 5
+    Tpton["ℙ^-1(p)"]
+    %% Returns index of prime p. ℙ^-1(5) = 3
     Tprime["p"]
     Texponent["e"]
     Tomega["Ω"]
     %% Expanded form `[ Σe_p ]`
-    Ttotient["'φ"]
+    Ttotient["φ"]
     %% Expanded form `[ n × ∏(1-p^-1) ]`
     Tdivisor_sum["σ"]
     %% Expanded form `[ Σ( (d|n) × d) ]`
@@ -37,6 +42,7 @@ subgraph Theory ["Number Theory"]
     Tmax["╧"]
     %% Expanded form `[a×(a>b) + b×((b>a) + (b==a))]`
 
+    Tntop --> Tpton
 
     Tprime_expansion --> Tprime
     Tprime_expansion --> Texponent
@@ -57,39 +63,41 @@ end
 
 subgraph Arithmetic ["Arithmetic"]
     Ainc["++"]
-    Aneg["±"]
-    Aminus["−"]
-    Aplus["\+"]
-    Amul["×"]
-    Adiv["÷"]
-    Apow["^"]
-    Aeudiv["#/⟡"]
-    %% Expanded form `[ a - (a ⟡ b) ÷ b ]`
-    Amod["⟡"]
-    %% Expanded form `[ a – (a ÷ b)]
+    Aneg["n±"]
+    Aminus["a−b"]
+    Aplus["a\+b"]
+    Amul["a×b"]
+    Adiv["a÷b"]
+    Apow["a^b"]
+    Amod["a◇b"]
+    %% Expanded form `a [÷b] [⌊n⌋] [×b] [±] [+a]`
+    Aeudiv["a∻b"]
+    %% Expanded form `[a÷b] - [a◇b]`
+    Apadic["n∥p"]
+    %% Expanded form ``
+    Ares["n⟐p"]
+    %% Expanded form `n⟐p -> n/(p^(n∥p))`
+    %% Expanded form `60⟐2=15 -> 60/(2^2)=15`
     Aabs["|n|"]
-    %% Expanded form `[ ¬n × n ]`
+    %% Expanded form ``
     Afloor["⌊n⌋"]
-    %% Expanded form `[ (n # 1)  ]`
+    %% Expanded form ``
     Aceil["⌈n⌉"]
-    %% Expanded form `[ (⌊n⌋ ++) ]`
+    %% Expanded form ``
+    %% a/b - r/b = q
 
+    Afloor --> Amod
+    Adiv --> Amod
+    Aneg --> Amod
     Ainc -->|Iterate| Aplus
     Aplus -->|Iterate| Amul
     Amul -->|Iterate| Apow
 
+    Amod --> Aeudiv
+
     Aplus -->|Invert| Aminus
     Amul -->|Invert| Adiv
 
-    Aminus --> Amod
-    Adiv --> Amod
-    Amod --> Aeudiv
-    
-    Aeudiv --> Afloor
-
-    Afloor --> Aceil
-
-    Amul --> Aabs
     Amul --> Aneg
 end
 
@@ -97,7 +105,7 @@ subgraph Logic ["Logical Predicates"]
     Lnot["¬"]
     %% Expanded form `[ 1 > n]`
     Ldivides["|"]
-    %% Expanded form `[ (b ⟡ a) == 0 ]`
+    %% Expanded form `[ (b ◇ a) == 0 ]`
     Lequals["=="]
     %% Expanded form `a [ - b] [ ¬ ]`
     Lgreater["\>"]
@@ -111,7 +119,6 @@ Lequals --> Tmin
 Lequals --> Tmax
 Aminus --> Lgreater
 Amod --> Ldivides
-Lnot --> Aabs
     %% 
 %% Idigits --> NN
 %% 

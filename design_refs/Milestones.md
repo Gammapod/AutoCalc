@@ -1,118 +1,43 @@
-# Release v0.8.1 (Shipped 2026-03-14)
+## Isolated Feature Backlog (Non-Milestone)
 
-## Milestone: Independent Display + Keying Changes
+Purpose: track implementable, self-contained features that do not require milestone framing.
+When implementing, every operator key MUST have all of the following defined:
+- functionality
+- key face
+- operator slot face
+- expanded form
 
-Goal: ship independent feature work (visualizer semantics/layout, CE removal, function-slot display rework) without introducing step-through execution state.
+### Unary Operators
 
-### Scope
+- `Collatz (Ctz)`: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
+- `Sort asc (▂▅▇d)`: reorder decimal digits of `n` in ascending order.
+- `Digit count (#d)`: return the count of decimal digits in `n`.
+- `Digit sum (∑d)`: return the sum of decimal digits in `n`.
+- `Digit^2 sum (∑d^2)`: return the sum of squared decimal digits in `n`.
+- `Mirror digits (⇋d)`: reverse decimal digit order of `n`.
+- `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
+- `Previous roll item (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
+- `Floor (⌊ _ ⌋)`: return greatest integer less than or equal to `n`.
+- `Ceiling (⌈ _ ⌉)`: return least integer greater than or equal to `n`.
+- `ℙ(n)`: return the nth prime number. NaN if n is not a natural number.
+- `ℙ⁻¹(p)`: return the index of prime p. NaN if p is not a prime.
 
-- Feature set #1 (default visualizer behavior/layout updates).
-- Feature set #4 (remove CE and standardize on C paths).
-- Feature set #5 (slot display format updates plus marquee overflow behavior).
-- Explicitly out of scope: feature sets #2 and #3 (reserved for v0.8.2).
+### Binary Operators
 
-### Deliverables
+- `Max (╧)`: return the larger of two operands.
+- `Min (╤)`: return the smaller of two operands.
+- `Specific digit (d_)`: return the digit at a specified position/index.
+- `Keep leftmost n`: keep only the leftmost `n` digits; discard the rest.
+- `Previous roll item (f(x-_))`: for current roll index `x`, return item value at relative offset `x-k` using second operand `k`.
 
-- Total display updates:
-  - NaN shows seven-segment `Err` / `Er` / `E` based on `maxTotalDigits`.
-  - Rational-with-numerator-denominator shows seven-segment `FrAC` / `FrC` / `Fr` / `F` based on `maxTotalDigits`.
-  - Remainder indicator uses `r=` prefix.
-  - Minus glyph moves to just left of the leftmost active digit.
-  - Number-domain indicator moves to prior minus position.
-  - Memory/lambda row remains visible regardless of active visualizer.
-- CE removal updates:
-  - `CE` key removed from key catalog/presentation/layout defaults/sandbox preset.
-  - CE-specific clear-entry routing removed; clear behavior standardized on `C`.
-  - Unlock catalog/effects updated so CE-specific unlock paths no longer exist.
-  - Save-load migration support for legacy states that still include CE references.
-- Function slot display updates:
-  - Arrow separators removed.
-  - Seed placeholder introduced (`_ [ _ _ ] [ _ _ ]` style).
-  - Seed value replaces leading `_` when entered.
-  - Overflow behavior becomes ellipsis + slow bidirectional marquee with edge pauses.
+### Binary Predicate Operators
 
-### Exit Criteria
+- `Divides (|)`: returns 1 if left operand divides into right operand. Otherwise, 0.
+- `Equals (==)`: returns 1 if two operands are equal, else 0.
 
-- No runtime references to CE remain in domain keying or default layouts.
-- Total panel semantics match required display strings and truncation behavior across digit capacities.
-- Slot display format and marquee behavior are stable on both mobile and desktop shells.
-- Persistence round-trip succeeds for both fresh v0.8.1 states and legacy pre-v0.8.1 CE-bearing saves.
-- Existing reducer parity invariants remain deterministic for non-step execution flows.
+### Unary Predicate Operators
 
-### Test Matrix
-
-- Domain:
-  - Update `tests/totalDisplay.test.ts` for new NaN/fraction token semantics and indicator placement assumptions.
-  - Update/remove CE assertions in:
-    - `tests/keyBehavior.contract.test.ts`
-    - `tests/reducer.layout.test.ts`
-    - `tests/reducer.input.test.ts`
-    - `tests/unlocksDisplay.test.ts`
-  - Add/adjust migration assertions in `tests/persistence.test.ts` for CE-bearing legacy payload normalization.
-- UI contracts:
-  - Update `tests/operationSlotDisplay.test.ts` for new seed-first format and no-arrow tokens.
-  - Add slot overflow/marquee behavior checks (module or integration-level).
-  - Update total-panel integration checks in `tests/uiIntegration.mobileShell.test.ts` for moved minus/domain/remainder conventions.
-- Parity:
-  - Refresh affected fixtures in `tests/contracts/fixtures/parityGolden.ts` and dependent parity tests.
-
-# Release v0.8.2
-
-## Milestone: Step-Through Execution + Expansion Toggle
-
-Goal: introduce step-wise execution (`step_through`) and per-step expansion view (`[ ??? ]`) as a coordinated execution-state upgrade.
-
-### Scope
-
-- Feature set #2 (new execution key `step_through` with partial execution semantics).
-- Feature set #3 (new mutually exclusive settings toggle `[ ??? ]` that alters active slot rendering during step mode).
-
-### Deliverables
-
-- Step-through key (`step_through`) support:
-  - New execution key with keyface U+25BB.
-  - Press executes exactly one operation slot per invocation.
-  - Intermediate substep results render inline on function display in place of executed slot body.
-  - Roll is not committed until final slot execution completes.
-  - `=` after partial stepping executes only remaining slots (not full restart).
-  - If and only if `step_through` is present on keypad, next operation slot is rendered in white.
-- Step expansion toggle (`[ ??? ]`) support:
-  - New yellow settings toggle keyface `[ ??? ]`.
-  - Mutually exclusive with existing settings-toggle keys.
-  - Effective only when `step_through` is present and a step target exists.
-  - Shows per-operator alternate expansion for current white-highlighted slot.
-  - Expansion definitions are function/slot aware and operator-specific.
-  - Operator expansion map includes bespoke forms for:
-    - `+`, `-`, `×`, `÷`, `#`, `◇`, `↺`, `⋀`, `⋁`, `++`, `--`, `±`, `Ω`, `φ`, `σ`.
-  - Symbol policy in expansion rendering:
-    - subtraction operation uses `U+2013` en dash;
-    - negative sign uses ASCII hyphen-minus (`-`).
-
-### Exit Criteria
-
-- Step execution state is deterministic, resumable, and reset correctly by clear/layout transitions.
-- `=` continuation behavior after partial step execution is correct for all supported operator classes.
-- White-slot highlight rules are tied to keypad presence of `step_through`, not merely unlock state.
-- `[ ??? ]` toggle obeys settings mutual-exclusion rules and does not alter execution results, only rendering.
-- v0.8.1 behavior remains unchanged when `step_through` is absent.
-
-### Test Matrix
-
-- Domain:
-  - Add reducer tests for:
-    - step cursor progression,
-    - partial execution state transitions,
-    - `=` continuation from partial state,
-    - clear/reset/layout actions cancelling or normalizing step state.
-  - Add execution-path tests for binary/unary/euclidean/error paths under stepped evaluation.
-  - Add unlock/state typing tests for new step key and any new settings flag.
-- UI contracts:
-  - Add slot display tests for inline substep replacement rendering.
-  - Add visual state tests for white next-slot highlighting conditioned on keypad presence of `step_through`.
-  - Add toggle-render tests for `[ ??? ]` expansion switching on active step target.
-- Integration/parity:
-  - Add mobile/desktop interaction tests for repeated `step_through` presses and mixed `step_through` + `=` workflow.
-  - Update parity fixtures and round-trip tests to include new step state and toggle flags.
+- `Not (¬)` returns 1 if operand is <= 0, else 0.
 
 # Release v0.8.5
 
@@ -131,45 +56,6 @@ Goal: scope multi-calculator progression into implementable phases.
 - Phase plan exists with clear boundaries and prerequisite contracts.
 - v1 success metrics and risks are documented.
 - Review-flag multi-calculator items are no longer undecided.
-
-## Isolated Feature Backlog (Non-Milestone)
-
-Purpose: track implementable, self-contained features that do not require milestone framing.
-When implementing, every operator MUST have all of the following defined:
-- functionality
-- key face
-- operator slot face
-- expanded form
-
-### Unary Operators
-
-- `Collatz (Ctz)`: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
-- `Sort asc (▂▅▇d)`: reorder decimal digits of `n` in ascending order.
-- `Digit count (#d)`: return the count of decimal digits in `n`.
-- `Digit sum (∑d)`: return the sum of decimal digits in `n`.
-- `Digit^2 sum (∑d^2)`: return the sum of squared decimal digits in `n`.
-- `Mirror digits (⇋d)`: reverse decimal digit order of `n`.
-- `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
-- `Previous roll item (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
-- `Floor (⌊ _ ⌋)`: return greatest integer less than or equal to `n`.
-- `Ceiling (⌈ _ ⌉)`: return least integer greater than or equal to `n`.
-
-### Binary Operators
-
-- `Max (╧)`: return the larger of two operands.
-- `Min (╤)`: return the smaller of two operands.
-- `Specific digit (d_)`: return the digit at a specified position/index.
-- `Keep leftmost n`: keep only the leftmost `n` digits; discard the rest.
-- `Previous roll item (f(x-_))`: for current roll index `x`, return item value at relative offset `x-k` using second operand `k`.
-
-### Binary Predicate Operators
-
-- `Divides (|)`: returns 1 if left operand divides into right operand. Otherwise, 0.
-- `Equals (==)`: returns 1 if two operands are equal, else 0.
-
-### Unary Predicate Operators
-
-- `Not (¬)` returns 1 if operand is <= 0, else 0.
 
 # Release v1.0.0
 
