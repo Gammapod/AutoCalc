@@ -39,7 +39,7 @@ When implementing, every operator key MUST have all of the following defined:
 
 - `Not (¬)` returns 1 if operand is <= 0, else 0.
 
-# Release v0.8.5
+# Release v0.8.3
 
 ## Milestone: Multiple Calculators
 
