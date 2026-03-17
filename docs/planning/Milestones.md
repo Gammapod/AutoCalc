@@ -45,9 +45,32 @@ The following require integer inputs, and return NaN otherwise:
 - `Previous result (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
 - `Roll index (X)`: returns the index of the previous roll result +1.
 
-# Release v0.8.3
+# Release v0.8.4: Refactor/Cleanup
 
-## Milestone: Multiple Calculators
+Goal: retire high-risk architectural debt through staged foundational refactors that reduce coupling and increase test confidence without changing gameplay outcomes.
+
+### Direction
+
+- Sequence work in three tracks: dependency injection for `contentRegistry`, semantic pipeline unification, and UI runtime typing cleanup.
+- Apply a foundation-first approach in each track: establish contracts and parity tests before behavior moves.
+- Use incremental cutovers with temporary adapters and explicit adapter-removal checkpoints.
+- Gate completion on parity across gameplay, replay, persistence, and UI lifecycle behavior.
+
+### Deliverables
+
+- Composition root (`AppServices` or equivalent) implemented and wired through top-level factories; production paths no longer rely on global `contentRegistry`.
+- Canonical `Action -> Event -> Reducer` boundary documented and adopted, with fixture-based equivalence coverage and seeded trace tests.
+- Shared typed UI runtime lifecycle helper introduced and applied to targeted modules, with migrated modules no longer using untyped runtime bags.
+- Refactor log completed for all three tracks, including temporary shims, cutover points, and final cleanup/removal commits.
+
+### Exit Criteria
+
+- No runtime reads of global `contentRegistry` remain outside explicitly scoped legacy-adapter tests.
+- Semantic parity suite passes against pre-refactor baselines for core gameplay transitions, replay behavior, and persistence outputs.
+- UI lifecycle cleanup tests (observers, timers, listeners) pass for all migrated modules.
+- CI is green and v0.8.4 notes enumerate removed adapters/debt items with no open refactor blockers.
+
+# Release v0.8.5: Multiple Calculators
 
 Goal: scope multi-calculator progression into implementable phases.
 
@@ -63,7 +86,7 @@ Goal: scope multi-calculator progression into implementable phases.
 - v1 success metrics and risks are documented.
 - Review-flag multi-calculator items are no longer undecided.
 
-# Release v1.0.0
+# Release v1.0.0: Commercial Launch
 
 ## Milestone: Unlock Rule Systematization (Design)
 
