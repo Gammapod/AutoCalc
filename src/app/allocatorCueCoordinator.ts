@@ -1,30 +1,32 @@
 import type { GameState } from "../domain/types.js";
 import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
 import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
-import { getContentProvider } from "../contracts/contentRegistry.js";
+import { getAppServices, type AppServices } from "../contracts/appServices.js";
 
 const ALLOCATOR_CUE_SETTLE_TIMEOUT_MS = 1100;
 
-let allocatorIncreaseByUnlockIdCache: Map<string, number> | null = null;
-const getAllocatorIncreaseByUnlockId = (): Map<string, number> => {
-  if (allocatorIncreaseByUnlockIdCache) {
-    return allocatorIncreaseByUnlockIdCache;
+const allocatorIncreaseByUnlockIdCache = new WeakMap<AppServices, Map<string, number>>();
+const getAllocatorIncreaseByUnlockId = (services: AppServices): Map<string, number> => {
+  const cached = allocatorIncreaseByUnlockIdCache.get(services);
+  if (cached) {
+    return cached;
   }
-  allocatorIncreaseByUnlockIdCache = new Map(
-    getContentProvider().unlockCatalog.flatMap((unlock) => {
+  const built = new Map(
+    services.contentProvider.unlockCatalog.flatMap((unlock) => {
       if (unlock.effect.type !== "increase_allocator_max_points") {
         return [];
       }
       return [[unlock.id, unlock.effect.amount] as const];
     }),
   );
-  return allocatorIncreaseByUnlockIdCache;
+  allocatorIncreaseByUnlockIdCache.set(services, built);
+  return built;
 };
 
-export const getAllocatorIncreaseFromUnlocks = (previous: GameState, next: GameState): number => {
+export const getAllocatorIncreaseFromUnlocks = (previous: GameState, next: GameState, services: AppServices): number => {
   const previousCompleted = new Set(previous.completedUnlockIds);
   const newlyCompletedUnlockIds = next.completedUnlockIds.filter((id) => !previousCompleted.has(id));
-  const allocatorIncreaseByUnlockId = getAllocatorIncreaseByUnlockId();
+  const allocatorIncreaseByUnlockId = getAllocatorIncreaseByUnlockId(services);
   return newlyCompletedUnlockIds.reduce((sum, unlockId) => {
     return sum + (allocatorIncreaseByUnlockId.get(unlockId) ?? 0);
   }, 0);
@@ -33,6 +35,7 @@ export const getAllocatorIncreaseFromUnlocks = (previous: GameState, next: GameS
 type CueCoordinator = ReturnType<typeof createCueLifecycleCoordinator>;
 
 type AllocatorCueCoordinatorDeps = {
+  services?: AppServices;
   cueCoordinator: CueCoordinator;
   playShellCue: (target: "calculator" | "storage") => Promise<void>;
   setInputBlocked: (blocked: boolean) => void;
@@ -41,12 +44,14 @@ type AllocatorCueCoordinatorDeps = {
 };
 
 export const createAllocatorCueCoordinator = ({
+  services = getAppServices(),
   cueCoordinator,
   playShellCue,
   setInputBlocked,
   redraw,
   focusStoragePanel,
 }: AllocatorCueCoordinatorDeps) => {
+  getAllocatorIncreaseByUnlockId(services);
   const runAllocatorIncreaseCue = async (): Promise<void> => {
     await cueCoordinator.run(
       {

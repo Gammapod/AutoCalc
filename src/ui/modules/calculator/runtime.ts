@@ -1,5 +1,5 @@
 import { getOrCreateRuntime } from "../../runtime/registry.js";
-import type { UiModuleRuntime } from "../../runtime/types.js";
+import type { CalculatorRuntime } from "../../runtime/types.js";
 import type { CalculatorLayoutSnapshot } from "../../layout/types.js";
 
 export type CalculatorModuleState = {
@@ -48,17 +48,16 @@ const createCalculatorLayoutRuntimeState = (): CalculatorLayoutRuntimeState => (
   previousSnapshot: null,
 });
 
-export const getCalculatorModuleRuntime = (root: Element): UiModuleRuntime =>
+export const getCalculatorModuleRuntime = (root: Element): CalculatorRuntime =>
   getOrCreateRuntime(root).calculator;
 
 export const getCalculatorModuleState = (root: Element): CalculatorModuleState => {
   const runtime = getCalculatorModuleRuntime(root);
-  const existing = runtime.state.calculatorModuleState as CalculatorModuleState | undefined;
-  if (existing) {
-    return existing;
+  if (runtime.moduleState) {
+    return runtime.moduleState;
   }
   const created = createCalculatorModuleState();
-  runtime.state.calculatorModuleState = created;
+  runtime.moduleState = created;
   runtime.dispose = () => {
     stopSlotMarquee(root);
     disposeSlotMarqueeObservers(root);
@@ -78,12 +77,12 @@ export const getCalculatorModuleState = (root: Element): CalculatorModuleState =
       cachedCharWidthPx: 0,
       cachedCharWidthFont: null,
     };
-    const layoutRuntime = runtime.state.calculatorLayoutRuntimeState as CalculatorLayoutRuntimeState | undefined;
+    const layoutRuntime = runtime.layoutState;
     if (layoutRuntime) {
       layoutRuntime.previousSnapshot = null;
     }
-    runtime.state.calculatorModuleState = createCalculatorModuleState();
-    runtime.state.calculatorLayoutRuntimeState = createCalculatorLayoutRuntimeState();
+    runtime.moduleState = createCalculatorModuleState();
+    runtime.layoutState = createCalculatorLayoutRuntimeState();
   };
   runtime.resetForTests = () => {
     stopSlotMarquee(root);
@@ -104,7 +103,7 @@ export const getCalculatorModuleState = (root: Element): CalculatorModuleState =
       cachedCharWidthPx: 0,
       cachedCharWidthFont: null,
     };
-    const layoutRuntime = runtime.state.calculatorLayoutRuntimeState as CalculatorLayoutRuntimeState | undefined;
+    const layoutRuntime = runtime.layoutState;
     if (layoutRuntime) {
       layoutRuntime.previousSnapshot = null;
     }
@@ -114,12 +113,11 @@ export const getCalculatorModuleState = (root: Element): CalculatorModuleState =
 
 export const getCalculatorLayoutRuntimeState = (root: Element): CalculatorLayoutRuntimeState => {
   const runtime = getCalculatorModuleRuntime(root);
-  const existing = runtime.state.calculatorLayoutRuntimeState as CalculatorLayoutRuntimeState | undefined;
-  if (existing) {
-    return existing;
+  if (runtime.layoutState) {
+    return runtime.layoutState;
   }
   const created = createCalculatorLayoutRuntimeState();
-  runtime.state.calculatorLayoutRuntimeState = created;
+  runtime.layoutState = created;
   return created;
 };
 
@@ -310,5 +308,6 @@ export const startOrUpdateSlotMarquee = (root: Element, maxOffsetChars: number):
 export const disposeCalculatorV2Module = (root: Element): void => {
   const runtime = getCalculatorModuleRuntime(root);
   runtime.dispose();
-  runtime.state = {};
+  runtime.moduleState = null;
+  runtime.layoutState = null;
 };

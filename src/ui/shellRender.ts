@@ -13,6 +13,7 @@ import type { ShellRuntimeState } from "./shell/runtimeState.js";
 import { buildRefsFromExistingShell, createShellDom } from "./shell/refs.js";
 import { bindShellGestures } from "./shell/gestureBinder.js";
 import { getSnapOffset } from "./shell/transforms.js";
+import type { AppServices } from "../contracts/appServices.js";
 
 export { canStartTouchRearrange, getMenuA11yState, shouldCloseMenuFromSwipe } from "./shellGesturePolicy.js";
 
@@ -69,7 +70,7 @@ const playElementCueAnimation = async (
   element.classList.remove("v2-transition-cue");
 };
 
-export const createShellRenderer = (root: Element): ShellRenderer => {
+export const createShellRenderer = (root: Element, rendererOptions: { services?: AppServices } = {}): ShellRenderer => {
   const controller = createShellController();
   const touchRearrange = createTouchRearrangeController();
 
@@ -297,7 +298,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
       inputBlocked: runtimeState.latestInputBlocked,
     });
     renderVisualizerHost(root, state);
-    renderChecklistV2Module(root, state);
+    renderChecklistV2Module(root, state, { services: rendererOptions.services });
     syncSnapAndUi(refs, state, false);
   };
 
@@ -372,13 +373,13 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
 
 export const renderWithShell = (root: Element, state: GameState, dispatch: (action: Action) => unknown): void => {
   const shellRuntime = getOrCreateRuntime(root).shell;
-  let renderer = shellRuntime.state.shellRenderer as ShellRenderer | undefined;
+  let renderer = shellRuntime.renderer ?? undefined;
   if (!renderer) {
     renderer = createShellRenderer(root);
-    shellRuntime.state.shellRenderer = renderer;
+    shellRuntime.renderer = renderer;
     shellRuntime.dispose = () => {
       renderer?.dispose();
-      shellRuntime.state.shellRenderer = undefined;
+      shellRuntime.renderer = null;
     };
     shellRuntime.resetForTests = () => {
       renderer?.resetForTests();
@@ -393,17 +394,17 @@ export const disposeShellRenderer = (root: Element): void => {
     return;
   }
   const shellRuntime = rootRuntime.shell;
-  const renderer = shellRuntime.state.shellRenderer as ShellRenderer | undefined;
+  const renderer = shellRuntime.renderer ?? undefined;
   if (!renderer) {
     return;
   }
   renderer.dispose();
-  shellRuntime.state.shellRenderer = undefined;
+  shellRuntime.renderer = null;
 };
 
 export const resetShellRuntimeForTests = (): void => {
   forEachUiRootRuntime((runtime) => {
-    const renderer = runtime.shell.state.shellRenderer as ShellRenderer | undefined;
+    const renderer = runtime.shell.renderer ?? undefined;
     renderer?.resetForTests();
   });
 };

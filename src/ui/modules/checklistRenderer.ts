@@ -1,16 +1,20 @@
 import { buildVisibleChecklistRows } from "../shared/readModelHelpers.js";
 import type { GameState } from "../../domain/types.js";
-import { getContentProvider } from "../../contracts/contentRegistry.js";
+import { getAppServices, type AppServices } from "../../contracts/appServices.js";
 
-const appendChecklistQuickstartGuide = (container: Element): void => {
-  const text = getContentProvider().uiText.checklist.quickstartItems;
+type ChecklistRenderOptions = {
+  services?: AppServices;
+};
+
+const appendChecklistQuickstartGuide = (container: Element, services: AppServices): void => {
+  const text = services.contentProvider.uiText.checklist.quickstartItems;
   const guideEl = document.createElement("div");
   guideEl.className = "debug-guide";
   guideEl.setAttribute("aria-label", "Feature overview");
 
   const titleEl = document.createElement("p");
   titleEl.className = "debug-guide-title";
-  titleEl.textContent = getContentProvider().uiText.checklist.quickstartTitle;
+  titleEl.textContent = services.contentProvider.uiText.checklist.quickstartTitle;
   guideEl.appendChild(titleEl);
 
   const listEl = document.createElement("ol");
@@ -33,8 +37,9 @@ const appendChecklistQuickstartGuide = (container: Element): void => {
   container.appendChild(guideEl);
 };
 
-export const renderChecklistV2Module = (root: Element, state: GameState): void => {
-  const content = getContentProvider();
+export const renderChecklistV2Module = (root: Element, state: GameState, options: ChecklistRenderOptions = {}): void => {
+  const services = options.services ?? getAppServices();
+  const content = services.contentProvider;
   const unlockEl = root.querySelector("[data-unlocks]");
   if (!unlockEl) {
     throw new Error("Checklist mount point is missing.");
@@ -59,7 +64,7 @@ export const renderChecklistV2Module = (root: Element, state: GameState): void =
   header.append(hintHeader, rewardHeader);
   unlockEl.appendChild(header);
 
-  const rows = buildVisibleChecklistRows(state);
+  const rows = buildVisibleChecklistRows(state, { catalog: content.unlockCatalog });
   const hintByUnlockId = new Map(content.unlockCatalog.map((unlock) => [unlock.id, unlock.description]));
   if (rows.length === 0) {
     const emptyStateEl = document.createElement("div");
@@ -84,5 +89,5 @@ export const renderChecklistV2Module = (root: Element, state: GameState): void =
       unlockEl.appendChild(rowEl);
     }
   }
-  appendChecklistQuickstartGuide(unlockEl);
+  appendChecklistQuickstartGuide(unlockEl, services);
 };

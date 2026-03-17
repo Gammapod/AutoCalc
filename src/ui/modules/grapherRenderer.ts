@@ -65,33 +65,32 @@ type ChartHandle = {
 
 type ChartCtor = new (ctx: CanvasRenderingContext2D, config: GraphChartConfig) => ChartHandle;
 
-type GrapherRuntime = {
+export type GrapherModuleState = {
   graphChart: ChartHandle | null;
   graphCanvas: HTMLCanvasElement | null;
 };
 
-const createGrapherRuntime = (): GrapherRuntime => ({
+const createGrapherRuntime = (): GrapherModuleState => ({
   graphChart: null,
   graphCanvas: null,
 });
 
-const clearGrapherRuntime = (runtime: GrapherRuntime): void => {
+const clearGrapherRuntime = (runtime: GrapherModuleState): void => {
   runtime.graphChart?.destroy();
   runtime.graphChart = null;
   runtime.graphCanvas = null;
 };
 
-const getGrapherRuntime = (root: Element): GrapherRuntime => {
+const getGrapherRuntime = (root: Element): GrapherModuleState => {
   const moduleRuntime = getOrCreateRuntime(root).grapher;
-  const existing = moduleRuntime.state.grapherModuleState as GrapherRuntime | undefined;
-  if (existing) {
-    return existing;
+  if (moduleRuntime.moduleState) {
+    return moduleRuntime.moduleState;
   }
   const created = createGrapherRuntime();
-  moduleRuntime.state.grapherModuleState = created;
+  moduleRuntime.moduleState = created;
   moduleRuntime.dispose = () => {
     clearGrapherRuntime(created);
-    moduleRuntime.state.grapherModuleState = createGrapherRuntime();
+    moduleRuntime.moduleState = createGrapherRuntime();
   };
   moduleRuntime.resetForTests = () => {
     clearGrapherRuntime(created);
@@ -186,7 +185,7 @@ export const clearGrapherV2Module = (root?: Element): void => {
     return;
   }
   forEachUiRootRuntime((runtime) => {
-    const grapherRuntime = runtime.grapher.state.grapherModuleState as GrapherRuntime | undefined;
+    const grapherRuntime = runtime.grapher.moduleState;
     if (grapherRuntime) {
       clearGrapherRuntime(grapherRuntime);
     }

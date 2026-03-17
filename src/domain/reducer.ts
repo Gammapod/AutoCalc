@@ -30,7 +30,7 @@ import type {
   GameState,
   VisualizerId,
 } from "./types.js";
-import { getContentProvider } from "../contracts/contentRegistry.js";
+import { getAppServices, type AppServices } from "../contracts/appServices.js";
 // Root reducer orchestrator: route actions to focused domain reducers.
 
 const allocatorFieldToAxis = (field: "width" | "height" | "range" | "speed" | "slots"): "alpha" | "beta" | "gamma" | null => {
@@ -60,8 +60,13 @@ const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): Game
   };
 };
 
-const reduceLegacy = (state: GameState, action: Action): GameState => {
-  const unlockCatalog = getContentProvider().unlockCatalog;
+type ReducerOptions = {
+  services?: AppServices;
+};
+
+const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
+  const services = options.services ?? getAppServices();
+  const unlockCatalog = services.contentProvider.unlockCatalog;
   if (action.type === "PRESS_KEY") {
     return applyKeyAction(state, resolveKeyId(action.key));
   }
@@ -208,5 +213,6 @@ const reduceLegacy = (state: GameState, action: Action): GameState => {
   return state;
 };
 
-export const reducer = (state: GameState = initialState(), action: Action): GameState => reduceLegacy(state, action);
+export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState =>
+  reduceLegacy(state, action, options);
 

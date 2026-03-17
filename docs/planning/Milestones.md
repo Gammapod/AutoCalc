@@ -1,50 +1,3 @@
-## Isolated Feature Backlog (Non-Milestone)
-
-Purpose: track implementable, self-contained features that do not require milestone framing.
-When implementing, every operator key MUST have all of the following defined:
-- functionality
-- key face
-- operator slot face
-- expanded form
-
-### Unary Operators
-All unary operators are applied to the previous step's result.
-
-- `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
-- `Floor (⌊n⌋)`: return greatest integer less than or equal to `n`.
-- `Ceiling (⌈n⌉)`: return least integer greater than or equal to `n`.
-- `Not (¬)` returns 1 if operand is == 0, else 0.
-
-The following require integer inputs, and return NaN otherwise:
-- `Collatz (Ctz)`: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
-- `Sort asc (⇡d)`: reorder decimal digits of `n` in ascending order.
-- `Digit count (#d)`: return the count of decimal digits in `n`.
-- `Digit sum (∑d)`: return the sum of decimal digits in `n`.
-- `Digit^2 sum (∑d^2)`: return the sum of squared decimal digits in `n`.
-- `Mirror digits (⇋d)`: reverse decimal digit order of `n`.
-- `Nth Prime (ℙ)`: return the nth prime number. NaN if n is not a natural number.
-- `Index of prime (ℙ⁻¹)`: return the index of prime p. NaN if p is not a prime.
-
-### Binary Operators
-
-- `Max (╧)`: return the larger of two operands.
-- `Min (╤)`: return the smaller of two operands.
-- `Greater (>)`: returns 1 if first operand is larger than the second, else 0.
-
-The following require integer inputs, and return NaN otherwise:
-- `Specific digit (d_)`: return the digit at a specified position/index.
-- `Keep leftmost n`: keep only the leftmost `n` digits; discard the rest.
-- `Previous roll item (f(x-k))`: for current roll index `x`, return item value at relative offset `x-k`.
-
-### Settings Keys
-
-- `Naturals -> Prime Domain (ℙ(ℙ⁻¹(f)))`: Allows arithmetic on the prime index. When toggled, the seed f_0=s becomes f_0=ℙ(s) and the function f_n=g°f_-n becomes ℙ(g°ℙ⁻¹(f_-n)).
-
-### Digits/Values
-
-- `Previous result (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
-- `Roll index (X)`: returns the index of the previous roll result +1.
-
 # Release v0.8.4: Refactor/Cleanup
 
 Goal: retire high-risk architectural debt through staged foundational refactors that reduce coupling and increase test confidence without changing gameplay outcomes.
@@ -86,7 +39,7 @@ Goal: scope multi-calculator progression into implementable phases.
 - v1 success metrics and risks are documented.
 - Review-flag multi-calculator items are no longer undecided.
 
-# Release v1.0.0: Commercial Launch
+# Release v0.9.0: Pre-Launch
 
 ## Milestone: Unlock Rule Systematization (Design)
 
@@ -182,3 +135,56 @@ Goal: define a concrete visualizer policy with current behavior and staged futur
 - Current visualizer contract is documented and testable.
 - Future contract items are split into explicit phases with ownership.
 - Review-flag visualizer items are resolved or retired.
+
+# Release v1.0.0: Content Backlog
+
+Purpose: track implementable, self-contained features that do not require milestone framing.
+
+## Operators
+When implementing, every operator key MUST have all of the following defined:
+- functionality
+- key face
+- operator slot face
+- expanded form
+
+### Unary Operators
+All unary operators are applied to the previous step's result.
+
+- `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
+- `Floor (⌊n⌋)`: return greatest integer less than or equal to `n`.
+- `Ceiling (⌈n⌉)`: return least integer greater than or equal to `n`.
+- `Not (¬)` returns 1 if operand is == 0, else 0.
+
+The following require integer inputs, and return NaN otherwise:
+- `Collatz (Ctz)`: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
+- `Sort asc (⇡d)`: reorder decimal digits of `n` in ascending order.
+- `Digit count (#d)`: return the count of decimal digits in `n`.
+- `Digit sum (∑d)`: return the sum of decimal digits in `n`.
+- `Digit^2 sum (∑d^2)`: return the sum of squared decimal digits in `n`.
+- `Mirror digits (⇋d)`: reverse decimal digit order of `n`.
+- `Nth Prime (ℙ)`: return the nth prime number. NaN if n is not a natural number.
+- `Index of prime (ℙ⁻¹)`: return the index of prime p. NaN if p is not a prime.
+
+### Binary Operators
+
+- `Max (╧)`: return the larger of two operands.
+- `Min (╤)`: return the smaller of two operands.
+- `Greater (>)`: returns 1 if first operand is larger than the second, else 0.
+
+The following require integer inputs, and return NaN otherwise:
+- `Specific digit (d_)`: return the digit at a specified position/index.
+- `Keep leftmost n`: keep only the leftmost `n` digits; discard the rest.
+- `Previous roll item (f(x-k))`: for current roll index `x`, return item value at relative offset `x-k`.
+
+## Settings Keys
+
+- `Naturals -> Prime Domain (ℙ(ℙ⁻¹(f)))`: Allows arithmetic on the prime index. When toggled, the seed f_0=s becomes f_0=ℙ(s) and the function f_n=g°f_-n becomes ℙ(g°ℙ⁻¹(f_-n)).
+
+## Digits/Values
+
+- `Previous result (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
+- `Roll index (X)`: returns the index of the previous roll result +1.
+
+## Visualizer changes
+
+- `Prime domain`: In addition to natural numbers, integers, rationals, etc, I'd like to also label prime numbers as being in the prime domain, `ℙ`. It is a subdomain of the naturals.

@@ -1,6 +1,6 @@
 import { analyzeUnlockSpecRows, type NumberDomainReport, type UnlockSpecAnalysisRow } from "../domain/analysis.js";
 import type { GameState } from "../domain/types.js";
-import { getContentProvider } from "../contracts/contentRegistry.js";
+import { getAppServices } from "../contracts/appServices.js";
 
 type UnlockSpecStatusCounts = {
   satisfied: number;
@@ -33,7 +33,7 @@ const countVisibleByChecklistPolicy = (rows: UnlockSpecAnalysisRow[]): number =>
   }, 0);
 
 export const formatNumberDomainReport = (report: NumberDomainReport, state?: GameState): string => {
-  const text = getContentProvider().uiText.analysis;
+  const text = getAppServices().contentProvider.uiText.analysis;
   const counts = countByStatus(report.unlockSpecAnalysis);
   const visibleInActiveScope = countVisibleByChecklistPolicy(report.unlockSpecAnalysis);
 

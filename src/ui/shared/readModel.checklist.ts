@@ -5,7 +5,7 @@ import type {
   UnlockDefinition,
   UnlockEffect,
 } from "../../domain/types.js";
-import { getContentProvider } from "../../contracts/contentRegistry.js";
+import { getAppServices } from "../../contracts/appServices.js";
 import { formatKeyLabel, formatOperatorForDisplay } from "./readModel.keyLabels.js";
 
 export type UnlockRowState = "not_completed" | "completed" | "impossible";
@@ -145,7 +145,7 @@ export const buildVisibleChecklistRows = (
   state: GameState,
   options: BuildVisibleChecklistRowsOptions = {},
 ): ChecklistVisibleRowVm[] => {
-  const catalog = options.catalog ?? getContentProvider().unlockCatalog;
+  const catalog = options.catalog ?? getAppServices().contentProvider.unlockCatalog;
   const visibilityPolicy: ChecklistVisibilityPolicy = {
     ...DEFAULT_CHECKLIST_VISIBILITY_POLICY,
     ...(options.visibilityPolicy ?? {}),
@@ -189,7 +189,7 @@ export const buildVisibleChecklistRows = (
 
 export const buildUnlockRows = (
   state: GameState,
-  catalog: UnlockDefinition[] = getContentProvider().unlockCatalog,
+  catalog: UnlockDefinition[] = getAppServices().contentProvider.unlockCatalog,
   impossibleCheck: (unlock: UnlockDefinition, state: GameState) => boolean = isUnlockImpossible,
 ): UnlockRowVm[] => {
   const visibleRowsById = new Map(buildVisibleChecklistRows(state, { catalog }).map((row) => [row.id, row]));

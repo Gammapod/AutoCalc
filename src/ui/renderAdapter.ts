@@ -10,6 +10,7 @@ export {
 } from "./shellRender.js";
 import { createShellRenderer as createMobileShellRenderer } from "./shellRender.js";
 import { createDesktopShellRenderer } from "./shells/desktopShellRenderer.js";
+import type { AppServices } from "../contracts/appServices.js";
 export { buildShellViewModel } from "./shellModel.js";
 export {
   createShellController,
@@ -35,10 +36,10 @@ export type ShellRendererVariant = "mobile" | "desktop";
 
 export const createShellRenderer = (
   root: Element,
-  options: { mode: ShellRendererVariant } = { mode: "mobile" },
+  options: { mode: ShellRendererVariant; services?: AppServices } = { mode: "mobile" },
 ): ReturnType<typeof createMobileShellRenderer> => {
   if (options.mode === "desktop") {
-    return createDesktopShellRenderer(root);
+    return createDesktopShellRenderer(root, { services: options.services });
   }
-  return createMobileShellRenderer(root);
+  return createMobileShellRenderer(root, { services: options.services });
 };

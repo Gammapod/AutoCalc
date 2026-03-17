@@ -8,7 +8,7 @@ import { isRationalCalculatorValue } from "./calculatorValue.js";
 import type { GameState, Key, UnlockDefinition, UnlockPredicate } from "./types.js";
 import { KEY_ID } from "./keyPresentation.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
-import { getContentProvider } from "../contracts/contentRegistry.js";
+import { getAppServices } from "../contracts/appServices.js";
 import {
   computeCapabilityContext,
   createAvailabilityReader as createCapabilityAvailabilityReader,
@@ -121,7 +121,7 @@ const analyzeUnlockBySpec = (
 export const analyzeUnlockSpecRows = (
   state: GameState,
   options: NumberDomainAnalysisOptions = {},
-  catalog: UnlockDefinition[] = getContentProvider().unlockCatalog,
+  catalog: UnlockDefinition[] = getAppServices().contentProvider.unlockCatalog,
 ): UnlockSpecAnalysisRow[] => {
   const { isAvailable } = createAvailabilityReader(state, options);
   const caps = computeCapabilityContext(state, isAvailable);
@@ -178,7 +178,7 @@ export const analyzeNumberDomains = (
     integersNonNatural,
     generatedAtIso: now.toISOString(),
     reasoning,
-    unlockSpecAnalysis: analyzeUnlockSpecRows(state, options, getContentProvider().unlockCatalog),
+    unlockSpecAnalysis: analyzeUnlockSpecRows(state, options, getAppServices().contentProvider.unlockCatalog),
   };
 };
 

@@ -5,7 +5,7 @@ import { getOrCreateRuntime } from "../runtime/registry.js";
 
 type VisualizerTransitionPhase = "idle" | "enter" | "exit" | "swap";
 
-type VisualizerHostRuntime = {
+export type VisualizerHostModuleState = {
   previousActivePanel: VisualizerHostPanel;
   transitionUnlockTimer: ReturnType<typeof setTimeout> | null;
   transitionUnlockHost: HTMLElement | null;
@@ -20,7 +20,7 @@ const FIXED_WIDTH_VAR = "--v2-visualizer-fixed-width";
 const FIXED_WIDTH_PX = 460;
 const VIEWPORT_PADDING_PX = 32;
 
-const createHostRuntime = (): VisualizerHostRuntime => ({
+const createHostRuntime = (): VisualizerHostModuleState => ({
   previousActivePanel: "total",
   transitionUnlockTimer: null,
   transitionUnlockHost: null,
@@ -28,17 +28,16 @@ const createHostRuntime = (): VisualizerHostRuntime => ({
   transitionEndListener: null,
 });
 
-const getHostRuntime = (root: Element): VisualizerHostRuntime => {
+const getHostRuntime = (root: Element): VisualizerHostModuleState => {
   const moduleRuntime = getOrCreateRuntime(root).visualizerHost;
-  const existing = moduleRuntime.state.visualizerHostModuleState as VisualizerHostRuntime | undefined;
-  if (existing) {
-    return existing;
+  if (moduleRuntime.moduleState) {
+    return moduleRuntime.moduleState;
   }
   const created = createHostRuntime();
-  moduleRuntime.state.visualizerHostModuleState = created;
+  moduleRuntime.moduleState = created;
   moduleRuntime.dispose = () => {
     clearRuntime(created);
-    moduleRuntime.state.visualizerHostModuleState = createHostRuntime();
+    moduleRuntime.moduleState = createHostRuntime();
   };
   moduleRuntime.resetForTests = () => {
     clearRuntime(created);
@@ -46,14 +45,14 @@ const getHostRuntime = (root: Element): VisualizerHostRuntime => {
   return created;
 };
 
-const clearTransitionUnlockTimer = (runtime: VisualizerHostRuntime): void => {
+const clearTransitionUnlockTimer = (runtime: VisualizerHostModuleState): void => {
   if (runtime.transitionUnlockTimer !== null) {
     globalThis.clearTimeout(runtime.transitionUnlockTimer);
     runtime.transitionUnlockTimer = null;
   }
 };
 
-const clearTransitionEndListener = (runtime: VisualizerHostRuntime): void => {
+const clearTransitionEndListener = (runtime: VisualizerHostModuleState): void => {
   if (!runtime.transitionEndHost || !runtime.transitionEndListener) {
     return;
   }
@@ -62,7 +61,7 @@ const clearTransitionEndListener = (runtime: VisualizerHostRuntime): void => {
   runtime.transitionEndListener = null;
 };
 
-const releaseSwapLock = (runtime: VisualizerHostRuntime, host: HTMLElement): void => {
+const releaseSwapLock = (runtime: VisualizerHostModuleState, host: HTMLElement): void => {
   if (runtime.transitionUnlockHost === host) {
     runtime.transitionUnlockHost = null;
   }
@@ -72,7 +71,7 @@ const releaseSwapLock = (runtime: VisualizerHostRuntime, host: HTMLElement): voi
   clearTransitionUnlockTimer(runtime);
 };
 
-const scheduleSwapUnlock = (runtime: VisualizerHostRuntime, host: HTMLElement): void => {
+const scheduleSwapUnlock = (runtime: VisualizerHostModuleState, host: HTMLElement): void => {
   if (runtime.transitionUnlockHost && runtime.transitionUnlockHost !== host) {
     releaseSwapLock(runtime, runtime.transitionUnlockHost);
   }
@@ -120,7 +119,7 @@ const resolveTransitionPhase = (
   return "idle";
 };
 
-const clearHostUiState = (runtime: VisualizerHostRuntime, root: Element): void => {
+const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): void => {
   const host = root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
   const displayWindow = root.querySelector<HTMLElement>("[data-display-window]");
   const graphDevice = root.querySelector<HTMLElement>("[data-grapher-device]");
@@ -351,7 +350,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   runtime.previousActivePanel = activePanel;
 };
 
-const clearRuntime = (runtime: VisualizerHostRuntime): void => {
+const clearRuntime = (runtime: VisualizerHostModuleState): void => {
   runtime.previousActivePanel = "total";
   if (runtime.transitionUnlockHost) {
     releaseSwapLock(runtime, runtime.transitionUnlockHost);

@@ -77,9 +77,9 @@ import {
   type ConstantKeyId,
 } from "./keyPresentation.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
-import { getContentProvider } from "../contracts/contentRegistry.js";
+import { getAppServices } from "../contracts/appServices.js";
 
-export const getUnlockCatalog = () => getContentProvider().unlockCatalog;
+export const getUnlockCatalog = () => getAppServices().contentProvider.unlockCatalog;
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
 export const incrementKeyPressCount = (state: GameState, key: Key): GameState => ({

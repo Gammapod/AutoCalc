@@ -1,5 +1,5 @@
 import { getOrCreateRuntime } from "../../runtime/registry.js";
-import type { UiModuleRuntime } from "../../runtime/types.js";
+import type { StorageRuntime } from "../../runtime/types.js";
 
 export type StorageModuleState = {
   storageGridResizeObserver: ResizeObserver | null;
@@ -13,17 +13,16 @@ const createStorageModuleState = (): StorageModuleState => ({
   previousUnlockSnapshot: null,
 });
 
-export const getStorageModuleRuntime = (root: Element): UiModuleRuntime =>
+export const getStorageModuleRuntime = (root: Element): StorageRuntime =>
   getOrCreateRuntime(root).storage;
 
 export const getStorageModuleState = (root: Element): StorageModuleState => {
   const runtime = getStorageModuleRuntime(root);
-  const existing = runtime.state.storageModuleState as StorageModuleState | undefined;
-  if (existing) {
-    return existing;
+  if (runtime.moduleState) {
+    return runtime.moduleState;
   }
   const created = createStorageModuleState();
-  runtime.state.storageModuleState = created;
+  runtime.moduleState = created;
   runtime.dispose = () => {
     if (created.storageGridResizeObserver && created.observedStorageGrid) {
       created.storageGridResizeObserver.unobserve(created.observedStorageGrid);
@@ -31,7 +30,7 @@ export const getStorageModuleState = (root: Element): StorageModuleState => {
     created.storageGridResizeObserver = null;
     created.observedStorageGrid = null;
     created.previousUnlockSnapshot = null;
-    runtime.state.storageModuleState = createStorageModuleState();
+    runtime.moduleState = createStorageModuleState();
   };
   runtime.resetForTests = () => {
     if (created.storageGridResizeObserver && created.observedStorageGrid) {

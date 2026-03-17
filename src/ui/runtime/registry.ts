@@ -1,21 +1,40 @@
-import type { UiModuleRuntime, UiRootRuntime } from "./types.js";
+import type { UiRootRuntime } from "./types.js";
 
 const runtimeByRoot = new WeakMap<Element, UiRootRuntime>();
 const runtimes = new Set<UiRootRuntime>();
 
-const createModuleRuntime = (): UiModuleRuntime => ({
-  state: {},
-  dispose: () => {},
-  resetForTests: () => {},
-});
-
 const createRootRuntime = (): UiRootRuntime => ({
-  calculator: createModuleRuntime(),
-  storage: createModuleRuntime(),
-  input: createModuleRuntime(),
-  visualizerHost: createModuleRuntime(),
-  grapher: createModuleRuntime(),
-  shell: createModuleRuntime(),
+  calculator: {
+    moduleState: null,
+    layoutState: null,
+    dispose: () => {},
+    resetForTests: () => {},
+  },
+  storage: {
+    moduleState: null,
+    dispose: () => {},
+    resetForTests: () => {},
+  },
+  input: {
+    moduleState: null,
+    dispose: () => {},
+    resetForTests: () => {},
+  },
+  visualizerHost: {
+    moduleState: null,
+    dispose: () => {},
+    resetForTests: () => {},
+  },
+  grapher: {
+    moduleState: null,
+    dispose: () => {},
+    resetForTests: () => {},
+  },
+  shell: {
+    renderer: null,
+    dispose: () => {},
+    resetForTests: () => {},
+  },
 });
 
 export const getOrCreateRuntime = (root: Element): UiRootRuntime => {
@@ -49,12 +68,13 @@ export const disposeRuntime = (root: Element): void => {
 
 export const resetAllUiRuntimeForTests = (): void => {
   for (const runtime of runtimes) {
-    runtime.calculator.state = {};
-    runtime.storage.state = {};
-    runtime.input.state = {};
-    runtime.visualizerHost.state = {};
-    runtime.grapher.state = {};
-    runtime.shell.state = {};
+    runtime.calculator.moduleState = null;
+    runtime.calculator.layoutState = null;
+    runtime.storage.moduleState = null;
+    runtime.input.moduleState = null;
+    runtime.visualizerHost.moduleState = null;
+    runtime.grapher.moduleState = null;
+    runtime.shell.renderer = null;
     runtime.calculator.resetForTests?.();
     runtime.storage.resetForTests?.();
     runtime.input.resetForTests?.();

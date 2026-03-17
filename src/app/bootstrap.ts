@@ -19,7 +19,7 @@ import type { Action, GameState } from "../domain/types.js";
 import { resolveAppMode } from "./appMode.js";
 import { createSandboxState } from "../domain/sandboxPreset.js";
 import { normalizeLoadedStateForRuntime } from "../infra/persistence/runtimeLoadNormalizer.js";
-import { setContentProvider } from "../contracts/contentRegistry.js";
+import { setAppServices } from "../contracts/appServices.js";
 import { defaultContentProvider } from "../content/defaultContentProvider.js";
 
 declare global {
@@ -47,7 +47,8 @@ const root = document.querySelector("#app");
 if (!root) {
   throw new Error("#app root not found.");
 }
-setContentProvider(defaultContentProvider);
+const services = { contentProvider: defaultContentProvider };
+setAppServices(services);
 const uiRefs = resolveBootstrapUiRefs(document);
 
 const storageRepo = createLocalStorageRepo(window.localStorage);
@@ -72,7 +73,7 @@ const bootState = runtimeLoaded ??
         },
       };
     })());
-const store = createStore(bootState);
+const store = createStore(bootState, services);
 const interactionRuntime = createInteractionRuntime();
 
 type DispatchOptions = {
@@ -104,7 +105,7 @@ const uiShellMode = resolveUiShellMode(window.location, {
   ...importMetaEnv,
 });
 
-const shellRenderer = createShellRenderer(root, { mode: uiShellMode });
+const shellRenderer = createShellRenderer(root, { mode: uiShellMode, services });
 document.body.setAttribute("data-ui-shell", uiShellMode);
 document.body.setAttribute("data-app-mode", appMode);
 
@@ -150,6 +151,7 @@ const unlockRevealCoordinator = createUnlockRevealCoordinator({
 });
 
 const allocatorCueCoordinator = createAllocatorCueCoordinator({
+  services,
   cueCoordinator,
   playShellCue: async (target) => {
     await shellRenderer.playTransitionCue(target);
@@ -180,12 +182,13 @@ const unsubscribe = createStoreSubscriptionCoordinator(store, {
   unlockTracker,
   allocatorCueCoordinator,
   unlockRevealCoordinator,
-  getAllocatorIncreaseFromUnlocks,
+  getAllocatorIncreaseFromUnlocks: (previous, latest) => getAllocatorIncreaseFromUnlocks(previous, latest, services),
   renderAndPersistState,
   initialState: store.getState(),
 });
 
 uiController = createBootstrapUiController({
+  services,
   refs: uiRefs,
   uiShellMode,
   appMode,

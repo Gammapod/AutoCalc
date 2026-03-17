@@ -1,6 +1,6 @@
 import { getOrCreateRuntime } from "../../runtime/registry.js";
 import type { Action, GameState, Key, LayoutSurface } from "../../../domain/types.js";
-import type { UiModuleRuntime } from "../../runtime/types.js";
+import type { InputRuntime } from "../../runtime/types.js";
 
 export type DragTarget = {
   surface: LayoutSurface;
@@ -42,17 +42,16 @@ const createInputModuleState = (): InputModuleState => ({
 
 const FALLBACK_TEST_STATE: InputModuleState = createInputModuleState();
 
-export const getInputModuleRuntime = (root: Element): UiModuleRuntime =>
+export const getInputModuleRuntime = (root: Element): InputRuntime =>
   getOrCreateRuntime(root).input;
 
 export const getInputModuleState = (root: Element): InputModuleState => {
   const runtime = getInputModuleRuntime(root);
-  const existing = runtime.state.inputModuleState as InputModuleState | undefined;
-  if (existing) {
-    return existing;
+  if (runtime.moduleState) {
+    return runtime.moduleState;
   }
   const created = createInputModuleState();
-  runtime.state.inputModuleState = created;
+  runtime.moduleState = created;
   runtime.dispose = () => {
     created.dragSession?.ghost?.remove();
     created.dragSession = null;
@@ -60,7 +59,7 @@ export const getInputModuleState = (root: Element): InputModuleState => {
     created.inputAnimationLockCount = 0;
     created.boundDraggableElements = new WeakSet<HTMLElement>();
     created.boundQuickTapButtons = new WeakSet<HTMLButtonElement>();
-    runtime.state.inputModuleState = createInputModuleState();
+    runtime.moduleState = createInputModuleState();
   };
   runtime.resetForTests = () => {
     created.dragSession?.ghost?.remove();

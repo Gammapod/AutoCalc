@@ -1,13 +1,14 @@
 import { KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../../domain/state.js";
 import type { GameState } from "../../domain/types.js";
 import type { AppMode } from "../../contracts/appMode.js";
+import type { AppServices } from "../../contracts/appServices.js";
 import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
 import { serializeRollEntriesForDebug } from "../../infra/debug/rollStateSerializer.js";
-import { getContentProvider } from "../../contracts/contentRegistry.js";
 
 type UiShellMode = "mobile" | "desktop";
 
 type BootstrapUiControllerDeps = {
+  services: AppServices;
   refs: BootstrapUiRefs;
   uiShellMode: UiShellMode;
   appMode: AppMode;
@@ -56,6 +57,7 @@ const getAppModeToggleUrl = (location: Location, mode: AppMode): string => {
 };
 
 export const createBootstrapUiController = ({
+  services,
   refs,
   uiShellMode,
   appMode,
@@ -96,16 +98,16 @@ export const createBootstrapUiController = ({
   const syncUiShellToggleLink = (): void => {
     const targetMode = getOppositeUiShellMode(uiShellMode);
     refs.toggleUiShellLink.textContent = targetMode === "desktop"
-      ? getContentProvider().uiText.switches.desktop
-      : getContentProvider().uiText.switches.mobile;
+      ? services.contentProvider.uiText.switches.desktop
+      : services.contentProvider.uiText.switches.mobile;
     refs.toggleUiShellLink.setAttribute("href", getUiShellToggleUrl(location, uiShellMode));
   };
 
   const syncAppModeToggleLink = (): void => {
     const targetMode = getOppositeAppMode(appMode);
     refs.toggleAppModeLink.textContent = targetMode === "sandbox"
-      ? getContentProvider().uiText.switches.sandbox
-      : getContentProvider().uiText.switches.game;
+      ? services.contentProvider.uiText.switches.sandbox
+      : services.contentProvider.uiText.switches.game;
     refs.toggleAppModeLink.setAttribute("href", getAppModeToggleUrl(location, appMode));
   };
 

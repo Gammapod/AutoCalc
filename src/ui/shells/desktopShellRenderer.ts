@@ -4,6 +4,7 @@ import { renderChecklistV2Module } from "../modules/checklistRenderer.js";
 import { renderCalculatorStorageV2Module } from "../modules/calculatorStorageRenderer.js";
 import type { ShellRenderOptions, ShellRenderer } from "../shellRender.js";
 import { awaitMotionSettled, beginMotionCycle, completeMotionCycle } from "../layout/motionLifecycleBridge.js";
+import type { AppServices } from "../../contracts/appServices.js";
 
 const CUE_DURATION_MS = 520;
 
@@ -74,7 +75,7 @@ const playElementCueAnimation = async (
   element.classList.remove("v2-transition-cue");
 };
 
-export const createDesktopShellRenderer = (root: Element): ShellRenderer => {
+export const createDesktopShellRenderer = (root: Element, rendererOptions: { services?: AppServices } = {}): ShellRenderer => {
   let latestState: GameState | null = null;
   let latestDispatch: ((action: Action) => unknown) | null = null;
   let latestOptions: ShellRenderOptions = {};
@@ -92,7 +93,7 @@ export const createDesktopShellRenderer = (root: Element): ShellRenderer => {
       inputBlocked: options.inputBlocked ?? false,
     });
     renderVisualizerHost(root, state);
-    renderChecklistV2Module(root, state);
+    renderChecklistV2Module(root, state, { services: rendererOptions.services });
   };
 
   const forceActiveView: ShellRenderer["forceActiveView"] = () => {
