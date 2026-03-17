@@ -90,8 +90,10 @@ import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
 import { runContentProviderWiringContractTests } from "./contentProviderWiring.contract.test.js";
+import { runCapabilitySemanticsParityContractTests } from "./capabilitySemanticsParity.contract.test.js";
 import { runShimInventoryTests } from "./shimInventory.test.js";
 import { runBootstrapImportOrderTests } from "./bootstrapImportOrder.test.js";
+import { runKeyUniverseContractGuardTests } from "./keyUniverseContract.guard.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -183,6 +185,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["app/app-mode-resolver", runAppModeResolverTests],
   ["domain/sandbox-preset", runSandboxPresetTests],
   ["contracts/content-provider-wiring", runContentProviderWiringContractTests],
+  ["contracts/capability-semantics-parity", runCapabilitySemanticsParityContractTests],
+  ["contracts/key-universe-guard", runKeyUniverseContractGuardTests],
   ["contracts/shim-inventory", runShimInventoryTests],
   ["app/bootstrap-import-order", runBootstrapImportOrderTests],
 ];

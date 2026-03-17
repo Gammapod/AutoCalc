@@ -17,7 +17,7 @@ All unary operators are applied to the previous step's result.
 
 The following require integer inputs, and return NaN otherwise:
 - `Collatz (Ctz)`: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
-- `Sort asc (▂▅▇d)`: reorder decimal digits of `n` in ascending order.
+- `Sort asc (⇡d)`: reorder decimal digits of `n` in ascending order.
 - `Digit count (#d)`: return the count of decimal digits in `n`.
 - `Digit sum (∑d)`: return the sum of decimal digits in `n`.
 - `Digit^2 sum (∑d^2)`: return the sum of squared decimal digits in `n`.
