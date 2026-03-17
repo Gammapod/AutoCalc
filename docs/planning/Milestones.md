@@ -17,10 +17,11 @@ When implementing, every operator key MUST have all of the following defined:
 - `Mirror digits (⇋d)`: reverse decimal digit order of `n`.
 - `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
 - `Previous roll item (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
-- `Floor (⌊ _ ⌋)`: return greatest integer less than or equal to `n`.
-- `Ceiling (⌈ _ ⌉)`: return least integer greater than or equal to `n`.
-- `ℙ(n)`: return the nth prime number. NaN if n is not a natural number.
-- `ℙ⁻¹(p)`: return the index of prime p. NaN if p is not a prime.
+- `Floor (⌊n⌋)`: return greatest integer less than or equal to `n`.
+- `Ceiling (⌈n⌉)`: return least integer greater than or equal to `n`.
+- `Nth Prime (ℙ)`: return the nth prime number. NaN if n is not a natural number.
+- `Index of prime (ℙ⁻¹)`: return the index of prime p. NaN if p is not a prime.
+- `
 
 ### Binary Operators
 
@@ -33,7 +34,7 @@ When implementing, every operator key MUST have all of the following defined:
 ### Binary Predicate Operators
 
 - `Divides (|)`: returns 1 if left operand divides into right operand. Otherwise, 0.
-- `Equals (==)`: returns 1 if two operands are equal, else 0.
+- `Equals (≡)`: returns 1 if two operands are equal, else 0.
 
 ### Unary Predicate Operators
 
