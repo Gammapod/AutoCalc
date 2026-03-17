@@ -91,6 +91,7 @@ import { runAppModeResolverTests } from "./appMode.resolver.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
 import { runContentProviderWiringContractTests } from "./contentProviderWiring.contract.test.js";
 import { runShimInventoryTests } from "./shimInventory.test.js";
+import { runBootstrapImportOrderTests } from "./bootstrapImportOrder.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -183,6 +184,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/sandbox-preset", runSandboxPresetTests],
   ["contracts/content-provider-wiring", runContentProviderWiringContractTests],
   ["contracts/shim-inventory", runShimInventoryTests],
+  ["app/bootstrap-import-order", runBootstrapImportOrderTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

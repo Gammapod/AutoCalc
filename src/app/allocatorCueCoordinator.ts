@@ -5,18 +5,26 @@ import { getContentProvider } from "../contracts/contentRegistry.js";
 
 const ALLOCATOR_CUE_SETTLE_TIMEOUT_MS = 1100;
 
-const allocatorIncreaseByUnlockId = new Map(
-  getContentProvider().unlockCatalog.flatMap((unlock) => {
-    if (unlock.effect.type !== "increase_allocator_max_points") {
-      return [];
-    }
-    return [[unlock.id, unlock.effect.amount] as const];
-  }),
-);
+let allocatorIncreaseByUnlockIdCache: Map<string, number> | null = null;
+const getAllocatorIncreaseByUnlockId = (): Map<string, number> => {
+  if (allocatorIncreaseByUnlockIdCache) {
+    return allocatorIncreaseByUnlockIdCache;
+  }
+  allocatorIncreaseByUnlockIdCache = new Map(
+    getContentProvider().unlockCatalog.flatMap((unlock) => {
+      if (unlock.effect.type !== "increase_allocator_max_points") {
+        return [];
+      }
+      return [[unlock.id, unlock.effect.amount] as const];
+    }),
+  );
+  return allocatorIncreaseByUnlockIdCache;
+};
 
 export const getAllocatorIncreaseFromUnlocks = (previous: GameState, next: GameState): number => {
   const previousCompleted = new Set(previous.completedUnlockIds);
   const newlyCompletedUnlockIds = next.completedUnlockIds.filter((id) => !previousCompleted.has(id));
+  const allocatorIncreaseByUnlockId = getAllocatorIncreaseByUnlockId();
   return newlyCompletedUnlockIds.reduce((sum, unlockId) => {
     return sum + (allocatorIncreaseByUnlockId.get(unlockId) ?? 0);
   }, 0);
