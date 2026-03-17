@@ -8,37 +8,42 @@ When implementing, every operator key MUST have all of the following defined:
 - expanded form
 
 ### Unary Operators
+All unary operators are applied to the previous step's result.
 
+- `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
+- `Floor (⌊n⌋)`: return greatest integer less than or equal to `n`.
+- `Ceiling (⌈n⌉)`: return least integer greater than or equal to `n`.
+- `Not (¬)` returns 1 if operand is == 0, else 0.
+
+The following require integer inputs, and return NaN otherwise:
 - `Collatz (Ctz)`: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
 - `Sort asc (▂▅▇d)`: reorder decimal digits of `n` in ascending order.
 - `Digit count (#d)`: return the count of decimal digits in `n`.
 - `Digit sum (∑d)`: return the sum of decimal digits in `n`.
 - `Digit^2 sum (∑d^2)`: return the sum of squared decimal digits in `n`.
 - `Mirror digits (⇋d)`: reverse decimal digit order of `n`.
-- `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
-- `Previous roll item (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
-- `Floor (⌊n⌋)`: return greatest integer less than or equal to `n`.
-- `Ceiling (⌈n⌉)`: return least integer greater than or equal to `n`.
 - `Nth Prime (ℙ)`: return the nth prime number. NaN if n is not a natural number.
 - `Index of prime (ℙ⁻¹)`: return the index of prime p. NaN if p is not a prime.
-- `
 
 ### Binary Operators
 
 - `Max (╧)`: return the larger of two operands.
 - `Min (╤)`: return the smaller of two operands.
+- `Greater (>)`: returns 1 if first operand is larger than the second, else 0.
+
+The following require integer inputs, and return NaN otherwise:
 - `Specific digit (d_)`: return the digit at a specified position/index.
 - `Keep leftmost n`: keep only the leftmost `n` digits; discard the rest.
-- `Previous roll item (f(x-_))`: for current roll index `x`, return item value at relative offset `x-k` using second operand `k`.
+- `Previous roll item (f(x-k))`: for current roll index `x`, return item value at relative offset `x-k`.
 
-### Binary Predicate Operators
+### Settings Keys
 
-- `Divides (|)`: returns 1 if left operand divides into right operand. Otherwise, 0.
-- `Equals (≡)`: returns 1 if two operands are equal, else 0.
+- `Naturals -> Prime Domain (ℙ(ℙ⁻¹(f)))`: Allows arithmetic on the prime index. When toggled, the seed f_0=s becomes f_0=ℙ(s) and the function f_n=g°f_-n becomes ℙ(g°ℙ⁻¹(f_-n)).
 
-### Unary Predicate Operators
+### Digits/Values
 
-- `Not (¬)` returns 1 if operand is <= 0, else 0.
+- `Previous result (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
+- `Roll index (X)`: returns the index of the previous roll result +1.
 
 # Release v0.8.3
 

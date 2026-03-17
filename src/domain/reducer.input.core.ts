@@ -433,159 +433,176 @@ const computePeerStepValue = (
   return executed.total;
 };
 
-const withRollDiagnosticsApplied = (
-  base: GameState,
-  operationSlots: GameState["calculator"]["operationSlots"],
-): GameState => {
+const withInvalidRollAnalysis = (base: GameState): GameState => ({
+  ...base,
+  calculator: {
+    ...base.calculator,
+    rollAnalysis: {
+      ...base.calculator.rollAnalysis,
+      stopReason: "invalid",
+    },
+  },
+});
+
+const withCycleRollAnalysis = (base: GameState, cycleMatchIndex: number, nextIndex: number): GameState => ({
+  ...base,
+  calculator: {
+    ...base.calculator,
+    rollAnalysis: {
+      stopReason: "cycle",
+      cycle: {
+        i: cycleMatchIndex,
+        j: nextIndex,
+        transientLength: cycleMatchIndex,
+        periodLength: nextIndex - cycleMatchIndex,
+      },
+    },
+  },
+});
+
+type RollDiagnosticContext = {
+  invalid: boolean;
+  rollEntries: RollEntry[];
+  nextIndex: number;
+  current: RollEntry;
+  previous: RollEntry;
+  currentX: Extract<GameState["calculator"]["total"], { kind: "rational" }>;
+  previousX: Extract<GameState["calculator"]["total"], { kind: "rational" }>;
+  seed: Extract<GameState["calculator"]["total"], { kind: "rational" }>;
+};
+
+const resolveRollDiagnosticContext = (base: GameState): RollDiagnosticContext | null => {
   const rollEntries = [...base.calculator.rollEntries];
   const nextIndex = rollEntries.length - 1;
-  if (nextIndex < 1) {
-    return base;
-  }
-  if (base.calculator.rollAnalysis.stopReason !== "none") {
-    return base;
+  if (nextIndex < 1 || base.calculator.rollAnalysis.stopReason !== "none") {
+    return null;
   }
 
   const current = rollEntries[nextIndex];
   const previous = rollEntries[nextIndex - 1];
   if (!current || !previous) {
-    return base;
+    return null;
   }
 
   const currentX = getXk(rollEntries, nextIndex);
   const previousX = getXk(rollEntries, nextIndex - 1);
-  if (!currentX || !previousX || !isDiagnosticRationalValue(currentX) || !isDiagnosticRationalValue(previousX) || current.error) {
-    return {
-      ...base,
-      calculator: {
-        ...base.calculator,
-        rollAnalysis: {
-          ...base.calculator.rollAnalysis,
-          stopReason: "invalid",
-        },
-      },
-    };
-  }
-
   const seed = getXk(rollEntries, 0);
-  if (!seed || !isDiagnosticRationalValue(seed)) {
+  if (
+    !currentX
+    || !previousX
+    || !seed
+    || !isDiagnosticRationalValue(currentX)
+    || !isDiagnosticRationalValue(previousX)
+    || !isDiagnosticRationalValue(seed)
+    || current.error
+  ) {
     return {
-      ...base,
-      calculator: {
-        ...base.calculator,
-        rollAnalysis: {
-          ...base.calculator.rollAnalysis,
-          stopReason: "invalid",
-        },
-      },
+      invalid: true,
+      rollEntries,
+      nextIndex,
+      current,
+      previous,
+      currentX: { kind: "rational", value: { num: 0n, den: 1n } },
+      previousX: { kind: "rational", value: { num: 0n, den: 1n } },
+      seed: { kind: "rational", value: { num: 0n, den: 1n } },
     };
   }
 
-  const cycleMatchIndex = rollEntries
-    .slice(0, nextIndex)
-    .findIndex((entry) => calculatorValueEquals(entry.y, current.y));
-  if (cycleMatchIndex >= 0) {
-    return {
-      ...base,
-      calculator: {
-        ...base.calculator,
-        rollAnalysis: {
-          stopReason: "cycle",
-          cycle: {
-            i: cycleMatchIndex,
-            j: nextIndex,
-            transientLength: cycleMatchIndex,
-            periodLength: nextIndex - cycleMatchIndex,
-          },
-        },
-      },
-    };
-  }
+  return {
+    invalid: false,
+    rollEntries,
+    nextIndex,
+    current,
+    previous,
+    currentX,
+    previousX,
+    seed,
+  };
+};
 
-  const d1 = subRational(currentX.value, previousX.value);
-  let d2: typeof current.d2 = null;
-  if (nextIndex >= 2) {
-    const previousD1 = previous.d1;
+const isInvalidDiagnosticContext = (context: RollDiagnosticContext): boolean => context.invalid;
+
+const resolveRollDiagnosticPatch = (
+  context: RollDiagnosticContext,
+  operationSlots: GameState["calculator"]["operationSlots"],
+): Pick<RollEntry, "d1" | "d2" | "r1" | "seedMinus1Y" | "seedPlus1Y"> | null => {
+  const d1 = subRational(context.currentX.value, context.previousX.value);
+  let d2: RollEntry["d2"] = null;
+  if (context.nextIndex >= 2) {
+    const previousD1 = context.previous.d1;
     if (!previousD1) {
-      return {
-        ...base,
-        calculator: {
-          ...base.calculator,
-          rollAnalysis: {
-            ...base.calculator.rollAnalysis,
-            stopReason: "invalid",
-          },
-        },
-      };
+      return null;
     }
     d2 = subRational(d1, previousD1);
   }
 
-  const r1 = divRational(currentX.value, previousX.value);
+  const r1 = divRational(context.currentX.value, context.previousX.value);
   if (!r1) {
-    return {
-      ...base,
-      calculator: {
-        ...base.calculator,
-        rollAnalysis: {
-          ...base.calculator.rollAnalysis,
-          stopReason: "invalid",
-        },
-      },
-    };
+    return null;
   }
 
   const previousPeerMinus =
-    nextIndex === 1
-      ? toRationalCalculatorValue(addIntToRational(seed.value, -1n))
-      : (previous.seedMinus1Y ?? null);
+    context.nextIndex === 1
+      ? toRationalCalculatorValue(addIntToRational(context.seed.value, -1n))
+      : (context.previous.seedMinus1Y ?? null);
   const previousPeerPlus =
-    nextIndex === 1
-      ? toRationalCalculatorValue(addIntToRational(seed.value, 1n))
-      : (previous.seedPlus1Y ?? null);
+    context.nextIndex === 1
+      ? toRationalCalculatorValue(addIntToRational(context.seed.value, 1n))
+      : (context.previous.seedPlus1Y ?? null);
 
   if (!previousPeerMinus || !previousPeerPlus) {
-    return {
-      ...base,
-      calculator: {
-        ...base.calculator,
-        rollAnalysis: {
-          ...base.calculator.rollAnalysis,
-          stopReason: "invalid",
-        },
-      },
-    };
+    return null;
   }
 
   const seedMinus1Y = computePeerStepValue(previousPeerMinus, operationSlots);
   const seedPlus1Y = computePeerStepValue(previousPeerPlus, operationSlots);
   if (!seedMinus1Y || !seedPlus1Y) {
-    return {
-      ...base,
-      calculator: {
-        ...base.calculator,
-        rollAnalysis: {
-          ...base.calculator.rollAnalysis,
-          stopReason: "invalid",
-        },
-      },
-    };
+    return null;
   }
 
-  rollEntries[nextIndex] = {
-    ...current,
+  return {
     d1,
     d2,
     r1,
     seedMinus1Y,
     seedPlus1Y,
   };
+};
+
+const withRollDiagnosticsApplied = (
+  base: GameState,
+  operationSlots: GameState["calculator"]["operationSlots"],
+): GameState => {
+  const context = resolveRollDiagnosticContext(base);
+  if (!context) {
+    return base;
+  }
+  if (isInvalidDiagnosticContext(context)) {
+    return withInvalidRollAnalysis(base);
+  }
+
+  const cycleMatchIndex = context.rollEntries
+    .slice(0, context.nextIndex)
+    .findIndex((entry) => calculatorValueEquals(entry.y, context.current.y));
+  if (cycleMatchIndex >= 0) {
+    return withCycleRollAnalysis(base, cycleMatchIndex, context.nextIndex);
+  }
+
+  const patch = resolveRollDiagnosticPatch(context, operationSlots);
+  if (!patch) {
+    return withInvalidRollAnalysis(base);
+  }
+
+  context.rollEntries[context.nextIndex] = {
+    ...context.current,
+    ...patch,
+  };
 
   return {
     ...base,
     calculator: {
       ...base.calculator,
-      rollEntries,
+      rollEntries: context.rollEntries,
     },
   };
 };
@@ -823,6 +840,127 @@ export const applyC = (state: GameState): GameState => {
 
 export const isValueAtomConstant = (key: Key): key is ConstantKeyId => isConstantKeyId(key);
 
+const slotToDrafting = (slot: BinarySlot): NonNullable<GameState["calculator"]["draftingSlot"]> => {
+  if (typeof slot.operand === "bigint") {
+    return {
+      operator: slot.operator,
+      operandInput: (slot.operand < 0n ? -slot.operand : slot.operand).toString(),
+      isNegative: slot.operand < 0n && slot.operand !== 0n,
+    };
+  }
+  const expr = slotOperandToExpression(slot.operand);
+  if (expr.type === "unary" && expr.op === "neg") {
+    return {
+      operator: slot.operator,
+      operandInput: calculatorValueToDisplayString(toExpressionCalculatorValue(expr.arg)),
+      isNegative: true,
+    };
+  }
+  return {
+    operator: slot.operator,
+    operandInput: calculatorValueToDisplayString(toExpressionCalculatorValue(expr)),
+    isNegative: false,
+  };
+};
+
+const withBackspaceBuilderPatch = (
+  state: GameState,
+  patch: Pick<GameState["calculator"], "operationSlots" | "draftingSlot">,
+): GameState => applyUnlocks(withBuilderPatchApplied(state, patch), getUnlockCatalog());
+
+const withSeedTotalBackspaced = (state: GameState): GameState => {
+  if (!isSeedEntryContext(state) || !isRationalCalculatorValue(state.calculator.total) || !isInteger(state.calculator.total.value)) {
+    return state;
+  }
+  const value = state.calculator.total.value;
+  const magnitudeText = value.num < 0n ? (-value.num).toString() : value.num.toString();
+  const nextMagnitudeText = magnitudeText.length <= 1 ? "0" : magnitudeText.slice(0, -1);
+  const nextMagnitude = BigInt(nextMagnitudeText);
+  const shouldBeNegative = value.num < 0n;
+  const nextNum = nextMagnitude === 0n ? 0n : shouldBeNegative ? -nextMagnitude : nextMagnitude;
+  if (nextNum === value.num) {
+    return state;
+  }
+  return applyUnlocks(
+    {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        total: toRationalCalculatorValue({ num: nextNum, den: 1n }),
+      },
+    },
+    getUnlockCatalog(),
+  );
+};
+
+const withDraftingBackspaced = (
+  state: GameState,
+  originalState: GameState,
+  drafting: NonNullable<GameState["calculator"]["draftingSlot"]>,
+): GameState => {
+  if (drafting.operandInput.length > 0) {
+    const nextInput = /^\d+$/.test(drafting.operandInput) ? drafting.operandInput.slice(0, -1) : "";
+    if (nextInput === drafting.operandInput) {
+      return originalState;
+    }
+    return withBackspaceBuilderPatch(state, {
+      operationSlots: state.calculator.operationSlots,
+      draftingSlot: {
+        ...drafting,
+        operandInput: nextInput,
+      },
+    });
+  }
+  if (drafting.isNegative && drafting.operandInput.length === 0) {
+    return withBackspaceBuilderPatch(state, {
+      operationSlots: state.calculator.operationSlots,
+      draftingSlot: {
+        ...drafting,
+        isNegative: false,
+      },
+    });
+  }
+  if (state.calculator.operationSlots.length > 0) {
+    const priorCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
+    if (!("operand" in priorCommitted)) {
+      return withBackspaceBuilderPatch(state, {
+        operationSlots: state.calculator.operationSlots.slice(0, -1),
+        draftingSlot: null,
+      });
+    }
+    return withBackspaceBuilderPatch(state, {
+      operationSlots: state.calculator.operationSlots.slice(0, -1),
+      draftingSlot: slotToDrafting(priorCommitted),
+    });
+  }
+  return withBackspaceBuilderPatch(state, {
+    operationSlots: state.calculator.operationSlots,
+    draftingSlot: null,
+  });
+};
+
+const withCommittedSlotBackspaced = (state: GameState): GameState => {
+  if (state.calculator.operationSlots.length === 0) {
+    return state;
+  }
+  const lastCommitted = state.calculator.operationSlots[state.calculator.operationSlots.length - 1];
+  if (!("operand" in lastCommitted)) {
+    return withBackspaceBuilderPatch(state, {
+      operationSlots: state.calculator.operationSlots.slice(0, -1),
+      draftingSlot: null,
+    });
+  }
+  const restoredDrafting = slotToDrafting(lastCommitted);
+  const trimmedInput = /^\d+$/.test(restoredDrafting.operandInput) ? restoredDrafting.operandInput.slice(0, -1) : "";
+  return withBackspaceBuilderPatch(state, {
+    operationSlots: state.calculator.operationSlots.slice(0, -1),
+    draftingSlot: {
+      ...restoredDrafting,
+      operandInput: trimmedInput,
+    },
+  });
+};
+
 export const applyBackspace = (state: GameState): GameState => {
   const withClearedStep = withClearedStepProgress(state);
   if (!state.unlocks.utilities[KEY_ID.util_backspace]) {
@@ -832,137 +970,16 @@ export const applyBackspace = (state: GameState): GameState => {
     return withClearedStep;
   }
 
-  const slotToDrafting = (slot: BinarySlot) => {
-    if (typeof slot.operand === "bigint") {
-      return {
-        operator: slot.operator,
-        operandInput: (slot.operand < 0n ? -slot.operand : slot.operand).toString(),
-        isNegative: slot.operand < 0n && slot.operand !== 0n,
-      };
-    }
-    const expr = slotOperandToExpression(slot.operand);
-    if (expr.type === "unary" && expr.op === "neg") {
-      return {
-        operator: slot.operator,
-        operandInput: calculatorValueToDisplayString(toExpressionCalculatorValue(expr.arg)),
-        isNegative: true,
-      };
-    }
-    return {
-      operator: slot.operator,
-      operandInput: calculatorValueToDisplayString(toExpressionCalculatorValue(expr)),
-      isNegative: false,
-    };
-  };
-
   const drafting = withClearedStep.calculator.draftingSlot;
   if (drafting) {
-    if (drafting.operandInput.length > 0) {
-      const nextInput = /^\d+$/.test(drafting.operandInput) ? drafting.operandInput.slice(0, -1) : "";
-      if (nextInput === drafting.operandInput) {
-        return state;
-      }
-      return applyUnlocks(
-        withBuilderPatchApplied(withClearedStep, {
-          operationSlots: withClearedStep.calculator.operationSlots,
-          draftingSlot: {
-            ...drafting,
-            operandInput: nextInput,
-          },
-        }),
-        getUnlockCatalog(),
-      );
-    }
-    if (drafting.isNegative && drafting.operandInput.length === 0) {
-      return applyUnlocks(
-        withBuilderPatchApplied(withClearedStep, {
-          operationSlots: withClearedStep.calculator.operationSlots,
-          draftingSlot: {
-            ...drafting,
-            isNegative: false,
-          },
-        }),
-        getUnlockCatalog(),
-      );
-    }
-
-    if (withClearedStep.calculator.operationSlots.length > 0) {
-      const priorCommitted = withClearedStep.calculator.operationSlots[withClearedStep.calculator.operationSlots.length - 1];
-      if (!("operand" in priorCommitted)) {
-        return applyUnlocks(
-          withBuilderPatchApplied(withClearedStep, {
-            operationSlots: withClearedStep.calculator.operationSlots.slice(0, -1),
-            draftingSlot: null,
-          }),
-          getUnlockCatalog(),
-        );
-      }
-      return applyUnlocks(
-        withBuilderPatchApplied(withClearedStep, {
-          operationSlots: withClearedStep.calculator.operationSlots.slice(0, -1),
-          draftingSlot: slotToDrafting(priorCommitted),
-        }),
-        getUnlockCatalog(),
-      );
-    }
-
-    return applyUnlocks(
-      withBuilderPatchApplied(withClearedStep, {
-        operationSlots: withClearedStep.calculator.operationSlots,
-        draftingSlot: null,
-      }),
-      getUnlockCatalog(),
-    );
+    return withDraftingBackspaced(withClearedStep, state, drafting);
   }
 
   if (withClearedStep.calculator.operationSlots.length > 0) {
-    const lastCommitted = withClearedStep.calculator.operationSlots[withClearedStep.calculator.operationSlots.length - 1];
-    if (!("operand" in lastCommitted)) {
-      return applyUnlocks(
-        withBuilderPatchApplied(withClearedStep, {
-          operationSlots: withClearedStep.calculator.operationSlots.slice(0, -1),
-          draftingSlot: null,
-        }),
-        getUnlockCatalog(),
-      );
-    }
-    const restoredDrafting = slotToDrafting(lastCommitted);
-    const trimmedInput = /^\d+$/.test(restoredDrafting.operandInput) ? restoredDrafting.operandInput.slice(0, -1) : "";
-    return applyUnlocks(
-      withBuilderPatchApplied(withClearedStep, {
-        operationSlots: withClearedStep.calculator.operationSlots.slice(0, -1),
-        draftingSlot: {
-          ...restoredDrafting,
-          operandInput: trimmedInput,
-        },
-      }),
-      getUnlockCatalog(),
-    );
+    return withCommittedSlotBackspaced(withClearedStep);
   }
 
-  if (!isSeedEntryContext(withClearedStep) || !isRationalCalculatorValue(withClearedStep.calculator.total) || !isInteger(withClearedStep.calculator.total.value)) {
-    return withClearedStep;
-  }
-  const value = withClearedStep.calculator.total.value;
-  const magnitudeText = value.num < 0n ? (-value.num).toString() : value.num.toString();
-  const nextMagnitudeText = magnitudeText.length <= 1 ? "0" : magnitudeText.slice(0, -1);
-  const nextMagnitude = BigInt(nextMagnitudeText);
-  const shouldBeNegative = value.num < 0n;
-  const nextNum = nextMagnitude === 0n ? 0n : shouldBeNegative ? -nextMagnitude : nextMagnitude;
-  if (nextNum === value.num) {
-    return withClearedStep;
-  }
-
-  return applyUnlocks(
-    {
-      ...withClearedStep,
-      calculator: {
-        ...withClearedStep.calculator,
-        total: toRationalCalculatorValue({ num: nextNum, den: 1n }),
-      },
-    },
-    getUnlockCatalog(),
-  );
+  return withSeedTotalBackspaced(withClearedStep);
 };
 
 export const applyUndo = (state: GameState): GameState => {
@@ -1033,6 +1050,33 @@ export const applyMemoryKeyAction = (state: GameState, key: Key): GameState => {
 
 export const applyUndoWithUnlocks = (state: GameState): GameState => applyUnlocks(applyUndo(state), getUnlockCatalog());
 
+const createKeyActionHandlers = (): Record<KeyActionHandlerId, (nextState: GameState, currentKey: Key) => GameState> => ({
+  apply_digit: (nextState, currentKey) => {
+    if (isDigit(currentKey)) {
+      return applyDigit(nextState, currentKey);
+    }
+    if (isValueAtomConstant(currentKey)) {
+      return applyConstantValue(nextState, currentKey);
+    }
+    return nextState;
+  },
+  apply_operator: (nextState, currentKey) => (isOperator(currentKey) ? applyOperator(nextState, currentKey) : nextState),
+  apply_unary_operator: (nextState, currentKey) => (isUnaryOperator(currentKey) ? applyUnaryOperator(nextState, currentKey) : nextState),
+  apply_execute: (nextState) => nextState,
+  apply_utility: (nextState) => nextState,
+  apply_visualizer_noop: (nextState) => nextState,
+  apply_toggle_noop: (nextState) => nextState,
+  apply_noop: (nextState) => nextState,
+  apply_memory: (nextState, currentKey) => applyMemoryKeyAction(nextState, currentKey),
+  apply_clear_all: (nextState) => applyC(nextState),
+  apply_backspace: (nextState) => applyBackspace(nextState),
+  apply_undo: (nextState) => applyUnlocks(applyUndo(nextState), getUnlockCatalog()),
+  apply_equals: (nextState) => (
+    nextState.calculator.stepProgress.active ? applyEqualsFromStepProgress(nextState) : applyEquals(nextState)
+  ),
+  apply_step_through: (nextState) => applyStepThrough(nextState),
+});
+
 export const applyKeyActionCore = (state: GameState, keyLike: KeyInput): GameState => {
   const stepAwareState = hasStepThroughOnKeypad(state) ? state : withClearedStepProgress(state);
   const key = resolveKeyId(keyLike);
@@ -1051,33 +1095,7 @@ export const applyKeyActionCore = (state: GameState, keyLike: KeyInput): GameSta
     return keyed;
   }
 
-  const handlers: Record<KeyActionHandlerId, (nextState: GameState, currentKey: Key) => GameState> = {
-    apply_digit: (nextState, currentKey) => {
-      if (isDigit(currentKey)) {
-        return applyDigit(nextState, currentKey);
-      }
-      if (isValueAtomConstant(currentKey)) {
-        return applyConstantValue(nextState, currentKey);
-      }
-      return nextState;
-    },
-    apply_operator: (nextState, currentKey) => (isOperator(currentKey) ? applyOperator(nextState, currentKey) : nextState),
-    apply_unary_operator: (nextState, currentKey) => (isUnaryOperator(currentKey) ? applyUnaryOperator(nextState, currentKey) : nextState),
-    apply_execute: (nextState) => nextState,
-    apply_utility: (nextState) => nextState,
-    apply_visualizer_noop: (nextState) => nextState,
-    apply_toggle_noop: (nextState) => nextState,
-    apply_noop: (nextState) => nextState,
-    apply_memory: (nextState, currentKey) => applyMemoryKeyAction(nextState, currentKey),
-    apply_clear_all: (nextState) => applyC(nextState),
-    apply_backspace: (nextState) => applyBackspace(nextState),
-    apply_undo: (nextState) => applyUnlocks(applyUndo(nextState), getUnlockCatalog()),
-    apply_equals: (nextState) => (
-      nextState.calculator.stepProgress.active ? applyEqualsFromStepProgress(nextState) : applyEquals(nextState)
-    ),
-    apply_step_through: (nextState) => applyStepThrough(nextState),
-  };
-
+  const handlers = createKeyActionHandlers();
   const handlerId = resolveKeyActionHandlerId(key);
   return handlers[handlerId](keyed, key);
 };

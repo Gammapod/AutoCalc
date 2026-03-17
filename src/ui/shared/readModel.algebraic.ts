@@ -1,3 +1,221 @@
-export type { AlgebraicMainLineSource, AlgebraicViewModel } from './readModel.core.js';
-export { buildFunctionRecurrenceDisplay, buildAlgebraicViewModel, buildOperationSlotDisplay } from './readModel.core.js';
+import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js";
+import { expressionToDisplayString, slotOperandToExpression } from "../../domain/expression.js";
+import { getSeedRow } from "../../domain/rollEntries.js";
+import { KEY_ID } from "../../domain/keyPresentation.js";
+import { STEP_EXPANSION_FLAG } from "../../domain/state.js";
+import type {
+  BinarySlot,
+  CalculatorValue,
+  GameState,
+} from "../../domain/types.js";
+import {
+  algebraicHelpers,
+  formatOperatorForOperationSlotDisplay,
+  keyLabelInternals,
+  resolveStepExpansionText,
+} from "./readModel.keyLabels.js";
 
+export type AlgebraicMainLineSource = "builder_unsimplified" | "roll_simplified" | "roll_literal";
+
+export type AlgebraicViewModel = {
+  seedLine: string;
+  recurrenceLine: string;
+  mainLine: string;
+  mainLineSource: AlgebraicMainLineSource;
+  hasIncompleteDraft: boolean;
+  containsEuclidLiteral: boolean;
+  recurrenceExpressionText: string;
+};
+
+export const buildOperationSlotDisplay = (state: GameState): string => {
+  const visibleSlots = state.unlocks.maxSlots;
+  if (visibleSlots <= 0) {
+    return "(no operation slots)";
+  }
+
+  const noSeedEnteredYet =
+    algebraicHelpers.isZeroRational(state.calculator.total)
+    && !state.calculator.pendingNegativeTotal
+    && state.calculator.rollEntries.length === 0
+    && (state.calculator.singleDigitInitialTotalEntry || !algebraicHelpers.hasAnyKeyPress(state));
+  const seedToken = state.calculator.rollEntries.length > 0
+    ? calculatorValueToDisplayString(getSeedRow(state.calculator.rollEntries)?.y ?? state.calculator.total)
+    : noSeedEnteredYet
+      ? "_"
+      : calculatorValueToDisplayString(state.calculator.total);
+
+  const stepThroughOnKeypad = state.ui.keyLayout.some(
+    (cell) => cell.kind === "key" && cell.key === KEY_ID.exec_step_through,
+  );
+  const stepProgress = state.calculator.stepProgress;
+  const stepTargetIndex =
+    stepThroughOnKeypad && state.calculator.operationSlots.length > 0
+      ? stepProgress.active
+        ? stepProgress.nextSlotIndex
+        : 0
+      : null;
+  const expansionEnabled = Boolean(state.ui.buttonFlags[STEP_EXPANSION_FLAG]);
+
+  const filledTokens = state.calculator.operationSlots.map((slot, index) => {
+    if (stepProgress.active && index < stepProgress.executedSlotResults.length) {
+      return `[ -> ${calculatorValueToDisplayString(stepProgress.executedSlotResults[index])} ]`;
+    }
+
+    let token = slot.kind === "unary"
+      ? `[ ${keyLabelInternals.formatUnarySlotToken(slot.operator)} ]`
+      : `[ ${formatOperatorForOperationSlotDisplay(slot.operator)} ${typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand))} ]`;
+
+    if (expansionEnabled && stepTargetIndex === index) {
+      const expansion = resolveStepExpansionText(slot, {
+        seedTotal: stepProgress.seedTotal ?? state.calculator.total,
+        currentTotal: stepProgress.currentTotal ?? state.calculator.total,
+        nextSlotIndex: stepProgress.active ? stepProgress.nextSlotIndex : 0,
+      });
+      if (expansion) {
+        token = `[ ${expansion} ]`;
+      }
+    }
+    return token;
+  });
+  if (state.calculator.draftingSlot) {
+    const operand = state.calculator.draftingSlot.operandInput
+      ? `${state.calculator.draftingSlot.isNegative ? "-" : ""}${state.calculator.draftingSlot.operandInput}`
+      : state.calculator.draftingSlot.isNegative
+        ? "-_"
+        : "_";
+    filledTokens.push(`[ ${formatOperatorForOperationSlotDisplay(state.calculator.draftingSlot.operator)} ${operand} ]`);
+  }
+
+  const tokens = filledTokens.slice(0, visibleSlots);
+  while (tokens.length < visibleSlots) {
+    tokens.push("[ _ _ ]");
+  }
+
+  return `${seedToken} ${tokens.join(" ")}`;
+};
+
+const resolveSeedValueForAlgebra = (state: GameState): CalculatorValue | null => {
+  if (state.calculator.rollEntries.length > 0) {
+    return getSeedRow(state.calculator.rollEntries)?.y ?? null;
+  }
+
+  const noSeedEnteredYet =
+    algebraicHelpers.isZeroRational(state.calculator.total)
+    && !state.calculator.pendingNegativeTotal
+    && state.calculator.rollEntries.length === 0
+    && state.calculator.operationSlots.length === 0
+    && state.calculator.draftingSlot === null
+    && (state.calculator.singleDigitInitialTotalEntry || !algebraicHelpers.hasAnyKeyPress(state));
+  if (noSeedEnteredYet) {
+    return null;
+  }
+
+  return state.calculator.total;
+};
+
+const normalizeDraftOperandText = (drafting: NonNullable<GameState["calculator"]["draftingSlot"]>): { value: string; incomplete: boolean } => {
+  if (drafting.operandInput === "") {
+    return { value: "_", incomplete: true };
+  }
+  const signedValue = `${drafting.isNegative ? "-" : ""}${drafting.operandInput}`;
+  return { value: signedValue, incomplete: false };
+};
+
+const toExpressionOperandText = (operand: BinarySlot["operand"]): string =>
+  typeof operand === "bigint" ? operand.toString() : expressionToDisplayString(slotOperandToExpression(operand));
+
+export const buildFunctionRecurrenceDisplay = (
+  state: GameState,
+): { line: string; hasIncompleteDraft: boolean; containsEuclidLiteral: boolean; expressionText: string } => {
+  let displayAccumulator = "f_n";
+  let expressionAccumulator = "f_n";
+  let hasIncompleteDraft = false;
+  let containsEuclidLiteral = false;
+
+  for (const slot of state.calculator.operationSlots) {
+    if (!("operand" in slot)) {
+      const unaryDisplay = keyLabelInternals.formatUnarySlotOperator(slot.operator);
+      displayAccumulator = `(${displayAccumulator} ${unaryDisplay})`;
+      expressionAccumulator = `(${expressionAccumulator}${slot.operator})`;
+      continue;
+    }
+    const operandText = toExpressionOperandText(slot.operand);
+    const displayOperator = keyLabelInternals.formatAlgebraicOperator(slot.operator);
+    displayAccumulator = `(${displayAccumulator} ${displayOperator} ${operandText})`;
+    expressionAccumulator = `(${expressionAccumulator}${slot.operator}${operandText})`;
+    containsEuclidLiteral = containsEuclidLiteral || keyLabelInternals.isEuclidLiteralOperator(slot.operator);
+  }
+
+  if (state.calculator.draftingSlot) {
+    const draftOperand = normalizeDraftOperandText(state.calculator.draftingSlot);
+    const displayOperator = keyLabelInternals.formatAlgebraicOperator(state.calculator.draftingSlot.operator);
+    displayAccumulator = `(${displayAccumulator} ${displayOperator} ${draftOperand.value})`;
+    expressionAccumulator = `(${expressionAccumulator}${state.calculator.draftingSlot.operator}${draftOperand.value})`;
+    hasIncompleteDraft = draftOperand.incomplete;
+    containsEuclidLiteral = containsEuclidLiteral || keyLabelInternals.isEuclidLiteralOperator(state.calculator.draftingSlot.operator);
+  }
+
+  return {
+    line: `f_{n+1} = ${displayAccumulator}`,
+    hasIncompleteDraft,
+    containsEuclidLiteral,
+    expressionText: expressionAccumulator,
+  };
+};
+
+export const buildAlgebraicViewModel = (state: GameState): AlgebraicViewModel => {
+  const seedValue = resolveSeedValueForAlgebra(state);
+  const seedLine = seedValue ? `f_0 = ${calculatorValueToDisplayString(seedValue)}` : "f_0 = _";
+  const recurrence = buildFunctionRecurrenceDisplay(state);
+  const preRollMain = recurrence.line;
+
+  if (state.calculator.rollEntries.length === 0) {
+    return {
+      seedLine,
+      recurrenceLine: recurrence.line,
+      mainLine: preRollMain,
+      mainLineSource: "builder_unsimplified",
+      hasIncompleteDraft: recurrence.hasIncompleteDraft,
+      containsEuclidLiteral: recurrence.containsEuclidLiteral,
+      recurrenceExpressionText: recurrence.expressionText,
+    };
+  }
+
+  if (recurrence.containsEuclidLiteral) {
+    return {
+      seedLine,
+      recurrenceLine: recurrence.line,
+      mainLine: preRollMain,
+      mainLineSource: "roll_literal",
+      hasIncompleteDraft: recurrence.hasIncompleteDraft,
+      containsEuclidLiteral: recurrence.containsEuclidLiteral,
+      recurrenceExpressionText: recurrence.expressionText,
+    };
+  }
+
+  const latestRelevantSymbolic = [...state.calculator.rollEntries]
+    .reverse()
+    .find((entry) => entry.symbolic?.exprText === recurrence.expressionText);
+
+  if (!latestRelevantSymbolic?.symbolic) {
+    return {
+      seedLine,
+      recurrenceLine: recurrence.line,
+      mainLine: preRollMain,
+      mainLineSource: "builder_unsimplified",
+      hasIncompleteDraft: recurrence.hasIncompleteDraft,
+      containsEuclidLiteral: recurrence.containsEuclidLiteral,
+      recurrenceExpressionText: recurrence.expressionText,
+    };
+  }
+
+  return {
+    seedLine,
+    recurrenceLine: recurrence.line,
+    mainLine: latestRelevantSymbolic.symbolic.renderText,
+    mainLineSource: "roll_simplified",
+    hasIncompleteDraft: recurrence.hasIncompleteDraft,
+    containsEuclidLiteral: recurrence.containsEuclidLiteral,
+    recurrenceExpressionText: recurrence.expressionText,
+  };
+};

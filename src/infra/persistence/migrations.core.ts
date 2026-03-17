@@ -18,6 +18,7 @@ import {
   KEY_ID,
   resolveKeyId,
 } from "../../domain/keyPresentation.js";
+import { migrateV6PlusToLatest } from "./migrations/v6plus.js";
 import type {
   ActiveVisualizer,
   DraftingSlot,
@@ -1590,106 +1591,28 @@ export const migrateToLatest = (schemaVersion: number, state: unknown): Serializ
   if (schemaVersion < 6) {
     return toSerializableInitialV14();
   }
-  if (!isObject(state)) {
-    return null;
-  }
-
-  if (schemaVersion === 6) {
-    const asV6 = state as SerializableStateV6;
-    const normalizedV6: SerializableStateV6 = {
-      ...normalizeCommonStateFields(asV6),
-      ui: normalizeLegacyUiBase(asV6.ui),
-    };
-    if (!validateSerializableStateV6(normalizedV6)) {
-      return null;
-    }
-    return migrateChain.fromV6(normalizedV6);
-  }
-  if (schemaVersion === 7) {
-    const asV7 = state as SerializableStateV7;
-    const normalizedV7: SerializableStateV7 = {
-      ...normalizeCommonStateFields(asV7),
-      calculator: normalizeCalculatorRollErrors(asV7.calculator),
-      ui: normalizeLegacyUiBase(asV7.ui),
-    };
-    return validateSerializableStateV7(normalizedV7) ? migrateChain.fromV7(normalizedV7) : null;
-  }
-  if (schemaVersion === 8) {
-    const asV8 = state as SerializableStateV8;
-    const normalizedV8: SerializableStateV8 = {
-      ...normalizeCommonStateFields(asV8),
-      calculator: normalizeCalculatorRollErrors(asV8.calculator),
-      ui: normalizeLegacyUiBase(asV8.ui),
-      allocator: normalizeAllocatorV8(asV8.allocator),
-    };
-    return validateSerializableStateV8(normalizedV8) ? migrateChain.fromV8(normalizedV8) : null;
-  }
-  if (schemaVersion === 9) {
-    const asV9 = state as SerializableStateV9;
-    const normalizedV9: SerializableStateV9 = {
-      ...normalizeCommonStateFields(asV9),
-      calculator: normalizeCalculatorRollErrors(asV9.calculator),
-      ui: normalizeLegacyUiBase(asV9.ui),
-      allocator: normalizeAllocatorV9(asV9.allocator),
-    };
-    return validateSerializableStateV9(normalizedV9) ? migrateChain.fromV9(normalizedV9) : null;
-  }
-  if (schemaVersion === 10) {
-    const asV10 = state as SerializableStateV10;
-    const normalizedV10: SerializableStateV10 = {
-      ...normalizeCommonStateFields(asV10),
-      ...normalizeAllocatorPressCounts(asV10),
-      calculator: normalizeCalculatorRollErrors(asV10.calculator),
-      ui: normalizeLegacyUiBase(asV10.ui),
-      allocator: normalizeAllocatorV10(asV10.allocator),
-    };
-    return validateSerializableStateV10(normalizedV10) ? migrateChain.fromV10(normalizedV10) : null;
-  }
-  if (schemaVersion === 11) {
-    const asV11 = state as SerializableStateV11;
-    const normalizedV11: SerializableStateV11 = {
-      ...normalizeCommonStateFields(asV11),
-      ...normalizeAllocatorPressCounts(asV11),
-      calculator: normalizeCalculatorRollErrors(asV11.calculator),
-      ui: normalizeLegacyUiWithVisualizer(asV11.ui),
-      allocator: normalizeAllocatorV10(asV11.allocator),
-    };
-    return validateSerializableStateV11(normalizedV11) ? migrateChain.fromV11(normalizedV11) : null;
-  }
-  if (schemaVersion === 12) {
-    const asV12 = state as SerializableStateV12;
-    const normalizedV12: SerializableStateV12 = {
-      ...normalizeCommonStateFields(asV12),
-      ...normalizeAllocatorPressCounts(asV12),
-      calculator: normalizeCalculatorRollErrors(asV12.calculator),
-      ui: normalizeLegacyUiWithVisualizer(asV12.ui),
-      allocator: normalizeAllocatorV10(asV12.allocator),
-    };
-    return validateSerializableStateV12(normalizedV12) ? migrateChain.fromV12(normalizedV12) : null;
-  }
-  if (schemaVersion === 13) {
-    const asV13 = state as SerializableStateV13;
-    const normalizedV13: SerializableStateV13 = {
-      ...normalizeCommonStateFields(asV13),
-      ...normalizeAllocatorPressCounts(asV13),
-      calculator: normalizeCurrentCalculator(asV13.calculator),
-      ui: normalizeLegacyUiWithVisualizer(asV13.ui),
-      allocator: normalizeAllocatorV10(asV13.allocator),
-    };
-    return validateSerializableStateV13(normalizedV13) ? migrateChain.fromV13(normalizedV13) : null;
-  }
-  if (schemaVersion === 14 || schemaVersion === 15 || schemaVersion === 16 || schemaVersion === 17 || schemaVersion === 18) {
-    const asV14 = state as SerializableStateV14;
-    const normalizedV14: SerializableStateV14 = {
-      ...normalizeCommonStateFields(asV14),
-      ...normalizeAllocatorPressCounts(asV14),
-      calculator: normalizeCurrentCalculator(asV14.calculator),
-      ui: normalizeLegacyUiWithVisualizer(asV14.ui),
-      allocator: normalizeAllocatorV10(asV14.allocator),
-    };
-    return validateSerializableStateV14(normalizedV14) ? normalizedV14 : null;
-  }
-  return null;
+  return migrateV6PlusToLatest(schemaVersion, state, {
+    isObject,
+    normalizeCommonStateFields,
+    normalizeLegacyUiBase,
+    normalizeLegacyUiWithVisualizer,
+    normalizeCalculatorRollErrors,
+    normalizeAllocatorPressCounts,
+    normalizeCurrentCalculator,
+    normalizeAllocatorV8,
+    normalizeAllocatorV9,
+    normalizeAllocatorV10,
+    validateSerializableStateV6,
+    validateSerializableStateV7,
+    validateSerializableStateV8,
+    validateSerializableStateV9,
+    validateSerializableStateV10,
+    validateSerializableStateV11,
+    validateSerializableStateV12,
+    validateSerializableStateV13,
+    validateSerializableStateV14,
+    migrateChain,
+  });
 };
 
 

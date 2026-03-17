@@ -9,6 +9,7 @@ import { clearVisualizerHost, renderVisualizerHost } from "./modules/visualizerH
 import { awaitMotionSettled, beginMotionCycle, completeMotionCycle } from "./layout/motionLifecycleBridge.js";
 import { forEachUiRootRuntime, getOrCreateRuntime, getRuntimeIfExists } from "./runtime/registry.js";
 import type { DrawerDragTarget, PointerSession, ShellRefs } from "./shell/types.js";
+import type { ShellRuntimeState } from "./shell/runtimeState.js";
 import { buildRefsFromExistingShell, createShellDom } from "./shell/refs.js";
 import { bindShellGestures } from "./shell/gestureBinder.js";
 import { getSnapOffset } from "./shell/transforms.js";
@@ -74,17 +75,7 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
 
   let refsCache: ShellRefs | null = null;
   let gestureBinding: { dispose: () => void } | null = null;
-  const runtimeState: {
-    dragDeltaY: number;
-    dragActive: boolean;
-    drawerDragDeltaX: number;
-    drawerDragActive: boolean;
-    drawerDragTarget: DrawerDragTarget | null;
-    latestState: GameState | null;
-    latestDispatch: ((action: Action) => unknown) | null;
-    latestInputBlocked: boolean;
-    pointerSession: PointerSession | null;
-  } = {
+  const runtimeState: ShellRuntimeState = {
     dragDeltaY: 0,
     dragActive: false,
     drawerDragDeltaX: 0,

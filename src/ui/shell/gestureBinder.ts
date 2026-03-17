@@ -2,19 +2,9 @@ import { canStartTouchRearrange, shouldCloseMenuFromSwipe } from "../shellGestur
 import { createShellController } from "../shellController.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "../touchRearrangeController.js";
 import type { Action, GameState, Key, LayoutSurface } from "../../domain/types.js";
-import type { DrawerDragTarget, PointerSession, ShellRefs } from "./types.js";
-
-type RuntimeState = {
-  dragDeltaY: number;
-  dragActive: boolean;
-  drawerDragDeltaX: number;
-  drawerDragActive: boolean;
-  drawerDragTarget: DrawerDragTarget | null;
-  latestState: GameState | null;
-  latestDispatch: ((action: Action) => unknown) | null;
-  latestInputBlocked: boolean;
-  pointerSession: PointerSession | null;
-};
+import type { DrawerDragTarget, ShellRefs } from "./types.js";
+import type { ShellRuntimeState } from "./runtimeState.js";
+import { createMenuPointerSession, createViewportPointerSession, updatePointerSessionTrail } from "./pointerSession.js";
 
 const isSurfaceValue = (value: string | undefined): value is LayoutSurface => value === "keypad" || value === "storage";
 
@@ -100,7 +90,7 @@ export const bindShellGestures = (args: {
   refs: ShellRefs;
   controller: ReturnType<typeof createShellController>;
   touchRearrange: ReturnType<typeof createTouchRearrangeController>;
-  runtime: RuntimeState;
+  runtime: ShellRuntimeState;
   closeMenu: (focusReturn?: boolean) => void;
   snapUp: () => void;
   snapDown: () => void;
@@ -173,20 +163,15 @@ export const bindShellGestures = (args: {
     const startedInRightEdgeZone = localX >= rect.width - 24;
     const preferredDrawerTarget: DrawerDragTarget = localY <= rect.height / 2 ? "middle" : "bottom";
     const target = pointerEvent.target as HTMLElement | null;
-    runtime.pointerSession = {
+    runtime.pointerSession = createViewportPointerSession({
       pointerId: pointerEvent.pointerId,
-      startX: pointerEvent.clientX,
-      startY: pointerEvent.clientY,
-      lastX: pointerEvent.clientX,
-      lastY: pointerEvent.clientY,
-      lastTimeMs: performance.now(),
-      axisLock: "none",
+      clientX: pointerEvent.clientX,
+      clientY: pointerEvent.clientY,
       startedInRightEdgeZone,
       startedInStorage: !!target?.closest("[data-storage-keys]"),
       startedInChecklist: !!target?.closest("[data-v2-drawer-panel='checklist']"),
       preferredDrawerTarget,
-      startedInMenu: false,
-    };
+    });
     refs.viewport.setPointerCapture(pointerEvent.pointerId);
   });
 
@@ -247,9 +232,10 @@ export const bindShellGestures = (args: {
       runtime.drawerDragActive = true;
       runtime.drawerDragDeltaX = dx;
       runtime.drawerDragTarget = runtime.pointerSession.preferredDrawerTarget;
-      runtime.pointerSession.lastX = pointerEvent.clientX;
-      runtime.pointerSession.lastY = pointerEvent.clientY;
-      runtime.pointerSession.lastTimeMs = performance.now();
+      updatePointerSessionTrail(runtime.pointerSession, {
+        clientX: pointerEvent.clientX,
+        clientY: pointerEvent.clientY,
+      });
       pointerEvent.preventDefault();
       if (runtime.drawerDragTarget === "middle") {
         args.applyMiddleDrawerTransform(refs, false);
@@ -260,24 +246,27 @@ export const bindShellGestures = (args: {
     }
 
     if (runtime.pointerSession.axisLock !== "y") {
-      runtime.pointerSession.lastX = pointerEvent.clientX;
-      runtime.pointerSession.lastY = pointerEvent.clientY;
-      runtime.pointerSession.lastTimeMs = performance.now();
+      updatePointerSessionTrail(runtime.pointerSession, {
+        clientX: pointerEvent.clientX,
+        clientY: pointerEvent.clientY,
+      });
       return;
     }
 
     if (runtime.pointerSession.startedInStorage && !isStorageBoundaryDrag(refs.storageKeys, dy)) {
-      runtime.pointerSession.lastX = pointerEvent.clientX;
-      runtime.pointerSession.lastY = pointerEvent.clientY;
-      runtime.pointerSession.lastTimeMs = performance.now();
+      updatePointerSessionTrail(runtime.pointerSession, {
+        clientX: pointerEvent.clientX,
+        clientY: pointerEvent.clientY,
+      });
       return;
     }
 
     runtime.dragActive = true;
     runtime.dragDeltaY = dy;
-    runtime.pointerSession.lastX = pointerEvent.clientX;
-    runtime.pointerSession.lastY = pointerEvent.clientY;
-    runtime.pointerSession.lastTimeMs = performance.now();
+    updatePointerSessionTrail(runtime.pointerSession, {
+      clientX: pointerEvent.clientX,
+      clientY: pointerEvent.clientY,
+    });
     pointerEvent.preventDefault();
     args.applyTrackTransform(refs, false);
   });
@@ -379,20 +368,11 @@ export const bindShellGestures = (args: {
     if (!controller.runtime.menuOpen) {
       return;
     }
-    runtime.pointerSession = {
+    runtime.pointerSession = createMenuPointerSession({
       pointerId: pointerEvent.pointerId,
-      startX: pointerEvent.clientX,
-      startY: pointerEvent.clientY,
-      lastX: pointerEvent.clientX,
-      lastY: pointerEvent.clientY,
-      lastTimeMs: performance.now(),
-      axisLock: "none",
-      startedInRightEdgeZone: false,
-      startedInStorage: false,
-      startedInChecklist: false,
-      preferredDrawerTarget: "middle",
-      startedInMenu: true,
-    };
+      clientX: pointerEvent.clientX,
+      clientY: pointerEvent.clientY,
+    });
     refs.menu.setPointerCapture(pointerEvent.pointerId);
   });
 
@@ -411,9 +391,10 @@ export const bindShellGestures = (args: {
       args.clearPointerSession(refs);
       return;
     }
-    runtime.pointerSession.lastX = pointerEvent.clientX;
-    runtime.pointerSession.lastY = pointerEvent.clientY;
-    runtime.pointerSession.lastTimeMs = performance.now();
+    updatePointerSessionTrail(runtime.pointerSession, {
+      clientX: pointerEvent.clientX,
+      clientY: pointerEvent.clientY,
+    });
   });
 
   listen(refs.menu, "pointerup", (event) => {
