@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { createCueLifecycleCoordinator, runCueLifecycle, type CueLifecycleDeps } from "../src/ui/layout/cueLifecycle.js";
-import { resetCueTelemetryForTests, subscribeCueTelemetry, type CueTelemetryEvent } from "../src/ui/layout/cueTelemetry.js";
+import { createCueLifecycleCoordinator, runCueLifecycle, type CueLifecycleDeps } from "../src/app/workflows/cueLifecycle.js";
+import { resetCueTelemetryForTests, subscribeCueTelemetry, type CueTelemetryEvent } from "../src/app/workflows/cueTelemetry.js";
 
 const createDeps = (): CueLifecycleDeps => ({
   playShellCue: async () => {},

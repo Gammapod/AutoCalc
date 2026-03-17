@@ -1,4 +1,5 @@
-export type AppMode = "game" | "sandbox";
+import type { AppMode } from "../contracts/appMode.js";
+export type { AppMode } from "../contracts/appMode.js";
 
 type LocationLike = { href: string } | URL | string;
 type EnvLike = Record<string, unknown> | undefined;

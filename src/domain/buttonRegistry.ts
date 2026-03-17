@@ -1,11 +1,11 @@
-import {
-  keyCatalog,
-  type KeyCatalogEntry,
-  type KeyHandlerOverrideId,
-  type KeyBehaviorKind,
-  type KeyUnlockGroup,
-  type KeyVisualizerId,
-} from "../content/keyCatalog.js";
+import type {
+  KeyCatalogEntry,
+  KeyHandlerOverrideId,
+  KeyBehaviorKind,
+  KeyUnlockGroup,
+  KeyVisualizerId,
+} from "../contracts/keyCatalog.js";
+import { keyCatalog } from "../contracts/keyCatalog.js";
 
 export type ButtonUnlockGroup = KeyUnlockGroup;
 export type ButtonBehaviorKind = KeyBehaviorKind;

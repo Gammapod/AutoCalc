@@ -1,4 +1,4 @@
-import { keyCatalog } from "../content/keyCatalog.js";
+import { getContentProvider } from "../contracts/contentRegistry.js";
 
 import type { Key } from "./types.js";
 import { isBinaryOperatorKeyId, isUnaryOperatorId, KEY_ID, toKeyId } from "./keyPresentation.js";
@@ -15,21 +15,21 @@ export type FunctionCapabilityProviderSpec = {
 };
 
 const keysWithTrait = (trait: string): Key[] =>
-  keyCatalog
+  getContentProvider().keyCatalog
     .filter((entry) => entry.traits.includes(trait as never))
      .map((entry) => toKeyId(entry.key));
 
 const operatorKeys = (): Key[] =>
-  keyCatalog
+  getContentProvider().keyCatalog
     .filter((entry) => isBinaryOperatorKeyId(toKeyId(entry.key)))
      .map((entry) => toKeyId(entry.key));
 
 const unaryOperatorKeys = (): Key[] =>
-  keyCatalog
+  getContentProvider().keyCatalog
     .filter((entry) => isUnaryOperatorId(toKeyId(entry.key)))
      .map((entry) => toKeyId(entry.key));
 
-const hasKey = (key: Key): boolean => keyCatalog.some((entry) => toKeyId(entry.key) === key);
+const hasKey = (key: Key): boolean => getContentProvider().keyCatalog.some((entry) => toKeyId(entry.key) === key);
 
 const uniqueClauses = (clauses: Array<Array<Key | string>>): Key[][] => {
   const seen = new Set<string>();

@@ -2,7 +2,7 @@ import "../support/keyCompat.runtime.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../../src/domain/calculatorValue.js";
 import { resolveKeyId, type KeyLike } from "../../src/domain/keyPresentation.js";
 import { initialState } from "../../src/domain/state.js";
-import type { BinarySlotOperator, ErrorCode, ExecutionErrorKind, GameState, KeyInput, RollEntry } from "../../src/domain/types.js";
+import type { ErrorCode, ExecutionErrorKind, GameState, KeyInput, RollEntry } from "../../src/domain/types.js";
 import { keyCounts, op } from "../support/keyCompat.js";
 
 export type SlotInputScenarioTag = "legacy_contract" | "target_spec";

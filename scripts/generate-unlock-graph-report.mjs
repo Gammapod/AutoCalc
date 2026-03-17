@@ -6,11 +6,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = resolve(__dirname, "..");
 
-const [{ unlockCatalog }, { initialState }, unlockGraphModule] = await Promise.all([
+const [{ unlockCatalog }, { initialState }, { setContentProvider }, { defaultContentProvider }] = await Promise.all([
   import(pathToFileURL(resolve(rootDir, "dist/src/content/unlocks.catalog.js")).href),
   import(pathToFileURL(resolve(rootDir, "dist/src/domain/state.js")).href),
-  import(pathToFileURL(resolve(rootDir, "dist/src/domain/unlockGraph.js")).href),
+  import(pathToFileURL(resolve(rootDir, "dist/src/contracts/contentRegistry.js")).href),
+  import(pathToFileURL(resolve(rootDir, "dist/src/content/defaultContentProvider.js")).href),
 ]);
+setContentProvider(defaultContentProvider);
+
+const unlockGraphModule = await import(pathToFileURL(resolve(rootDir, "dist/src/domain/unlockGraph.js")).href);
 
 const {
   buildUnlockGraphReport,

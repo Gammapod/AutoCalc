@@ -1,7 +1,6 @@
 import {
   buttonRegistry,
   getButtonDefinition,
-  type ButtonKey,
 } from "./buttonRegistry.js";
 import { resolveKeyId, toKeyId, toLegacyKey, type KeyLike } from "./keyPresentation.js";
 import type { GameState, Key } from "./types.js";

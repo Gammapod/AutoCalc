@@ -4,7 +4,7 @@ import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "../sr
 import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState, Key, Store } from "../src/domain/types.js";
-import { execution, k, op, executionUnlockPatch } from "./support/keyCompat.js";
+import { execution, op, executionUnlockPatch } from "./support/keyCompat.js";
 
 type TimerHandle = ReturnType<typeof setInterval>;
 

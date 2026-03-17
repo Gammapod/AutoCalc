@@ -1,9 +1,10 @@
-import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { applyEffect } from "./unlocks.js";
 import type { GameState } from "./types.js";
+import { getContentProvider } from "../contracts/contentRegistry.js";
 
 export const applyUnlockAllPreset = (state: GameState): GameState => {
+  const unlockCatalog = getContentProvider().unlockCatalog;
   const withCatalogEffects = unlockCatalog.reduce((next, unlock) => applyEffect(unlock.effect, next), state);
   const withProjectedControl = applyAllocatorRuntimeProjection(withCatalogEffects, {
     ...withCatalogEffects.lambdaControl,

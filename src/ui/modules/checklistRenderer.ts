@@ -1,30 +1,31 @@
-import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { buildVisibleChecklistRows } from "../shared/readModelHelpers.js";
 import type { GameState } from "../../domain/types.js";
+import { getContentProvider } from "../../contracts/contentRegistry.js";
 
 const appendChecklistQuickstartGuide = (container: Element): void => {
+  const text = getContentProvider().uiText.checklist.quickstartItems;
   const guideEl = document.createElement("div");
   guideEl.className = "debug-guide";
   guideEl.setAttribute("aria-label", "Feature overview");
 
   const titleEl = document.createElement("p");
   titleEl.className = "debug-guide-title";
-  titleEl.textContent = "Feature Overview";
+  titleEl.textContent = getContentProvider().uiText.checklist.quickstartTitle;
   guideEl.appendChild(titleEl);
 
   const listEl = document.createElement("ol");
   listEl.className = "debug-guide-list";
   listEl.innerHTML = `
-    <li>Make calculations to unlock more convenient calculator keys.</li>
-    <li>Use unlocks and keypad growth controls in the debug panel to expand your machine.</li>
-    <li>Drag+Drop keys to rearrange layout at any time.</li>
+    <li>${text.unlockKeys}</li>
+    <li>${text.debugPanel}</li>
+    <li>${text.dragDrop}</li>
     <li>
-      Allocator can change:
+      ${text.allocatorIntro}
       <ul class="debug-guide-sublist">
-        <li>Size of calculator keypad</li>
-        <li>Range of total display</li>
-        <li>Number of operations per function</li>
-        <li>Speed of auto-clicker</li>
+        <li>${text.allocatorItems[0]}</li>
+        <li>${text.allocatorItems[1]}</li>
+        <li>${text.allocatorItems[2]}</li>
+        <li>${text.allocatorItems[3]}</li>
       </ul>
     </li>
   `;
@@ -33,6 +34,7 @@ const appendChecklistQuickstartGuide = (container: Element): void => {
 };
 
 export const renderChecklistV2Module = (root: Element, state: GameState): void => {
+  const content = getContentProvider();
   const unlockEl = root.querySelector("[data-unlocks]");
   if (!unlockEl) {
     throw new Error("Checklist mount point is missing.");
@@ -45,24 +47,24 @@ export const renderChecklistV2Module = (root: Element, state: GameState): void =
 
   const title = document.createElement("div");
   title.className = "unlock-title";
-  title.textContent = "Unlocks";
+  title.textContent = content.uiText.checklist.title;
   unlockEl.appendChild(title);
 
   const header = document.createElement("div");
   header.className = "unlock-header";
   const hintHeader = document.createElement("span");
-  hintHeader.textContent = "Hint";
+  hintHeader.textContent = content.uiText.checklist.headerHint;
   const rewardHeader = document.createElement("span");
-  rewardHeader.textContent = "Reward";
+  rewardHeader.textContent = content.uiText.checklist.headerReward;
   header.append(hintHeader, rewardHeader);
   unlockEl.appendChild(header);
 
   const rows = buildVisibleChecklistRows(state);
-  const hintByUnlockId = new Map(unlockCatalog.map((unlock) => [unlock.id, unlock.description]));
+  const hintByUnlockId = new Map(content.unlockCatalog.map((unlock) => [unlock.id, unlock.description]));
   if (rows.length === 0) {
     const emptyStateEl = document.createElement("div");
     emptyStateEl.className = "unlock-empty-state";
-    emptyStateEl.textContent = "No currently attemptable unlocks from active keypad layout.";
+    emptyStateEl.textContent = content.uiText.checklist.emptyAttemptable;
     unlockEl.appendChild(emptyStateEl);
   } else {
     for (const row of rows) {

@@ -1,8 +1,6 @@
-import type { CueKind, CuePhase } from "./cueLifecycle.js";
-
 export type CueTelemetryEvent = {
-  cueKind: CueKind;
-  phase: CuePhase;
+  cueKind: import("./cueLifecycle.js").CueKind;
+  phase: import("./cueLifecycle.js").CuePhase;
   atMs: number;
   durationMs?: number;
   metadata?: Record<string, string | number | boolean | null>;

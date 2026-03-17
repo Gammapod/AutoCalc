@@ -13,7 +13,7 @@ import { capabilityToFunctionProviderIds, staticFunctionCapabilityProviders } fr
 import { reducer } from "../src/domain/reducer.js";
 import { initialState, LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID } from "../src/domain/state.js";
 import { evaluateUnlockPredicate } from "../src/domain/unlockEngine.js";
-import type { GameState, Key, KeyInput, RollEntry, UnlockPredicate } from "../src/domain/types.js";
+import type { GameState, KeyInput, RollEntry, UnlockPredicate } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));

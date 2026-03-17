@@ -5,7 +5,7 @@ import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
 import { applyUnlocks } from "../src/domain/unlocks.js";
-import type { GameState, Key, KeyInput, RollEntry } from "../src/domain/types.js";
+import type { GameState, KeyInput, RollEntry } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));

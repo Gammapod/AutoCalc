@@ -109,7 +109,7 @@ export const renderKeypadCells = (
         dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
       }
       queueToggleAnimation(root, state, cell as KeyCell);
-      dispatch(buildKeyButtonAction(state, cell as KeyCell));
+      dispatch(buildKeyButtonAction(cell as KeyCell));
     });
     keysEl.appendChild(button);
   }

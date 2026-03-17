@@ -1,6 +1,5 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { initialState } from "../src/domain/state.js";
 import type { KeyCell } from "../src/domain/types.js";
 import {
   buildKeyButtonAction,
@@ -10,10 +9,8 @@ import {
 import { k, keyCell } from "./support/keyCompat.js";
 
 export const runContractsUiActionEmissionTests = (): void => {
-  const state = initialState();
-
   const graphCell: KeyCell = keyCell("GRAPH");
-  const graphAction = buildKeyButtonAction(state, graphCell);
+  const graphAction = buildKeyButtonAction(graphCell);
   assert.deepEqual(
     graphAction,
     { type: "TOGGLE_VISUALIZER", visualizer: "graph" },
@@ -21,14 +18,14 @@ export const runContractsUiActionEmissionTests = (): void => {
   );
 
   const feedCell: KeyCell = keyCell("FEED");
-  const feedAction = buildKeyButtonAction(state, feedCell);
+  const feedAction = buildKeyButtonAction(feedCell);
   assert.deepEqual(
     feedAction,
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key emits visualizer toggle action",
   );
   const circleCell: KeyCell = keyCell("CIRCLE");
-  const circleAction = buildKeyButtonAction(state, circleCell);
+  const circleAction = buildKeyButtonAction(circleCell);
   assert.deepEqual(
     circleAction,
     { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
@@ -36,7 +33,7 @@ export const runContractsUiActionEmissionTests = (): void => {
   );
 
   const digitCell: KeyCell = keyCell("1");
-  const digitAction = buildKeyButtonAction(state, digitCell);
+  const digitAction = buildKeyButtonAction(digitCell);
   assert.deepEqual(digitAction, { type: "PRESS_KEY", key: k("1") }, "digit key emits press action");
 
   const moveAction = buildLayoutDropDispatchAction(

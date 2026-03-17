@@ -5,8 +5,6 @@ import {
   initialState,
   KEYPAD_DEFAULT_COLUMNS,
   KEYPAD_DEFAULT_ROWS,
-  KEYPAD_DIM_MAX,
-  KEYPAD_DIM_MIN,
   STORAGE_COLUMNS,
   STORAGE_INITIAL_SLOTS,
 } from "../../domain/state.js";
@@ -232,81 +230,7 @@ export type SerializableStateV14 = SerializableStateV13;
 const RATIONAL_RE = /^\s*-?\d+(?:\s*\/\s*-?\d+)?\s*$/;
 const CALCULATOR_VALUE_RE = /^(?:\s*-?\d+(?:\s*\/\s*-?\d+)?\s*|NaN|[A-Za-z0-9_()+\-*/\s]+)$/;
 
-const BINARY_SLOT_OPERATOR_VALUES = [
-  KEY_ID.op_add,
-  KEY_ID.op_sub,
-  KEY_ID.op_mul,
-  KEY_ID.op_div,
-  KEY_ID.op_euclid_div,
-  KEY_ID.op_mod,
-  KEY_ID.op_rotate_left,
-  KEY_ID.op_gcd,
-  KEY_ID.op_lcm,
-] as const;
-const UNARY_SLOT_OPERATOR_VALUES = [
-  KEY_ID.unary_inc,
-  KEY_ID.unary_dec,
-  KEY_ID.unary_neg,
-  KEY_ID.unary_sigma,
-  KEY_ID.unary_phi,
-  KEY_ID.unary_omega,
-] as const;
-const SLOT_OPERATOR_VALUES: Slot["operator"][] = [...BINARY_SLOT_OPERATOR_VALUES, ...UNARY_SLOT_OPERATOR_VALUES];
-const DRAFTING_OPERATOR_VALUES = BINARY_SLOT_OPERATOR_VALUES;
-const DIGIT_VALUES = [
-  KEY_ID.digit_0,
-  KEY_ID.digit_1,
-  KEY_ID.digit_2,
-  KEY_ID.digit_3,
-  KEY_ID.digit_4,
-  KEY_ID.digit_5,
-  KEY_ID.digit_6,
-  KEY_ID.digit_7,
-  KEY_ID.digit_8,
-  KEY_ID.digit_9,
-] as const;
-const VALUE_EXPRESSION_KEY_VALUES = [...DIGIT_VALUES, KEY_ID.const_pi, KEY_ID.const_e] as const;
-const UTILITY_KEY_VALUES = [
-  KEY_ID.util_clear_all,
-  KEY_ID.util_undo,
-  KEY_ID.util_backspace,
-  KEY_ID.toggle_delta_range_clamp,
-  KEY_ID.toggle_mod_zero_to_delta,
-  KEY_ID.toggle_step_expansion,
-] as const;
-const MEMORY_KEY_VALUES = [
-  KEY_ID.memory_cycle_variable,
-  KEY_ID.memory_adjust_plus,
-  KEY_ID.memory_adjust_minus,
-  KEY_ID.memory_recall,
-] as const;
-const VISUALIZER_KEY_VALUES = [
-  KEY_ID.viz_graph,
-  KEY_ID.viz_feed,
-  KEY_ID.viz_factorization,
-  KEY_ID.viz_circle,
-  KEY_ID.viz_eigen_allocator,
-  KEY_ID.viz_algebraic,
-] as const;
-const EXEC_KEY_VALUES = [KEY_ID.exec_equals, KEY_ID.exec_step_through] as const;
-const UNARY_OPERATOR_KEY_VALUES = [
-  KEY_ID.unary_inc,
-  KEY_ID.unary_dec,
-  KEY_ID.unary_neg,
-  KEY_ID.unary_sigma,
-  KEY_ID.unary_phi,
-  KEY_ID.unary_omega,
-] as const;
 const MEMORY_VARIABLE_VALUES: readonly MemoryVariable[] = ["α", "β", "γ"];
-const KEY_VALUES: readonly Key[] = [
-  ...VALUE_EXPRESSION_KEY_VALUES,
-  ...SLOT_OPERATOR_VALUES,
-  ...UNARY_OPERATOR_KEY_VALUES,
-  ...UTILITY_KEY_VALUES,
-  ...MEMORY_KEY_VALUES,
-  ...VISUALIZER_KEY_VALUES,
-  ...EXEC_KEY_VALUES,
-];
 const ERROR_CODE_VALUES: readonly ErrorCode[] = [
   "x∉[-R,R]",
   "n/0",
@@ -547,13 +471,6 @@ const isSerializableSlot = (value: unknown): value is SerializableSlot =>
   );
 
 const defaultUnlocks = (): UnlockState => initialState().unlocks;
-
-const normalizeKeypadDimension = (value: unknown, fallback: number): number => {
-  if (!isInteger(value)) {
-    return fallback;
-  }
-  return Math.max(KEYPAD_DIM_MIN, Math.min(KEYPAD_DIM_MAX, value));
-};
 
 const normalizeKeypadLayoutForDimensions = (
   layout: LayoutCell[] | undefined,

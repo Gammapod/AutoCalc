@@ -1,5 +1,5 @@
 import type { GameState, Key } from "../domain/types.js";
-import { createCueLifecycleCoordinator } from "../ui/layout/cueLifecycle.js";
+import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
 import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
 
 const UNLOCK_REVEAL_SETTLE_TIMEOUT_MS = 1300;

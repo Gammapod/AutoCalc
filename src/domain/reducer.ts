@@ -14,7 +14,6 @@ import {
 import { applyLifecycleAction } from "./reducer.lifecycle.js";
 import { applyToggleFlag } from "./reducer.flags.js";
 import { clearOperationEntry, withStepProgressCleared } from "./reducer.stateBuilders.js";
-import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { applyUnlocks } from "./unlocks.js";
 import { resolveKeyId } from "./keyPresentation.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
@@ -31,6 +30,7 @@ import type {
   GameState,
   VisualizerId,
 } from "./types.js";
+import { getContentProvider } from "../contracts/contentRegistry.js";
 // Root reducer orchestrator: route actions to focused domain reducers.
 
 const allocatorFieldToAxis = (field: "width" | "height" | "range" | "speed" | "slots"): "alpha" | "beta" | "gamma" | null => {
@@ -61,6 +61,7 @@ const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): Game
 };
 
 const reduceLegacy = (state: GameState, action: Action): GameState => {
+  const unlockCatalog = getContentProvider().unlockCatalog;
   if (action.type === "PRESS_KEY") {
     return applyKeyAction(state, resolveKeyId(action.key));
   }

@@ -19,7 +19,7 @@ export const runButtonBehaviorTests = (): void => {
   const base = initialState();
   const pressCell: KeyCell = keyCell("+");
   assert.deepEqual(
-    buildKeyButtonAction(base, pressCell),
+    buildKeyButtonAction(pressCell),
     { type: "PRESS_KEY", key: k("+") },
     "default button behavior dispatches PRESS_KEY",
   );
@@ -27,7 +27,7 @@ export const runButtonBehaviorTests = (): void => {
 
   const toggleCell: KeyCell = keyCell("1", { type: "toggle_flag", flag: "sticky.negate" });
   assert.deepEqual(
-    buildKeyButtonAction(base, toggleCell),
+    buildKeyButtonAction(toggleCell),
     { type: "TOGGLE_FLAG", flag: "sticky.negate" },
     "toggle behavior dispatches TOGGLE_FLAG",
   );
@@ -47,19 +47,19 @@ export const runButtonBehaviorTests = (): void => {
 
   const feedToggleCell: KeyCell = keyCell("FEED");
   assert.deepEqual(
-    buildKeyButtonAction(base, feedToggleCell),
+    buildKeyButtonAction(feedToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key dispatches visualizer toggle action",
   );
   const circleToggleCell: KeyCell = keyCell("CIRCLE");
   assert.deepEqual(
-    buildKeyButtonAction(base, circleToggleCell),
+    buildKeyButtonAction(circleToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
     "CIRCLE key dispatches visualizer toggle action",
   );
   const eigenAllocatorToggleCell: KeyCell = keyCell("\u03BB");
   assert.deepEqual(
-    buildKeyButtonAction(base, eigenAllocatorToggleCell),
+    buildKeyButtonAction(eigenAllocatorToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" },
     "\u03BB key dispatches eigen allocator visualizer toggle action",
   );

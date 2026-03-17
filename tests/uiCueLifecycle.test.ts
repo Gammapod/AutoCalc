@@ -4,7 +4,7 @@ import {
   runCueLifecycle,
   type CueLifecycleDeps,
   type CuePhase,
-} from "../src/ui/layout/cueLifecycle.js";
+} from "../src/app/workflows/cueLifecycle.js";
 
 const createDeps = (events: string[], options: {
   playShellCueDelayMs?: number;

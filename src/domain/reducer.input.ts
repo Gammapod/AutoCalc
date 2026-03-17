@@ -1,4 +1,3 @@
-import { unlockCatalog } from "../content/unlocks.catalog.js";
 import { isInteger } from "../infra/math/rationalEngine.js";
 import {
   clampRationalToBoundary,
@@ -13,7 +12,7 @@ import {
   toNanCalculatorValue,
   toRationalCalculatorValue,
 } from "./calculatorValue.js";
-import { expressionToDisplayString, parseExpressionOrNull, slotOperandToExpression } from "./expression.js";
+import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
 import { buildSymbolicExpression, evaluateSymbolicExpression, executeSlotsValue } from "./engine.js";
 import {
   applyDigitInput,
@@ -45,7 +44,6 @@ import type {
   BinarySlotOperator,
   Digit,
   ErrorCode,
-  ExecKey,
   ExecutionErrorKind,
   GameState,
   Key,
@@ -79,6 +77,9 @@ import {
   type ConstantKeyId,
 } from "./keyPresentation.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
+import { getContentProvider } from "../contracts/contentRegistry.js";
+
+const unlockCatalog = getContentProvider().unlockCatalog;
 
 // PRESS_KEY behavior and key-flow preprocessing/dispatch.
 const incrementKeyPressCount = (state: GameState, key: Key): GameState => ({
@@ -397,69 +398,6 @@ const markOverflowErrorSeen = (state: GameState): GameState => {
   };
 };
 
-const evaluateExecutionOutcome = (state: GameState, execKey: ExecKey): EvaluatedExecution => {
-  const currentTotal = state.calculator.total;
-  if (currentTotal.kind === "nan") {
-    return {
-      nextTotal: toNanCalculatorValue(),
-      errorCode: NAN_INPUT_ERROR_CODE,
-      errorKind: "nan_input",
-    };
-  }
-
-  const execution = executeSlotsValue(currentTotal, state.calculator.operationSlots);
-  if (!execution.ok) {
-    if (execution.reason === "unsupported_symbolic") {
-      return {
-        nextTotal: toNanCalculatorValue(),
-        errorCode: NAN_INPUT_ERROR_CODE,
-        errorKind: "nan_input",
-      };
-    }
-    return {
-      nextTotal: toNanCalculatorValue(),
-      errorCode: execution.reason === "division_by_zero" ? DIVISION_BY_ZERO_ERROR_CODE : NAN_INPUT_ERROR_CODE,
-      errorKind: execution.reason === "division_by_zero" ? "division_by_zero" : "nan_input",
-    };
-  }
-
-  if (!isRationalCalculatorValue(execution.total)) {
-    if (execution.total.kind !== "expr") {
-      return {
-        nextTotal: toNanCalculatorValue(),
-        errorCode: NAN_INPUT_ERROR_CODE,
-        errorKind: "nan_input",
-      };
-    }
-    const symbolicExpression = buildSymbolicExpression(currentTotal, state.calculator.operationSlots);
-    const expressionForEvaluation = symbolicExpression.ok ? symbolicExpression.expression : execution.total.value;
-    const expressionKey = buildBuilderExpressionSignature(state.calculator.operationSlots);
-    const symbolicEvaluation = evaluateSymbolicExpression(expressionForEvaluation);
-    const symbolicText = symbolicEvaluation.ok
-      ? symbolicEvaluation.value.simplifiedText
-      : symbolicEvaluation.simplifiedText;
-    if (!symbolicEvaluation.ok) {
-      return toSymbolicExecution(expressionKey, symbolicText);
-    }
-    const rationalized = symbolicEvaluation.value.rationalValue;
-    if (!rationalized) {
-      return toSymbolicExecution(expressionKey, symbolicText);
-    }
-    const overflowChecked = applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, state);
-    return {
-      ...overflowChecked,
-      symbolic: toSymbolicPayload(expressionKey, symbolicText),
-      ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
-    };
-  }
-
-  const overflowChecked = applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, state);
-  return {
-    ...overflowChecked,
-    euclidRemainder: execution.euclidRemainder,
-  };
-};
-
 const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
   const factorization = getRollYPrimeFactorization(evaluation.nextTotal);
   return createRollEntry(evaluation.nextTotal, {
@@ -665,7 +603,6 @@ const withClearedStepProgress = (state: GameState): GameState => ({
 
 const evaluateExecutionOutcomeForSlots = (
   state: GameState,
-  execKey: ExecKey,
   seedTotal: GameState["calculator"]["total"],
   operationSlots: Slot[],
 ): EvaluatedExecution => {
@@ -739,7 +676,6 @@ const applyEquals = (state: GameState): GameState => {
   const finalized = withClearedStepProgress(finalizeDraftingSlot(state));
   const evaluation = evaluateExecutionOutcomeForSlots(
     finalized,
-    equalsKey,
     finalized.calculator.total,
     finalized.calculator.operationSlots,
   );
@@ -779,7 +715,7 @@ const applyEqualsFromStepProgress = (state: GameState): GameState => {
     return withClearedStepProgress(finalized);
   }
 
-  const evaluation = evaluateExecutionOutcomeForSlots(finalized, equalsKey, stepProgress.currentTotal, remainingSlots);
+  const evaluation = evaluateExecutionOutcomeForSlots(finalized, stepProgress.currentTotal, remainingSlots);
   const nextEntry = toRollEntry(evaluation);
   const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
   const nextRollEntries = appendStepRow(withSeed, nextEntry);
@@ -827,7 +763,7 @@ const applyStepThrough = (state: GameState): GameState => {
   }
 
   const slot = finalized.calculator.operationSlots[stepProgress.nextSlotIndex];
-  const evaluation = evaluateExecutionOutcomeForSlots(finalized, stepKey, stepProgress.currentTotal, [slot]);
+  const evaluation = evaluateExecutionOutcomeForSlots(finalized, stepProgress.currentTotal, [slot]);
   const nextResults = [...stepProgress.executedSlotResults, evaluation.nextTotal];
   const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + 1 >= finalized.calculator.operationSlots.length;
 
@@ -885,8 +821,6 @@ const applyC = (state: GameState): GameState => {
   };
 };
 
-const NUMERIC_DIGIT_RE = /^[0-9]$/;
-const isNumericDigit = (key: string): key is Digit => NUMERIC_DIGIT_RE.test(key);
 const isValueAtomConstant = (key: Key): key is ConstantKeyId => isConstantKeyId(key);
 
 const applyBackspace = (state: GameState): GameState => {

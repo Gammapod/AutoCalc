@@ -127,16 +127,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     refs.track.style.transform = `translate3d(0, ${translateY.toString()}px, 0)`;
   };
 
-  const getDrawerStride = (firstPanel: HTMLElement, secondPanel: HTMLElement): number => {
-    const firstRect = firstPanel.getBoundingClientRect();
-    const secondRect = secondPanel.getBoundingClientRect();
-    const measured = Math.abs(secondRect.left - firstRect.left);
-    if (measured > 0) {
-      return measured;
-    }
-    return Math.max(1, firstPanel.clientWidth);
-  };
-
   const getDrawerLeadInset = (viewport: HTMLElement, panel: HTMLElement): number =>
     Math.max(0, (viewport.clientWidth - panel.clientWidth) / 2);
 
@@ -233,10 +223,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     applyBottomDrawerTransform(refs, includeTransition);
   };
 
-  const focusMenuTarget = (refs: ShellRefs): void => {
-    refs.menuNavChecklist.focus();
-  };
-
   const restoreFocus = (refs: ShellRefs): void => {
     const target = returnFocusEl ?? refs.controlsMenu;
     returnFocusEl = null;
@@ -254,21 +240,6 @@ export const createShellRenderer = (root: Element): ShellRenderer => {
     if (focusReturn) {
       restoreFocus(refs);
     }
-  };
-
-  const openMenu = (triggerEl?: HTMLElement | null): void => {
-    if (runtimeState.latestInputBlocked || touchRearrange.isGestureBlocked()) {
-      return;
-    }
-    const refs = refsCache;
-    const state = runtimeState.latestState;
-    if (!refs || !state) {
-      return;
-    }
-    returnFocusEl = triggerEl ?? (document.activeElement instanceof HTMLElement ? document.activeElement : refs.controlsMenu);
-    controller.setMenuOpen(true);
-    syncSnapAndUi(refs, state, true);
-    focusMenuTarget(refs);
   };
 
   const snapUp = (): void => {

@@ -7,18 +7,20 @@ import { resolveUiShellMode } from "./uiShellMode.js";
 import { createInteractionRuntime } from "./interactionRuntime.js";
 import {
   createAutoEqualsScheduler,
-  normalizeLoadedStateForRuntime,
 } from "./autoEqualsScheduler.js";
-import { createCueLifecycleCoordinator } from "../ui/layout/cueLifecycle.js";
-import { subscribeCueTelemetry } from "../ui/layout/cueTelemetry.js";
+import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
+import { subscribeCueTelemetry } from "./workflows/cueTelemetry.js";
 import { createAllocatorCueCoordinator, getAllocatorIncreaseFromUnlocks } from "./allocatorCueCoordinator.js";
 import { createUnlockRevealCoordinator, createUnlockTracker } from "./unlockCueCoordinator.js";
-import { resolveBootstrapUiRefs } from "./ui/bootstrapUiRefs.js";
-import { createBootstrapUiController } from "./ui/bootstrapUiController.js";
+import { resolveBootstrapUiRefs } from "../ui/bootstrap/bootstrapUiRefs.js";
+import { createBootstrapUiController } from "../ui/bootstrap/bootstrapUiController.js";
 import { createResetRunHandler, createStoreSubscriptionCoordinator } from "./bootstrap/subscriptionCoordinator.js";
 import type { Action, GameState } from "../domain/types.js";
 import { resolveAppMode } from "./appMode.js";
 import { createSandboxState } from "../domain/sandboxPreset.js";
+import { normalizeLoadedStateForRuntime } from "../infra/persistence/runtimeLoadNormalizer.js";
+import { setContentProvider } from "../contracts/contentRegistry.js";
+import { defaultContentProvider } from "../content/defaultContentProvider.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -45,6 +47,7 @@ const root = document.querySelector("#app");
 if (!root) {
   throw new Error("#app root not found.");
 }
+setContentProvider(defaultContentProvider);
 const uiRefs = resolveBootstrapUiRefs(document);
 
 const storageRepo = createLocalStorageRepo(window.localStorage);
@@ -189,7 +192,6 @@ uiController = createBootstrapUiController({
   location: window.location,
   document,
   getState: () => store.getState(),
-  isInputBlocked: () => interactionRuntime.isInputBlocked(),
   onResetRun: appMode === "sandbox"
     ? () => {
       store.dispatch({ type: "HYDRATE_SAVE", state: createSandboxState() });

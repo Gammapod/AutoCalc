@@ -1,12 +1,12 @@
-import { unlockCatalog } from "../content/unlocks.catalog.js";
 import type { GameState } from "../domain/types.js";
-import { createCueLifecycleCoordinator } from "../ui/layout/cueLifecycle.js";
+import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
 import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
+import { getContentProvider } from "../contracts/contentRegistry.js";
 
 const ALLOCATOR_CUE_SETTLE_TIMEOUT_MS = 1100;
 
 const allocatorIncreaseByUnlockId = new Map(
-  unlockCatalog.flatMap((unlock) => {
+  getContentProvider().unlockCatalog.flatMap((unlock) => {
     if (unlock.effect.type !== "increase_allocator_max_points") {
       return [];
     }

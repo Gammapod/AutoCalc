@@ -48,3 +48,14 @@ The visualizer surface is governed by these invariants:
 2. Visualizer host active-panel selection and precedence is covered in `uiModule.visualizerHost.v2`.
 3. Graph model helpers (`points`, `x-window`, `y-window`, renderability) are covered by `graphDisplay`.
 4. Feed roll view-model behavior and graph/feed precedence is covered by `rollDisplay`.
+
+## Layer Boundary Hardening
+
+These import boundaries are CI-enforced by dependency-cruiser:
+
+1. `src/domain` must not import `src/ui`, `src/app`, or `src/content`.
+2. `src/ui` must not import `src/app`.
+3. `src/contracts` must not import `src/content`, `src/app`, `src/ui`, or `src/infra`.
+4. `src/content` must not import `src/ui`, `src/app`, or `src/infra`.
+
+Violation snapshots are written to `dist/reports/boundary-violations.json` during `ci:verify:boundaries`.

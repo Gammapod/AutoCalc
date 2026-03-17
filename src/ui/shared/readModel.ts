@@ -1,4 +1,3 @@
-import { unlockCatalog } from "../../content/unlocks.catalog.js";
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
 import { calculatorValueToDisplayString, computeOverflowBoundary } from "../../domain/calculatorValue.js";
 import { expressionToDisplayString, slotOperandToExpression } from "../../domain/expression.js";
@@ -33,6 +32,7 @@ import type {
   UnlockDefinition,
   UnlockEffect,
 } from "../../domain/types.js";
+import { getContentProvider } from "../../contracts/contentRegistry.js";
 
 export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "memory" | "step" | "settings" | "visualizers" | "execution";
 
@@ -1028,7 +1028,7 @@ export const buildVisibleChecklistRows = (
   state: GameState,
   options: BuildVisibleChecklistRowsOptions = {},
 ): ChecklistVisibleRowVm[] => {
-  const catalog = options.catalog ?? unlockCatalog;
+  const catalog = options.catalog ?? getContentProvider().unlockCatalog;
   const visibilityPolicy: ChecklistVisibilityPolicy = {
     ...DEFAULT_CHECKLIST_VISIBILITY_POLICY,
     ...(options.visibilityPolicy ?? {}),
@@ -1072,7 +1072,7 @@ export const buildVisibleChecklistRows = (
 
 export const buildUnlockRows = (
   state: GameState,
-  catalog: UnlockDefinition[] = unlockCatalog,
+  catalog: UnlockDefinition[] = getContentProvider().unlockCatalog,
   impossibleCheck: (unlock: UnlockDefinition, state: GameState) => boolean = isUnlockImpossible,
 ): UnlockRowVm[] => {
   const visibleRowsById = new Map(buildVisibleChecklistRows(state, { catalog }).map((row) => [row.id, row]));
@@ -1096,7 +1096,6 @@ export const buildUnlockRows = (
   const completed = visible.filter((row) => row.state === "completed");
   return [...pending, ...completed];
 };
-
 
 
 

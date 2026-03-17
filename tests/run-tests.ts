@@ -1,3 +1,4 @@
+import "./support/contentProviderSetup.js";
 import Algebrite from "algebrite";
 import * as keyCompat from "./support/keyCompat.js";
 import { runEngineTests } from "./engine.test.js";
@@ -88,6 +89,8 @@ import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
+import { runContentProviderWiringContractTests } from "./contentProviderWiring.contract.test.js";
+import { runShimInventoryTests } from "./shimInventory.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -178,6 +181,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/complexity-gate", runUiComplexityGateTests],
   ["app/app-mode-resolver", runAppModeResolverTests],
   ["domain/sandbox-preset", runSandboxPresetTests],
+  ["contracts/content-provider-wiring", runContentProviderWiringContractTests],
+  ["contracts/shim-inventory", runShimInventoryTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

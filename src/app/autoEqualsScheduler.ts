@@ -1,8 +1,13 @@
-import { AUTO_EQUALS_FLAG } from "../domain/state.js";
-import { getOperationSnapshot } from "../domain/slotDrafting.js";
 import { getAutoEqualsRateMultiplier as getLambdaAutoEqualsRateMultiplier } from "../domain/lambdaControl.js";
-import type { ExecKey, GameState, Key, Store } from "../domain/types.js";
+import type { GameState, Key, Store } from "../domain/types.js";
 import { KEY_ID } from "../domain/keyPresentation.js";
+import { AUTO_EQUALS_FLAG } from "../domain/state.js";
+import {
+  getInstalledExecutorKey,
+  hasValidAutoEqualsEquation,
+  isAutoEqualsEnabled,
+} from "../domain/autoEqualsPolicy.js";
+import { stableSignature } from "../infra/stateSignature.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
 export const AUTO_EQUALS_POINT_BONUS = 0.01;
@@ -30,10 +35,6 @@ const defaultTimers: TimerApi = {
   clearInterval: (handle) => clearInterval(handle),
 };
 
-const isAutoEqualsEnabled = (state: GameState): boolean => Boolean(state.ui.buttonFlags[AUTO_EQUALS_FLAG]);
-const hasValidEquation = (state: GameState): boolean => getOperationSnapshot(state.calculator).length > 0;
-const EXECUTOR_KEYS: readonly ExecKey[] = [KEY_ID.exec_equals];
-
 const getAutoEqualsRateMultiplier = (state: GameState): number => {
   return getLambdaAutoEqualsRateMultiplier(state.lambdaControl);
 };
@@ -41,45 +42,9 @@ const getAutoEqualsRateMultiplier = (state: GameState): number => {
 const getAutoEqualsIntervalMs = (state: GameState, baseIntervalMs: number): number =>
   baseIntervalMs / getAutoEqualsRateMultiplier(state);
 
-const isExecutorKey = (key: Key): key is ExecKey => EXECUTOR_KEYS.includes(key as ExecKey);
-
-const getInstalledExecutorKey = (state: GameState): ExecKey | null => {
-  for (const cell of state.ui.keyLayout) {
-    if (cell.kind === "key" && isExecutorKey(cell.key)) {
-      return cell.key;
-    }
-  }
-  return null;
-};
-
 type AutoActionPlan = {
   action: { type: "PRESS_KEY"; key: Key };
   key: Key;
-};
-
-const stableSignature = (value: unknown): string => {
-  const seen = new WeakSet<object>();
-  const walk = (input: unknown): unknown => {
-    if (typeof input === "bigint") {
-      return { __bigint: input.toString() };
-    }
-    if (Array.isArray(input)) {
-      return input.map((entry) => walk(entry));
-    }
-    if (input && typeof input === "object") {
-      if (seen.has(input as object)) {
-        return "[Circular]";
-      }
-      seen.add(input as object);
-      const out: Record<string, unknown> = {};
-      for (const key of Object.keys(input as Record<string, unknown>).sort()) {
-        out[key] = walk((input as Record<string, unknown>)[key]);
-      }
-      return out;
-    }
-    return input;
-  };
-  return JSON.stringify(walk(value));
 };
 
 const getAutoActionPlan = (state: GameState): AutoActionPlan | null => {
@@ -87,24 +52,7 @@ const getAutoActionPlan = (state: GameState): AutoActionPlan | null => {
   return fallbackExecutorKey ? { action: { type: "PRESS_KEY", key: fallbackExecutorKey }, key: fallbackExecutorKey } : null;
 };
 
-export const clearAutoEqualsFlagForRuntime = (state: GameState): GameState => {
-  if (!Object.prototype.hasOwnProperty.call(state.ui.buttonFlags, AUTO_EQUALS_FLAG)) {
-    return state;
-  }
-
-  const nextFlags = { ...state.ui.buttonFlags };
-  delete nextFlags[AUTO_EQUALS_FLAG];
-  return {
-    ...state,
-    ui: {
-      ...state.ui,
-      buttonFlags: nextFlags,
-    },
-  };
-};
-
-export const normalizeLoadedStateForRuntime = (loaded: GameState | null): GameState | null =>
-  loaded ? clearAutoEqualsFlagForRuntime(loaded) : loaded;
+export { normalizeLoadedStateForRuntime } from "../infra/persistence/runtimeLoadNormalizer.js";
 
 export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSchedulerOptions = {}) => {
   const baseIntervalMs = options.intervalMs ?? AUTO_EQUALS_INTERVAL_MS;
@@ -144,7 +92,10 @@ export const createAutoEqualsScheduler = (store: Store, options: AutoEqualsSched
     }
 
     const autoAction = autoPlan.action;
-    const validEquation = autoAction.type === "PRESS_KEY" && autoAction.key === KEY_ID.exec_equals ? hasValidEquation(beforeAttempt) : true;
+    const validEquation =
+      autoAction.type === "PRESS_KEY" && autoAction.key === KEY_ID.exec_equals
+        ? hasValidAutoEqualsEquation(beforeAttempt)
+        : true;
     dispatchAction(autoAction);
     onAutoKeyActivated(autoPlan.key);
     const afterAttempt = store.getState();

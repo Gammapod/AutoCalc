@@ -1,14 +1,10 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
-import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { initialState } from "../src/domain/state.js";
 import { buildUnlockCriteria } from "../src/domain/unlockEngine.js";
 import type { GameState, UnlockDefinition } from "../src/domain/types.js";
 import { buildUnlockRows, buildVisibleChecklistRows } from "../src/ui/shared/readModel.js";
-
-const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
-const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 
 export const runUnlocksDisplayTests = (): void => {
   const base = initialState();

@@ -1,6 +1,4 @@
-import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
-import { getSlotIdAtIndex, toCoordFromIndex } from "../../../domain/keypadLayoutModel.js";
-import type { Action, GameState, Key, KeyCell } from "../../../domain/types.js";
+import type { Action, GameState } from "../../../domain/types.js";
 import { buildStepBodyHighlightRegions, resolveStepBodyHighlightRects } from "../../stepHighlight.js";
 import { resolveLayoutMotionIntent } from "../../layout/motionCoordinator.js";
 import { beginMotionCycle, completeMotionCycle } from "../../layout/motionLifecycleBridge.js";
@@ -10,11 +8,7 @@ import {
   isDesktopShellContext,
   resolveSingleInstanceSnapshot,
 } from "../../layout/layoutAdapter.js";
-import { beginInputAnimationLock, bindQuickTapPressFeedback, shouldSuppressClick } from "../input/pressFeedback.js";
-import {
-  isToggleFlagActive,
-} from "../calculatorStorageCore.js";
-import { getKeyVisualGroup, resolveCalculatorKeysLocked } from "./dom.js";
+import { resolveCalculatorKeysLocked } from "./dom.js";
 import {
   buildOperationSlotDisplayModel,
   buildRollViewModel,

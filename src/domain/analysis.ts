@@ -1,4 +1,3 @@
-import { unlockCatalog } from "../content/unlocks.catalog.js";
 import {
   getPredicateCapabilitySpec,
   type CapabilityId,
@@ -10,6 +9,7 @@ import { isKeyUnlocked } from "./keyUnlocks.js";
 import type { GameState, Key, LayoutCell, UnlockDefinition, UnlockPredicate } from "./types.js";
 import { isBinaryOperatorKeyId, isUnaryOperatorId, KEY_ID } from "./keyPresentation.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
+import { getContentProvider } from "../contracts/contentRegistry.js";
 
 export type NumberDomainAnalysisOptions = {
   capabilityScope?: CapabilityScope;
@@ -252,7 +252,7 @@ const analyzeUnlockBySpec = (
 export const analyzeUnlockSpecRows = (
   state: GameState,
   options: NumberDomainAnalysisOptions = {},
-  catalog: UnlockDefinition[] = unlockCatalog,
+  catalog: UnlockDefinition[] = getContentProvider().unlockCatalog,
 ): UnlockSpecAnalysisRow[] => {
   const { isAvailable } = createAvailabilityReader(state, options);
   const caps = computeCapabilities(state, isAvailable);
@@ -309,7 +309,7 @@ export const analyzeNumberDomains = (
     integersNonNatural,
     generatedAtIso: now.toISOString(),
     reasoning,
-    unlockSpecAnalysis: analyzeUnlockSpecRows(state, options, unlockCatalog),
+    unlockSpecAnalysis: analyzeUnlockSpecRows(state, options, getContentProvider().unlockCatalog),
   };
 };
 

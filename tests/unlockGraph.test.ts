@@ -12,7 +12,7 @@ import {
   formatUnlockGraphMermaid,
   formatUnlockGraphReport,
 } from "../src/domain/unlockGraph.js";
-import { execution, k, valueExpr } from "./support/keyCompat.js";
+import { execution, valueExpr } from "./support/keyCompat.js";
 
 export const runUnlockGraphTests = (): void => {
   const startingKeys = deriveUnlockedKeysFromState(initialState());

@@ -99,7 +99,7 @@ const getGrapherRuntime = (root: Element): GrapherRuntime => {
   return created;
 };
 
-const buildGraphOptions = (hasPoints: boolean, points: GraphPoint[], maxXIndex: number, unlockedTotalDigits: number): GraphOptions => {
+const buildGraphOptions = (hasPoints: boolean, maxXIndex: number, unlockedTotalDigits: number): GraphOptions => {
   const xWindow = buildGraphXWindow(maxXIndex);
   const bounds = buildGraphYWindow(unlockedTotalDigits);
   const defaultWindowMax = buildGraphXWindow(0).max;
@@ -222,7 +222,7 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
 
   const points = buildGraphPoints(state.calculator.rollEntries);
   const hasPoints = isGraphRenderable(state.calculator.rollEntries);
-  const options = buildGraphOptions(hasPoints, points, toStepCount(state.calculator.rollEntries), state.unlocks.maxTotalDigits);
+  const options = buildGraphOptions(hasPoints, toStepCount(state.calculator.rollEntries), state.unlocks.maxTotalDigits);
   const pointBackgroundColor = points.map((point) => {
     if (point.kind === "remainder") {
       return "#ffd84d";

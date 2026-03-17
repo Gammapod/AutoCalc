@@ -1,4 +1,4 @@
-import { getButtonDefinition, type ButtonBehaviorKind, type ButtonHandlerOverrideId, type ButtonKey } from "./buttonRegistry.js";
+import { getButtonDefinition, type ButtonBehaviorKind, type ButtonHandlerOverrideId } from "./buttonRegistry.js";
 import { buttonRegistry } from "./buttonRegistry.js";
 import { resolveKeyId, toLegacyKey, type KeyLike } from "./keyPresentation.js";
 

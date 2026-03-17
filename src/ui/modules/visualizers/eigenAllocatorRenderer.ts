@@ -1,4 +1,4 @@
-import { getLambdaDerivedValues, getLambdaUnusedPoints, toNumber } from "../../../domain/lambdaControl.js";
+import { getLambdaDerivedValues } from "../../../domain/lambdaControl.js";
 import type { GameState, MemoryVariable } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 
@@ -33,8 +33,6 @@ const buildEigenAllocatorLatex = (state: GameState): string => {
   const derived = getLambdaDerivedValues(state.lambdaControl);
   const delta = derived.deltaEffective;
   const epsilon = toDisplayString(derived.epsilonEffective);
-  const epsilonFloat = toNumber(derived.epsilonEffective);
-  const unused = getLambdaUnusedPoints(state.lambdaControl);
   return String.raw`
 \text{ALLOCATOR ~,==,"<}\\[10pt]
 \begin{bmatrix}

@@ -1,5 +1,6 @@
 import { analyzeUnlockSpecRows, type NumberDomainReport, type UnlockSpecAnalysisRow } from "../domain/analysis.js";
 import type { GameState } from "../domain/types.js";
+import { getContentProvider } from "../contracts/contentRegistry.js";
 
 type UnlockSpecStatusCounts = {
   satisfied: number;
@@ -32,20 +33,21 @@ const countVisibleByChecklistPolicy = (rows: UnlockSpecAnalysisRow[]): number =>
   }, 0);
 
 export const formatNumberDomainReport = (report: NumberDomainReport, state?: GameState): string => {
+  const text = getContentProvider().uiText.analysis;
   const counts = countByStatus(report.unlockSpecAnalysis);
   const visibleInActiveScope = countVisibleByChecklistPolicy(report.unlockSpecAnalysis);
 
   const lines = [
-    "Number Domain Analysis",
+    text.title,
     `Generated: ${report.generatedAtIso}`,
     "",
     `(\u2115) Natural Numbers: ${report.naturalNumbers ? "true" : "false"}`,
     `(\u2124) Integers: ${report.integersNonNatural ? "true" : "false"}`,
     "",
-    "Reasoning:",
+    text.reasoning,
     ...report.reasoning.map((line) => `- ${line}`),
     "",
-    "Unlock Spec Analysis:",
+    text.unlockSpec,
     `- satisfied=${counts.satisfied} possible=${counts.possible} blocked=${counts.blocked} unknown=${counts.unknown} todo=${counts.todo}`,
     `- checklistVisibleByPolicy=${visibleInActiveScope}/${report.unlockSpecAnalysis.length}`,
     ...report.unlockSpecAnalysis.map(
@@ -64,7 +66,7 @@ export const formatNumberDomainReport = (report: NumberDomainReport, state?: Gam
 
     lines.push(
       "",
-      "Checklist Visibility Scope Compare:",
+      text.scopeCompare,
       `- present_on_keypad visible=${keypadOnlyVisible}/${keypadOnlyRows.length} blocked=${keypadOnlyCounts.blocked}`,
       `- all_unlocked visible=${allUnlockedVisible}/${allUnlockedRows.length} blocked=${allUnlockedCounts.blocked}`,
       `- delta_visible=${(allUnlockedVisible - keypadOnlyVisible).toString()}`,

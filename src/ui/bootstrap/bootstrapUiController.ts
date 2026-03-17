@@ -1,7 +1,9 @@
 import { KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../../domain/state.js";
 import type { GameState } from "../../domain/types.js";
-import type { AppMode } from "../appMode.js";
+import type { AppMode } from "../../contracts/appMode.js";
 import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
+import { serializeRollEntriesForDebug } from "../../infra/debug/rollStateSerializer.js";
+import { getContentProvider } from "../../contracts/contentRegistry.js";
 
 type UiShellMode = "mobile" | "desktop";
 
@@ -12,7 +14,6 @@ type BootstrapUiControllerDeps = {
   location: Location;
   document: Document;
   getState: () => GameState;
-  isInputBlocked: () => boolean;
   onResetRun: () => void;
   onUnlockAll: () => void;
   onSetKeypadDimensions: (columns: number, rows: number) => void;
@@ -36,21 +37,6 @@ const clampNonNegativeInteger = (value: number, fallback: number): number => {
   }
   return Math.max(0, value);
 };
-
-const serializeRationalForDebug = (value: { num: bigint; den: bigint }): { num: string; den: string } => ({
-  num: value.num.toString(),
-  den: value.den.toString(),
-});
-
-const serializeCalculatorValueForDebug = (value: GameState["calculator"]["total"]):
-  | { kind: "nan" }
-  | { kind: "rational"; value: { num: string; den: string } }
-  | { kind: "expr"; value: string } =>
-  value.kind === "nan"
-    ? { kind: "nan" }
-    : value.kind === "rational"
-      ? { kind: "rational", value: serializeRationalForDebug(value.value) }
-      : { kind: "expr", value: JSON.stringify(value.value) };
 
 const getOppositeUiShellMode = (mode: UiShellMode): UiShellMode =>
   mode === "mobile" ? "desktop" : "mobile";
@@ -76,7 +62,6 @@ export const createBootstrapUiController = ({
   location,
   document,
   getState,
-  isInputBlocked,
   onResetRun,
   onUnlockAll,
   onSetKeypadDimensions,
@@ -110,13 +95,17 @@ export const createBootstrapUiController = ({
 
   const syncUiShellToggleLink = (): void => {
     const targetMode = getOppositeUiShellMode(uiShellMode);
-    refs.toggleUiShellLink.textContent = `Switch to ${targetMode === "desktop" ? "Desktop" : "Mobile"} UI`;
+    refs.toggleUiShellLink.textContent = targetMode === "desktop"
+      ? getContentProvider().uiText.switches.desktop
+      : getContentProvider().uiText.switches.mobile;
     refs.toggleUiShellLink.setAttribute("href", getUiShellToggleUrl(location, uiShellMode));
   };
 
   const syncAppModeToggleLink = (): void => {
     const targetMode = getOppositeAppMode(appMode);
-    refs.toggleAppModeLink.textContent = `Switch to ${targetMode === "sandbox" ? "Sandbox" : "Game"} Mode`;
+    refs.toggleAppModeLink.textContent = targetMode === "sandbox"
+      ? getContentProvider().uiText.switches.sandbox
+      : getContentProvider().uiText.switches.game;
     refs.toggleAppModeLink.setAttribute("href", getAppModeToggleUrl(location, appMode));
   };
 
@@ -128,17 +117,7 @@ export const createBootstrapUiController = ({
     refs.keypadHeightInput.value = state.ui.keypadRows.toString();
     refs.debugMaxPointsInput.value = state.lambdaControl.maxPoints.toString();
 
-    const serializedRollState = state.calculator.rollEntries.map((entry, index) => ({
-      x: index,
-      y: serializeCalculatorValueForDebug(entry.y),
-      ...(entry.remainder ? { remainder: serializeRationalForDebug(entry.remainder) } : {}),
-      ...(entry.error ? { error: entry.error } : {}),
-      d1: entry.d1 ? serializeRationalForDebug(entry.d1) : null,
-      d2: entry.d2 ? serializeRationalForDebug(entry.d2) : null,
-      r1: entry.r1 ? serializeRationalForDebug(entry.r1) : null,
-      seedMinus1Y: entry.seedMinus1Y ? serializeCalculatorValueForDebug(entry.seedMinus1Y) : null,
-      seedPlus1Y: entry.seedPlus1Y ? serializeCalculatorValueForDebug(entry.seedPlus1Y) : null,
-    }));
+    const serializedRollState = serializeRollEntriesForDebug(state);
     refs.debugRollStateEl.textContent = JSON.stringify(
       {
         rollEntries: serializedRollState,

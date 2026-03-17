@@ -1,31 +1,11 @@
 import {
   keyCatalog,
-  type KeyBehaviorKind,
   type KeyCatalogEntry,
-  type KeyHandlerOverrideId,
 } from "./keyCatalog.js";
-
-export type KeyRuntimeUnlockBucket =
-  | "valueExpression"
-  | "slotOperators"
-  | "unaryOperators"
-  | "utilities"
-  | "memory"
-  | "steps"
-  | "visualizers"
-  | "execution"
-  | "none";
-
-export type KeyRuntimeBehaviorKind = KeyBehaviorKind;
-export type KeyRuntimeCatalogEntry = {
-  key: string;
-  category: string;
-  unlockBucket: KeyRuntimeUnlockBucket;
-  defaultUnlocked: boolean;
-  supportsPressCount: boolean;
-  behaviorKind: KeyRuntimeBehaviorKind;
-  handlerOverrideId?: KeyHandlerOverrideId;
-};
+import type {
+  KeyRuntimeUnlockBucket,
+  KeyRuntimeCatalogEntry,
+} from "../contracts/keyRuntimeCatalog.js";
 
 const toRuntimeUnlockBucket = (entry: KeyCatalogEntry): KeyRuntimeUnlockBucket => {
   if (entry.unlockGroup === "valueAtoms" || entry.unlockGroup === "valueCompose") {

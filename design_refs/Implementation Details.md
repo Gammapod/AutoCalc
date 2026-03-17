@@ -1,6 +1,6 @@
 # AutoCalc Implementation Details (Current Runtime Contract)
 
-Last updated: 2026-03-03
+Last updated: 2026-03-16
 Scope: Runtime behavior implemented in `src/` and active shell rendering in `src/`.
 
 ## Architecture Overview
@@ -16,14 +16,13 @@ Primary layers:
 
 ## Runtime Key Types
 
-Current key families:
+Canonical key IDs and key-family type definitions are maintained in:
 
-```ts
-type SlotOperator = "+" | "-" | "*" | "/" | "#" | "\u27E1";
-type ValueExpressionKey = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "NEG";
-type UtilityKey = "C" | "CE" | "UNDO" | "GRAPH" | "\u23EF";
-type ExecKey = "=" | "++";
-```
+- `src/domain/keyPresentation.ts` (`KEY_ID`, `*KeyId` type unions)
+- `src/domain/types.ts` (domain key aliases such as `SlotOperator`, `ExecKey`, `UtilityKey`)
+- `src/content/keyCatalog.ts` (catalog metadata: category, unlock group, behavior kind, input family)
+
+Documentation should reference these files instead of duplicating key lists.
 
 ## Calculator State Model
 
@@ -69,12 +68,11 @@ Roll behavior for `=`:
 
 ## Utility Key Behavior
 
-- `CE`: clears roll/drafting/slots/remainders/errors while preserving current total.
 - `C`: full calculator reset to zero rational total and clean run state.
+- `\u2190`: backspace behavior for current input/drafting path.
 - `UNDO`: pops one roll entry when available and restores prior roll total.
-- `GRAPH`: utility key present in unlocks/layout; actual graph visibility is controlled via toggle behavior.
-- `\u23EF`: toggle-style utility tied to execution pause flag.
-- `NEG`: toggles sign for total or drafting operand under reducer gating rules.
+- `\u27E1[-\u{1D6FF}, \u{1D6FF})` / `\u27E1[0, \u{1D6FF})`: runtime toggle keys in the utilities/settings group.
+- `[ ??? ]`: step-expansion toggle key (rendering-mode toggle, not execution-result logic).
 
 ## Unlock and Layout Model
 
