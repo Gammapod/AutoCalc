@@ -1,6 +1,6 @@
 # AutoCalc UX Guidelines
 
-Last updated: 2026-03-14
+Last updated: 2026-03-17
 Scope: Current UX behavior that matches implemented runtime/UI behavior.
 
 ## 1. UX Invariants
@@ -38,3 +38,12 @@ Scope: Current UX behavior that matches implemented runtime/UI behavior.
 
 - Use `U+2013` (en dash) for subtraction operation notation.
 - Use `-` (hyphen-minus) for negative sign notation.
+
+## 7. Semantic Visual Families
+
+These are semantic grouping rules for visualizers and function displays. They define meaning channels, not fixed hex values.
+
+- Modular arithmetic family: modulo, cycle analysis, and congruence visuals share one semantic channel (default hue direction: yellow/amber).
+- Control/resource family: memory, control matrix, and lambda visuals share one semantic channel.
+- Error family: errors use a dedicated semantic channel distinct from all non-error families.
+- Do not use color alone for family meaning; pair each family with at least one additional cue (label, icon, pattern, or motion/state treatment).

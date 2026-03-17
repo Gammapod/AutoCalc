@@ -1,137 +1,233 @@
 # AutoCalc Functional Specification
 
-Last updated: 2026-03-17  
-Status: Draft v1  
-Purpose: Define design truths and behavioral invariants that must remain true regardless of implementation details.
+Last updated: 2026-03-17
+Status: Draft v2 (design-truth restructure)
+Purpose: Define player-facing functional truth, independent of implementation structure.
 
 ## 1. Scope and Precedence
 
-This document specifies what AutoCalc must do as a game system. It is implementation-agnostic.
+This document specifies what AutoCalc MUST do as a game system.
 
-Precedence order for behavior decisions:
+Precedence order:
 
 1. This functional specification
 2. Contract docs (for example `docs/contracts/ui-domain-contract.md`)
-3. Feature/milestone docs
+3. Milestone/feature docs
 4. Implementation details
 
-If implementation conflicts with this document, implementation is considered incorrect.
+If implementation conflicts with this document, implementation is incorrect.
 
 ## 2. Product Identity
 
-AutoCalc is a calculator-first progression game.  
-Player capability is represented by unlocked input/actions.  
-Progression is earned by demonstrated behavior, not by spending a generic currency.
+AutoCalc is a calculator-first progression game.
 
-## 3. System Model (Design-Level)
+- Player capability is represented by unlocked actions.
+- Progression is earned by demonstrated behavior.
+- Shell/UI presentation may vary, but game semantics MUST remain invariant.
 
-The game consists of:
+## 3. Top-Level Player Interfaces
 
-1. A deterministic state transition system driven by player actions.
-2. A progression system that evaluates predicates over player-visible history/state.
-3. A UI shell that presents and emits actions but does not define game semantics.
-4. A persistence system that restores equivalent gameplay state across sessions.
+The player interacts with two top-level interfaces:
 
-## 4. Core Design Truths (Invariants)
+1. Global State Interface
+2. Calculator State Interface
 
-Each invariant is normative and testable.
+### 3.1 Global State Interface
 
-### 4.1 Determinism and State Semantics
+The Global State Interface governs session continuity, progression capability state, and shared storage policy.
 
-- `FS-DET-01`: Given the same initial state and same action sequence, resulting gameplay state is identical.
-- `FS-DET-02`: Action semantics are platform-independent (mobile/desktop may differ in interaction mechanics, not outcomes).
-- `FS-DET-03`: No UI-only effect may alter domain outcome unless it emits a domain action that explicitly encodes that effect.
+#### 3.1.1 Saves and Session
 
-### 4.2 Input and Execution Semantics
+- `FS-GS-01` (MUST): Save/load round-trip preserves gameplay-equivalent global state.
+  Rationale: session continuity must not change player capability semantics.
+- `FS-GS-02` (MUST): Malformed or incompatible save payloads fail safe.
+  Rationale: invalid persistence must not create undefined progression state.
 
-- `FS-EXEC-01`: Unlocked keys define the set of legal player actions.
-- `FS-EXEC-02`: Locked keys are inert for gameplay progression and state mutation (except explicitly defined non-gameplay telemetry).
-- `FS-EXEC-03`: Standard execution (`=`) resolves the currently committed operation sequence deterministically.
-- `FS-EXEC-04`: Any stepped/partial execution mode must preserve final-result equivalence with full execution when both complete.
-- `FS-EXEC-05`: Error outcomes are first-class execution results and must be represented consistently in state/history.
+#### 3.1.2 Storage Model
 
-### 4.3 Progression and Unlock Semantics
+- `FS-GS-03` (MUST): Storage is global progression-governed inventory/surface, not an execution engine.
+  Rationale: storage controls access/placement, not math outcomes.
+- `FS-GS-04` (MUST): Storage interactions may change action availability ergonomics, but not action meaning.
+  Rationale: relocation cannot redefine key semantics.
 
-- `FS-PROG-01`: Unlock predicates are evaluated against player state/history, not presentation-layer artifacts.
-- `FS-PROG-02`: Unlock completion is monotonic unless a specific unlock is explicitly designed as reversible.
-- `FS-PROG-03`: Unlock effects expand or reconfigure capability without invalidating already-earned progression.
-- `FS-PROG-04`: Equivalent player behavior must yield equivalent unlock outcomes across supported shells.
+#### 3.1.3 Unlock/Progression (Gameplay Spine)
 
-### 4.4 History (Roll) Semantics
+- `FS-UP-01` (MUST): Unlock runtime state is progression-owned under Global State.
+  Rationale: capability ownership must be singular and auditable.
+- `FS-UP-02` (MUST): Unlock predicates evaluate canonical domain state/history, never presentation artifacts.
+  Rationale: progression truth must be shell-agnostic.
+- `FS-UP-03` (MUST): Unlock completion is monotonic unless explicitly defined as reversible.
+  Rationale: earned progress should not silently regress.
+- `FS-UP-04` (MUST): Equivalent action histories produce equivalent unlock outcomes across shells.
+  Rationale: platform parity is a core player promise.
+- `FS-UP-05` (MUST): Implemented key catalog/type definition is separate from unlock runtime flags.
+  Rationale: static key identity and dynamic capability state are distinct concerns.
+- `FS-UP-06` (SHALL): Locked capabilities remain inert for gameplay mutation.
+  Rationale: locked actions must not create hidden state change paths.
 
-- `FS-HIST-01`: History is an auditable record of executed outcomes, not transient drafting state.
-- `FS-HIST-02`: Error and remainder channels are part of canonical history semantics when present.
-- `FS-HIST-03`: History display differences are allowed, but history meaning is invariant.
+#### 3.1.4 Traceability (Global State)
 
-### 4.5 Layout and Surface Semantics
-
-- `FS-LAYOUT-01`: Layout/storage systems may change action access ergonomics but may not change action meaning.
-- `FS-LAYOUT-02`: Move/swap validity constraints are game rules and therefore domain-consistent across shells.
-- `FS-LAYOUT-03`: Shell-specific gestures are implementation choices; their emitted action intent must preserve domain rules.
-
-### 4.6 Visualizer and Read-Model Semantics
-
-- `FS-VIZ-01`: Visualizers are projections of canonical state and must not become alternative sources of truth.
-- `FS-VIZ-02`: Changing active visualizer must not alter calculator/progression outcomes by itself.
-- `FS-VIZ-03`: Unsupported or unavailable visualizer states must degrade to a defined safe default.
-
-### 4.7 Persistence and Migration Semantics
-
-- `FS-PERS-01`: Save/load round-trip preserves gameplay-equivalent state.
-- `FS-PERS-02`: Legacy payload migration may normalize structure, but must preserve intended player progression semantics when representable.
-- `FS-PERS-03`: Malformed/invalid persisted payloads fail safe and must not produce undefined gameplay states.
-
-## 5. Allowed Variation (Non-Invariants)
-
-The following may vary without violating the design:
-
-1. Visual composition, density, and motion style.
-2. Input modality details (click/touch/gesture/keyboard), provided action intent is preserved.
-3. Internal module boundaries, naming, and refactors.
-4. Data structures that are behaviorally equivalent.
-
-## 6. Contract Clause Style
-
-All contract clauses should map to this format:
-
-1. `Clause ID` (for example `FS-EXEC-04`)
-2. `Behavioral statement` (player/system truth)
-3. `Observable oracle` (what can be checked)
-4. `Negative case` (what must fail)
-5. `Current test coverage` (suite names)
-
-## 7. Test Strategy Requirements (Spec-Driven)
-
-- `FS-TEST-01`: Every invariant in Section 4 must have at least one automated assertion.
-- `FS-TEST-02`: High-risk invariants (`DET`, `EXEC`, `PROG`, `PERS`) must have at least one multi-step workflow test, not only unit assertions.
-- `FS-TEST-03`: Contract tests must assert behavior semantics (action/state outcomes), not pixel-level rendering parity.
-- `FS-TEST-04`: Fixture-registration tests alone do not satisfy invariant coverage for parity/fuzz claims; invariants require executable comparisons.
-
-## 8. Traceability Matrix (Template)
-
-Use this table to keep design truths connected to tests:
-
-| Invariant ID | Design Truth Summary | Primary Test Suites | Coverage Type | Gap/Notes |
+| Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
-| FS-DET-01 | Deterministic state transitions |  | Unit + Integration |  |
-| FS-EXEC-04 | Stepped vs full execution equivalence |  | Workflow |  |
-| FS-PROG-04 | Cross-shell unlock equivalence |  | Integration + Contract |  |
-| FS-PERS-01 | Save/load gameplay equivalence |  | Unit + Migration |  |
+| FS-GS-01 | Save/load preserves gameplay-equivalent global state | `persistence`, `v2/persistence-parity` | unit + contract | none |
+| FS-GS-02 | Malformed/incompatible saves fail safe | `persistence` | unit | none |
+| FS-GS-03 | Storage is global inventory/surface, not execution engine | `ui/storage-display`, `ui/drag-drop-behavior` | integration | partial: semantic clause, no dedicated contract ID suite |
+| FS-GS-04 | Storage changes do not alter key meaning | `contracts/ui-action-emission`, `domain/key-identity-adapters` | contract + unit | partial: no direct end-to-end assertion |
+| FS-UP-01 | Unlock runtime state progression-owned | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership is indirectly asserted |
+| FS-UP-02 | Predicate evaluation uses canonical state/history | `domain/unlock-engine` | unit | none |
+| FS-UP-03 | Unlock completion monotonic by default | `content-drill/unlock-extension`, `domain/unlock-engine` | workflow + unit | gap: no generic monotonicity property test |
+| FS-UP-04 | Cross-shell unlock outcome equivalence | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity` | integration + parity | partial: no unlock-focused cross-shell parity fixture |
+| FS-UP-05 | Key catalog/type is separate from runtime unlock flags | `domain/button-registry-contract`, `domain/key-action-handlers-contract`, `domain/key-catalog-normalization` | contract + unit | none |
+| FS-UP-06 | Locked capabilities are inert | `reducer/input`, `domain/key-unlocks` | unit | none |
 
-## 9. Out of Scope
+### 3.2 Calculator State Interface
+
+The Calculator State Interface governs the active calculator runtime model.
+
+#### 3.2.1 Core Calculator Surfaces
+
+- `FS-CS-01` (MUST): Calculator state owns keypad, roll/history, display/visualizer projection, and control matrix state.
+  Rationale: these are calculator-local runtime semantics.
+- `FS-CS-02` (MUST): Control matrix semantics are calculator-local capabilities.
+  Rationale: control behavior must remain cohesive with calculator runtime.
+- `FS-CS-03` (MUST): Visualizers are projections of canonical calculator state and cannot become alternate sources of truth.
+  Rationale: read-model/UI cannot override domain truth.
+- `FS-CS-04` (MUST): Roll/history represents executed outcomes, not transient drafting intent.
+  Rationale: history is an auditable execution trail.
+- `FS-CS-05` (MUST): Error and remainder channels are canonical parts of execution outcome semantics when present.
+  Rationale: failure modes and remainders are gameplay-relevant outputs.
+
+#### 3.2.1.a Semantic Visual Families (Visualizer + Function Displays)
+
+- `FS-CS-06` (MUST): Modulo, cycle analysis, and congruence concepts share one semantic visual family across visualizers and function displays.
+  Rationale: players should recognize modular arithmetic concepts as one conceptual channel.
+- `FS-CS-07` (MUST): Memory, control matrix, and lambda-related concepts share one semantic visual family across visualizers and function displays.
+  Rationale: control/resource concepts should read as one coherent operational channel.
+- `FS-CS-08` (MUST): Error concepts use a distinct semantic visual family that cannot be confused with normal operation families.
+  Rationale: failure state readability must be immediate and unambiguous.
+- `FS-CS-09` (SHALL): Semantic families are not conveyed by color alone; at least one additional cue (iconography, labeling, pattern, or motion state) is provided.
+  Rationale: semantic readability and accessibility must not depend on color perception alone.
+
+#### 3.2.2 Function Builder and Operation Slots (Gameplay Spine)
+
+- `FS-FB-01` (MUST): Seed total semantics are deterministic and explicit.
+  Rationale: all operation trajectories depend on seed interpretation.
+- `FS-FB-02` (MUST): Standard execution resolves committed operation slots deterministically (left-to-right semantics).
+  Rationale: execution order is core gameplay truth.
+- `FS-FB-03` (MUST): Value/number behavior is capability-gated by unlocked key state.
+  Rationale: progression must control expression power.
+- `FS-FB-04` (SHALL): Alternate settings modify execution only through explicit modeled flags.
+  Rationale: optional behavior must stay declarative and testable.
+- `FS-FB-05` (MUST): Step-through partial execution preserves terminal equivalence with full execution when completion scope is equal.
+  Rationale: step-through is an interaction mode, not a different math system.
+- `FS-FB-06` (MUST): Execution finalization commits one terminal outcome per completion path.
+  Rationale: prevents duplicate roll/terminal writes.
+- `FS-FB-07` (MUST): If step-through capability is absent, step-specific behavior is inert.
+  Rationale: unavailable capabilities cannot leak behavior.
+
+#### 3.2.3 Traceability (Calculator State)
+
+| Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
+|---|---|---|---|---|
+| FS-CS-01 | Calculator owns keypad/roll/display/control matrix runtime semantics | `ui/runtime-registry`, `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: interface ownership is inferred |
+| FS-CS-02 | Control matrix is calculator-local capability | `domain/sandbox-preset`, `app/analysis-report` | unit | gap: no explicit control-matrix locality contract suite |
+| FS-CS-03 | Visualizers are projections, not truth source | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
+| FS-CS-04 | Roll is executed outcomes, not drafting state | `reducer/input`, `ui/roll-display`, `contracts/slot-input-parity` | unit + integration + contract | none |
+| FS-CS-05 | Error/remainder channels are canonical outcomes | `reducer/input`, `ui/total-display`, `ui/roll-display`, `persistence` | unit + integration | none |
+| FS-CS-06 | Modulo/cycle/congruence share one semantic visual family | `ui/graph-display`, `ui-module/grapher-v2` | integration | gap: no explicit semantic-family contract assertion |
+| FS-CS-07 | Memory/control-matrix/lambda share one semantic visual family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract assertion |
+| FS-CS-08 | Errors use distinct semantic visual family | `ui/total-display`, `ui/roll-display` | integration | partial: behavior tested, family-level visual contract absent |
+| FS-CS-09 | Semantic families are not color-only | `ui-shell/menu-a11y` | integration | gap: no dedicated accessibility contract for semantic family cues |
+| FS-FB-01 | Deterministic seed semantics | `reducer/input`, `contracts/slot-input-target-spec` | unit + contract | partial: target-spec scenarios are selective |
+| FS-FB-02 | Deterministic slot execution order | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | none |
+| FS-FB-03 | Value/number behavior is capability-gated | `domain/key-unlocks`, `reducer/input`, `domain/key-behavior-contract` | unit + contract | none |
+| FS-FB-04 | Alternate settings use explicit flags | `reducer/input`, `domain/key-action-handlers-contract` | unit + contract | partial: no dedicated cross-feature settings matrix |
+| FS-FB-05 | Step-through terminal equivalence with full execution | `reducer/input`, `ui-integration/mobile-shell`, `ui-integration/desktop-shell` | unit + workflow/integration | none |
+| FS-FB-06 | Finalization writes one terminal outcome per completion path | `reducer/input`, `persistence` | unit | partial: no dedicated long-trace finalization stress suite |
+| FS-FB-07 | Step behavior inert when capability absent | `reducer/input`, `ui-integration/mobile-shell` | unit + integration | none |
+
+## 4. Cross-Interface Boundary Clauses
+
+- `FS-BND-01` (MUST): Global state may gate calculator capability inputs but MUST NOT directly mutate in-progress calculator execution except via explicit domain actions.
+  Rationale: preserves deterministic action-driven state transitions.
+- `FS-BND-02` (MUST): Calculator state consumes capability inputs but MUST NOT define unlock predicates/effects.
+  Rationale: progression logic remains globally owned.
+- `FS-BND-03` (MUST): Shell-specific layout/gesture behavior may diverge, but emitted domain action intent and resulting state outcomes remain equivalent.
+  Rationale: interaction modality is allowed divergence; game outcome is not.
+- `FS-BND-04` (SHALL): Contract-layer definitions remain implementation-independent from app/ui/infra/content wiring.
+  Rationale: contracts should encode stable semantics, not runtime coupling.
+
+### 4.1 Traceability (Boundaries)
+
+| Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
+|---|---|---|---|---|
+| FS-BND-01 | Global gating cannot directly mutate execution outside actions | `v2/import-boundary`, `app/bootstrap-boundary` | contract + boundary | gap: no direct action-bypass mutation test |
+| FS-BND-02 | Calculator does not own unlock predicate/effect definitions | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership tested indirectly |
+| FS-BND-03 | Shell divergence allowed; outcomes must remain equivalent | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity`, `contracts/ui-action-emission` | integration + parity + contract | none |
+| FS-BND-04 | Contracts remain implementation-independent | `app/bootstrap-boundary`, `contracts/shim-inventory`, `browser/import-safety` | boundary + contract | partial: semantic independence asserted via import boundaries |
+
+## 5. Conceptual Contracts (Spec-Level Interfaces)
+
+These are stable documentation interfaces for test/contract alignment, not code symbols.
+
+1. `Global State Interface`
+   Defines save/session semantics, storage policy, and progression-owned unlock runtime state.
+2. `Calculator State Interface`
+   Defines keypad, roll, visualizer projection, and control matrix runtime semantics.
+3. `Progression Capability Contract`
+   Defines how unlock predicates/effects map to capability gating consumed by calculator behavior.
+4. `Function Builder Contract`
+   Defines seed, operation-slot, setting-modifier, step-through, and finalization semantics.
+
+## 6. Test Strategy Requirements (Spec-Driven)
+
+- `FS-TEST-01` (MUST): Every normative clause in this document has a unique ID and appears in exactly one traceability table.
+- `FS-TEST-02` (MUST): High-risk clauses (determinism, execution, progression, persistence) map to at least one executable automated suite.
+- `FS-TEST-03` (SHALL): Coverage labels classify each mapped suite as `unit`, `workflow/integration`, or `contract`.
+- `FS-TEST-04` (MUST): Fixture-registration-only suites do not satisfy parity/fuzz behavioral claims.
+
+### 6.1 Traceability (Test Requirements)
+
+| Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
+|---|---|---|---|---|
+| FS-TEST-01 | Every normative clause has unique ID and one table entry | this document | spec governance | manual check required |
+| FS-TEST-02 | High-risk clauses map to executable suites | `reducer/input`, `persistence`, `v2/parity`, `ui-integration/*`, `contracts/action-event-round-trip` | mixed | none |
+| FS-TEST-03 | Coverage classification is explicit | this document tables | spec governance | none |
+| FS-TEST-04 | Fixture-only suites do not count as parity/fuzz execution | `contracts/parity-long-traces`, `contracts/parity-seeded-fuzz` | contract hygiene | gap: current suites are fixture-presence checks only |
+
+## 7. Current Gap Report (Initial Baseline)
+
+### 7.1 Invariants with no direct executable assertion
+
+1. `FS-CS-02` control matrix locality has no explicit dedicated contract/assertion suite.
+2. `FS-BND-01` action-bypass mutation prevention is not directly asserted as a behavior test.
+
+### 7.2 Invariants with only partial or indirect coverage
+
+1. `FS-UP-01` and `FS-BND-02` ownership rules are inferred through contract wiring/boundary tests, not directly behavior-specified.
+2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
+3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but not yet as explicit contract clauses.
+4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
+
+### 7.3 Fixture-only parity/fuzz coverage flags
+
+1. `contracts/parity-long-traces` currently checks fixture registration, not parity execution.
+2. `contracts/parity-seeded-fuzz` currently checks seed fixture presence, not seeded run outcome equivalence.
+
+## 8. Out of Scope
 
 This document does not define:
 
-1. Detailed UI layout specs.
-2. Art direction or animation timing details.
-3. Internal implementation architecture.
-4. Milestone planning specifics.
+1. Visual styling/theming specifics.
+2. Animation choreography details.
+3. Internal module/file architecture decisions.
+4. Milestone sequencing and delivery dates.
 
-## 10. Change Control
+## 9. Change Control
 
-When behavior changes intentionally:
+When intentional behavior changes occur:
 
-1. Update relevant invariant clauses first.
-2. Update contract clauses and tests second.
+1. Update affected functional clauses first.
+2. Update contracts/tests second.
 3. Update implementation third.
-4. Reject behavior changes that have no associated invariant or clause update.
+4. Reject behavior changes without clause and traceability updates.
