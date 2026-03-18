@@ -46,7 +46,10 @@ const parseDragTarget = (value: unknown): DragTarget | null => {
     return null;
   }
   const target = value as { surface?: unknown; index?: unknown };
-  if ((target.surface !== "keypad" && target.surface !== "storage") || typeof target.index !== "number") {
+  if (
+    (target.surface !== "keypad" && target.surface !== "keypad_f" && target.surface !== "keypad_g" && target.surface !== "storage")
+    || typeof target.index !== "number"
+  ) {
     return null;
   }
   if (!Number.isInteger(target.index) || target.index < 0) {

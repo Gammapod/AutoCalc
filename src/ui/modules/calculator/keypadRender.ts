@@ -35,11 +35,17 @@ export const renderKeypadCells = (
   state: GameState,
   dispatch: (action: Action) => unknown,
   options: {
+    calculatorId?: "g" | "f";
     calculatorKeysLocked: boolean;
     newlyUnlockedKeys: Set<Key>;
     bindUnlockAnimationLock: (element: HTMLElement) => void;
   },
 ): void => {
+  const keypadSurface = options.calculatorId === "g"
+    ? "keypad_g"
+    : options.calculatorId === "f"
+      ? "keypad_f"
+      : "keypad";
   const slotLabels = buildKeypadSlotLabels(state.ui.keyLayout, state.ui.keypadColumns, state.ui.keypadRows);
   for (let index = 0; index < state.ui.keyLayout.length; index += 1) {
     const cell = state.ui.keyLayout[index];
@@ -50,7 +56,7 @@ export const renderKeypadCells = (
       const placeholder = document.createElement("div");
       placeholder.className = "placeholder placeholder--drop-slot";
       placeholder.setAttribute("aria-hidden", "true");
-      bindDropTargetCell(placeholder, "keypad", index);
+      bindDropTargetCell(placeholder, keypadSurface, index);
       placeholder.dataset.layoutOccupied = "empty";
       placeholder.dataset.keypadCellId = slotId;
       appendDebugSlotLabel(placeholder, slotLabel);
@@ -95,7 +101,7 @@ export const renderKeypadCells = (
     button.dataset.keypadCellId = slotId;
     button.dataset.key = cell.key;
     bindQuickTapPressFeedback(root, button);
-    bindDraggableCell(root, button, state, dispatch, { surface: "keypad", index }, cell.key);
+    bindDraggableCell(root, button, state, dispatch, { surface: keypadSurface, index }, cell.key);
     appendDebugSlotLabel(button, slotLabel);
 
     button.addEventListener("click", () => {
@@ -106,10 +112,15 @@ export const renderKeypadCells = (
         return;
       }
       if (state.ui.buttonFlags[AUTO_EQUALS_FLAG] && !isAutoEqualsToggleCell(cell as KeyCell)) {
-        dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+        dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG, ...(options.calculatorId ? { calculatorId: options.calculatorId } : {}) });
       }
       queueToggleAnimation(root, state, cell as KeyCell);
-      dispatch(buildKeyButtonAction(cell as KeyCell));
+      const action = buildKeyButtonAction(cell as KeyCell);
+      if (options.calculatorId && (action.type === "PRESS_KEY" || action.type === "TOGGLE_FLAG" || action.type === "TOGGLE_VISUALIZER")) {
+        dispatch({ ...action, calculatorId: options.calculatorId });
+      } else {
+        dispatch(action);
+      }
     });
     keysEl.appendChild(button);
   }

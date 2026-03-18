@@ -97,6 +97,10 @@ export const renderCalculatorV2Module = (
     inputBlocked: boolean;
   },
 ): void => {
+  const calculatorId: "g" | "f" =
+    root instanceof HTMLElement && root.dataset.calcInstanceId === "g"
+      ? "g"
+      : "f";
   ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
   const slotEl = root.querySelector<HTMLElement>("[data-slot]");
@@ -265,6 +269,7 @@ export const renderCalculatorV2Module = (
 
   const stepBodyHighlights = buildStepBodyHighlightRegions(state);
   renderKeypadCells(root, keysEl, state, dispatch, {
+    calculatorId,
     calculatorKeysLocked,
     newlyUnlockedKeys,
     bindUnlockAnimationLock: (element) => {

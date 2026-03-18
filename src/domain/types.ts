@@ -32,6 +32,7 @@ export type VisualizerKey = VisualizerKeyId;
 export type VisualizerId = ButtonVisualizerId;
 export type ActiveVisualizer = "total" | VisualizerId;
 export type MemoryVariable = "α" | "β" | "γ";
+export type CalculatorId = "g" | "f";
 export type ExecKey = ExecKeyId;
 export type Key = KeyId;
 export type CanonicalKeyId = KeyId;
@@ -528,11 +529,24 @@ export type GameState = {
   allocatorAllocatePressCount?: number;
   unlocks: UnlockState;
   completedUnlockIds: string[];
+  calculators?: Partial<Record<CalculatorId, CalculatorInstanceState>>;
+  calculatorOrder?: CalculatorId[];
+  activeCalculatorId?: CalculatorId;
+};
+
+export type CalculatorInstanceState = {
+  id: CalculatorId;
+  symbol: CalculatorId;
+  calculator: CalculatorState;
+  lambdaControl: LambdaControl;
+  allocator: AllocatorState;
+  ui: GameState["ui"];
 };
 
 export type PressKeyAction = {
   type: "PRESS_KEY";
   key: KeyInput;
+  calculatorId?: CalculatorId;
 };
 
 export type ResetRunAction = {
@@ -560,7 +574,7 @@ export type SwapKeySlotsAction = {
   secondIndex: number;
 };
 
-export type LayoutSurface = "keypad" | "storage";
+export type LayoutSurface = "keypad" | "keypad_f" | "keypad_g" | "storage";
 
 export type MoveLayoutCellAction = {
   type: "MOVE_LAYOUT_CELL";
@@ -568,6 +582,7 @@ export type MoveLayoutCellAction = {
   fromIndex: number;
   toSurface: LayoutSurface;
   toIndex: number;
+  calculatorId?: CalculatorId;
 };
 
 export type SwapLayoutCellsAction = {
@@ -576,81 +591,103 @@ export type SwapLayoutCellsAction = {
   fromIndex: number;
   toSurface: LayoutSurface;
   toIndex: number;
+  calculatorId?: CalculatorId;
 };
 
 export type SetKeypadDimensionsAction = {
   type: "SET_KEYPAD_DIMENSIONS";
   columns: number;
   rows: number;
+  calculatorId?: CalculatorId;
 };
 
 export type UpgradeKeypadRowAction = {
   type: "UPGRADE_KEYPAD_ROW";
+  calculatorId?: CalculatorId;
 };
 
 export type UpgradeKeypadColumnAction = {
   type: "UPGRADE_KEYPAD_COLUMN";
+  calculatorId?: CalculatorId;
 };
 
 export type ToggleFlagAction = {
   type: "TOGGLE_FLAG";
   flag: string;
+  calculatorId?: CalculatorId;
 };
 
 export type ToggleVisualizerAction = {
   type: "TOGGLE_VISUALIZER";
   visualizer: VisualizerId;
+  calculatorId?: CalculatorId;
 };
 
 export type AllocatorAdjustAction = {
   type: "ALLOCATOR_ADJUST";
   field: AllocatorAllocationField;
   delta: 1 | -1;
+  calculatorId?: CalculatorId;
 };
 
 export type AllocatorSetMaxPointsAction = {
   type: "ALLOCATOR_SET_MAX_POINTS";
   value: number;
+  calculatorId?: CalculatorId;
 };
 
 export type AllocatorAddMaxPointsAction = {
   type: "ALLOCATOR_ADD_MAX_POINTS";
   amount: number;
+  calculatorId?: CalculatorId;
 };
 
 export type ResetAllocatorDeviceAction = {
   type: "RESET_ALLOCATOR_DEVICE";
+  calculatorId?: CalculatorId;
 };
 
 export type AllocatorReturnPressedAction = {
   type: "ALLOCATOR_RETURN_PRESSED";
+  calculatorId?: CalculatorId;
 };
 
 export type AllocatorAllocatePressedAction = {
   type: "ALLOCATOR_ALLOCATE_PRESSED";
+  calculatorId?: CalculatorId;
 };
 
 export type LambdaSetOverrideDeltaAction = {
   type: "LAMBDA_SET_OVERRIDE_DELTA";
   value: number;
+  calculatorId?: CalculatorId;
 };
 
 export type LambdaSetOverrideEpsilonAction = {
   type: "LAMBDA_SET_OVERRIDE_EPSILON";
   value: RationalValue;
+  calculatorId?: CalculatorId;
 };
 
 export type LambdaClearOverrideDeltaAction = {
   type: "LAMBDA_CLEAR_OVERRIDE_DELTA";
+  calculatorId?: CalculatorId;
 };
 
 export type LambdaClearOverrideEpsilonAction = {
   type: "LAMBDA_CLEAR_OVERRIDE_EPSILON";
+  calculatorId?: CalculatorId;
 };
 
 export type LambdaSetControlAction = {
   type: "LAMBDA_SET_CONTROL";
   value: LambdaControl;
+  calculatorId?: CalculatorId;
+};
+
+export type SetActiveCalculatorAction = {
+  type: "SET_ACTIVE_CALCULATOR";
+  calculatorId: CalculatorId;
 };
 
 export type Action =
@@ -677,7 +714,8 @@ export type Action =
   | LambdaSetOverrideEpsilonAction
   | LambdaClearOverrideDeltaAction
   | LambdaClearOverrideEpsilonAction
-  | LambdaSetControlAction;
+  | LambdaSetControlAction
+  | SetActiveCalculatorAction;
 
 export type Store = {
   getState: () => GameState;

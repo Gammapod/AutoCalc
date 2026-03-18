@@ -1,36 +1,37 @@
-import type { Action, GameState, KeyInput, LambdaControl, VisualizerId } from "./types.js";
+import type { Action, CalculatorId, GameState, KeyInput, LambdaControl, VisualizerId } from "./types.js";
 
 export type DomainEvent =
-  | { type: "KeyPressed"; key: KeyInput }
+  | { type: "KeyPressed"; key: KeyInput; calculatorId?: CalculatorId }
   | { type: "RunResetRequested" }
   | { type: "SaveHydrated"; state: GameState }
   | { type: "UnlockAllRequested" }
   | { type: "KeySlotMoved"; fromIndex: number; toIndex: number }
   | { type: "KeySlotsSwapped"; firstIndex: number; secondIndex: number }
-  | { type: "LayoutCellMoved"; fromSurface: "keypad" | "storage"; fromIndex: number; toSurface: "keypad" | "storage"; toIndex: number }
+  | { type: "LayoutCellMoved"; fromSurface: "keypad" | "keypad_f" | "keypad_g" | "storage"; fromIndex: number; toSurface: "keypad" | "keypad_f" | "keypad_g" | "storage"; toIndex: number }
   | {
       type: "LayoutCellsSwapped";
-      fromSurface: "keypad" | "storage";
+      fromSurface: "keypad" | "keypad_f" | "keypad_g" | "storage";
       fromIndex: number;
-      toSurface: "keypad" | "storage";
+      toSurface: "keypad" | "keypad_f" | "keypad_g" | "storage";
       toIndex: number;
     }
   | { type: "KeypadDimensionsSet"; columns: number; rows: number }
   | { type: "KeypadRowUpgraded" }
   | { type: "KeypadColumnUpgraded" }
-  | { type: "FlagToggled"; flag: string }
-  | { type: "VisualizerToggled"; visualizer: VisualizerId }
-  | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed" | "slots"; delta: 1 | -1 }
-  | { type: "AllocatorMaxPointsSet"; value: number }
-  | { type: "AllocatorMaxPointsAdded"; amount: number }
-  | { type: "AllocatorDeviceResetRequested" }
-  | { type: "AllocatorReturnPressed" }
-  | { type: "AllocatorAllocatePressed" }
-  | { type: "LambdaOverrideDeltaSet"; value: number }
-  | { type: "LambdaOverrideEpsilonSet"; value: { num: string; den: string } }
-  | { type: "LambdaOverrideDeltaCleared" }
-  | { type: "LambdaOverrideEpsilonCleared" }
-  | { type: "LambdaControlSet"; value: LambdaControl };
+  | { type: "FlagToggled"; flag: string; calculatorId?: CalculatorId }
+  | { type: "VisualizerToggled"; visualizer: VisualizerId; calculatorId?: CalculatorId }
+  | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed" | "slots"; delta: 1 | -1; calculatorId?: CalculatorId }
+  | { type: "AllocatorMaxPointsSet"; value: number; calculatorId?: CalculatorId }
+  | { type: "AllocatorMaxPointsAdded"; amount: number; calculatorId?: CalculatorId }
+  | { type: "AllocatorDeviceResetRequested"; calculatorId?: CalculatorId }
+  | { type: "AllocatorReturnPressed"; calculatorId?: CalculatorId }
+  | { type: "AllocatorAllocatePressed"; calculatorId?: CalculatorId }
+  | { type: "LambdaOverrideDeltaSet"; value: number; calculatorId?: CalculatorId }
+  | { type: "LambdaOverrideEpsilonSet"; value: { num: string; den: string }; calculatorId?: CalculatorId }
+  | { type: "LambdaOverrideDeltaCleared"; calculatorId?: CalculatorId }
+  | { type: "LambdaOverrideEpsilonCleared"; calculatorId?: CalculatorId }
+  | { type: "LambdaControlSet"; value: LambdaControl; calculatorId?: CalculatorId }
+  | { type: "ActiveCalculatorSet"; calculatorId: CalculatorId };
 
 const assertNever = (value: never): never => {
   throw new Error(`Unhandled variant: ${JSON.stringify(value)}`);
@@ -38,7 +39,7 @@ const assertNever = (value: never): never => {
 
 export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "PRESS_KEY") {
-    return { type: "KeyPressed", key: action.key };
+    return { type: "KeyPressed", key: action.key, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "RESET_RUN") {
     return { type: "RunResetRequested" };
@@ -87,28 +88,28 @@ export const eventFromAction = (action: Action): DomainEvent => {
     return { type: "KeypadColumnUpgraded" };
   }
   if (action.type === "TOGGLE_VISUALIZER") {
-    return { type: "VisualizerToggled", visualizer: action.visualizer };
+    return { type: "VisualizerToggled", visualizer: action.visualizer, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "ALLOCATOR_ADJUST") {
-    return { type: "AllocatorAdjusted", field: action.field, delta: action.delta };
+    return { type: "AllocatorAdjusted", field: action.field, delta: action.delta, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
-    return { type: "AllocatorMaxPointsSet", value: action.value };
+    return { type: "AllocatorMaxPointsSet", value: action.value, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
-    return { type: "AllocatorMaxPointsAdded", amount: action.amount };
+    return { type: "AllocatorMaxPointsAdded", amount: action.amount, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "RESET_ALLOCATOR_DEVICE") {
-    return { type: "AllocatorDeviceResetRequested" };
+    return { type: "AllocatorDeviceResetRequested", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "ALLOCATOR_RETURN_PRESSED") {
-    return { type: "AllocatorReturnPressed" };
+    return { type: "AllocatorReturnPressed", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "ALLOCATOR_ALLOCATE_PRESSED") {
-    return { type: "AllocatorAllocatePressed" };
+    return { type: "AllocatorAllocatePressed", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "LAMBDA_SET_OVERRIDE_DELTA") {
-    return { type: "LambdaOverrideDeltaSet", value: action.value };
+    return { type: "LambdaOverrideDeltaSet", value: action.value, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "LAMBDA_SET_OVERRIDE_EPSILON") {
     return {
@@ -117,26 +118,30 @@ export const eventFromAction = (action: Action): DomainEvent => {
         num: action.value.num.toString(),
         den: action.value.den.toString(),
       },
+      ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}),
     };
   }
   if (action.type === "LAMBDA_CLEAR_OVERRIDE_DELTA") {
-    return { type: "LambdaOverrideDeltaCleared" };
+    return { type: "LambdaOverrideDeltaCleared", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "LAMBDA_CLEAR_OVERRIDE_EPSILON") {
-    return { type: "LambdaOverrideEpsilonCleared" };
+    return { type: "LambdaOverrideEpsilonCleared", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "LAMBDA_SET_CONTROL") {
-    return { type: "LambdaControlSet", value: action.value };
+    return { type: "LambdaControlSet", value: action.value, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "TOGGLE_FLAG") {
-    return { type: "FlagToggled", flag: action.flag };
+    return { type: "FlagToggled", flag: action.flag, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
+  }
+  if (action.type === "SET_ACTIVE_CALCULATOR") {
+    return { type: "ActiveCalculatorSet", calculatorId: action.calculatorId };
   }
   return assertNever(action);
 };
 
 export const actionFromEvent = (event: DomainEvent): Action => {
   if (event.type === "KeyPressed") {
-    return { type: "PRESS_KEY", key: event.key };
+    return { type: "PRESS_KEY", key: event.key, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "RunResetRequested") {
     return { type: "RESET_RUN" };
@@ -185,28 +190,28 @@ export const actionFromEvent = (event: DomainEvent): Action => {
     return { type: "UPGRADE_KEYPAD_COLUMN" };
   }
   if (event.type === "VisualizerToggled") {
-    return { type: "TOGGLE_VISUALIZER", visualizer: event.visualizer };
+    return { type: "TOGGLE_VISUALIZER", visualizer: event.visualizer, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "AllocatorAdjusted") {
-    return { type: "ALLOCATOR_ADJUST", field: event.field, delta: event.delta };
+    return { type: "ALLOCATOR_ADJUST", field: event.field, delta: event.delta, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "AllocatorMaxPointsSet") {
-    return { type: "ALLOCATOR_SET_MAX_POINTS", value: event.value };
+    return { type: "ALLOCATOR_SET_MAX_POINTS", value: event.value, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "AllocatorMaxPointsAdded") {
-    return { type: "ALLOCATOR_ADD_MAX_POINTS", amount: event.amount };
+    return { type: "ALLOCATOR_ADD_MAX_POINTS", amount: event.amount, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "AllocatorDeviceResetRequested") {
-    return { type: "RESET_ALLOCATOR_DEVICE" };
+    return { type: "RESET_ALLOCATOR_DEVICE", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "AllocatorReturnPressed") {
-    return { type: "ALLOCATOR_RETURN_PRESSED" };
+    return { type: "ALLOCATOR_RETURN_PRESSED", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "AllocatorAllocatePressed") {
-    return { type: "ALLOCATOR_ALLOCATE_PRESSED" };
+    return { type: "ALLOCATOR_ALLOCATE_PRESSED", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "LambdaOverrideDeltaSet") {
-    return { type: "LAMBDA_SET_OVERRIDE_DELTA", value: event.value };
+    return { type: "LAMBDA_SET_OVERRIDE_DELTA", value: event.value, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "LambdaOverrideEpsilonSet") {
     return {
@@ -215,19 +220,23 @@ export const actionFromEvent = (event: DomainEvent): Action => {
         num: BigInt(event.value.num),
         den: BigInt(event.value.den),
       },
+      ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}),
     };
   }
   if (event.type === "LambdaOverrideDeltaCleared") {
-    return { type: "LAMBDA_CLEAR_OVERRIDE_DELTA" };
+    return { type: "LAMBDA_CLEAR_OVERRIDE_DELTA", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "LambdaOverrideEpsilonCleared") {
-    return { type: "LAMBDA_CLEAR_OVERRIDE_EPSILON" };
+    return { type: "LAMBDA_CLEAR_OVERRIDE_EPSILON", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "LambdaControlSet") {
-    return { type: "LAMBDA_SET_CONTROL", value: event.value };
+    return { type: "LAMBDA_SET_CONTROL", value: event.value, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "FlagToggled") {
-    return { type: "TOGGLE_FLAG", flag: event.flag };
+    return { type: "TOGGLE_FLAG", flag: event.flag, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
+  }
+  if (event.type === "ActiveCalculatorSet") {
+    return { type: "SET_ACTIVE_CALCULATOR", calculatorId: event.calculatorId };
   }
   return assertNever(event);
 };

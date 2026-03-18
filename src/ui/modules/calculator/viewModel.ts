@@ -144,25 +144,32 @@ export type OperationSlotDisplayModel = {
   stepTargetTokenIndex: number | null;
 };
 
-const toFunctionBuilderDisplayParts = (base: string): { displayFunctionBase: string; fixedSeedLabel: string } => {
+const toFunctionBuilderDisplayParts = (
+  base: string,
+  symbol: "f" | "g",
+): { displayFunctionBase: string; fixedSeedLabel: string } => {
+  const sym = symbol === "g" ? "g" : "f";
+  const seedPrefix = `${sym}\u2080`;
+  const functionPrefix = symbol === "g" ? `${sym}\u2093 = ${sym}\u2093\u208B\u2081` : `${sym}\u2093 = ${sym}\u2080`;
   if (base === "(no operation slots)") {
-    return { displayFunctionBase: `f\u2093 = f\u208B\u2081`, fixedSeedLabel: `| f\u2080 = _` };
+    return { displayFunctionBase: functionPrefix, fixedSeedLabel: `| ${seedPrefix} = _` };
   }
   const firstTokenStart = base.indexOf(" [");
   const seedToken = firstTokenStart < 0 ? base.trim() : base.slice(0, firstTokenStart).trim();
   const slotTokens = firstTokenStart < 0 ? "" : base.slice(firstTokenStart).trim();
   return {
-    displayFunctionBase: slotTokens ? `f\u2093 = f\u208B\u2081 ${slotTokens}` : `f\u2093 = f\u2080`,
-    fixedSeedLabel: `| f\u2080 = ${seedToken || "_"}`,
+    displayFunctionBase: slotTokens ? `${functionPrefix} ${slotTokens}` : functionPrefix,
+    fixedSeedLabel: `| ${seedPrefix} = ${seedToken || "_"}`,
   };
 };
 
 const withDisplayParts = (
   base: string,
+  symbol: "f" | "g",
   deltaWrapSuffix: string | null,
   stepTargetTokenIndex: number | null,
 ): OperationSlotDisplayModel => {
-  const parts = toFunctionBuilderDisplayParts(base);
+  const parts = toFunctionBuilderDisplayParts(base, symbol);
   return {
     base,
     displayFunctionBase: parts.displayFunctionBase,
@@ -174,6 +181,7 @@ const withDisplayParts = (
 
 export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotDisplayModel => {
   const base = buildOperationSlotDisplayShared(state);
+  const symbol: "f" | "g" = state.activeCalculatorId === "g" ? "g" : "f";
   const stepThroughOnKeypad = state.ui.keyLayout.some(
     (cell) => cell.kind === "key" && cell.key === "exec_step_through",
   );
@@ -192,17 +200,17 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
   const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
   if (modZeroToDeltaEnabled) {
     if (base === "(no operation slots)") {
-      return withDisplayParts("_ [ \u27E1 \u{1D6FF} ]", null, stepTargetTokenIndex);
+      return withDisplayParts("_ [ \u27E1 \u{1D6FF} ]", symbol, null, stepTargetTokenIndex);
     }
-    return withDisplayParts(base, MOD_ZERO_TO_DELTA_SUFFIX, stepTargetTokenIndex);
+    return withDisplayParts(base, symbol, MOD_ZERO_TO_DELTA_SUFFIX, stepTargetTokenIndex);
   }
   if (deltaWrapEnabled) {
     if (base === "(no operation slots)") {
-      return withDisplayParts("_ [ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", null, stepTargetTokenIndex);
+      return withDisplayParts("_ [ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", symbol, null, stepTargetTokenIndex);
     }
-    return withDisplayParts(base, DELTA_WRAP_SUFFIX, stepTargetTokenIndex);
+    return withDisplayParts(base, symbol, DELTA_WRAP_SUFFIX, stepTargetTokenIndex);
   }
-  return withDisplayParts(base, null, stepTargetTokenIndex);
+  return withDisplayParts(base, symbol, null, stepTargetTokenIndex);
 };
 
 export const buildOperationSlotDisplay = (state: GameState): string => {

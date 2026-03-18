@@ -61,45 +61,147 @@ const appendKeyToStorage = (
 
 const emptyCell = (): LayoutCell => ({ kind: "placeholder", area: "empty" });
 
-const getCurrentKeypadCells = (state: GameState): KeypadCellRecord[] => {
-  const columns = Math.max(1, state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS);
-  const rows = Math.max(1, state.ui.keypadRows || KEYPAD_DEFAULT_ROWS);
-  const expectedLength = columns * rows;
-  if (state.ui.keypadCells.length === expectedLength) {
-    return state.ui.keypadCells;
+const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" =>
+  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g";
+
+const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): "f" | "g" | null => {
+  if (surface === "keypad_f") {
+    return "f";
   }
-  return fromKeyLayoutArray(state.ui.keyLayout, columns, rows);
+  if (surface === "keypad_g") {
+    return "g";
+  }
+  if (surface === "keypad") {
+    return state.activeCalculatorId ?? null;
+  }
+  return null;
+};
+
+const getSurfaceUi = (state: GameState, surface: LayoutSurface): GameState["ui"] | null => {
+  if (surface === "keypad") {
+    const activeCalculatorId = state.activeCalculatorId;
+    if (activeCalculatorId && state.calculators?.[activeCalculatorId]?.ui) {
+      return state.calculators[activeCalculatorId].ui;
+    }
+    return state.ui;
+  }
+  if (surface === "keypad_f") {
+    return state.calculators?.f?.ui ?? state.ui;
+  }
+  if (surface === "keypad_g") {
+    return state.calculators?.g?.ui ?? null;
+  }
+  return null;
+};
+
+const getCurrentKeypadCells = (ui: GameState["ui"]): KeypadCellRecord[] => {
+  const columns = Math.max(1, ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS);
+  const rows = Math.max(1, ui.keypadRows || KEYPAD_DEFAULT_ROWS);
+  const expectedLength = columns * rows;
+  if (ui.keypadCells.length === expectedLength) {
+    return ui.keypadCells;
+  }
+  return fromKeyLayoutArray(ui.keyLayout, columns, rows);
 };
 
 const withKeypadState = (
-  state: GameState,
+  ui: GameState["ui"],
   keypadCells: KeypadCellRecord[],
   columns: number,
   rows: number,
-): GameState => {
+): GameState["ui"] => {
   const keyLayout = toKeyLayoutArray(keypadCells, columns, rows);
   return {
-    ...state,
-    ui: {
-      ...state.ui,
-      keyLayout,
-      keypadCells,
-      keypadColumns: columns,
-      keypadRows: rows,
-    },
+    ...ui,
+    keyLayout,
+    keypadCells,
+    keypadColumns: columns,
+    keypadRows: rows,
   };
 };
 
+const setSurfaceUi = (state: GameState, surface: LayoutSurface, ui: GameState["ui"]): GameState => {
+  const sharedStorageUi: GameState["ui"] = {
+    ...ui,
+    storageLayout: state.ui.storageLayout,
+  };
+  if (surface === "keypad") {
+    const activeCalculatorId = state.activeCalculatorId;
+    if (activeCalculatorId && state.calculators?.[activeCalculatorId]) {
+      return {
+        ...state,
+        ui: sharedStorageUi,
+        calculators: {
+          ...state.calculators,
+          [activeCalculatorId]: {
+            ...state.calculators[activeCalculatorId],
+            ui: sharedStorageUi,
+          },
+        },
+      };
+    }
+    return {
+      ...state,
+      ui: sharedStorageUi,
+    };
+  }
+  if (surface === "keypad_f") {
+    if (!state.calculators?.f) {
+      return {
+        ...state,
+        ui: sharedStorageUi,
+      };
+    }
+    return {
+      ...state,
+      ui: sharedStorageUi,
+      calculators: {
+        ...state.calculators,
+        f: {
+          ...state.calculators.f,
+          ui: sharedStorageUi,
+        },
+      },
+    };
+  }
+  if (surface === "keypad_g") {
+    if (!state.calculators?.g) {
+      return state;
+    }
+    return {
+      ...state,
+      calculators: {
+        ...state.calculators,
+        g: {
+          ...state.calculators.g,
+          ui: sharedStorageUi,
+        },
+      },
+    };
+  }
+  return state;
+};
+
 const getSurfaceLength = (state: GameState, surface: LayoutSurface): number =>
-  surface === "keypad"
-    ? Math.max(1, (state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS) * (state.ui.keypadRows || KEYPAD_DEFAULT_ROWS))
+  isKeypadSurface(surface)
+    ? (() => {
+      const ui = getSurfaceUi(state, surface);
+      if (!ui) {
+        return 0;
+      }
+      return Math.max(1, (ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS) * (ui.keypadRows || KEYPAD_DEFAULT_ROWS));
+    })()
     : state.ui.storageLayout.length;
 
 const readSurfaceCell = (state: GameState, surface: LayoutSurface, index: number): LayoutCell | KeyCell | null => {
-  if (surface === "keypad") {
-    const columns = state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
-    const rows = state.ui.keypadRows || KEYPAD_DEFAULT_ROWS;
-    return getCellAtIndex(getCurrentKeypadCells(state), index, columns, rows);
+  if (isKeypadSurface(surface)) {
+    const ui = getSurfaceUi(state, surface);
+    if (!ui) {
+      return null;
+    }
+    const columns = ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
+    const rows = ui.keypadRows || KEYPAD_DEFAULT_ROWS;
+    return getCellAtIndex(getCurrentKeypadCells(ui), index, columns, rows);
   }
   return state.ui.storageLayout[index];
 };
@@ -110,11 +212,16 @@ const writeSurfaceCell = (
   index: number,
   value: LayoutCell | KeyCell | null,
 ): GameState => {
-  if (surface === "keypad") {
-    const columns = state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
-    const rows = state.ui.keypadRows || KEYPAD_DEFAULT_ROWS;
-    const nextKeypadCells = setCellAtIndex(getCurrentKeypadCells(state), index, columns, rows, value as LayoutCell);
-    return withKeypadState(state, nextKeypadCells, columns, rows);
+  if (isKeypadSurface(surface)) {
+    const ui = getSurfaceUi(state, surface);
+    if (!ui) {
+      return state;
+    }
+    const columns = ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
+    const rows = ui.keypadRows || KEYPAD_DEFAULT_ROWS;
+    const nextKeypadCells = setCellAtIndex(getCurrentKeypadCells(ui), index, columns, rows, value as LayoutCell);
+    const nextUi = withKeypadState(ui, nextKeypadCells, columns, rows);
+    return setSurfaceUi(state, surface, nextUi);
   }
 
   const nextStorageLayout = [...state.ui.storageLayout];
@@ -129,10 +236,10 @@ const writeSurfaceCell = (
 };
 
 const sourceClearedCell = (surface: LayoutSurface): LayoutCell | null =>
-  surface === "keypad" ? emptyCell() : null;
+  isKeypadSurface(surface) ? emptyCell() : null;
 
 const isEmptyCell = (surface: LayoutSurface, cell: LayoutCell | KeyCell | null): boolean =>
-  surface === "keypad" ? isKeypadEmptyCell(cell as LayoutCell) : isStorageEmptyCell(cell as KeyCell | null);
+  isKeypadSurface(surface) ? isKeypadEmptyCell(cell as LayoutCell) : isStorageEmptyCell(cell as KeyCell | null);
 
 const hasValidSurfaceIndex = (state: GameState, surface: LayoutSurface, index: number): boolean =>
   isValidLayoutIndex(getSurfaceLength(state, surface), index);
@@ -155,13 +262,34 @@ const hasOnlyExpectedKeyChanges = (
   allowedChanges: SurfaceIndex[],
 ): boolean => {
   const allow = new Set(allowedChanges.map((entry) => `${entry.surface}:${entry.index}`));
+  if (previous.calculators?.g && previous.calculators?.f && previous.activeCalculatorId) {
+    const activeSurface = previous.activeCalculatorId === "g" ? "keypad_g" : "keypad_f";
+    for (const entry of allowedChanges) {
+      if (entry.surface === "keypad") {
+        allow.add(`${activeSurface}:${entry.index}`);
+      }
+    }
+  }
+  const surfaces: LayoutSurface[] = previous.calculators?.g && previous.calculators?.f
+    ? ["keypad_f", "keypad_g", "storage"]
+    : ["keypad", "storage"];
 
-  for (let index = 0; index < previous.ui.keyLayout.length; index += 1) {
-    if (allow.has(`keypad:${index}`)) {
+  for (const surface of surfaces) {
+    if (surface === "storage") {
       continue;
     }
-    if (keySignature(previous.ui.keyLayout[index]) !== keySignature(next.ui.keyLayout[index])) {
+    const previousLength = getSurfaceLength(previous, surface);
+    const nextLength = getSurfaceLength(next, surface);
+    if (previousLength !== nextLength) {
       return false;
+    }
+    for (let index = 0; index < previousLength; index += 1) {
+      if (allow.has(`${surface}:${index}`)) {
+        continue;
+      }
+      if (keySignature(readSurfaceCell(previous, surface, index)) !== keySignature(readSurfaceCell(next, surface, index))) {
+        return false;
+      }
     }
   }
 
@@ -197,22 +325,6 @@ export const resizeKeyLayout = (
   return toKeyLayoutArray(resizeAnchored(sourceCells, toColumns, toRows), toColumns, toRows);
 };
 
-const clearButtonFlag = (state: GameState, flag: string): GameState => {
-  const trimmed = flag.trim();
-  if (trimmed.length === 0 || !state.ui.buttonFlags[trimmed]) {
-    return state;
-  }
-  const nextFlags = { ...state.ui.buttonFlags };
-  delete nextFlags[trimmed];
-  return {
-    ...state,
-    ui: {
-      ...state.ui,
-      buttonFlags: nextFlags,
-    },
-  };
-};
-
 const visualizerFromKey = (key: KeyCell["key"]): VisualizerId | null => {
   return keyToVisualizerId(toLegacyKey(resolveKeyId(key)));
 };
@@ -223,27 +335,51 @@ const clearToggleFlagWhenLeavingKeypad = (
   fromSurface: LayoutSurface,
   toSurface: LayoutSurface,
 ): GameState => {
-  const visualizer = visualizerFromKey(keyCell.key);
-  if (visualizer && fromSurface === "keypad" && toSurface === "storage" && state.ui.activeVisualizer === visualizer) {
-    return {
-      ...state,
-      ui: {
-        ...state.ui,
-        activeVisualizer: "total",
-      },
-    };
-  }
-
-  if (fromSurface !== "keypad" || toSurface !== "storage" || keyCell.behavior?.type !== "toggle_flag") {
+  if (!isKeypadSurface(fromSurface)) {
     return state;
   }
-  return clearButtonFlag(state, keyCell.behavior.flag);
+  const fromCalculatorId = resolveSurfaceCalculatorId(state, fromSurface);
+  const toCalculatorId = resolveSurfaceCalculatorId(state, toSurface);
+  const leftSourceCalculator = !isKeypadSurface(toSurface) || fromCalculatorId !== toCalculatorId;
+  if (!leftSourceCalculator) {
+    return state;
+  }
+  const fromUi = getSurfaceUi(state, fromSurface);
+  if (!fromUi) {
+    return state;
+  }
+  const visualizer = visualizerFromKey(keyCell.key);
+  let nextState = state;
+  if (visualizer && fromUi.activeVisualizer === visualizer) {
+    nextState = setSurfaceUi(nextState, fromSurface, {
+      ...fromUi,
+      activeVisualizer: "total",
+    });
+  }
+
+  if (keyCell.behavior?.type !== "toggle_flag") {
+    return nextState;
+  }
+  const latestFromUi = getSurfaceUi(nextState, fromSurface);
+  if (!latestFromUi) {
+    return nextState;
+  }
+  const trimmed = keyCell.behavior.flag.trim();
+  if (trimmed.length === 0 || !latestFromUi.buttonFlags[trimmed]) {
+    return nextState;
+  }
+  const nextFlags = { ...latestFromUi.buttonFlags };
+  delete nextFlags[trimmed];
+  return setSurfaceUi(nextState, fromSurface, {
+    ...latestFromUi,
+    buttonFlags: nextFlags,
+  });
 };
 
 export const applyMoveKeySlot = (state: GameState, fromIndex: number, toIndex: number): GameState => {
   const columns = state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
   const rows = state.ui.keypadRows || KEYPAD_DEFAULT_ROWS;
-  const layout = toKeyLayoutArray(getCurrentKeypadCells(state), columns, rows);
+  const layout = toKeyLayoutArray(getCurrentKeypadCells(state.ui), columns, rows);
   if (
     !isValidLayoutIndex(layout.length, fromIndex) ||
     !isValidLayoutIndex(layout.length, toIndex) ||
@@ -256,13 +392,16 @@ export const applyMoveKeySlot = (state: GameState, fromIndex: number, toIndex: n
   const [movedCell] = nextLayout.splice(fromIndex, 1);
   nextLayout.splice(toIndex, 0, movedCell);
   const keypadCells = fromKeyLayoutArray(nextLayout, columns, rows);
-  return withKeypadState(state, keypadCells, columns, rows);
+  return {
+    ...state,
+    ui: withKeypadState(state.ui, keypadCells, columns, rows),
+  };
 };
 
 export const applySwapKeySlots = (state: GameState, firstIndex: number, secondIndex: number): GameState => {
   const columns = state.ui.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
   const rows = state.ui.keypadRows || KEYPAD_DEFAULT_ROWS;
-  const layout = toKeyLayoutArray(getCurrentKeypadCells(state), columns, rows);
+  const layout = toKeyLayoutArray(getCurrentKeypadCells(state.ui), columns, rows);
   if (
     !isValidLayoutIndex(layout.length, firstIndex) ||
     !isValidLayoutIndex(layout.length, secondIndex) ||
@@ -274,7 +413,10 @@ export const applySwapKeySlots = (state: GameState, firstIndex: number, secondIn
   const nextLayout = [...layout];
   [nextLayout[firstIndex], nextLayout[secondIndex]] = [nextLayout[secondIndex], nextLayout[firstIndex]];
   const keypadCells = fromKeyLayoutArray(nextLayout, columns, rows);
-  return withKeypadState(state, keypadCells, columns, rows);
+  return {
+    ...state,
+    ui: withKeypadState(state.ui, keypadCells, columns, rows),
+  };
 };
 
 export const applyMoveLayoutCell = (
@@ -372,7 +514,7 @@ export const applySetKeypadDimensions = (state: GameState, columns: number, rows
   if (state.ui.keypadColumns === clampedColumns && state.ui.keypadRows === clampedRows) {
     return state;
   }
-  const currentKeypadCells = getCurrentKeypadCells(state);
+  const currentKeypadCells = getCurrentKeypadCells(state.ui);
   const removedKeyCells: KeyCell[] = currentKeypadCells
     .filter(
       (record) =>
@@ -415,8 +557,11 @@ export const applyUpgradeKeypadRow = (state: GameState): GameState => {
   if (upgradedRows === currentRows) {
     return state;
   }
-  const resizedCells = resizeAnchored(getCurrentKeypadCells(state), currentColumns, upgradedRows);
-  return withKeypadState(state, resizedCells, currentColumns, upgradedRows);
+  const resizedCells = resizeAnchored(getCurrentKeypadCells(state.ui), currentColumns, upgradedRows);
+  return {
+    ...state,
+    ui: withKeypadState(state.ui, resizedCells, currentColumns, upgradedRows),
+  };
 };
 
 export const applyUpgradeKeypadColumn = (state: GameState): GameState => {
@@ -426,8 +571,11 @@ export const applyUpgradeKeypadColumn = (state: GameState): GameState => {
   if (upgradedColumns === currentColumns) {
     return state;
   }
-  const resizedCells = resizeAnchored(getCurrentKeypadCells(state), upgradedColumns, currentRows);
-  return withKeypadState(state, resizedCells, upgradedColumns, currentRows);
+  const resizedCells = resizeAnchored(getCurrentKeypadCells(state.ui), upgradedColumns, currentRows);
+  return {
+    ...state,
+    ui: withKeypadState(state.ui, resizedCells, upgradedColumns, currentRows),
+  };
 };
 
 

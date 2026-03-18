@@ -24,6 +24,23 @@ type Occupancy = "key" | "empty" | "invalid";
 export const isStorageLayoutValid = (storageLayout: Array<GameState["ui"]["storageLayout"][number]>): boolean =>
   storageLayout.length > 0 && storageLayout.length % STORAGE_COLUMNS === 0;
 
+const getKeyLayoutForSurface = (state: GameState, surface: LayoutSurface): GameState["ui"]["keyLayout"] | null => {
+  if (surface === "keypad") {
+    const activeCalculatorId = state.activeCalculatorId;
+    if (activeCalculatorId && state.calculators?.[activeCalculatorId]?.ui.keyLayout) {
+      return state.calculators[activeCalculatorId].ui.keyLayout;
+    }
+    return state.ui.keyLayout;
+  }
+  if (surface === "keypad_f") {
+    return state.calculators?.f?.ui.keyLayout ?? state.ui.keyLayout;
+  }
+  if (surface === "keypad_g") {
+    return state.calculators?.g?.ui.keyLayout ?? null;
+  }
+  return null;
+};
+
 const getCellOccupancy = (
   state: GameState,
   target: LayoutTarget,
@@ -33,8 +50,9 @@ const getCellOccupancy = (
   if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {
     return "invalid";
   }
-  if (target.surface === "keypad") {
-    const cell = state.ui.keyLayout[target.index];
+  if (target.surface === "keypad" || target.surface === "keypad_f" || target.surface === "keypad_g") {
+    const keyLayout = getKeyLayoutForSurface(state, target.surface);
+    const cell = keyLayout?.[target.index];
     if (!cell) {
       return "invalid";
     }
@@ -76,7 +94,8 @@ const isStorageDropGeometryValid = (
       if (source.surface === "storage") {
         nextStorage[destination.index] = sourceStorageCell;
       } else {
-        const sourceKeypadCell = state.ui.keyLayout[source.index];
+        const sourceKeypadLayout = getKeyLayoutForSurface(state, source.surface);
+        const sourceKeypadCell = sourceKeypadLayout?.[source.index];
         nextStorage[destination.index] = sourceKeypadCell?.kind === "key" ? sourceKeypadCell : null;
       }
     }
@@ -84,11 +103,16 @@ const isStorageDropGeometryValid = (
     if (source.surface === "storage" && destination.surface === "storage") {
       nextStorage[source.index] = destinationStorageCell;
       nextStorage[destination.index] = sourceStorageCell;
-    } else if (source.surface === "storage" && destination.surface === "keypad") {
-      const destinationKeypadCell = state.ui.keyLayout[destination.index];
+    } else if (
+      source.surface === "storage"
+      && (destination.surface === "keypad" || destination.surface === "keypad_f" || destination.surface === "keypad_g")
+    ) {
+      const destinationKeypadLayout = getKeyLayoutForSurface(state, destination.surface);
+      const destinationKeypadCell = destinationKeypadLayout?.[destination.index];
       nextStorage[source.index] = destinationKeypadCell?.kind === "key" ? destinationKeypadCell : null;
-    } else if (source.surface === "keypad" && destination.surface === "storage") {
-      const sourceKeypadCell = state.ui.keyLayout[source.index];
+    } else if ((source.surface === "keypad" || source.surface === "keypad_f" || source.surface === "keypad_g") && destination.surface === "storage") {
+      const sourceKeypadLayout = getKeyLayoutForSurface(state, source.surface);
+      const sourceKeypadCell = sourceKeypadLayout?.[source.index];
       nextStorage[destination.index] = sourceKeypadCell?.kind === "key" ? sourceKeypadCell : null;
     }
   }

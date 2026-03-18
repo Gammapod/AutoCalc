@@ -1044,6 +1044,28 @@
         flex: 1 1 auto;
       }
 
+      .calc-switch-row {
+        display: none;
+      }
+
+      .calc-instance-track {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .calc-instance {
+        min-width: 0;
+      }
+
+      .calc-instance[data-calc-instance-id="g"] {
+        order: 1;
+      }
+
+      .calc-instance[data-calc-instance-id="f"] {
+        order: 2;
+      }
+
       .slot-display__track {
         display: inline-flex;
         align-items: center;
@@ -2086,6 +2108,34 @@
         height: 100%;
       }
 
+      body[data-ui-shell="mobile"] .calc-switch-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      body[data-ui-shell="mobile"] .calc-switch {
+        flex: 1;
+        border: 1px solid #4f5b6a;
+        border-radius: 8px;
+        background: #202734;
+        color: #b4f1d3;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+      }
+
+      body[data-ui-shell="mobile"] .calc-instance-track {
+        display: block;
+      }
+
+      body[data-ui-shell="mobile"] .calc-instance {
+        display: none;
+      }
+
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="g"] .calc-instance[data-calc-instance-id="g"],
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="f"] .calc-instance[data-calc-instance-id="f"] {
+        display: block;
+      }
+
       body[data-ui-shell="mobile"] .device--allocator {
         --allocator-display-col: 56px;
         --allocator-stepper-col: 74px;
@@ -2903,29 +2953,62 @@
         <section class="play-area">
           <div class="device-row">
             <section class="device device--calc" data-calc-device>
-              <section class="roll" data-roll aria-label="Calculator roll"></section>
-              <section class="calc">
-                <div class="slot" aria-hidden="true"></div>
-                <div class="display-stack">
-                  <div class="display display--shared" data-display-window data-graph-visible="false">
-                    <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
-                      <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
-                      <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
-                        <div class="grapher-screen">
-                          <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
-                        </div>
-                      </section>
-                      <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
-                      <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
-                      <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
-                      <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
-                      <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
-                    </section>
-                  </div>
-                  <div class="display" data-slot></div>
-                </div>
-                <div data-keys></div>
-              </section>
+              <div class="calc-switch-row" data-calc-switch-row>
+                <button type="button" class="calc-switch" data-calc-switch="g">g</button>
+                <button type="button" class="calc-switch" data-calc-switch="f">f</button>
+              </div>
+              <div class="calc-instance-track" data-calc-instance-track>
+                <section class="calc-instance" data-calc-instance-id="f">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+                <section class="calc-instance" data-calc-instance-id="g">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+              </div>
             </section>
           </div>
           <section class="storage" aria-label="Button storage">

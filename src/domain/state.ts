@@ -1,11 +1,11 @@
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
-import { buildAllocatorSnapshot, createDefaultLambdaControl } from "./lambdaControl.js";
+import { buildAllocatorSnapshot, createDefaultLambdaControl, sanitizeLambdaControl } from "./lambdaControl.js";
 import { KEY_ID, toKeyId } from "./keyPresentation.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 18;
+export const SAVE_SCHEMA_VERSION = 19;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
@@ -152,7 +152,7 @@ export const initialState = (): GameState => {
   const valueAtoms = buildUnlockRecord("valueAtoms");
   const valueCompose = buildUnlockRecord("valueCompose");
   const lambdaControl = createDefaultLambdaControl();
-  return {
+  const base: GameState = {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
       pendingNegativeTotal: false,
@@ -205,5 +205,61 @@ export const initialState = (): GameState => {
       maxTotalDigits: 1,
     },
     completedUnlockIds: [],
+  };
+  const gColumns = 4;
+  const gRows = 2;
+  const gKeyLayout = defaultDrawerKeyLayout(gColumns, gRows);
+  const gIndex = (row: number, col: number): number => (gRows - row) * gColumns + (gColumns - col);
+  gKeyLayout[gIndex(1, 1)] = { kind: "key", key: KEY_ID.exec_equals };
+  gKeyLayout[gIndex(1, 3)] = { kind: "key", key: KEY_ID.op_mul };
+  gKeyLayout[gIndex(1, 4)] = { kind: "key", key: KEY_ID.digit_0 };
+  gKeyLayout[gIndex(2, 3)] = { kind: "key", key: KEY_ID.op_add };
+  gKeyLayout[gIndex(2, 4)] = { kind: "key", key: KEY_ID.digit_1 };
+  const gControl = sanitizeLambdaControl({
+    maxPoints: 5,
+    alpha: 3,
+    beta: 1,
+    gamma: 1,
+    overrides: {
+      delta: 8,
+      epsilon: { num: 0n, den: 1n },
+    },
+  });
+  const gUi = {
+    ...base.ui,
+    keyLayout: gKeyLayout,
+    keypadCells: fromKeyLayoutArray(gKeyLayout, gColumns, gRows),
+    keypadColumns: gColumns,
+    keypadRows: gRows,
+    buttonFlags: {},
+    activeVisualizer: "total" as const,
+  };
+  return {
+    ...base,
+    calculators: {
+      g: {
+        id: "g",
+        symbol: "g",
+        calculator: {
+          ...base.calculator,
+          singleDigitInitialTotalEntry: true,
+          rollEntries: [],
+          operationSlots: [],
+        },
+        lambdaControl: gControl,
+        allocator: buildAllocatorSnapshot(gControl),
+        ui: gUi,
+      },
+      f: {
+        id: "f",
+        symbol: "f",
+        calculator: { ...base.calculator },
+        lambdaControl: base.lambdaControl,
+        allocator: base.allocator,
+        ui: base.ui,
+      },
+    },
+    calculatorOrder: ["g", "f"],
+    activeCalculatorId: "f",
   };
 };

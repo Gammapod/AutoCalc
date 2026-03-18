@@ -6,7 +6,11 @@ import type { DrawerDragTarget, ShellRefs } from "./types.js";
 import type { ShellRuntimeState } from "./runtimeState.js";
 import { createMenuPointerSession, createViewportPointerSession, updatePointerSessionTrail } from "./pointerSession.js";
 
-const isSurfaceValue = (value: string | undefined): value is LayoutSurface => value === "keypad" || value === "storage";
+const isSurfaceValue = (value: string | undefined): value is LayoutSurface =>
+  value === "keypad"
+  || value === "keypad_f"
+  || value === "keypad_g"
+  || value === "storage";
 
 const parseTargetFromElement = (element: HTMLElement | null): TouchRearrangeTarget | null => {
   if (!element) {
@@ -29,7 +33,24 @@ const parseTargetFromElement = (element: HTMLElement | null): TouchRearrangeTarg
 
 const readKeyAtSurfaceIndex = (state: GameState, surface: LayoutSurface, index: number): Key | null => {
   if (surface === "keypad") {
-    const cell = state.ui.keyLayout[index];
+    const activeCalculatorId = state.activeCalculatorId;
+    const cell = activeCalculatorId
+      ? state.calculators?.[activeCalculatorId]?.ui.keyLayout[index] ?? state.ui.keyLayout[index]
+      : state.ui.keyLayout[index];
+    if (!cell || cell.kind !== "key") {
+      return null;
+    }
+    return cell.key;
+  }
+  if (surface === "keypad_f") {
+    const cell = (state.calculators?.f?.ui.keyLayout ?? state.ui.keyLayout)[index];
+    if (!cell || cell.kind !== "key") {
+      return null;
+    }
+    return cell.key;
+  }
+  if (surface === "keypad_g") {
+    const cell = state.calculators?.g?.ui.keyLayout[index];
     if (!cell || cell.kind !== "key") {
       return null;
     }

@@ -25,8 +25,10 @@ import {
   withMaxPointsAdded,
   withMaxPointsSet,
 } from "./lambdaControl.js";
+import { commitLegacyProjection, projectCalculatorToLegacy, resolveActiveCalculatorId } from "./multiCalculator.js";
 import type {
   Action,
+  CalculatorId,
   GameState,
   VisualizerId,
 } from "./types.js";
@@ -213,6 +215,52 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
   return state;
 };
 
-export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState =>
-  reduceLegacy(state, action, options);
+const resolveActionCalculatorId = (state: GameState, action: Action): CalculatorId | null => {
+  if ("calculatorId" in action && action.calculatorId) {
+    return action.calculatorId;
+  }
+  if (
+    action.type === "PRESS_KEY"
+    || action.type === "SET_KEYPAD_DIMENSIONS"
+    || action.type === "UPGRADE_KEYPAD_ROW"
+    || action.type === "UPGRADE_KEYPAD_COLUMN"
+    || action.type === "TOGGLE_FLAG"
+    || action.type === "TOGGLE_VISUALIZER"
+    || action.type === "ALLOCATOR_ADJUST"
+    || action.type === "ALLOCATOR_SET_MAX_POINTS"
+    || action.type === "ALLOCATOR_ADD_MAX_POINTS"
+    || action.type === "RESET_ALLOCATOR_DEVICE"
+    || action.type === "ALLOCATOR_RETURN_PRESSED"
+    || action.type === "ALLOCATOR_ALLOCATE_PRESSED"
+    || action.type === "LAMBDA_SET_OVERRIDE_DELTA"
+    || action.type === "LAMBDA_SET_OVERRIDE_EPSILON"
+    || action.type === "LAMBDA_CLEAR_OVERRIDE_DELTA"
+    || action.type === "LAMBDA_CLEAR_OVERRIDE_EPSILON"
+    || action.type === "LAMBDA_SET_CONTROL"
+  ) {
+    return resolveActiveCalculatorId(state);
+  }
+  return null;
+};
+
+export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {
+  const hasDualCalculators = Boolean(state.calculators?.g && state.calculators?.f);
+  if (!hasDualCalculators) {
+    return reduceLegacy(state, action, options);
+  }
+  const withInstances = state;
+  if (action.type === "SET_ACTIVE_CALCULATOR") {
+    return {
+      ...withInstances,
+      activeCalculatorId: action.calculatorId,
+    };
+  }
+  const targetCalculatorId = resolveActionCalculatorId(withInstances, action);
+  if (!targetCalculatorId) {
+    return reduceLegacy(withInstances, action, options);
+  }
+  const projected = projectCalculatorToLegacy(withInstances, targetCalculatorId);
+  const reduced = reduceLegacy(projected, action, options);
+  return commitLegacyProjection(withInstances, reduced, targetCalculatorId);
+};
 

@@ -40,10 +40,10 @@ export const resolveStepBodyHighlightRects = (
   const rects: StepBodyHighlightRect[] = [];
   for (const region of regions) {
     const topSlot = keysEl.querySelector<HTMLElement>(
-      `[data-layout-surface="keypad"][data-layout-index="${region.topIndex.toString()}"]`,
+      `[data-layout-index="${region.topIndex.toString()}"]`,
     );
     const bottomSlot = keysEl.querySelector<HTMLElement>(
-      `[data-layout-surface="keypad"][data-layout-index="${region.bottomIndex.toString()}"]`,
+      `[data-layout-index="${region.bottomIndex.toString()}"]`,
     );
     if (!topSlot || !bottomSlot) {
       continue;

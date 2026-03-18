@@ -127,8 +127,12 @@ const toExpressionOperandText = (operand: BinarySlot["operand"]): string =>
 export const buildFunctionRecurrenceDisplay = (
   state: GameState,
 ): { line: string; hasIncompleteDraft: boolean; containsEuclidLiteral: boolean; expressionText: string } => {
-  let displayAccumulator = "f_n";
-  let expressionAccumulator = "f_n";
+  const symbol = state.activeCalculatorId === "g" ? "g" : "f";
+  const useXStyle = symbol === "g";
+  const currentToken = useXStyle ? `${symbol}_{x-1}` : `${symbol}_n`;
+  const nextToken = useXStyle ? `${symbol}_{x}` : `${symbol}_{n+1}`;
+  let displayAccumulator = currentToken;
+  let expressionAccumulator = currentToken;
   let hasIncompleteDraft = false;
   let containsEuclidLiteral = false;
 
@@ -156,7 +160,7 @@ export const buildFunctionRecurrenceDisplay = (
   }
 
   return {
-    line: `f_{n+1} = ${displayAccumulator}`,
+    line: `${nextToken} = ${displayAccumulator}`,
     hasIncompleteDraft,
     containsEuclidLiteral,
     expressionText: expressionAccumulator,
@@ -164,8 +168,9 @@ export const buildFunctionRecurrenceDisplay = (
 };
 
 export const buildAlgebraicViewModel = (state: GameState): AlgebraicViewModel => {
+  const symbol = state.activeCalculatorId === "g" ? "g" : "f";
   const seedValue = resolveSeedValueForAlgebra(state);
-  const seedLine = seedValue ? `f_0 = ${calculatorValueToDisplayString(seedValue)}` : "f_0 = _";
+  const seedLine = seedValue ? `${symbol}_0 = ${calculatorValueToDisplayString(seedValue)}` : `${symbol}_0 = _`;
   const recurrence = buildFunctionRecurrenceDisplay(state);
   const preRollMain = recurrence.line;
 
