@@ -123,7 +123,7 @@ export const renderCalculatorV2Module = (
   const track = document.createElement("span");
   track.className = "slot-display__track";
   const slotBase = document.createElement("span");
-  appendSlotTrackBase(slotBase, slotDisplay.base, slotDisplay.stepTargetTokenIndex);
+  appendSlotTrackBase(slotBase, slotDisplay.displayFunctionBase, slotDisplay.stepTargetTokenIndex);
   track.appendChild(slotBase);
   if (slotDisplay.deltaWrapSuffix) {
     const deltaWrap = document.createElement("span");
@@ -131,12 +131,16 @@ export const renderCalculatorV2Module = (
     deltaWrap.textContent = slotDisplay.deltaWrapSuffix;
     track.appendChild(deltaWrap);
   }
-  viewport.appendChild(track);
-  slotEl.appendChild(viewport);
   const ellipsis = document.createElement("span");
   ellipsis.className = "slot-display__ellipsis";
   ellipsis.textContent = "\u2026";
+  const fixedSeed = document.createElement("span");
+  fixedSeed.className = "slot-display__seed";
+  fixedSeed.textContent = slotDisplay.fixedSeedLabel;
+  viewport.appendChild(track);
+  slotEl.appendChild(viewport);
   slotEl.appendChild(ellipsis);
+  slotEl.appendChild(fixedSeed);
   bindOrUpdateSlotMarquee(root, { slotEl, viewportEl: viewport, trackEl: track });
 
   const rollView = buildRollViewModel(state.calculator.rollEntries);

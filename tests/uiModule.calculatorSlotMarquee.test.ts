@@ -68,7 +68,7 @@ export const runUiModuleCalculatorSlotMarqueeTests = (): void => {
     let previousTransform = trackEl?.style.transform ?? "";
     let pauseTickCount = 0;
     let observedEdgePause = false;
-    for (let index = 0; index < 400; index += 1) {
+    for (let index = 0; index < 1200; index += 1) {
       advanceSlotMarqueeTickForTests(harness.root, 1);
       const currentTransform = trackEl?.style.transform ?? "";
       if (currentTransform === previousTransform && currentTransform !== "translateX(-0ch)") {

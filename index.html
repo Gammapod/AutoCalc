@@ -1041,7 +1041,7 @@
         display: inline-flex;
         min-width: 0;
         overflow: hidden;
-        flex: 1;
+        flex: 1 1 auto;
       }
 
       .slot-display__track {
@@ -1054,12 +1054,17 @@
 
       .slot-display__ellipsis {
         display: none;
-        margin-left: 4px;
+        margin-left: 6px;
+        margin-right: 6px;
         color: #7f8b9a;
       }
 
       [data-slot].slot-display--marquee .slot-display__ellipsis {
         display: inline;
+      }
+
+      .slot-display__seed {
+        flex: 0 0 auto;
       }
 
       .slot-display__delta-wrap {

@@ -138,8 +138,38 @@ const MOD_ZERO_TO_DELTA_SUFFIX = " [ \u27E1 \u{1D6FF} ]";
 
 export type OperationSlotDisplayModel = {
   base: string;
+  displayFunctionBase: string;
+  fixedSeedLabel: string;
   deltaWrapSuffix: string | null;
   stepTargetTokenIndex: number | null;
+};
+
+const toFunctionBuilderDisplayParts = (base: string): { displayFunctionBase: string; fixedSeedLabel: string } => {
+  if (base === "(no operation slots)") {
+    return { displayFunctionBase: `f\u2093 = f\u208B\u2081`, fixedSeedLabel: `| f\u2080 = _` };
+  }
+  const firstTokenStart = base.indexOf(" [");
+  const seedToken = firstTokenStart < 0 ? base.trim() : base.slice(0, firstTokenStart).trim();
+  const slotTokens = firstTokenStart < 0 ? "" : base.slice(firstTokenStart).trim();
+  return {
+    displayFunctionBase: slotTokens ? `f\u2093 = f\u208B\u2081 ${slotTokens}` : `f\u2093 = f\u2080`,
+    fixedSeedLabel: `| f\u2080 = ${seedToken || "_"}`,
+  };
+};
+
+const withDisplayParts = (
+  base: string,
+  deltaWrapSuffix: string | null,
+  stepTargetTokenIndex: number | null,
+): OperationSlotDisplayModel => {
+  const parts = toFunctionBuilderDisplayParts(base);
+  return {
+    base,
+    displayFunctionBase: parts.displayFunctionBase,
+    fixedSeedLabel: parts.fixedSeedLabel,
+    deltaWrapSuffix,
+    stepTargetTokenIndex,
+  };
 };
 
 export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotDisplayModel => {
@@ -162,17 +192,17 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
   const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
   if (modZeroToDeltaEnabled) {
     if (base === "(no operation slots)") {
-      return { base: "[ \u27E1 \u{1D6FF} ]", deltaWrapSuffix: null, stepTargetTokenIndex };
+      return withDisplayParts("_ [ \u27E1 \u{1D6FF} ]", null, stepTargetTokenIndex);
     }
-    return { base, deltaWrapSuffix: MOD_ZERO_TO_DELTA_SUFFIX, stepTargetTokenIndex };
+    return withDisplayParts(base, MOD_ZERO_TO_DELTA_SUFFIX, stepTargetTokenIndex);
   }
   if (deltaWrapEnabled) {
     if (base === "(no operation slots)") {
-      return { base: "[ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", deltaWrapSuffix: null, stepTargetTokenIndex };
+      return withDisplayParts("_ [ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", null, stepTargetTokenIndex);
     }
-    return { base, deltaWrapSuffix: DELTA_WRAP_SUFFIX, stepTargetTokenIndex };
+    return withDisplayParts(base, DELTA_WRAP_SUFFIX, stepTargetTokenIndex);
   }
-  return { base, deltaWrapSuffix: null, stepTargetTokenIndex };
+  return withDisplayParts(base, null, stepTargetTokenIndex);
 };
 
 export const buildOperationSlotDisplay = (state: GameState): string => {
