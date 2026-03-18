@@ -279,7 +279,8 @@ The following require integer inputs, and return NaN otherwise:
 
 ## Settings Keys
 
-- `Naturals -> Prime Domain (ℙ(ℙ⁻¹(f)))`: Allows arithmetic on the prime index. When toggled, the seed f_0=s becomes f_0=ℙ(s) and the function f_n=g°f_-n becomes ℙ(g°ℙ⁻¹(f_-n)).
+- `Base-Prime (ℙ(ℙ⁻¹(f)))`: Allows arithmetic on the prime index. When toggled, the seed f_0=s becomes f_0=ℙ(s) and the function f_n=g°f_-n becomes ℙ(g°ℙ⁻¹(f_-n)).
+- `Base-2 display`: Changes to binary notation. Please note - binary notation should still respect maxDigits and digit-specific operations. If maxDigits is set to 4, then the highest number possible in the roll is "1111", or 15.
 
 ## Digits/Values
 
