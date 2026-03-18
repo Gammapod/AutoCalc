@@ -89,6 +89,31 @@ With `?ui=mobile`:
 npm test
 ```
 
+Code health scorecard (0-100) with CI enforcement:
+
+```bash
+npm run ci:health
+```
+
+Standards:
+
+- `perfection`: `>=95` and all hard gates pass
+- `good-enough`: `>=80` and all hard gates pass (default CI gate)
+- `hackathon`: `>=60`
+
+Current weighted dimensions:
+
+- build success (15)
+- test pass rate (25)
+- dependency boundaries (15)
+- UI complexity gate (10)
+- test density proxy (10)
+- type discipline via `@ts-nocheck` usage (10)
+- documentation coverage (10)
+- debt marker density (`TODO`/`FIXME`/`HACK`) (5)
+
+The score report is written to `dist/reports/code-health-score.json`.
+
 Includes dedicated shell tests:
 
 - `ui-shell/snap-availability`

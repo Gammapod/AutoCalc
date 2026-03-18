@@ -82,7 +82,22 @@ The Global State Interface governs session continuity, progression capability st
 
 ### 3.2 Calculator State Interface
 
-The Calculator State Interface governs the active calculator runtime model.
+The Calculator State Interface governs calculator runtime models for one or more calculator instances.
+
+#### 3.2.0 Multi-Calculator Session Model
+
+- `FS-MC-01` (MUST): A session supports one or more calculator instances.
+  Rationale: more calculators means a wider possibility space for puzzles.
+- `FS-MC-02` (MUST): Each calculator instance owns isolated execution-local state (total, drafting, slots, roll/history, control matrix variables, and step progress).
+  Rationale: multi-calculator play requires local execution truth per instance.
+- `FS-MC-03` (MUST): Progression-owned unlock state remains global and shared across calculators unless explicitly defined otherwise.
+  Rationale: progression ownership and auditability remain singular under global state.
+- `FS-MC-05` (MUST): Unlocking an additional calculator creates a deterministic initial calculator runtime state.
+  Rationale: newly granted calculators must be predictable and parity-testable.
+- `FS-MC-07` (MUST): Save/load round-trip preserves all calculator instances and active-calculator selection.
+  Rationale: session continuity must hold for multi-instance progression.
+- `FS-MC-08` (MUST): With only one unlocked calculator, behavior remains equivalent to single-calculator gameplay semantics.
+  Rationale: multi-calculator rollout must preserve baseline play and existing progress compatibility.
 
 #### 3.2.1 Core Calculator Surfaces
 
@@ -146,6 +161,17 @@ The Calculator State Interface governs the active calculator runtime model.
 | FS-FB-06 | Finalization writes one terminal outcome per completion path | `reducer/input`, `persistence` | unit | partial: no dedicated long-trace finalization stress suite |
 | FS-FB-07 | Step behavior inert when capability absent | `reducer/input`, `ui-integration/mobile-shell` | unit + integration | none |
 
+#### 3.2.4 Traceability (Multi-Calculator Session Model)
+
+| Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
+|---|---|---|---|---|
+| FS-MC-01 | One-or-more calculators with exactly one active selection | `reducer/lifecycle`, `v2/parity` | unit + parity | gap: no active-calculator selection contract yet |
+| FS-MC-02 | Calculator execution-local state is isolated per instance | `reducer/input`, `contracts/slot-input-parity` | unit + contract | gap: no per-instance isolation suite yet |
+| FS-MC-03 | Unlock ownership remains global/shared | `domain/unlock-engine`, `contracts/content-provider-wiring` | unit + contract | gap: no multi-calculator unlock-scope assertion yet |
+| FS-MC-05 | Additional calculator initialization is deterministic | `reducer/lifecycle`, `persistence` | unit | gap: no unlock-to-instance initialization suite yet |
+| FS-MC-07 | Persistence preserves all instances and active selection | `persistence`, `v2/persistence-parity` | unit + contract | gap: multi-instance migration fixtures not defined |
+| FS-MC-08 | One-calculator mode preserves baseline semantics | `v2/parity`, `contracts/parity-long-traces` | parity + contract | gap: no baseline-compat mode fixture pair yet |
+
 ## 4. Cross-Interface Boundary Clauses
 
 - `FS-BND-01` (MUST): Global state may gate calculator capability inputs but MUST NOT directly mutate in-progress calculator execution except via explicit domain actions.
@@ -156,6 +182,8 @@ The Calculator State Interface governs the active calculator runtime model.
   Rationale: interaction modality is allowed divergence; game outcome is not.
 - `FS-BND-04` (SHALL): Contract-layer definitions remain implementation-independent from app/ui/infra/content wiring.
   Rationale: contracts should encode stable semantics, not runtime coupling.
+- `FS-BND-06` (MUST): Additional calculator creation/removal occurs only through explicit domain actions/effects.
+  Rationale: calculator lifecycle transitions must remain auditable and deterministic.
 
 ### 4.1 Traceability (Boundaries)
 
@@ -165,6 +193,7 @@ The Calculator State Interface governs the active calculator runtime model.
 | FS-BND-02 | Calculator does not own unlock predicate/effect definitions | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership tested indirectly |
 | FS-BND-03 | Shell divergence allowed; outcomes must remain equivalent | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity`, `contracts/ui-action-emission` | integration + parity + contract | none |
 | FS-BND-04 | Contracts remain implementation-independent | `app/bootstrap-boundary`, `contracts/shim-inventory`, `browser/import-safety` | boundary + contract | partial: semantic independence asserted via import boundaries |
+| FS-BND-06 | Calculator lifecycle changes require explicit actions/effects | `domain/unlock-engine`, `reducer/lifecycle` | unit | gap: no explicit lifecycle-event contract yet |
 
 ## 5. Conceptual Contracts (Spec-Level Interfaces)
 
@@ -173,7 +202,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 1. `Global State Interface`
    Defines save/session semantics, storage policy, and progression-owned unlock runtime state.
 2. `Calculator State Interface`
-   Defines keypad, roll, visualizer projection, and control matrix runtime semantics.
+   Defines per-calculator keypad, roll, visualizer projection, and control matrix runtime semantics.
 3. `Progression Capability Contract`
    Defines how unlock predicates/effects map to capability gating consumed by calculator behavior.
 4. `Function Builder Contract`
@@ -201,6 +230,8 @@ These are stable documentation interfaces for test/contract alignment, not code 
 
 1. `FS-CS-02` control matrix locality has no explicit dedicated contract/assertion suite.
 2. `FS-BND-01` action-bypass mutation prevention is not directly asserted as a behavior test.
+3. `FS-MC-01` active-calculator selection uniqueness has no dedicated contract suite.
+4. `FS-BND-06` calculator lifecycle explicitness has no action/event contract suite.
 
 ### 7.2 Invariants with only partial or indirect coverage
 
@@ -208,6 +239,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
 3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but not yet as explicit contract clauses.
 4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
+5. `FS-MC-02`, `FS-MC-03`, `FS-MC-05`, `FS-MC-07`, and `FS-MC-08` are specification-defined but currently lack dedicated multi-calculator fixtures/contracts.
 
 ### 7.3 Fixture-only parity/fuzz coverage flags
 

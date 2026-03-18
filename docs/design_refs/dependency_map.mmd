@@ -9,24 +9,83 @@ flowchart TD
 %%     Uce["CE"]
 %% end
 %% subgraph Expressable ["Expressable Values"]
+%%     NP["ℙ (2)"]
 %%     NN["ℕ (1)"]
 %%     NZ["ℤ (-1)"]
 %%     NQ["ℚ (1/2)"]
 %%     NA["𝔸 (√2)"]
 %%     NR["ℝ (π)"]
 %%     NC["ℂ (√-1)"]
-%%     NP["ℙ (2)"]
-%%     NN --> NZ --> NQ --> NA --> NR --> NC
+%%     NP --> NN --> NZ --> NQ --> NA --> NR --> NC
 %% end
 
+subgraph Logic ["Logical Predicates"]
+    Lnot["¬"]
+    %% Expanded form `[ ≤ 0 ]`
+    Llte["≤"]
+    %% Expanded form `[ ¬(a-b) ]
+    Llt["<"]
+    %% Expanded form `[ (a≤b) × ¬(¬(a-b))]
+    Ldiv["|"]
+    %% Expanded form `[ ¬(a◇b) ]
+    Leq["≡"]
+    %% Expanded form `[ ¬((a<b) + (b<a)) ]
+    Land["×"]
+    Lor["\+"]
+    
+    Lnot --> Llte --> Llt
+    Lnot --> Ldiv
+    Land --> Llt --> Leq
+    Lor --> Leq
+end
+
+subgraph Arithmetic ["Arithmetic"]
+    Ainc["++"]
+    Aminus["a−b"]
+    Aplus["a\+b"]
+    Amul["a×b"]
+    Aneg["n±"]
+    Aabs["|n|"]
+    %% Expanded form `[ (¬(n) × ±n) + ((0<n) × n) ]`
+    Adiv["a÷b"]
+    Afloor["⌊n⌋"]
+    %% Expanded form `[a÷b] - FrAC`
+    Aeudiv["a∻b"]
+    %% Expanded form `[ ⌊a÷b⌋ ] `
+    Aceil["⌈n⌉"]
+    %% Expanded form `[ ⌊n⌋++ ]`
+    Apow["a^b"]
+    Amod["a◇b"]
+    %% Expanded form `[ (a÷b) - (a∻b) ]`
+    %% Ares["n⟐p"]
+    %% %% Expanded form `n⟐p -> n/(p^(n∥p))`
+    %% %% Expanded form `60⟐2=15 -> 60/(2^2)=15`
+
+    Ainc -->|Iterate| Aplus
+    Aplus -->|Iterate| Amul
+    Amul -->|Iterate| Apow
+
+    Adiv --> Afloor
+    Afloor --> Aeudiv
+    Aeudiv --> Amod
+    Afloor --> Aceil
+
+    Aplus -->|Invert| Aminus
+    Amul -->|Invert| Adiv
+
+    Aminus --> Aneg    
+    Aneg --> Aabs
+end
+
 subgraph Theory ["Number Theory"]
-    Tprime_expansion["∏ ℙ^e"]
     Tntop["ℙ(n)"]
     %% Returns nth prime. ℙ(3) = 5
     Tpton["ℙ^-1(p)"]
     %% Returns index of prime p. ℙ^-1(5) = 3
-    Tprime["p"]
+    Tpadic["n∥p"]
+    %% Expanded form `?`
     Texponent["e"]
+    Tprime_expansion["∏ ℙ^e"]
     Tomega["Ω"]
     %% Expanded form `[ Σe_p ]`
     Ttotient["φ"]
@@ -37,88 +96,38 @@ subgraph Theory ["Number Theory"]
     %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
     Tlcm["⋁"]
     %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`
-    Tmin["╤"]  
-    %% Expanded form `[ a×(b>a) + b×((a>b) + (a==b)) ]`
     Tmax["╧"]
-    %% Expanded form `[a×(a>b) + b×((b>a) + (b==a))]`
+    %% Expanded form `[ ((a<b)×b) + ¬(a≤b)×a) ]`
+    Tmin["╤"]  
+    %% Expanded form `[ ((a<b)×a) + ¬(a≤b)×b) ]`
 
-    Tntop --> Tpton
+    Tntop --> Tpadic --> Texponent
 
-    Tprime_expansion --> Tprime
-    Tprime_expansion --> Texponent
+    Tntop --> Tpton --> Tprime_expansion --> Tomega
 
-    Texponent --> Tomega
+    Tntop --> Ttotient
 
-    Tprime --> Ttotient
-
-    Tprime --> Tgcd
+    Tntop --> Tgcd
     Texponent --> Tgcd
     Tmax --> Tgcd
 
-    Tprime --> Tlcm
+    Tntop --> Tlcm
     Texponent --> Tlcm
     Tmin --> Tlcm
 
 end
 
-subgraph Arithmetic ["Arithmetic"]
-    Ainc["++"]
-    Aneg["n±"]
-    Aminus["a−b"]
-    Aplus["a\+b"]
-    Amul["a×b"]
-    Adiv["a÷b"]
-    Apow["a^b"]
-    Amod["a◇b"]
-    %% Expanded form `a [÷b] [⌊n⌋] [×b] [±] [+a]`
-    Aeudiv["a∻b"]
-    %% Expanded form `[a÷b] - [a◇b]`
-    Apadic["n∥p"]
-    %% Expanded form ``
-    Ares["n⟐p"]
-    %% Expanded form `n⟐p -> n/(p^(n∥p))`
-    %% Expanded form `60⟐2=15 -> 60/(2^2)=15`
-    Aabs["|n|"]
-    %% Expanded form ``
-    Afloor["⌊n⌋"]
-    %% Expanded form ``
-    Aceil["⌈n⌉"]
-    %% Expanded form ``
-    %% a/b - r/b = q
-
-    Afloor --> Amod
-    Adiv --> Amod
-    Aneg --> Amod
-    Ainc -->|Iterate| Aplus
-    Aplus -->|Iterate| Amul
-    Amul -->|Iterate| Apow
-
-    Amod --> Aeudiv
-
-    Aplus -->|Invert| Aminus
-    Amul -->|Invert| Adiv
-
-    Amul --> Aneg
-end
-
-subgraph Logic ["Logical Predicates"]
-    Lnot["¬"]
-    %% Expanded form `[ 1 > n]`
-    Ldivides["|"]
-    %% Expanded form `[ (b ◇ a) == 0 ]`
-    Lequals["=="]
-    %% Expanded form `a [ - b] [ ¬ ]`
-    Lgreater["\>"]
-    %% Expanded form `[ (a - b) == |a - b| ]
-    Lgreater --> Lnot --> Lequals --> Ldivides
-end
-    
+Ldiv --> Tpadic
+Llt --> Aabs
+Amod --> Ldiv
 Apow --> Tprime_expansion
-Ldivides --> Tdivisor_sum
-Lequals --> Tmin
-Lequals --> Tmax
-Aminus --> Lgreater
-Amod --> Ldivides
+Ldiv --> Tdivisor_sum
+Llt --> Tmin
+Llt --> Tmax
+Aminus --> Llte
+Amul --> Land
+Aplus --> Lor
+
     %% 
 %% Idigits --> NN
 %% 

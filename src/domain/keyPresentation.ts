@@ -162,7 +162,7 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["\u03BB", { keyId: KEY_ID.viz_eigen_allocator, buttonFace: "\u03BB" }],
   ["ALG", { keyId: KEY_ID.viz_algebraic, buttonFace: "ALG" }],
   ["=", { keyId: KEY_ID.exec_equals, buttonFace: "=" }],
-  ["\u25BB", { keyId: KEY_ID.exec_step_through, buttonFace: "[ \u25B6\u2758 ]" }],
+  ["\u25BB", { keyId: KEY_ID.exec_step_through, buttonFace: "[ \u25BA\u2758 ]" }],
 ]);
 
 const entries: KeyPresentation[] = buttonRegistry.map((entry) => {

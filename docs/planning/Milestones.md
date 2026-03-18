@@ -25,19 +25,43 @@ Goal: retire high-risk architectural debt through staged foundational refactors 
 
 # Release v0.8.5: Multiple Calculators
 
-Goal: scope multi-calculator progression into implementable phases.
+Goal: define and de-risk multi-calculator progression through implementation-ready phases.
 
 ### Direction
 
+- Lock v1 player-facing semantics before architecture choices.
 - Define v1 domain model and persistence impact for more than one calculator.
 - Stage rollout from read-only surfaces to one unlockable second calculator.
 - Defer specialist variants until onboarding and complexity targets are validated.
+
+### Deliverables
+
+- Functional clauses and traceability IDs are updated for multi-calculator behavior (`FS-MC-*`, boundary deltas).
+- Multi-calculator contract prerequisites are documented:
+  - calculator-targeted action semantics
+  - per-instance execution-state isolation
+  - active-calculator selection invariants
+  - multi-instance persistence/migration invariants
+- A phase execution plan is frozen with entry/exit criteria:
+  - Phase 0: Spec + contract scaffolding only (no gameplay behavior change).
+  - Phase 1: Read-only second calculator surface (observe/select only, non-mutating).
+  - Phase 2: One unlockable second calculator with full targeted execution behavior.
+- Baseline-compat strategy is defined for existing saves and one-calculator parity behavior.
+
+### Risks / Validation Focus
+
+- Player cognitive load from calculator switching may reduce clarity of immediate goals.
+- Save migration risk rises due to shape change from single to multi-instance calculator state.
+- Unlock predicate semantics can drift if calculator-target scope is underspecified.
+- Mobile/desktop shell parity risk increases when focus, selection, and routing are introduced.
 
 ### Exit Criteria
 
 - Phase plan exists with clear boundaries and prerequisite contracts.
 - v1 success metrics and risks are documented.
 - Review-flag multi-calculator items are no longer undecided.
+- A no-regression path is documented for single-calculator saves and behavior parity.
+- At least one acceptance fixture is defined per phase boundary (Phase 0/1/2).
 
 # Release v0.9.0: Pre-Launch
 
@@ -150,31 +174,108 @@ When implementing, every operator key MUST have all of the following defined:
 ### Unary Operators
 All unary operators are applied to the previous step's result.
 
-- `Distinct prime factors (ω)`: return the number of distinct prime factors of `n`.
-- `Floor (⌊n⌋)`: return greatest integer less than or equal to `n`.
-- `Ceiling (⌈n⌉)`: return least integer greater than or equal to `n`.
-- `Not (¬)` returns 1 if operand is == 0, else 0.
+- `Distinct prime factors`: 
+    - functionality: return the number of distinct prime factors of operand.
+    - key face: `ω`
+    - operator slot face: `[ ω ]`
+    - expanded form: ``
+- `Floor`:
+    - functionality: return greatest integer less than or equal to `n`.
+    - key face: `⌊n⌋`
+    - operator slot face: `[ ⌊n⌋ ]`
+    - expanded form: ``
+- `Ceiling`:
+    - functionality: return least integer greater than or equal to `n`.
+    - key face: `⌈n⌉`
+    - operator slot face: `[ ⌈n⌉ ]`
+    - expanded form: ``
+- `Not`:
+    - functionality: returns 1 if operand is == 0, else 0.
+    - key face: `¬`
+    - operator slot face: `[ ¬ ]`
+    - expanded form: `[ 0 ? 1 : 0 ]`
 
 The following require integer inputs, and return NaN otherwise:
-- `Collatz (Ctz)`: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
-- `Sort asc (⇡d)`: reorder decimal digits of `n` in ascending order.
-- `Digit count (#d)`: return the count of decimal digits in `n`.
-- `Digit sum (∑d)`: return the sum of decimal digits in `n`.
-- `Digit^2 sum (∑d^2)`: return the sum of squared decimal digits in `n`.
-- `Mirror digits (⇋d)`: reverse decimal digit order of `n`.
-- `Nth Prime (ℙ)`: return the nth prime number. NaN if n is not a natural number.
-- `Index of prime (ℙ⁻¹)`: return the index of prime p. NaN if p is not a prime.
+- `Collatz`:
+    - functionality: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
+    - key face: `Ctz`
+    - operator slot face: `[ Ctz ]`
+    - expanded form: `[ n◇2¬ ? 3n+1 : n÷2 ]`
+- `Sort asc`:
+    - functionality: reorder decimal digits of `n` in ascending order.
+    - key face: `⇡d`
+    - operator slot face: `[ ⇡ ]`
+    - expanded form: `[ sort_asc() ]`
+- `Digit count (digit)`:
+    - functionality: return the count of decimal digits in `n`.
+    - key face: ``
+    - operator slot face: `[  ]`
+    - expanded form: `[  ]`
+- `Digit sum`:
+    - functionality: return the sum of decimal digits in `n`.
+    - key face: ``
+    - operator slot face: `[  ]`
+    - expanded form: `[ d#1 + d#2 + {as many digits in number} ]`
+- `Digit^2 sum (∑d^2)`:
+    - functionality: return the sum of squared decimal digits in `n`.
+    - key face: ``
+    - operator slot face: `[  ]`
+    - expanded form: `[ (d#1^2) + (d#2^2) + {as many digits in number} ]`
+- `Mirror digits (⇋d)`:
+    - functionality: reverse decimal digit order of `n`.
+    - key face: ``
+    - operator slot face: `[ ⇋ ]`
+    - expanded form: `[ abc -> cba ]`
+- `Nth Prime (ℙ)`:
+    - functionality: return the nth prime number. NaN if n is not a natural number.
+    - key face: ``
+    - operator slot face: `[ ℙ ]`
+    - expanded form: `[ ℙ(n) ]`
+- `Index of prime (ℙ⁻¹)`:
+    - functionality: return the index of prime p. NaN if p is not a prime.
+    - key face: ``
+    - operator slot face: `[ ℙ⁻¹ ]`
+    - expanded form: `[  ]`
 
 ### Binary Operators
 
-- `Max (╧)`: return the larger of two operands.
-- `Min (╤)`: return the smaller of two operands.
-- `Greater (>)`: returns 1 if first operand is larger than the second, else 0.
+- `Digit number (d)`:
+    - functionality: return the nth digit of the operand.
+    - key face: ``
+    - operator slot face: `[ d#_ ]`
+    - expanded form: `[   ]`
+- `Max (╧)`:
+    - functionality: return the larger of two operands.
+    - key face: ``
+    - operator slot face: `[ ╧ _ ]`
+    - expanded form: `[ a > b ] [ × a ] + [ a > b ] [ × b ] [ ¬ ]`
+- `Min (╤)`:
+    - functionality: return the smaller of two operands.
+    - key face: ``
+    - operator slot face: `[ ╤ _ ]`
+    - expanded form: `[ a > b ] [ × b ] + [ a > b ] [ × a ] [ ¬ ]`
+- `Greater (>)`:
+    - functionality: returns 1 if first operand is larger than the second, else 0.
+    - key face: ``
+    - operator slot face: `[ > _ ]`
+    - expanded form: `[  ]`
 
 The following require integer inputs, and return NaN otherwise:
-- `Specific digit (d_)`: return the digit at a specified position/index.
-- `Keep leftmost n`: keep only the leftmost `n` digits; discard the rest.
-- `Previous roll item (f(x-k))`: for current roll index `x`, return item value at relative offset `x-k`.
+- `Specific digit (d_)`:
+    - functionality: return the digit at a specified position/index.
+    - key face: ``
+    - operator slot face: `[  ]`
+    - expanded form: `[  ]`
+- `Keep leftmost n`:
+    - functionality: keep only the leftmost `n` digits; discard the rest.
+    - key face: ``
+    - operator slot face: `[  ]`
+    - expanded form: `[  ]`
+- `Previous roll item (f(x-k))`:
+    - functionality: for current roll index `x`, return item value at relative offset `x-k`.
+    - key face: ``
+    - operator slot face: `[  ]`
+    - expanded form: `[  ]`
 
 ## Settings Keys
 
@@ -188,3 +289,4 @@ The following require integer inputs, and return NaN otherwise:
 ## Visualizer changes
 
 - `Prime domain`: In addition to natural numbers, integers, rationals, etc, I'd like to also label prime numbers as being in the prime domain, `ℙ`. It is a subdomain of the naturals.
+- `Function display`: Prime factorization visualizer should display the user-defined function expanded - if the user's function is `5 [ - 4 ] [ Ω ] [ × 8 ] [ ^ 2 ] [ ++ ]`, the visualizer should show `f_0 = 5, f_x = ++(( Ω(f_x-1 - 4) × 8) ^ 2)`. Binary operations are added to the right and unary operators are added to the left, parentheses as needed.
