@@ -2,15 +2,18 @@ import type { Key, UnlockDefinition } from "./types.js";
 import type { GraphNode, UnlockGraph, UnlockGraphReport } from "./unlockGraph.types.js";
 import { analyzeUnlockGraph } from "./unlockGraph.analysis.js";
 import { buildUnlockGraph } from "./unlockGraph.rules.js";
+import type { UnlockProofReport } from "./unlockGraph.types.js";
 
 export const buildUnlockGraphReport = (
   catalog: UnlockDefinition[],
   startingKeys: Key[],
   generatedAt: Date = new Date(),
+  proof?: UnlockProofReport,
 ): UnlockGraphReport => ({
   generatedAtIso: generatedAt.toISOString(),
   graph: buildUnlockGraph(catalog, startingKeys),
   analysis: analyzeUnlockGraph(catalog, startingKeys),
+  proof,
 });
 
 export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
@@ -60,6 +63,20 @@ export const formatUnlockGraphReport = (report: UnlockGraphReport): string => {
       ? report.analysis.keyCycles.map((cycle) => `- ${cycle.join(" -> ")}`)
       : ["- (none)"]),
   ];
+
+  if (report.proof) {
+    const proved = report.proof.unlockProofs.filter((entry) => entry.status === "proved").length;
+    const impossible = report.proof.unlockProofs.filter((entry) => entry.status === "impossible").length;
+    const unknown = report.proof.unlockProofs.filter((entry) => entry.status === "unknown").length;
+    lines.push(
+      "",
+      "Proof Summary",
+      `- Engine: ${report.proof.engineVersion}`,
+      `- Runtime: ${report.proof.runtimeMs.toString()}ms`,
+      `- proved=${proved}, impossible=${impossible}, unknown=${unknown}`,
+      `- Cache: mode=${report.proof.cache.mode}, used=${report.proof.cache.cacheUsed ? "true" : "false"}, hitLayers=${report.proof.cache.cacheHitLayers.toString()}`,
+    );
+  }
 
   return lines.join("\n");
 };
@@ -281,4 +298,3 @@ export const formatUnlockGraphMermaid = (graph: UnlockGraph): string => {
 
   return `${lines.join("\n")}\n`;
 };
-

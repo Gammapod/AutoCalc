@@ -31,6 +31,7 @@ import { runRollDerivedTests } from "./rollDerived.test.js";
 import { runControlProjectionTests } from "./controlProjection.test.js";
 import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.js";
 import { runUnlockGraphTests } from "./unlockGraph.test.js";
+import { runUnlockProofTests } from "./unlockProof.test.js";
 import { runKeyBehaviorContractTests } from "./keyBehavior.contract.test.js";
 import { runUiShellSnapAvailabilityTests } from "./uiShell.snapAvailability.test.js";
 import { runUiShellGestureArbitrationTests } from "./uiShell.gestureArbitration.test.js";
@@ -122,6 +123,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/control-projection", runControlProjectionTests],
   ["domain/predicate-capability-spec", runPredicateCapabilitySpecTests],
   ["domain/unlock-graph", runUnlockGraphTests],
+  ["domain/unlock-proof", runUnlockProofTests],
   ["domain/key-behavior-contract", runKeyBehaviorContractTests],
   ["domain/key-unlocks", runKeyUnlocksTests],
   ["domain/layout-rules-invariants", runLayoutRulesInvariantTests],

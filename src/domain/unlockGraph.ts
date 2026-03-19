@@ -8,6 +8,14 @@ export type {
   ConditionStatus,
   UnlockGraphAnalysis,
   UnlockGraphReport,
+  UnlockProofStatus,
+  ImpossibleCertificate,
+  ProofAction,
+  ProofBounds,
+  UnlockProofRecord,
+  ProofLayer,
+  UnlockProofCacheStats,
+  UnlockProofReport,
 } from "./unlockGraph.types.js";
 
 export { buildUnlockGraph } from "./unlockGraph.rules.js";
@@ -21,3 +29,7 @@ export {
   filterUnlockGraphToIncomingUnlockKeys,
   deriveUnlockedKeysFromState,
 } from "./unlockGraph.filters.js";
+export {
+  buildUnlockProofReport,
+  formatUnlockProofReport,
+} from "./unlockProof.js";
