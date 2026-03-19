@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "../src/app/autoEqualsScheduler.js";
 import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
+import { projectControlFromState } from "../src/domain/controlProjection.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState, Key, Store } from "../src/domain/types.js";
 import { execution, op, executionUnlockPatch } from "./support/keyCompat.js";
@@ -104,11 +105,12 @@ export const runAutoEqualsSchedulerTests = (): void => {
   assert.equal(timers.activeCount(), 0, "no interval is created while off");
 
   store.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
+  const expectedInitialIntervalMs = 1000 / projectControlFromState(store.getState()).autoEqualsRateMultiplier;
   scheduler.sync(store.getState());
   assert.equal(countExecutorPresses(store.actions), 1, "toggling on dispatches immediate executor press once");
   assert.equal(countExecutorPressesForKey(store.actions, execution("=")), 1, "fallback path presses first installed execution key");
   assert.equal(timers.setCalls, 1, "toggling on creates one interval");
-  assert.equal(timers.setMsHistory[0], 1000, "default speed starts at one executor press per second");
+  assert.equal(timers.setMsHistory[0], expectedInitialIntervalMs, "default speed follows control-derived epsilon rate");
   assert.equal(timers.activeCount(), 1, "interval remains active while on");
   assert.equal(Boolean(store.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]), true, "toggle remains on after successful = attempt");
 

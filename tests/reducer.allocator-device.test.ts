@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
@@ -28,9 +29,9 @@ export const runReducerAllocatorDeviceTests = (): void => {
   assertAllocatorInvariant(withSlots);
 
   const reset = reducer(withSlots, { type: "RESET_ALLOCATOR_DEVICE" });
-  assert.equal(reset.lambdaControl.alpha, 2, "reset restores alpha start");
-  assert.equal(reset.lambdaControl.beta, 1, "reset restores beta start");
-  assert.equal(reset.lambdaControl.gamma, 1, "reset restores gamma start");
+  assert.equal(reset.lambdaControl.alpha, controlProfiles.f.starts.alpha, "reset restores alpha start");
+  assert.equal(reset.lambdaControl.beta, controlProfiles.f.starts.beta, "reset restores beta start");
+  assert.equal(reset.lambdaControl.gamma, controlProfiles.f.starts.gamma, "reset restores gamma start");
   assert.equal(reset.lambdaControl.maxPoints, withSlots.lambdaControl.maxPoints, "reset preserves max points");
   assertAllocatorInvariant(reset);
 };

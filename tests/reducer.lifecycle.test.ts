@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { applyLifecycleAction } from "../src/domain/reducer.lifecycle.js";
 import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, STEP_EXPANSION_FLAG, initialState } from "../src/domain/state.js";
+import { projectControlFromState } from "../src/domain/controlProjection.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
@@ -10,6 +11,10 @@ export const runReducerLifecycleTests = (): void => {
 
   const reset = applyLifecycleAction(base, { type: "RESET_RUN" });
   assert.deepEqual(reset, initialState(), "RESET_RUN returns initial state");
+  const baseline = initialState();
+  const baselineProjection = projectControlFromState(baseline, "f");
+  assert.equal(baseline.ui.keypadColumns, baselineProjection.keypadColumns, "initial columns match projected alpha");
+  assert.equal(baseline.ui.keypadRows, baselineProjection.keypadRows, "initial rows match projected beta");
 
   const hydratedState: GameState = {
     ...base,
@@ -18,6 +23,26 @@ export const runReducerLifecycleTests = (): void => {
   const hydrated = applyLifecycleAction(base, { type: "HYDRATE_SAVE", state: hydratedState });
   assert.equal(Boolean(hydrated), true, "HYDRATE_SAVE returns a state");
   assert.equal(hydrated?.completedUnlockIds.includes("hydrate-marker"), true, "HYDRATE_SAVE preserves provided unlock ids");
+
+  const mismatchedHydrateInput: GameState = {
+    ...baseline,
+    ui: {
+      ...baseline.ui,
+      keypadColumns: baseline.ui.keypadColumns + 1,
+      keypadRows: baseline.ui.keypadRows + 1,
+    },
+  };
+  const normalizedHydrate = applyLifecycleAction(base, { type: "HYDRATE_SAVE", state: mismatchedHydrateInput });
+  assert.equal(
+    normalizedHydrate?.ui.keypadColumns,
+    baselineProjection.keypadColumns,
+    "HYDRATE_SAVE normalizes columns to projected alpha",
+  );
+  assert.equal(
+    normalizedHydrate?.ui.keypadRows,
+    baselineProjection.keypadRows,
+    "HYDRATE_SAVE normalizes rows to projected beta",
+  );
 
   const unlockedAll = applyLifecycleAction(base, { type: "UNLOCK_ALL" });
   if (!unlockedAll) {

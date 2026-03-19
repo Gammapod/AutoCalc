@@ -57,9 +57,6 @@ subgraph Arithmetic ["Arithmetic"]
     Apow["a^b"]
     Amod["a◇b"]
     %% Expanded form `[ (a÷b) - (a∻b) ]`
-    %% Ares["n⟐p"]
-    %% %% Expanded form `n⟐p -> n/(p^(n∥p))`
-    %% %% Expanded form `60⟐2=15 -> 60/(2^2)=15`
 
     Ainc -->|Iterate| Aplus
     Aplus -->|Iterate| Amul
@@ -97,9 +94,12 @@ subgraph Theory ["Number Theory"]
     Tlcm["⋁"]
     %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`
     Tmax["╧"]
-    %% Expanded form `[ ((a<b)×b) + ¬(a≤b)×a) ]`
+    %% Expanded form `[ ((a<b)×b) + ¬((a≤b)×a) ]`
     Tmin["╤"]  
-    %% Expanded form `[ ((a<b)×a) + ¬(a≤b)×b) ]`
+    %% Expanded form `[ ((a<b)×a) + ¬((a≤b)×b) ]`
+    Tres["n⟐p"]
+    %% %% Expanded form `n⟐p -> n/(p^(n∥p))`
+    %% %% Expanded form `60⟐2=15 -> 60/(2^2)=15`
 
     Tntop --> Ttotient
 
@@ -113,13 +113,14 @@ subgraph Theory ["Number Theory"]
     Texponent --> Tlcm
     Tmin --> Tlcm
     Tntop --> Tpadic --> Texponent
-
+    Tpadic --> Tres
 end
 
 Ldiv --> Tpadic
 Llt --> Aabs
 Amod --> Ldiv
 Apow --> Tprime_expansion
+Apow --> Tpadic
 Ldiv --> Tdivisor_sum
 Llt --> Tmin
 Llt --> Tmax

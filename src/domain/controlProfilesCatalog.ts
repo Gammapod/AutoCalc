@@ -17,8 +17,8 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
   f: {
     id: "f",
     starts: {
-      alpha: 2,
-      beta: 1,
+      alpha: 3,
+      beta: 2,
       gamma: 1,
       delta: 1,
       epsilon: 0,

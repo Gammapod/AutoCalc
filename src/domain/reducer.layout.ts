@@ -262,6 +262,14 @@ const hasOnlyExpectedKeyChanges = (
   allowedChanges: SurfaceIndex[],
 ): boolean => {
   const allow = new Set(allowedChanges.map((entry) => `${entry.surface}:${entry.index}`));
+  const hasDualKeypads = Boolean(previous.calculators?.g && previous.calculators?.f);
+  if (!hasDualKeypads) {
+    for (const entry of allowedChanges) {
+      if (entry.surface === "keypad_f" || entry.surface === "keypad_g") {
+        allow.add(`keypad:${entry.index}`);
+      }
+    }
+  }
   if (previous.calculators?.g && previous.calculators?.f && previous.activeCalculatorId) {
     const activeSurface = previous.activeCalculatorId === "g" ? "keypad_g" : "keypad_f";
     for (const entry of allowedChanges) {
@@ -270,7 +278,7 @@ const hasOnlyExpectedKeyChanges = (
       }
     }
   }
-  const surfaces: LayoutSurface[] = previous.calculators?.g && previous.calculators?.f
+  const surfaces: LayoutSurface[] = hasDualKeypads
     ? ["keypad_f", "keypad_g", "storage"]
     : ["keypad", "storage"];
 

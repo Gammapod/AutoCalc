@@ -1,4 +1,4 @@
-import { fromKeyLayoutArray, toIndexFromCoord } from "./keypadLayoutModel.js";
+import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, getLambdaDerivedValues } from "./lambdaControl.js";
@@ -14,10 +14,16 @@ export const AUTO_EQUALS_FLAG = "execution.pause";
 export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";
 export const MOD_ZERO_TO_DELTA_FLAG = "settings.mod_zero_to_delta";
 export const STEP_EXPANSION_FLAG = "settings.step_expansion";
-export const KEYPAD_DEFAULT_COLUMNS = 3;
-export const KEYPAD_DEFAULT_ROWS = 2;
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
+export const KEYPAD_DEFAULT_COLUMNS = Math.max(
+  KEYPAD_DIM_MIN,
+  Math.min(KEYPAD_DIM_MAX, Math.trunc(controlProfiles.f.starts.alpha)),
+);
+export const KEYPAD_DEFAULT_ROWS = Math.max(
+  KEYPAD_DIM_MIN,
+  Math.min(KEYPAD_DIM_MAX, Math.trunc(controlProfiles.f.starts.beta)),
+);
 export const TOTAL_DIGITS_MIN = 1;
 export const TOTAL_DIGITS_MAX = 12;
 export const OPERATION_SLOTS_MIN = 0;
@@ -159,20 +165,20 @@ export const defaultKeyLayout = (): LayoutCell[] => [
 ];
 
 export const initialState = (): GameState => {
-  const keyLayout = defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS);
-  keyLayout[toIndexFromCoord({ row: 1, col: 1 }, KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)] = {
-    kind: "key",
-    key: KEY_ID.exec_equals,
-  };
-  keyLayout[toIndexFromCoord({ row: 1, col: 2 }, KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS)] = {
-    kind: "key",
-    key: KEY_ID.unary_inc,
-  };
   const valueAtoms = buildUnlockRecord("valueAtoms");
   const valueCompose = buildUnlockRecord("valueCompose");
   const fProfile = controlProfiles.f;
   const lambdaControl = createDefaultLambdaControl(fProfile);
   const lambdaDerived = getLambdaDerivedValues(lambdaControl, fProfile);
+  const initialColumns = lambdaDerived.effectiveFields.alpha;
+  const initialRows = lambdaDerived.effectiveFields.beta;
+  const keyLayout = defaultDrawerKeyLayout(initialColumns, initialRows);
+  if (keyLayout.length >= 2) {
+    keyLayout[keyLayout.length - 2] = {
+      kind: "key",
+      key: KEY_ID.unary_inc,
+    };
+  }
   const base: GameState = {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
@@ -197,10 +203,10 @@ export const initialState = (): GameState => {
     allocator: buildAllocatorSnapshot(lambdaControl, fProfile),
     ui: {
       keyLayout,
-      keypadCells: fromKeyLayoutArray(keyLayout, KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
+      keypadCells: fromKeyLayoutArray(keyLayout, initialColumns, initialRows),
       storageLayout: defaultStorageLayout(),
-      keypadColumns: KEYPAD_DEFAULT_COLUMNS,
-      keypadRows: KEYPAD_DEFAULT_ROWS,
+      keypadColumns: initialColumns,
+      keypadRows: initialRows,
       activeVisualizer: "total",
       memoryVariable: "α",
       buttonFlags: {},

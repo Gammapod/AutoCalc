@@ -27,12 +27,13 @@ ALLOCATOR  ,==,"<
  |0.5 0.5 1   0   0|   |1|   |δ' -> dig++  |
  |0.1 0.1 0.1 0.1 0|   |1|   |ϵ' -> tick++ |
 
-Symbol | Starting values | min..max Values | Settable?                               
-α      | 3               | 3..8            | yes        
-β      | 2               | 2..8            | yes      
-γ      | 1               | 1..4            | yes 
-δ      | ('1)            | ('1)..('none)   | no                    
-ϵ      | ('0)            | ('0)..('none)   | no                
+Symbol | Starting values | min..max Values | Settable?
+-------|-----------------|-----------------|-----------
+α      | 3               | 3..8            | yes
+β      | 2               | 2..8            | yes
+γ      | 1               | 1..4            | yes
+δ      | ('1)            | ('1)..('none)   | no
+ϵ      | ('0)            | ('0)..('none)   | no
 
 in words:
 delta increases proportionally to alpha and beta and gamma, with the effect of alpha and beta being half that of delta. intent: the range of numbers the player can calculate should expand as the complexity of the equation increases
@@ -50,12 +51,13 @@ ALLOCATOR  ,==,"<
  | 0   0   0   1   0|   |8|   |δ' -> dig++  |
  | 0   0   0.5 0   0|   |1|   |ϵ' -> tick++ |
 
-Symbol | Starting values | min..max Values | Settable?                           
-α      | ('4)            | ('1)..('4)      | no    
-β      | ('2)            | ('2)..('2)      | no  
-γ      | 3               | 0..11           | yes 
-δ      | ('8)            | ('8)..('8)      | no      
-ϵ      | ('0)            | ('0)..('none)   | no  
+Symbol | Starting values | min..max Values | Settable?
+-------|-----------------|-----------------|-----------
+α      | ('4)            | ('1)..('4)      | no
+β      | ('2)            | ('2)..('2)      | no
+γ      | 3               | 0..11           | yes
+δ      | ('8)            | ('8)..('8)      | no
+ϵ      | ('0)            | ('0)..('none)   | no
 
 
 in words:

@@ -20,6 +20,7 @@ const e = (y: RollEntry["y"], patch: Partial<RollEntry> = {}): RollEntry => ({ y
 
 export const runUiModuleCircleVisualizerV2Tests = (): void => {
   const base = initialState();
+  const deltaBoundary = (10 ** base.unlocks.maxTotalDigits) - 1;
 
   const cycleWindowState: GameState = {
     ...base,
@@ -92,7 +93,7 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
   assert.equal(resolveCircleRenderMode(withModZeroToDelta), "residue_wheel", "mod-zero-to-delta flag forces residue wheel mode");
   assert.equal(modFlagSpec?.cycleEndIndex, -1, "mod-flag wheel starts at seed with no radial history segment");
   assert.equal(modFlagSpec?.wheelMin, 0, "mod-zero-to-delta wheel starts at zero");
-  assert.equal(modFlagSpec?.wheelMaxExclusive, 99, "mod-zero-to-delta wheel upper bound follows delta boundary");
+  assert.equal(modFlagSpec?.wheelMaxExclusive, deltaBoundary, "mod-zero-to-delta wheel upper bound follows delta boundary");
 
   const withDeltaRange: GameState = {
     ...base,
@@ -106,8 +107,8 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
   const deltaFlagSpec = detectResidueWheelSpec(withDeltaRange);
   assert.ok(deltaFlagSpec, "delta-range flag enables wheel mode immediately");
   assert.equal(resolveCircleRenderMode(withDeltaRange), "residue_wheel", "delta-range flag forces residue wheel mode");
-  assert.equal(deltaFlagSpec?.wheelMin, -99, "delta-range wheel lower bound is -delta");
-  assert.equal(deltaFlagSpec?.wheelMaxExclusive, 99, "delta-range wheel upper bound is +delta exclusive");
+  assert.equal(deltaFlagSpec?.wheelMin, -deltaBoundary, "delta-range wheel lower bound is -delta");
+  assert.equal(deltaFlagSpec?.wheelMaxExclusive, deltaBoundary, "delta-range wheel upper bound is +delta exclusive");
 
   assert.equal(toCanonicalWheelIndex(-2, 3), 1, "canonical wheel index wraps negatives");
   const residueProjection = projectResidueWheelPoints(

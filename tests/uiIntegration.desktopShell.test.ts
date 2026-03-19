@@ -17,6 +17,8 @@ export const runUiIntegrationDesktopShellTests = (): void => {
   };
 
   try {
+    const defaultColumns = initialState().ui.keypadColumns;
+    const defaultRows = initialState().ui.keypadRows;
     harness.document.body.setAttribute("data-ui-shell", "desktop");
     const renderer = createShellRenderer(harness.root, { mode: "desktop" });
 
@@ -47,8 +49,16 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       true,
       "desktop uses minimum key-width token for keypad columns",
     );
-    assert.equal(keys?.style.getPropertyValue("--desktop-calc-cols"), "3", "desktop render sets keypad column sizing var");
-    assert.equal(keys?.style.getPropertyValue("--desktop-calc-rows"), "2", "desktop render sets keypad row sizing var");
+    assert.equal(
+      keys?.style.getPropertyValue("--desktop-calc-cols"),
+      defaultColumns.toString(),
+      "desktop render sets keypad column sizing var",
+    );
+    assert.equal(
+      keys?.style.getPropertyValue("--desktop-calc-rows"),
+      defaultRows.toString(),
+      "desktop render sets keypad row sizing var",
+    );
     assert.equal(
       keys?.style.getPropertyValue("--desktop-key-min-width").endsWith("px"),
       true,
@@ -72,16 +82,29 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       "var(--desktop-calc-width)",
       "when columns are <= 4, visualizer width follows calculator width token",
     );
-    assert.equal(
-      keys?.style.gridTemplateRows.includes("repeat(2, var(--desktop-key-height))"),
-      true,
-      "desktop baseline rows use fixed-height row tracks",
-    );
-    assert.equal(
-      keys?.style.height,
-      "",
-      "desktop baseline rows do not force stretch height",
-    );
+    if (defaultRows >= 2) {
+      assert.equal(
+        keys?.style.gridTemplateRows.includes("repeat(2, var(--desktop-key-height))"),
+        true,
+        "desktop baseline rows use fixed-height row tracks",
+      );
+      assert.equal(
+        keys?.style.height,
+        "",
+        "desktop baseline rows do not force stretch height",
+      );
+    } else {
+      assert.equal(
+        keys?.style.gridTemplateRows.includes("minmax(var(--desktop-key-height), 1fr)"),
+        true,
+        "desktop below-baseline rows stretch to fill baseline keypad height",
+      );
+      assert.equal(
+        keys?.style.height.endsWith("px"),
+        true,
+        "desktop below-baseline rows apply explicit baseline keypad height",
+      );
+    }
 
     const widthAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
     const heightAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
