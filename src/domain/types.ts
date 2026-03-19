@@ -267,10 +267,26 @@ export type AllocatorState = {
 export type AllocatorAllocationField = keyof AllocatorState["allocations"];
 
 export type LambdaAxis = "alpha" | "beta" | "gamma";
+export type ControlField = "alpha" | "beta" | "gamma" | "delta" | "epsilon";
 
-export type LambdaOverrides = {
-  delta?: number;
-  epsilon?: RationalValue;
+export type ControlFieldBounds = {
+  min: number;
+  max: number | null;
+};
+
+export type ControlEquation = {
+  coefficients: Record<ControlField, number>;
+  constant: number;
+};
+
+export type ControlProfile = {
+  id: CalculatorId;
+  starts: Record<ControlField, number>;
+  settable: Record<ControlField, boolean>;
+  bounds: Record<ControlField, ControlFieldBounds>;
+  equations: Record<ControlField, ControlEquation>;
+  rounding: "floor";
+  gammaMinAfterOne?: boolean;
 };
 
 export type LambdaControl = {
@@ -278,7 +294,7 @@ export type LambdaControl = {
   alpha: number;
   beta: number;
   gamma: number;
-  overrides: LambdaOverrides;
+  gammaMinRaised?: boolean;
 };
 
 export type AllocatorBudgetSnapshot = {
@@ -529,6 +545,8 @@ export type GameState = {
   allocatorAllocatePressCount?: number;
   unlocks: UnlockState;
   completedUnlockIds: string[];
+  perCalculatorCompletedUnlockIds?: Partial<Record<CalculatorId, string[]>>;
+  sessionControlProfiles?: Partial<Record<CalculatorId, ControlProfile>>;
   calculators?: Partial<Record<CalculatorId, CalculatorInstanceState>>;
   calculatorOrder?: CalculatorId[];
   activeCalculatorId?: CalculatorId;
@@ -657,32 +675,16 @@ export type AllocatorAllocatePressedAction = {
   calculatorId?: CalculatorId;
 };
 
-export type LambdaSetOverrideDeltaAction = {
-  type: "LAMBDA_SET_OVERRIDE_DELTA";
-  value: number;
-  calculatorId?: CalculatorId;
-};
-
-export type LambdaSetOverrideEpsilonAction = {
-  type: "LAMBDA_SET_OVERRIDE_EPSILON";
-  value: RationalValue;
-  calculatorId?: CalculatorId;
-};
-
-export type LambdaClearOverrideDeltaAction = {
-  type: "LAMBDA_CLEAR_OVERRIDE_DELTA";
-  calculatorId?: CalculatorId;
-};
-
-export type LambdaClearOverrideEpsilonAction = {
-  type: "LAMBDA_CLEAR_OVERRIDE_EPSILON";
-  calculatorId?: CalculatorId;
-};
-
 export type LambdaSetControlAction = {
   type: "LAMBDA_SET_CONTROL";
   value: LambdaControl;
   calculatorId?: CalculatorId;
+};
+
+export type SetSessionControlEquationsAction = {
+  type: "SET_SESSION_CONTROL_EQUATIONS";
+  calculatorId: CalculatorId;
+  equations: Record<ControlField, ControlEquation>;
 };
 
 export type SetActiveCalculatorAction = {
@@ -710,11 +712,8 @@ export type Action =
   | ResetAllocatorDeviceAction
   | AllocatorReturnPressedAction
   | AllocatorAllocatePressedAction
-  | LambdaSetOverrideDeltaAction
-  | LambdaSetOverrideEpsilonAction
-  | LambdaClearOverrideDeltaAction
-  | LambdaClearOverrideEpsilonAction
   | LambdaSetControlAction
+  | SetSessionControlEquationsAction
   | SetActiveCalculatorAction;
 
 export type Store = {

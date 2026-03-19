@@ -1,4 +1,13 @@
-import type { Action, CalculatorId, GameState, KeyInput, LambdaControl, VisualizerId } from "./types.js";
+import type {
+  Action,
+  CalculatorId,
+  ControlEquation,
+  ControlField,
+  GameState,
+  KeyInput,
+  LambdaControl,
+  VisualizerId,
+} from "./types.js";
 
 export type DomainEvent =
   | { type: "KeyPressed"; key: KeyInput; calculatorId?: CalculatorId }
@@ -26,11 +35,8 @@ export type DomainEvent =
   | { type: "AllocatorDeviceResetRequested"; calculatorId?: CalculatorId }
   | { type: "AllocatorReturnPressed"; calculatorId?: CalculatorId }
   | { type: "AllocatorAllocatePressed"; calculatorId?: CalculatorId }
-  | { type: "LambdaOverrideDeltaSet"; value: number; calculatorId?: CalculatorId }
-  | { type: "LambdaOverrideEpsilonSet"; value: { num: string; den: string }; calculatorId?: CalculatorId }
-  | { type: "LambdaOverrideDeltaCleared"; calculatorId?: CalculatorId }
-  | { type: "LambdaOverrideEpsilonCleared"; calculatorId?: CalculatorId }
   | { type: "LambdaControlSet"; value: LambdaControl; calculatorId?: CalculatorId }
+  | { type: "SessionControlEquationsSet"; calculatorId: CalculatorId; equations: Record<ControlField, ControlEquation> }
   | { type: "ActiveCalculatorSet"; calculatorId: CalculatorId };
 
 const assertNever = (value: never): never => {
@@ -108,27 +114,11 @@ export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "ALLOCATOR_ALLOCATE_PRESSED") {
     return { type: "AllocatorAllocatePressed", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
-  if (action.type === "LAMBDA_SET_OVERRIDE_DELTA") {
-    return { type: "LambdaOverrideDeltaSet", value: action.value, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
-  if (action.type === "LAMBDA_SET_OVERRIDE_EPSILON") {
-    return {
-      type: "LambdaOverrideEpsilonSet",
-      value: {
-        num: action.value.num.toString(),
-        den: action.value.den.toString(),
-      },
-      ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}),
-    };
-  }
-  if (action.type === "LAMBDA_CLEAR_OVERRIDE_DELTA") {
-    return { type: "LambdaOverrideDeltaCleared", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
-  if (action.type === "LAMBDA_CLEAR_OVERRIDE_EPSILON") {
-    return { type: "LambdaOverrideEpsilonCleared", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
   if (action.type === "LAMBDA_SET_CONTROL") {
     return { type: "LambdaControlSet", value: action.value, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
+  }
+  if (action.type === "SET_SESSION_CONTROL_EQUATIONS") {
+    return { type: "SessionControlEquationsSet", calculatorId: action.calculatorId, equations: action.equations };
   }
   if (action.type === "TOGGLE_FLAG") {
     return { type: "FlagToggled", flag: action.flag, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
@@ -210,27 +200,11 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   if (event.type === "AllocatorAllocatePressed") {
     return { type: "ALLOCATOR_ALLOCATE_PRESSED", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
-  if (event.type === "LambdaOverrideDeltaSet") {
-    return { type: "LAMBDA_SET_OVERRIDE_DELTA", value: event.value, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
-  if (event.type === "LambdaOverrideEpsilonSet") {
-    return {
-      type: "LAMBDA_SET_OVERRIDE_EPSILON",
-      value: {
-        num: BigInt(event.value.num),
-        den: BigInt(event.value.den),
-      },
-      ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}),
-    };
-  }
-  if (event.type === "LambdaOverrideDeltaCleared") {
-    return { type: "LAMBDA_CLEAR_OVERRIDE_DELTA", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
-  if (event.type === "LambdaOverrideEpsilonCleared") {
-    return { type: "LAMBDA_CLEAR_OVERRIDE_EPSILON", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
   if (event.type === "LambdaControlSet") {
     return { type: "LAMBDA_SET_CONTROL", value: event.value, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
+  }
+  if (event.type === "SessionControlEquationsSet") {
+    return { type: "SET_SESSION_CONTROL_EQUATIONS", calculatorId: event.calculatorId, equations: event.equations };
   }
   if (event.type === "FlagToggled") {
     return { type: "TOGGLE_FLAG", flag: event.flag, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };

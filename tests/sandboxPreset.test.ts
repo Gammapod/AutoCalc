@@ -30,10 +30,7 @@ export const runSandboxPresetTests = (): void => {
       alpha: 4,
       beta: 7,
       gamma: 4,
-      overrides: {
-        delta: 12,
-        epsilon: { num: 5n, den: 1n },
-      },
+      gammaMinRaised: true,
     },
     "sandbox lambda defaults are applied",
   );

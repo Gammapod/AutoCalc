@@ -1,81 +1,61 @@
-import { KEYPAD_DIM_MAX, KEYPAD_DIM_MIN, OPERATION_SLOTS_MAX, OPERATION_SLOTS_MIN, TOTAL_DIGITS_MAX, TOTAL_DIGITS_MIN } from "./state.js";
-import type { AllocatorState, LambdaAxis, LambdaControl, RationalValue } from "./types.js";
+import type { AllocatorState, ControlField, ControlProfile, LambdaAxis, LambdaControl, RationalValue } from "./types.js";
 
-const EPSILON_BASE_DEN = 10n;
-const EPSILON_RATE_BASE = 1.05;
+const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
+const SPEND_AXES: readonly LambdaAxis[] = ["alpha", "beta", "gamma"];
 const TRIM_ORDER: readonly LambdaAxis[] = ["gamma", "beta", "alpha"];
 
-const gcd = (a: bigint, b: bigint): bigint => {
-  let x = a < 0n ? -a : a;
-  let y = b < 0n ? -b : b;
-  while (y !== 0n) {
-    const t = x % y;
-    x = y;
-    y = t;
-  }
-  return x;
-};
-
-const normalizeRational = (value: RationalValue): RationalValue => {
-  if (value.den === 0n) {
-    return { num: 0n, den: 1n };
-  }
-  if (value.num === 0n) {
-    return { num: 0n, den: 1n };
-  }
-  const sign = value.den < 0n ? -1n : 1n;
-  const num = value.num * sign;
-  const den = value.den * sign;
-  const divisor = gcd(num, den);
-  return {
-    num: num / divisor,
-    den: den / divisor,
-  };
-};
-
 const clampInteger = (value: number, min: number, max: number): number => {
-  if (!Number.isInteger(value)) {
+  if (!Number.isFinite(value)) {
     return min;
   }
-  return Math.max(min, Math.min(max, value));
+  return Math.max(min, Math.min(max, Math.trunc(value)));
 };
 
-const clampNonNegativeInt = (value: number): number => {
-  if (!Number.isInteger(value)) {
-    return 0;
+const clampNonNegativeInt = (value: number): number =>
+  !Number.isFinite(value) ? 0 : Math.max(0, Math.trunc(value));
+
+const floorValue = (value: number): number => Math.floor(value);
+
+const defaultProfile: ControlProfile = {
+  id: "f",
+  starts: { alpha: 1, beta: 1, gamma: 0, delta: 1, epsilon: 0 },
+  settable: { alpha: true, beta: true, gamma: true, delta: false, epsilon: false },
+  bounds: {
+    alpha: { min: 1, max: 8 },
+    beta: { min: 1, max: 8 },
+    gamma: { min: 0, max: 4 },
+    delta: { min: 1, max: null },
+    epsilon: { min: 0, max: null },
+  },
+  equations: {
+    alpha: { coefficients: { alpha: 1, beta: 0, gamma: 0, delta: 0, epsilon: 0 }, constant: 0 },
+    beta: { coefficients: { alpha: 0, beta: 1, gamma: 0, delta: 0, epsilon: 0 }, constant: 0 },
+    gamma: { coefficients: { alpha: 0, beta: 0, gamma: 1, delta: 0, epsilon: 0 }, constant: 0 },
+    delta: { coefficients: { alpha: 0.5, beta: 0.5, gamma: 1, delta: 0, epsilon: 0 }, constant: 0 },
+    epsilon: { coefficients: { alpha: 0.1, beta: 0.1, gamma: 0.1, delta: 0.1, epsilon: 0 }, constant: 0.1 },
+  },
+  rounding: "floor",
+  gammaMinAfterOne: true,
+};
+
+const resolveProfile = (profile?: ControlProfile): ControlProfile => profile ?? defaultProfile;
+
+const minForField = (profile: ControlProfile, field: ControlField, control: LambdaControl): number => {
+  if (field === "gamma" && profile.gammaMinAfterOne && control.gammaMinRaised) {
+    return Math.max(1, profile.bounds.gamma.min);
   }
-  return Math.max(0, value);
+  return profile.bounds[field].min;
 };
 
-export const clampAlpha = (value: number): number => clampInteger(value, KEYPAD_DIM_MIN - 1, KEYPAD_DIM_MAX - 1);
-export const clampBeta = (value: number): number => clampInteger(value, KEYPAD_DIM_MIN - 1, KEYPAD_DIM_MAX - 1);
-export const clampGamma = (value: number): number => clampInteger(value, OPERATION_SLOTS_MIN, OPERATION_SLOTS_MAX);
-
-export const createDefaultLambdaControl = (): LambdaControl => ({
-  maxPoints: 0,
-  alpha: 0,
-  beta: 0,
-  gamma: 0,
-  overrides: {},
-});
-
-export const getLambdaSpentPoints = (control: LambdaControl): number => control.alpha + control.beta + control.gamma;
-
-export const getLambdaUnusedPoints = (control: LambdaControl): number => control.maxPoints - getLambdaSpentPoints(control);
-
-export const deriveDelta = (control: Pick<LambdaControl, "alpha" | "beta" | "gamma">): number =>
-  control.gamma + Math.floor((control.alpha + control.beta) / 2);
-
-export const deriveEpsilon = (
-  control: Pick<LambdaControl, "alpha" | "beta" | "gamma">,
-  deltaEffective: number,
-): RationalValue => normalizeRational({
-  num: BigInt(control.alpha + control.beta + control.gamma + deltaEffective),
-  den: EPSILON_BASE_DEN,
-});
-
-export const toNumber = (value: RationalValue): number =>
-  Number(value.num) / Number(value.den);
+const clampToFieldBounds = (value: number, field: ControlField, control: LambdaControl, profile: ControlProfile): number => {
+  const min = minForField(profile, field, control);
+  const max = profile.bounds[field].max;
+  const floored = floorValue(value);
+  if (max === null) {
+    return Math.max(min, floored);
+  }
+  return clampInteger(floored, min, max);
+};
 
 export type LambdaDerivedValues = {
   deltaDerived: number;
@@ -84,157 +64,268 @@ export type LambdaDerivedValues = {
   epsilonEffective: RationalValue;
   spentPoints: number;
   unusedPoints: number;
+  effectiveFields: Record<ControlField, number>;
 };
 
-export const getLambdaDerivedValues = (control: LambdaControl): LambdaDerivedValues => {
-  const deltaDerived = deriveDelta(control);
-  const deltaOverride = control.overrides.delta;
-  const deltaEffective = deltaOverride === undefined ? deltaDerived : clampNonNegativeInt(deltaOverride);
-  const epsilonDerived = deriveEpsilon(control, deltaEffective);
-  const epsilonEffective = control.overrides.epsilon ? normalizeRational(control.overrides.epsilon) : epsilonDerived;
-  const spentPoints = getLambdaSpentPoints(control);
+const evaluateEffectiveFieldsInternal = (control: LambdaControl, profileInput?: ControlProfile): Record<ControlField, number> => {
+  const profile = resolveProfile(profileInput);
+  const effective: Record<ControlField, number> = {
+    alpha: profile.starts.alpha,
+    beta: profile.starts.beta,
+    gamma: profile.starts.gamma,
+    delta: profile.starts.delta,
+    epsilon: profile.starts.epsilon,
+  };
+
+  for (const field of CONTROL_FIELDS) {
+    if (profile.settable[field]) {
+      const value = field === "alpha"
+        ? control.alpha
+        : field === "beta"
+          ? control.beta
+          : field === "gamma"
+            ? control.gamma
+            : profile.starts[field];
+      effective[field] = clampToFieldBounds(value, field, control, profile);
+      continue;
+    }
+    const eq = profile.equations[field];
+    const raw =
+      effective.alpha * eq.coefficients.alpha
+      + effective.beta * eq.coefficients.beta
+      + effective.gamma * eq.coefficients.gamma
+      + effective.delta * eq.coefficients.delta
+      + effective.epsilon * eq.coefficients.epsilon
+      + eq.constant;
+    effective[field] = clampToFieldBounds(raw, field, control, profile);
+  }
+
+  return effective;
+};
+
+export const evaluateEffectiveFields = (control: LambdaControl, profile?: ControlProfile): Record<ControlField, number> =>
+  evaluateEffectiveFieldsInternal(control, profile);
+
+const getSpentFromEffective = (effective: Record<ControlField, number>, profileInput?: ControlProfile): number => {
+  const profile = resolveProfile(profileInput);
+  let spent = 0;
+  for (const axis of SPEND_AXES) {
+    if (!profile.settable[axis]) {
+      continue;
+    }
+    spent += effective[axis];
+  }
+  return spent;
+};
+
+export const createDefaultLambdaControl = (profileInput?: ControlProfile): LambdaControl => {
+  const profile = resolveProfile(profileInput);
+  const base: LambdaControl = {
+    maxPoints: 0,
+    alpha: profile.starts.alpha,
+    beta: profile.starts.beta,
+    gamma: profile.starts.gamma,
+    gammaMinRaised: profile.gammaMinAfterOne ? profile.starts.gamma >= 1 : false,
+  };
+  const effective = evaluateEffectiveFieldsInternal(base, profile);
+  return {
+    ...base,
+    alpha: effective.alpha,
+    beta: effective.beta,
+    gamma: effective.gamma,
+    maxPoints: getSpentFromEffective(effective, profile),
+  };
+};
+
+export const getLambdaDerivedValues = (control: LambdaControl, profileInput?: ControlProfile): LambdaDerivedValues => {
+  const profile = resolveProfile(profileInput);
+  const effective = evaluateEffectiveFieldsInternal(control, profile);
+  const spentPoints = getSpentFromEffective(effective, profile);
   const unusedPoints = control.maxPoints - spentPoints;
   return {
-    deltaDerived,
-    deltaEffective,
-    epsilonDerived,
-    epsilonEffective,
+    deltaDerived: effective.delta,
+    deltaEffective: effective.delta,
+    epsilonDerived: { num: BigInt(effective.epsilon), den: 1n },
+    epsilonEffective: { num: BigInt(effective.epsilon), den: 1n },
     spentPoints,
     unusedPoints,
+    effectiveFields: effective,
   };
 };
 
-export const sanitizeLambdaControl = (input: LambdaControl | null | undefined): LambdaControl => {
+export const getLambdaSpentPoints = (control: LambdaControl, profile?: ControlProfile): number =>
+  getLambdaDerivedValues(control, profile).spentPoints;
+
+export const getLambdaUnusedPoints = (control: LambdaControl, profile?: ControlProfile): number =>
+  getLambdaDerivedValues(control, profile).unusedPoints;
+
+export const sanitizeLambdaControl = (input: LambdaControl | null | undefined, profileInput?: ControlProfile): LambdaControl => {
+  const profile = resolveProfile(profileInput);
   if (!input) {
-    return createDefaultLambdaControl();
+    return createDefaultLambdaControl(profile);
   }
-  const sanitized: LambdaControl = {
+  const next: LambdaControl = {
     maxPoints: clampNonNegativeInt(input.maxPoints),
-    alpha: clampAlpha(input.alpha),
-    beta: clampBeta(input.beta),
-    gamma: clampGamma(input.gamma),
-    overrides: {},
+    alpha: Math.trunc(input.alpha),
+    beta: Math.trunc(input.beta),
+    gamma: Math.trunc(input.gamma),
+    gammaMinRaised: Boolean(input.gammaMinRaised),
   };
-  if (input.overrides && input.overrides.delta !== undefined) {
-    sanitized.overrides.delta = clampNonNegativeInt(input.overrides.delta);
+  if (profile.gammaMinAfterOne && next.gamma >= 1) {
+    next.gammaMinRaised = true;
   }
-  if (input.overrides && input.overrides.epsilon) {
-    sanitized.overrides.epsilon = normalizeRational(input.overrides.epsilon);
-  }
-  return trimLambdaToBudget(sanitized);
-};
 
-export const withLegacyAllocatorFallback = (
-  control: LambdaControl,
-  allocator: AllocatorState,
-): LambdaControl => sanitizeLambdaControl({
-  ...control,
-  maxPoints: Math.max(control.maxPoints, allocator.maxPoints),
-  alpha: Math.max(control.alpha, allocator.allocations.width),
-  beta: Math.max(control.beta, allocator.allocations.height),
-  gamma: Math.max(control.gamma, allocator.allocations.slots),
-});
+  // Clamp settable axes against profile limits.
+  for (const axis of SPEND_AXES) {
+    if (!profile.settable[axis]) {
+      const startValue = profile.starts[axis];
+      if (axis === "alpha") {
+        next.alpha = startValue;
+      } else if (axis === "beta") {
+        next.beta = startValue;
+      } else {
+        next.gamma = startValue;
+      }
+      continue;
+    }
+    const clamped = clampToFieldBounds(axis === "alpha" ? next.alpha : axis === "beta" ? next.beta : next.gamma, axis, next, profile);
+    if (axis === "alpha") {
+      next.alpha = clamped;
+    } else if (axis === "beta") {
+      next.beta = clamped;
+    } else {
+      next.gamma = clamped;
+    }
+  }
 
-export const canAdjustAxis = (control: LambdaControl, axis: LambdaAxis, delta: 1 | -1): boolean => {
-  if (delta === 1 && getLambdaUnusedPoints(control) <= 0) {
-    return false;
-  }
-  const current = control[axis];
-  if (delta === -1 && current <= 0) {
-    return false;
-  }
-  const next = current + delta;
-  if (axis === "alpha") {
-    return next >= KEYPAD_DIM_MIN - 1 && next <= KEYPAD_DIM_MAX - 1;
-  }
-  if (axis === "beta") {
-    return next >= KEYPAD_DIM_MIN - 1 && next <= KEYPAD_DIM_MAX - 1;
-  }
-  return next >= OPERATION_SLOTS_MIN && next <= OPERATION_SLOTS_MAX;
-};
-
-export const adjustAxis = (control: LambdaControl, axis: LambdaAxis, delta: 1 | -1): LambdaControl => {
-  if (!canAdjustAxis(control, axis, delta)) {
-    return control;
-  }
-  const next = {
-    ...control,
-    [axis]: control[axis] + delta,
-  };
-  return sanitizeLambdaControl(next);
-};
-
-export const trimLambdaToBudget = (control: LambdaControl): LambdaControl => {
-  const next = { ...control };
-  let overspend = getLambdaSpentPoints(next) - next.maxPoints;
-  if (overspend <= 0) {
+  // Trim to budget by reducing settable axes according to policy.
+  let derived = getLambdaDerivedValues(next, profile);
+  if (derived.spentPoints <= next.maxPoints) {
     return next;
   }
+  let overspend = derived.spentPoints - next.maxPoints;
   for (const axis of TRIM_ORDER) {
-    if (overspend <= 0) {
-      break;
+    if (overspend <= 0 || !profile.settable[axis]) {
+      continue;
     }
-    const reduction = Math.min(next[axis], overspend);
-    next[axis] -= reduction;
-    overspend -= reduction;
+    while (overspend > 0) {
+      const current = axis === "alpha" ? next.alpha : axis === "beta" ? next.beta : next.gamma;
+      const min = minForField(profile, axis, next);
+      if (current <= min) {
+        break;
+      }
+      if (axis === "alpha") {
+        next.alpha -= 1;
+      } else if (axis === "beta") {
+        next.beta -= 1;
+      } else {
+        next.gamma -= 1;
+      }
+      overspend -= 1;
+    }
+  }
+  derived = getLambdaDerivedValues(next, profile);
+  if (derived.spentPoints > next.maxPoints) {
+    next.maxPoints = derived.spentPoints;
   }
   return next;
 };
 
-export const withMaxPointsSet = (control: LambdaControl, rawValue: number): LambdaControl => {
-  const maxPoints = clampNonNegativeInt(rawValue);
-  return trimLambdaToBudget({
-    ...control,
-    maxPoints,
-  });
+export const withLegacyAllocatorFallback = (
+  control: LambdaControl,
+  _allocator: AllocatorState,
+  profile?: ControlProfile,
+): LambdaControl => sanitizeLambdaControl(control, profile);
+
+export const canAdjustAxis = (control: LambdaControl, profileInput: ControlProfile | undefined, axis: LambdaAxis, delta: 1 | -1): boolean => {
+  const profile = resolveProfile(profileInput);
+  if (!profile.settable[axis]) {
+    return false;
+  }
+  const derived = getLambdaDerivedValues(control, profile);
+  if (delta === 1 && derived.unusedPoints <= 0) {
+    return false;
+  }
+  const current = axis === "alpha" ? control.alpha : axis === "beta" ? control.beta : control.gamma;
+  const next = current + delta;
+  const min = minForField(profile, axis, control);
+  const max = profile.bounds[axis].max;
+  if (next < min) {
+    return false;
+  }
+  if (max !== null && next > max) {
+    return false;
+  }
+  return true;
 };
 
-export const withMaxPointsAdded = (control: LambdaControl, amount: number): LambdaControl => {
+export const adjustAxis = (control: LambdaControl, profileInput: ControlProfile | undefined, axis: LambdaAxis, delta: 1 | -1): LambdaControl => {
+  const profile = resolveProfile(profileInput);
+  if (!canAdjustAxis(control, profile, axis, delta)) {
+    return control;
+  }
+  const next: LambdaControl = {
+    ...control,
+    [axis]: (axis === "alpha" ? control.alpha : axis === "beta" ? control.beta : control.gamma) + delta,
+  };
+  if (profile.gammaMinAfterOne && axis === "gamma" && next.gamma >= 1) {
+    next.gammaMinRaised = true;
+  }
+  return sanitizeLambdaControl(next, profile);
+};
+
+export const withMaxPointsSet = (control: LambdaControl, profileInput: ControlProfile | undefined, rawValue: number): LambdaControl =>
+  sanitizeLambdaControl({ ...control, maxPoints: clampNonNegativeInt(rawValue) }, profileInput);
+
+export const withMaxPointsAdded = (control: LambdaControl, profileInput: ControlProfile | undefined, amount: number): LambdaControl => {
   const delta = clampNonNegativeInt(amount);
   if (delta <= 0) {
     return control;
   }
-  return {
+  return sanitizeLambdaControl({ ...control, maxPoints: control.maxPoints + delta }, profileInput);
+};
+
+export const resetLambdaAdjustments = (control: LambdaControl, profileInput?: ControlProfile): LambdaControl => {
+  const profile = resolveProfile(profileInput);
+  const next: LambdaControl = {
     ...control,
-    maxPoints: control.maxPoints + delta,
+    alpha: profile.starts.alpha,
+    beta: profile.starts.beta,
+    gamma: profile.starts.gamma,
+    gammaMinRaised: profile.gammaMinAfterOne ? profile.starts.gamma >= 1 : false,
   };
+  return sanitizeLambdaControl(next, profile);
 };
 
-export const resetLambdaAdjustments = (control: LambdaControl): LambdaControl => ({
-  ...control,
-  alpha: 0,
-  beta: 0,
-  gamma: 0,
-  overrides: {},
-});
+export const getEffectiveKeypadColumns = (control: LambdaControl, profile?: ControlProfile): number =>
+  getLambdaDerivedValues(control, profile).effectiveFields.alpha;
 
-export const getEffectiveKeypadColumns = (control: LambdaControl): number =>
-  clampInteger(1 + control.alpha, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
+export const getEffectiveKeypadRows = (control: LambdaControl, profile?: ControlProfile): number =>
+  getLambdaDerivedValues(control, profile).effectiveFields.beta;
 
-export const getEffectiveKeypadRows = (control: LambdaControl): number =>
-  clampInteger(1 + control.beta, KEYPAD_DIM_MIN, KEYPAD_DIM_MAX);
+export const getEffectiveMaxSlots = (control: LambdaControl, profile?: ControlProfile): number =>
+  getLambdaDerivedValues(control, profile).effectiveFields.gamma;
 
-export const getEffectiveMaxSlots = (control: LambdaControl): number =>
-  clampInteger(control.gamma, OPERATION_SLOTS_MIN, OPERATION_SLOTS_MAX);
+export const getEffectiveMaxTotalDigits = (control: LambdaControl, profile?: ControlProfile): number =>
+  getLambdaDerivedValues(control, profile).effectiveFields.delta;
 
-export const getEffectiveMaxTotalDigits = (control: LambdaControl): number =>
-  clampInteger(1 + getLambdaDerivedValues(control).deltaEffective, TOTAL_DIGITS_MIN, TOTAL_DIGITS_MAX);
-
-export const getAutoEqualsRateMultiplier = (control: LambdaControl): number => {
-  const delta = Math.max(0, getLambdaDerivedValues(control).deltaEffective);
-  return Math.pow(EPSILON_RATE_BASE, delta);
+export const getAutoEqualsRateMultiplier = (control: LambdaControl, profile?: ControlProfile): number => {
+  const epsilon = Math.max(0, getLambdaDerivedValues(control, profile).effectiveFields.epsilon);
+  return Math.pow(1.05, epsilon);
 };
 
-export const buildAllocatorSnapshot = (control: LambdaControl): AllocatorState => {
-  const derived = getLambdaDerivedValues(control);
+export const buildAllocatorSnapshot = (control: LambdaControl, profile?: ControlProfile): AllocatorState => {
+  const derived = getLambdaDerivedValues(control, profile);
+  const effective = derived.effectiveFields;
   return {
     maxPoints: control.maxPoints,
     allocations: {
-      width: control.alpha,
-      height: control.beta,
-      range: derived.deltaEffective,
-      speed: Math.max(0, Math.trunc(toNumber(derived.epsilonEffective))),
-      slots: control.gamma,
+      width: effective.alpha,
+      height: effective.beta,
+      range: effective.delta,
+      speed: effective.epsilon,
+      slots: effective.gamma,
     },
   };
 };
+

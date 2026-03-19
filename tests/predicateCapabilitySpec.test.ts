@@ -109,8 +109,8 @@ const runScript = (state: GameState, script: KeyInput[]): GameState =>
 
 const withTwoDigitRange = (state: GameState): GameState =>
   reducer(state, {
-    type: "LAMBDA_SET_OVERRIDE_DELTA",
-    value: 1,
+    type: "LAMBDA_SET_CONTROL",
+    value: { maxPoints: 3, alpha: 1, beta: 1, gamma: 1, gammaMinRaised: true },
   });
 
 const proofFixtures: ProofFixture[] = [

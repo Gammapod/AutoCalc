@@ -11,6 +11,7 @@ import {
   STORAGE_INITIAL_SLOTS,
 } from "./state.js";
 import type { GameState, KeyCell, LayoutCell } from "./types.js";
+import { controlProfiles } from "./controlProfilesCatalog.js";
 
 const SANDBOX_KEYPAD_COLUMNS = 5;
 const SANDBOX_KEYPAD_ROWS = 8;
@@ -149,10 +150,7 @@ export const createSandboxState = (): GameState => {
     alpha: 4,
     beta: 7,
     gamma: 4,
-    overrides: {
-      delta: 12,
-      epsilon: { num: 5n, den: 1n },
-    },
+    gammaMinRaised: true,
   };
 
   return {
@@ -162,7 +160,7 @@ export const createSandboxState = (): GameState => {
       singleDigitInitialTotalEntry: true,
     },
     lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl),
+    allocator: buildAllocatorSnapshot(lambdaControl, controlProfiles.f),
     ui: {
       ...unlocked.ui,
       keyLayout,

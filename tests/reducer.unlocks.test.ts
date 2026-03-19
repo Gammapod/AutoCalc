@@ -13,8 +13,8 @@ const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y 
 const press = (state: GameState, key: KeyInput): GameState => reducer(state, { type: "PRESS_KEY", key });
 const withTwoDigitRange = (state: GameState): GameState =>
   reducer(state, {
-    type: "LAMBDA_SET_OVERRIDE_DELTA",
-    value: 1,
+    type: "LAMBDA_SET_CONTROL",
+    value: { maxPoints: 3, alpha: 1, beta: 1, gamma: 1, gammaMinRaised: true },
   });
 
 const findKeypadIndex = (state: GameState, keyLike: KeyInput): number =>

@@ -1,5 +1,6 @@
 import { getLambdaDerivedValues } from "../../../domain/lambdaControl.js";
-import type { GameState, MemoryVariable } from "../../../domain/types.js";
+import { getEffectiveControlProfile } from "../../../domain/controlProfileRuntime.js";
+import type { ControlField, GameState, MemoryVariable } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 
 type KatexRenderOptions = {
@@ -16,25 +17,50 @@ const getKatexApi = (): KatexApi | undefined => {
   return scope.katex;
 };
 
+const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
+
+const formatMatrixNumber = (value: number): string => {
+  const rounded = Math.round(value * 1000) / 1000;
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toString();
+};
+
 const selectedVectorEntry = (selectedVariable: MemoryVariable): string => {
-  if (selectedVariable === "α") {
+  if (selectedVariable === "\u03B1") {
     return String.raw`{\color{#be8ee8}{[\alpha]}}`;
   }
-  if (selectedVariable === "β") {
+  if (selectedVariable === "\u03B2") {
     return String.raw`{\color{#be8ee8}{[\beta]}}`;
   }
   return String.raw`{\color{#be8ee8}{[\gamma]}}`;
 };
 
 const buildEigenAllocatorLatex = (state: GameState): string => {
-  const alphaEntry = state.ui.memoryVariable === "α" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\alpha`;
-  const betaEntry = state.ui.memoryVariable === "β" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\beta`;
-  const gammaEntry = state.ui.memoryVariable === "γ" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\gamma`;
-  const derived = getLambdaDerivedValues(state.lambdaControl);
-  const delta = derived.deltaEffective;
-  const epsilon = toDisplayString(derived.epsilonEffective);
+  const profile = getEffectiveControlProfile(state);
+  const derived = getLambdaDerivedValues(state.lambdaControl, profile);
+  const alphaEntry = state.ui.memoryVariable === "\u03B1" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\alpha`;
+  const betaEntry = state.ui.memoryVariable === "\u03B2" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\beta`;
+  const gammaEntry = state.ui.memoryVariable === "\u03B3" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\gamma`;
+  const matrixRows = CONTROL_FIELDS.map((target) => {
+    const eq = profile.equations[target];
+    return CONTROL_FIELDS.map((source) => formatMatrixNumber(eq.coefficients[source])).join("&");
+  }).join(String.raw`\\`);
+  const inputVector = [
+    formatMatrixNumber(derived.effectiveFields.alpha),
+    formatMatrixNumber(derived.effectiveFields.beta),
+    formatMatrixNumber(derived.effectiveFields.gamma),
+    formatMatrixNumber(derived.effectiveFields.delta),
+    formatMatrixNumber(derived.effectiveFields.epsilon),
+  ].join(String.raw`\\`);
+  const outputVector = [
+    String.raw`\alpha'=${derived.effectiveFields.alpha.toString()}`,
+    String.raw`\beta'=${derived.effectiveFields.beta.toString()}`,
+    String.raw`\gamma'=${derived.effectiveFields.gamma.toString()}`,
+    String.raw`\delta'=${derived.effectiveFields.delta.toString()}`,
+    String.raw`\epsilon'=${derived.effectiveFields.epsilon.toString()}`,
+  ].join(String.raw`\\`);
+
   return String.raw`
-\text{ALLOCATOR ~,==,"<}\\[10pt]
+\text{ALLOCATOR CONTROL MATRIX}\\[8pt]
 \begin{bmatrix}
 ${alphaEntry}\\
 ${betaEntry}\\
@@ -44,30 +70,22 @@ ${gammaEntry}\\
 \end{bmatrix}
 \times
 \begin{bmatrix}
-${alphaEntry}&0&0&0&0\\
-0&${betaEntry}&0&0&0\\
-0&0&${gammaEntry}&0&0\\
-0.5&0.5&1&\delta&0\\
-0.1&0.1&0.1&0.1&\epsilon
+${matrixRows}
 \end{bmatrix}
 =
 \begin{bmatrix}
-\lambda{\leftrightarrow}=${state.lambdaControl.alpha.toString()}\\
-\lambda{\updownarrow}=${state.lambdaControl.beta.toString()}\\
-\lambda{[\text{\_ \_}]}=${state.lambdaControl.gamma.toString()}\\
-\lambda{[-\delta,\delta]}=${delta.toString()}\\
-\lambda{\frac{\Delta T}{1.05^\epsilon}=${epsilon}}
+${inputVector}
 \end{bmatrix}
 `;
 };
 
 const buildCompactAllocatorSummary = (state: GameState): string => {
-  const derived = getLambdaDerivedValues(state.lambdaControl);
+  const derived = getLambdaDerivedValues(state.lambdaControl, getEffectiveControlProfile(state));
   const epsilon = toDisplayString(derived.epsilonEffective);
   return [
-    `alpha=${state.lambdaControl.alpha.toString()}`,
-    `beta=${state.lambdaControl.beta.toString()}`,
-    `gamma=${state.lambdaControl.gamma.toString()}`,
+    `alpha=${derived.effectiveFields.alpha.toString()}`,
+    `beta=${derived.effectiveFields.beta.toString()}`,
+    `gamma=${derived.effectiveFields.gamma.toString()}`,
     `delta=${derived.deltaEffective.toString()}`,
     `epsilon=${epsilon}`,
   ].join(" | ");

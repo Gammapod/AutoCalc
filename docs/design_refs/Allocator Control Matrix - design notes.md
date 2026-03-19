@@ -12,6 +12,7 @@ global rules:
 - lambda values can be spent and refunded between any non-derived values - integer increments only
 - each player-settable values have a min..max limit, and this differs between calculators
 - derived values should implicitly never go outside the (min)..(max) ranges based on user-controlled limits, but don't need to be explicitly prevented.
+- resulting ' values are integer-only, rounded down
 
 debug behavior:
 - the values in the 5x5 matrices should be adjustable
@@ -19,18 +20,19 @@ debug behavior:
 - there should be a debug command to increase lambda by 1 point
 
 f matrix:
- |1   0   0   0   0|   |α|   |α' -> ↔↔↔        |
- |0   1   0   0   0|   |β|   |β' -> ↕↕↕        |
- |0   0   1   0   0| × |γ| = |γ' -> [_ _]      |
- |0.5 0.5 1   0   0|   |1|   |δ' -> dig++      |
- |0.1 0.1 0.1 0.1 0|   |1|   |ϵ' -> tick++     |
+ALLOCATOR  ,==,"<
+ |1   0   0   0   0|   |α|   |α' -> ↔↔↔    |
+ |0   1   0   0   0|   |β|   |β' -> ↕↕↕    |
+ |0   0   1   0   0| × |γ| = |γ' -> [_ _]  |
+ |0.5 0.5 1   0   0|   |1|   |δ' -> dig++  |
+ |0.1 0.1 0.1 0.1 0|   |1|   |ϵ' -> tick++ |
 
 Symbol | Starting values | min..max Values | Settable?                               
 α      | 1               | 1..8            | yes        
 β      | 1               | 1..8            | yes      
 γ      | 0               | 1..4            | yes 
-δ      | (1)             | (1)..(none)     | no                    
-ϵ      | (0)             | (0)..(none)     | no                
+δ      | ('1)            | ('1)..('none)   | no                    
+ϵ      | ('0)            | ('0)..('none)   | no                
 
 in words:
 delta increases proportionally to alpha and beta and gamma, with the effect of alpha and beta being half that of delta. intent: the range of numbers the player can calculate should expand as the complexity of the equation increases
@@ -41,18 +43,19 @@ epsilon increases slightly, proportionally to all the other values in equal meas
 
 
 g matrix:
- | 1   0  -0.25 0  0|   |5|   |α' -> ↔↔↔        |
- | 0   1   0   0   0|   |2|   |β' -> ↕↕↕        |
- | 0   0   1   0   0| × |γ| = |γ' -> [_ _]      |
- | 0   0   0   1   0|   |8|   |δ' -> dig++      |
- | 0   0   0.5 0   0|   |1|   |ϵ' -> tick++     |
+ALLOCATOR  ,==,"<
+ | 1   0  -0.25 0  0|   |5|   |α' -> ↔↔↔    |
+ | 0   1   0   0   0|   |2|   |β' -> ↕↕↕    |
+ | 0   0   1   0   0| × |γ| = |γ' -> [_ _]  |
+ | 0   0   0   1   0|   |8|   |δ' -> dig++  |
+ | 0   0   0.5 0   0|   |1|   |ϵ' -> tick++ |
 
 Symbol | Starting values | min..max Values | Settable?                           
-α      | (4)             | (1)..(4)        | no    
-β      | (2)             | (2)..(2)        | no  
+α      | ('4)            | ('1)..('4)      | no    
+β      | ('2)            | ('2)..('2)      | no  
 γ      | 3               | 0..11           | yes 
-δ      | (8)             | (8)..(8)        | no      
-ϵ      | (0)             | (0)..(none)     | no  
+δ      | ('8)            | ('8)..('8)      | no      
+ϵ      | ('0)            | ('0)..('none)   | no  
 
 
 in words:

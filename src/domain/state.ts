@@ -3,9 +3,10 @@ import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, sanitizeLambdaControl } from "./lambdaControl.js";
 import { KEY_ID, toKeyId } from "./keyPresentation.js";
+import { controlProfiles } from "./controlProfilesCatalog.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 19;
+export const SAVE_SCHEMA_VERSION = 20;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
@@ -151,7 +152,9 @@ export const initialState = (): GameState => {
   const keyLayout = defaultDrawerKeyLayout(KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS);
   const valueAtoms = buildUnlockRecord("valueAtoms");
   const valueCompose = buildUnlockRecord("valueCompose");
-  const lambdaControl = createDefaultLambdaControl();
+  const fProfile = controlProfiles.f;
+  const gProfile = controlProfiles.g;
+  const lambdaControl = createDefaultLambdaControl(fProfile);
   const base: GameState = {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
@@ -173,7 +176,7 @@ export const initialState = (): GameState => {
       },
     },
     lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl),
+    allocator: buildAllocatorSnapshot(lambdaControl, fProfile),
     ui: {
       keyLayout,
       keypadCells: fromKeyLayoutArray(keyLayout, KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS),
@@ -216,15 +219,12 @@ export const initialState = (): GameState => {
   gKeyLayout[gIndex(2, 3)] = { kind: "key", key: KEY_ID.op_add };
   gKeyLayout[gIndex(2, 4)] = { kind: "key", key: KEY_ID.digit_1 };
   const gControl = sanitizeLambdaControl({
-    maxPoints: 5,
-    alpha: 3,
-    beta: 1,
-    gamma: 1,
-    overrides: {
-      delta: 8,
-      epsilon: { num: 0n, den: 1n },
-    },
-  });
+    maxPoints: gProfile.starts.gamma,
+    alpha: gProfile.starts.alpha,
+    beta: gProfile.starts.beta,
+    gamma: gProfile.starts.gamma,
+    gammaMinRaised: gProfile.starts.gamma >= 1,
+  }, gProfile);
   const gUi = {
     ...base.ui,
     keyLayout: gKeyLayout,
@@ -247,7 +247,7 @@ export const initialState = (): GameState => {
           operationSlots: [],
         },
         lambdaControl: gControl,
-        allocator: buildAllocatorSnapshot(gControl),
+        allocator: buildAllocatorSnapshot(gControl, gProfile),
         ui: gUi,
       },
       f: {
@@ -261,5 +261,7 @@ export const initialState = (): GameState => {
     },
     calculatorOrder: ["g", "f"],
     activeCalculatorId: "f",
+    perCalculatorCompletedUnlockIds: { g: [], f: [] },
+    sessionControlProfiles: {},
   };
 };

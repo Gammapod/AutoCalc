@@ -1,9 +1,10 @@
 import { KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../../domain/state.js";
-import type { GameState } from "../../domain/types.js";
+import type { CalculatorId, ControlEquation, ControlField, GameState } from "../../domain/types.js";
 import type { AppMode } from "../../contracts/appMode.js";
 import type { AppServices } from "../../contracts/appServices.js";
 import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
 import { serializeRollEntriesForDebug } from "../../infra/debug/rollStateSerializer.js";
+import { getEffectiveControlProfile } from "../../domain/controlProfileRuntime.js";
 
 type UiShellMode = "mobile" | "desktop";
 
@@ -17,10 +18,13 @@ type BootstrapUiControllerDeps = {
   getState: () => GameState;
   onResetRun: () => void;
   onUnlockAll: () => void;
-  onSetKeypadDimensions: (columns: number, rows: number) => void;
-  onUpgradeKeypadRow: () => void;
-  onUpgradeKeypadColumn: () => void;
-  onSetAllocatorMaxPoints: (value: number) => void;
+  onSetKeypadDimensions: (calculatorId: CalculatorId, columns: number, rows: number) => void;
+  onUpgradeKeypadRow: (calculatorId: CalculatorId) => void;
+  onUpgradeKeypadColumn: (calculatorId: CalculatorId) => void;
+  onSetAllocatorMaxPoints: (calculatorId: CalculatorId, value: number) => void;
+  onAddAllocatorMaxPoints: (calculatorId: CalculatorId, amount: number) => void;
+  onSetSessionControlEquations: (calculatorId: CalculatorId, equations: Record<ControlField, ControlEquation>) => void;
+  onSetActiveCalculator: (calculatorId: CalculatorId) => void;
   onNavigateToUiShell: (url: string) => void;
   onNavigateToAppMode: (url: string) => void;
 };
@@ -56,6 +60,45 @@ const getAppModeToggleUrl = (location: Location, mode: AppMode): string => {
   return url.toString();
 };
 
+const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
+
+const toSelectedCalculatorId = (value: string): CalculatorId => (value === "g" ? "g" : "f");
+
+const renderMatrixEditor = (root: HTMLElement, equations: Record<ControlField, ControlEquation>): void => {
+  const headers = ["out", "a", "b", "g", "d", "e", "c"];
+  const topRow = headers
+    .map((header) => `<div class="debug-matrix-cell debug-matrix-cell--label">${header}</div>`)
+    .join("");
+  const rows = CONTROL_FIELDS.map((target) => {
+    const eq = equations[target];
+    const coeffInputs = CONTROL_FIELDS.map((source) =>
+      `<div class="debug-matrix-cell"><input type="number" step="0.1" data-eq-target="${target}" data-eq-source="${source}" value="${eq.coefficients[source].toString()}" /></div>`).join("");
+    return `<div class="debug-matrix-cell debug-matrix-cell--label">${target}</div>${coeffInputs}<div class="debug-matrix-cell"><input type="number" step="0.1" data-eq-target="${target}" data-eq-source="constant" value="${eq.constant.toString()}" /></div>`;
+  }).join("");
+  root.innerHTML = `<div class="debug-matrix-grid">${topRow}${rows}</div>`;
+};
+
+const readMatrixEditor = (root: HTMLElement, fallback: Record<ControlField, ControlEquation>): Record<ControlField, ControlEquation> => {
+  const parsed: Record<ControlField, ControlEquation> = { ...fallback };
+  for (const target of CONTROL_FIELDS) {
+    const base = fallback[target];
+    const next: ControlEquation = {
+      coefficients: { ...base.coefficients },
+      constant: base.constant,
+    };
+    for (const source of CONTROL_FIELDS) {
+      const input = root.querySelector<HTMLInputElement>(`[data-eq-target="${target}"][data-eq-source="${source}"]`);
+      const numeric = Number(input?.value ?? base.coefficients[source]);
+      next.coefficients[source] = Number.isFinite(numeric) ? numeric : base.coefficients[source];
+    }
+    const constantInput = root.querySelector<HTMLInputElement>(`[data-eq-target="${target}"][data-eq-source="constant"]`);
+    const constant = Number(constantInput?.value ?? base.constant);
+    next.constant = Number.isFinite(constant) ? constant : base.constant;
+    parsed[target] = next;
+  }
+  return parsed;
+};
+
 export const createBootstrapUiController = ({
   services,
   refs,
@@ -70,6 +113,9 @@ export const createBootstrapUiController = ({
   onUpgradeKeypadRow,
   onUpgradeKeypadColumn,
   onSetAllocatorMaxPoints,
+  onAddAllocatorMaxPoints,
+  onSetSessionControlEquations,
+  onSetActiveCalculator,
   onNavigateToUiShell,
   onNavigateToAppMode,
 }: BootstrapUiControllerDeps): {
@@ -91,7 +137,9 @@ export const createBootstrapUiController = ({
 
   const syncDebugMenuVisibility = (): void => {
     const isOpen = refs.debugToggle.checked;
+    const matrixOpen = isOpen && refs.debugMatrixToggle.checked;
     refs.debugMenu.hidden = !isOpen;
+    refs.debugMatrixWindow.hidden = !matrixOpen;
     document.body.setAttribute("data-debug-menu-open", isOpen ? "true" : "false");
   };
 
@@ -112,12 +160,21 @@ export const createBootstrapUiController = ({
   };
 
   const syncUi = (state: GameState): void => {
+    const selectedCalculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f");
+    const selectedInstance = state.calculators?.[selectedCalculatorId];
+    const selectedProjected = selectedInstance ?? state;
+    const selectedProfile = getEffectiveControlProfile({
+      ...state,
+      activeCalculatorId: selectedCalculatorId,
+    });
     syncDebugMenuVisibility();
     syncUiShellToggleLink();
     syncAppModeToggleLink();
-    refs.keypadWidthInput.value = state.ui.keypadColumns.toString();
-    refs.keypadHeightInput.value = state.ui.keypadRows.toString();
-    refs.debugMaxPointsInput.value = state.lambdaControl.maxPoints.toString();
+    refs.debugCalculatorSelect.value = selectedCalculatorId;
+    refs.keypadWidthInput.value = selectedProjected.ui.keypadColumns.toString();
+    refs.keypadHeightInput.value = selectedProjected.ui.keypadRows.toString();
+    refs.debugMaxPointsInput.value = selectedProjected.lambdaControl.maxPoints.toString();
+    renderMatrixEditor(refs.debugMatrixEditor, selectedProfile.equations);
 
     const serializedRollState = serializeRollEntriesForDebug(state);
     refs.debugRollStateEl.textContent = JSON.stringify(
@@ -131,6 +188,7 @@ export const createBootstrapUiController = ({
   };
 
   listen(refs.debugToggle, "change", syncDebugMenuVisibility);
+  listen(refs.debugMatrixToggle, "change", syncDebugMenuVisibility);
 
   listen(refs.clearSaveButton, "click", () => {
     onResetRun();
@@ -142,23 +200,50 @@ export const createBootstrapUiController = ({
 
   listen(refs.applyKeypadSizeButton, "click", () => {
     const state = getState();
-    const columns = clampDimensionInput(Number(refs.keypadWidthInput.value), state.ui.keypadColumns);
-    const rows = clampDimensionInput(Number(refs.keypadHeightInput.value), state.ui.keypadRows);
-    onSetKeypadDimensions(columns, rows);
+    const calculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f");
+    const instance = state.calculators?.[calculatorId];
+    const columns = clampDimensionInput(Number(refs.keypadWidthInput.value), instance?.ui.keypadColumns ?? state.ui.keypadColumns);
+    const rows = clampDimensionInput(Number(refs.keypadHeightInput.value), instance?.ui.keypadRows ?? state.ui.keypadRows);
+    onSetKeypadDimensions(calculatorId, columns, rows);
   });
 
   listen(refs.upgradeKeypadRowButton, "click", () => {
-    onUpgradeKeypadRow();
+    const state = getState();
+    onUpgradeKeypadRow(toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f"));
   });
 
   listen(refs.upgradeKeypadColumnButton, "click", () => {
-    onUpgradeKeypadColumn();
+    const state = getState();
+    onUpgradeKeypadColumn(toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f"));
   });
 
   listen(refs.applyMaxPointsButton, "click", () => {
     const state = getState();
-    const value = clampNonNegativeInteger(Number(refs.debugMaxPointsInput.value), state.lambdaControl.maxPoints);
-    onSetAllocatorMaxPoints(value);
+    const calculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f");
+    const instance = state.calculators?.[calculatorId];
+    const value = clampNonNegativeInteger(Number(refs.debugMaxPointsInput.value), instance?.lambdaControl.maxPoints ?? state.lambdaControl.maxPoints);
+    onSetAllocatorMaxPoints(calculatorId, value);
+  });
+
+  listen(refs.addMaxPointsButton, "click", () => {
+    const state = getState();
+    onAddAllocatorMaxPoints(toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f"), 1);
+  });
+
+  listen(refs.applyControlMatrixButton, "click", () => {
+    const state = getState();
+    const calculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f");
+    const profile = getEffectiveControlProfile({
+      ...state,
+      activeCalculatorId: calculatorId,
+    });
+    const equations = readMatrixEditor(refs.debugMatrixEditor, profile.equations);
+    onSetSessionControlEquations(calculatorId, equations);
+  });
+
+  listen(refs.debugCalculatorSelect, "change", () => {
+    const calculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value);
+    onSetActiveCalculator(calculatorId);
   });
 
   listen(refs.toggleUiShellLink, "click", (event) => {

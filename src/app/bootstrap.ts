@@ -203,17 +203,26 @@ uiController = createBootstrapUiController({
   onUnlockAll: () => {
     store.dispatch({ type: "UNLOCK_ALL" });
   },
-  onSetKeypadDimensions: (columns, rows) => {
-    store.dispatch({ type: "SET_KEYPAD_DIMENSIONS", columns, rows });
+  onSetKeypadDimensions: (calculatorId, columns, rows) => {
+    store.dispatch({ type: "SET_KEYPAD_DIMENSIONS", calculatorId, columns, rows });
   },
-  onUpgradeKeypadRow: () => {
-    store.dispatch({ type: "UPGRADE_KEYPAD_ROW" });
+  onUpgradeKeypadRow: (calculatorId) => {
+    store.dispatch({ type: "UPGRADE_KEYPAD_ROW", calculatorId });
   },
-  onUpgradeKeypadColumn: () => {
-    store.dispatch({ type: "UPGRADE_KEYPAD_COLUMN" });
+  onUpgradeKeypadColumn: (calculatorId) => {
+    store.dispatch({ type: "UPGRADE_KEYPAD_COLUMN", calculatorId });
   },
-  onSetAllocatorMaxPoints: (value) => {
-    store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", value });
+  onSetAllocatorMaxPoints: (calculatorId, value) => {
+    store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", calculatorId, value });
+  },
+  onAddAllocatorMaxPoints: (calculatorId, amount) => {
+    store.dispatch({ type: "ALLOCATOR_ADD_MAX_POINTS", calculatorId, amount });
+  },
+  onSetSessionControlEquations: (calculatorId, equations) => {
+    store.dispatch({ type: "SET_SESSION_CONTROL_EQUATIONS", calculatorId, equations });
+  },
+  onSetActiveCalculator: (calculatorId) => {
+    store.dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId });
   },
   onNavigateToUiShell: (url) => {
     window.location.assign(url);

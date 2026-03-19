@@ -1853,6 +1853,29 @@
         background: rgba(255, 255, 255, 0.42);
       }
 
+      .debug-matrix-window {
+        position: fixed;
+        top: 12px;
+        right: min(304px, calc(100vw - 24px));
+        z-index: 51;
+        width: min(420px, calc(100vw - 36px));
+        aspect-ratio: 1 / 1;
+        border: 1px solid rgba(32, 39, 52, 0.35);
+        border-radius: 10px;
+        padding: 10px;
+        background: rgba(245, 250, 255, 0.92);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 8px;
+      }
+
+      .debug-matrix-title {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #1b212b;
+      }
+
       .debug-toggle {
         display: inline-flex;
         align-items: center;
@@ -1916,6 +1939,13 @@
         border: 1px solid rgba(45, 53, 63, 0.35);
       }
 
+      .debug-size select {
+        width: 100%;
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: 1px solid rgba(45, 53, 63, 0.35);
+      }
+
       .debug-action {
         display: block;
         text-align: center;
@@ -1932,6 +1962,41 @@
 
       .debug-action:hover {
         filter: brightness(1.03);
+      }
+
+      .debug-matrix-grid {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+      }
+
+      .debug-matrix-cell {
+        min-width: 0;
+      }
+
+      .debug-matrix-cell--label {
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(45, 53, 63, 0.2);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.8);
+        color: #1b212b;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: lowercase;
+      }
+
+      .debug-matrix-cell input {
+        width: 100%;
+        height: 100%;
+        min-height: 30px;
+        border-radius: 6px;
+        border: 1px solid rgba(45, 53, 63, 0.28);
+        padding: 4px 6px;
+        font-size: 0.73rem;
+        background: rgba(255, 255, 255, 0.96);
       }
 
       .debug-report {
@@ -2904,6 +2969,12 @@
           top: 10px;
         }
 
+        .debug-matrix-window {
+          right: 10px;
+          top: 242px;
+          width: min(94vw, 360px);
+        }
+
         :root {
           --gap: 8px;
         }
@@ -2930,6 +3001,11 @@
       </label>
       <div class="debug-menu" data-debug-menu hidden>
         <div class="debug-size">
+          <label for="debug-calculator">Calc</label>
+          <select id="debug-calculator" data-debug-calculator-select>
+            <option value="g">g</option>
+            <option value="f">f</option>
+          </select>
           <label for="debug-width">Width</label>
           <input id="debug-width" type="number" min="1" max="8" data-debug-keypad-width />
           <label for="debug-height">Height</label>
@@ -2939,14 +3015,24 @@
         </div>
         <button type="button" class="debug-action" data-debug-apply-keypad-size>Apply Keypad Size</button>
         <button type="button" class="debug-action" data-debug-apply-max-points>Apply maxPoints</button>
+        <button type="button" class="debug-action" data-debug-add-max-points>+1 lambda point</button>
         <button type="button" class="debug-action" data-debug-upgrade-keypad-row>Upgrade Row</button>
         <button type="button" class="debug-action" data-debug-upgrade-keypad-column>Upgrade Column</button>
+        <label class="debug-option">
+          <input type="checkbox" data-debug-matrix-toggle />
+          <span>Matrix Window</span>
+        </label>
         <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
         <button type="button" class="debug-action" data-debug-unlock-all>Unlock All</button>
         <a class="debug-action" data-debug-toggle-ui-shell href="#">Switch UI Shell</a>
         <a class="debug-action" data-debug-toggle-app-mode href="#">Switch App Mode</a>
         <pre class="debug-report" data-debug-roll-state>[]</pre>
       </div>
+    </section>
+    <section class="debug-matrix-window" data-debug-matrix-window hidden aria-label="Control matrix debug editor">
+      <p class="debug-matrix-title">Control Matrix</p>
+      <div data-debug-control-matrix></div>
+      <button type="button" class="debug-action" data-debug-apply-control-matrix>Apply Control Matrix</button>
     </section>
     <div class="app-shell">
       <main id="app" class="app-layout" aria-label="AutoCalc">

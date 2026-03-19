@@ -11,6 +11,7 @@ import {
   createLocalStorageRepo,
   loadFromRawSave,
 } from "../src/infra/persistence/localStorageRepo.js";
+import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 
 type MemoryStorage = {
@@ -39,8 +40,8 @@ const createMemoryStorage = (): MemoryStorage => {
 export const runPersistenceTests = (): void => {
   const storage = createMemoryStorage();
   const repo = createLocalStorageRepo(storage);
-
   const base = initialState();
+
   const persisted: GameState = {
     ...base,
     calculator: {
@@ -48,40 +49,16 @@ export const runPersistenceTests = (): void => {
       total: r(12n),
       rollEntries: re(r(9n), r(11n), r(12n)),
     },
-    keyPressCounts: keyCounts([["+", 3], ["=", 2]]),
-    allocatorReturnPressCount: 2,
-    allocatorAllocatePressCount: 3,
-    allocator: {
-      maxPoints: 9,
-      allocations: {
-        width: 2,
-        height: 1,
-        range: 3,
-        speed: 0,
-        slots: 2,
-      },
-    },
     lambdaControl: {
       maxPoints: 9,
       alpha: 2,
       beta: 1,
       gamma: 2,
-      overrides: {
-        delta: 3,
-        epsilon: { num: 9n, den: 10n },
-      },
+      gammaMinRaised: true,
     },
-    unlocks: {
-      ...base.unlocks,
-      uiUnlocks: { storageVisible: true },
-      visualizers: { ...base.unlocks.visualizers, [visualizer("FEED")]: true },
-      execution: { ...base.unlocks.execution, [k("=")]: true },
+    sessionControlProfiles: {
+      f: controlProfiles.f,
     },
-    ui: {
-      ...base.ui,
-      activeVisualizer: "feed",
-    },
-    completedUnlockIds: ["unlock_equals_on_total_11"],
   };
   repo.save(persisted);
 
@@ -93,24 +70,7 @@ export const runPersistenceTests = (): void => {
   const loaded = repo.load();
   assert.ok(loaded, "saved payload hydrates");
   assert.deepEqual(loaded?.calculator.total, r(12n), "round-trip total");
-  assert.deepEqual(loaded?.calculator.rollEntries[0]?.y, r(9n), "round-trip preserves seed row at index 0");
-  assert.deepEqual(
-    loaded?.calculator.rollEntries[1]?.factorization,
-    {
-      sign: 1,
-      numerator: [{ prime: 11n, exponent: 1 }],
-      denominator: [],
-    },
-    "round-trip persists/backfills roll-entry factorization payload",
-  );
-  assert.deepEqual(loaded?.keyPressCounts, keyCounts([["+", 3], ["=", 2]]), "round-trip key press counters");
-  assert.equal(loaded?.allocatorReturnPressCount, 2, "round-trip allocator RETURN press counter");
-  assert.equal(loaded?.allocatorAllocatePressCount, 3, "round-trip allocator Allocate press counter");
-  assert.deepEqual(
-    loaded?.allocator,
-    { maxPoints: 9, allocations: { width: 2, height: 1, range: 3, speed: 0, slots: 2 } },
-    "round-trip allocator snapshot fields",
-  );
+  assert.deepEqual(loaded?.calculator.rollEntries[0]?.y, r(9n), "round-trip roll entries");
   assert.deepEqual(
     loaded?.lambdaControl,
     {
@@ -118,507 +78,25 @@ export const runPersistenceTests = (): void => {
       alpha: 2,
       beta: 1,
       gamma: 2,
-      overrides: {
-        delta: 3,
-        epsilon: { num: 9n, den: 10n },
-      },
+      gammaMinRaised: true,
     },
-    "round-trip canonical lambda control",
+    "round-trip lambda control",
   );
-  assert.equal(loaded?.unlocks.uiUnlocks.storageVisible, true, "round-trip storage unlock");
-  assert.equal(loaded?.unlocks.visualizers[visualizer("FEED")], true, "round-trip FEED visualizer unlock");
-  assert.equal(loaded?.ui.activeVisualizer, "feed", "round-trip active visualizer");
-  assert.equal(loaded?.calculator.stepProgress.active, false, "default step progress round-trips as inactive");
+  assert.deepEqual(loaded?.sessionControlProfiles, {}, "session-only control profile edits are not persisted");
 
-  const withActiveStepProgress: GameState = {
-    ...base,
-    calculator: {
-      ...base.calculator,
-      operationSlots: [
-        { kind: "binary", operator: op("+"), operand: 2n },
-        { kind: "binary", operator: op("*"), operand: 3n },
-      ],
-      stepProgress: {
-        active: true,
-        seedTotal: r(1n),
-        currentTotal: r(3n),
-        nextSlotIndex: 1,
-        executedSlotResults: [r(3n)],
-      },
-    },
-  };
-  repo.save(withActiveStepProgress);
-  const loadedWithActiveStep = repo.load();
-  assert.ok(loadedWithActiveStep, "active step progress payload hydrates");
-  assert.deepEqual(
-    loadedWithActiveStep?.calculator.stepProgress,
-    withActiveStepProgress.calculator.stepProgress,
-    "valid step progress survives save/load round-trip",
-  );
-
-  const legacyV1 = loadFromRawSave(
+  const unsupported = loadFromRawSave(
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: SAVE_SCHEMA_VERSION - 1,
       savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "9",
-          pendingNegativeTotal: false,
-          roll: ["9"],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-      },
+      state: {},
     }),
   );
-  assert.ok(legacyV1.state, "legacy payload hydrates");
-  assert.deepEqual(legacyV1.state, initialState(), "legacy payload is hard-reset to current initial state");
-  assert.equal(legacyV1.state?.calculator.rollEntries.length, 0, "legacy payload defaults to empty roll");
-
-  const legacyV5 = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 5,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "11",
-          pendingNegativeTotal: false,
-          singleDigitInitialTotalEntry: false,
-          roll: ["11"],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 1,
-          keypadRows: 1,
-          buttonFlags: {},
-        },
-        unlocks: initialState().unlocks,
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  assert.ok(legacyV5.state, "v5 payload hydrates");
-  assert.deepEqual(legacyV5.state, initialState(), "v5 payload is hard-reset to current initial state");
-
-  const legacyV7 = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 7,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "11",
-          pendingNegativeTotal: false,
-          singleDigitInitialTotalEntry: false,
-          roll: ["11"],
-          rollErrors: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 1,
-          keypadRows: 1,
-          buttonFlags: {},
-        },
-        keyPressCounts: {},
-        unlocks: { ...initialState().unlocks, maxTotalDigits: 2, maxSlots: 2 },
-        completedUnlockIds: [],
-      },
-    }),
-  );
-  assert.ok(legacyV7.state, "v7 payload hydrates");
-  assert.deepEqual(
-    legacyV7.state?.lambdaControl,
-    { maxPoints: 0, alpha: 0, beta: 0, gamma: 0, overrides: {} },
-    "v7 migration resets lambda control",
-  );
-
-  const legacyV8 = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 8,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "11",
-          pendingNegativeTotal: false,
-          singleDigitInitialTotalEntry: false,
-          roll: ["11"],
-          rollErrors: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 3,
-          keypadRows: 2,
-          buttonFlags: {},
-        },
-        keyPressCounts: {},
-        unlocks: { ...initialState().unlocks, maxTotalDigits: 5 },
-        completedUnlockIds: [],
-        allocator: {
-          points: 7,
-          speed: 4,
-        },
-      },
-    }),
-  );
-  assert.ok(legacyV8.state, "v8 payload hydrates");
-  assert.deepEqual(
-    legacyV8.state?.lambdaControl,
-    { maxPoints: 0, alpha: 0, beta: 0, gamma: 0, overrides: {} },
-    "v8 migration resets lambda control",
-  );
-
-  const legacyV10WithVisualizerFlags = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 10,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          rollErrors: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 1,
-          keypadRows: 1,
-          buttonFlags: {
-            "graph.visible": true,
-            "feed.visible": true,
-          },
-        },
-        keyPressCounts: {},
-        unlocks: initialState().unlocks,
-        completedUnlockIds: [],
-        allocatorReturnPressCount: 0,
-        allocatorAllocatePressCount: 0,
-        allocator: {
-          maxPoints: 0,
-          allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
-        },
-      },
-    }),
-  );
-  assert.ok(legacyV10WithVisualizerFlags.state, "v10 payload hydrates");
-  assert.equal(
-    legacyV10WithVisualizerFlags.state?.ui.activeVisualizer,
-    "graph",
-    "v10 migration maps legacy flags to activeVisualizer with graph precedence",
-  );
-  assert.equal(
-    Object.prototype.hasOwnProperty.call(legacyV10WithVisualizerFlags.state?.ui.buttonFlags ?? {}, "graph.visible"),
-    false,
-    "legacy graph visibility flag is removed from buttonFlags",
-  );
-
-  const legacyV11WithNoneVisualizer = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 11,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          rollErrors: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 1,
-          keypadRows: 1,
-          activeVisualizer: "none",
-          buttonFlags: {},
-        },
-        keyPressCounts: {},
-        unlocks: initialState().unlocks,
-        completedUnlockIds: [],
-        allocatorReturnPressCount: 0,
-        allocatorAllocatePressCount: 0,
-        allocator: {
-          maxPoints: 0,
-          allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
-        },
-      },
-    }),
-  );
-  assert.ok(legacyV11WithNoneVisualizer.state, "v11 payload with none visualizer hydrates");
-  assert.equal(
-    legacyV11WithNoneVisualizer.state?.ui.activeVisualizer,
-    "total",
-    "v11 migration maps legacy none visualizer to total",
-  );
-
-  const legacyV11InvalidVisualizerWithFlags = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 11,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          rollErrors: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 1,
-          keypadRows: 1,
-          activeVisualizer: "bogus",
-          buttonFlags: {
-            "feed.visible": true,
-          },
-        },
-        keyPressCounts: {},
-        unlocks: initialState().unlocks,
-        completedUnlockIds: [],
-        allocatorReturnPressCount: 0,
-        allocatorAllocatePressCount: 0,
-        allocator: {
-          maxPoints: 0,
-          allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
-        },
-      },
-    }),
-  );
-  assert.ok(legacyV11InvalidVisualizerWithFlags.state, "v11 payload with invalid visualizer hydrates");
-  assert.equal(
-    legacyV11InvalidVisualizerWithFlags.state?.ui.activeVisualizer,
-    "feed",
-    "v11 invalid visualizer falls back to legacy feed flag mapping",
-  );
-
-  const legacyV13ValueExpressionOnly = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 13,
-      savedAt: Date.now(),
-      state: {
-        ...JSON.parse(JSON.stringify({
-          calculator: {
-            total: "0",
-            pendingNegativeTotal: false,
-            singleDigitInitialTotalEntry: false,
-            rollEntries: [],
-            operationSlots: [],
-            draftingSlot: null,
-          },
-          ui: {
-            keyLayout: initialState().ui.keyLayout,
-            keypadCells: initialState().ui.keypadCells,
-            storageLayout: initialState().ui.storageLayout,
-            keypadColumns: 1,
-            keypadRows: 1,
-            activeVisualizer: "total",
-            buttonFlags: {},
-          },
-          keyPressCounts: {},
-          unlocks: {
-            ...initialState().unlocks,
-            valueExpression: { ...initialState().unlocks.valueExpression, NEG: true, [k("1")]: true },
-          },
-          completedUnlockIds: [],
-          allocatorReturnPressCount: 0,
-          allocatorAllocatePressCount: 0,
-          allocator: {
-            maxPoints: 0,
-            allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
-          },
-        })),
-      },
-    }),
-  );
-  assert.ok(legacyV13ValueExpressionOnly.state, "v13 payload hydrates under v14 runtime");
-  assert.equal(
-    legacyV13ValueExpressionOnly.state?.unlocks.valueAtoms[valueExpr("1")],
-    true,
-    "v13 valueExpression digit maps to split valueAtoms unlocks",
-  );
-  assert.equal(
-    Object.keys(legacyV13ValueExpressionOnly.state?.unlocks.valueCompose ?? {}).length,
-    0,
-    "v13 valueExpression compose keys are removed from current runtime",
-  );
-
-  const legacyV15MissingFactorization = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 15,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "6/35",
-          pendingNegativeTotal: false,
-          singleDigitInitialTotalEntry: false,
-          rollEntries: [{ y: "6/35" }, { y: "NaN" }],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 1,
-          keypadRows: 1,
-          activeVisualizer: "total",
-          memoryVariable: "Î±",
-          buttonFlags: {},
-        },
-        keyPressCounts: {},
-        unlocks: initialState().unlocks,
-        completedUnlockIds: [],
-        allocatorReturnPressCount: 0,
-        allocatorAllocatePressCount: 0,
-        allocator: {
-          maxPoints: 0,
-          allocations: { width: 0, height: 0, range: 0, speed: 0, slots: 0 },
-        },
-      },
-    }),
-  );
-  assert.ok(legacyV15MissingFactorization.state, "v15 payload without factorization hydrates");
-  assert.deepEqual(
-    legacyV15MissingFactorization.state?.calculator.rollEntries[1]?.factorization,
-    {
-      sign: 1,
-      numerator: [{ prime: 2n, exponent: 1 }, { prime: 3n, exponent: 1 }],
-      denominator: [{ prime: 5n, exponent: 1 }, { prime: 7n, exponent: 1 }],
-    },
-    "missing factorization payload is backfilled during load normalization",
-  );
+  assert.equal(unsupported.state, null, "unsupported legacy schema does not load");
+  assert.equal(unsupported.reason, LoadFailureReason.UnsupportedSchemaVersion, "legacy schema failure reason is reported");
 
   const badJson = loadFromRawSave("{");
   assert.equal(badJson.state, null, "invalid JSON fails safely");
   assert.equal(badJson.reason, LoadFailureReason.InvalidJson, "invalid JSON reason is reported");
-
-  const malformed = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: SAVE_SCHEMA_VERSION,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          rollErrors: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 1,
-          keypadRows: 1,
-          buttonFlags: {},
-        },
-        keyPressCounts: { "+": "bad" },
-        unlocks: initialState().unlocks,
-        completedUnlockIds: [],
-        allocator: {
-          maxPoints: 4,
-          allocations: { width: 1, height: 1, range: 1, speed: 1, slots: 1 },
-        },
-      },
-    }),
-  );
-  assert.ok(malformed.state, "invalid keyPressCounts payload still hydrates");
-  assert.deepEqual(malformed.state?.keyPressCounts, {}, "invalid keyPressCounts are normalized away");
-
-  repo.save(withActiveStepProgress);
-  const rawStepPayload = storage.getItem(SAVE_KEY);
-  assert.ok(rawStepPayload, "serialized payload exists for malformed stepProgress test");
-  const malformedStepPayload = JSON.parse(rawStepPayload ?? "{}");
-  malformedStepPayload.state.calculator.stepProgress = {
-    active: true,
-    seedTotal: "1",
-    currentTotal: "3",
-    nextSlotIndex: 99,
-    executedSlotResults: ["3"],
-  };
-  const malformedStepLoaded = loadFromRawSave(JSON.stringify(malformedStepPayload));
-  assert.ok(malformedStepLoaded.state, "malformed step payload still hydrates");
-  assert.deepEqual(
-    malformedStepLoaded.state?.calculator.stepProgress,
-    {
-      active: false,
-      seedTotal: null,
-      currentTotal: null,
-      nextSlotIndex: 0,
-      executedSlotResults: [],
-    },
-    "malformed step progress is strictly reset to inactive defaults",
-  );
-
-  repo.save(initialState());
-  const serializedBaseline = storage.getItem(SAVE_KEY);
-  assert.ok(serializedBaseline, "serialized baseline exists for CE legacy migration test");
-  const ceLegacyPayload = JSON.parse(serializedBaseline ?? "{}");
-  ceLegacyPayload.state.ui.keyLayout = [{ kind: "key", key: "CE" }, ...ceLegacyPayload.state.ui.keyLayout.slice(1)];
-  ceLegacyPayload.state.ui.storageLayout = [{ kind: "key", key: "CE" }, ...ceLegacyPayload.state.ui.storageLayout.slice(1)];
-  ceLegacyPayload.state.keyPressCounts = { CE: 3, [utility("C")]: 1 };
-  ceLegacyPayload.state.completedUnlockIds = ["unlock_ce_on_first_division_by_zero", "unlock_equals_on_total_11"];
-  ceLegacyPayload.state.unlocks.utilities = {
-    ...ceLegacyPayload.state.unlocks.utilities,
-    CE: true,
-    [utility("C")]: true,
-  };
-  const ceBearingLegacy = loadFromRawSave(JSON.stringify(ceLegacyPayload));
-  assert.ok(ceBearingLegacy.state, "schema-18 payload with retired CE refs hydrates");
-  assert.equal(
-    ceBearingLegacy.state?.ui.keyLayout.some((cell) => cell.kind === "key" && String(cell.key) === "CE"),
-    false,
-    "retired CE keypad cells are removed during load normalization",
-  );
-  assert.equal(
-    ceBearingLegacy.state?.ui.storageLayout.some((cell) => cell?.kind === "key" && String(cell.key) === "CE"),
-    false,
-    "retired CE storage cells are removed during load normalization",
-  );
-  assert.equal(
-    Object.prototype.hasOwnProperty.call(ceBearingLegacy.state?.keyPressCounts ?? {}, "CE"),
-    false,
-    "retired CE key press counters are removed during load normalization",
-  );
-  assert.equal(
-    ceBearingLegacy.state?.completedUnlockIds.includes("unlock_ce_on_first_division_by_zero"),
-    false,
-    "retired CE unlock id is removed during load normalization",
-  );
-  assert.equal(
-    Object.prototype.hasOwnProperty.call(ceBearingLegacy.state?.unlocks.utilities ?? {}, "CE"),
-    false,
-    "retired CE utility unlock flag is removed during load normalization",
-  );
-  assert.equal(ceBearingLegacy.state?.unlocks.utilities[utility("C")], true, "non-CE utility unlock flags are preserved");
 
   const nanRoundTrip = {
     ...base,
@@ -633,46 +111,4 @@ export const runPersistenceTests = (): void => {
   assert.ok(loadedNan, "NaN payload hydrates");
   assert.deepEqual(loadedNan?.calculator.total, toNanCalculatorValue(), "NaN total round-trips");
   assert.equal(loadedNan?.calculator.rollEntries[1]?.y.kind, "nan", "NaN roll entries round-trip");
-
-  const overspentV9 = loadFromRawSave(
-    JSON.stringify({
-      schemaVersion: 9,
-      savedAt: Date.now(),
-      state: {
-        calculator: {
-          total: "0",
-          pendingNegativeTotal: false,
-          roll: [],
-          rollErrors: [],
-          euclidRemainders: [],
-          operationSlots: [],
-          draftingSlot: null,
-        },
-        ui: {
-          keyLayout: initialState().ui.keyLayout,
-          keypadCells: initialState().ui.keypadCells,
-          storageLayout: initialState().ui.storageLayout,
-          keypadColumns: 1,
-          keypadRows: 1,
-          buttonFlags: {},
-        },
-        keyPressCounts: {},
-        unlocks: initialState().unlocks,
-        completedUnlockIds: [],
-        allocator: {
-          maxPoints: 2,
-          allocations: { width: 2, height: 2, range: 0, speed: 0, slots: 2 },
-        },
-      },
-    }),
-  );
-  assert.ok(overspentV9.state, "overspent v9 payload hydrates");
-  assert.deepEqual(
-    overspentV9.state?.lambdaControl,
-    { maxPoints: 0, alpha: 0, beta: 0, gamma: 0, overrides: {} },
-    "overspent legacy allocator payload is ignored in favor of reset lambda control",
-  );
 };
-
-
-

@@ -10,35 +10,23 @@ import {
 } from "./lambdaControl.js";
 import { LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID } from "./state.js";
 import type { GameState, LambdaControl } from "./types.js";
-
-const rationalEquals = (
-  a?: { num: bigint; den: bigint },
-  b?: { num: bigint; den: bigint },
-): boolean => {
-  if (!a && !b) {
-    return true;
-  }
-  if (!a || !b) {
-    return false;
-  }
-  return a.num === b.num && a.den === b.den;
-};
+import { getEffectiveControlProfile } from "./controlProfileRuntime.js";
 
 const lambdaControlEquals = (a: LambdaControl, b: LambdaControl): boolean =>
   a.maxPoints === b.maxPoints &&
   a.alpha === b.alpha &&
   a.beta === b.beta &&
   a.gamma === b.gamma &&
-  a.overrides.delta === b.overrides.delta &&
-  rationalEquals(a.overrides.epsilon, b.overrides.epsilon);
+  Boolean(a.gammaMinRaised) === Boolean(b.gammaMinRaised);
 
 export const applyAllocatorRuntimeProjection = (
   state: GameState,
   lambdaControl: LambdaControl,
 ): GameState => {
-  const nextControl = sanitizeLambdaControl(lambdaControl);
-  const previousSpent = getLambdaSpentPoints(state.lambdaControl);
-  const nextSpent = getLambdaSpentPoints(nextControl);
+  const profile = getEffectiveControlProfile(state);
+  const nextControl = sanitizeLambdaControl(lambdaControl, profile);
+  const previousSpent = getLambdaSpentPoints(state.lambdaControl, profile);
+  const nextSpent = getLambdaSpentPoints(nextControl, profile);
   const markSpentDropSeen =
     previousSpent === 1
     && nextSpent === 0
@@ -52,12 +40,12 @@ export const applyAllocatorRuntimeProjection = (
       completedUnlockIds: [...withControl.completedUnlockIds, LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID],
     }
     : withControl;
-  const columns = getEffectiveKeypadColumns(withMarker.lambdaControl);
-  const rows = getEffectiveKeypadRows(withMarker.lambdaControl);
-  const maxDigits = getEffectiveMaxTotalDigits(withMarker.lambdaControl);
-  const maxSlots = getEffectiveMaxSlots(withMarker.lambdaControl);
+  const columns = getEffectiveKeypadColumns(withMarker.lambdaControl, profile);
+  const rows = getEffectiveKeypadRows(withMarker.lambdaControl, profile);
+  const maxDigits = getEffectiveMaxTotalDigits(withMarker.lambdaControl, profile);
+  const maxSlots = getEffectiveMaxSlots(withMarker.lambdaControl, profile);
   const resized = applySetKeypadDimensions(withMarker, columns, rows);
-  const allocator = buildAllocatorSnapshot(resized.lambdaControl);
+  const allocator = buildAllocatorSnapshot(resized.lambdaControl, profile);
   if (
     resized.unlocks.maxTotalDigits === maxDigits &&
     resized.unlocks.maxSlots === maxSlots &&

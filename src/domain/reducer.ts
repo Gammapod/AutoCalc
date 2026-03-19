@@ -20,12 +20,12 @@ import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import {
   adjustAxis,
   resetLambdaAdjustments,
-  sanitizeLambdaControl,
   withLegacyAllocatorFallback,
   withMaxPointsAdded,
   withMaxPointsSet,
 } from "./lambdaControl.js";
 import { commitLegacyProjection, projectCalculatorToLegacy, resolveActiveCalculatorId } from "./multiCalculator.js";
+import { getBaseControlProfile, getEffectiveControlProfile } from "./controlProfileRuntime.js";
 import type {
   Action,
   CalculatorId,
@@ -125,35 +125,38 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     return applyToggleVisualizer(state, action.visualizer);
   }
   if (action.type === "ALLOCATOR_ADJUST") {
-    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
+    const profile = getEffectiveControlProfile(state);
+    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator, profile);
     const axis = allocatorFieldToAxis(action.field);
     if (!axis) {
       return state;
     }
-    const nextControl = adjustAxis(effectiveControl, axis, action.delta);
+    const nextControl = adjustAxis(effectiveControl, profile, axis, action.delta);
     if (nextControl === effectiveControl) {
       return state;
     }
     return applyUnlocks(applyAllocatorRuntimeProjection(state, nextControl), unlockCatalog);
   }
   if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
-    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
-    const nextControl = withMaxPointsSet(effectiveControl, action.value);
+    const profile = getEffectiveControlProfile(state);
+    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator, profile);
+    const nextControl = withMaxPointsSet(effectiveControl, profile, action.value);
     if (nextControl === effectiveControl) {
       return state;
     }
     return applyAllocatorRuntimeProjection(state, nextControl);
   }
   if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
-    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator);
-    const nextControl = withMaxPointsAdded(effectiveControl, action.amount);
+    const profile = getEffectiveControlProfile(state);
+    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator, profile);
+    const nextControl = withMaxPointsAdded(effectiveControl, profile, action.amount);
     if (nextControl === effectiveControl) {
       return state;
     }
     return applyAllocatorRuntimeProjection(state, nextControl);
   }
   if (action.type === "RESET_ALLOCATOR_DEVICE") {
-    return applyAllocatorRuntimeProjection(state, resetLambdaAdjustments(state.lambdaControl));
+    return applyAllocatorRuntimeProjection(state, resetLambdaAdjustments(state.lambdaControl, getEffectiveControlProfile(state)));
   }
   if (action.type === "ALLOCATOR_RETURN_PRESSED") {
     const withCount: GameState = {
@@ -169,48 +172,23 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     };
     return applyUnlocks(withCount, unlockCatalog);
   }
-  if (action.type === "LAMBDA_SET_OVERRIDE_DELTA") {
-    const next = sanitizeLambdaControl({
-      ...state.lambdaControl,
-      overrides: {
-        ...state.lambdaControl.overrides,
-        delta: action.value,
-      },
-    });
-    return applyAllocatorRuntimeProjection(state, next);
-  }
-  if (action.type === "LAMBDA_SET_OVERRIDE_EPSILON") {
-    const next = sanitizeLambdaControl({
-      ...state.lambdaControl,
-      overrides: {
-        ...state.lambdaControl.overrides,
-        epsilon: action.value,
-      },
-    });
-    return applyAllocatorRuntimeProjection(state, next);
-  }
-  if (action.type === "LAMBDA_CLEAR_OVERRIDE_DELTA") {
-    const next = sanitizeLambdaControl({
-      ...state.lambdaControl,
-      overrides: {
-        ...state.lambdaControl.overrides,
-      },
-    });
-    delete next.overrides.delta;
-    return applyAllocatorRuntimeProjection(state, next);
-  }
-  if (action.type === "LAMBDA_CLEAR_OVERRIDE_EPSILON") {
-    const next = sanitizeLambdaControl({
-      ...state.lambdaControl,
-      overrides: {
-        ...state.lambdaControl.overrides,
-      },
-    });
-    delete next.overrides.epsilon;
-    return applyAllocatorRuntimeProjection(state, next);
-  }
   if (action.type === "LAMBDA_SET_CONTROL") {
     return applyUnlocks(applyAllocatorRuntimeProjection(state, action.value), unlockCatalog);
+  }
+  if (action.type === "SET_SESSION_CONTROL_EQUATIONS") {
+    const baseProfile = getBaseControlProfile(action.calculatorId);
+    const merged = {
+      ...baseProfile,
+      equations: action.equations,
+    };
+    const withSessionProfiles: GameState = {
+      ...state,
+      sessionControlProfiles: {
+        ...state.sessionControlProfiles,
+        [action.calculatorId]: merged,
+      },
+    };
+    return applyAllocatorRuntimeProjection(withSessionProfiles, withSessionProfiles.lambdaControl);
   }
   return state;
 };
@@ -232,10 +210,6 @@ const resolveActionCalculatorId = (state: GameState, action: Action): Calculator
     || action.type === "RESET_ALLOCATOR_DEVICE"
     || action.type === "ALLOCATOR_RETURN_PRESSED"
     || action.type === "ALLOCATOR_ALLOCATE_PRESSED"
-    || action.type === "LAMBDA_SET_OVERRIDE_DELTA"
-    || action.type === "LAMBDA_SET_OVERRIDE_EPSILON"
-    || action.type === "LAMBDA_CLEAR_OVERRIDE_DELTA"
-    || action.type === "LAMBDA_CLEAR_OVERRIDE_EPSILON"
     || action.type === "LAMBDA_SET_CONTROL"
   ) {
     return resolveActiveCalculatorId(state);

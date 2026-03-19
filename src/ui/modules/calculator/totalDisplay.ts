@@ -1,6 +1,7 @@
 import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { getLambdaDerivedValues, getLambdaUnusedPoints } from "../../../domain/lambdaControl.js";
+import { getEffectiveControlProfile } from "../../../domain/controlProfileRuntime.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 import {
@@ -155,14 +156,15 @@ const renderSevenSegmentValue = (
 };
 
 export const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
-  const lambdaDerived = getLambdaDerivedValues(state.lambdaControl);
+  const profile = getEffectiveControlProfile(state);
+  const lambdaDerived = getLambdaDerivedValues(state.lambdaControl, profile);
   const buildMemoryStatusRow = (): HTMLElement => {
     const row = document.createElement("div");
     row.className = "total-memory-row";
 
     const lambda = document.createElement("span");
     lambda.className = "total-memory-lambda";
-    lambda.textContent = `\u03BB = ${getLambdaUnusedPoints(state.lambdaControl).toString()}`;
+    lambda.textContent = `\u03BB = ${getLambdaUnusedPoints(state.lambdaControl, profile).toString()}`;
     row.appendChild(lambda);
 
     const variables = document.createElement("div");

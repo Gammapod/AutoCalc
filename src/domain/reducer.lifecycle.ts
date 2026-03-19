@@ -5,6 +5,7 @@ import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { sanitizeLambdaControl } from "./lambdaControl.js";
 import { applyUnlockAllPreset } from "./lifecyclePresets.js";
 import { createInitialStepProgressState } from "./reducer.stateBuilders.js";
+import { getEffectiveControlProfile } from "./controlProfileRuntime.js";
 
 export const applyLifecycleAction = (state: GameState, action: Action): GameState | null => {
   if (action.type === "RESET_RUN") {
@@ -33,7 +34,7 @@ export const applyLifecycleAction = (state: GameState, action: Action): GameStat
             },
           }
         : withCells;
-    return applyAllocatorRuntimeProjection(withStepProgress, sanitizeLambdaControl(withStepProgress.lambdaControl));
+    return applyAllocatorRuntimeProjection(withStepProgress, sanitizeLambdaControl(withStepProgress.lambdaControl, getEffectiveControlProfile(withStepProgress)));
   }
   if (action.type === "UNLOCK_ALL") {
     return applyUnlockAllPreset(state);

@@ -6,6 +6,7 @@ import { setButtonUnlocked } from "./buttonStateAccess.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
+import { resolveActiveCalculatorId } from "./multiCalculator.js";
 
 export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean =>
   evaluateUnlockPredicate(predicate, state);
@@ -221,9 +222,14 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
 export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): GameState => {
   let nextState = state;
   const newlyUnlockedKeys = new Set<Key>();
+  const activeCalculatorId = resolveActiveCalculatorId(state);
+  const perCalcCompleted = new Set(nextState.perCalculatorCompletedUnlockIds?.[activeCalculatorId] ?? []);
 
   for (const unlock of catalog) {
-    const isAlreadyCompleted = nextState.completedUnlockIds.includes(unlock.id);
+    const isControlAllocatorUnlock = unlock.effect.type === "increase_allocator_max_points";
+    const isAlreadyCompleted = isControlAllocatorUnlock
+      ? perCalcCompleted.has(unlock.id)
+      : nextState.completedUnlockIds.includes(unlock.id);
 
     if (unlock.once && isAlreadyCompleted) {
       continue;
@@ -241,10 +247,24 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
       }
     }
     if (!isAlreadyCompleted) {
-      nextState = {
-        ...nextState,
-        completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
-      };
+      if (isControlAllocatorUnlock) {
+        perCalcCompleted.add(unlock.id);
+        nextState = {
+          ...nextState,
+          perCalculatorCompletedUnlockIds: {
+            ...(nextState.perCalculatorCompletedUnlockIds ?? {}),
+            [activeCalculatorId]: [...perCalcCompleted],
+          },
+          completedUnlockIds: nextState.completedUnlockIds.includes(unlock.id)
+            ? nextState.completedUnlockIds
+            : [...nextState.completedUnlockIds, unlock.id],
+        };
+      } else {
+        nextState = {
+          ...nextState,
+          completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
+        };
+      }
     }
   }
 

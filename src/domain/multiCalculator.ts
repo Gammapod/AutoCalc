@@ -3,6 +3,7 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { KEY_ID } from "./keyPresentation.js";
 import { KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS, defaultDrawerKeyLayout } from "./state.js";
 import type { CalculatorId, CalculatorInstanceState, GameState, Key } from "./types.js";
+import { controlProfiles } from "./controlProfilesCatalog.js";
 
 export const CALCULATOR_ORDER: readonly CalculatorId[] = ["g", "f"];
 export const MAIN_CALCULATOR_ID: CalculatorId = "f";
@@ -29,8 +30,8 @@ const createDefaultFCalculator = (state: GameState): CalculatorInstanceState => 
   id: "f",
   symbol: "f",
   calculator: cloneCalculator(state.calculator),
-  lambdaControl: sanitizeLambdaControl(state.lambdaControl),
-  allocator: buildAllocatorSnapshot(sanitizeLambdaControl(state.lambdaControl)),
+  lambdaControl: sanitizeLambdaControl(state.lambdaControl, controlProfiles.f),
+  allocator: buildAllocatorSnapshot(sanitizeLambdaControl(state.lambdaControl, controlProfiles.f), controlProfiles.f),
   ui: cloneUi(state.ui),
 });
 
@@ -51,12 +52,12 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
   assign(2, 4, KEY_ID.digit_1);
 
   const lambdaControl = sanitizeLambdaControl({
-    maxPoints: 5,
-    alpha: 3,
-    beta: 1,
-    gamma: 1,
-    overrides: { delta: 8, epsilon: { num: 0n, den: 1n } },
-  });
+    maxPoints: controlProfiles.g.starts.gamma,
+    alpha: controlProfiles.g.starts.alpha,
+    beta: controlProfiles.g.starts.beta,
+    gamma: controlProfiles.g.starts.gamma,
+    gammaMinRaised: controlProfiles.g.starts.gamma >= 1,
+  }, controlProfiles.g);
 
   const baseUi: GameState["ui"] = {
     keyLayout,
@@ -92,7 +93,7 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
       },
     },
     lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl),
+    allocator: buildAllocatorSnapshot(lambdaControl, controlProfiles.g),
     ui: baseUi,
   };
 };
@@ -124,7 +125,7 @@ export const projectCalculatorToLegacy = (state: GameState, calculatorId: Calcul
     ...withInstances,
     activeCalculatorId: calculatorId,
     calculator: cloneCalculator(instance.calculator),
-    lambdaControl: sanitizeLambdaControl(instance.lambdaControl),
+    lambdaControl: sanitizeLambdaControl(instance.lambdaControl, controlProfiles[calculatorId]),
     allocator: instance.allocator,
     ui: cloneUi({
       ...instance.ui,
@@ -139,7 +140,7 @@ export const commitLegacyProjection = (previous: GameState, projected: GameState
     id: calculatorId,
     symbol: calculatorId,
     calculator: cloneCalculator(projected.calculator),
-    lambdaControl: sanitizeLambdaControl(projected.lambdaControl),
+    lambdaControl: sanitizeLambdaControl(projected.lambdaControl, controlProfiles[calculatorId]),
     allocator: projected.allocator,
     ui: cloneUi({
       ...projected.ui,
