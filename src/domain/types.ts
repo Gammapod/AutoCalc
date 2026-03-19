@@ -399,6 +399,28 @@ export type RollEndsWithConstantStepRunPredicate = {
   minAbsStep?: bigint;
   requirePositiveStep?: boolean;
   requireNegativeStep?: boolean;
+  endValue?: bigint;
+};
+
+export type GrowthOrder = "linear" | "exponential";
+
+export type RollEndsWithGrowthOrderRunPredicate = {
+  type: "roll_ends_with_growth_order_run";
+  order: GrowthOrder;
+  length: number;
+};
+
+export type RollCycleIsOppositePairPredicate = {
+  type: "roll_cycle_is_opposite_pair";
+};
+
+export type AnyErrorSeenPredicate = {
+  type: "any_error_seen";
+};
+
+export type KeysUnlockedAllPredicate = {
+  type: "keys_unlocked_all";
+  keys: Key[];
 };
 
 export type KeyPressCountAtLeastPredicate = {
@@ -453,6 +475,10 @@ export type UnlockPredicate =
   | RollEndsWithIncrementingRunPredicate
   | RollEndsWithAlternatingSignConstantAbsRunPredicate
   | RollEndsWithConstantStepRunPredicate
+  | RollEndsWithGrowthOrderRunPredicate
+  | RollCycleIsOppositePairPredicate
+  | AnyErrorSeenPredicate
+  | KeysUnlockedAllPredicate
   | KeyPressCountAtLeastPredicate
   | OverflowErrorSeenPredicate
   | DivisionByZeroErrorSeenPredicate
@@ -522,6 +548,11 @@ export type MoveKeyToCoordEffect = {
   onOccupied: "push_to_storage";
 };
 
+export type UnlockCalculatorEffect = {
+  type: "unlock_calculator";
+  calculatorId: CalculatorId;
+};
+
 export type UnlockEffect =
   | UnlockUtilityEffect
   | UnlockMemoryEffect
@@ -534,7 +565,8 @@ export type UnlockEffect =
   | UnlockSecondSlotEffect
   | UpgradeKeypadColumnEffect
   | UpgradeKeypadRowEffect
-  | MoveKeyToCoordEffect;
+  | MoveKeyToCoordEffect
+  | UnlockCalculatorEffect;
 
 export type NumberDomainNodeId = "NN" | "NZ" | "NQ" | "NA" | "NR" | "NC";
 

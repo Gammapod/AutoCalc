@@ -16,6 +16,7 @@ export const KEY_ID = {
   op_add: "op_add",
   op_sub: "op_sub",
   op_mul: "op_mul",
+  op_pow: "op_pow",
   op_div: "op_div",
   op_euclid_div: "op_euclid_div",
   op_mod: "op_mod",
@@ -74,6 +75,7 @@ export type BinaryOperatorKeyId =
   | typeof KEY_ID.op_add
   | typeof KEY_ID.op_sub
   | typeof KEY_ID.op_mul
+  | typeof KEY_ID.op_pow
   | typeof KEY_ID.op_div
   | typeof KEY_ID.op_euclid_div
   | typeof KEY_ID.op_mod
@@ -151,6 +153,7 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["+", { keyId: KEY_ID.op_add, buttonFace: "+", operatorInlineFace: "+", operatorSlotFace: "+", operatorAlgebraicFace: "+" }],
   ["-", { keyId: KEY_ID.op_sub, buttonFace: "-", operatorInlineFace: "-", operatorSlotFace: "-", operatorAlgebraicFace: "-" }],
   ["*", { keyId: KEY_ID.op_mul, buttonFace: "\u00D7", operatorInlineFace: "\u00D7", operatorSlotFace: "\u00D7", operatorAlgebraicFace: "\u00D7" }],
+  ["^", { keyId: KEY_ID.op_pow, buttonFace: "^", operatorInlineFace: "^", operatorSlotFace: "^", operatorAlgebraicFace: "^" }],
   ["/", { keyId: KEY_ID.op_div, buttonFace: "\u00F7", operatorInlineFace: "\u00F7", operatorSlotFace: "\u00F7", operatorAlgebraicFace: "\u00F7" }],
   ["#", { keyId: KEY_ID.op_euclid_div, buttonFace: "#/\u27E1", operatorInlineFace: "#", operatorSlotFace: "#", operatorAlgebraicFace: "#" }],
   ["\u27E1", { keyId: KEY_ID.op_mod, buttonFace: "\u27E1", operatorInlineFace: "\u27E1", operatorSlotFace: "\u2662", operatorAlgebraicFace: "\u27E1" }],
@@ -296,6 +299,7 @@ const BINARY_OPERATOR_KEY_ID_SET = new Set<BinaryOperatorKeyId>([
   KEY_ID.op_add,
   KEY_ID.op_sub,
   KEY_ID.op_mul,
+  KEY_ID.op_pow,
   KEY_ID.op_div,
   KEY_ID.op_euclid_div,
   KEY_ID.op_mod,
@@ -342,6 +346,7 @@ export const isUnsupportedSymbolicOperatorKeyId = (keyLike: KeyLike): boolean =>
   const keyId = resolveKeyId(keyLike);
   return keyId === KEY_ID.op_euclid_div
     || keyId === KEY_ID.op_mod
+    || keyId === KEY_ID.op_pow
     || keyId === KEY_ID.op_rotate_left
     || keyId === KEY_ID.op_gcd
     || keyId === KEY_ID.op_lcm;

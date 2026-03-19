@@ -9,8 +9,8 @@ export const runControlProjectionTests = (): void => {
   const fProjection = projectControlFromState(base, "f");
   const fDerived = getLambdaDerivedValues(fProjection.control, fProjection.profile);
   assert.deepEqual(fProjection.fields, fDerived.effectiveFields, "projection fields mirror lambda-derived effective fields");
-  assert.equal(fProjection.keypadColumns, base.calculators?.f?.ui.keypadColumns, "f projection columns match projected UI state");
-  assert.equal(fProjection.keypadRows, base.calculators?.f?.ui.keypadRows, "f projection rows match projected UI state");
+  assert.equal(fProjection.keypadColumns, fDerived.effectiveFields.alpha, "f projection columns match derived alpha");
+  assert.equal(fProjection.keypadRows, fDerived.effectiveFields.beta, "f projection rows match derived beta");
   assert.equal(fProjection.maxSlots, base.calculators?.f?.allocator.allocations.slots, "f projection slots match allocator snapshot");
   assert.equal(fProjection.maxTotalDigits, base.calculators?.f?.allocator.allocations.range, "f projection range matches allocator snapshot");
   assert.equal(fProjection.budget.maxPoints, fProjection.control.maxPoints, "projection budget maxPoints mirrors control");

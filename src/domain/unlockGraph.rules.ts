@@ -98,6 +98,9 @@ const unlockEffectTarget = (effect: UnlockEffect): UnlockTargetDescriptor => {
   if (effect.type === "upgrade_keypad_row") {
     return { id: "effect.keypad.rows", type: "effect_target", label: "keypad.rows" };
   }
+  if (effect.type === "unlock_calculator") {
+    return { id: `effect.calculator.${effect.calculatorId}.unlocked`, type: "effect_target", label: `calculator.${effect.calculatorId}` };
+  }
   return {
     id: `effect.move_key_to_coord.${effect.key}.r${effect.row}.c${effect.col}`,
     type: "effect_target",
@@ -141,6 +144,11 @@ export const allKnownKeys = (catalog: UnlockDefinition[], startingKeys: Key[]): 
     }
     if (unlock.predicate.type === "key_press_count_at_least") {
       keys.add(unlock.predicate.key);
+    }
+    if (unlock.predicate.type === "keys_unlocked_all") {
+      for (const key of unlock.predicate.keys) {
+        keys.add(key);
+      }
     }
   }
   for (const provider of staticFunctionCapabilityProviders) {

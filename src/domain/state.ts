@@ -14,8 +14,8 @@ export const AUTO_EQUALS_FLAG = "execution.pause";
 export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";
 export const MOD_ZERO_TO_DELTA_FLAG = "settings.mod_zero_to_delta";
 export const STEP_EXPANSION_FLAG = "settings.step_expansion";
-export const KEYPAD_DEFAULT_COLUMNS = 2;
-export const KEYPAD_DEFAULT_ROWS = 1;
+export const KEYPAD_DEFAULT_COLUMNS = 3;
+export const KEYPAD_DEFAULT_ROWS = 2;
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
 export const TOTAL_DIGITS_MIN = 1;
@@ -126,6 +126,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.op_greater },
   { kind: "key", key: KEY_ID.op_euclid_div },
   { kind: "key", key: KEY_ID.op_mul },
+  { kind: "key", key: KEY_ID.op_pow },
   { kind: "key", key: KEY_ID.digit_7 },
   { kind: "key", key: KEY_ID.digit_8 },
   { kind: "key", key: KEY_ID.digit_9 },

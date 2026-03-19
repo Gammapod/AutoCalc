@@ -32,6 +32,52 @@ const lcmBigInt = (left: bigint, right: bigint): bigint => {
   return (a / gcdBigInt(a, b)) * b;
 };
 
+const normalizeRational = (value: RationalValue): RationalValue => {
+  if (value.den === 0n) {
+    throw new Error("Invalid rational denominator.");
+  }
+  if (value.num === 0n) {
+    return { num: 0n, den: 1n };
+  }
+  const sign = value.den < 0n ? -1n : 1n;
+  const num = value.num * sign;
+  const den = value.den * sign;
+  const divisor = gcdBigInt(num, den);
+  return { num: num / divisor, den: den / divisor };
+};
+
+const multiplyRational = (left: RationalValue, right: RationalValue): RationalValue =>
+  normalizeRational({ num: left.num * right.num, den: left.den * right.den });
+
+const invertRational = (value: RationalValue): RationalValue => {
+  if (value.num === 0n) {
+    throw new Error("Division by zero.");
+  }
+  return normalizeRational({ num: value.den, den: value.num });
+};
+
+const powRationalInt = (base: RationalValue, exponent: bigint): RationalValue => {
+  if (exponent === 0n) {
+    return { num: 1n, den: 1n };
+  }
+  if (exponent < 0n) {
+    return powRationalInt(invertRational(base), -exponent);
+  }
+  let result: RationalValue = { num: 1n, den: 1n };
+  let factor = normalizeRational(base);
+  let power = exponent;
+  while (power > 0n) {
+    if ((power & 1n) === 1n) {
+      result = multiplyRational(result, factor);
+    }
+    power >>= 1n;
+    if (power > 0n) {
+      factor = multiplyRational(factor, factor);
+    }
+  }
+  return result;
+};
+
 const floorDiv = (num: bigint, den: bigint): bigint => {
   const q = num / den;
   const r = num % den;
@@ -261,6 +307,15 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_mul) {
       nextTotal = mulInt(nextTotal, slot.operand);
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_pow) {
+      try {
+        nextTotal = powRationalInt(nextTotal, slot.operand);
+      } catch {
+        return { ok: false, reason: "division_by_zero" };
+      }
       endsWithEuclidLikeOperator = false;
       continue;
     }

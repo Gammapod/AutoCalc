@@ -17,10 +17,14 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "roll_ends_with_incrementing_run",
   "roll_ends_with_alternating_sign_constant_abs_run",
   "roll_ends_with_constant_step_run",
+  "roll_ends_with_growth_order_run",
+  "roll_cycle_is_opposite_pair",
   "key_press_count_at_least",
   "overflow_error_seen",
   "division_by_zero_error_seen",
   "symbolic_error_seen",
+  "any_error_seen",
+  "keys_unlocked_all",
   "allocator_return_press_count_at_least",
   "allocator_allocate_press_count_at_least",
   "keypad_key_slots_at_least",
@@ -42,6 +46,7 @@ export type CapabilityId =
   | "roll_incrementing_run"
   | "roll_alternating_sign_constant_abs"
   | "roll_constant_step_run"
+  | "keys_unlocked_all"
   | "division_by_zero_error"
   | "symbolic_result_error"
   | "euclid_division_operator";
@@ -197,6 +202,34 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
       },
     ],
   },
+  roll_ends_with_growth_order_run: {
+    predicateType: "roll_ends_with_growth_order_run",
+    necessary: [
+      { capability: "execute_activation", reason: "Growth order is inferred from executed roll rows." },
+      { capability: "roll_growth", reason: "Need repeated growth-producing rows to classify local order." },
+    ],
+    sufficientSets: [
+      {
+        id: "growth_order_run_via_roll_growth",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "With execution and roll growth, local-order streaks can be produced and observed.",
+      },
+    ],
+  },
+  roll_cycle_is_opposite_pair: {
+    predicateType: "roll_cycle_is_opposite_pair",
+    necessary: [
+      { capability: "execute_activation", reason: "Cycle metadata only emerges from executed roll evolution." },
+      { capability: "roll_alternating_sign_constant_abs", reason: "Opposite-pair cycles require sign-opposed equal magnitudes." },
+    ],
+    sufficientSets: [
+      {
+        id: "opposite_pair_cycle_via_sign_alternation",
+        allOf: ["execute_activation", "roll_alternating_sign_constant_abs"],
+        rationale: "Repeatable sign inversion patterns can realize opposite-value 2-cycles.",
+      },
+    ],
+  },
   operation_first_euclid_equivalent_modulo: {
     predicateType: "operation_first_euclid_equivalent_modulo",
     necessary: [
@@ -315,6 +348,33 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "symbolic_error_seen_via_symbolic_execution",
         allOf: ["execute_activation", "symbolic_result_error"],
         rationale: "Executing a symbolic expression records a symbolic-result error entry.",
+      },
+    ],
+  },
+  any_error_seen: {
+    predicateType: "any_error_seen",
+    necessary: [
+      { capability: "execute_activation", reason: "Errors are recorded on execution." },
+      { capability: "roll_growth", reason: "Need execution paths that can produce evaluable roll outcomes." },
+    ],
+    sufficientSets: [
+      {
+        id: "any_error_seen_via_exec_path",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "Executable growth paths can eventually yield an observable error row.",
+      },
+    ],
+  },
+  keys_unlocked_all: {
+    predicateType: "keys_unlocked_all",
+    necessary: [
+      { capability: "keys_unlocked_all", reason: "All predicate-specified keys must be unlocked." },
+    ],
+    sufficientSets: [
+      {
+        id: "keys_unlocked_all_via_targeted_unlocks",
+        allOf: ["keys_unlocked_all"],
+        rationale: "When every listed key is unlocked, the predicate is satisfied.",
       },
     ],
   },

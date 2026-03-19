@@ -19,8 +19,8 @@ export const runReducerLayoutTests = (): void => {
   const baselineLayout = baseline.ui.keyLayout;
   assert.deepEqual(
     baselineLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
-    [k("++"), k("=")],
-    "default keypad starts as 1x2 with ++ and =",
+    [null, null, null, null, k("++"), k("=")],
+    "default keypad starts as 3x2 with ++ and = in bottom-right cells",
   );
   assert.ok(
     baseline.ui.storageLayout.some((cell) => cell?.key === k("1")),
@@ -33,9 +33,9 @@ export const runReducerLayoutTests = (): void => {
 
   const lastKeypadIndex = baselineLayout.length - 1;
 
-  const moved = reducer(baseline, { type: "MOVE_KEY_SLOT", fromIndex: 0, toIndex: lastKeypadIndex });
+  const moved = reducer(baseline, { type: "MOVE_KEY_SLOT", fromIndex: 4, toIndex: lastKeypadIndex });
   assert.equal(moved.ui.keyLayout.length, baselineLayout.length, "move preserves layout length");
-  assert.notDeepEqual(moved.ui.keyLayout, baseline.ui.keyLayout, "move updates keypad ordering on 1x2 default keypad");
+  assert.notDeepEqual(moved.ui.keyLayout, baseline.ui.keyLayout, "move updates keypad ordering on default keypad");
 
   const swapped = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: 0, secondIndex: 99 });
   assert.equal(swapped, baseline, "legacy swap with invalid index returns original state");
@@ -124,7 +124,7 @@ export const runReducerLayoutTests = (): void => {
   const sameSurfaceMoveNoEntryClear = reducer(entryClearState, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "keypad",
-    fromIndex: 1,
+    fromIndex: 2,
     toSurface: "keypad",
     toIndex: emptyKeypadIndex,
   });
@@ -549,19 +549,19 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(clampedResize.ui.keyLayout[7]?.kind === "key" ? clampedResize.ui.keyLayout[7].key : null, k("="), "= stays right anchored");
 
   const upgradedRow = reducer(baseline, { type: "UPGRADE_KEYPAD_ROW" });
-  assert.equal(upgradedRow.ui.keypadRows, 2, "row upgrade increases rows by one");
-  assert.equal(upgradedRow.ui.keyLayout.length, 4, "row upgrade creates a second keypad row");
+  assert.equal(upgradedRow.ui.keypadRows, 3, "row upgrade increases rows by one");
+  assert.equal(upgradedRow.ui.keyLayout.length, 9, "row upgrade creates a third keypad row");
   assert.equal(upgradedRow.ui.keyLayout[0]?.kind, "placeholder", "row upgrade pushes keys down");
   assert.equal(upgradedRow.ui.keyLayout[1]?.kind, "placeholder", "row upgrade keeps top row empty");
-  assert.equal(upgradedRow.ui.keyLayout[2]?.kind === "key" ? upgradedRow.ui.keyLayout[2].key : null, k("++"), "row upgrade preserves ++ anchor");
-  assert.equal(upgradedRow.ui.keyLayout[3]?.kind === "key" ? upgradedRow.ui.keyLayout[3].key : null, k("="), "row upgrade preserves = anchor");
+  assert.equal(upgradedRow.ui.keyLayout[7]?.kind === "key" ? upgradedRow.ui.keyLayout[7].key : null, k("++"), "row upgrade preserves ++ anchor");
+  assert.equal(upgradedRow.ui.keyLayout[8]?.kind === "key" ? upgradedRow.ui.keyLayout[8].key : null, k("="), "row upgrade preserves = anchor");
 
   const upgradedColumn = reducer(baseline, { type: "UPGRADE_KEYPAD_COLUMN" });
-  assert.equal(upgradedColumn.ui.keypadColumns, 3, "column upgrade increases columns by one");
-  assert.equal(upgradedColumn.ui.keyLayout.length, 3, "column upgrade creates a third keypad slot");
+  assert.equal(upgradedColumn.ui.keypadColumns, 4, "column upgrade increases columns by one");
+  assert.equal(upgradedColumn.ui.keyLayout.length, 8, "column upgrade creates a fourth keypad column");
   assert.equal(upgradedColumn.ui.keyLayout[0]?.kind, "placeholder", "column upgrade pushes keys right");
-  assert.equal(upgradedColumn.ui.keyLayout[1]?.kind === "key" ? upgradedColumn.ui.keyLayout[1].key : null, k("++"), "column upgrade preserves ++ anchor");
-  assert.equal(upgradedColumn.ui.keyLayout[2]?.kind === "key" ? upgradedColumn.ui.keyLayout[2].key : null, k("="), "column upgrade preserves = anchor");
+  assert.equal(upgradedColumn.ui.keyLayout[6]?.kind === "key" ? upgradedColumn.ui.keyLayout[6].key : null, k("++"), "column upgrade preserves ++ anchor");
+  assert.equal(upgradedColumn.ui.keyLayout[7]?.kind === "key" ? upgradedColumn.ui.keyLayout[7].key : null, k("="), "column upgrade preserves = anchor");
 
   const atMaxRows = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: baseline.ui.keypadColumns, rows: 8 });
   const noOpUpgradeRow = reducer(atMaxRows, { type: "UPGRADE_KEYPAD_ROW" });

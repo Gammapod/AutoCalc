@@ -47,7 +47,7 @@ const d = (key: Key): KeyBehaviorSpec => ({
 const op = (key: Key): KeyBehaviorSpec => ({
   key,
   lockModel: "unlockable",
-  unlockPathPolicy: key === KEY_ID.op_add || key === KEY_ID.op_sub ? "catalog" : "none_planned",
+  unlockPathPolicy: key === KEY_ID.op_add || key === KEY_ID.op_sub || key === KEY_ID.op_pow ? "catalog" : "none_planned",
   primaryExpectation: "operator_starts_drafting",
   edgeCaseExpectation: "operator_replaces_empty_drafting_operator",
 });
@@ -76,6 +76,7 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   op(KEY_ID.op_add),
   op(KEY_ID.op_sub),
   op(KEY_ID.op_mul),
+  op(KEY_ID.op_pow),
   op(KEY_ID.op_div),
   op(KEY_ID.op_euclid_div),
   op(KEY_ID.op_mod),

@@ -76,6 +76,9 @@ const getUnlockName = (effect: UnlockEffect): string => {
   if (effect.type === "move_key_to_coord") {
     return `${formatKeyLabel(effect.key)}->R${effect.row.toString()}C${effect.col.toString()}`;
   }
+  if (effect.type === "unlock_calculator") {
+    return `calculator_${effect.calculatorId}`;
+  }
   return "unknown";
 };
 

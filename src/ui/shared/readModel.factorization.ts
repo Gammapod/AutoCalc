@@ -1,4 +1,5 @@
 import { computeOverflowBoundary } from "../../domain/calculatorValue.js";
+import { classifyLocalGrowthOrder as classifyLocalGrowthOrderShared, type LocalGrowthOrder } from "../../domain/rollGrowthOrder.js";
 import { getRollYPrimeFactorization } from "../../domain/rollDerived.js";
 import { getStepRows } from "../../domain/rollEntries.js";
 import type {
@@ -9,8 +10,8 @@ import type {
   RollEntry,
 } from "../../domain/types.js";
 
-export type LocalGrowthOrder = "constant" | "linear" | "quadratic" | "exponential" | "radical" | "logarithmic" | "unknown";
 export type OrbitHeuristicState = "none" | "chaos_like" | "cycle_likely";
+export type { LocalGrowthOrder };
 
 export type FactorizationPanelViewModel = {
   seedLabel: string;
@@ -310,47 +311,8 @@ const resolveGrowthTargetIndex = (state: GameState): number => {
   return Math.max(1, Math.min(maxIndex, cycle.j));
 };
 
-const classifyLocalGrowthOrder = (state: GameState): LocalGrowthOrder => {
-  const targetIndex = resolveGrowthTargetIndex(state);
-  if (targetIndex < 1) {
-    return "unknown";
-  }
-  const samples = state.calculator.rollEntries
-    .slice(1, targetIndex + 1)
-    .map((entry, offset) => toGrowthSample(entry, offset + 1))
-    .filter((entry): entry is GrowthSample => Boolean(entry));
-  const window = samples.slice(-GROWTH_WINDOW_SIZE);
-  if (window.length < GROWTH_WINDOW_SIZE) {
-    return "unknown";
-  }
-
-  const d1Values = window.map((sample) => sample.d1);
-  const d2Values = window.map((sample) => sample.d2);
-  const r1Values = window.map((sample) => sample.r1);
-
-  if (d1Values.every((value) => isRationalZero(value))) {
-    return "constant";
-  }
-
-  const d1First = d1Values[0];
-  if (!isRationalZero(d1First) && d1Values.every((value) => rationalsEqual(value, d1First))) {
-    return "linear";
-  }
-
-  const r1First = r1Values[0];
-  if (absRationalGreaterThanOne(r1First) && r1Values.every((value) => rationalsEqual(value, r1First))) {
-    return "exponential";
-  }
-
-  if (d2Values.every((value) => value !== null && !isRationalZero(value))) {
-    const first = d2Values[0];
-    if (first && d2Values.every((value) => value !== null && rationalsEqual(value, first))) {
-      return "quadratic";
-    }
-  }
-
-  return classifyNonlinearGrowth(window);
-};
+const classifyLocalGrowthOrder = (state: GameState): LocalGrowthOrder =>
+  classifyLocalGrowthOrderShared(state, resolveGrowthTargetIndex(state));
 
 const buildSeedFactorizationLabel = (state: GameState): string => {
   const seedValue = state.calculator.rollEntries.length > 0

@@ -101,11 +101,9 @@ subgraph Theory ["Number Theory"]
     Tmin["╤"]  
     %% Expanded form `[ ((a<b)×a) + ¬(a≤b)×b) ]`
 
-    Tntop --> Tpadic --> Texponent
+    Tntop --> Ttotient
 
     Tntop --> Tpton --> Tprime_expansion --> Tomega
-
-    Tntop --> Ttotient
 
     Tntop --> Tgcd
     Texponent --> Tgcd
@@ -114,6 +112,7 @@ subgraph Theory ["Number Theory"]
     Tntop --> Tlcm
     Texponent --> Tlcm
     Tmin --> Tlcm
+    Tntop --> Tpadic --> Texponent
 
 end
 

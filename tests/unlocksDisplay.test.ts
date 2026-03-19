@@ -12,15 +12,15 @@ export const runUnlocksDisplayTests = (): void => {
     completedUnlockIds: ["unlock_checklist_on_first_c_press"],
   };
   const rows = buildVisibleChecklistRows(base, { catalog: unlockCatalog, visibilityPolicy: { hideBlocked: false } });
-  assert.equal(rows.length, 1, "single unlock row is rendered");
-  assert.equal(rows[0]?.id, "unlock_4_on_total_4", "row id matches reduced catalog");
+  assert.equal(rows.length, unlockCatalog.length, "all unlock rows are rendered");
+  assert.equal(rows.some((row) => row.id === "unlock_4_on_linear_growth_run_7"), true, "linear growth row is present");
 
   const criteria = buildUnlockCriteria(unlockCatalog[0]!.predicate, base);
-  assert.equal(criteria.length, 1, "total_equals predicate still renders one criterion row");
+  assert.equal(criteria.length, 1, "growth-order predicate renders one criterion row");
 
   const completedState: GameState = {
     ...base,
-    completedUnlockIds: ["unlock_4_on_total_4"],
+    completedUnlockIds: ["unlock_4_on_linear_growth_run_7"],
   };
   const completedRows = buildUnlockRows(completedState, unlockCatalog);
   assert.equal(completedRows[0]?.state, "completed", "completed unlock is marked completed");

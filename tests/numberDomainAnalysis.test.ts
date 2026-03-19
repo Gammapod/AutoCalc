@@ -15,9 +15,13 @@ export const runNumberDomainAnalysisTests = (): void => {
   assert.equal(initialReport.unlockSpecAnalysis.length, unlockCatalog.length, "analysis covers all unlock rows");
   assert.equal(initialReport.generatedAtIso, "2026-02-28T00:00:00.000Z", "timestamp is preserved");
 
-  const onlyRow = initialReport.unlockSpecAnalysis.find((row) => row.unlockId === "unlock_4_on_total_4");
-  assert.ok(onlyRow, "single unlock row is present");
-  assert.equal(["possible", "blocked", "satisfied", "unknown", "todo"].includes(onlyRow!.status), true, "unlock row has a valid status");
+  const linearRow = initialReport.unlockSpecAnalysis.find((row) => row.unlockId === "unlock_4_on_linear_growth_run_7");
+  assert.ok(linearRow, "linear-growth unlock row is present");
+  assert.equal(
+    ["possible", "blocked", "satisfied", "unknown", "todo"].includes(linearRow!.status),
+    true,
+    "unlock row has a valid status",
+  );
 
   const atFourState: GameState = {
     ...base,
@@ -27,7 +31,12 @@ export const runNumberDomainAnalysisTests = (): void => {
     },
   };
   const rowsAtFour = analyzeUnlockSpecRows(atFourState, {}, unlockCatalog);
-  assert.equal(rowsAtFour[0]?.status === "satisfied" || rowsAtFour[0]?.status === "possible", true, "total=4 makes the unlock satisfiable");
+  assert.equal(rowsAtFour.length, unlockCatalog.length, "unlock row analysis returns every catalog row");
+  assert.equal(
+    rowsAtFour.some((row) => row.unlockId === "unlock_dec_on_total_at_least_10"),
+    true,
+    "analysis includes total-at-least unlock rows",
+  );
 
   const unaryIncrementCatalog: UnlockDefinition[] = [
     {

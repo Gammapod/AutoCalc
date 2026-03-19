@@ -17,6 +17,12 @@ import type { GameState, KeyInput, RollEntry, UnlockPredicate } from "../src/dom
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
+const linearGrowthEntries = (length: number, step: bigint): RollEntry[] =>
+  Array.from({ length }, (_, index) => ({
+    y: r(BigInt(index) * step),
+    d1: index === 0 ? null : { num: step, den: 1n },
+    r1: index === 0 ? null : { num: 1n, den: 1n },
+  }));
 
 type ProofFixture = {
   id: string;
@@ -137,6 +143,17 @@ const proofFixtures: ProofFixture[] = [
     script: [],
   },
   {
+    id: "proof_total_at_most_minus_1_via_decrement",
+    predicateType: "total_at_most",
+    sufficientSetId: "total_at_most_via_decrement",
+    predicate: { type: "total_at_most", value: -1n },
+    buildInitialState: () => ({
+      ...withTwoDigitRange(initialState()),
+      calculator: { ...initialState().calculator, total: r(-1n) },
+    }),
+    script: [],
+  },
+  {
     id: "proof_total_magnitude_at_least_10_via_increment",
     predicateType: "total_magnitude_at_least",
     sufficientSetId: "total_magnitude_at_least_via_increment",
@@ -250,6 +267,38 @@ const proofFixtures: ProofFixture[] = [
     script: [],
   },
   {
+    id: "proof_growth_order_linear_run_len_7",
+    predicateType: "roll_ends_with_growth_order_run",
+    sufficientSetId: "growth_order_run_via_roll_growth",
+    predicate: { type: "roll_ends_with_growth_order_run", order: "linear", length: 7 },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["=", "+", "4"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: linearGrowthEntries(12, 2n),
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_cycle_opposite_pair_via_sign_alternation",
+    predicateType: "roll_cycle_is_opposite_pair",
+    sufficientSetId: "opposite_pair_cycle_via_sign_alternation",
+    predicate: { type: "roll_cycle_is_opposite_pair" },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["=", "-n", "2"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(2n), r(-2n), r(2n), r(-2n)),
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 0, j: 2, transientLength: 0, periodLength: 2 },
+        },
+      },
+    }),
+    script: [],
+  },
+  {
     id: "proof_first_euclid_equivalent_modulo",
     predicateType: "operation_first_euclid_equivalent_modulo",
     sufficientSetId: "euclid_equivalent_modulo_via_operation_eval",
@@ -326,6 +375,28 @@ const proofFixtures: ProofFixture[] = [
         rollEntries: [{ y: { kind: "nan" }, error: { code: "ALG", kind: "symbolic_result" } }],
       },
     }),
+    script: [],
+  },
+  {
+    id: "proof_any_error_seen",
+    predicateType: "any_error_seen",
+    sufficientSetId: "any_error_seen_via_exec_path",
+    predicate: { type: "any_error_seen" },
+    buildInitialState: () => ({
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: [{ y: r(0n), error: { code: "n/0", kind: "division_by_zero" } }],
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_keys_unlocked_all_add_mul",
+    predicateType: "keys_unlocked_all",
+    sufficientSetId: "keys_unlocked_all_via_targeted_unlocks",
+    predicate: { type: "keys_unlocked_all", keys: [op("+"), op("*")] },
+    buildInitialState: () => buildStateWithUnlockedKeys(["+", "*"]),
     script: [],
   },
   {

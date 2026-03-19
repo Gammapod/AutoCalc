@@ -50,6 +50,7 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
   assign(1, 4, KEY_ID.digit_0);
   assign(2, 3, KEY_ID.op_add);
   assign(2, 4, KEY_ID.digit_1);
+  assign(2, 1, KEY_ID.unary_not);
 
   const lambdaControl = sanitizeLambdaControl({
     maxPoints: controlProfiles.g.starts.gamma,
@@ -108,6 +109,22 @@ export const ensureCalculatorInstances = (state: GameState): GameState => {
     calculators: { ...(state.calculators ?? {}), f },
     calculatorOrder: state.calculators?.g ? [...CALCULATOR_ORDER] : ["f"],
     activeCalculatorId: state.activeCalculatorId ?? MAIN_CALCULATOR_ID,
+  };
+};
+
+export const materializeCalculatorG = (state: GameState): GameState => {
+  const withInstances = ensureCalculatorInstances(state);
+  if (withInstances.calculators?.g) {
+    return withInstances;
+  }
+  return {
+    ...withInstances,
+    calculators: {
+      ...withInstances.calculators,
+      g: createDefaultGCalculator(),
+    },
+    calculatorOrder: [...CALCULATOR_ORDER],
+    activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
   };
 };
 

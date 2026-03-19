@@ -5,8 +5,11 @@ import { expressionToDisplayString, slotOperandToExpression } from "./expression
 import { getOperationSnapshot } from "./slotDrafting.js";
 import { LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID, OVERFLOW_ERROR_SEEN_ID } from "./state.js";
 import { KEY_ID } from "./keyPresentation.js";
+import { classifyLocalGrowthOrder } from "./rollGrowthOrder.js";
+import { isKeyUnlocked } from "./keyUnlocks.js";
 import type {
   GameState,
+  AnyErrorSeenPredicate,
   RollContainsDomainTypePredicate,
   AllocatorReturnPressCountAtLeastPredicate,
   AllocatorAllocatePressCountAtLeastPredicate,
@@ -18,6 +21,9 @@ import type {
   OperationEqualsPredicate,
   RollEndsWithAlternatingSignConstantAbsRunPredicate,
   RollEndsWithConstantStepRunPredicate,
+  RollEndsWithGrowthOrderRunPredicate,
+  RollCycleIsOppositePairPredicate,
+  KeysUnlockedAllPredicate,
   RollContainsValuePredicate,
   RollEndsWithEqualRunPredicate,
   RollEndsWithIncrementingRunPredicate,
@@ -219,10 +225,57 @@ const analyzeRollEndsWithConstantStepRun: PredicateAnalyzer<RollEndsWithConstant
     if (isMet && predicate.requireNegativeStep) {
       isMet = step < 0n;
     }
+    if (isMet && predicate.endValue != null) {
+      isMet = suffix[suffix.length - 1] === predicate.endValue;
+    }
   }
   return {
     isMet,
     criteria: [{ label: `const step run x${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
+const analyzeRollEndsWithGrowthOrderRun: PredicateAnalyzer<RollEndsWithGrowthOrderRunPredicate> = (predicate, state) => {
+  const stepRowCount = Math.max(0, state.calculator.rollEntries.length - 1);
+  let isMet = stepRowCount >= predicate.length;
+  if (isMet) {
+    const startIndex = state.calculator.rollEntries.length - predicate.length;
+    const endIndex = state.calculator.rollEntries.length - 1;
+    for (let index = startIndex; index <= endIndex; index += 1) {
+      if (classifyLocalGrowthOrder(state, index) !== predicate.order) {
+        isMet = false;
+        break;
+      }
+    }
+  }
+  return {
+    isMet,
+    criteria: [{ label: `${predicate.order} run x${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
+const analyzeRollCycleIsOppositePair: PredicateAnalyzer<RollCycleIsOppositePairPredicate> = (_predicate, state) => {
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
+  let isMet = false;
+  if (cycle && cycle.periodLength === 2) {
+    const left = state.calculator.rollEntries[cycle.i];
+    const right = state.calculator.rollEntries[cycle.i + 1];
+    isMet = Boolean(
+      left
+      && right
+      && !left.error
+      && !right.error
+      && left.y.kind === "rational"
+      && right.y.kind === "rational"
+      && left.y.value.den === 1n
+      && right.y.value.den === 1n
+      && left.y.value.num !== 0n
+      && right.y.value.num === -left.y.value.num,
+    );
+  }
+  return {
+    isMet,
+    criteria: [{ label: "opposite-value cycle detected", checked: isMet }],
   };
 };
 
@@ -258,6 +311,22 @@ const analyzeSymbolicErrorSeen: PredicateAnalyzer<SymbolicErrorSeenPredicate> = 
   return {
     isMet,
     criteria: [{ label: "symbolic result observed", checked: isMet }],
+  };
+};
+
+const analyzeAnyErrorSeen: PredicateAnalyzer<AnyErrorSeenPredicate> = (_predicate, state) => {
+  const isMet = state.calculator.rollEntries.some((entry) => Boolean(entry.error));
+  return {
+    isMet,
+    criteria: [{ label: "any error observed", checked: isMet }],
+  };
+};
+
+const analyzeKeysUnlockedAll: PredicateAnalyzer<KeysUnlockedAllPredicate> = (predicate, state) => {
+  const isMet = predicate.keys.every((key) => isKeyUnlocked(state, key));
+  return {
+    isMet,
+    criteria: predicate.keys.map((key) => ({ label: `${key} unlocked`, checked: isKeyUnlocked(state, key) })),
   };
 };
 
@@ -383,10 +452,14 @@ const analyzers = {
   roll_ends_with_incrementing_run: analyzeRollEndsWithIncrementingRun,
   roll_ends_with_alternating_sign_constant_abs_run: analyzeRollEndsWithAlternatingSignConstantAbsRun,
   roll_ends_with_constant_step_run: analyzeRollEndsWithConstantStepRun,
+  roll_ends_with_growth_order_run: analyzeRollEndsWithGrowthOrderRun,
+  roll_cycle_is_opposite_pair: analyzeRollCycleIsOppositePair,
   key_press_count_at_least: analyzeKeyPressCountAtLeast,
   overflow_error_seen: analyzeOverflowErrorSeen,
   division_by_zero_error_seen: analyzeDivisionByZeroErrorSeen,
   symbolic_error_seen: analyzeSymbolicErrorSeen,
+  any_error_seen: analyzeAnyErrorSeen,
+  keys_unlocked_all: analyzeKeysUnlockedAll,
   allocator_return_press_count_at_least: analyzeAllocatorReturnPressCountAtLeast,
   allocator_allocate_press_count_at_least: analyzeAllocatorAllocatePressCountAtLeast,
   keypad_key_slots_at_least: analyzeKeypadKeySlotsAtLeast,

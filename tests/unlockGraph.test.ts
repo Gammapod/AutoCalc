@@ -30,7 +30,7 @@ export const runUnlockGraphTests = (): void => {
     unlockCatalog.length,
     "each unlock definition should map to exactly one condition node",
   );
-  assert.equal(effectTargetNodes.length, 0, "single digit unlock emits no non-key effect target nodes");
+  assert.ok(effectTargetNodes.length >= 1, "catalog with unlock_calculator emits non-key effect target nodes");
   assert.ok(unlockEdges.length > 0, "expected unlock edges from conditions to targets");
   assert.ok(requireEdges.length > 0, "expected requirement edges from conditions to functions");
   assert.ok(sufficientEdges.length > 0, "expected sufficient edges from keys or sufficient-set nodes");

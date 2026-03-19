@@ -7,6 +7,7 @@ import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 import { resolveActiveCalculatorId } from "./multiCalculator.js";
+import { materializeCalculatorG } from "./multiCalculator.js";
 import { projectControlFromState } from "./controlProjection.js";
 
 export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean =>
@@ -212,6 +213,12 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
   }
   if (effect.type === "move_key_to_coord") {
     return moveKeyToCoord(state, effect);
+  }
+  if (effect.type === "unlock_calculator") {
+    if (effect.calculatorId === "g") {
+      return materializeCalculatorG(state);
+    }
+    return state;
   }
   return state;
 };

@@ -71,7 +71,7 @@ export const runDragDropBehaviorTests = (): void => {
   const allowedFormerBottomRightMove = classifyDropAction(
     withStorageKey,
     { surface: "storage", index: 0 },
-    { surface: "keypad", index: 4 },
+    { surface: "keypad", index: 6 },
   );
   assert.equal(
     allowedFormerBottomRightMove,

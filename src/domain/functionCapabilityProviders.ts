@@ -123,6 +123,13 @@ export const buildCapabilityProvidersFromCatalog = (): FunctionCapabilityProvide
       sufficiency: sufficiencyByCapability.euclid_division_operator,
     },
     {
+      capability: "keys_unlocked_all",
+      id: "fn.keys_unlocked_all",
+      label: "keys_unlocked_all",
+      rule: "all keys listed by predicate are unlocked",
+      sufficiency: sufficiencyByCapability.keys_unlocked_all,
+    },
+    {
       capability: "symbolic_result_error",
       id: "fn.symbolic_result_error",
       label: "symbolic_result_error",
@@ -155,6 +162,7 @@ export const buildCapabilityToProviderIndex = (
   roll_constant_step_run: providers.filter((provider) => provider.id === "fn.roll_constant_step_run").map((provider) => provider.id),
   division_by_zero_error: providers.filter((provider) => provider.id === "fn.division_by_zero_error").map((provider) => provider.id),
   euclid_division_operator: providers.filter((provider) => provider.id === "fn.euclid_division_operator").map((provider) => provider.id),
+  keys_unlocked_all: providers.filter((provider) => provider.id === "fn.keys_unlocked_all").map((provider) => provider.id),
   symbolic_result_error: providers.filter((provider) => provider.id === "fn.symbolic_result_error").map((provider) => provider.id),
 });
 

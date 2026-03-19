@@ -24,6 +24,7 @@ export type CapabilityContext = {
   divisionByZeroError: boolean;
   symbolicResultError: boolean;
   euclidDivisionOperator: boolean;
+  keysUnlockedAll: boolean;
 };
 
 const isKeyCell = (cell: LayoutCell): cell is { kind: "key"; key: Key } => cell.kind === "key";
@@ -118,6 +119,7 @@ export const computeCapabilityContext = (
   const divisionByZeroError = executeActivation && isAvailable(KEY_ID.op_div) && hasZero;
   const symbolicResultError = executeActivation && (hasPi || hasE);
   const euclidDivisionOperator = isAvailable(KEY_ID.op_euclid_div);
+  const keysUnlockedAll = true;
 
   return {
     executeActivation,
@@ -136,6 +138,7 @@ export const computeCapabilityContext = (
     divisionByZeroError,
     symbolicResultError,
     euclidDivisionOperator,
+    keysUnlockedAll,
   };
 };
 
@@ -186,6 +189,12 @@ export const resolveCapabilityFromContext = (
   }
   if (capability === "euclid_division_operator") {
     return caps.euclidDivisionOperator;
+  }
+  if (capability === "keys_unlocked_all") {
+    if (predicate.type !== "keys_unlocked_all") {
+      return false;
+    }
+    return predicate.keys.every((key) => isAvailable(key));
   }
   if (capability === "press_target_key") {
     if (predicate.type !== "key_press_count_at_least") {
@@ -280,5 +289,6 @@ export const buildCapabilitySufficiencyById = (): Record<Exclude<CapabilityId, "
     ),
     symbolic_result_error: symbolicResultClauses,
     euclid_division_operator: uniqueClauses(euclidKey ? [clause(euclidKey)] : []),
+    keys_unlocked_all: executeActivationClauses,
   };
 };
