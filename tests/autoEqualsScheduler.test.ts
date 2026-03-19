@@ -255,21 +255,79 @@ export const runAutoEqualsSchedulerTests = (): void => {
   assert.equal(Boolean(normalized.ui.buttonFlags[AUTO_EQUALS_FLAG]), false, "runtime load clears auto-equals flag");
   assert.equal(Boolean(normalized.ui.buttonFlags["another.flag"]), true, "runtime load preserves other flags");
 
-  const missingCatalogKeyState: GameState = {
+  const missingLockedCatalogKeyState: GameState = {
     ...initialState(),
     ui: {
       ...initialState().ui,
       storageLayout: initialState().ui.storageLayout.filter((cell) => cell?.kind !== "key" || cell.key !== KEY_ID.op_max),
     },
   };
-  const normalizedWithBackfill = normalizeLoadedStateForRuntime(missingCatalogKeyState);
-  if (!normalizedWithBackfill) {
-    throw new Error("Expected normalized backfill state.");
+  const normalizedWithoutLockedBackfill = normalizeLoadedStateForRuntime(missingLockedCatalogKeyState);
+  if (!normalizedWithoutLockedBackfill) {
+    throw new Error("Expected normalized state.");
   }
   assert.equal(
-    normalizedWithBackfill.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === KEY_ID.op_max),
+    normalizedWithoutLockedBackfill.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === KEY_ID.op_max),
+    false,
+    "runtime load does not backfill missing locked keys into storage",
+  );
+
+  const unlockedMissingEverywhere: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      utilities: {
+        ...initialState().unlocks.utilities,
+        [KEY_ID.util_clear_all]: true,
+      },
+    },
+    ui: {
+      ...initialState().ui,
+      keyLayout: initialState().ui.keyLayout.map((cell) =>
+        cell.kind === "key" && cell.key === KEY_ID.util_clear_all
+          ? { kind: "placeholder", area: "empty" as const }
+          : cell,
+      ),
+      storageLayout: initialState().ui.storageLayout.map((cell) =>
+        cell?.kind === "key" && cell.key === KEY_ID.util_clear_all ? null : cell,
+      ),
+    },
+  };
+  const normalizedWithUnlockedRepair = normalizeLoadedStateForRuntime(unlockedMissingEverywhere);
+  if (!normalizedWithUnlockedRepair) {
+    throw new Error("Expected normalized unlocked repair state.");
+  }
+  assert.equal(
+    normalizedWithUnlockedRepair.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === KEY_ID.util_clear_all),
     true,
-    "runtime load backfills missing catalog keys into storage",
+    "runtime load repairs missing unlocked keys into storage",
+  );
+
+  const duplicateKeyLoadedState: GameState = {
+    ...initialState(),
+    unlocks: {
+      ...initialState().unlocks,
+      execution: {
+        ...initialState().unlocks.execution,
+        [KEY_ID.exec_equals]: true,
+      },
+    },
+    ui: {
+      ...initialState().ui,
+      keyLayout: [{ kind: "key", key: KEY_ID.exec_equals }],
+      keypadColumns: 1,
+      keypadRows: 1,
+      storageLayout: [{ kind: "key", key: KEY_ID.exec_equals }, ...initialState().ui.storageLayout.slice(1)],
+    },
+  };
+  const normalizedDuplicates = normalizeLoadedStateForRuntime(duplicateKeyLoadedState);
+  if (!normalizedDuplicates) {
+    throw new Error("Expected normalized duplicate-resolution state.");
+  }
+  assert.equal(
+    normalizedDuplicates.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === KEY_ID.exec_equals),
+    false,
+    "runtime load collapses duplicate key instances by keeping keypad precedence",
   );
 };
 

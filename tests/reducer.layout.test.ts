@@ -2,6 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
+import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import { initialState } from "../src/domain/state.js";
 import { legacyInitialState } from "./support/legacyState.js";
 import type { GameState } from "../src/domain/types.js";
@@ -17,7 +18,7 @@ export const runReducerLayoutTests = (): void => {
     storage: state.ui.storageLayout.map((cell) => (cell ? cell.key : null)),
   });
 
-  const baseline = legacyInitialState();
+  const baseline = normalizeRuntimeStateInvariants(legacyInitialState());
   const baselineLayout = baseline.ui.keyLayout;
   const baselineExpectedLayout = Array.from({ length: baselineLayout.length }, (_, index) =>
     index === baselineLayout.length - 2 ? k("++") : index === baselineLayout.length - 1 ? k("=") : null);
@@ -26,13 +27,15 @@ export const runReducerLayoutTests = (): void => {
     baselineExpectedLayout,
     "default keypad starts with ++ and = anchored at the end of the layout",
   );
-  assert.ok(
+  assert.equal(
     baseline.ui.storageLayout.some((cell) => cell?.key === k("1")),
-    "default storage includes 1 key",
+    false,
+    "default storage excludes locked keys",
   );
-  assert.ok(
+  assert.equal(
     baseline.ui.storageLayout.some((cell) => cell?.key === k("+")),
-    "default storage includes + key",
+    false,
+    "default storage excludes locked operators",
   );
 
   const lastKeypadIndex = baselineLayout.length - 1;
@@ -42,16 +45,16 @@ export const runReducerLayoutTests = (): void => {
   assert.notDeepEqual(moved.ui.keyLayout, baseline.ui.keyLayout, "move updates keypad ordering on default keypad");
 
   const swapped = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: 0, secondIndex: 99 });
-  assert.equal(swapped, baseline, "legacy swap with invalid index returns original state");
+  assert.deepEqual(swapped, baseline, "legacy swap with invalid index leaves state unchanged");
 
   const invalidMove = reducer(baseline, { type: "MOVE_KEY_SLOT", fromIndex: -1, toIndex: 2 });
-  assert.equal(invalidMove, baseline, "invalid move index returns original state reference");
+  assert.deepEqual(invalidMove, baseline, "invalid move index leaves state unchanged");
 
   const invalidSwap = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: 2, secondIndex: 99 });
-  assert.equal(invalidSwap, baseline, "invalid swap index returns original state reference");
+  assert.deepEqual(invalidSwap, baseline, "invalid swap index leaves state unchanged");
 
   const noOpSwap = reducer(baseline, { type: "SWAP_KEY_SLOTS", firstIndex: lastKeypadIndex, secondIndex: lastKeypadIndex });
-  assert.equal(noOpSwap, baseline, "same-index swap is a no-op");
+  assert.deepEqual(noOpSwap, baseline, "same-index swap is a no-op");
 
   const baselineWithSpaceUnlocked: GameState = {
     ...baseline,
@@ -291,9 +294,54 @@ export const runReducerLayoutTests = (): void => {
   const firstEmptyKeypadIndex = baselineWithSpace.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
   assert.ok(executionKeypadIndex >= 0, "baseline keypad includes an execution key");
   assert.ok(firstStorageEmptyIndex >= 0, "baseline storage includes at least one empty slot");
-  assert.ok(firstStorageExecutionIndex >= 0, "baseline storage includes an additional execution key by default");
+  assert.equal(firstStorageExecutionIndex, -1, "baseline storage does not duplicate keypad execution key");
   assert.ok(firstStorageNonExecutionIndex >= 0, "baseline storage includes a non-execution key");
   assert.ok(firstEmptyKeypadIndex >= 0, "baseline keypad includes an empty slot");
+
+  const lockedExecutionOnKeypad: GameState = {
+    ...baselineWithSpace,
+    unlocks: {
+      ...baselineWithSpace.unlocks,
+      execution: {
+        ...baselineWithSpace.unlocks.execution,
+        [execution("=")]: false,
+      },
+    },
+  };
+  const lockedExecutionMoveWithinKeypad = reducer(lockedExecutionOnKeypad, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad",
+    fromIndex: executionKeypadIndex,
+    toSurface: "keypad",
+    toIndex: firstEmptyKeypadIndex,
+  });
+  assert.equal(
+    lockedExecutionMoveWithinKeypad.ui.keyLayout[firstEmptyKeypadIndex]?.kind === "key"
+      ? lockedExecutionMoveWithinKeypad.ui.keyLayout[firstEmptyKeypadIndex].key
+      : null,
+    k("="),
+    "locked keypad keys can still move within the same keypad",
+  );
+
+  const lockedExecutionMoveOutToStorage = reducer(lockedExecutionOnKeypad, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad",
+    fromIndex: executionKeypadIndex,
+    toSurface: "storage",
+    toIndex: firstStorageEmptyIndex,
+  });
+  assert.equal(
+    lockedExecutionMoveOutToStorage.ui.keyLayout[executionKeypadIndex]?.kind === "key"
+      ? lockedExecutionMoveOutToStorage.ui.keyLayout[executionKeypadIndex].key
+      : null,
+    k("="),
+    "locked keypad keys cannot move off-calculator into storage",
+  );
+  assert.notEqual(
+    lockedExecutionMoveOutToStorage.ui.storageLayout[firstStorageEmptyIndex]?.key,
+    k("="),
+    "blocked locked move leaves storage destination unchanged",
+  );
 
   const validExecutionMoveOutToStorage = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
@@ -322,10 +370,15 @@ export const runReducerLayoutTests = (): void => {
     toSurface: "storage",
     toIndex: firstStorageNonExecutionIndex,
   });
-  assert.equal(
+  assert.notDeepEqual(
     allowedNonExecutionSwapIntoExecutionSlot,
     baselineWithSpace,
-    "swap is rejected when it would move a locked storage key",
+    "swap succeeds when both keys are unlocked",
+  );
+  assert.equal(
+    allowedNonExecutionSwapIntoExecutionSlot.ui.storageLayout[firstStorageNonExecutionIndex]?.key,
+    k("="),
+    "unlocked keypad key can be swapped into storage",
   );
 
   if (firstStorageExecutionIndex >= 0) {
@@ -450,7 +503,7 @@ export const runReducerLayoutTests = (): void => {
     toSurface: "keypad",
     toIndex: 0,
   });
-  assert.equal(invalidSurfaceMove, baseline, "invalid surface indices are rejected");
+  assert.deepEqual(invalidSurfaceMove, baseline, "invalid surface indices are rejected");
 
   const movedForInvariant = reducer(baselineWithSpace, {
     type: "MOVE_LAYOUT_CELL",
@@ -618,17 +671,17 @@ export const runReducerLayoutTests = (): void => {
 
   const atMaxRows = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: baseline.ui.keypadColumns, rows: 8 });
   const noOpUpgradeRow = reducer(atMaxRows, { type: "UPGRADE_KEYPAD_ROW" });
-  assert.equal(noOpUpgradeRow, atMaxRows, "row upgrade no-ops at max bound");
+  assert.deepEqual(noOpUpgradeRow, atMaxRows, "row upgrade no-ops at max bound");
   const atMaxColumns = reducer(baseline, { type: "SET_KEYPAD_DIMENSIONS", columns: 8, rows: baseline.ui.keypadRows });
   const noOpUpgradeColumn = reducer(atMaxColumns, { type: "UPGRADE_KEYPAD_COLUMN" });
-  assert.equal(noOpUpgradeColumn, atMaxColumns, "column upgrade no-ops at max bound");
+  assert.deepEqual(noOpUpgradeColumn, atMaxColumns, "column upgrade no-ops at max bound");
 
   const noopResize = reducer(baseline, {
     type: "SET_KEYPAD_DIMENSIONS",
     columns: baseline.ui.keypadColumns,
     rows: baseline.ui.keypadRows,
   });
-  assert.equal(noopResize, baseline, "unchanged dimensions are a no-op");
+  assert.deepEqual(noopResize, baseline, "unchanged dimensions are a no-op");
 };
 
 

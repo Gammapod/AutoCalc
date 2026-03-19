@@ -182,6 +182,11 @@ export const runReducerInputTests = (): void => {
 
   const stepThroughSource: GameState = {
     ...fullyUnlocked,
+    calculators: undefined,
+    calculatorOrder: undefined,
+    activeCalculatorId: undefined,
+    perCalculatorCompletedUnlockIds: undefined,
+    sessionControlProfiles: undefined,
     ui: {
       ...fullyUnlocked.ui,
       keyLayout: [{ kind: "key", key: k("\u25BB") }],

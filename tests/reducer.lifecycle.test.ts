@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { applyLifecycleAction } from "../src/domain/reducer.lifecycle.js";
+import { KEY_ID } from "../src/domain/keyPresentation.js";
+import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, STEP_EXPANSION_FLAG, initialState } from "../src/domain/state.js";
 import { projectControlFromState } from "../src/domain/controlProjection.js";
 import { reducer } from "../src/domain/reducer.js";
@@ -7,7 +9,7 @@ import type { Action, GameState } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
 
 export const runReducerLifecycleTests = (): void => {
-  const base = legacyInitialState();
+  const base = normalizeRuntimeStateInvariants(legacyInitialState());
 
   const reset = applyLifecycleAction(base, { type: "RESET_RUN" });
   assert.deepEqual(reset, initialState(), "RESET_RUN returns initial state");
@@ -72,7 +74,7 @@ export const runReducerLifecycleTests = (): void => {
   );
 
   const blankNoop = reducer(base, { type: "TOGGLE_FLAG", flag: "   " });
-  assert.equal(blankNoop, base, "blank flag names are ignored");
+  assert.deepEqual(blankNoop, base, "blank flag names are ignored");
 
   const deltaOn = reducer(base, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
   assert.equal(deltaOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range settings toggle turns on");
@@ -101,6 +103,93 @@ export const runReducerLifecycleTests = (): void => {
 
   const eigenOff = reducer(eigenOn, { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" });
   assert.equal(eigenOff.ui.activeVisualizer, "total", "pressing active \u03BB visualizer toggles off to total");
+
+  const lockedSettingsInstalled: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      keyLayout: [
+        { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
+        { kind: "key", key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } },
+      ],
+      keypadColumns: 2,
+      keypadRows: 1,
+      buttonFlags: {
+        [MOD_ZERO_TO_DELTA_FLAG]: true,
+      },
+    },
+    unlocks: {
+      ...base.unlocks,
+      utilities: {
+        ...base.unlocks.utilities,
+        [KEY_ID.toggle_delta_range_clamp]: false,
+        [KEY_ID.toggle_mod_zero_to_delta]: false,
+      },
+    },
+  };
+  const forcedLockedSettings = reducer(lockedSettingsInstalled, { type: "TOGGLE_FLAG", flag: MOD_ZERO_TO_DELTA_FLAG });
+  assert.equal(
+    forcedLockedSettings.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG],
+    true,
+    "with multiple locked settings toggles installed, first keypad-order toggle is forced ON",
+  );
+  assert.equal(
+    Boolean(forcedLockedSettings.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]),
+    false,
+    "locked settings forcing clears later settings toggles in the exclusive group",
+  );
+
+  const lockedPlayPauseInstalled: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      keyLayout: [{ kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: "execution.pause" } }],
+      keypadColumns: 1,
+      keypadRows: 1,
+      buttonFlags: {},
+    },
+    unlocks: {
+      ...base.unlocks,
+      execution: {
+        ...base.unlocks.execution,
+        [KEY_ID.exec_equals]: false,
+      },
+    },
+  };
+  const playPauseNotForced = reducer(lockedPlayPauseInstalled, { type: "TOGGLE_FLAG", flag: "   " });
+  assert.equal(
+    Boolean(playPauseNotForced.ui.buttonFlags["execution.pause"]),
+    false,
+    "locked installed play/pause is excluded from forced-ON behavior",
+  );
+
+  const lockedVisualizersInstalled: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      keyLayout: [
+        { kind: "key", key: KEY_ID.viz_feed },
+        { kind: "key", key: KEY_ID.viz_graph },
+      ],
+      keypadColumns: 2,
+      keypadRows: 1,
+      activeVisualizer: "graph",
+    },
+    unlocks: {
+      ...base.unlocks,
+      visualizers: {
+        ...base.unlocks.visualizers,
+        [KEY_ID.viz_feed]: false,
+        [KEY_ID.viz_graph]: false,
+      },
+    },
+  };
+  const visualizerForcedByKeypadOrder = reducer(lockedVisualizersInstalled, { type: "TOGGLE_VISUALIZER", visualizer: "graph" });
+  assert.equal(
+    visualizerForcedByKeypadOrder.ui.activeVisualizer,
+    "feed",
+    "locked installed visualizers force a single active visualizer by keypad scan order",
+  );
 };
 
 

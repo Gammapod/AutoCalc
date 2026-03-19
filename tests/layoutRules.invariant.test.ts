@@ -90,6 +90,51 @@ export const runLayoutRulesInvariantTests = (): void => {
     "storage interactions reject malformed storage geometry",
   );
 
+  const lockedEqualsOnKeypad: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      execution: {
+        ...base.unlocks.execution,
+        [execution("=")]: false,
+      },
+    },
+  };
+  const lockedSwapWithinKeypad = evaluateLayoutDrop(
+    lockedEqualsOnKeypad,
+    { surface: "keypad", index: 3 },
+    { surface: "keypad", index: 2 },
+  );
+  assert.deepEqual(
+    lockedSwapWithinKeypad,
+    { allowed: true, action: "swap" },
+    "locked keypad keys remain valid intra-keypad swap sources",
+  );
+
+  const firstEmptyStorageIndex = lockedEqualsOnKeypad.ui.storageLayout.findIndex((cell) => cell === null);
+  assert.ok(firstEmptyStorageIndex >= 0, "fixture provides an empty storage slot");
+  const lockedMoveToStorageBlocked = evaluateLayoutDrop(
+    lockedEqualsOnKeypad,
+    { surface: "keypad", index: 3 },
+    { surface: "storage", index: firstEmptyStorageIndex },
+  );
+  assert.deepEqual(
+    lockedMoveToStorageBlocked,
+    { allowed: false, reason: "locked_key_immobile" },
+    "locked keypad keys cannot move off-calculator into storage",
+  );
+
+  const lockedSwapWithStorageBlocked = evaluateLayoutDrop(
+    lockedEqualsOnKeypad,
+    { surface: "storage", index: 0 },
+    { surface: "keypad", index: 3 },
+  );
+  assert.deepEqual(
+    lockedSwapWithStorageBlocked,
+    { allowed: false, reason: "locked_key_immobile" },
+    "swaps that would move a locked keypad key into storage are rejected",
+  );
+
   const stepHighlights = buildStepBodyHighlightRegions(base);
   assert.deepEqual(stepHighlights, [], "no step highlight regions are generated without a step key");
 };

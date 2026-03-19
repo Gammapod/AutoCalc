@@ -9,6 +9,7 @@ import { evaluateUnlockPredicate } from "./unlockEngine.js";
 import { resolveActiveCalculatorId } from "./multiCalculator.js";
 import { materializeCalculatorG } from "./multiCalculator.js";
 import { projectControlFromState } from "./controlProjection.js";
+import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 
 export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean =>
   evaluateUnlockPredicate(predicate, state);
@@ -243,8 +244,11 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
 
   for (const unlock of catalog) {
     const isControlAllocatorUnlock = unlock.effect.type === "increase_allocator_max_points";
+    const hasPerCalculatorCompletion = Boolean(nextState.perCalculatorCompletedUnlockIds);
     const isAlreadyCompleted = isControlAllocatorUnlock
-      ? perCalcCompleted.has(unlock.id)
+      ? (hasPerCalculatorCompletion
+        ? perCalcCompleted.has(unlock.id)
+        : nextState.completedUnlockIds.includes(unlock.id))
       : nextState.completedUnlockIds.includes(unlock.id);
 
     if (unlock.once && isAlreadyCompleted) {
@@ -264,17 +268,26 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
     }
     if (!isAlreadyCompleted) {
       if (isControlAllocatorUnlock) {
-        perCalcCompleted.add(unlock.id);
-        nextState = {
-          ...nextState,
-          perCalculatorCompletedUnlockIds: {
-            ...(nextState.perCalculatorCompletedUnlockIds ?? {}),
-            [activeCalculatorId]: [...perCalcCompleted],
-          },
-          completedUnlockIds: nextState.completedUnlockIds.includes(unlock.id)
-            ? nextState.completedUnlockIds
-            : [...nextState.completedUnlockIds, unlock.id],
-        };
+        if (hasPerCalculatorCompletion) {
+          perCalcCompleted.add(unlock.id);
+          nextState = {
+            ...nextState,
+            perCalculatorCompletedUnlockIds: {
+              ...(nextState.perCalculatorCompletedUnlockIds ?? {}),
+              [activeCalculatorId]: [...perCalcCompleted],
+            },
+            completedUnlockIds: nextState.completedUnlockIds.includes(unlock.id)
+              ? nextState.completedUnlockIds
+              : [...nextState.completedUnlockIds, unlock.id],
+          };
+        } else {
+          nextState = {
+            ...nextState,
+            completedUnlockIds: nextState.completedUnlockIds.includes(unlock.id)
+              ? nextState.completedUnlockIds
+              : [...nextState.completedUnlockIds, unlock.id],
+          };
+        }
       } else {
         nextState = {
           ...nextState,
@@ -289,5 +302,5 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
     nextState = moveUnlockedKeyToStorageFront(nextState, key);
   }
 
-  return nextState;
+  return normalizeRuntimeStateInvariants(nextState);
 };

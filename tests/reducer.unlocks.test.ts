@@ -133,4 +133,82 @@ export const runReducerUnlockTests = (): void => {
     true,
     "g unlock completion is recorded",
   );
+
+  const duplicateAndLockedStorage: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      execution: {
+        ...base.unlocks.execution,
+        [execution("=")]: true,
+      },
+      utilities: {
+        ...base.unlocks.utilities,
+        [utility("C")]: true,
+      },
+    },
+    ui: {
+      ...base.ui,
+      keyLayout: [
+        { kind: "key", key: execution("=") },
+        { kind: "placeholder", area: "empty" },
+      ],
+      keypadColumns: 2,
+      keypadRows: 1,
+      storageLayout: [
+        { kind: "key", key: execution("=") },
+        { kind: "key", key: op("MAX") },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ],
+    },
+  };
+  const normalizedInventory = applyUnlocks(duplicateAndLockedStorage, []);
+  assert.equal(
+    normalizedInventory.ui.keyLayout.filter((cell) => cell.kind === "key" && cell.key === execution("=")).length,
+    1,
+    "normalization keeps exactly one live instance of a key across keypad/storage",
+  );
+  assert.equal(
+    normalizedInventory.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === execution("=")),
+    false,
+    "duplicate storage copy is removed when keypad instance has precedence",
+  );
+  assert.equal(
+    normalizedInventory.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === op("MAX")),
+    false,
+    "storage strips keys that are still locked",
+  );
+
+  const unlockedMissingEverywhere: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      utilities: {
+        ...base.unlocks.utilities,
+        [utility("C")]: true,
+      },
+    },
+    ui: {
+      ...base.ui,
+      keyLayout: base.ui.keyLayout.map((cell) =>
+        cell.kind === "key" && cell.key === utility("C")
+          ? { kind: "placeholder", area: "empty" as const }
+          : cell,
+      ),
+      storageLayout: base.ui.storageLayout.map((cell) =>
+        cell?.kind === "key" && cell.key === utility("C") ? null : cell,
+      ),
+    },
+  };
+  const repairedUnlockedPresence = applyUnlocks(unlockedMissingEverywhere, []);
+  assert.equal(
+    repairedUnlockedPresence.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === utility("C")),
+    true,
+    "missing unlocked key is auto-repaired into storage",
+  );
 };

@@ -68,8 +68,8 @@ The Global State Interface governs session continuity, progression capability st
   Rationale: static key identity and dynamic capability state are distinct concerns.
 - `FS-UP-06` (SHALL): Locked capabilities remain inert for gameplay mutation.
   Rationale: locked actions must not create hidden state change paths.
-- `FS-UP-07` (MUST): A key installed on a calculator keypad is press-usable even while locked, but locked installed keys are immobile; for locked toggle keys, ON state is forced and cannot be toggled OFF until unlocked.
-  Rationale: installed locked keys are explicit progression affordances, with deterministic locked-toggle behavior and no locked-key relocation.
+- `FS-UP-07` (MUST): A key installed on a calculator keypad is press-usable even while locked, and locked installed keys are immobile. For locked installed toggle behavior: (a) settings-toggle keys are forced ON and cannot be toggled OFF until unlocked; (b) play/pause is excluded from forced-ON lock behavior; (c) if one or more locked visualizer keys are installed, exactly one locked visualizer is forced-active, chosen by keypad scan order.
+  Rationale: installed locked keys are explicit progression affordances, with deterministic locked-toggle and visualizer-selection behavior and no locked-key relocation.
 
 #### 3.1.4 Traceability (Global State)
 
@@ -87,7 +87,7 @@ The Global State Interface governs session continuity, progression capability st
 | FS-UP-04 | Cross-shell unlock outcome equivalence | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity` | integration + parity | partial: no unlock-focused cross-shell parity fixture |
 | FS-UP-05 | Key catalog/type is separate from runtime unlock flags | `domain/button-registry-contract`, `domain/key-action-handlers-contract`, `domain/key-catalog-normalization` | contract + unit | none |
 | FS-UP-06 | Locked capabilities are inert | `reducer/input`, `domain/key-unlocks` | unit | none |
-| FS-UP-07 | Installed locked keys are usable but immobile; locked toggles are forced ON | `domain/key-unlocks`, `domain/layout-rules-invariants`, `ui-module/calculator-keypad-render` | unit + contract + integration | partial: forced-ON locked-toggle behavior lacks dedicated contract assertion |
+| FS-UP-07 | Installed locked keys are usable but immobile; settings toggles forced ON; play/pause excluded; one locked visualizer forced-active by keypad scan order | `domain/key-unlocks`, `domain/layout-rules-invariants`, `ui-module/calculator-keypad-render` | unit + contract + integration | partial: settings-toggle forced-ON, play/pause exclusion, and locked-visualizer keypad-order selection lack dedicated contract assertions |
 
 ### 3.2 Calculator State Interface
 
@@ -248,6 +248,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but not yet as explicit contract clauses.
 4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
 5. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.
+6. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
 
 ### 7.3 Fixture-only parity/fuzz coverage flags
 

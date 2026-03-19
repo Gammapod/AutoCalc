@@ -26,6 +26,7 @@ import {
 import { commitLegacyProjection, projectCalculatorToLegacy, resolveActiveCalculatorId } from "./multiCalculator.js";
 import { getBaseControlProfile } from "./controlProfileRuntime.js";
 import { projectControlFromState } from "./controlProjection.js";
+import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 import type {
   Action,
   CalculatorId,
@@ -217,26 +218,32 @@ const resolveActionCalculatorId = (state: GameState, action: Action): Calculator
 
 export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {
   const hasDualCalculators = Boolean(state.calculators?.g && state.calculators?.f);
+  let nextState: GameState;
   if (!hasDualCalculators) {
     const reduced = reduceLegacy(state, action, options);
     if (state.calculators?.f) {
-      return commitLegacyProjection(state, reduced, "f");
+      nextState = commitLegacyProjection(state, reduced, "f");
+    } else {
+      nextState = reduced;
     }
-    return reduced;
+  } else {
+    const withInstances = state;
+    if (action.type === "SET_ACTIVE_CALCULATOR") {
+      nextState = {
+        ...withInstances,
+        activeCalculatorId: action.calculatorId,
+      };
+    } else {
+      const targetCalculatorId = resolveActionCalculatorId(withInstances, action);
+      if (!targetCalculatorId) {
+        nextState = reduceLegacy(withInstances, action, options);
+      } else {
+        const projected = projectCalculatorToLegacy(withInstances, targetCalculatorId);
+        const reduced = reduceLegacy(projected, action, options);
+        nextState = commitLegacyProjection(withInstances, reduced, targetCalculatorId);
+      }
+    }
   }
-  const withInstances = state;
-  if (action.type === "SET_ACTIVE_CALCULATOR") {
-    return {
-      ...withInstances,
-      activeCalculatorId: action.calculatorId,
-    };
-  }
-  const targetCalculatorId = resolveActionCalculatorId(withInstances, action);
-  if (!targetCalculatorId) {
-    return reduceLegacy(withInstances, action, options);
-  }
-  const projected = projectCalculatorToLegacy(withInstances, targetCalculatorId);
-  const reduced = reduceLegacy(projected, action, options);
-  return commitLegacyProjection(withInstances, reduced, targetCalculatorId);
+  return normalizeRuntimeStateInvariants(nextState);
 };
 

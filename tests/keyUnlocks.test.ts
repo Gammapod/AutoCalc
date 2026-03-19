@@ -1,6 +1,6 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { isKeyUnlocked } from "../src/domain/keyUnlocks.js";
+import { isKeyUnlocked, isKeyUsableForInput } from "../src/domain/keyUnlocks.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState, Key } from "../src/domain/types.js";
 import { k } from "./support/keyCompat.js";
@@ -147,6 +147,33 @@ export const runKeyUnlocksTests = (): void => {
 
   const executionUnlocked = withUnlock(base, "execution", k("="));
   assert.equal(isKeyUnlocked(executionUnlocked, k("=")), true, "execution unlock is routed correctly");
+
+  const lockedInstalledOnKeypad: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      keyLayout: [{ kind: "key", key: k("=") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+    unlocks: {
+      ...base.unlocks,
+      execution: {
+        ...base.unlocks.execution,
+        [k("=")]: false,
+      },
+    },
+  };
+  assert.equal(
+    isKeyUsableForInput(lockedInstalledOnKeypad, k("=")),
+    true,
+    "installed locked keys are still usable for input",
+  );
+  assert.equal(
+    isKeyUsableForInput(base, k("C")),
+    false,
+    "locked keys that are not installed are not usable",
+  );
 
   assert.throws(() => isKeyUnlocked(base, "NOT_A_KEY" as Key), /Unsupported legacy key/, "unknown keys fail closed");
 };

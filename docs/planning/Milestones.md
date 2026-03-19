@@ -164,11 +164,6 @@ The following require integer inputs, and return NaN otherwise:
 
 ### Binary Operators
 
-- `Digit number (d)`:
-    - functionality: return the nth digit of the operand.
-    - key face: ``
-    - operator slot face: `[ d#_ ]`
-    - expanded form: `[   ]`
 - `Max (╧)`:
     - functionality: return the larger of two operands.
     - key face: ``
@@ -186,12 +181,12 @@ The following require integer inputs, and return NaN otherwise:
     - expanded form: `[  ]`
 
 The following require integer inputs, and return NaN otherwise:
-- `Specific digit (d_)`:
-    - functionality: return the digit at a specified position/index.
+- `Digit number (d#)`:
+    - functionality: return the nth digit of the operand.
     - key face: ``
-    - operator slot face: `[  ]`
-    - expanded form: `[  ]`
-- `Keep leftmost n`:
+    - operator slot face: `[ d#_ ]`
+    - expanded form: `[   ]`
+- `Keep leftmost n (⪻d)`:
     - functionality: keep only the leftmost `n` digits; discard the rest.
     - key face: ``
     - operator slot face: `[  ]`

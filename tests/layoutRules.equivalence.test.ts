@@ -117,8 +117,8 @@ export const runLayoutRulesEquivalenceTests = (): void => {
   );
   assert.deepEqual(
     reducerPolicyDecision,
-    { allowed: false, reason: "invalid_destination" },
-    "shared evaluator rejects locked keypad destination under reducer policy",
+    { allowed: false, reason: "locked_key_immobile" },
+    "shared evaluator rejects swaps that would move locked keypad keys off-calculator",
   );
 };
 

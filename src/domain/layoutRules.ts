@@ -8,6 +8,7 @@ export type LayoutRuleReason =
   | "same_source_destination"
   | "invalid_source"
   | "invalid_destination"
+  | "locked_key_immobile"
   | "storage_geometry_invalid";
 
 export type LayoutRuleDecision =
@@ -44,8 +45,8 @@ const getKeyLayoutForSurface = (state: GameState, surface: LayoutSurface): GameS
 const getCellOccupancy = (
   state: GameState,
   target: LayoutTarget,
-  mode: "source" | "destination",
-  enforceUnlockedKeypadDestination: boolean,
+  _mode: "source" | "destination",
+  _enforceUnlockedKeypadDestination: boolean,
 ): Occupancy => {
   if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {
     return "invalid";
@@ -58,13 +59,6 @@ const getCellOccupancy = (
     }
     if (cell.kind !== "key") {
       return "empty";
-    }
-    const unlocked = isKeyUnlocked(state, cell.key);
-    if (!unlocked) {
-      return "invalid";
-    }
-    if (mode === "source" || !enforceUnlockedKeypadDestination) {
-      return "key";
     }
     return "key";
   }
@@ -79,6 +73,65 @@ const getCellOccupancy = (
     return "invalid";
   }
   return "key";
+};
+
+const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" =>
+  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g";
+
+const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): "f" | "g" | null => {
+  if (surface === "keypad_f") {
+    return "f";
+  }
+  if (surface === "keypad_g") {
+    return state.calculators?.g ? "g" : null;
+  }
+  if (surface === "keypad") {
+    if (state.calculators?.g && state.calculators?.f) {
+      return state.activeCalculatorId ?? "f";
+    }
+    return "f";
+  }
+  return null;
+};
+
+const isLockedInstalledKeypadCell = (state: GameState, target: LayoutTarget): boolean => {
+  if (!isKeypadSurface(target.surface)) {
+    return false;
+  }
+  const keyLayout = getKeyLayoutForSurface(state, target.surface);
+  const cell = keyLayout?.[target.index];
+  return Boolean(cell?.kind === "key" && !isKeyUnlocked(state, cell.key));
+};
+
+const wouldMoveOffCalculator = (
+  state: GameState,
+  fromSurface: LayoutSurface,
+  toSurface: LayoutSurface,
+): boolean => {
+  if (!isKeypadSurface(fromSurface)) {
+    return false;
+  }
+  if (!isKeypadSurface(toSurface)) {
+    return true;
+  }
+  const fromCalculatorId = resolveSurfaceCalculatorId(state, fromSurface);
+  const toCalculatorId = resolveSurfaceCalculatorId(state, toSurface);
+  return fromCalculatorId !== null && toCalculatorId !== null && fromCalculatorId !== toCalculatorId;
+};
+
+const violatesLockedKeyImmobility = (
+  state: GameState,
+  source: LayoutTarget,
+  destination: LayoutTarget,
+  action: LayoutDropAction,
+): boolean => {
+  const sourceLocked = isLockedInstalledKeypadCell(state, source);
+  if (action === "move") {
+    return sourceLocked && wouldMoveOffCalculator(state, source.surface, destination.surface);
+  }
+  const destinationLocked = isLockedInstalledKeypadCell(state, destination);
+  return (sourceLocked && wouldMoveOffCalculator(state, source.surface, destination.surface))
+    || (destinationLocked && wouldMoveOffCalculator(state, destination.surface, source.surface));
 };
 
 const isStorageDropGeometryValid = (
@@ -147,6 +200,9 @@ export const evaluateLayoutDrop = (
     return { allowed: false, reason: "invalid_destination" };
   }
   const action: LayoutDropAction = destinationOccupancy === "key" ? "swap" : "move";
+  if (violatesLockedKeyImmobility(state, source, destination, action)) {
+    return { allowed: false, reason: "locked_key_immobile" };
+  }
   if (!isStorageDropGeometryValid(state, source, destination, action)) {
     return { allowed: false, reason: "storage_geometry_invalid" };
   }

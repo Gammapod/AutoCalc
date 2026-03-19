@@ -754,6 +754,9 @@ export const applyEqualsFromStepProgress = (state: GameState): GameState => {
 
 export const applyStepThrough = (state: GameState): GameState => {
   const stepKey = KEY_ID.exec_step_through;
+  if (!hasStepThroughOnKeypad(state)) {
+    return withClearedStepProgress(state);
+  }
   if (!isKeyUsableForInput(state, stepKey)) {
     return state;
   }
