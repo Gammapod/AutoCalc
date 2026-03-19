@@ -156,34 +156,46 @@ const moveUnlockedKeyToStorageFront = (state: GameState, key: Key): GameState =>
   if (!source) {
     return state;
   }
+  if (source.surface === "keypad") {
+    // Keep newly unlocked keys in-place when already present on the active keypad.
+    return state;
+  }
 
-  const sourceCell =
-    source.surface === "keypad"
-      ? state.ui.keyLayout[source.index]
-      : state.ui.storageLayout[source.index];
+  const sourceCell = state.ui.storageLayout[source.index];
   if (!sourceCell || sourceCell.kind !== "key") {
     return state;
   }
 
-  let baseState = state;
-  if (source.surface === "keypad") {
-    const nextKeyLayout = [...state.ui.keyLayout];
-    nextKeyLayout[source.index] = { kind: "placeholder", area: "empty" };
-    baseState = withKeyLayout(state, nextKeyLayout);
-  }
-
-  const nextStorage = toStorageWithLeadingUnlockedKey(baseState.ui.storageLayout, sourceCell);
+  const nextStorage = toStorageWithLeadingUnlockedKey(state.ui.storageLayout, sourceCell);
   let nextState: GameState = {
-    ...baseState,
+    ...state,
     ui: {
-      ...baseState.ui,
+      ...state.ui,
       storageLayout: nextStorage,
     },
   };
-  if (source.surface === "keypad") {
-    nextState = clearOperationEntry(nextState);
-  }
   return nextState;
+};
+
+const removeStorageDuplicatesForKeyIfOnKeypad = (state: GameState, key: Key): GameState => {
+  const isOnKeypad = state.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === key);
+  if (!isOnKeypad) {
+    return state;
+  }
+  const hasStorageDuplicate = state.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === key);
+  if (!hasStorageDuplicate) {
+    return state;
+  }
+  const nextStorage = state.ui.storageLayout.map((cell) =>
+    cell?.kind === "key" && cell.key === key ? null : cell,
+  );
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      storageLayout: nextStorage,
+    },
+  };
 };
 
 export const applyEffect = (effect: UnlockEffect, state: GameState): GameState => {
@@ -273,6 +285,7 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
   }
 
   for (const key of newlyUnlockedKeys) {
+    nextState = removeStorageDuplicatesForKeyIfOnKeypad(nextState, key);
     nextState = moveUnlockedKeyToStorageFront(nextState, key);
   }
 

@@ -24,7 +24,7 @@ ALLOCATOR  ,==,"<
  |1   0   0   0   0|   |α|   |α' -> ↔↔↔    |
  |0   1   0   0   0|   |β|   |β' -> ↕↕↕    |
  |0   0   1   0   0| × |γ| = |γ' -> [_ _]  |
- |0.5 0.5 1   0   0|   |1|   |δ' -> dig++  |
+ |0.5 0.5 0.5 0   0|   |1|   |δ' -> dig++  |
  |0.1 0.1 0.1 0.1 0|   |1|   |ϵ' -> tick++ |
 
 Symbol | Starting values | min..max Values | Settable?
@@ -37,8 +37,6 @@ Symbol | Starting values | min..max Values | Settable?
 
 in words:
 delta increases proportionally to alpha and beta and gamma, with the effect of alpha and beta being half that of delta. intent: the range of numbers the player can calculate should expand as the complexity of the equation increases
-
-gamma begins at 0, and once the player has upgraded once, they cannot downgrade below 1.
 
 epsilon increases slightly, proportionally to all the other values in equal measure. intent: the step speed should go up as complexity rises and the possible length of roll gets longer
 

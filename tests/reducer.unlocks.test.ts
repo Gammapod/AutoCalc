@@ -52,7 +52,31 @@ export const runReducerUnlockTests = (): void => {
     unlockCatalog,
   );
   assert.equal(atTen.unlocks.unaryOperators[uop("--")], true, "-- unlocks at total >= 10");
+  assert.equal(atTen.unlocks.unaryOperators[uop("++")], true, "++ unlocks at total >= 10");
+  assert.equal(atTen.unlocks.execution[execution("=")], true, "= unlocks at total >= 10");
   assert.equal(atTen.completedUnlockIds.includes("unlock_dec_on_total_at_least_10"), true, "-- unlock id is recorded");
+  assert.equal(atTen.completedUnlockIds.includes("unlock_inc_on_total_at_least_10"), true, "++ unlock id is recorded");
+  assert.equal(atTen.completedUnlockIds.includes("unlock_equals_on_total_at_least_10"), true, "= unlock id is recorded");
+  assert.equal(
+    atTen.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === uop("++")),
+    true,
+    "++ remains on keypad when unlocked",
+  );
+  assert.equal(
+    atTen.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === execution("=")),
+    true,
+    "= remains on keypad when unlocked",
+  );
+  assert.equal(
+    atTen.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === uop("++")),
+    false,
+    "++ is removed from storage when already installed on keypad",
+  );
+  assert.equal(
+    atTen.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === execution("=")),
+    false,
+    "= keyed storage variants are removed when = is already installed on keypad",
+  );
 
   const withError = applyUnlocks(
     {
@@ -65,6 +89,23 @@ export const runReducerUnlockTests = (): void => {
     unlockCatalog,
   );
   assert.equal(withError.unlocks.utilities[utility("C")], true, "C unlocks when first error is seen");
+
+  const withFirstRationalResult = applyUnlocks(
+    {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollEntries: [{ y: r(3n, 2n) }],
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(withFirstRationalResult.unlocks.slotOperators[op("#")], true, "# unlocks on first rational result");
+  assert.equal(
+    withFirstRationalResult.completedUnlockIds.includes("unlock_euclid_div_on_first_rational_result"),
+    true,
+    "euclidean-division unlock id is recorded",
+  );
 
   const secondPass = applyUnlocks(beforeLinearRun, unlockCatalog);
   const completionCount = secondPass.completedUnlockIds.filter((id) => id === "unlock_4_on_linear_growth_run_7").length;
