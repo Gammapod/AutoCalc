@@ -1,6 +1,6 @@
 # AutoCalc Functional Specification
 
-Last updated: 2026-03-17
+Last updated: 2026-03-19
 Status: Draft v2 (design-truth restructure)
 Purpose: Define player-facing functional truth, independent of implementation structure.
 
@@ -49,6 +49,10 @@ The Global State Interface governs session continuity, progression capability st
   Rationale: storage controls access/placement, not math outcomes.
 - `FS-GS-04` (MUST): Storage interactions may change action availability ergonomics, but not action meaning.
   Rationale: relocation cannot redefine key semantics.
+- `FS-GS-05` (MUST): Each key identity has at most one live instance across all calculators and storage; once a key is unlocked, exactly one live instance must exist either on a calculator keypad or in storage.
+  Rationale: progression and layout semantics require deterministic one-key/one-instance inventory truth.
+- `FS-GS-06` (MUST): Storage contains only unlocked key instances.
+  Rationale: locked capability state must not be represented as hidden storage inventory.
 
 #### 3.1.3 Unlock/Progression (Gameplay Spine)
 
@@ -64,6 +68,8 @@ The Global State Interface governs session continuity, progression capability st
   Rationale: static key identity and dynamic capability state are distinct concerns.
 - `FS-UP-06` (SHALL): Locked capabilities remain inert for gameplay mutation.
   Rationale: locked actions must not create hidden state change paths.
+- `FS-UP-07` (MUST): A key installed on a calculator keypad is press-usable even while locked, but locked installed keys are immobile; for locked toggle keys, ON state is forced and cannot be toggled OFF until unlocked.
+  Rationale: installed locked keys are explicit progression affordances, with deterministic locked-toggle behavior and no locked-key relocation.
 
 #### 3.1.4 Traceability (Global State)
 
@@ -73,12 +79,15 @@ The Global State Interface governs session continuity, progression capability st
 | FS-GS-02 | Malformed/incompatible saves fail safe | `persistence` | unit | none |
 | FS-GS-03 | Storage is global inventory/surface, not execution engine | `ui/storage-display`, `ui/drag-drop-behavior` | integration | partial: semantic clause, no dedicated contract ID suite |
 | FS-GS-04 | Storage changes do not alter key meaning | `contracts/ui-action-emission`, `domain/key-identity-adapters` | contract + unit | partial: no direct end-to-end assertion |
+| FS-GS-05 | Key identity is single-instance; unlocked keys always exist in keypad/storage inventory | `reducer/unlocks`, `reducer/layout`, `contracts/multi-calculator-invariants` | unit + contract | partial: no dedicated global one-instance property suite |
+| FS-GS-06 | Storage contains only unlocked key instances | `ui-module/storage-v2`, `ui/storage-display` | integration | partial: no explicit unlocked-only storage contract yet |
 | FS-UP-01 | Unlock runtime state progression-owned | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership is indirectly asserted |
 | FS-UP-02 | Predicate evaluation uses canonical state/history | `domain/unlock-engine` | unit | none |
 | FS-UP-03 | Unlock completion monotonic by default | `content-drill/unlock-extension`, `domain/unlock-engine` | workflow + unit | gap: no generic monotonicity property test |
 | FS-UP-04 | Cross-shell unlock outcome equivalence | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity` | integration + parity | partial: no unlock-focused cross-shell parity fixture |
 | FS-UP-05 | Key catalog/type is separate from runtime unlock flags | `domain/button-registry-contract`, `domain/key-action-handlers-contract`, `domain/key-catalog-normalization` | contract + unit | none |
 | FS-UP-06 | Locked capabilities are inert | `reducer/input`, `domain/key-unlocks` | unit | none |
+| FS-UP-07 | Installed locked keys are usable but immobile; locked toggles are forced ON | `domain/key-unlocks`, `domain/layout-rules-invariants`, `ui-module/calculator-keypad-render` | unit + contract + integration | partial: forced-ON locked-toggle behavior lacks dedicated contract assertion |
 
 ### 3.2 Calculator State Interface
 
