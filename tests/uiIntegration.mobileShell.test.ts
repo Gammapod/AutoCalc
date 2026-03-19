@@ -393,8 +393,8 @@ export const runUiIntegrationMobileShellTests = (): void => {
       ...projected,
       ui: {
         ...projected.ui,
-        keyLayout: [{ kind: "key", key: k("\u25BB") }],
-        keypadColumns: 1,
+        keyLayout: [{ kind: "key", key: k("\u25BB") }, { kind: "key", key: k("=") }],
+        keypadColumns: 2,
         keypadRows: 1,
       },
       calculator: {

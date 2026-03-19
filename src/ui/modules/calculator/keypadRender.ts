@@ -64,24 +64,20 @@ export const renderKeypadCells = (
       continue;
     }
 
-    if (!isKeyUnlocked(state, cell.key)) {
-      const hidden = document.createElement("div");
-      hidden.className = "placeholder placeholder--drop-slot placeholder--locked-hidden";
-      hidden.setAttribute("aria-hidden", "true");
-      hidden.dataset.keypadCellId = slotId;
-      appendDebugSlotLabel(hidden, slotLabel);
-      keysEl.appendChild(hidden);
-      continue;
-    }
-
+    const unlocked = isKeyUnlocked(state, cell.key);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "key key--draggable";
+    button.className = "key";
+    if (unlocked) {
+      button.classList.add("key--draggable");
+    } else {
+      button.classList.add("key--locked-capability");
+    }
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
     if (getButtonDefinition(toLegacyKey(resolveKeyId(cell.key)))?.unlockGroup === "unaryOperators") {
       button.classList.add("key--unary-operator");
     }
-    if (options.newlyUnlockedKeys.has(cell.key)) {
+    if (unlocked && options.newlyUnlockedKeys.has(cell.key)) {
       button.classList.add("key--unlock-animate");
       options.bindUnlockAnimationLock(button);
     }
@@ -101,7 +97,9 @@ export const renderKeypadCells = (
     button.dataset.keypadCellId = slotId;
     button.dataset.key = cell.key;
     bindQuickTapPressFeedback(root, button);
-    bindDraggableCell(root, button, state, dispatch, { surface: keypadSurface, index }, cell.key);
+    if (unlocked) {
+      bindDraggableCell(root, button, state, dispatch, { surface: keypadSurface, index }, cell.key);
+    }
     appendDebugSlotLabel(button, slotLabel);
 
     button.addEventListener("click", () => {

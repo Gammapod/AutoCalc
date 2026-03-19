@@ -1,4 +1,4 @@
-import type { CalculatorId, ControlField, ControlProfile } from "./types.js";
+﻿import type { CalculatorId, ControlField, ControlProfile } from "./types.js";
 
 const zeroCoefficients = (): Record<ControlField, number> => ({
   alpha: 0,
@@ -17,9 +17,9 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
   f: {
     id: "f",
     starts: {
-      alpha: 1,
+      alpha: 2,
       beta: 1,
-      gamma: 0,
+      gamma: 1,
       delta: 1,
       epsilon: 0,
     },
@@ -80,3 +80,4 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
     rounding: "floor",
   },
 };
+

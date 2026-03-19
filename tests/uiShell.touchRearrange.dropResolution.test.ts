@@ -33,6 +33,10 @@ const buildRearrangeState = (): GameState => {
         ...base.unlocks.utilities,
         [utility("C")]: true,
       },
+      execution: {
+        ...base.unlocks.execution,
+        [execution("=")]: true,
+      },
       valueExpression: {
         ...base.unlocks.valueExpression,
         [k("1")]: true,
@@ -45,6 +49,7 @@ const buildRearrangeState = (): GameState => {
       keypadColumns: 4,
       keypadRows: 1,
       keyLayout,
+      storageLayout: [{ kind: "key", key: utility("C") }, ...projected.ui.storageLayout.slice(1)],
     },
   }));
 };
@@ -105,7 +110,21 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
 
   const crossActions: Action[] = [];
   const crossController = createTouchRearrangeController();
-  crossController.syncContext(buildRearrangeState(), (action) => {
+  const withGSurface = withCalculatorProjection(buildRearrangeState(), "g", (projected) => ({
+    ...projected,
+    ui: {
+      ...projected.ui,
+      keypadColumns: 4,
+      keypadRows: 1,
+      keyLayout: [
+        { kind: "placeholder", area: "empty" },
+        { kind: "placeholder", area: "empty" },
+        { kind: "placeholder", area: "empty" },
+        { kind: "placeholder", area: "empty" },
+      ],
+    },
+  }));
+  crossController.syncContext(withGSurface, (action) => {
     crossActions.push(action);
     return action;
   });

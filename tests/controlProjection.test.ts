@@ -16,12 +16,6 @@ export const runControlProjectionTests = (): void => {
   assert.equal(fProjection.budget.maxPoints, fProjection.control.maxPoints, "projection budget maxPoints mirrors control");
   assert.equal(fProjection.budget.unused + fProjection.budget.spent, fProjection.budget.maxPoints, "projection budget is internally consistent");
 
-  const gProjection = projectControlFromState(base, "g");
-  assert.equal(gProjection.keypadColumns, base.calculators?.g?.ui.keypadColumns, "g projection columns match projected UI state");
-  assert.equal(gProjection.keypadRows, base.calculators?.g?.ui.keypadRows, "g projection rows match projected UI state");
-  assert.equal(gProjection.fields.alpha, gProjection.allocator.allocations.width, "g projection alpha tracks allocator width");
-  assert.equal(gProjection.fields.beta, gProjection.allocator.allocations.height, "g projection beta tracks allocator height");
-
   const gFlooring = projectControlFromInputs(
     { maxPoints: 11, alpha: 99, beta: 99, gamma: 4, gammaMinRaised: true },
     controlProfiles.g,

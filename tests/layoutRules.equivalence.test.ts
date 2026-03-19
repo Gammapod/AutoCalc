@@ -23,6 +23,10 @@ const createScenarioState = (): GameState => {
         ...base.unlocks.utilities,
         ...utilityUnlockPatch([["C", true], ["UNDO", true]]),
       },
+      execution: {
+        ...base.unlocks.execution,
+        [execution("=")]: true,
+      },
     },
     ui: {
       ...base.ui,
@@ -99,10 +103,10 @@ export const runLayoutRulesEquivalenceTests = (): void => {
     "keypad",
     1,
   );
-  assert.notEqual(
+  assert.equal(
     reducerAllowsLockedKeypadDestination,
     lockedKeypadDestination,
-    "reducer keeps legacy behavior by allowing locked keypad destination when using reducer policy",
+    "reducer rejects locked keypad destinations",
   );
 
   const reducerPolicyDecision = evaluateLayoutDrop(
@@ -113,8 +117,8 @@ export const runLayoutRulesEquivalenceTests = (): void => {
   );
   assert.deepEqual(
     reducerPolicyDecision,
-    { allowed: true, action: "swap" },
-    "shared evaluator with reducer policy agrees with reducer acceptance",
+    { allowed: false, reason: "invalid_destination" },
+    "shared evaluator rejects locked keypad destination under reducer policy",
   );
 };
 

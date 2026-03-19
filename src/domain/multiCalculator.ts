@@ -5,7 +5,7 @@ import { KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS, defaultDrawerKeyLayout } f
 import type { CalculatorId, CalculatorInstanceState, GameState, Key } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 
-export const CALCULATOR_ORDER: readonly CalculatorId[] = ["g", "f"];
+export const CALCULATOR_ORDER: readonly CalculatorId[] = ["f", "g"];
 export const MAIN_CALCULATOR_ID: CalculatorId = "f";
 
 const cloneUi = (ui: GameState["ui"]): GameState["ui"] => ({
@@ -99,15 +99,14 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
 };
 
 export const ensureCalculatorInstances = (state: GameState): GameState => {
-  if (state.calculators?.f && state.calculators?.g) {
+  if (state.calculators?.f) {
     return state;
   }
-  const f = state.calculators?.f ?? createDefaultFCalculator(state);
-  const g = state.calculators?.g ?? createDefaultGCalculator();
+  const f = createDefaultFCalculator(state);
   return {
     ...state,
-    calculators: { g, f },
-    calculatorOrder: [...CALCULATOR_ORDER],
+    calculators: { ...(state.calculators ?? {}), f },
+    calculatorOrder: state.calculators?.g ? [...CALCULATOR_ORDER] : ["f"],
     activeCalculatorId: state.activeCalculatorId ?? MAIN_CALCULATOR_ID,
   };
 };

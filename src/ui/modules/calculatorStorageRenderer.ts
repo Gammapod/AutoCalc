@@ -13,8 +13,20 @@ export const renderCalculatorStorageV2Module = (
   },
 ): void => {
   const calculatorDevice = root.querySelector<HTMLElement>("[data-calc-device]");
+  const switchRow = calculatorDevice?.querySelector<HTMLElement>("[data-calc-switch-row]");
+  const fInstance = calculatorDevice?.querySelector<HTMLElement>("[data-calc-instance-id='f']");
+  const gInstance = calculatorDevice?.querySelector<HTMLElement>("[data-calc-instance-id='g']");
   const hasDual = Boolean(state.calculators?.g && state.calculators?.f);
   if (hasDual && calculatorDevice) {
+    if (switchRow) {
+      switchRow.hidden = false;
+    }
+    if (fInstance) {
+      fInstance.hidden = false;
+    }
+    if (gInstance) {
+      gInstance.hidden = false;
+    }
     const activeCalculatorId = resolveActiveCalculatorId(state);
     calculatorDevice.dataset.activeCalculatorId = activeCalculatorId;
     const switchButtons = calculatorDevice.querySelectorAll<HTMLButtonElement>("[data-calc-switch]");
@@ -39,6 +51,18 @@ export const renderCalculatorStorageV2Module = (
       renderCalculatorV2Module(instanceEl, projected, dispatch, {
         inputBlocked: options.inputBlocked,
       });
+    });
+  } else if (calculatorDevice && fInstance) {
+    calculatorDevice.dataset.activeCalculatorId = "f";
+    if (switchRow) {
+      switchRow.hidden = true;
+    }
+    fInstance.hidden = false;
+    if (gInstance) {
+      gInstance.hidden = true;
+    }
+    renderCalculatorV2Module(fInstance, state, dispatch, {
+      inputBlocked: options.inputBlocked,
     });
   } else {
     renderCalculatorV2Module(root, state, dispatch, {

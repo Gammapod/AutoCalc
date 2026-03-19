@@ -19,7 +19,7 @@ export const applyKeyAction = (state: GameState, keyLike: KeyInput): GameState =
     return context.stepAwareState;
   }
 
-  if (!context.isUnlocked) {
+  if (!context.isUsable) {
     return context.keyed;
   }
 

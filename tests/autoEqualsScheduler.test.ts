@@ -180,6 +180,10 @@ export const runAutoEqualsSchedulerTests = (): void => {
         ...executionUnlockPatch([["=", false]]),
       },
     },
+    ui: {
+      ...initialState().ui,
+      keyLayout: [{ kind: "placeholder", area: "empty" }],
+    },
   };
   const invalidStore = createMockStore(stateWithInvalidEqualsExecutor);
   const invalidTimers = createFakeTimerApi();
@@ -188,24 +192,13 @@ export const runAutoEqualsSchedulerTests = (): void => {
   invalidScheduler.sync(invalidStore.getState());
   assert.equal(
     countExecutorPressesForKey(invalidStore.actions, execution("=")),
-    1,
-    "invalid equals path still attempts immediate = press once",
-  );
-  assert.equal(
-    Boolean(invalidStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]),
-    true,
-    "first invalid equals attempt keeps auto toggle on",
-  );
-  invalidTimers.tick();
-  assert.equal(
-    countExecutorPressesForKey(invalidStore.actions, execution("=")),
-    2,
-    "invalid equals path performs second attempt on first interval tick",
+    0,
+    "without an installed executor key, scheduler performs no immediate executor press",
   );
   assert.equal(
     Boolean(invalidStore.getState().ui.buttonFlags[AUTO_EQUALS_FLAG]),
     false,
-    "invalid equals path auto-turns off after second failed attempt",
+    "missing installed executor key turns auto toggle off immediately",
   );
   assert.equal(invalidTimers.activeCount(), 0, "invalid equals auto-turn-off clears active interval");
 

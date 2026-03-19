@@ -14,6 +14,14 @@ const withTwoByTwoKeypad = (state: GameState): GameState => ({
       ...state.unlocks.valueExpression,
       [k("1")]: true,
     },
+    utilities: {
+      ...state.unlocks.utilities,
+      [utility("C")]: true,
+    },
+    execution: {
+      ...state.unlocks.execution,
+      [execution("=")]: true,
+    },
   },
   ui: {
     ...state.ui,

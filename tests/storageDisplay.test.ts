@@ -54,6 +54,13 @@ export const runStorageDisplayTests = (): void => {
 
   const sortedByExecution: GameState = {
     ...orderedState,
+    unlocks: {
+      ...orderedState.unlocks,
+      execution: {
+        ...orderedState.unlocks.execution,
+        [k("=")]: true,
+      },
+    },
     ui: {
       ...orderedState.ui,
       storageLayout: [

@@ -218,7 +218,11 @@ const resolveActionCalculatorId = (state: GameState, action: Action): Calculator
 export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {
   const hasDualCalculators = Boolean(state.calculators?.g && state.calculators?.f);
   if (!hasDualCalculators) {
-    return reduceLegacy(state, action, options);
+    const reduced = reduceLegacy(state, action, options);
+    if (state.calculators?.f) {
+      return commitLegacyProjection(state, reduced, "f");
+    }
+    return reduced;
   }
   const withInstances = state;
   if (action.type === "SET_ACTIVE_CALCULATOR") {

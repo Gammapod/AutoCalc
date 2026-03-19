@@ -16,43 +16,27 @@ const toSingleCalculatorState = (state: GameState): GameState => ({
 
 export const runMultiCalculatorContractTests = (): void => {
   const base = initialState();
-  assert.ok(base.calculators?.f && base.calculators?.g, "session initializes with one-or-more calculators");
-  assert.equal(base.activeCalculatorId === "f" || base.activeCalculatorId === "g", true, "active selection is always singular");
+  assert.ok(base.calculators?.f, "session initializes with f calculator");
+  assert.equal(Boolean(base.calculators?.g), false, "session does not initialize g by default");
+  assert.equal(base.activeCalculatorId, "f", "active selection starts on f");
 
   const switched = reducer(base, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "g" });
-  assert.equal(switched.activeCalculatorId, "g", "active calculator selection is explicit and deterministic");
+  assert.equal(switched.activeCalculatorId, "f", "active calculator cannot switch to missing g");
 
   const isolated = reducer(base, { type: "SET_KEYPAD_DIMENSIONS", calculatorId: "g", columns: 3, rows: 3 });
-  assert.equal(isolated.calculators?.g?.ui.keypadColumns, 3, "targeted layout action mutates g instance");
-  assert.equal(isolated.calculators?.g?.ui.keypadRows, 3, "targeted layout action mutates g rows");
-  assert.equal(
-    isolated.calculators?.f?.ui.keypadColumns,
-    base.calculators?.f?.ui.keypadColumns,
-    "targeted layout action preserves f instance layout",
-  );
-  assert.equal(
-    isolated.calculators?.f?.ui.keypadRows,
-    base.calculators?.f?.ui.keypadRows,
-    "targeted layout action preserves f instance rows",
-  );
+  assert.equal(Boolean(isolated.calculators?.g), false, "targeted g layout action does not materialize g");
+  assert.equal(isolated.ui.keypadColumns, 3, "layout action applies to active single-calculator projection");
+  assert.equal(isolated.ui.keypadRows, 3, "layout action rows apply to active single-calculator projection");
 
   const unlockedViaG = reducer(base, { type: "ALLOCATOR_RETURN_PRESSED", calculatorId: "g" });
-  assert.equal(
-    unlockedViaG.unlocks.utilities[KEY_ID.util_undo],
-    true,
-    "unlock mutations remain global/shared when driven from a specific calculator",
-  );
+  assert.equal(unlockedViaG.allocatorReturnPressCount, 1, "allocator actions still route through shared state");
   const projectedF = projectCalculatorToLegacy(unlockedViaG, "f");
-  assert.equal(projectedF.unlocks.utilities[KEY_ID.util_undo], true, "shared unlock state is visible on f projection");
+  assert.equal(projectedF.allocatorReturnPressCount, 1, "shared counter state is visible on f projection");
 
   const legacyOnly = toSingleCalculatorState(initialState());
   const normalizedOnce = normalizeLegacyForMissingInstances(legacyOnly);
   const normalizedTwice = normalizeLegacyForMissingInstances(legacyOnly);
-  assert.deepEqual(
-    normalizedOnce.calculators?.g,
-    normalizedTwice.calculators?.g,
-    "missing-instance normalization is deterministic for g initialization",
-  );
+  assert.equal(Boolean(normalizedOnce.calculators?.g), false, "missing-instance normalization does not force g");
   assert.deepEqual(
     normalizedOnce.calculators?.f,
     normalizedTwice.calculators?.f,

@@ -31,7 +31,7 @@ import {
   subRational,
   calculatorValueEquals,
 } from "./rollEntries.js";
-import { isKeyUnlocked } from "./keyUnlocks.js";
+import { isKeyUsableForInput } from "./keyUnlocks.js";
 import { clearOperationEntry, createInitialStepProgressState, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import {
   CHECKLIST_UNLOCK_ID,
@@ -132,7 +132,7 @@ const withBuilderPatchApplied = (
 });
 
 export const applyOperator = (state: GameState, operator: BinarySlotOperator): GameState => {
-  if (!state.unlocks.slotOperators[operator]) {
+  if (!isKeyUsableForInput(state, operator)) {
     return state;
   }
 
@@ -153,7 +153,7 @@ export const applyOperator = (state: GameState, operator: BinarySlotOperator): G
 };
 
 export const applyUnaryOperator = (state: GameState, key: UnaryOperator): GameState => {
-  if (!state.unlocks.unaryOperators[key]) {
+  if (!isKeyUsableForInput(state, key)) {
     return state;
   }
   let baseOperationSlots = state.calculator.operationSlots;
@@ -194,14 +194,14 @@ export const applyDigit = (state: GameState, key: Key): GameState => {
   if (!isDigitKeyId(key)) {
     return state;
   }
-  if (!state.unlocks.valueAtoms[key] && !state.unlocks.valueExpression[key]) {
+  if (!isKeyUsableForInput(state, key)) {
     return state;
   }
   return applyDigitValue(state, toLegacyKey(key) as Digit);
 };
 
 export const applyConstantValue = (state: GameState, constant: ConstantKeyId): GameState => {
-  if (!state.unlocks.valueAtoms[constant] && !state.unlocks.valueExpression[constant]) {
+  if (!isKeyUsableForInput(state, constant)) {
     return state;
   }
   if (state.calculator.rollEntries.length > 0) {
@@ -686,7 +686,7 @@ const evaluateExecutionOutcomeForSlots = (
 
 export const applyEquals = (state: GameState): GameState => {
   const equalsKey = KEY_ID.exec_equals;
-  if (!state.unlocks.execution[equalsKey]) {
+  if (!isKeyUsableForInput(state, equalsKey)) {
     return state;
   }
 
@@ -717,7 +717,7 @@ export const applyEquals = (state: GameState): GameState => {
 
 export const applyEqualsFromStepProgress = (state: GameState): GameState => {
   const equalsKey = KEY_ID.exec_equals;
-  if (!state.unlocks.execution[equalsKey]) {
+  if (!isKeyUsableForInput(state, equalsKey)) {
     return state;
   }
 
@@ -754,7 +754,7 @@ export const applyEqualsFromStepProgress = (state: GameState): GameState => {
 
 export const applyStepThrough = (state: GameState): GameState => {
   const stepKey = KEY_ID.exec_step_through;
-  if (!state.unlocks.execution[stepKey]) {
+  if (!isKeyUsableForInput(state, stepKey)) {
     return state;
   }
 
@@ -822,7 +822,7 @@ export const applyStepThrough = (state: GameState): GameState => {
 };
 
 export const applyC = (state: GameState): GameState => {
-  if (!state.unlocks.utilities[KEY_ID.util_clear_all]) {
+  if (!isKeyUsableForInput(state, KEY_ID.util_clear_all)) {
     return state;
   }
 
@@ -963,7 +963,7 @@ const withCommittedSlotBackspaced = (state: GameState): GameState => {
 
 export const applyBackspace = (state: GameState): GameState => {
   const withClearedStep = withClearedStepProgress(state);
-  if (!state.unlocks.utilities[KEY_ID.util_backspace]) {
+  if (!isKeyUsableForInput(state, KEY_ID.util_backspace)) {
     return withClearedStep;
   }
   if (withClearedStep.calculator.rollEntries.length > 0) {
@@ -984,7 +984,7 @@ export const applyBackspace = (state: GameState): GameState => {
 
 export const applyUndo = (state: GameState): GameState => {
   const withClearedStep = withClearedStepProgress(state);
-  if (!state.unlocks.utilities[KEY_ID.util_undo]) {
+  if (!isKeyUsableForInput(state, KEY_ID.util_undo)) {
     return withClearedStep;
   }
 
@@ -1020,17 +1020,17 @@ export const preprocessForActiveRoll = (state: GameState, key: Key): GameState =
     return state;
   }
 
-  if (isOperator(key) && !state.unlocks.slotOperators[key]) {
+  if (isOperator(key) && !isKeyUsableForInput(state, key)) {
     return state;
   }
-  if (isUnaryOperator(key) && !state.unlocks.unaryOperators[key]) {
+  if (isUnaryOperator(key) && !isKeyUsableForInput(state, key)) {
     return state;
   }
   return clearOperationEntry(state);
 };
 
 export const applyMemoryKeyAction = (state: GameState, key: Key): GameState => {
-  if (!isMemoryKey(key) || !isKeyUnlocked(state, key)) {
+  if (!isMemoryKey(key) || !isKeyUsableForInput(state, key)) {
     return state;
   }
   if (isMemoryCycleKey(key)) {
@@ -1089,9 +1089,9 @@ export const applyKeyActionCore = (state: GameState, keyLike: KeyInput): GameSta
   }
 
   const preprocessed = preprocessForActiveRoll(stepAwareState, key);
-  const isUnlocked = isKeyUnlocked(preprocessed, key);
-  const keyed = isUnlocked ? incrementKeyPressCount(preprocessed, key) : preprocessed;
-  if (!isUnlocked) {
+  const isUsable = isKeyUsableForInput(preprocessed, key);
+  const keyed = isUsable ? incrementKeyPressCount(preprocessed, key) : preprocessed;
+  if (!isUsable) {
     return keyed;
   }
 

@@ -274,8 +274,8 @@ export const runReducerInputTests = (): void => {
   const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "1");
   assert.deepEqual(afterActiveRollDigit, activeRollDigitNoOp, "digit key is no-op while roll is active");
 
-  const lockedUnaryNoOp = applyKeyAction(legacyInitialState(), "++");
-  assert.deepEqual(lockedUnaryNoOp, legacyInitialState(), "locked unary key is a no-op");
+  const lockedUnaryFromKeypad = applyKeyAction(legacyInitialState(), "++");
+  assert.equal(lockedUnaryFromKeypad.keyPressCounts[uop("++")] ?? 0, 1, "locked keypad-installed unary key still counts as a press");
 
   const unaryPlus = applyKeyAction(fullyUnlocked, "++");
   assert.deepEqual(unaryPlus.calculator.operationSlots, [{ kind: "unary", operator: uop("++") }], "++ appends unary slot");
@@ -596,11 +596,11 @@ export const runReducerInputTests = (): void => {
     },
   };
   const plusAlpha = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "α" } }, "M+");
-  assert.equal(plusAlpha.ui.keypadColumns, 2, "M+ with α increases keypad columns");
+  assert.equal(plusAlpha.ui.keypadColumns, 3, "M+ with α increases keypad columns");
   const plusBeta = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "β" } }, "M+");
   assert.equal(plusBeta.ui.keypadRows, 2, "M+ with β increases keypad rows");
   const plusGamma = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "γ" } }, "M+");
-  assert.equal(plusGamma.unlocks.maxSlots, 1, "M+ with γ increases operation slot count");
+  assert.equal(plusGamma.unlocks.maxSlots, 2, "M+ with γ increases operation slot count");
 
   const memoryMinusBase = legacyInitialState();
   const memoryMinusUnlocked: GameState = {

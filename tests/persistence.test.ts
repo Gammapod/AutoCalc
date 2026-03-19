@@ -59,22 +59,12 @@ export const runPersistenceTests = (): void => {
     sessionControlProfiles: {
       f: controlProfiles.f,
     },
-    activeCalculatorId: "g",
+    activeCalculatorId: "f",
     perCalculatorCompletedUnlockIds: {
-      g: ["unlock_allocator_point_on_total_at_least_9"],
       f: [],
     },
     calculators: {
       ...base.calculators,
-      g: base.calculators?.g
-        ? {
-            ...base.calculators.g,
-            calculator: {
-              ...base.calculators.g.calculator,
-              total: r(33n),
-            },
-          }
-        : undefined,
       f: base.calculators?.f
         ? {
             ...base.calculators.f,
@@ -109,14 +99,14 @@ export const runPersistenceTests = (): void => {
     "round-trip lambda control",
   );
   assert.deepEqual(loaded?.sessionControlProfiles, {}, "session-only control profile edits are not persisted");
-  assert.equal(loaded?.activeCalculatorId, "g", "active calculator selection round-trips");
+  assert.equal(loaded?.activeCalculatorId, "f", "active calculator selection round-trips");
   assert.deepEqual(
     loaded?.perCalculatorCompletedUnlockIds,
     persisted.perCalculatorCompletedUnlockIds,
     "per-calculator control unlock completion round-trips",
   );
-  assert.ok(loaded?.calculators?.g && loaded?.calculators?.f, "dual calculators round-trip");
-  assert.deepEqual(loaded?.calculators?.g?.calculator.total, r(33n), "g calculator state round-trips");
+  assert.ok(loaded?.calculators?.f, "f calculator round-trips");
+  assert.equal(Boolean(loaded?.calculators?.g), false, "g calculator remains absent when not initialized");
   assert.deepEqual(loaded?.calculators?.f?.calculator.total, r(12n), "f calculator state round-trips");
 
   const unsupported = loadFromRawSave(

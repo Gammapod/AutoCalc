@@ -59,10 +59,14 @@ const getCellOccupancy = (
     if (cell.kind !== "key") {
       return "empty";
     }
+    const unlocked = isKeyUnlocked(state, cell.key);
+    if (!unlocked) {
+      return "invalid";
+    }
     if (mode === "source" || !enforceUnlockedKeypadDestination) {
       return "key";
     }
-    return isKeyUnlocked(state, cell.key) ? "key" : "invalid";
+    return "key";
   }
   const slot = state.ui.storageLayout[target.index];
   if (typeof slot === "undefined") {
@@ -70,6 +74,9 @@ const getCellOccupancy = (
   }
   if (!slot) {
     return "empty";
+  }
+  if (!isKeyUnlocked(state, slot.key)) {
+    return "invalid";
   }
   return "key";
 };

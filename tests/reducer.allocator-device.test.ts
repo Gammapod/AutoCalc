@@ -28,9 +28,9 @@ export const runReducerAllocatorDeviceTests = (): void => {
   assertAllocatorInvariant(withSlots);
 
   const reset = reducer(withSlots, { type: "RESET_ALLOCATOR_DEVICE" });
-  assert.equal(reset.lambdaControl.alpha, 1, "reset restores alpha start");
+  assert.equal(reset.lambdaControl.alpha, 2, "reset restores alpha start");
   assert.equal(reset.lambdaControl.beta, 1, "reset restores beta start");
-  assert.equal(reset.lambdaControl.gamma, 0, "reset restores gamma start");
+  assert.equal(reset.lambdaControl.gamma, 1, "reset restores gamma start");
   assert.equal(reset.lambdaControl.maxPoints, withSlots.lambdaControl.maxPoints, "reset preserves max points");
   assertAllocatorInvariant(reset);
 };

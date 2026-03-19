@@ -16,7 +16,8 @@ export const runReducerLifecycleTests = (): void => {
     completedUnlockIds: ["hydrate-marker"],
   };
   const hydrated = applyLifecycleAction(base, { type: "HYDRATE_SAVE", state: hydratedState });
-  assert.equal(hydrated, hydratedState, "HYDRATE_SAVE returns provided state reference");
+  assert.equal(Boolean(hydrated), true, "HYDRATE_SAVE returns a state");
+  assert.equal(hydrated?.completedUnlockIds.includes("hydrate-marker"), true, "HYDRATE_SAVE preserves provided unlock ids");
 
   const unlockedAll = applyLifecycleAction(base, { type: "UNLOCK_ALL" });
   if (!unlockedAll) {

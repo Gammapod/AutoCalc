@@ -140,8 +140,8 @@ export const runDragDropBehaviorTests = (): void => {
   );
   assert.equal(
     allowedExecutionMoveOutOfKeypad,
-    "move",
-    "dragging execution key out of keypad into storage is allowed",
+    null,
+    "locked keypad keys cannot be moved into storage",
   );
 
   const invalid = classifyDropAction(

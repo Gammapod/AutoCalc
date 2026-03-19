@@ -168,7 +168,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(projectedDisplay),
-    "_ [ + 1 ] [ _ _ ] [ _ _ ]",
+    "_ [ + 1 ] [ _ _ ] [ _ _ ] [ _ _ ]",
     "display capacity follows allocator-projected max slot count",
   );
 
@@ -511,7 +511,6 @@ export const runOperationSlotDisplayTests = (): void => {
     "expansion toggle is a no-op when no valid step target exists",
   );
 };
-
 
 
 

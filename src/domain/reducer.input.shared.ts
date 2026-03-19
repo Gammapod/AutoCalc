@@ -1,4 +1,4 @@
-import { isKeyUnlocked } from "./keyUnlocks.js";
+import { isKeyUsableForInput } from "./keyUnlocks.js";
 import { resolveKeyId } from "./keyPresentation.js";
 import {
   hasStepThroughOnKeypad,
@@ -13,7 +13,7 @@ export type PreparedKeyActionContext = {
   stepAwareState: GameState;
   preprocessed: GameState;
   keyed: GameState;
-  isUnlocked: boolean;
+  isUsable: boolean;
 };
 
 export const prepareKeyActionContext = (
@@ -23,8 +23,7 @@ export const prepareKeyActionContext = (
   const stepAwareState = hasStepThroughOnKeypad(state) ? state : withClearedStepProgress(state);
   const key = resolveKeyId(keyLike);
   const preprocessed = preprocessForActiveRoll(stepAwareState, key);
-  const isUnlocked = isKeyUnlocked(preprocessed, key);
-  const keyed = isUnlocked ? incrementKeyPressCount(preprocessed, key) : preprocessed;
-  return { key, stepAwareState, preprocessed, keyed, isUnlocked };
+  const isUsable = isKeyUsableForInput(preprocessed, key);
+  const keyed = isUsable ? incrementKeyPressCount(preprocessed, key) : preprocessed;
+  return { key, stepAwareState, preprocessed, keyed, isUsable };
 };
-

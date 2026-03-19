@@ -47,7 +47,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       true,
       "desktop uses minimum key-width token for keypad columns",
     );
-    assert.equal(keys?.style.getPropertyValue("--desktop-calc-cols"), "1", "desktop render sets keypad column sizing var");
+    assert.equal(keys?.style.getPropertyValue("--desktop-calc-cols"), "2", "desktop render sets keypad column sizing var");
     assert.equal(keys?.style.getPropertyValue("--desktop-calc-rows"), "1", "desktop render sets keypad row sizing var");
     assert.equal(
       keys?.style.getPropertyValue("--desktop-key-min-width").endsWith("px"),
@@ -154,8 +154,8 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       ...projected,
       ui: {
         ...projected.ui,
-        keyLayout: [{ kind: "key" as const, key: k("\u25BB") }],
-        keypadColumns: 1,
+        keyLayout: [{ kind: "key" as const, key: k("\u25BB") }, { kind: "key" as const, key: k("=") }],
+        keypadColumns: 2,
         keypadRows: 1,
       },
       calculator: {
