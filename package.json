@@ -44,6 +44,9 @@
     "chart.js": "^4.4.3",
     "katex": "^0.16.33"
   },
+  "overrides": {
+    "tar": "^7.5.11"
+  },
   "build": {
     "appId": "com.autocalc.app",
     "productName": "AutoCalc",
