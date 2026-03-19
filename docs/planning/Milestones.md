@@ -161,16 +161,6 @@ The following require integer inputs, and return NaN otherwise:
     - key face: ``
     - operator slot face: `[ ⇋ ]`
     - expanded form: `[ abc -> cba ]`
-- `Nth Prime (ℙ)`:
-    - functionality: return the nth prime number. NaN if n is not a natural number.
-    - key face: ``
-    - operator slot face: `[ ℙ ]`
-    - expanded form: `[ ℙ(n) ]`
-- `Index of prime (ℙ⁻¹)`:
-    - functionality: return the index of prime p. NaN if p is not a prime.
-    - key face: ``
-    - operator slot face: `[ ℙ⁻¹ ]`
-    - expanded form: `[  ]`
 
 ### Binary Operators
 
@@ -214,7 +204,6 @@ The following require integer inputs, and return NaN otherwise:
 
 ## Settings Keys
 
-- `Base-Prime (ℙ(ℙ⁻¹(f)))`: Allows arithmetic on the prime index. When toggled, the seed f_0=s becomes f_0=ℙ(s) and the function f_n=g°f_-n becomes ℙ(g°ℙ⁻¹(f_-n)).
 - `Base-2 display`: Changes to binary notation. Please note - binary notation should also influence the behavior with respect to maxDigits and digit-specific operations. If maxDigits is set to 4, then the highest number possible is "1111", or 15 on the roll.
 
 ## Digits/Values
@@ -224,5 +213,27 @@ The following require integer inputs, and return NaN otherwise:
 
 ## Visualizer changes
 
-- `Prime domain`: In addition to natural numbers, integers, rationals, etc, I'd like to also label prime numbers as being in the prime domain, `ℙ`. It is a subdomain of the naturals.
 - `Function display`: Prime factorization visualizer should display the user-defined function expanded - if the user's function is `5 [ - 4 ] [ Ω ] [ × 8 ] [ ^ 2 ] [ ++ ]`, the visualizer should show `f_0 = 5, f_x = ++(( Ω(f_x-1 - 4) × 8) ^ 2)`. Binary operations are added to the right and unary operators are added to the left, parentheses as needed.
+
+# Post-release: full version backlog
+
+## Unary Operators
+
+- `Nth Prime (ℙ)`:
+    - functionality: return the nth prime number. NaN if n is not a natural number.
+    - key face: ``
+    - operator slot face: `[ ℙ ]`
+    - expanded form: `[ ℙ(n) ]`
+- `Index of prime (ℙ⁻¹)`:
+    - functionality: return the index of prime p. NaN if p is not a prime.
+    - key face: ``
+    - operator slot face: `[ ℙ⁻¹ ]`
+    - expanded form: `[  ]`
+    
+## Settings Keys
+
+- `Base-Prime (ℙ(ℙ⁻¹(f)))`: Allows arithmetic on the prime index. When toggled, the seed f_0=s becomes f_0=ℙ(s) and the function f_n=g°f_-n becomes ℙ(g°ℙ⁻¹(f_-n)).
+
+## Visualizer changes
+
+- `Prime domain`: In addition to natural numbers, integers, rationals, etc, I'd like to also label prime numbers as being in the prime domain, `ℙ`. It is a subdomain of the naturals.
