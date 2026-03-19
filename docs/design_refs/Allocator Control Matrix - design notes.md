@@ -28,9 +28,9 @@ ALLOCATOR  ,==,"<
  |0.1 0.1 0.1 0.1 0|   |1|   |ϵ' -> tick++ |
 
 Symbol | Starting values | min..max Values | Settable?                               
-α      | 1               | 1..8            | yes        
-β      | 1               | 1..8            | yes      
-γ      | 0               | 1..4            | yes 
+α      | 3               | 3..8            | yes        
+β      | 2               | 2..8            | yes      
+γ      | 1               | 1..4            | yes 
 δ      | ('1)            | ('1)..('none)   | no                    
 ϵ      | ('0)            | ('0)..('none)   | no                
 

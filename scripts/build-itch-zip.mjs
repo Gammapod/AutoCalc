@@ -5,6 +5,9 @@ import { spawnSync } from "node:child_process";
 const root = process.cwd();
 const releaseDir = resolve(root, "release");
 const stagingRoot = resolve(releaseDir, ".itch-staging");
+const designRefsSource = existsSync(resolve(root, "design_refs"))
+  ? resolve(root, "design_refs")
+  : resolve(root, "docs", "design_refs");
 
 const packageJsonPath = resolve(root, "package.json");
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
@@ -23,7 +26,7 @@ const zipPath = resolve(releaseDir, zipName);
 const requiredPaths = [
   resolve(root, "index.html"),
   resolve(root, "dist"),
-  resolve(root, "design_refs"),
+  designRefsSource,
   resolve(root, "dist", "reports"),
   resolve(root, "node_modules", "katex", "dist", "katex.min.css"),
   resolve(root, "node_modules", "katex", "dist", "katex.min.js"),
@@ -82,7 +85,7 @@ copyIntoStaging("node_modules/chart.js/dist/chart.umd.min.js", "mobile_web/node_
 copyIntoStaging("node_modules/algebrite/dist/algebrite.bundle-for-browser.js", "mobile_web/node_modules/algebrite/dist/algebrite.bundle-for-browser.js");
 
 // Keep requested folders in the archive.
-cpSync(resolve(root, "design_refs"), resolve(stagingRoot, "design_refs"), { recursive: true });
+cpSync(designRefsSource, resolve(stagingRoot, "design_refs"), { recursive: true });
 cpSync(resolve(root, "dist", "reports"), resolve(stagingRoot, "dist", "reports"), { recursive: true });
 
 // Add itch-playable root structure.
