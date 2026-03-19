@@ -7,6 +7,7 @@ import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 import { resolveActiveCalculatorId } from "./multiCalculator.js";
+import { projectControlFromState } from "./controlProjection.js";
 
 export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean =>
   evaluateUnlockPredicate(predicate, state);
@@ -198,9 +199,10 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
     };
   }
   if (effect.type === "increase_allocator_max_points") {
+    const projection = projectControlFromState(state);
     return applyAllocatorRuntimeProjection(state, {
-      ...state.lambdaControl,
-      maxPoints: state.lambdaControl.maxPoints + effect.amount,
+      ...projection.control,
+      maxPoints: projection.control.maxPoints + effect.amount,
     });
   }
   if (effect.type === "unlock_second_slot") {

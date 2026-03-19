@@ -2,10 +2,9 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { initialState } from "./state.js";
 import type { Action, GameState } from "./types.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
-import { sanitizeLambdaControl } from "./lambdaControl.js";
 import { applyUnlockAllPreset } from "./lifecyclePresets.js";
 import { createInitialStepProgressState } from "./reducer.stateBuilders.js";
-import { getEffectiveControlProfile } from "./controlProfileRuntime.js";
+import { projectControlFromState } from "./controlProjection.js";
 
 export const applyLifecycleAction = (state: GameState, action: Action): GameState | null => {
   if (action.type === "RESET_RUN") {
@@ -34,7 +33,7 @@ export const applyLifecycleAction = (state: GameState, action: Action): GameStat
             },
           }
         : withCells;
-    return applyAllocatorRuntimeProjection(withStepProgress, sanitizeLambdaControl(withStepProgress.lambdaControl, getEffectiveControlProfile(withStepProgress)));
+    return applyAllocatorRuntimeProjection(withStepProgress, projectControlFromState(withStepProgress).control);
   }
   if (action.type === "UNLOCK_ALL") {
     return applyUnlockAllPreset(state);

@@ -7,7 +7,7 @@ import {
   hasValidAutoEqualsEquation,
   isAutoEqualsEnabled,
 } from "../domain/autoEqualsPolicy.js";
-import { getEffectiveControlProfile } from "../domain/controlProfileRuntime.js";
+import { projectControlFromState } from "../domain/controlProjection.js";
 import { stableSignature } from "../infra/stateSignature.js";
 
 export const AUTO_EQUALS_INTERVAL_MS = 1000;
@@ -37,7 +37,7 @@ const defaultTimers: TimerApi = {
 };
 
 const getAutoEqualsRateMultiplier = (state: GameState): number => {
-  return getLambdaAutoEqualsRateMultiplier(state.lambdaControl, getEffectiveControlProfile(state));
+  return projectControlFromState(state).autoEqualsRateMultiplier ?? getLambdaAutoEqualsRateMultiplier(state.lambdaControl);
 };
 
 const getAutoEqualsIntervalMs = (state: GameState, baseIntervalMs: number): number =>

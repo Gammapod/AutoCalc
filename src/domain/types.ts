@@ -289,6 +289,31 @@ export type ControlProfile = {
   gammaMinAfterOne?: boolean;
 };
 
+export type ControlProjectionFields = Record<ControlField, number>;
+
+export type ControlProjectionBudget = {
+  spent: number;
+  unused: number;
+  maxPoints: number;
+};
+
+export type ControlProjection = {
+  calculatorId: CalculatorId;
+  profile: ControlProfile;
+  control: LambdaControl;
+  fields: ControlProjectionFields;
+  budget: ControlProjectionBudget;
+  allocator: AllocatorState;
+  keypadColumns: number;
+  keypadRows: number;
+  maxSlots: number;
+  maxTotalDigits: number;
+  deltaEffective: number;
+  epsilonEffective: RationalValue;
+  gammaMinRaised: boolean;
+  autoEqualsRateMultiplier: number;
+};
+
 export type LambdaControl = {
   maxPoints: number;
   alpha: number;

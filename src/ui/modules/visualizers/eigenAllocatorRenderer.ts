@@ -1,5 +1,4 @@
-import { getLambdaDerivedValues } from "../../../domain/lambdaControl.js";
-import { getEffectiveControlProfile } from "../../../domain/controlProfileRuntime.js";
+import { projectControlFromState } from "../../../domain/controlProjection.js";
 import type { ControlField, GameState, MemoryVariable } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 
@@ -35,28 +34,27 @@ const selectedVectorEntry = (selectedVariable: MemoryVariable): string => {
 };
 
 const buildEigenAllocatorLatex = (state: GameState): string => {
-  const profile = getEffectiveControlProfile(state);
-  const derived = getLambdaDerivedValues(state.lambdaControl, profile);
+  const projection = projectControlFromState(state);
   const alphaEntry = state.ui.memoryVariable === "\u03B1" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\alpha`;
   const betaEntry = state.ui.memoryVariable === "\u03B2" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\beta`;
   const gammaEntry = state.ui.memoryVariable === "\u03B3" ? selectedVectorEntry(state.ui.memoryVariable) : String.raw`\gamma`;
   const matrixRows = CONTROL_FIELDS.map((target) => {
-    const eq = profile.equations[target];
+    const eq = projection.profile.equations[target];
     return CONTROL_FIELDS.map((source) => formatMatrixNumber(eq.coefficients[source])).join("&");
   }).join(String.raw`\\`);
   const inputVector = [
-    formatMatrixNumber(derived.effectiveFields.alpha),
-    formatMatrixNumber(derived.effectiveFields.beta),
-    formatMatrixNumber(derived.effectiveFields.gamma),
-    formatMatrixNumber(derived.effectiveFields.delta),
-    formatMatrixNumber(derived.effectiveFields.epsilon),
+    formatMatrixNumber(projection.fields.alpha),
+    formatMatrixNumber(projection.fields.beta),
+    formatMatrixNumber(projection.fields.gamma),
+    formatMatrixNumber(projection.fields.delta),
+    formatMatrixNumber(projection.fields.epsilon),
   ].join(String.raw`\\`);
   const outputVector = [
-    String.raw`\alpha'=${derived.effectiveFields.alpha.toString()}`,
-    String.raw`\beta'=${derived.effectiveFields.beta.toString()}`,
-    String.raw`\gamma'=${derived.effectiveFields.gamma.toString()}`,
-    String.raw`\delta'=${derived.effectiveFields.delta.toString()}`,
-    String.raw`\epsilon'=${derived.effectiveFields.epsilon.toString()}`,
+    String.raw`\alpha'=${projection.fields.alpha.toString()}`,
+    String.raw`\beta'=${projection.fields.beta.toString()}`,
+    String.raw`\gamma'=${projection.fields.gamma.toString()}`,
+    String.raw`\delta'=${projection.fields.delta.toString()}`,
+    String.raw`\epsilon'=${projection.fields.epsilon.toString()}`,
   ].join(String.raw`\\`);
 
   return String.raw`
@@ -72,22 +70,27 @@ ${gammaEntry}\\
 \begin{bmatrix}
 ${matrixRows}
 \end{bmatrix}
-=
+\times
 \begin{bmatrix}
 ${inputVector}
+\end{bmatrix}
+=
+\begin{bmatrix}
+${outputVector}
 \end{bmatrix}
 `;
 };
 
 const buildCompactAllocatorSummary = (state: GameState): string => {
-  const derived = getLambdaDerivedValues(state.lambdaControl, getEffectiveControlProfile(state));
-  const epsilon = toDisplayString(derived.epsilonEffective);
+  const projection = projectControlFromState(state);
+  const epsilon = toDisplayString(projection.epsilonEffective);
   return [
-    `alpha=${derived.effectiveFields.alpha.toString()}`,
-    `beta=${derived.effectiveFields.beta.toString()}`,
-    `gamma=${derived.effectiveFields.gamma.toString()}`,
-    `delta=${derived.deltaEffective.toString()}`,
+    `alpha=${projection.fields.alpha.toString()}`,
+    `beta=${projection.fields.beta.toString()}`,
+    `gamma=${projection.fields.gamma.toString()}`,
+    `delta=${projection.deltaEffective.toString()}`,
     `epsilon=${epsilon}`,
+    `lambda=${projection.budget.unused.toString()}`,
   ].join(" | ");
 };
 

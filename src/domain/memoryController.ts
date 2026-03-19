@@ -1,8 +1,8 @@
 import type { Digit, GameState, Key, MemoryVariable } from "./types.js";
-import { adjustAxis, withLegacyAllocatorFallback } from "./lambdaControl.js";
+import { adjustAxis } from "./lambdaControl.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { isMemoryKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
-import { getEffectiveControlProfile } from "./controlProfileRuntime.js";
+import { projectControlFromState } from "./controlProjection.js";
 
 const MEMORY_VARIABLE_CYCLE: readonly MemoryVariable[] = ["alpha", "beta", "gamma"].map((symbol) =>
   symbol === "alpha" ? "α" : symbol === "beta" ? "β" : "γ",
@@ -20,7 +20,7 @@ const memoryVariableToAxis = (memoryVariable: MemoryVariable): "alpha" | "beta" 
 
 const readSelectedMemoryValue = (state: GameState): number => {
   const axis = memoryVariableToAxis(state.ui.memoryVariable);
-  return state.lambdaControl[axis];
+  return projectControlFromState(state).fields[axis];
 };
 
 export const isMemoryKey = (key: Key): boolean => isMemoryKeyId(key);
@@ -48,11 +48,10 @@ export const resolveMemoryRecallDigit = (state: GameState): Digit => {
 };
 
 export const applyMemoryAdjust = (state: GameState, delta: 1 | -1): GameState => {
-  const profile = getEffectiveControlProfile(state);
-  const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator, profile);
+  const projection = projectControlFromState(state);
   const axis = memoryVariableToAxis(state.ui.memoryVariable);
-  const nextControl = adjustAxis(effectiveControl, profile, axis, delta);
-  if (nextControl === effectiveControl) {
+  const nextControl = adjustAxis(projection.control, projection.profile, axis, delta);
+  if (nextControl === projection.control) {
     return state;
   }
   return applyAllocatorRuntimeProjection(state, nextControl);
@@ -62,4 +61,3 @@ export const isMemoryCycleKey = (key: Key): boolean => resolveKeyId(key) === KEY
 export const isMemoryRecallKey = (key: Key): boolean => resolveKeyId(key) === KEY_ID.memory_recall;
 export const isMemoryPlusKey = (key: Key): boolean => resolveKeyId(key) === KEY_ID.memory_adjust_plus;
 export const isMemoryMinusKey = (key: Key): boolean => resolveKeyId(key) === KEY_ID.memory_adjust_minus;
-

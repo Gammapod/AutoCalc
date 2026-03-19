@@ -59,6 +59,11 @@ export const runPersistenceTests = (): void => {
     sessionControlProfiles: {
       f: controlProfiles.f,
     },
+    activeCalculatorId: "g",
+    perCalculatorCompletedUnlockIds: {
+      g: ["unlock_allocator_point_on_total_at_least_9"],
+      f: [],
+    },
   };
   repo.save(persisted);
 
@@ -83,6 +88,13 @@ export const runPersistenceTests = (): void => {
     "round-trip lambda control",
   );
   assert.deepEqual(loaded?.sessionControlProfiles, {}, "session-only control profile edits are not persisted");
+  assert.equal(loaded?.activeCalculatorId, "g", "active calculator selection round-trips");
+  assert.deepEqual(
+    loaded?.perCalculatorCompletedUnlockIds,
+    persisted.perCalculatorCompletedUnlockIds,
+    "per-calculator control unlock completion round-trips",
+  );
+  assert.ok(loaded?.calculators?.g && loaded?.calculators?.f, "dual calculators round-trip");
 
   const unsupported = loadFromRawSave(
     JSON.stringify({

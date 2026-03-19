@@ -1,7 +1,6 @@
 import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
-import { getLambdaDerivedValues, getLambdaUnusedPoints } from "../../../domain/lambdaControl.js";
-import { getEffectiveControlProfile } from "../../../domain/controlProfileRuntime.js";
+import { projectControlFromState } from "../../../domain/controlProjection.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 import {
@@ -156,25 +155,24 @@ const renderSevenSegmentValue = (
 };
 
 export const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
-  const profile = getEffectiveControlProfile(state);
-  const lambdaDerived = getLambdaDerivedValues(state.lambdaControl, profile);
+  const projection = projectControlFromState(state);
   const buildMemoryStatusRow = (): HTMLElement => {
     const row = document.createElement("div");
     row.className = "total-memory-row";
 
     const lambda = document.createElement("span");
     lambda.className = "total-memory-lambda";
-    lambda.textContent = `\u03BB = ${getLambdaUnusedPoints(state.lambdaControl, profile).toString()}`;
+    lambda.textContent = `\u03BB = ${projection.budget.unused.toString()}`;
     row.appendChild(lambda);
 
     const variables = document.createElement("div");
     variables.className = "total-memory-variables";
     const variableValues: Array<{ symbol: "\u03B1" | "\u03B2" | "\u03B3" | "\u03B4" | "\u03F5"; value: string }> = [
-      { symbol: "\u03B1", value: state.lambdaControl.alpha.toString() },
-      { symbol: "\u03B2", value: state.lambdaControl.beta.toString() },
-      { symbol: "\u03B3", value: state.lambdaControl.gamma.toString() },
-      { symbol: "\u03B4", value: lambdaDerived.deltaEffective.toString() },
-      { symbol: "\u03F5", value: toDisplayString(lambdaDerived.epsilonEffective) },
+      { symbol: "\u03B1", value: projection.fields.alpha.toString() },
+      { symbol: "\u03B2", value: projection.fields.beta.toString() },
+      { symbol: "\u03B3", value: projection.fields.gamma.toString() },
+      { symbol: "\u03B4", value: projection.deltaEffective.toString() },
+      { symbol: "\u03F5", value: toDisplayString(projection.epsilonEffective) },
     ];
     for (const entry of variableValues) {
       const token = document.createElement("span");

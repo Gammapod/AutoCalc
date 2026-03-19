@@ -20,12 +20,12 @@ import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import {
   adjustAxis,
   resetLambdaAdjustments,
-  withLegacyAllocatorFallback,
   withMaxPointsAdded,
   withMaxPointsSet,
 } from "./lambdaControl.js";
 import { commitLegacyProjection, projectCalculatorToLegacy, resolveActiveCalculatorId } from "./multiCalculator.js";
-import { getBaseControlProfile, getEffectiveControlProfile } from "./controlProfileRuntime.js";
+import { getBaseControlProfile } from "./controlProfileRuntime.js";
+import { projectControlFromState } from "./controlProjection.js";
 import type {
   Action,
   CalculatorId,
@@ -125,38 +125,36 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     return applyToggleVisualizer(state, action.visualizer);
   }
   if (action.type === "ALLOCATOR_ADJUST") {
-    const profile = getEffectiveControlProfile(state);
-    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator, profile);
+    const projection = projectControlFromState(state);
     const axis = allocatorFieldToAxis(action.field);
     if (!axis) {
       return state;
     }
-    const nextControl = adjustAxis(effectiveControl, profile, axis, action.delta);
-    if (nextControl === effectiveControl) {
+    const nextControl = adjustAxis(projection.control, projection.profile, axis, action.delta);
+    if (nextControl === projection.control) {
       return state;
     }
     return applyUnlocks(applyAllocatorRuntimeProjection(state, nextControl), unlockCatalog);
   }
   if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
-    const profile = getEffectiveControlProfile(state);
-    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator, profile);
-    const nextControl = withMaxPointsSet(effectiveControl, profile, action.value);
-    if (nextControl === effectiveControl) {
+    const projection = projectControlFromState(state);
+    const nextControl = withMaxPointsSet(projection.control, projection.profile, action.value);
+    if (nextControl === projection.control) {
       return state;
     }
     return applyAllocatorRuntimeProjection(state, nextControl);
   }
   if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
-    const profile = getEffectiveControlProfile(state);
-    const effectiveControl = withLegacyAllocatorFallback(state.lambdaControl, state.allocator, profile);
-    const nextControl = withMaxPointsAdded(effectiveControl, profile, action.amount);
-    if (nextControl === effectiveControl) {
+    const projection = projectControlFromState(state);
+    const nextControl = withMaxPointsAdded(projection.control, projection.profile, action.amount);
+    if (nextControl === projection.control) {
       return state;
     }
     return applyAllocatorRuntimeProjection(state, nextControl);
   }
   if (action.type === "RESET_ALLOCATOR_DEVICE") {
-    return applyAllocatorRuntimeProjection(state, resetLambdaAdjustments(state.lambdaControl, getEffectiveControlProfile(state)));
+    const projection = projectControlFromState(state);
+    return applyAllocatorRuntimeProjection(state, resetLambdaAdjustments(projection.control, projection.profile));
   }
   if (action.type === "ALLOCATOR_RETURN_PRESSED") {
     const withCount: GameState = {

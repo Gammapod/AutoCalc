@@ -231,12 +231,6 @@ export const sanitizeLambdaControl = (input: LambdaControl | null | undefined, p
   return next;
 };
 
-export const withLegacyAllocatorFallback = (
-  control: LambdaControl,
-  _allocator: AllocatorState,
-  profile?: ControlProfile,
-): LambdaControl => sanitizeLambdaControl(control, profile);
-
 export const canAdjustAxis = (control: LambdaControl, profileInput: ControlProfile | undefined, axis: LambdaAxis, delta: 1 | -1): boolean => {
   const profile = resolveProfile(profileInput);
   if (!profile.settable[axis]) {
@@ -328,4 +322,3 @@ export const buildAllocatorSnapshot = (control: LambdaControl, profile?: Control
     },
   };
 };
-
