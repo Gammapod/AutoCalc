@@ -22,12 +22,21 @@ export const KEY_ID = {
   op_rotate_left: "op_rotate_left",
   op_gcd: "op_gcd",
   op_lcm: "op_lcm",
+  op_max: "op_max",
+  op_min: "op_min",
+  op_greater: "op_greater",
   unary_inc: "unary_inc",
   unary_dec: "unary_dec",
   unary_neg: "unary_neg",
   unary_sigma: "unary_sigma",
   unary_phi: "unary_phi",
   unary_omega: "unary_omega",
+  unary_not: "unary_not",
+  unary_collatz: "unary_collatz",
+  unary_sort_asc: "unary_sort_asc",
+  unary_floor: "unary_floor",
+  unary_ceil: "unary_ceil",
+  unary_mirror_digits: "unary_mirror_digits",
   util_clear_all: "util_clear_all",
   util_backspace: "util_backspace",
   util_undo: "util_undo",
@@ -70,14 +79,23 @@ export type BinaryOperatorKeyId =
   | typeof KEY_ID.op_mod
   | typeof KEY_ID.op_rotate_left
   | typeof KEY_ID.op_gcd
-  | typeof KEY_ID.op_lcm;
+  | typeof KEY_ID.op_lcm
+  | typeof KEY_ID.op_max
+  | typeof KEY_ID.op_min
+  | typeof KEY_ID.op_greater;
 export type UnaryOperatorKeyId =
   | typeof KEY_ID.unary_inc
   | typeof KEY_ID.unary_dec
   | typeof KEY_ID.unary_neg
   | typeof KEY_ID.unary_sigma
   | typeof KEY_ID.unary_phi
-  | typeof KEY_ID.unary_omega;
+  | typeof KEY_ID.unary_omega
+  | typeof KEY_ID.unary_not
+  | typeof KEY_ID.unary_collatz
+  | typeof KEY_ID.unary_sort_asc
+  | typeof KEY_ID.unary_floor
+  | typeof KEY_ID.unary_ceil
+  | typeof KEY_ID.unary_mirror_digits;
 export type MemoryKeyId =
   | typeof KEY_ID.memory_cycle_variable
   | typeof KEY_ID.memory_adjust_plus
@@ -139,12 +157,21 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["\u21BA", { keyId: KEY_ID.op_rotate_left, buttonFace: "\u21BA", operatorInlineFace: "\u21BA", operatorSlotFace: "\u21BA", operatorAlgebraicFace: "\u21BA" }],
   ["\u2A51", { keyId: KEY_ID.op_gcd, buttonFace: "\u22C0", operatorInlineFace: "\u22C0", operatorSlotFace: "\u22C0", operatorAlgebraicFace: "\u22C0" }],
   ["\u2A52", { keyId: KEY_ID.op_lcm, buttonFace: "\u22C1", operatorInlineFace: "\u22C1", operatorSlotFace: "\u22C1", operatorAlgebraicFace: "\u22C1" }],
+  ["MAX", { keyId: KEY_ID.op_max, buttonFace: "\u2567", operatorInlineFace: "\u2567", operatorSlotFace: "\u2567", operatorAlgebraicFace: "\u2567" }],
+  ["MIN", { keyId: KEY_ID.op_min, buttonFace: "\u2564", operatorInlineFace: "\u2564", operatorSlotFace: "\u2564", operatorAlgebraicFace: "\u2564" }],
+  [">", { keyId: KEY_ID.op_greater, buttonFace: ">", operatorInlineFace: ">", operatorSlotFace: ">", operatorAlgebraicFace: ">" }],
   ["++", { keyId: KEY_ID.unary_inc, buttonFace: "+ +", operatorInlineFace: "++", operatorSlotFace: "++", operatorAlgebraicFace: "++" }],
   ["--", { keyId: KEY_ID.unary_dec, buttonFace: "\u2212 \u2212", operatorInlineFace: "\u2212\u2212", operatorSlotFace: "\u2212\u2212", operatorAlgebraicFace: "\u2212\u2212" }],
   ["-n", { keyId: KEY_ID.unary_neg, buttonFace: "\u00B1", operatorInlineFace: "\u00B1", operatorSlotFace: "\u00B1", operatorAlgebraicFace: "\u00B1" }],
   ["\u03C3", { keyId: KEY_ID.unary_sigma, buttonFace: "\u03C3", operatorInlineFace: "\u03C3", operatorSlotFace: "\u03C3", operatorAlgebraicFace: "\u03C3" }],
   ["\u03C6", { keyId: KEY_ID.unary_phi, buttonFace: "\u03C6", operatorInlineFace: "\u03C6", operatorSlotFace: "\u03C6", operatorAlgebraicFace: "\u03C6" }],
   ["\u03A9", { keyId: KEY_ID.unary_omega, buttonFace: "\u03A9", operatorInlineFace: "\u03A9", operatorSlotFace: "\u03A9", operatorAlgebraicFace: "\u03A9" }],
+  ["NOT", { keyId: KEY_ID.unary_not, buttonFace: "\u00AC", operatorInlineFace: "\u00AC", operatorSlotFace: "\u00AC", operatorAlgebraicFace: "\u00AC" }],
+  ["CTZ", { keyId: KEY_ID.unary_collatz, buttonFace: "Ctz", operatorInlineFace: "Ctz", operatorSlotFace: "Ctz", operatorAlgebraicFace: "Ctz" }],
+  ["SORT", { keyId: KEY_ID.unary_sort_asc, buttonFace: "\u21E1d", operatorInlineFace: "\u21E1d", operatorSlotFace: "\u21E1", operatorAlgebraicFace: "\u21E1d" }],
+  ["FLOOR", { keyId: KEY_ID.unary_floor, buttonFace: "\u230An\u230B", operatorInlineFace: "\u230An\u230B", operatorSlotFace: "\u230An\u230B", operatorAlgebraicFace: "\u230An\u230B" }],
+  ["CEIL", { keyId: KEY_ID.unary_ceil, buttonFace: "\u2308n\u2309", operatorInlineFace: "\u2308n\u2309", operatorSlotFace: "\u2308n\u2309", operatorAlgebraicFace: "\u2308n\u2309" }],
+  ["REV", { keyId: KEY_ID.unary_mirror_digits, buttonFace: "\u21CBd", operatorInlineFace: "\u21CBd", operatorSlotFace: "\u21CB", operatorAlgebraicFace: "\u21CBd" }],
   ["C", { keyId: KEY_ID.util_clear_all, buttonFace: "C" }],
   ["\u2190", { keyId: KEY_ID.util_backspace, buttonFace: "\u2190" }],
   ["UNDO", { keyId: KEY_ID.util_undo, buttonFace: "\u2936" }],
@@ -275,6 +302,9 @@ const BINARY_OPERATOR_KEY_ID_SET = new Set<BinaryOperatorKeyId>([
   KEY_ID.op_rotate_left,
   KEY_ID.op_gcd,
   KEY_ID.op_lcm,
+  KEY_ID.op_max,
+  KEY_ID.op_min,
+  KEY_ID.op_greater,
 ]);
 const UNARY_OPERATOR_KEY_ID_SET = new Set<UnaryOperatorKeyId>([
   KEY_ID.unary_inc,
@@ -283,6 +313,12 @@ const UNARY_OPERATOR_KEY_ID_SET = new Set<UnaryOperatorKeyId>([
   KEY_ID.unary_sigma,
   KEY_ID.unary_phi,
   KEY_ID.unary_omega,
+  KEY_ID.unary_not,
+  KEY_ID.unary_collatz,
+  KEY_ID.unary_sort_asc,
+  KEY_ID.unary_floor,
+  KEY_ID.unary_ceil,
+  KEY_ID.unary_mirror_digits,
 ]);
 const MEMORY_KEY_ID_SET = new Set<MemoryKeyId>([
   KEY_ID.memory_cycle_variable,

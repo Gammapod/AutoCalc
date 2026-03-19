@@ -84,6 +84,66 @@ export const runEngineTests = (): void => {
     { ok: true, total: r(1n, 2n), euclidRemainder: r(1n, 2n) },
     "modulo operator supports fractional totals and preserves exact remainder metadata",
   );
+
+  const maxOnInteger = executeSlots(r(10n), [{ operator: op("MAX"), operand: 12n }]);
+  assert.deepEqual(maxOnInteger, { ok: true, total: r(12n) }, "max returns larger value");
+
+  const minOnInteger = executeSlots(r(10n), [{ operator: op("MIN"), operand: 12n }]);
+  assert.deepEqual(minOnInteger, { ok: true, total: r(10n) }, "min returns smaller value");
+
+  const greaterTrue = executeSlots(r(7n), [{ operator: op(">"), operand: 6n }]);
+  assert.deepEqual(greaterTrue, { ok: true, total: r(1n) }, "greater returns 1 when lhs > rhs");
+
+  const greaterFalse = executeSlots(r(6n), [{ operator: op(">"), operand: 6n }]);
+  assert.deepEqual(greaterFalse, { ok: true, total: r(0n) }, "greater returns 0 when lhs <= rhs");
+
+  const maxOnRational = executeSlots(r(5n, 2n), [{ operator: op("MAX"), operand: 2n }]);
+  assert.deepEqual(maxOnRational, { ok: true, total: r(5n, 2n) }, "max supports exact rational-vs-integer comparison");
+
+  const minOnRational = executeSlots(r(5n, 2n), [{ operator: op("MIN"), operand: 3n }]);
+  assert.deepEqual(minOnRational, { ok: true, total: r(5n, 2n) }, "min supports exact rational-vs-integer comparison");
+
+  const unaryNotZero = executeSlots(r(0n), [{ kind: "unary", operator: uop("NOT") }]);
+  assert.deepEqual(unaryNotZero, { ok: true, total: r(1n) }, "not maps zero to one");
+
+  const unaryNotNonZero = executeSlots(r(-12n), [{ kind: "unary", operator: uop("NOT") }]);
+  assert.deepEqual(unaryNotNonZero, { ok: true, total: r(0n) }, "not maps non-zero to zero");
+
+  const unaryCollatzEven = executeSlots(r(8n), [{ kind: "unary", operator: uop("CTZ") }]);
+  assert.deepEqual(unaryCollatzEven, { ok: true, total: r(4n) }, "collatz halves even integers");
+
+  const unaryCollatzOdd = executeSlots(r(7n), [{ kind: "unary", operator: uop("CTZ") }]);
+  assert.deepEqual(unaryCollatzOdd, { ok: true, total: r(22n) }, "collatz applies 3n+1 for odd integers");
+
+  const unarySortAsc = executeSlots(r(-3102n), [{ kind: "unary", operator: uop("SORT") }]);
+  assert.deepEqual(unarySortAsc, { ok: true, total: r(-123n) }, "sort-asc reorders magnitude digits and preserves sign");
+
+  const unaryMirror = executeSlots(r(-12030n), [{ kind: "unary", operator: uop("REV") }]);
+  assert.deepEqual(unaryMirror, { ok: true, total: r(-3021n) }, "mirror reverses magnitude digits and preserves sign");
+
+  const unaryFloor = executeSlots(r(7n, 3n), [{ kind: "unary", operator: uop("FLOOR") }]);
+  assert.deepEqual(unaryFloor, { ok: true, total: r(2n) }, "floor maps positive rational to integer floor");
+
+  const unaryFloorNegative = executeSlots(r(-7n, 3n), [{ kind: "unary", operator: uop("FLOOR") }]);
+  assert.deepEqual(unaryFloorNegative, { ok: true, total: r(-3n) }, "floor maps negative rational to integer floor");
+
+  const unaryCeil = executeSlots(r(7n, 3n), [{ kind: "unary", operator: uop("CEIL") }]);
+  assert.deepEqual(unaryCeil, { ok: true, total: r(3n) }, "ceiling maps positive rational to integer ceiling");
+
+  const unaryCeilNegative = executeSlots(r(-7n, 3n), [{ kind: "unary", operator: uop("CEIL") }]);
+  assert.deepEqual(unaryCeilNegative, { ok: true, total: r(-2n) }, "ceiling maps negative rational to integer ceiling");
+
+  const collatzNanInput = executeSlots(r(3n, 2n), [{ kind: "unary", operator: uop("CTZ") }]);
+  assert.deepEqual(collatzNanInput, { ok: false, reason: "nan_input" }, "collatz rejects non-integer totals");
+
+  const sortNanInput = executeSlots(r(3n, 2n), [{ kind: "unary", operator: uop("SORT") }]);
+  assert.deepEqual(sortNanInput, { ok: false, reason: "nan_input" }, "sort-asc rejects non-integer totals");
+
+  const mirrorNanInput = executeSlots(r(3n, 2n), [{ kind: "unary", operator: uop("REV") }]);
+  assert.deepEqual(mirrorNanInput, { ok: false, reason: "nan_input" }, "mirror rejects non-integer totals");
+
+  const notNanInput = executeSlots(r(3n, 2n), [{ kind: "unary", operator: uop("NOT") }]);
+  assert.deepEqual(notNanInput, { ok: false, reason: "nan_input" }, "not rejects non-integer totals");
 };
 
 

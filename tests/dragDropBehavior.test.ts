@@ -1,6 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
+import { legacyInitialState } from "./support/legacyState.js";
 import { classifyDropAction, shouldStartDragFromDelta } from "../src/domain/layoutDragDrop.js";
 import type { GameState } from "../src/domain/types.js";
 
@@ -8,7 +9,7 @@ export const runDragDropBehaviorTests = (): void => {
   assert.equal(shouldStartDragFromDelta(2, 2, 6), false, "small pointer motion does not start drag");
   assert.equal(shouldStartDragFromDelta(6, 0, 6), true, "threshold crossing starts drag");
 
-  const base = initialState();
+  const base = legacyInitialState();
   const withStorageKey: GameState = {
     ...base,
     unlocks: {
@@ -167,6 +168,9 @@ export const runDragDropBehaviorTests = (): void => {
   assert.equal(lockedTargetAction, null, "locked keys are not valid drop targets");
 
 };
+
+
+
 
 
 

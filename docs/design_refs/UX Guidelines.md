@@ -1,6 +1,6 @@
 # AutoCalc UX Guidelines
 
-Last updated: 2026-03-17
+Last updated: 2026-03-19
 Scope: Current UX behavior that matches implemented runtime/UI behavior.
 
 ## 1. UX Invariants
@@ -33,6 +33,7 @@ Scope: Current UX behavior that matches implemented runtime/UI behavior.
 
 - This document reflects current behavior only.
 - Future-direction UX ideas that are not implemented belong in milestone planning or review flags, not here.
+- Checklist surfaces are currently active in both shells; replacement with contextual visualizer hints is tracked as pre-release planned work.
 
 ## 6. Symbol Conventions
 

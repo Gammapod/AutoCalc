@@ -6,6 +6,7 @@ import type { GameState, RollEntry } from "../src/domain/types.js";
 
 type RootLike = {
   querySelector: (selector: string) => Element | null;
+  querySelectorAll: (selector: string) => Element[];
 };
 
 type FakeElement = {
@@ -132,6 +133,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
 
   const missingRoot: RootLike = {
     querySelector: () => null,
+    querySelectorAll: () => [],
   };
   assert.doesNotThrow(
     () => renderVisualizerHost(missingRoot as unknown as Element, withFeedOnRoll),
@@ -184,6 +186,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       return null;
     },
+    querySelectorAll: () => [],
   };
   renderVisualizerHost(renderRoot as unknown as Element, withGraphOn);
   assert.equal(
@@ -272,6 +275,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       return null;
     },
+    querySelectorAll: () => [],
   };
   clearVisualizerHost(cleanupRoot as unknown as Element);
   assert.equal(feedPanel.innerHTML, "", "clearVisualizerHost clears feed rows");
@@ -325,6 +329,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       return null;
     },
+    querySelectorAll: () => [],
   };
 
   const secondHost = createFakeElement();
@@ -363,6 +368,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       return null;
     },
+    querySelectorAll: () => [],
   };
 
   renderVisualizerHost(firstRoot as unknown as Element, withGraphOn);

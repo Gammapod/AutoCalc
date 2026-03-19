@@ -64,6 +64,27 @@ export const runPersistenceTests = (): void => {
       g: ["unlock_allocator_point_on_total_at_least_9"],
       f: [],
     },
+    calculators: {
+      ...base.calculators,
+      g: base.calculators?.g
+        ? {
+            ...base.calculators.g,
+            calculator: {
+              ...base.calculators.g.calculator,
+              total: r(33n),
+            },
+          }
+        : undefined,
+      f: base.calculators?.f
+        ? {
+            ...base.calculators.f,
+            calculator: {
+              ...base.calculators.f.calculator,
+              total: r(12n),
+            },
+          }
+        : undefined,
+    },
   };
   repo.save(persisted);
 
@@ -95,6 +116,8 @@ export const runPersistenceTests = (): void => {
     "per-calculator control unlock completion round-trips",
   );
   assert.ok(loaded?.calculators?.g && loaded?.calculators?.f, "dual calculators round-trip");
+  assert.deepEqual(loaded?.calculators?.g?.calculator.total, r(33n), "g calculator state round-trips");
+  assert.deepEqual(loaded?.calculators?.f?.calculator.total, r(12n), "f calculator state round-trips");
 
   const unsupported = loadFromRawSave(
     JSON.stringify({

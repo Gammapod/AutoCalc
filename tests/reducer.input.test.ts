@@ -6,13 +6,14 @@ import { MAX_ROLL_ENTRIES } from "../src/domain/rollEntries.js";
 import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
+import { legacyInitialState } from "./support/legacyState.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 export const runReducerInputTests = (): void => {
-  const base = initialState();
+  const base = legacyInitialState();
 
   const freshBootNoSaveState: GameState = {
     ...base,
@@ -64,7 +65,7 @@ export const runReducerInputTests = (): void => {
     "entering seed zero marks seed as present (not placeholder)",
   );
 
-  const fullyUnlocked = reducer(initialState(), { type: "UNLOCK_ALL" });
+  const fullyUnlocked = reducer(legacyInitialState(), { type: "UNLOCK_ALL" });
   const firstFreshDigit = applyKeyAction(fullyUnlocked, "9");
   assert.deepEqual(firstFreshDigit.calculator.total, r(9n), "first total digit on fresh cleared save is accepted");
   const blockedFreshSecondDigit = applyKeyAction(firstFreshDigit, "8");
@@ -167,7 +168,7 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(afterModWrap.calculator.total, r(1n), "mod-wrap toggle maps 100 to 1 for maxDigits=2");
   assert.equal(afterModWrap.calculator.rollEntries.at(-1)?.error, undefined, "mod-wrap path does not emit overflow error");
 
-  const equalsSource = initialState();
+  const equalsSource = legacyInitialState();
   const afterEquals = applyKeyAction(equalsSource, "=");
   assert.deepEqual(afterEquals.calculator.total, r(0n), "equals with no operations keeps total unchanged");
   assert.deepEqual(
@@ -273,8 +274,8 @@ export const runReducerInputTests = (): void => {
   const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "1");
   assert.deepEqual(afterActiveRollDigit, activeRollDigitNoOp, "digit key is no-op while roll is active");
 
-  const lockedUnaryNoOp = applyKeyAction(initialState(), "++");
-  assert.deepEqual(lockedUnaryNoOp, initialState(), "locked unary key is a no-op");
+  const lockedUnaryNoOp = applyKeyAction(legacyInitialState(), "++");
+  assert.deepEqual(lockedUnaryNoOp, legacyInitialState(), "locked unary key is a no-op");
 
   const unaryPlus = applyKeyAction(fullyUnlocked, "++");
   assert.deepEqual(unaryPlus.calculator.operationSlots, [{ kind: "unary", operator: uop("++") }], "++ appends unary slot");
@@ -554,16 +555,16 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(afterUndo.calculator.rollEntries, re(r(5n)), "UNDO removes last step and keeps seed row");
   assert.equal(afterUndo.calculator.stepProgress.active, false, "UNDO cancels active step session");
 
-  const memoryCycleLocked = initialState();
+  const memoryCycleLocked = legacyInitialState();
   const afterLockedMemoryCycle = applyKeyAction(memoryCycleLocked, "α,β,γ");
   assert.equal(afterLockedMemoryCycle.ui.memoryVariable, "α", "locked memory-cycle key does not change selected variable");
 
   const memoryCycleUnlocked: GameState = {
-    ...initialState(),
+    ...legacyInitialState(),
     unlocks: {
-      ...initialState().unlocks,
+      ...legacyInitialState().unlocks,
       memory: {
-        ...initialState().unlocks.memory,
+        ...legacyInitialState().unlocks.memory,
         [k("α,β,γ")]: true,
       },
     },
@@ -575,12 +576,16 @@ export const runReducerInputTests = (): void => {
   const afterThirdMemoryCycle = applyKeyAction(afterSecondMemoryCycle, "α,β,γ");
   assert.equal(afterThirdMemoryCycle.ui.memoryVariable, "α", "memory-cycle key wraps γ to α");
 
-  const memoryPlusBase = initialState();
+  const memoryPlusBase = legacyInitialState();
   const memoryPlusUnlocked: GameState = {
     ...memoryPlusBase,
+    lambdaControl: {
+      ...memoryPlusBase.lambdaControl,
+      maxPoints: 5,
+    },
     allocator: {
       ...memoryPlusBase.allocator,
-      maxPoints: 2,
+      maxPoints: 5,
     },
     unlocks: {
       ...memoryPlusBase.unlocks,
@@ -597,16 +602,24 @@ export const runReducerInputTests = (): void => {
   const plusGamma = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "γ" } }, "M+");
   assert.equal(plusGamma.unlocks.maxSlots, 1, "M+ with γ increases operation slot count");
 
-  const memoryMinusBase = initialState();
+  const memoryMinusBase = legacyInitialState();
   const memoryMinusUnlocked: GameState = {
     ...memoryMinusBase,
+    lambdaControl: {
+      ...memoryMinusBase.lambdaControl,
+      maxPoints: 5,
+      alpha: 2,
+      beta: 2,
+      gamma: 1,
+      gammaMinRaised: true,
+    },
     allocator: {
       ...memoryMinusBase.allocator,
-      maxPoints: 3,
+      maxPoints: 5,
       allocations: {
         ...memoryMinusBase.allocator.allocations,
-        width: 1,
-        height: 1,
+        width: 2,
+        height: 2,
         slots: 1,
       },
     },
@@ -640,8 +653,8 @@ export const runReducerInputTests = (): void => {
     },
   };
 
-  const backspaceLockedNoOp = applyKeyAction(initialState(), "\u2190");
-  assert.deepEqual(backspaceLockedNoOp, initialState(), "locked backspace remains a no-op");
+  const backspaceLockedNoOp = applyKeyAction(legacyInitialState(), "\u2190");
+  assert.deepEqual(backspaceLockedNoOp, legacyInitialState(), "locked backspace remains a no-op");
 
   const backspaceDraftingDelete: GameState = {
     ...withBackspaceUnlocked,
@@ -725,6 +738,9 @@ export const runReducerInputTests = (): void => {
   const afterWalk5 = applyKeyAction(afterWalk4, "\u2190");
   assert.deepEqual(afterWalk5.calculator.total, r(0n), "walk 5 trims seed total value");
 };
+
+
+
 
 
 

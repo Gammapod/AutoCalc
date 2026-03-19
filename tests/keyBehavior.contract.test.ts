@@ -4,18 +4,20 @@ import { keyBehaviorCatalog } from "../src/content/keyBehavior.catalog.js";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
-import { CHECKLIST_UNLOCK_ID, initialState } from "../src/domain/state.js";
+import { CHECKLIST_UNLOCK_ID } from "../src/domain/state.js";
 import { getButtonFace, isDigitKeyId, KEY_ID, resolveKeyId } from "../src/domain/keyPresentation.js";
+import { resolveMemoryRecallDigit } from "../src/domain/memoryController.js";
 import type { GameState, Key, KeyInput, RollEntry } from "../src/domain/types.js";
 import { getSlotInputScenariosByTag } from "./helpers/slotInput.contractFixtures.js";
 import { assertScenarioResult, runScenario, type SlotInputRuntimeAdapter } from "./helpers/slotInput.contractRunner.js";
+import { legacyInitialState } from "./support/legacyState.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const runtimeKeysFromInitialUnlocks = (): Key[] => {
-  const state = initialState();
+  const state = legacyInitialState();
   return [
     ...(Object.keys(state.unlocks.valueExpression) as Key[]),
     ...(Object.keys(state.unlocks.slotOperators) as Key[]),
@@ -170,7 +172,7 @@ const unlockKey = (state: GameState, keyLike: KeyInput): GameState => {
 };
 
 const assertLockedBehavior = (key: Key): void => {
-  const base = initialState();
+  const base = legacyInitialState();
   const next = applyKeyAction(base, key);
   assert.deepEqual(next, base, `locked key ${key} should be a no-op`);
   assert.equal(next.keyPressCounts[key] ?? 0, 0, `locked key ${key} should not increment key press count`);
@@ -180,9 +182,9 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   if (kind === "digit_sets_drafting_operand") {
     const state = unlockKey(
       {
-        ...initialState(),
+        ...legacyInitialState(),
         calculator: {
-          ...initialState().calculator,
+          ...legacyInitialState().calculator,
           draftingSlot: { operator: op("+"), operandInput: "", isNegative: false },
         },
       },
@@ -195,14 +197,14 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "operator_starts_drafting") {
-    const state = unlockKey(initialState(), key);
+    const state = unlockKey(legacyInitialState(), key);
     const next = applyKeyAction(state, key);
     assert.equal(next.calculator.draftingSlot?.operator, key, `operator ${key} should start drafting`);
     return;
   }
 
   if (kind === "unary_operator_inserts_pair") {
-    const state = unlockKey(initialState(), key);
+    const state = unlockKey(legacyInitialState(), key);
     const next = applyKeyAction(state, key);
     assert.equal(next.calculator.draftingSlot, null, `${key} does not create binary drafting state`);
     assert.deepEqual(next.calculator.operationSlots.at(-1), { kind: "unary", operator: key }, `${key} appends unary slot`);
@@ -212,9 +214,9 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   if (kind === "c_resets_calculator") {
     const state = unlockKey(
       {
-        ...initialState(),
+        ...legacyInitialState(),
         calculator: {
-          ...initialState().calculator,
+          ...legacyInitialState().calculator,
           total: r(7n),
           rollEntries: re(r(7n), r(9n)),
           operationSlots: [{ operator: op("+"), operand: 1n }],
@@ -234,9 +236,9 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   if (kind === "backspace_deletes_last_input") {
     const state = unlockKey(
       {
-        ...initialState(),
+        ...legacyInitialState(),
         calculator: {
-          ...initialState().calculator,
+          ...legacyInitialState().calculator,
           draftingSlot: { operator: op("+"), operandInput: "9", isNegative: false },
         },
       },
@@ -250,9 +252,9 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   if (kind === "undo_pops_roll") {
     const state = unlockKey(
       {
-        ...initialState(),
+        ...legacyInitialState(),
         calculator: {
-          ...initialState().calculator,
+          ...legacyInitialState().calculator,
           total: r(9n),
           rollEntries: re(r(3n), r(5n), r(9n)),
         },
@@ -266,7 +268,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "graph_counts_only") {
-    const state = unlockKey(initialState(), key);
+    const state = unlockKey(legacyInitialState(), key);
     const next = applyKeyAction(state, key);
     assert.equal(next.keyPressCounts[key] ?? 0, 1, `${key} should count key press when unlocked`);
     assert.deepEqual(next.calculator, state.calculator, `${key} should not mutate calculator state`);
@@ -274,7 +276,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "equals_executes_drafted_plus_one") {
-    let state = unlockKey(initialState(), "=");
+    let state = unlockKey(legacyInitialState(), "=");
     state = unlockKey(state, "+");
     state = unlockKey(state, "1");
     state = applyKeyAction(state, "+");
@@ -285,7 +287,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "memory_recall_sets_input") {
-    let state = unlockKey(initialState(), KEY_ID.memory_recall);
+    let state = unlockKey(legacyInitialState(), KEY_ID.memory_recall);
     state = unlockKey(state, KEY_ID.memory_cycle_variable);
     state = unlockKey(state, "+");
     state = {
@@ -296,7 +298,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       },
       ui: {
         ...state.ui,
-        memoryVariable: "\u03B1",
+        memoryVariable: state.ui.memoryVariable,
       },
       completedUnlockIds: unlockCatalog.map((unlock) => unlock.id),
       calculator: {
@@ -305,48 +307,62 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       },
     };
     const next = applyKeyAction(state, KEY_ID.memory_recall);
-    assert.equal(next.calculator.draftingSlot?.operandInput, "4", "M\u2192 should inject selected memory value like a digit");
+    assert.equal(
+      next.calculator.draftingSlot?.operandInput,
+      resolveMemoryRecallDigit(state),
+      "M\u2192 should inject selected memory value like a digit",
+    );
     return;
   }
 
   if (kind === "memory_adjusts_allocator") {
     if (key === k("M+")) {
-      const base = initialState();
+      const base = legacyInitialState();
       const state = unlockKey({
         ...base,
+        lambdaControl: {
+          ...base.lambdaControl,
+          maxPoints: 5,
+        },
         allocator: {
           ...base.allocator,
-          maxPoints: 1,
+          maxPoints: 5,
         },
         ui: {
           ...base.ui,
-          memoryVariable: "\u03B1",
+          memoryVariable: base.ui.memoryVariable,
         },
       }, "M+");
       const next = applyKeyAction(state, "M+");
-      assert.equal(next.allocator.allocations.width, 1, "M+ should increase selected allocator dimension");
+      assert.equal(next.allocator.allocations.width, 2, "M+ should increase selected allocator dimension");
       assert.equal(next.ui.keypadColumns, 2, "M+ on α should project to keypad column growth");
       return;
     }
     if (key === k("M\u2013")) {
-      const base = initialState();
+      const base = legacyInitialState();
       const state = unlockKey({
         ...base,
+        lambdaControl: {
+          ...base.lambdaControl,
+          maxPoints: 5,
+          alpha: 2,
+        },
         allocator: {
           ...base.allocator,
-          maxPoints: 1,
+          maxPoints: 5,
           allocations: {
             ...base.allocator.allocations,
-            width: 1,
+            width: 2,
           },
         },
         ui: {
           ...base.ui,
-          memoryVariable: "\u03B1",
+          keypadColumns: 2,
+          memoryVariable: base.ui.memoryVariable,
         },
       }, "M\u2013");
       const next = applyKeyAction(state, "M\u2013");
-      assert.equal(next.allocator.allocations.width, 0, "M\u2013 should decrease selected allocator dimension");
+      assert.equal(next.allocator.allocations.width, 1, "M\u2013 should decrease selected allocator dimension");
       assert.equal(next.ui.keypadColumns, 1, "M\u2013 on α should project to keypad column reduction");
       return;
     }
@@ -359,9 +375,9 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   if (kind === "digit_replaces_full_operand_digit") {
     const state = unlockKey(
       {
-        ...initialState(),
+        ...legacyInitialState(),
         calculator: {
-          ...initialState().calculator,
+          ...legacyInitialState().calculator,
           draftingSlot: { operator: op("+"), operandInput: "9", isNegative: false },
         },
       },
@@ -374,7 +390,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "operator_replaces_empty_drafting_operator") {
-    let state = unlockKey(initialState(), key);
+    let state = unlockKey(legacyInitialState(), key);
     state = {
       ...state,
       calculator: {
@@ -390,9 +406,9 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   if (kind === "unary_operator_clears_active_roll_then_inserts_pair") {
     const state = unlockKey(
       {
-        ...initialState(),
+        ...legacyInitialState(),
         calculator: {
-          ...initialState().calculator,
+          ...legacyInitialState().calculator,
           total: r(5n),
           rollEntries: re(r(5n)),
           operationSlots: [{ operator: op("+"), operand: 9n }],
@@ -409,7 +425,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "c_checklist_recorded_once") {
-    const state = unlockKey(initialState(), "C");
+    const state = unlockKey(legacyInitialState(), "C");
     const once = applyKeyAction(state, "C");
     const twice = applyKeyAction(once, "C");
     const count = twice.completedUnlockIds.filter((id) => id === CHECKLIST_UNLOCK_ID).length;
@@ -418,7 +434,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "backspace_noop_when_nothing_to_delete") {
-    const state = unlockKey(initialState(), "\u2190");
+    const state = unlockKey(legacyInitialState(), "\u2190");
     const next = applyKeyAction(state, "\u2190");
     assert.deepEqual(next.calculator, state.calculator, "backspace should no-op when nothing is deletable");
     return;
@@ -427,18 +443,18 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   if (kind === "undo_noop_when_roll_empty") {
     const state = unlockKey(
       {
-        ...initialState(),
+        ...legacyInitialState(),
         calculator: {
-          ...initialState().calculator,
+          ...legacyInitialState().calculator,
           total: r(7n),
           rollEntries: [],
           operationSlots: [{ operator: op("+"), operand: 9n }],
           draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
         },
         unlocks: {
-          ...initialState().unlocks,
+          ...legacyInitialState().unlocks,
         utilities: {
-          ...initialState().unlocks.utilities,
+          ...legacyInitialState().unlocks.utilities,
           ...utilityUnlockPatch([["C", false], ["UNDO", true]]),
         },
       },
@@ -454,9 +470,9 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   if (kind === "graph_does_not_mutate_calculator_state") {
     const state = unlockKey(
       {
-        ...initialState(),
+        ...legacyInitialState(),
         calculator: {
-          ...initialState().calculator,
+          ...legacyInitialState().calculator,
           total: r(11n),
           rollEntries: re(r(11n)),
           draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
@@ -470,7 +486,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "equals_division_by_zero_sets_nan") {
-    const base = initialState();
+    const base = legacyInitialState();
     const state: GameState = {
       ...unlockKey(base, "="),
       calculator: {
@@ -486,13 +502,14 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
   }
 
   if (kind === "memory_recall_noop_on_active_roll") {
-    const base = initialState();
+    const base = legacyInitialState();
     const state = unlockKey(
       {
         ...base,
         ui: {
           ...base.ui,
-          memoryVariable: "\u03B1",
+          keypadColumns: 2,
+          memoryVariable: base.ui.memoryVariable,
         },
         completedUnlockIds: unlockCatalog.map((unlock) => unlock.id),
         calculator: {
@@ -509,12 +526,13 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
 
   if (kind === "memory_adjust_noop_without_budget_or_bounds") {
     if (key === k("M+")) {
-      const base = initialState();
+      const base = legacyInitialState();
       const state = unlockKey({
         ...base,
         ui: {
           ...base.ui,
-          memoryVariable: "\u03B1",
+          keypadColumns: 2,
+          memoryVariable: base.ui.memoryVariable,
         },
       }, "M+");
       const next = applyKeyAction(state, "M+");
@@ -523,16 +541,29 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       return;
     }
     if (key === k("M\u2013")) {
-      const base = initialState();
+      const base = legacyInitialState();
       const state = unlockKey({
         ...base,
+        lambdaControl: {
+          ...base.lambdaControl,
+          maxPoints: 2,
+          alpha: 1,
+        },
+        allocator: {
+          ...base.allocator,
+          maxPoints: 2,
+          allocations: {
+            ...base.allocator.allocations,
+            width: 1,
+          },
+        },
         ui: {
           ...base.ui,
-          memoryVariable: "\u03B1",
+          memoryVariable: base.ui.memoryVariable,
         },
       }, "M\u2013");
       const next = applyKeyAction(state, "M\u2013");
-      assert.equal(next.allocator.allocations.width, 0, "M\u2013 should no-op at lower bound");
+      assert.equal(next.allocator.allocations.width, 1, "M\u2013 should no-op at lower bound");
       assert.equal(next.ui.keypadColumns, state.ui.keypadColumns, "M\u2013 no-op at lower bound should keep projected width");
       return;
     }
@@ -593,6 +624,12 @@ export const runKeyBehaviorContractTests = (): void => {
     }
   }
 };
+
+
+
+
+
+
 
 
 

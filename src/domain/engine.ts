@@ -32,6 +32,18 @@ const lcmBigInt = (left: bigint, right: bigint): bigint => {
   return (a / gcdBigInt(a, b)) * b;
 };
 
+const floorDiv = (num: bigint, den: bigint): bigint => {
+  const q = num / den;
+  const r = num % den;
+  return r !== 0n && ((num < 0n) !== (den < 0n)) ? q - 1n : q;
+};
+
+const ceilDiv = (num: bigint, den: bigint): bigint => {
+  const q = num / den;
+  const r = num % den;
+  return r !== 0n && ((num < 0n) === (den < 0n)) ? q + 1n : q;
+};
+
 const rotateLeftDigits = (value: bigint, amount: bigint): bigint => {
   const sign = value < 0n ? -1n : 1n;
   const digits = absBigInt(value).toString();
@@ -70,6 +82,20 @@ const factorCountWithMultiplicity = (value: bigint): bigint => {
     count += 1n;
   }
   return count;
+};
+
+const sortDigitsAscending = (value: bigint): bigint => {
+  const sign = value < 0n ? -1n : 1n;
+  const digits = absBigInt(value).toString().split("").sort().join("");
+  const sorted = BigInt(digits);
+  return sign < 0n ? -sorted : sorted;
+};
+
+const reverseDigits = (value: bigint): bigint => {
+  const sign = value < 0n ? -1n : 1n;
+  const digits = absBigInt(value).toString().split("").reverse().join("");
+  const reversed = BigInt(digits);
+  return sign < 0n ? -reversed : reversed;
 };
 
 const phiBigInt = (value: bigint): bigint => {
@@ -147,30 +173,71 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
 
   for (const slot of slots) {
     if (slot.kind === "unary") {
-      if (nextTotal.den !== 1n) {
-        return { ok: false, reason: "nan_input" };
-      }
       if (resolveKeyId(slot.operator) === KEY_ID.unary_inc) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
         nextTotal = addInt(nextTotal, 1n);
       } else if (resolveKeyId(slot.operator) === KEY_ID.unary_dec) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
         nextTotal = subInt(nextTotal, 1n);
       } else if (resolveKeyId(slot.operator) === KEY_ID.unary_neg) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
         nextTotal = mulInt(nextTotal, -1n);
       } else if (resolveKeyId(slot.operator) === KEY_ID.unary_sigma) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
         if (nextTotal.num === 0n) {
           return { ok: false, reason: "nan_input" };
         }
         nextTotal = { num: sigmaBigInt(nextTotal.num), den: 1n };
       } else if (resolveKeyId(slot.operator) === KEY_ID.unary_phi) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
         if (nextTotal.num === 0n) {
           return { ok: false, reason: "nan_input" };
         }
         nextTotal = { num: phiBigInt(nextTotal.num), den: 1n };
       } else if (resolveKeyId(slot.operator) === KEY_ID.unary_omega) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
         if (nextTotal.num === 0n) {
           return { ok: false, reason: "nan_input" };
         }
         nextTotal = { num: factorCountWithMultiplicity(nextTotal.num), den: 1n };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_not) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
+        nextTotal = { num: nextTotal.num === 0n ? 1n : 0n, den: 1n };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_collatz) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
+        nextTotal = nextTotal.num % 2n === 0n
+          ? { num: nextTotal.num / 2n, den: 1n }
+          : { num: (3n * nextTotal.num) + 1n, den: 1n };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_sort_asc) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
+        nextTotal = { num: sortDigitsAscending(nextTotal.num), den: 1n };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_floor) {
+        nextTotal = { num: floorDiv(nextTotal.num, nextTotal.den), den: 1n };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_ceil) {
+        nextTotal = { num: ceilDiv(nextTotal.num, nextTotal.den), den: 1n };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_mirror_digits) {
+        if (nextTotal.den !== 1n) {
+          return { ok: false, reason: "nan_input" };
+        }
+        nextTotal = { num: reverseDigits(nextTotal.num), den: 1n };
       } else {
         return { ok: false, reason: "unsupported_symbolic" };
       }
@@ -246,6 +313,27 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
         return { ok: false, reason: "nan_input" };
       }
       nextTotal = { num: lcmBigInt(nextTotal.num, slot.operand), den: 1n };
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_max) {
+      const leftScaled = nextTotal.num;
+      const rightScaled = slot.operand * nextTotal.den;
+      nextTotal = leftScaled >= rightScaled ? nextTotal : { num: slot.operand, den: 1n };
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_min) {
+      const leftScaled = nextTotal.num;
+      const rightScaled = slot.operand * nextTotal.den;
+      nextTotal = leftScaled <= rightScaled ? nextTotal : { num: slot.operand, den: 1n };
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_greater) {
+      const leftScaled = nextTotal.num;
+      const rightScaled = slot.operand * nextTotal.den;
+      nextTotal = { num: leftScaled > rightScaled ? 1n : 0n, den: 1n };
       endsWithEuclidLikeOperator = false;
       continue;
     }

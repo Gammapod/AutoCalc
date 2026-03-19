@@ -165,12 +165,12 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
-| FS-MC-01 | One-or-more calculators with exactly one active selection | `reducer/lifecycle`, `v2/parity` | unit + parity | gap: no active-calculator selection contract yet |
-| FS-MC-02 | Calculator execution-local state is isolated per instance | `reducer/input`, `contracts/slot-input-parity` | unit + contract | gap: no per-instance isolation suite yet |
-| FS-MC-03 | Unlock ownership remains global/shared | `domain/unlock-engine`, `contracts/content-provider-wiring` | unit + contract | gap: no multi-calculator unlock-scope assertion yet |
-| FS-MC-05 | Additional calculator initialization is deterministic | `reducer/lifecycle`, `persistence` | unit | gap: no unlock-to-instance initialization suite yet |
+| FS-MC-01 | One-or-more calculators with exactly one active selection | `reducer/lifecycle`, `v2/parity`, `contracts/multi-calculator-invariants` | unit + parity + contract | partial: runtime path covered; invalid-id runtime guard not explicitly asserted |
+| FS-MC-02 | Calculator execution-local state is isolated per instance | `reducer/input`, `contracts/slot-input-parity`, `contracts/multi-calculator-invariants` | unit + contract | partial: core targeted isolation covered; broader randomized isolation matrix pending |
+| FS-MC-03 | Unlock ownership remains global/shared | `domain/unlock-engine`, `contracts/content-provider-wiring`, `contracts/multi-calculator-invariants` | unit + contract | partial: global unlock scope covered; reversible/exception scope policies not yet modeled |
+| FS-MC-05 | Additional calculator initialization is deterministic | `reducer/lifecycle`, `persistence`, `contracts/multi-calculator-invariants` | unit + contract | partial: deterministic initialization covered; migration-triggered initialization fixtures pending |
 | FS-MC-07 | Persistence preserves all instances and active selection | `persistence`, `v2/persistence-parity` | unit + contract | gap: multi-instance migration fixtures not defined |
-| FS-MC-08 | One-calculator mode preserves baseline semantics | `v2/parity`, `contracts/parity-long-traces` | parity + contract | gap: no baseline-compat mode fixture pair yet |
+| FS-MC-08 | One-calculator mode preserves baseline semantics | `v2/parity`, `contracts/parity-long-traces`, `contracts/multi-calculator-invariants` | parity + contract | partial: baseline-compat fixture pair exists for core sequences; broader long-trace coverage expansion pending |
 
 ## 4. Cross-Interface Boundary Clauses
 
@@ -222,7 +222,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 | FS-TEST-01 | Every normative clause has unique ID and one table entry | this document | spec governance | manual check required |
 | FS-TEST-02 | High-risk clauses map to executable suites | `reducer/input`, `persistence`, `v2/parity`, `ui-integration/*`, `contracts/action-event-round-trip` | mixed | none |
 | FS-TEST-03 | Coverage classification is explicit | this document tables | spec governance | none |
-| FS-TEST-04 | Fixture-only suites do not count as parity/fuzz execution | `contracts/parity-long-traces`, `contracts/parity-seeded-fuzz` | contract hygiene | gap: current suites are fixture-presence checks only |
+| FS-TEST-04 | Fixture-only suites do not count as parity/fuzz execution | `contracts/parity-long-traces`, `contracts/parity-seeded-fuzz` | contract hygiene | none |
 
 ## 7. Current Gap Report (Initial Baseline)
 
@@ -230,8 +230,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 
 1. `FS-CS-02` control matrix locality has no explicit dedicated contract/assertion suite.
 2. `FS-BND-01` action-bypass mutation prevention is not directly asserted as a behavior test.
-3. `FS-MC-01` active-calculator selection uniqueness has no dedicated contract suite.
-4. `FS-BND-06` calculator lifecycle explicitness has no action/event contract suite.
+3. `FS-BND-06` calculator lifecycle explicitness has no action/event contract suite.
 
 ### 7.2 Invariants with only partial or indirect coverage
 
@@ -239,12 +238,11 @@ These are stable documentation interfaces for test/contract alignment, not code 
 2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
 3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but not yet as explicit contract clauses.
 4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
-5. `FS-MC-02`, `FS-MC-03`, `FS-MC-05`, `FS-MC-07`, and `FS-MC-08` are specification-defined but currently lack dedicated multi-calculator fixtures/contracts.
+5. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.
 
 ### 7.3 Fixture-only parity/fuzz coverage flags
 
-1. `contracts/parity-long-traces` currently checks fixture registration, not parity execution.
-2. `contracts/parity-seeded-fuzz` currently checks seed fixture presence, not seeded run outcome equivalence.
+1. no open fixture-only parity/fuzz coverage flags.
 
 ## 8. Out of Scope
 

@@ -1,148 +1,105 @@
-# AutoCalc Implementation Details (Current Runtime Contract)
+﻿# AutoCalc Implementation Details (Current Runtime Contract)
 
-Last updated: 2026-03-16
+Last updated: 2026-03-19
 Scope: Runtime behavior implemented in `src/` and active shell rendering in `src/`.
 
 ## Architecture Overview
 
 Primary layers:
 
-1. Domain (`src/domain`): reducer logic, execution semantics, unlock logic, layout movement rules.
-2. Content (`src/content`): unlock catalog and key behavior catalog.
-3. Infrastructure (`src/infra`): rational/euclidean math, persistence, migrations.
-4. UI v1 renderer (`src/ui`): DOM rendering for classic shell.
-5. UI v2 shell (`src/ui`): stacked shell, touch rearrangement, modular rendering adapter.
-6. App bootstrap/store (`src/app`): mode resolution, store wiring, scheduler, debug controls.
+1. Domain (`src/domain`): reducer logic, execution semantics, unlock logic, layout movement rules, multi-calculator projection.
+2. Content (`src/content`): unlock catalog and key behavior/catalog metadata.
+3. Infrastructure (`src/infra`): rational/euclidean/symbolic math, persistence codecs/repos.
+4. UI (`src/ui`): shell rendering, module renderers, read-model adapters.
+5. App bootstrap/store (`src/app`): mode resolution, store wiring, scheduler, debug controls.
 
 ## Runtime Key Types
 
 Canonical key IDs and key-family type definitions are maintained in:
 
-- `src/domain/keyPresentation.ts` (`KEY_ID`, `*KeyId` type unions)
+- `src/domain/keyPresentation.ts` (`KEY_ID`, `*KeyId` unions)
 - `src/domain/types.ts` (domain key aliases such as `SlotOperator`, `ExecKey`, `UtilityKey`)
 - `src/content/keyCatalog.ts` (catalog metadata: category, unlock group, behavior kind, input family)
 
-Documentation should reference these files instead of duplicating key lists.
-
 ## Calculator State Model
 
-Key fields in current calculator state:
+Key runtime fields:
 
-- `total: CalculatorValue` where CalculatorValue is `rational` or `nan`.
-- `pendingNegativeTotal: boolean`.
-- `singleDigitInitialTotalEntry: boolean`.
-- `roll: CalculatorValue[]`.
-- `rollErrors: RollErrorEntry[]`.
-- `euclidRemainders: EuclidRemainderEntry[]`.
-- `operationSlots: Slot[]`.
-- `draftingSlot: DraftingSlot | null`.
+- `calculator.total: CalculatorValue` (`rational` | `expr` | `nan`)
+- `calculator.rollEntries: RollEntry[]` (canonical execution history)
+- `calculator.operationSlots: Slot[]`
+- `calculator.draftingSlot: DraftingSlot | null`
+- `calculator.stepProgress` (step-through cursor + partial results)
+- `ui.activeVisualizer`, `ui.keyLayout`, `ui.storageLayout`, `ui.buttonFlags`
+
+Multi-calculator fields:
+
+- `calculators: Partial<Record<CalculatorId, CalculatorInstanceState>>`
+- `activeCalculatorId`, `calculatorOrder`
+- Global/shared progression state remains in top-level `unlocks`.
 
 ## Execution Semantics
 
 ### `=` execution
 
-`=` finalizes drafting slot (if valid), then executes committed slots left-to-right.
+- Finalizes drafting slot (if valid), then executes committed slots left-to-right.
+- Appends roll output deterministically.
+- Euclidean operators preserve remainder metadata.
+- Errors (`overflow`, `division_by_zero`, `nan_input`, `symbolic_result`) are recorded via roll/error channels.
 
-Operator behavior:
+### `▻` step-through execution
 
-- `+`, `-`, `*`: integer operand over rational total.
-- `/`: rational division; divisor `0` yields division-by-zero error result.
-- `#`: Euclidean division, writes quotient to total, records final remainder annotation.
-- `\u27E1`: Euclidean remainder operator, writes remainder to total.
+- Executes exactly one slot per key press when step-through key is available.
+- Maintains `stepProgress` intermediate state.
+- Final completion commits terminal roll output once.
+- `=` after partial stepping completes remaining slots (does not restart).
 
-Roll behavior for `=`:
+### Operator Families
 
-- If operation slots exist and roll is empty: append starting total and resulting total.
-- Otherwise append resulting total only.
-- Errors and Euclidean remainders are attached to the appended roll index.
-
-### `++` execution
-
-`++` increments total by `1` directly. It does not append to roll.
-
-### Overflow and error policy
-
-- Total magnitude is clamped to boundary derived from `maxTotalDigits`.
-- Overflow produces an overflow error code (and marks overflow-seen unlock marker).
-- Division by zero or NaN input paths produce NaN total with error codes.
-
-## Utility Key Behavior
-
-- `C`: full calculator reset to zero rational total and clean run state.
-- `\u2190`: backspace behavior for current input/drafting path.
-- `UNDO`: pops one roll entry when available and restores prior roll total.
-- `\u27E1[-\u{1D6FF}, \u{1D6FF})` / `\u27E1[0, \u{1D6FF})`: runtime toggle keys in the utilities/settings group.
-- `[ ??? ]`: step-expansion toggle key (rendering-mode toggle, not execution-result logic).
+- Binary: arithmetic, Euclidean, rotate/gcd/lcm, comparison-style (`max`, `min`, `greater`).
+- Unary: increment/decrement/negation, number-theory transforms, boolean/integer transforms, floor/ceiling, digit transforms.
+- Integer-only unary operators return `nan_input` on non-integer totals.
 
 ## Unlock and Layout Model
 
 Unlock effects include:
 
-- key unlocks (digit, slot operator, utility, execution)
-- total digit cap increase
-- allocator max-point increase
-- storage drawer unlock
+- key unlocks (value atom, slot operator, unary, utility, memory, visualizer, execution)
+- total digit cap and allocator max-point growth
 - keypad row/column upgrades
-- directed key movement to keypad coordinates
+- directed key movement and storage visibility gating
 
 Layout model supports:
 
 - separate keypad and storage surfaces
 - placeholder cells and key cells
 - drag/drop move and swap actions with execution-key constraints
+- per-calculator keypad surfaces (`keypad_f`, `keypad_g`) with shared storage policy
 
 ## UI Shell Mode
 
-UI shell mode resolves to:
+Shell mode resolution order:
 
-- `mobile` by default
-- `desktop` when explicitly requested
+1. query param override (`?ui=mobile|desktop`)
+2. env/runtime override (`UI_SHELL_TARGET`)
+3. runtime fallback
+4. safe fallback (`mobile`)
 
-mobile shell is currently the default rendering path unless overridden.
-
-Current contract:
-
-1. Query param override has highest precedence:
-2. `?ui=mobile` -> mobile path
-3. `?ui=desktop` -> desktop path
-4. Env fallback when query is absent:
-5. `UI_SHELL_TARGET=mobile|desktop` -> selected path
-6. Default fallback -> mobile path
-
-Packaging/runtime defaults:
-
-1. Browser-hosted usage defaults to mobile shell.
-2. Windows portable Electron entrypoint defaults to desktop shell.
+Checklist surfaces are currently implemented in shell modules. Planned replacement with visualizer-driven unlock hints is tracked as a pre-release milestone.
 
 ## Persistence Contract
 
 - Save key: `autocalc.v1.save`
-- Current schema version: `10`
-- Payload includes calculator, ui layout/storage/flags, unlocks, key press counts, allocator, completed unlocks
-- Schema handling:
-  - versions `< 6`: reset to normalized v10 baseline
-  - versions `6..10`: normalized and migrated to v10 with validation
+- Current schema version: `20`
+- v20 serialization uses direct state codec; runtime load normalizer handles session-only and compatibility cleanup.
 
 ## Testing Contract
 
 Test suite under `tests/` covers:
 
-- reducer input/lifecycle/flags/layout behavior
-- engine/operator semantics and roll/remainder/error behavior
-- unlock graph and unlock domain analysis behavior
-- persistence/migration paths
-- v2 shell rendering and touch rearrangement flows
+- reducer/input/lifecycle/layout behavior
+- engine/operator semantics
+- unlock graph + capability analysis
+- persistence and parity suites
+- shell/module/integration contracts (mobile + desktop)
 
-## Unlock Graph Contract
-
-Unlock graph function capability logic in `src/domain/unlockGraph.ts` is sufficiency-clause driven (OR-of-AND key sets).
-This metadata is the source of truth for:
-
-- function satisfiability checks
-- graph report generation (JSON + Mermaid)
-- condition reachability analysis
-
-Maintenance rule:
-
-- Update sufficiency clauses when function capability assumptions change.
-- Avoid ad-hoc manual predicates that bypass sufficiency metadata.

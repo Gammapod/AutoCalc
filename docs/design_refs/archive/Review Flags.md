@@ -1,6 +1,6 @@
 # AutoCalc Review Flags
 
-Last updated: 2026-03-12
+Last updated: 2026-03-19
 Purpose: Track non-implemented, conflicting, or uncategorized design content for disposition.
 
 ## Review Items
@@ -23,3 +23,4 @@ Purpose: Track non-implemented, conflicting, or uncategorized design content for
 - `dependency_map.mmd` remains unchanged by instruction and is excluded from consolidation edits.
 - Any flagged item accepted for near-term delivery should be rewritten into concrete milestone outcomes before implementation work.
 - Resolution destinations created: `design_refs/Development Guidelines.md` and new milestones in `design_refs/Milestones.md` (`Consolidated Mobile/Desktop UI Policy`, `Consolidated Visualizer Policy`, `Multiple Calculators`, `Consolidated UX Policy`, `Consolidated Unlock Policy`).
+- Canonical refresh snapshot notes recorded under `design_refs/archive/2026-03-19/Archive Notes.md`.

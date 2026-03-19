@@ -96,6 +96,7 @@ import { runShimInventoryTests } from "./shimInventory.test.js";
 import { runBootstrapImportOrderTests } from "./bootstrapImportOrder.test.js";
 import { runKeyUniverseContractGuardTests } from "./keyUniverseContract.guard.test.js";
 import { runContentRegistryBoundaryTests } from "./contentRegistryBoundary.test.js";
+import { runMultiCalculatorContractTests } from "./multiCalculator.contract.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -192,6 +193,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/key-universe-guard", runKeyUniverseContractGuardTests],
   ["contracts/shim-inventory", runShimInventoryTests],
   ["contracts/content-registry-boundary", runContentRegistryBoundaryTests],
+  ["contracts/multi-calculator-invariants", runMultiCalculatorContractTests],
   ["app/bootstrap-import-order", runBootstrapImportOrderTests],
 ];
 

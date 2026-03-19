@@ -2,6 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { createAutoEqualsScheduler, normalizeLoadedStateForRuntime } from "../src/app/autoEqualsScheduler.js";
 import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
+import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState, Key, Store } from "../src/domain/types.js";
 import { execution, op, executionUnlockPatch } from "./support/keyCompat.js";
@@ -258,5 +259,22 @@ export const runAutoEqualsSchedulerTests = (): void => {
   }
   assert.equal(Boolean(normalized.ui.buttonFlags[AUTO_EQUALS_FLAG]), false, "runtime load clears auto-equals flag");
   assert.equal(Boolean(normalized.ui.buttonFlags["another.flag"]), true, "runtime load preserves other flags");
+
+  const missingCatalogKeyState: GameState = {
+    ...initialState(),
+    ui: {
+      ...initialState().ui,
+      storageLayout: initialState().ui.storageLayout.filter((cell) => cell?.kind !== "key" || cell.key !== KEY_ID.op_max),
+    },
+  };
+  const normalizedWithBackfill = normalizeLoadedStateForRuntime(missingCatalogKeyState);
+  if (!normalizedWithBackfill) {
+    throw new Error("Expected normalized backfill state.");
+  }
+  assert.equal(
+    normalizedWithBackfill.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === KEY_ID.op_max),
+    true,
+    "runtime load backfills missing catalog keys into storage",
+  );
 };
 

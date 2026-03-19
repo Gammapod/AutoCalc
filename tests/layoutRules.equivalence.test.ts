@@ -4,12 +4,13 @@ import { classifyDropAction as classifyDomainDropAction } from "../src/domain/la
 import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
 import { applyMoveLayoutCell, applySwapLayoutCells } from "../src/domain/reducer.layout.js";
 import { initialState } from "../src/domain/state.js";
+import { legacyInitialState } from "./support/legacyState.js";
 import type { GameState, LayoutSurface } from "../src/domain/types.js";
 
 type DragTarget = { surface: LayoutSurface; index: number };
 
 const createScenarioState = (): GameState => {
-  const base = initialState();
+  const base = legacyInitialState();
   return {
     ...base,
     unlocks: {
@@ -116,6 +117,9 @@ export const runLayoutRulesEquivalenceTests = (): void => {
     "shared evaluator with reducer policy agrees with reducer acceptance",
   );
 };
+
+
+
 
 
 

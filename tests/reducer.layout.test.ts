@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
+import { legacyInitialState } from "./support/legacyState.js";
 import type { GameState } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
@@ -14,7 +15,7 @@ export const runReducerLayoutTests = (): void => {
     storage: state.ui.storageLayout.map((cell) => (cell ? cell.key : null)),
   });
 
-  const baseline = initialState();
+  const baseline = legacyInitialState();
   const baselineLayout = baseline.ui.keyLayout;
   assert.deepEqual(
     baselineLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
@@ -543,6 +544,9 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.equal(noopResize, baseline, "unchanged dimensions are a no-op");
 };
+
+
+
 
 
 

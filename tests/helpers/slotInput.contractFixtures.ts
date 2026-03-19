@@ -2,6 +2,7 @@ import "../support/keyCompat.runtime.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../../src/domain/calculatorValue.js";
 import { resolveKeyId, type KeyLike } from "../../src/domain/keyPresentation.js";
 import { initialState } from "../../src/domain/state.js";
+import { legacyInitialState } from "../support/legacyState.js";
 import type { ErrorCode, ExecutionErrorKind, GameState, KeyInput, RollEntry } from "../../src/domain/types.js";
 import { keyCounts, op } from "../support/keyCompat.js";
 
@@ -182,7 +183,7 @@ const withUnlockedKeys = (state: GameState, keys: readonly KeyInput[]): GameStat
   return next;
 };
 
-const base = initialState();
+const base = legacyInitialState();
 
 export const slotInputScenarios: readonly SlotInputScenario[] = [
   {
@@ -501,5 +502,8 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
 
 export const getSlotInputScenariosByTag = (tag: SlotInputScenarioTag): SlotInputScenario[] =>
   slotInputScenarios.filter((scenario) => scenario.tags.includes(tag));
+
+
+
 
 

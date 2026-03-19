@@ -3,9 +3,10 @@ import { applyLifecycleAction } from "../src/domain/reducer.lifecycle.js";
 import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, STEP_EXPANSION_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState } from "../src/domain/types.js";
+import { legacyInitialState } from "./support/legacyState.js";
 
 export const runReducerLifecycleTests = (): void => {
-  const base = initialState();
+  const base = legacyInitialState();
 
   const reset = applyLifecycleAction(base, { type: "RESET_RUN" });
   assert.deepEqual(reset, initialState(), "RESET_RUN returns initial state");
@@ -75,5 +76,8 @@ export const runReducerLifecycleTests = (): void => {
   const eigenOff = reducer(eigenOn, { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" });
   assert.equal(eigenOff.ui.activeVisualizer, "total", "pressing active \u03BB visualizer toggles off to total");
 };
+
+
+
 
 
