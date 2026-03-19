@@ -6,6 +6,7 @@ import { reducer } from "../src/domain/reducer.js";
 import { createShellRenderer } from "../src/ui/renderAdapter.js";
 import { click } from "./helpers/eventHarness.js";
 import { installDomHarness } from "./helpers/domHarness.js";
+import { withCalculatorProjection } from "./helpers/dualCalculatorState.js";
 
 export const runUiIntegrationMobileShellTests = (): void => {
   const r = (num: bigint, den: bigint = 1n): RollEntry["y"] => ({
@@ -64,27 +65,27 @@ export const runUiIntegrationMobileShellTests = (): void => {
             inputBlocked: false,
     });
     const host = harness.root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
-    const withGraph: GameState = {
-      ...withStorage,
+    const withGraph = withCalculatorProjection(withStorage, "f", (projected) => ({
+      ...projected,
       ui: {
-        ...withStorage.ui,
+        ...projected.ui,
         activeVisualizer: "graph",
       },
-    };
-    const withFeed: GameState = {
-      ...withStorage,
+    }));
+    const withFeed = withCalculatorProjection(withStorage, "f", (projected) => ({
+      ...projected,
       ui: {
-        ...withStorage.ui,
+        ...projected.ui,
         activeVisualizer: "feed",
       },
-    };
-    const withTotal: GameState = {
-      ...withStorage,
+    }));
+    const withTotal = withCalculatorProjection(withStorage, "f", (projected) => ({
+      ...projected,
       ui: {
-        ...withStorage.ui,
+        ...projected.ui,
         activeVisualizer: "total",
       },
-    };
+    }));
     renderer.render(withGraph, dispatch, {
             inputBlocked: false,
     });
@@ -100,21 +101,23 @@ export const runUiIntegrationMobileShellTests = (): void => {
     });
     const feedPanel = harness.root.querySelector<HTMLElement>("[data-v2-feed-panel]");
     assert.ok(feedPanel, "feed panel is mounted");
-    const withFeedTable: GameState = {
+    const withFeedTable = withCalculatorProjection({
       ...withFeed,
       unlocks: {
         ...withFeed.unlocks,
         maxTotalDigits: 9,
       },
+    }, "f", (projected) => ({
+      ...projected,
       calculator: {
-        ...withFeed.calculator,
+        ...projected.calculator,
         rollEntries: [
           { y: r(9n) },
           { y: r(10n), remainder: { num: 1n, den: 2n } },
           { y: r(11n), error: { code: "n/0", kind: "division_by_zero" } },
         ],
       },
-    };
+    }));
     renderer.render(withFeedTable, dispatch, {
             inputBlocked: false,
     });
@@ -153,10 +156,10 @@ export const runUiIntegrationMobileShellTests = (): void => {
       false,
       "feed divider line does not emit oversized y-column padding dashes",
     );
-    const withFeedNoVisibleRemainder: GameState = {
-      ...withFeed,
+    const withFeedNoVisibleRemainder = withCalculatorProjection(withFeed, "f", (projected) => ({
+      ...projected,
       calculator: {
-        ...withFeed.calculator,
+        ...projected.calculator,
         rollEntries: [
           { y: r(1n) },
           { y: r(2n), remainder: { num: 1n, den: 2n } },
@@ -169,7 +172,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
           { y: r(9n) },
         ],
       },
-    };
+    }));
     renderer.render(withFeedNoVisibleRemainder, dispatch, {
             inputBlocked: false,
     });
@@ -209,17 +212,17 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "true",
       "domain indicator is hidden when total display is the cleared placeholder",
     );
-    const withErrorTotal: GameState = {
-      ...withTotal,
+    const withErrorTotal = withCalculatorProjection(withTotal, "f", (projected) => ({
+      ...projected,
       calculator: {
-        ...withTotal.calculator,
+        ...projected.calculator,
         total: r(11n),
         rollEntries: [
           { y: r(5n) },
           { y: r(11n), error: { code: "n/0", kind: "division_by_zero" } },
         ],
       },
-    };
+    }));
     renderer.render(withErrorTotal, dispatch, {
             inputBlocked: false,
     });
@@ -242,21 +245,23 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "remainder display is hidden when latest roll entry has no remainder",
     );
 
-    const withRemainderTotal: GameState = {
+    const withRemainderTotal = withCalculatorProjection({
       ...withErrorTotal,
       unlocks: {
         ...withErrorTotal.unlocks,
         maxTotalDigits: 4,
       },
+    }, "f", (projected) => ({
+      ...projected,
       calculator: {
-        ...withErrorTotal.calculator,
+        ...projected.calculator,
         total: r(1n, 2n),
         rollEntries: [
-          ...withErrorTotal.calculator.rollEntries,
+          ...projected.calculator.rollEntries,
           { y: r(1n, 2n), remainder: { num: 1n, den: 3n } },
         ],
       },
-    };
+    }));
     renderer.render(withRemainderTotal, dispatch, {
             inputBlocked: false,
     });
@@ -298,16 +303,16 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "fraction remainder shows FrAC token instead of numeric fraction text",
     );
 
-    const withLongIntegerRemainder: GameState = {
-      ...withRemainderTotal,
+    const withLongIntegerRemainder = withCalculatorProjection(withRemainderTotal, "f", (projected) => ({
+      ...projected,
       calculator: {
-        ...withRemainderTotal.calculator,
+        ...projected.calculator,
         rollEntries: [
-          ...withRemainderTotal.calculator.rollEntries,
+          ...projected.calculator.rollEntries,
           { y: r(123456789n), remainder: { num: 123456789n, den: 1n } },
         ],
       },
-    };
+    }));
     renderer.render(withLongIntegerRemainder, dispatch, {
             inputBlocked: false,
     });
@@ -339,14 +344,14 @@ export const runUiIntegrationMobileShellTests = (): void => {
     assert.deepEqual(getDigitOnSegments(fractionDigits[10]!), ["a", "b", "c", "e", "f", "g"], "A token maps to segment glyph");
     assert.deepEqual(getDigitOnSegments(fractionDigits[11]!), ["a", "d", "e", "f"], "C token maps to segment glyph");
 
-    const withNanTotal: GameState = {
-      ...withRemainderTotal,
+    const withNanTotal = withCalculatorProjection(withRemainderTotal, "f", (projected) => ({
+      ...projected,
       calculator: {
-        ...withRemainderTotal.calculator,
+        ...projected.calculator,
         total: { kind: "nan" },
-        rollEntries: [...withRemainderTotal.calculator.rollEntries, { y: { kind: "nan" } }],
+        rollEntries: [...projected.calculator.rollEntries, { y: { kind: "nan" } }],
       },
-    };
+    }));
     renderer.render(withNanTotal, dispatch, {
             inputBlocked: false,
     });
@@ -378,24 +383,26 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "clicking a rendered key dispatches PRESS_KEY action",
     );
 
-    const withStepKey: GameState = {
+    const withStepKey = withCalculatorProjection({
       ...withStorage,
-      ui: {
-        ...withStorage.ui,
-        keyLayout: [{ kind: "key", key: k("\u25BB") }],
-        keypadColumns: 1,
-        keypadRows: 1,
-      },
       unlocks: {
         ...withStorage.unlocks,
         maxSlots: 2,
       },
+    }, "f", (projected) => ({
+      ...projected,
+      ui: {
+        ...projected.ui,
+        keyLayout: [{ kind: "key", key: k("\u25BB") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
       calculator: {
-        ...withStorage.calculator,
+        ...projected.calculator,
         total: r(1n),
         operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
       },
-    };
+    }));
     renderer.render(withStepKey, dispatch, {
             inputBlocked: false,
     });
@@ -418,13 +425,13 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "mixed step-through then equals continues remaining slots from partial cursor",
     );
 
-    const withoutStepKey: GameState = {
-      ...steppedOnce,
+    const withoutStepKey = withCalculatorProjection(steppedOnce, "f", (projected) => ({
+      ...projected,
       ui: {
-        ...steppedOnce.ui,
+        ...projected.ui,
         keyLayout: [{ kind: "key", key: k("=") }],
       },
-    };
+    }));
     renderer.render(withoutStepKey, dispatch, {
             inputBlocked: false,
     });

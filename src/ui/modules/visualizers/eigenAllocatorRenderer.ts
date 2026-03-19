@@ -70,13 +70,9 @@ ${gammaEntry}\\
 \begin{bmatrix}
 ${matrixRows}
 \end{bmatrix}
-\times
-\begin{bmatrix}
-${inputVector}
-\end{bmatrix}
 =
 \begin{bmatrix}
-${outputVector}
+${inputVector}
 \end{bmatrix}
 `;
 };

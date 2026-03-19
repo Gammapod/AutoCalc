@@ -40,6 +40,7 @@ export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => 
       }
       return null;
     },
+    querySelectorAll: () => [],
   };
 
   const state = initialState();

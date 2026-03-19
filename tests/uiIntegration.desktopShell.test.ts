@@ -6,6 +6,7 @@ import { reducer } from "../src/domain/reducer.js";
 import { createShellRenderer } from "../src/ui/renderAdapter.js";
 import { click } from "./helpers/eventHarness.js";
 import { installDomHarness } from "./helpers/domHarness.js";
+import { withCalculatorProjection } from "./helpers/dualCalculatorState.js";
 
 export const runUiIntegrationDesktopShellTests = (): void => {
   const harness = installDomHarness("http://localhost:4173/index.html?ui=desktop");
@@ -16,6 +17,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
   };
 
   try {
+    harness.document.body.setAttribute("data-ui-shell", "desktop");
     const renderer = createShellRenderer(harness.root, { mode: "desktop" });
 
     renderer.render(initialState(), dispatch, {
@@ -141,24 +143,27 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       "clicking a rendered key dispatches PRESS_KEY action on desktop shell",
     );
 
-    const withStepKey = {
-      ...initialState(),
+    const baseStepState = initialState();
+    const withStepKey = withCalculatorProjection({
+      ...baseStepState,
+      unlocks: {
+        ...baseStepState.unlocks,
+        maxSlots: 2,
+      },
+    }, "f", (projected) => ({
+      ...projected,
       ui: {
-        ...initialState().ui,
+        ...projected.ui,
         keyLayout: [{ kind: "key" as const, key: k("\u25BB") }],
         keypadColumns: 1,
         keypadRows: 1,
       },
-      unlocks: {
-        ...initialState().unlocks,
-        maxSlots: 2,
-      },
       calculator: {
-        ...initialState().calculator,
+        ...projected.calculator,
         total: { kind: "rational" as const, value: { num: 1n, den: 1n } },
         operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
       },
-    };
+    }));
     renderer.render(withStepKey, dispatch, {
             inputBlocked: false,
     });

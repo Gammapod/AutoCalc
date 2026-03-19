@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { createTouchRearrangeController } from "../src/ui/renderAdapter.js";
 import type { Action, GameState, LayoutCell } from "../src/domain/types.js";
+import { withCalculatorProjection } from "./helpers/dualCalculatorState.js";
 
 const fakeTargetElement = (): HTMLElement =>
   ({
@@ -20,7 +21,7 @@ const buildRearrangeState = (): GameState => {
     { kind: "placeholder", area: "empty" },
     { kind: "key", key: k("=") },
   ];
-  return {
+  return withCalculatorProjection({
     ...base,
     unlocks: {
       ...base.unlocks,
@@ -37,13 +38,15 @@ const buildRearrangeState = (): GameState => {
         [k("1")]: true,
       },
     },
+  }, "f", (projected) => ({
+    ...projected,
     ui: {
-      ...base.ui,
+      ...projected.ui,
       keypadColumns: 4,
       keypadRows: 1,
       keyLayout,
     },
-  };
+  }));
 };
 
 export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
@@ -57,21 +60,21 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
   moveController.startPress(1, 30, 40, { surface: "storage", index: 0, key: k("C") }, null);
   moveController.forceActivateCarryForTests();
   moveController.move(1, 60, 70, () => ({
-    target: { surface: "keypad", index: 0 },
+    target: { surface: "keypad_f", index: 0 },
     targetElement: fakeTargetElement(),
   }));
   const moveResult = moveController.end(1);
   assert.equal(moveResult, "moved", "drop on empty slot resolves to move");
   assert.deepEqual(
     moveActions[0],
-    { type: "MOVE_LAYOUT_CELL", fromSurface: "storage", fromIndex: 0, toSurface: "keypad", toIndex: 0 },
+    { type: "MOVE_LAYOUT_CELL", fromSurface: "storage", fromIndex: 0, toSurface: "keypad_f", toIndex: 0 },
     "move dispatch uses existing reducer action",
   );
 
-  const swapState: GameState = {
-    ...buildRearrangeState(),
+  const swapState: GameState = withCalculatorProjection(buildRearrangeState(), "f", (projected) => ({
+    ...projected,
     ui: {
-      ...buildRearrangeState().ui,
+      ...projected.ui,
       keyLayout: [
         { kind: "key", key: k("1") },
         { kind: "placeholder", area: "empty" },
@@ -79,7 +82,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
         { kind: "key", key: k("=") },
       ],
     },
-  };
+  }));
   const swapActions: Action[] = [];
   const swapController = createTouchRearrangeController();
   swapController.syncContext(swapState, (action) => {
@@ -89,15 +92,35 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
   swapController.startPress(2, 30, 40, { surface: "storage", index: 0, key: k("C") }, null);
   swapController.forceActivateCarryForTests();
   swapController.move(2, 60, 70, () => ({
-    target: { surface: "keypad", index: 0 },
+    target: { surface: "keypad_f", index: 0 },
     targetElement: fakeTargetElement(),
   }));
   const swapResult = swapController.end(2);
   assert.equal(swapResult, "swapped", "drop on occupied slot resolves to swap");
   assert.deepEqual(
     swapActions[0],
-    { type: "SWAP_LAYOUT_CELLS", fromSurface: "storage", fromIndex: 0, toSurface: "keypad", toIndex: 0 },
+    { type: "SWAP_LAYOUT_CELLS", fromSurface: "storage", fromIndex: 0, toSurface: "keypad_f", toIndex: 0 },
     "swap dispatch uses existing reducer action",
+  );
+
+  const crossActions: Action[] = [];
+  const crossController = createTouchRearrangeController();
+  crossController.syncContext(buildRearrangeState(), (action) => {
+    crossActions.push(action);
+    return action;
+  });
+  crossController.startPress(3, 30, 40, { surface: "keypad_f", index: 3, key: k("=") }, null);
+  crossController.forceActivateCarryForTests();
+  crossController.move(3, 60, 70, () => ({
+    target: { surface: "keypad_g", index: 2 },
+    targetElement: fakeTargetElement(),
+  }));
+  const crossResult = crossController.end(3);
+  assert.equal(crossResult, "moved", "cross-calculator drop on empty g slot resolves to move");
+  assert.deepEqual(
+    crossActions[0],
+    { type: "MOVE_LAYOUT_CELL", fromSurface: "keypad_f", fromIndex: 3, toSurface: "keypad_g", toIndex: 2 },
+    "cross-calculator move dispatch targets keypad_f -> keypad_g surfaces",
   );
 };
 
