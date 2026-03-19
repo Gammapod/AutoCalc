@@ -1,4 +1,4 @@
-import { buildAllocatorSnapshot } from "./lambdaControl.js";
+import { buildAllocatorSnapshot, getLambdaDerivedValues } from "./lambdaControl.js";
 import { fromKeyLayoutArray, toIndexFromCoord } from "./keypadLayoutModel.js";
 import { applyUnlockAllPreset } from "./lifecyclePresets.js";
 import { KEY_ID } from "./keyPresentation.js";
@@ -152,6 +152,7 @@ export const createSandboxState = (): GameState => {
     gamma: 4,
     gammaMinRaised: true,
   };
+  const lambdaDerived = getLambdaDerivedValues(lambdaControl, controlProfiles.f);
 
   return {
     ...unlocked,
@@ -177,8 +178,8 @@ export const createSandboxState = (): GameState => {
         ...unlocked.unlocks.uiUnlocks,
         storageVisible: false,
       },
-      maxSlots: 4,
-      maxTotalDigits: 12,
+      maxSlots: lambdaDerived.effectiveFields.gamma,
+      maxTotalDigits: lambdaDerived.effectiveFields.delta,
     },
   };
 };

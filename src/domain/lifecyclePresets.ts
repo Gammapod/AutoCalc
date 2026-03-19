@@ -55,7 +55,6 @@ export const applyUnlockAllPreset = (state: GameState): GameState => {
         ...withProjectedControl.unlocks.uiUnlocks,
         storageVisible: true,
       },
-      maxSlots: 4,
     },
     completedUnlockIds: [
       ...new Set([...withProjectedControl.completedUnlockIds, ...unlockCatalog.map((unlock) => unlock.id)]),

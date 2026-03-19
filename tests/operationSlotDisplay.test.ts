@@ -12,7 +12,7 @@ const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, d
 export const runOperationSlotDisplayTests = (): void => {
   const base = initialState();
 
-  assert.equal(buildOperationSlotDisplay(base), "(no operation slots)", "empty state shows no-slot fallback");
+  assert.equal(buildOperationSlotDisplay(base), "_ [ _ _ ]", "empty state shows one derived slot from gamma");
 
   const draftingOperatorOnly: GameState = {
     ...base,
@@ -511,7 +511,6 @@ export const runOperationSlotDisplayTests = (): void => {
     "expansion toggle is a no-op when no valid step target exists",
   );
 };
-
 
 
 

@@ -641,7 +641,7 @@ export const runReducerInputTests = (): void => {
   const minusBeta = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "β" } }, "M–");
   assert.equal(minusBeta.ui.keypadRows, 1, "M– with β decreases keypad rows");
   const minusGamma = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "γ" } }, "M–");
-  assert.equal(minusGamma.unlocks.maxSlots, 0, "M– with γ decreases operation slot count");
+  assert.equal(minusGamma.unlocks.maxSlots, 1, "M– with γ respects gamma minimum once gamma has been raised");
   const withBackspaceUnlocked: GameState = {
     ...fullyUnlocked,
     unlocks: {

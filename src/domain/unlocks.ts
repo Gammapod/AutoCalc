@@ -190,13 +190,8 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
     return setButtonUnlocked(state, keyFromUnlockEffect(effect), true);
   }
   if (effect.type === "increase_max_total_digits") {
-    return {
-      ...state,
-      unlocks: {
-        ...state.unlocks,
-        maxTotalDigits: state.unlocks.maxTotalDigits + effect.amount,
-      },
-    };
+    // Capacity is allocator-projected from lambda control (delta); keep legacy effect as no-op.
+    return state;
   }
   if (effect.type === "increase_allocator_max_points") {
     const projection = projectControlFromState(state);

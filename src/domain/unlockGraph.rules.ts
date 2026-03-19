@@ -64,6 +64,8 @@ const dedupeGraphEdges = (edges: GraphEdge[]): GraphEdge[] => {
 };
 
 const pressFunctionId = (key: Key): string => `fn.press_target_key.${key}`;
+const isLegacyCapacityNoopEffect = (effect: UnlockEffect): boolean =>
+  effect.type === "increase_max_total_digits" || effect.type === "unlock_second_slot";
 
 const unlockEffectTarget = (effect: UnlockEffect): UnlockTargetDescriptor => {
   if (
@@ -103,21 +105,26 @@ const unlockEffectTarget = (effect: UnlockEffect): UnlockTargetDescriptor => {
   };
 };
 
-export const unlockTargetsFromEffect = (unlock: UnlockDefinition): UnlockTargetDescriptor[] => [unlockEffectTarget(unlock.effect)];
+export const unlockTargetsFromEffect = (unlock: UnlockDefinition): UnlockTargetDescriptor[] =>
+  isLegacyCapacityNoopEffect(unlock.effect) ? [] : [unlockEffectTarget(unlock.effect)];
 
 export const unlockedKeyFromEffect = (unlock: UnlockDefinition): Key | null => {
-  const target = unlockEffectTarget(unlock.effect);
+  const target = unlockTargetsFromEffect(unlock)[0];
+  if (!target) {
+    return null;
+  }
   return target.type === "key" ? target.key ?? null : null;
 };
 
 export const allKnownEffectTargets = (catalog: UnlockDefinition[]): UnlockTargetDescriptor[] => {
   const descriptors = new Map<string, UnlockTargetDescriptor>();
   for (const unlock of catalog) {
-    const target = unlockEffectTarget(unlock.effect);
-    if (target.type !== "effect_target") {
-      continue;
+    for (const target of unlockTargetsFromEffect(unlock)) {
+      if (target.type !== "effect_target") {
+        continue;
+      }
+      descriptors.set(target.id, target);
     }
-    descriptors.set(target.id, target);
   }
   return [...descriptors.values()].sort((a, b) => a.id.localeCompare(b.id));
 };
@@ -307,4 +314,3 @@ export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[
     edges: dedupeGraphEdges(edges),
   };
 };
-

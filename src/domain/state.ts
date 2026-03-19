@@ -1,7 +1,7 @@
 import { fromKeyLayoutArray, toIndexFromCoord } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
-import { buildAllocatorSnapshot, createDefaultLambdaControl } from "./lambdaControl.js";
+import { buildAllocatorSnapshot, createDefaultLambdaControl, getLambdaDerivedValues } from "./lambdaControl.js";
 import { KEY_ID, toKeyId } from "./keyPresentation.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 
@@ -171,6 +171,7 @@ export const initialState = (): GameState => {
   const valueCompose = buildUnlockRecord("valueCompose");
   const fProfile = controlProfiles.f;
   const lambdaControl = createDefaultLambdaControl(fProfile);
+  const lambdaDerived = getLambdaDerivedValues(lambdaControl, fProfile);
   const base: GameState = {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
@@ -220,8 +221,8 @@ export const initialState = (): GameState => {
       uiUnlocks: {
         storageVisible: true,
       },
-      maxSlots: 0,
-      maxTotalDigits: 1,
+      maxSlots: lambdaDerived.effectiveFields.gamma,
+      maxTotalDigits: lambdaDerived.effectiveFields.delta,
     },
     completedUnlockIds: [],
   };
