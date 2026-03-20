@@ -1,5 +1,5 @@
 import { projectControlFromState } from "../domain/controlProjection.js";
-import { EXECUTION_PAUSE_FLAG } from "../domain/state.js";
+import { isExecutionModeActive } from "../domain/executionModePolicy.js";
 import type { Action, GameState, Store } from "../domain/types.js";
 
 export const AUTO_STEP_INTERVAL_MS = 1000;
@@ -29,7 +29,7 @@ const getAutoStepIntervalMs = (state: GameState, baseIntervalMs: number): number
   baseIntervalMs / getAutoStepRateMultiplier(state);
 
 const isAutoStepEnabled = (state: GameState): boolean =>
-  Boolean(state.ui.buttonFlags[EXECUTION_PAUSE_FLAG]);
+  isExecutionModeActive(state);
 
 export const createAutoStepScheduler = (store: Store, options: AutoStepSchedulerOptions = {}) => {
   const baseIntervalMs = options.intervalMs ?? AUTO_STEP_INTERVAL_MS;

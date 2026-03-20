@@ -11,6 +11,7 @@ export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
 export const EXECUTION_PAUSE_FLAG = "execution.pause";
+export const EXECUTION_PAUSE_EQUALS_FLAG = "execution.pause.equals";
 // Backward-compatible alias retained while downstream modules migrate naming.
 export const AUTO_EQUALS_FLAG = EXECUTION_PAUSE_FLAG;
 export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";

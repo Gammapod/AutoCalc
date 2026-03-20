@@ -2,7 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { executeCommand } from "../src/domain/commands.js";
 import { reducer } from "../src/domain/reducer.js";
-import { EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
 import { compareParity } from "../src/compat/parityHarness.js";
 import type { Action, GameState } from "../src/domain/types.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
@@ -104,7 +104,7 @@ export const runContractsExecutionGateParityTests = (): void => {
         { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } },
         { kind: "key", key: k("1") },
         { kind: "key", key: op("+") },
-        { kind: "key", key: k("=") },
+        { kind: "key", key: k("="), behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
         { kind: "key", key: k("\u2190") },
       ],
       keypadColumns: 5,
@@ -149,9 +149,9 @@ export const runContractsExecutionGateParityTests = (): void => {
   );
 
   runParityAcceptedCase(
-    "execution-pause execution interrupt",
+    "execution-pause equals-toggle interrupt",
     pausedState,
-    { type: "PRESS_KEY", key: k("=") },
+    { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
   );
 
   const autoStepSeed: GameState = {

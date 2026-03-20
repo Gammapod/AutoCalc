@@ -1,6 +1,6 @@
 import { getButtonDefinition } from "./buttonRegistry.js";
 import { KEY_ID, resolveKeyId, toLegacyKey, type KeyLike } from "./keyPresentation.js";
-import { EXECUTION_PAUSE_FLAG } from "./state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG } from "./state.js";
 import type { Action, GameState, Key, KeyCell } from "./types.js";
 
 const isKeyCell = (cell: GameState["ui"]["keyLayout"][number] | GameState["ui"]["storageLayout"][number]): cell is KeyCell =>
@@ -32,6 +32,9 @@ const getExecutionToggleFlagsForKey = (ui: GameState["ui"], keyLike: KeyLike): S
   if (key === KEY_ID.exec_play_pause) {
     flags.add(EXECUTION_PAUSE_FLAG);
   }
+  if (key === KEY_ID.exec_equals) {
+    flags.add(EXECUTION_PAUSE_EQUALS_FLAG);
+  }
   for (const cell of ui.keyLayout) {
     if (!isKeyCell(cell)) {
       continue;
@@ -60,7 +63,7 @@ const getExecutionToggleFlagsForKey = (ui: GameState["ui"], keyLike: KeyLike): S
 };
 
 const getExecutionToggleFlags = (ui: GameState["ui"]): Set<string> => {
-  const flags = new Set<string>([EXECUTION_PAUSE_FLAG]);
+  const flags = new Set<string>([EXECUTION_PAUSE_FLAG, EXECUTION_PAUSE_EQUALS_FLAG]);
   for (const cell of ui.keyLayout) {
     if (!isKeyCell(cell)) {
       continue;
@@ -134,6 +137,8 @@ export const clearExecutionModeFlagsForInterrupt = (state: GameState, keyLike: K
   const executionFlags = getExecutionToggleFlags(state.ui);
   const keepFlags = resolvedKey === KEY_ID.exec_play_pause
     ? new Set<string>([EXECUTION_PAUSE_FLAG])
+    : resolvedKey === KEY_ID.exec_equals
+      ? new Set<string>([EXECUTION_PAUSE_EQUALS_FLAG])
     : getExecutionToggleFlagsForKey(state.ui, keyLike);
   if (executionFlags.size === 0) {
     return state;
@@ -142,6 +147,34 @@ export const clearExecutionModeFlagsForInterrupt = (state: GameState, keyLike: K
   let changed = false;
   for (const flag of executionFlags) {
     if (keepFlags.has(flag)) {
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(nextFlags, flag)) {
+      delete nextFlags[flag];
+      changed = true;
+    }
+  }
+  if (!changed) {
+    return state;
+  }
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      buttonFlags: nextFlags,
+    },
+  };
+};
+
+export const clearExecutionModeFlagsForInterruptByFlag = (state: GameState, keepFlag: string): GameState => {
+  const executionFlags = getExecutionToggleFlags(state.ui);
+  if (executionFlags.size === 0) {
+    return state;
+  }
+  const nextFlags = { ...state.ui.buttonFlags };
+  let changed = false;
+  for (const flag of executionFlags) {
+    if (flag === keepFlag) {
       continue;
     }
     if (Object.prototype.hasOwnProperty.call(nextFlags, flag)) {

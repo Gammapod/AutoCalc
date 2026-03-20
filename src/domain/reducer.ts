@@ -29,6 +29,7 @@ import { projectControlFromState } from "./controlProjection.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 import {
   clearExecutionModeFlagsForInterrupt,
+  clearExecutionModeFlagsForInterruptByFlag,
   isExecutionGatedMutationAction,
   isExecutionGatedInputKey,
   isExecutionInterruptingKey,
@@ -37,7 +38,7 @@ import {
   markInvalidExecutionGateInput,
 } from "./executionModePolicy.js";
 import { handleAutoStepTick } from "./reducer.input.handlers.execution.js";
-import { EXECUTION_PAUSE_FLAG } from "./state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG } from "./state.js";
 import type {
   Action,
   CalculatorId,
@@ -97,10 +98,26 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     return applyKeyAction(state, resolvedKey);
   }
   if (action.type === "AUTO_STEP_TICK") {
-    if (!state.ui.buttonFlags[EXECUTION_PAUSE_FLAG]) {
+    if (!isExecutionModeActive(state)) {
       return state;
     }
-    return handleAutoStepTick(state);
+    const stepped = handleAutoStepTick(state);
+    if (
+      stepped !== state
+      && state.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]
+      && stepped.calculator.rollEntries.length > state.calculator.rollEntries.length
+    ) {
+      const nextFlags = { ...stepped.ui.buttonFlags };
+      delete nextFlags[EXECUTION_PAUSE_EQUALS_FLAG];
+      return {
+        ...stepped,
+        ui: {
+          ...stepped.ui,
+          buttonFlags: nextFlags,
+        },
+      };
+    }
+    return stepped;
   }
 
   const lifecycleHandled = applyLifecycleAction(state, action);
@@ -150,7 +167,7 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
   }
   if (action.type === "TOGGLE_FLAG") {
     if (isExecutionToggleFlag(state, action.flag)) {
-      const cleared = clearExecutionModeFlagsForInterrupt(state, KEY_ID.exec_play_pause);
+      const cleared = clearExecutionModeFlagsForInterruptByFlag(state, action.flag);
       return applyToggleFlag(cleared, action.flag);
     }
     return applyToggleFlag(state, action.flag);

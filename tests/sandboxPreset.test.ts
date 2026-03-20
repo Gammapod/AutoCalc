@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createSandboxState } from "../src/domain/sandboxPreset.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
-import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../src/domain/state.js";
 
 const keyAt = (state: ReturnType<typeof createSandboxState>, row: number, col: number): string | null => {
   const index = toIndexFromCoord({ row, col }, state.ui.keypadColumns, state.ui.keypadRows);
@@ -66,6 +66,11 @@ export const runSandboxPresetTests = (): void => {
   assert.equal(keyAt(sandbox, 3, 1), KEY_ID.op_sub, "R3C1 is subtraction");
   assert.equal(keyAt(sandbox, 2, 1), KEY_ID.op_add, "R2C1 is addition");
   assert.equal(keyAt(sandbox, 1, 1), KEY_ID.exec_equals, "R1C1 mapped from screenshot");
+  assert.deepEqual(
+    behaviorAt(sandbox, 1, 1),
+    { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG },
+    "R1C1 is equals auto-step toggle behavior",
+  );
 
   assert.ok(Object.values(sandbox.unlocks.valueExpression).every(Boolean), "sandbox unlocks all value keys");
   assert.ok(Object.values(sandbox.unlocks.slotOperators).every(Boolean), "sandbox unlocks all slot operators");

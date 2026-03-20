@@ -92,6 +92,7 @@ import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
 import { runAutoStepSchedulerTests } from "./autoStepScheduler.test.js";
+import { runEqualsToggleAutoStepTests } from "./equalsToggleAutoStep.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
 import { runContentProviderWiringContractTests } from "./contentProviderWiring.contract.test.js";
 import { runCapabilitySemanticsParityContractTests } from "./capabilitySemanticsParity.contract.test.js";
@@ -193,6 +194,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/complexity-gate", runUiComplexityGateTests],
   ["app/app-mode-resolver", runAppModeResolverTests],
   ["app/auto-step-scheduler", runAutoStepSchedulerTests],
+  ["domain/equals-toggle-auto-step", runEqualsToggleAutoStepTests],
   ["domain/sandbox-preset", runSandboxPresetTests],
   ["contracts/content-provider-wiring", runContentProviderWiringContractTests],
   ["contracts/capability-semantics-parity", runCapabilitySemanticsParityContractTests],

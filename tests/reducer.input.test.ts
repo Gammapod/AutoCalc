@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { MAX_ROLL_ENTRIES } from "../src/domain/rollEntries.js";
-import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
@@ -102,7 +102,7 @@ export const runReducerInputTests = (): void => {
         { kind: "key", key: k("1") },
         { kind: "key", key: op("+") },
         { kind: "key", key: k("\u2190") },
-        { kind: "key", key: k("=") },
+        { kind: "key", key: k("="), behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
       ],
       keypadColumns: 5,
       keypadRows: 1,
@@ -148,9 +148,24 @@ export const runReducerInputTests = (): void => {
   assert.equal(Boolean(backspaceInterruptsAndClearsPause.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "utility key press clears execution pause");
   assert.notDeepEqual(backspaceInterruptsAndClearsPause.calculator, withPauseOn.calculator, "utility key still executes after clearing pause");
 
-  const equalsInterruptsAndClearsPause = reducer(withPauseOn, { type: "PRESS_KEY", key: k("=") });
-  assert.equal(Boolean(equalsInterruptsAndClearsPause.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "execution key press clears execution pause");
-  assert.equal(equalsInterruptsAndClearsPause.calculator.rollEntries.length > 0, true, "execution key still executes after clearing pause");
+  const withEqualsPauseOn = reducer(executionGateBase, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
+  assert.equal(Boolean(withEqualsPauseOn.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), true, "equals toggle turns equals auto-step flag on");
+  const withEqualsPauseOff = reducer(withEqualsPauseOn, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
+  assert.equal(Boolean(withEqualsPauseOff.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "equals toggle turns equals auto-step flag off");
+
+  const equalsAutoStepSource: GameState = {
+    ...withEqualsPauseOn,
+    calculator: {
+      ...withEqualsPauseOn.calculator,
+      total: r(2n),
+      draftingSlot: null,
+      operationSlots: [{ operator: op("+"), operand: 3n }],
+      rollEntries: [],
+    },
+  };
+  const afterEqualsAutoTick = reducer(equalsAutoStepSource, { type: "AUTO_STEP_TICK" });
+  assert.equal(Boolean(afterEqualsAutoTick.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "equals toggle auto-clears after terminal auto-step roll update");
+  assert.equal(afterEqualsAutoTick.calculator.rollEntries.length > 0, true, "equals toggle terminal auto-step commits roll update");
 
   const firstFreshDigit = applyKeyAction(fullyUnlocked, "9");
   assert.deepEqual(firstFreshDigit.calculator.total, r(9n), "first total digit on fresh cleared save is accepted");

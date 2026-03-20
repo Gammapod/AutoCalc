@@ -5,6 +5,7 @@ import { KEY_ID } from "./keyPresentation.js";
 import {
   defaultStorageLayout,
   DELTA_RANGE_CLAMP_FLAG,
+  EXECUTION_PAUSE_EQUALS_FLAG,
   EXECUTION_PAUSE_FLAG,
   initialState,
   MOD_ZERO_TO_DELTA_FLAG,
@@ -72,7 +73,7 @@ const SANDBOX_LAYOUT_ENTRIES: ReadonlyArray<{
   { row: 1, col: 4, cell: { kind: "key", key: KEY_ID.digit_2 } },
   { row: 1, col: 3, cell: { kind: "key", key: KEY_ID.digit_3 } },
   { row: 1, col: 2, cell: { kind: "key", key: KEY_ID.digit_0 } },
-  { row: 1, col: 1, cell: { kind: "key", key: KEY_ID.exec_equals } },
+  { row: 1, col: 1, cell: { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } } },
 ];
 
 const keyCellSignature = (cell: KeyCell): string =>
