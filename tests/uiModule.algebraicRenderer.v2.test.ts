@@ -1,4 +1,4 @@
-import "./support/keyCompat.runtime.js";
+﻿import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { installDomHarness } from "./helpers/domHarness.js";
 import { initialState } from "../src/domain/state.js";
@@ -46,7 +46,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
     assert.match(committedText, /(?:\u{1D453}\u2080\(\u{1D465}\)|f_0)\s*=\s*5/u, "pre-roll seed line uses current seed value");
     assert.match(
       committedText,
-      /\((?:\u{1D453}\u2099\(\u{1D465}\)|f_n)\s*\+\s*1\)\s*(?:�|×|\*)\s*3/u,
+      /\((?:\u{1D453}\u2099\(\u{1D465}\)|f_n)\s*\+\s*1\)\s*(?:�|×|\*)\s*3/u,
       "recurrence builds from committed slots",
     );
 
@@ -113,7 +113,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
       },
     };
     renderAlgebraicVisualizerPanel(harness.root, stateWithEuclidLiteral);
-    assert.match(panel.textContent ?? "", /#\s*5/i, "euclidean literal operator stays literal in algebra view");
+    assert.match(panel.textContent ?? "", /\u2AFD\s*5/i, "euclidean literal operator stays literal in algebra view");
   } finally {
     harness.teardown();
   }

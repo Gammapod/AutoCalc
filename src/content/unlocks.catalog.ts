@@ -73,6 +73,16 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetLabel: "=",
   },
   {
+    id: "unlock_step_expansion_on_total_at_least_10",
+    description: "Unlock [ ??? ] when total reaches at least 10.",
+    predicate: { type: "total_at_least", value: 10n },
+    effect: { type: "unlock_utility", key: KEY_ID.toggle_step_expansion },
+    once: true,
+    domainNodeId: "NN",
+    targetNodeId: "Ustep_expansion_unlock",
+    targetLabel: "[ ??? ]",
+  },
+  {
     id: "unlock_minus_on_negative_total",
     description: "Unlock - after reaching a negative total.",
     predicate: { type: "total_at_most", value: -1n },
@@ -127,16 +137,6 @@ export const unlockCatalog: UnlockDefinition[] = [
     domainNodeId: "NQ",
     targetNodeId: "Aeuclid_unlock",
     targetLabel: "#",
-  },
-  {
-    id: "unlock_floor_on_first_rational_result",
-    description: "Unlock FLOOR the first time a rational non-integer result appears in the roll.",
-    predicate: { type: "roll_contains_domain_type", domainType: "rational_non_integer" },
-    effect: { type: "unlock_slot_operator", key: KEY_ID.unary_floor },
-    once: true,
-    domainNodeId: "NQ",
-    targetNodeId: "Afloor_unlock",
-    targetLabel: "FLOOR",
   },
   {
     id: "unlock_calculator_g_on_add_and_mul",

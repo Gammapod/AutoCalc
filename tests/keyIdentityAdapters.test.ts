@@ -10,7 +10,7 @@ export const runKeyIdentityAdaptersTests = (): void => {
   assert.equal(resolveKeyId("+"), "op_add", "resolver normalizes legacy key");
   assert.equal(resolveKeyId("op_add"), "op_add", "resolver keeps canonical key id");
   assert.equal(getButtonFace("op_div"), "\u00F7", "button-face lookup accepts canonical key ids");
-  assert.equal(getOperatorSlotFace("op_mod"), "\u2662", "operator-slot lookup accepts canonical key ids");
+  assert.equal(getOperatorSlotFace("op_mod"), "\u25C7", "operator-slot lookup accepts canonical key ids");
 
   assert.throws(() => toLegacyKey("not_a_key_id" as never), /Unsupported key id/, "invalid key id throws");
 

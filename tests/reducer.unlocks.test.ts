@@ -54,9 +54,15 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(atTen.unlocks.unaryOperators[uop("--")], true, "-- unlocks at total >= 10");
   assert.equal(atTen.unlocks.unaryOperators[uop("++")], true, "++ unlocks at total >= 10");
   assert.equal(atTen.unlocks.execution[execution("=")], true, "= unlocks at total >= 10");
+  assert.equal(atTen.unlocks.utilities[utility("[ ??? ]")], true, "[ ??? ] unlocks at total >= 10");
   assert.equal(atTen.completedUnlockIds.includes("unlock_dec_on_total_at_least_10"), true, "-- unlock id is recorded");
   assert.equal(atTen.completedUnlockIds.includes("unlock_inc_on_total_at_least_10"), true, "++ unlock id is recorded");
   assert.equal(atTen.completedUnlockIds.includes("unlock_equals_on_total_at_least_10"), true, "= unlock id is recorded");
+  assert.equal(
+    atTen.completedUnlockIds.includes("unlock_step_expansion_on_total_at_least_10"),
+    true,
+    "[ ??? ] unlock id is recorded",
+  );
   assert.equal(
     atTen.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === uop("++")),
     true,
@@ -68,6 +74,11 @@ export const runReducerUnlockTests = (): void => {
     "= remains on keypad when unlocked",
   );
   assert.equal(
+    atTen.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === utility("[ ??? ]")),
+    true,
+    "[ ??? ] remains on keypad when unlocked",
+  );
+  assert.equal(
     atTen.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === uop("++")),
     false,
     "++ is removed from storage when already installed on keypad",
@@ -76,6 +87,11 @@ export const runReducerUnlockTests = (): void => {
     atTen.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === execution("=")),
     false,
     "= keyed storage variants are removed when = is already installed on keypad",
+  );
+  assert.equal(
+    atTen.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === utility("[ ??? ]")),
+    false,
+    "[ ??? ] is removed from storage when already installed on keypad",
   );
 
   const withError = applyUnlocks(

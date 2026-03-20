@@ -9,7 +9,7 @@ import { k } from "./support/keyCompat.js";
 export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(k("*")), "\u00D7", "mul key label renders as \u00D7");
   assert.equal(formatKeyLabel(k("/")), "\u00F7", "div key label renders as \u00F7");
-  assert.equal(formatKeyLabel(k("#")), "#/\u27E1", "euclidean division key label renders as #/\u27E1");
+  assert.equal(formatKeyLabel(k("#")), "\u2AFD", "euclidean division key label renders as \u2AFD");
   assert.equal(formatKeyLabel(k("\u27E1")), "\u27E1", "modulo key label renders as \u27E1");
   assert.equal(formatKeyLabel(k("UNDO")), "\u2936", "undo key label renders as \u2936");
   assert.equal(formatKeyLabel(k("\u2190")), "\u2190", "backspace key label remains left arrow");

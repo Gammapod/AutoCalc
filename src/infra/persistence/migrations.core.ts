@@ -253,6 +253,8 @@ const MAX_TOTAL_DIGITS_MAX = 12;
 const ALLOCATOR_MIN = 0;
 const LEGACY_CE_KEY = "CE";
 const LEGACY_CE_KEY_ID = "util_clear_entry";
+const LEGACY_GREATER_KEY = ">";
+const LEGACY_GREATER_KEY_ID = "op_greater";
 const RETIRED_CE_UNLOCK_ID = "unlock_ce_on_first_division_by_zero";
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -272,6 +274,8 @@ const isUnarySlotOperator = (value: unknown): value is Slot["operator"] =>
 const isKnownKey = (value: unknown): value is Key => isString(value) && (isLegacyKey(value as never) || isKeyId(value as never));
 const isLegacyCeKey = (value: unknown): boolean =>
   value === LEGACY_CE_KEY || value === LEGACY_CE_KEY_ID;
+const isLegacyGreaterKey = (value: unknown): boolean =>
+  value === LEGACY_GREATER_KEY || value === LEGACY_GREATER_KEY_ID;
 const isMemoryVariable = (value: unknown): value is MemoryVariable =>
   isString(value) && MEMORY_VARIABLE_VALUES.includes(value as MemoryVariable);
 const isBooleanRecord = (value: unknown): value is Record<string, boolean> =>
@@ -380,6 +384,10 @@ const stripCeFromLayoutCells = (layout: unknown): LayoutCell[] | undefined => {
         next.push({ kind: "placeholder", area: "empty" });
         continue;
       }
+      if (isLegacyGreaterKey(cell.key)) {
+        next.push({ kind: "placeholder", area: "empty" });
+        continue;
+      }
       if (!isKnownKey(cell.key)) {
         continue;
       }
@@ -411,6 +419,10 @@ const stripCeFromStorageSlots = (layout: unknown): Array<KeyCell | null> | undef
       next.push(null);
       continue;
     }
+    if (isLegacyGreaterKey(cell.key)) {
+      next.push(null);
+      continue;
+    }
     if (!isKnownKey(cell.key)) {
       continue;
     }
@@ -434,7 +446,7 @@ const stripCeFromKeyPressCounts = (counts: unknown): Partial<Record<Key, number>
   }
   return Object.fromEntries(
     Object.entries(counts).filter(
-      ([key, value]) => !isLegacyCeKey(key) && isKnownKey(key) && isInteger(value) && value >= 0,
+      ([key, value]) => !isLegacyCeKey(key) && !isLegacyGreaterKey(key) && isKnownKey(key) && isInteger(value) && value >= 0,
     ).map(([key, value]) => [key as Key, value]),
   );
 };
@@ -607,7 +619,12 @@ const normalizeUnlocks = (source?: SerializableStateV2["unlocks"]): UnlockState 
       ...normalizedValueAtoms,
       ...normalizedValueCompose,
     },
-    slotOperators: { ...defaults.slotOperators, ...(source?.slotOperators ?? {}) },
+    slotOperators: Object.fromEntries(
+      Object.keys(defaults.slotOperators).map((key) => [
+        key,
+        Boolean((source?.slotOperators as Record<string, unknown> | undefined)?.[key] ?? defaults.slotOperators[key as keyof typeof defaults.slotOperators]),
+      ]),
+    ) as UnlockState["slotOperators"],
     unaryOperators: { ...defaults.unaryOperators, ...sourceUnaryOperators },
     utilities: { ...defaults.utilities, ...sourceUtilities },
     memory: { ...defaults.memory, ...(source?.memory ?? {}) },

@@ -85,7 +85,6 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   op(KEY_ID.op_lcm),
   op(KEY_ID.op_max),
   op(KEY_ID.op_min),
-  op(KEY_ID.op_greater),
   unary(KEY_ID.unary_inc),
   unary(KEY_ID.unary_dec),
   unary(KEY_ID.unary_neg),

@@ -262,7 +262,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
         if (nextTotal.den !== 1n) {
           return { ok: false, reason: "nan_input" };
         }
-        nextTotal = { num: nextTotal.num === 0n ? 1n : 0n, den: 1n };
+        nextTotal = { num: nextTotal.num <= 0n ? 1n : 0n, den: 1n };
       } else if (resolveKeyId(slot.operator) === KEY_ID.unary_collatz) {
         if (nextTotal.den !== 1n) {
           return { ok: false, reason: "nan_input" };
@@ -382,13 +382,6 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       const leftScaled = nextTotal.num;
       const rightScaled = slot.operand * nextTotal.den;
       nextTotal = leftScaled <= rightScaled ? nextTotal : { num: slot.operand, den: 1n };
-      endsWithEuclidLikeOperator = false;
-      continue;
-    }
-    if (resolveKeyId(slot.operator) === KEY_ID.op_greater) {
-      const leftScaled = nextTotal.num;
-      const rightScaled = slot.operand * nextTotal.den;
-      nextTotal = { num: leftScaled > rightScaled ? 1n : 0n, den: 1n };
       endsWithEuclidLikeOperator = false;
       continue;
     }

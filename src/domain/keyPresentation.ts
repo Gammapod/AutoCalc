@@ -25,7 +25,6 @@ export const KEY_ID = {
   op_lcm: "op_lcm",
   op_max: "op_max",
   op_min: "op_min",
-  op_greater: "op_greater",
   unary_inc: "unary_inc",
   unary_dec: "unary_dec",
   unary_neg: "unary_neg",
@@ -83,8 +82,7 @@ export type BinaryOperatorKeyId =
   | typeof KEY_ID.op_gcd
   | typeof KEY_ID.op_lcm
   | typeof KEY_ID.op_max
-  | typeof KEY_ID.op_min
-  | typeof KEY_ID.op_greater;
+  | typeof KEY_ID.op_min;
 export type UnaryOperatorKeyId =
   | typeof KEY_ID.unary_inc
   | typeof KEY_ID.unary_dec
@@ -155,14 +153,13 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["*", { keyId: KEY_ID.op_mul, buttonFace: "\u00D7", operatorInlineFace: "\u00D7", operatorSlotFace: "\u00D7", operatorAlgebraicFace: "\u00D7" }],
   ["^", { keyId: KEY_ID.op_pow, buttonFace: "^", operatorInlineFace: "^", operatorSlotFace: "^", operatorAlgebraicFace: "^" }],
   ["/", { keyId: KEY_ID.op_div, buttonFace: "\u00F7", operatorInlineFace: "\u00F7", operatorSlotFace: "\u00F7", operatorAlgebraicFace: "\u00F7" }],
-  ["#", { keyId: KEY_ID.op_euclid_div, buttonFace: "#/\u27E1", operatorInlineFace: "#", operatorSlotFace: "#", operatorAlgebraicFace: "#" }],
-  ["\u27E1", { keyId: KEY_ID.op_mod, buttonFace: "\u27E1", operatorInlineFace: "\u27E1", operatorSlotFace: "\u2662", operatorAlgebraicFace: "\u27E1" }],
+  ["#", { keyId: KEY_ID.op_euclid_div, buttonFace: "\u2AFD", operatorInlineFace: "\u2AFD", operatorSlotFace: "\u2AFD", operatorAlgebraicFace: "\u2AFD" }],
+  ["\u27E1", { keyId: KEY_ID.op_mod, buttonFace: "\u27E1", operatorInlineFace: "\u27E1", operatorSlotFace: "\u25C7", operatorAlgebraicFace: "\u27E1" }],
   ["\u21BA", { keyId: KEY_ID.op_rotate_left, buttonFace: "\u21BA", operatorInlineFace: "\u21BA", operatorSlotFace: "\u21BA", operatorAlgebraicFace: "\u21BA" }],
   ["\u2A51", { keyId: KEY_ID.op_gcd, buttonFace: "\u22C0", operatorInlineFace: "\u22C0", operatorSlotFace: "\u22C0", operatorAlgebraicFace: "\u22C0" }],
   ["\u2A52", { keyId: KEY_ID.op_lcm, buttonFace: "\u22C1", operatorInlineFace: "\u22C1", operatorSlotFace: "\u22C1", operatorAlgebraicFace: "\u22C1" }],
   ["MAX", { keyId: KEY_ID.op_max, buttonFace: "\u2567", operatorInlineFace: "\u2567", operatorSlotFace: "\u2567", operatorAlgebraicFace: "\u2567" }],
   ["MIN", { keyId: KEY_ID.op_min, buttonFace: "\u2564", operatorInlineFace: "\u2564", operatorSlotFace: "\u2564", operatorAlgebraicFace: "\u2564" }],
-  [">", { keyId: KEY_ID.op_greater, buttonFace: ">", operatorInlineFace: ">", operatorSlotFace: ">", operatorAlgebraicFace: ">" }],
   ["++", { keyId: KEY_ID.unary_inc, buttonFace: "+ +", operatorInlineFace: "++", operatorSlotFace: "++", operatorAlgebraicFace: "++" }],
   ["--", { keyId: KEY_ID.unary_dec, buttonFace: "\u2212 \u2212", operatorInlineFace: "\u2212\u2212", operatorSlotFace: "\u2212\u2212", operatorAlgebraicFace: "\u2212\u2212" }],
   ["-n", { keyId: KEY_ID.unary_neg, buttonFace: "\u00B1", operatorInlineFace: "\u00B1", operatorSlotFace: "\u00B1", operatorAlgebraicFace: "\u00B1" }],
@@ -308,7 +305,6 @@ const BINARY_OPERATOR_KEY_ID_SET = new Set<BinaryOperatorKeyId>([
   KEY_ID.op_lcm,
   KEY_ID.op_max,
   KEY_ID.op_min,
-  KEY_ID.op_greater,
 ]);
 const UNARY_OPERATOR_KEY_ID_SET = new Set<UnaryOperatorKeyId>([
   KEY_ID.unary_inc,

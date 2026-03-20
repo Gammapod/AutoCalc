@@ -91,12 +91,6 @@ export const runEngineTests = (): void => {
   const minOnInteger = executeSlots(r(10n), [{ operator: op("MIN"), operand: 12n }]);
   assert.deepEqual(minOnInteger, { ok: true, total: r(10n) }, "min returns smaller value");
 
-  const greaterTrue = executeSlots(r(7n), [{ operator: op(">"), operand: 6n }]);
-  assert.deepEqual(greaterTrue, { ok: true, total: r(1n) }, "greater returns 1 when lhs > rhs");
-
-  const greaterFalse = executeSlots(r(6n), [{ operator: op(">"), operand: 6n }]);
-  assert.deepEqual(greaterFalse, { ok: true, total: r(0n) }, "greater returns 0 when lhs <= rhs");
-
   const maxOnRational = executeSlots(r(5n, 2n), [{ operator: op("MAX"), operand: 2n }]);
   assert.deepEqual(maxOnRational, { ok: true, total: r(5n, 2n) }, "max supports exact rational-vs-integer comparison");
 
@@ -106,8 +100,11 @@ export const runEngineTests = (): void => {
   const unaryNotZero = executeSlots(r(0n), [{ kind: "unary", operator: uop("NOT") }]);
   assert.deepEqual(unaryNotZero, { ok: true, total: r(1n) }, "not maps zero to one");
 
-  const unaryNotNonZero = executeSlots(r(-12n), [{ kind: "unary", operator: uop("NOT") }]);
-  assert.deepEqual(unaryNotNonZero, { ok: true, total: r(0n) }, "not maps non-zero to zero");
+  const unaryNotNegative = executeSlots(r(-12n), [{ kind: "unary", operator: uop("NOT") }]);
+  assert.deepEqual(unaryNotNegative, { ok: true, total: r(1n) }, "not maps negative values to one");
+
+  const unaryNotPositive = executeSlots(r(12n), [{ kind: "unary", operator: uop("NOT") }]);
+  assert.deepEqual(unaryNotPositive, { ok: true, total: r(0n) }, "not maps positive values to zero");
 
   const unaryCollatzEven = executeSlots(r(8n), [{ kind: "unary", operator: uop("CTZ") }]);
   assert.deepEqual(unaryCollatzEven, { ok: true, total: r(4n) }, "collatz halves even integers");

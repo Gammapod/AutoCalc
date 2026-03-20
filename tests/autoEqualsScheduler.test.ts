@@ -329,5 +329,51 @@ export const runAutoEqualsSchedulerTests = (): void => {
     false,
     "runtime load collapses duplicate key instances by keeping keypad precedence",
   );
+
+  const legacyGreaterLoadedState = {
+    ...initialState(),
+    calculator: {
+      ...initialState().calculator,
+      operationSlots: [{ operator: "op_greater", operand: 3n }],
+      draftingSlot: { operator: "op_greater", operandInput: "7", isNegative: false },
+    },
+    keyPressCounts: {
+      ...initialState().keyPressCounts,
+      op_greater: 4,
+    },
+    ui: {
+      ...initialState().ui,
+      keyLayout: [{ kind: "key", key: "op_greater" }, ...initialState().ui.keyLayout.slice(1)],
+      storageLayout: [{ kind: "key", key: "op_greater" }, ...initialState().ui.storageLayout.slice(1)],
+    },
+    unlocks: {
+      ...initialState().unlocks,
+      slotOperators: {
+        ...initialState().unlocks.slotOperators,
+        op_greater: true,
+      },
+    },
+  } as unknown as GameState;
+  const normalizedLegacyGreater = normalizeLoadedStateForRuntime(legacyGreaterLoadedState);
+  if (!normalizedLegacyGreater) {
+    throw new Error("Expected normalized legacy-greater state.");
+  }
+  assert.equal(
+    normalizedLegacyGreater.calculator.operationSlots.some((slot) => "operand" in slot && String(slot.operator) === "op_greater"),
+    false,
+    "runtime load removes legacy op_greater operation slots",
+  );
+  assert.equal(normalizedLegacyGreater.calculator.draftingSlot, null, "runtime load removes legacy op_greater drafting slot");
+  assert.equal("op_greater" in normalizedLegacyGreater.keyPressCounts, false, "runtime load removes legacy op_greater key press counts");
+  assert.equal(
+    normalizedLegacyGreater.ui.keyLayout.some((cell) => cell.kind === "key" && String(cell.key) === "op_greater"),
+    false,
+    "runtime load replaces legacy op_greater keypad keys",
+  );
+  assert.equal(
+    normalizedLegacyGreater.ui.storageLayout.some((cell) => cell?.kind === "key" && String(cell.key) === "op_greater"),
+    false,
+    "runtime load removes legacy op_greater storage keys",
+  );
 };
 

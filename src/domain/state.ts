@@ -1,4 +1,4 @@
-import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
+import { fromKeyLayoutArray, toIndexFromCoord } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, getLambdaDerivedValues } from "./lambdaControl.js";
@@ -129,7 +129,6 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.op_lcm },
   { kind: "key", key: KEY_ID.op_max },
   { kind: "key", key: KEY_ID.op_min },
-  { kind: "key", key: KEY_ID.op_greater },
   { kind: "key", key: KEY_ID.op_euclid_div },
   { kind: "key", key: KEY_ID.op_mul },
   { kind: "key", key: KEY_ID.op_pow },
@@ -173,11 +172,23 @@ export const initialState = (): GameState => {
   const initialColumns = lambdaDerived.effectiveFields.alpha;
   const initialRows = lambdaDerived.effectiveFields.beta;
   const keyLayout = defaultDrawerKeyLayout(initialColumns, initialRows);
-  if (keyLayout.length >= 2) {
-    keyLayout[keyLayout.length - 2] = {
-      kind: "key",
-      key: KEY_ID.unary_inc,
-    };
+  const startupPlacements: Array<{ row: number; col: number; cell: LayoutCell }> = [
+    { row: 2, col: 1, cell: { kind: "key", key: KEY_ID.unary_inc } },
+    {
+      row: 2,
+      col: 3,
+      cell: {
+        kind: "key",
+        key: KEY_ID.toggle_step_expansion,
+        behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG },
+      },
+    },
+  ];
+  for (const placement of startupPlacements) {
+    const index = toIndexFromCoord({ row: placement.row, col: placement.col }, initialColumns, initialRows);
+    if (index >= 0 && index < keyLayout.length) {
+      keyLayout[index] = placement.cell;
+    }
   }
   const base: GameState = {
     calculator: {

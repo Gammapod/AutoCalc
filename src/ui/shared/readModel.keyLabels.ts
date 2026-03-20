@@ -91,36 +91,54 @@ export const resolveStepExpansionText = (
       return "\u00D7 -1";
     }
     if (slot.operator === KEY_ID.unary_omega) {
-      return "\u03A3e_p";
+      return "\u03A3\u209B(e\u209B)";
     }
     if (slot.operator === KEY_ID.unary_phi) {
       return "n \u00D7 \u220F(1-p^-1)";
     }
     if (slot.operator === KEY_ID.unary_sigma) {
-      return "\u03A3( [d|n] \u00D7 d)";
+      return "\u03A3_d( [d|n] \u00D7 d)";
+    }
+    if (slot.operator === KEY_ID.unary_not) {
+      return "\u2264 0";
+    }
+    if (slot.operator === KEY_ID.unary_collatz) {
+      return "\u00AC(n\u25C72)\u00D7(n\u00F72) + (n\u25C72)\u00D7(n\u00D73+1)";
+    }
+    if (slot.operator === KEY_ID.unary_sort_asc) {
+      return "sort";
+    }
+    if (slot.operator === KEY_ID.unary_floor) {
+      return "n\u2AFDm";
+    }
+    if (slot.operator === KEY_ID.unary_ceil) {
+      return "\u230An\u230B++";
+    }
+    if (slot.operator === KEY_ID.unary_mirror_digits) {
+      return "mirror";
     }
     return `${formatUnarySlotOperator(slot.operator)}(${current})`;
   }
   if (slot.operator === KEY_ID.op_add && typeof slot.operand === "bigint") {
     if (slot.operand > 0n) {
-      return Array.from({ length: Number(slot.operand) }, () => "+1").join(" ");
+      return Array.from({ length: Number(slot.operand) }, () => "++").join(" ");
     }
     if (slot.operand < 0n) {
-      return Array.from({ length: Number(-slot.operand) }, () => "-1").join(" ");
+      return Array.from({ length: Number(-slot.operand) }, () => "--").join(" ");
     }
     return "0";
   }
   if (slot.operator === KEY_ID.op_sub && typeof slot.operand === "bigint") {
     if (slot.operand > 0n) {
-      return Array.from({ length: Number(slot.operand) }, () => "\u20131").join(" ");
+      return Array.from({ length: Number(slot.operand) }, () => "--").join(" ");
     }
     if (slot.operand < 0n) {
-      return Array.from({ length: Number(-slot.operand) }, () => "+1").join(" ");
+      return Array.from({ length: Number(-slot.operand) }, () => "++").join(" ");
     }
     return "0";
   }
   if (slot.operator === KEY_ID.op_mul && typeof slot.operand === "bigint" && slot.operand > 1n) {
-    return Array.from({ length: Number(slot.operand - 1n) }, () => "+n").join(" ");
+    return Array.from({ length: Number(slot.operand - 1n) }, () => `+ ${current}`).join(" ");
   }
   if (slot.operator === KEY_ID.op_div && typeof slot.operand === "bigint" && slot.operand !== 0n) {
     return `\u00D7(1/${slot.operand.toString()})`;
@@ -129,16 +147,22 @@ export const resolveStepExpansionText = (
     return `n ${"<".repeat(Number(slot.operand))}`;
   }
   if (slot.operator === KEY_ID.op_euclid_div && typeof slot.operand === "bigint") {
-    return `(\u230An \u00F7 ${slot.operand.toString()}\u230B, n \u2013 q)`;
+    return `q=\u230An \u00F7 ${slot.operand.toString()}\u230B;r=n\u2013q`;
   }
   if (slot.operator === KEY_ID.op_mod && typeof slot.operand === "bigint") {
-    return "n \u2013 (m \u00D7 \u230An \u00F7 m\u230B)";
+    return `n \u00F7 ${slot.operand.toString()} \u2013 (n\u2AFD${slot.operand.toString()})`;
   }
   if (slot.operator === KEY_ID.op_gcd && typeof slot.operand === "bigint") {
     return "\u220Fp^(e_a \u2567 e_b)";
   }
   if (slot.operator === KEY_ID.op_lcm && typeof slot.operand === "bigint") {
     return "\u220Fp^(e_a \u2564 e_b)";
+  }
+  if (slot.operator === KEY_ID.op_max && typeof slot.operand === "bigint") {
+    return `< ${slot.operand.toString()} \u00D7 ${slot.operand.toString()} + \u00AC(${current} \u2264 ${slot.operand.toString()} \u00D7 ${current})`;
+  }
+  if (slot.operator === KEY_ID.op_min && typeof slot.operand === "bigint") {
+    return `< ${slot.operand.toString()} \u00D7 ${current} + \u00AC(${current} \u2264 ${slot.operand.toString()} \u00D7 ${slot.operand.toString()})`;
   }
   const operand = typeof slot.operand === "bigint" ? slot.operand.toString() : expressionToDisplayString(slotOperandToExpression(slot.operand));
   return `${current} ${formatOperatorForOperationSlotDisplay(slot.operator)} ${operand}`;

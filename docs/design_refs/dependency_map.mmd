@@ -58,21 +58,21 @@ subgraph Arithmetic ["Arithmetic"]
     %% Expanded form `[ (¬(n) × ±n) + ((0<n) × n) ]`
     Adiv["a÷b"]
     Afloor["⌊n⌋"]
-    %% Expanded form `[a÷b] - FrAC`
-    Aeudiv["a∻b"]
-    %% Expanded form `[ ⌊a÷b⌋ ] `
+    %% Expanded form `[ a-a◇1 ]`
+    Aeudiv["a⫽b"]
+    %% Expanded form `[ a÷b - FrAC ] `
     Aceil["⌈n⌉"]
     %% Expanded form `[ ⌊n⌋++ ]`
     Apow["a^b"]
     Amod["a◇b"]
-    %% Expanded form `[ (a÷b) - (a∻b) ]`
+    %% Expanded form `[ (a÷b) - (a⫽b) ]`
 
     Ainc -->|Iterate| Aplus
     Aplus -->|Iterate| Amul
     Amul -->|Iterate| Apow
 
-    Adiv --> Afloor
-    Afloor --> Aeudiv
+    Amod --> Afloor
+    Adiv --> Aeudiv
     Aeudiv --> Amod
     Afloor --> Aceil
 
