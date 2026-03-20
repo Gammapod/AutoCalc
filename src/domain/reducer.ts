@@ -28,6 +28,7 @@ import { getBaseControlProfile } from "./controlProfileRuntime.js";
 import { projectControlFromState } from "./controlProjection.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 import {
+  clearExecutionModeFlags,
   clearExecutionModeFlagsForInterrupt,
   clearExecutionModeFlagsForInterruptByFlag,
   isExecutionGatedMutationAction,
@@ -38,7 +39,7 @@ import {
   markInvalidExecutionGateInput,
 } from "./executionModePolicy.js";
 import { handleAutoStepTick } from "./reducer.input.handlers.execution.js";
-import { EXECUTION_PAUSE_EQUALS_FLAG } from "./state.js";
+import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "./state.js";
 import type {
   Action,
   CalculatorId,
@@ -78,6 +79,11 @@ const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): Game
 type ReducerOptions = {
   services?: AppServices;
 };
+
+const EXECUTION_INTERRUPTIBLE_SETTINGS_FLAGS = new Set<string>([
+  DELTA_RANGE_CLAMP_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+]);
 
 const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
   const services = options.services ?? getAppServices();
@@ -169,6 +175,9 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     if (isExecutionToggleFlag(state, action.flag)) {
       const cleared = clearExecutionModeFlagsForInterruptByFlag(state, action.flag);
       return applyToggleFlag(cleared, action.flag);
+    }
+    if (EXECUTION_INTERRUPTIBLE_SETTINGS_FLAGS.has(action.flag)) {
+      return applyToggleFlag(clearExecutionModeFlags(state), action.flag);
     }
     return applyToggleFlag(state, action.flag);
   }

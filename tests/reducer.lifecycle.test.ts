@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { applyLifecycleAction } from "../src/domain/reducer.lifecycle.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, STEP_EXPANSION_FLAG, initialState } from "../src/domain/state.js";
+import {
+  DELTA_RANGE_CLAMP_FLAG,
+  EXECUTION_PAUSE_EQUALS_FLAG,
+  EXECUTION_PAUSE_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+  STEP_EXPANSION_FLAG,
+  initialState,
+} from "../src/domain/state.js";
 import { projectControlFromState } from "../src/domain/controlProjection.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { Action, GameState } from "../src/domain/types.js";
@@ -87,13 +94,34 @@ export const runReducerLifecycleTests = (): void => {
         [KEY_ID.toggle_step_expansion]: true,
       },
     },
+    ui: {
+      ...base.ui,
+      buttonFlags: {
+        [EXECUTION_PAUSE_FLAG]: true,
+        [EXECUTION_PAUSE_EQUALS_FLAG]: true,
+      },
+    },
   };
 
   const deltaOn = reducer(settingsToggleBase, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
   assert.equal(deltaOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range settings toggle turns on");
+  assert.equal(Boolean(deltaOn.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "delta-range settings toggle interrupts and clears play/pause execution toggle");
+  assert.equal(Boolean(deltaOn.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "delta-range settings toggle interrupts and clears equals execution toggle");
   const modOn = reducer(deltaOn, { type: "TOGGLE_FLAG", flag: MOD_ZERO_TO_DELTA_FLAG });
   assert.equal(Boolean(modOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]), false, "mod-range toggle clears delta-range toggle");
   assert.equal(modOn.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG], true, "mod-range settings toggle turns on");
+  const modInterruptSource: GameState = {
+    ...settingsToggleBase,
+    ui: {
+      ...settingsToggleBase.ui,
+      buttonFlags: {
+        [EXECUTION_PAUSE_FLAG]: true,
+      },
+    },
+  };
+  const modOnFromExecution = reducer(modInterruptSource, { type: "TOGGLE_FLAG", flag: MOD_ZERO_TO_DELTA_FLAG });
+  assert.equal(Boolean(modOnFromExecution.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "mod-range settings toggle interrupts and clears play/pause execution toggle");
+  assert.equal(modOnFromExecution.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG], true, "mod-range settings toggle still applies after execution interrupt");
   const deltaBackOn = reducer(modOn, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
   assert.equal(deltaBackOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range toggle can be re-enabled");
   assert.equal(Boolean(deltaBackOn.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]), false, "delta-range toggle clears mod-range toggle");
