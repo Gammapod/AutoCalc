@@ -1,9 +1,9 @@
 import type { GameState } from "./types.js";
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, STEP_EXPANSION_FLAG } from "./state.js";
+import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "./state.js";
 
 // Toggle UI-level boolean flags used by toggle-style buttons.
 const EXCLUSIVE_FLAG_GROUPS: readonly (readonly string[])[] = [
-  [DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, STEP_EXPANSION_FLAG],
+  [DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG],
 ];
 
 const clearExclusivePeers = (flags: Record<string, boolean>, flag: string): Record<string, boolean> => {

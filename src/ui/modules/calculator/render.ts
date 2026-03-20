@@ -48,15 +48,17 @@ const appendSlotTrackBase = (
   parent: HTMLElement,
   base: string,
   stepTargetTokenIndex: number | null,
-): void => {
+): number => {
+  const tokenRegex = /\[[^\]]*\]/g;
+  const tokenMatches = base.match(tokenRegex);
+  const tokenCount = tokenMatches ? tokenMatches.length : 0;
   if (stepTargetTokenIndex === null) {
     const textNode = document.createElement("span");
     textNode.textContent = base;
     parent.appendChild(textNode);
-    return;
+    return tokenCount;
   }
 
-  const tokenRegex = /\[[^\]]*\]/g;
   let tokenIndex = 0;
   let cursor = 0;
   let match: RegExpExecArray | null = tokenRegex.exec(base);
@@ -87,6 +89,7 @@ const appendSlotTrackBase = (
     textSuffix.textContent = base.slice(cursor);
     parent.appendChild(textSuffix);
   }
+  return tokenCount;
 };
 
 
@@ -129,11 +132,14 @@ export const renderCalculatorV2Module = (
   const track = document.createElement("span");
   track.className = "slot-display__track";
   const slotBase = document.createElement("span");
-  appendSlotTrackBase(slotBase, slotDisplay.displayFunctionBase, slotDisplay.stepTargetTokenIndex);
+  const baseTokenCount = appendSlotTrackBase(slotBase, slotDisplay.displayFunctionBase, slotDisplay.stepTargetTokenIndex);
   track.appendChild(slotBase);
   if (slotDisplay.deltaWrapSuffix) {
     const deltaWrap = document.createElement("span");
     deltaWrap.className = "slot-display__delta-wrap";
+    if (slotDisplay.stepTargetTokenIndex !== null && slotDisplay.stepTargetTokenIndex === baseTokenCount) {
+      deltaWrap.classList.add("slot-display__token--step-target");
+    }
     deltaWrap.textContent = slotDisplay.deltaWrapSuffix;
     track.appendChild(deltaWrap);
   }

@@ -21,6 +21,7 @@ import { runV2PersistenceParityTests } from "./v2PersistenceParity.test.js";
 import { runStorageDisplayTests } from "./storageDisplay.test.js";
 import { runDragDropBehaviorTests } from "./dragDropBehavior.test.js";
 import { runReducerAllocatorDeviceTests } from "./reducer.allocator-device.test.js";
+import { runReducerWrapTailExecutionTests } from "./reducer.wrapTailExecution.test.js";
 import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
 import { runAnalysisReportTests } from "./analysisReport.test.js";
 import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
@@ -88,6 +89,7 @@ import { runUiModuleCalculatorMotionTests } from "./uiModule.calculatorMotion.te
 import { runUiModuleCalculatorKeypadRenderTests } from "./uiModule.calculatorKeypadRender.test.js";
 import { runUiModuleCalculatorRejectBlinkTests } from "./uiModule.calculatorRejectBlink.test.js";
 import { runUiModuleCalculatorSlotMarqueeTests } from "./uiModule.calculatorSlotMarquee.test.js";
+import { runUiModuleCalculatorSlotDisplayTests } from "./uiModule.calculatorSlotDisplay.test.js";
 import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
@@ -108,6 +110,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["reducer/layout", runReducerLayoutTests],
   ["reducer/allocator-device", runReducerAllocatorDeviceTests],
   ["reducer/lifecycle", runReducerLifecycleTests],
+  ["reducer/wrap-tail-execution", runReducerWrapTailExecutionTests],
   ["reducer/unlocks", runReducerUnlockTests],
   ["persistence", runPersistenceTests],
   ["ui/operation-slot-display", runOperationSlotDisplayTests],
@@ -190,6 +193,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/calculator-keypad-render", runUiModuleCalculatorKeypadRenderTests],
   ["ui-module/calculator-reject-blink", runUiModuleCalculatorRejectBlinkTests],
   ["ui-module/calculator-slot-marquee", runUiModuleCalculatorSlotMarqueeTests],
+  ["ui-module/calculator-slot-display", runUiModuleCalculatorSlotDisplayTests],
   ["ui/visualizer-fit-contract", runUiVisualizerFitContractTests],
   ["ui/complexity-gate", runUiComplexityGateTests],
   ["app/app-mode-resolver", runAppModeResolverTests],

@@ -35,8 +35,6 @@ import { isKeyUsableForInput } from "./keyUnlocks.js";
 import { clearOperationEntry, createInitialStepProgressState, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import {
   CHECKLIST_UNLOCK_ID,
-  DELTA_RANGE_CLAMP_FLAG,
-  MOD_ZERO_TO_DELTA_FLAG,
   OVERFLOW_ERROR_SEEN_ID,
 } from "./state.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
@@ -77,6 +75,7 @@ import {
   type ConstantKeyId,
 } from "./keyPresentation.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
+import { buildExecutionStagePlan, type ExecutionStage, type WrapStageMode } from "./executionPlan.js";
 import { getAppServices } from "../contracts/appServices.js";
 
 export const getUnlockCatalog = () => getAppServices().contentProvider.unlockCatalog;
@@ -365,19 +364,8 @@ const euclideanModuloBigInt = (value: bigint, modulus: bigint): bigint => {
   return remainder < 0n ? remainder + modulus : remainder;
 };
 
-const applyOverflowPolicy = (value: RationalValue, maxDigits: number, state: GameState): EvaluatedExecution => {
-  const deltaRangeWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
-  const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
+const applyOverflowPolicy = (value: RationalValue, maxDigits: number): EvaluatedExecution => {
   const boundary = computeOverflowBoundary(maxDigits);
-  if (modZeroToDeltaEnabled && value.den === 1n) {
-    const wrapped = euclideanModuloBigInt(value.num, boundary);
-    return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
-  }
-  if (deltaRangeWrapEnabled && value.den === 1n) {
-    const ringWidth = boundary * 2n;
-    const wrapped = euclideanModuloBigInt(value.num + boundary, ringWidth) - boundary;
-    return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
-  }
   if (!exceedsMagnitudeBoundary(value, boundary)) {
     return { nextTotal: toRationalCalculatorValue(value) };
   }
@@ -386,6 +374,28 @@ const applyOverflowPolicy = (value: RationalValue, maxDigits: number, state: Gam
     errorCode: OVERFLOW_ERROR_CODE,
     errorKind: "overflow",
   };
+};
+
+const applyWrapStage = (
+  total: GameState["calculator"]["total"],
+  mode: WrapStageMode,
+  maxDigits: number,
+): EvaluatedExecution => {
+  if (!isRationalCalculatorValue(total)) {
+    return { nextTotal: total };
+  }
+  const value = total.value;
+  const boundary = computeOverflowBoundary(maxDigits);
+  if (value.den === 1n) {
+    if (mode === "mod_zero_to_delta") {
+      const wrapped = euclideanModuloBigInt(value.num, boundary);
+      return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
+    }
+    const ringWidth = boundary * 2n;
+    const wrapped = euclideanModuloBigInt(value.num + boundary, ringWidth) - boundary;
+    return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
+  }
+  return applyOverflowPolicy(value, maxDigits);
 };
 
 const markOverflowErrorSeen = (state: GameState): GameState => {
@@ -622,6 +632,9 @@ const evaluateExecutionOutcomeForSlots = (
   state: GameState,
   seedTotal: GameState["calculator"]["total"],
   operationSlots: Slot[],
+  options: {
+    deferOverflowToWrapStage?: boolean;
+  } = {},
 ): EvaluatedExecution => {
   if (seedTotal.kind === "nan") {
     return {
@@ -669,7 +682,9 @@ const evaluateExecutionOutcomeForSlots = (
     if (!rationalized) {
       return toSymbolicExecution(expressionKey, symbolicText);
     }
-    const overflowChecked = applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, state);
+    const overflowChecked = options.deferOverflowToWrapStage
+      ? { nextTotal: toRationalCalculatorValue(rationalized) }
+      : applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits);
     return {
       ...overflowChecked,
       symbolic: toSymbolicPayload(expressionKey, symbolicText),
@@ -677,10 +692,48 @@ const evaluateExecutionOutcomeForSlots = (
     };
   }
 
-  const overflowChecked = applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, state);
+  const overflowChecked = options.deferOverflowToWrapStage
+    ? { nextTotal: toRationalCalculatorValue(execution.total.value) }
+    : applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits);
   return {
     ...overflowChecked,
     euclidRemainder: execution.euclidRemainder,
+  };
+};
+
+const evaluateExecutionPlan = (
+  state: GameState,
+  seedTotal: GameState["calculator"]["total"],
+  stages: ExecutionStage[],
+): EvaluatedExecution => {
+  if (stages.length === 0) {
+    return evaluateExecutionOutcomeForSlots(state, seedTotal, []);
+  }
+
+  const maybeLastStage = stages.at(-1);
+  const wrapStage: Extract<ExecutionStage, { kind: "wrap" }> | null =
+    maybeLastStage && maybeLastStage.kind === "wrap" ? maybeLastStage : null;
+  const slotStages = wrapStage ? stages.slice(0, -1) : stages;
+  const slotList = slotStages
+    .filter((stage): stage is Extract<ExecutionStage, { kind: "slot" }> => stage.kind === "slot")
+    .map((stage) => stage.slot);
+
+  let evaluation = slotList.length > 0
+    ? evaluateExecutionOutcomeForSlots(state, seedTotal, slotList, {
+      deferOverflowToWrapStage: Boolean(wrapStage),
+    })
+    : wrapStage
+      ? { nextTotal: seedTotal }
+      : evaluateExecutionOutcomeForSlots(state, seedTotal, []);
+
+  if (!wrapStage || evaluation.errorKind) {
+    return evaluation;
+  }
+
+  const wrapped = applyWrapStage(evaluation.nextTotal, wrapStage.mode, state.unlocks.maxTotalDigits);
+  return {
+    ...wrapped,
+    ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
   };
 };
 
@@ -691,11 +744,8 @@ export const applyEquals = (state: GameState): GameState => {
   }
 
   const finalized = withClearedStepProgress(finalizeDraftingSlot(state));
-  const evaluation = evaluateExecutionOutcomeForSlots(
-    finalized,
-    finalized.calculator.total,
-    finalized.calculator.operationSlots,
-  );
+  const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
+  const evaluation = evaluateExecutionPlan(finalized, finalized.calculator.total, executionPlan);
   const nextEntry = toRollEntry(evaluation);
   const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
   const nextRollEntries = appendStepRow(withSeed, nextEntry);
@@ -727,12 +777,13 @@ export const applyEqualsFromStepProgress = (state: GameState): GameState => {
     return applyEquals(finalized);
   }
 
-  const remainingSlots = finalized.calculator.operationSlots.slice(stepProgress.nextSlotIndex);
-  if (remainingSlots.length === 0) {
+  const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
+  const remainingStages = executionPlan.slice(stepProgress.nextSlotIndex);
+  if (remainingStages.length === 0) {
     return withClearedStepProgress(finalized);
   }
 
-  const evaluation = evaluateExecutionOutcomeForSlots(finalized, stepProgress.currentTotal, remainingSlots);
+  const evaluation = evaluateExecutionPlan(finalized, stepProgress.currentTotal, remainingStages);
   const nextEntry = toRollEntry(evaluation);
   const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
   const nextRollEntries = appendStepRow(withSeed, nextEntry);
@@ -771,7 +822,8 @@ const applyStepThroughInternal = (
   }
 
   const finalized = finalizeDraftingSlot(state);
-  if (finalized.calculator.operationSlots.length === 0) {
+  const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
+  if (executionPlan.length === 0) {
     return withClearedStepProgress(finalized);
   }
 
@@ -787,14 +839,23 @@ const applyStepThroughInternal = (
           executedSlotResults: [],
         };
 
-  if (!stepProgress.currentTotal || stepProgress.nextSlotIndex >= finalized.calculator.operationSlots.length) {
+  if (!stepProgress.currentTotal || stepProgress.nextSlotIndex >= executionPlan.length) {
     return withClearedStepProgress(finalized);
   }
 
-  const slot = finalized.calculator.operationSlots[stepProgress.nextSlotIndex];
-  const evaluation = evaluateExecutionOutcomeForSlots(finalized, stepProgress.currentTotal, [slot]);
+  const stage = executionPlan[stepProgress.nextSlotIndex];
+  const nextStage = executionPlan[stepProgress.nextSlotIndex + 1];
+  const deferOverflowToWrapStage = nextStage?.kind === "wrap";
+  const evaluation = stage.kind === "slot"
+    ? evaluateExecutionOutcomeForSlots(
+      finalized,
+      stepProgress.currentTotal,
+      [stage.slot],
+      { deferOverflowToWrapStage },
+    )
+    : applyWrapStage(stepProgress.currentTotal, stage.mode, finalized.unlocks.maxTotalDigits);
   const nextResults = [...stepProgress.executedSlotResults, evaluation.nextTotal];
-  const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + 1 >= finalized.calculator.operationSlots.length;
+  const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + 1 >= executionPlan.length;
 
   if (!isTerminal) {
     return applyUnlocks(
@@ -835,14 +896,15 @@ const applyStepThroughInternal = (
 
 export const canAutoStepProgress = (state: GameState): boolean => {
   const finalized = finalizeDraftingSlot(state);
-  if (finalized.calculator.operationSlots.length === 0) {
+  const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
+  if (executionPlan.length === 0) {
     return false;
   }
   const progress = finalized.calculator.stepProgress;
   if (!progress.active) {
     return true;
   }
-  return Boolean(progress.currentTotal) && progress.nextSlotIndex < finalized.calculator.operationSlots.length;
+  return Boolean(progress.currentTotal) && progress.nextSlotIndex < executionPlan.length;
 };
 
 export const applyAutoStepTick = (state: GameState): GameState => {

@@ -1,5 +1,6 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../../../domain/state.js";
+import { getExecutionStageCount, resolveWrapStageMode } from "../../../domain/executionPlan.js";
 import type { CalculatorValue, CalculatorState, GameState, RollEntry } from "../../../domain/types.js";
 import {
   buildOperationSlotDisplay as buildOperationSlotDisplayShared,
@@ -182,30 +183,41 @@ const withDisplayParts = (
 export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotDisplayModel => {
   const base = buildOperationSlotDisplayShared(state);
   const symbol: "f" | "g" = state.activeCalculatorId === "g" ? "g" : "f";
+  const operationSlotCount = state.calculator.operationSlots.length;
+  const executionStageCount = getExecutionStageCount(state.calculator.operationSlots, state);
+  const hasWrapStage = resolveWrapStageMode(state) !== null;
   const stepThroughOnKeypad = state.ui.keyLayout.some(
     (cell) => cell.kind === "key" && cell.key === "exec_step_through",
   );
-  const stepTargetTokenIndex =
-    stepThroughOnKeypad && state.calculator.operationSlots.length > 0
+  const stepTargetStageIndex =
+    stepThroughOnKeypad && executionStageCount > 0
       ? state.calculator.stepProgress.active
         ? (
             state.calculator.stepProgress.nextSlotIndex >= 0
-            && state.calculator.stepProgress.nextSlotIndex < state.calculator.operationSlots.length
+            && state.calculator.stepProgress.nextSlotIndex < executionStageCount
               ? state.calculator.stepProgress.nextSlotIndex
               : null
           )
         : 0
       : null;
+  const stepTargetTokenIndex = stepTargetStageIndex === null
+    ? null
+    : stepTargetStageIndex < operationSlotCount
+      ? stepTargetStageIndex
+      : hasWrapStage
+        ? operationSlotCount
+        : null;
   const deltaWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
   const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
+  const hasNoCommittedOrDraftedSlots = operationSlotCount === 0 && state.calculator.draftingSlot === null;
   if (modZeroToDeltaEnabled) {
-    if (base === "(no operation slots)") {
+    if (hasNoCommittedOrDraftedSlots) {
       return withDisplayParts("_ [ \u27E1 \u{1D6FF} ]", symbol, null, stepTargetTokenIndex);
     }
     return withDisplayParts(base, symbol, MOD_ZERO_TO_DELTA_SUFFIX, stepTargetTokenIndex);
   }
   if (deltaWrapEnabled) {
-    if (base === "(no operation slots)") {
+    if (hasNoCommittedOrDraftedSlots) {
       return withDisplayParts("_ [ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", symbol, null, stepTargetTokenIndex);
     }
     return withDisplayParts(base, symbol, DELTA_WRAP_SUFFIX, stepTargetTokenIndex);
