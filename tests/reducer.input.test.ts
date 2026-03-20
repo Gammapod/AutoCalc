@@ -341,6 +341,11 @@ export const runReducerInputTests = (): void => {
   assert.equal(autoStepTick2.calculator.stepProgress.active, false, "terminal AUTO_STEP_TICK clears step progress");
   assert.deepEqual(autoStepTick2.calculator.total, r(20n), "terminal AUTO_STEP_TICK commits final total");
   assert.equal(autoStepTick2.calculator.rollEntries.length, 2, "terminal AUTO_STEP_TICK commits seed and final step exactly once");
+  assert.equal(
+    autoStepTick2.calculator.rollEntries.length - autoStepTick1.calculator.rollEntries.length,
+    2,
+    "terminal AUTO_STEP_TICK appends exactly one completion pair (seed + terminal result)",
+  );
   assert.deepEqual(autoStepTick2.keyPressCounts, autoStepSeed.keyPressCounts, "AUTO_STEP_TICK terminal commit still does not increment key press counts");
 
   const autoStepIdleSource: GameState = {

@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
-import { normalizeLegacyForMissingInstances, projectCalculatorToLegacy } from "../src/domain/multiCalculator.js";
+import {
+  materializeCalculatorG,
+  normalizeLegacyForMissingInstances,
+  projectCalculatorToLegacy,
+} from "../src/domain/multiCalculator.js";
 import type { Action, GameState } from "../src/domain/types.js";
 
 const toSingleCalculatorState = (state: GameState): GameState => ({
@@ -32,6 +36,50 @@ export const runMultiCalculatorContractTests = (): void => {
   assert.equal(unlockedViaG.allocatorReturnPressCount, 1, "allocator actions still route through shared state");
   const projectedF = projectCalculatorToLegacy(unlockedViaG, "f");
   assert.equal(projectedF.allocatorReturnPressCount, 1, "shared counter state is visible on f projection");
+
+  const dualUnlocked = materializeCalculatorG(initialState());
+  assert.equal(Boolean(dualUnlocked.calculators?.g), true, "unlock-all materializes g calculator");
+  const dualWithActiveF = reducer(dualUnlocked, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" });
+  const beforeFProjection = projectCalculatorToLegacy(dualWithActiveF, "f");
+  const beforeGProjection = projectCalculatorToLegacy(dualWithActiveF, "g");
+  const afterTargetedGInput = reducer(dualWithActiveF, { type: "SET_KEYPAD_DIMENSIONS", calculatorId: "g", columns: 3, rows: 2 });
+  const afterFProjection = projectCalculatorToLegacy(afterTargetedGInput, "f");
+  const afterGProjection = projectCalculatorToLegacy(afterTargetedGInput, "g");
+  assert.deepEqual(
+    afterFProjection.ui,
+    beforeFProjection.ui,
+    "targeted g layout action keeps f calculator-local ui/runtime state unchanged",
+  );
+  assert.equal(
+    afterGProjection.ui.keypadColumns,
+    3,
+    "targeted g layout action mutates g calculator-local ui/runtime state",
+  );
+  assert.equal(afterGProjection.ui.keypadRows, 2, "targeted g layout action updates g rows");
+  assert.equal(
+    afterTargetedGInput.allocatorReturnPressCount,
+    dualWithActiveF.allocatorReturnPressCount,
+    "targeted calculator-local layout action does not mutate shared/global progression counters",
+  );
+  const dualSharedCounter = reducer(dualWithActiveF, { type: "ALLOCATOR_RETURN_PRESSED", calculatorId: "g" });
+  assert.equal(
+    dualSharedCounter.allocatorReturnPressCount,
+    (dualWithActiveF.allocatorReturnPressCount ?? 0) + 1,
+    "targeted calculator actions still mutate shared/global progression counters when action family is global",
+  );
+  const dualWithActiveG = reducer(dualUnlocked, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "g" });
+  const beforeFFromActiveG = projectCalculatorToLegacy(dualWithActiveG, "f");
+  const beforeGFromActiveG = projectCalculatorToLegacy(dualWithActiveG, "g");
+  const afterTargetedFInput = reducer(dualWithActiveG, { type: "SET_KEYPAD_DIMENSIONS", calculatorId: "f", columns: 4, rows: 3 });
+  const afterFFromActiveG = projectCalculatorToLegacy(afterTargetedFInput, "f");
+  const afterGFromActiveG = projectCalculatorToLegacy(afterTargetedFInput, "g");
+  assert.equal(
+    afterFFromActiveG.ui.keypadColumns,
+    4,
+    "targeted f layout action mutates f calculator-local state while g is active",
+  );
+  assert.equal(afterFFromActiveG.ui.keypadRows, 3, "targeted f layout action updates f rows");
+  assert.deepEqual(afterGFromActiveG.ui, beforeGFromActiveG.ui, "targeted f layout action keeps g state unchanged");
 
   const legacyOnly = toSingleCalculatorState(initialState());
   const normalizedOnce = normalizeLegacyForMissingInstances(legacyOnly);

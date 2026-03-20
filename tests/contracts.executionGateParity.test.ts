@@ -110,6 +110,36 @@ export const runContractsExecutionGateParityTests = (): void => {
     { type: "PRESS_KEY", key: op("+") },
     { expectRejectUiEffect: true },
   );
+  runParityRejectionCase(
+    "execution-pause keypad resize rejection",
+    pausedState,
+    { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 2 },
+    { expectRejectUiEffect: true },
+  );
+  runParityRejectionCase(
+    "execution-pause keypad row-upgrade rejection",
+    pausedState,
+    { type: "UPGRADE_KEYPAD_ROW" },
+    { expectRejectUiEffect: true },
+  );
+  runParityRejectionCase(
+    "execution-pause keypad column-upgrade rejection",
+    pausedState,
+    { type: "UPGRADE_KEYPAD_COLUMN" },
+    { expectRejectUiEffect: true },
+  );
+  runParityRejectionCase(
+    "execution-pause active-surface move rejection",
+    pausedState,
+    { type: "MOVE_LAYOUT_CELL", fromSurface: "keypad", fromIndex: 0, toSurface: "storage", toIndex: 0 },
+    { expectRejectUiEffect: true },
+  );
+  runParityRejectionCase(
+    "execution-pause active-surface swap rejection",
+    pausedState,
+    { type: "SWAP_LAYOUT_CELLS", fromSurface: "keypad", fromIndex: 0, toSurface: "storage", toIndex: 0 },
+    { expectRejectUiEffect: true },
+  );
 
   const runParityAcceptedCase = (label: string, state: GameState, action: Action): void => {
     const reduced = reducer(state, action);

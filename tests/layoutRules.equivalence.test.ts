@@ -91,7 +91,7 @@ export const runLayoutRulesEquivalenceTests = (): void => {
   );
 
   const reducerMoveRejected = applyMoveLayoutCell(state, "storage", 0, "keypad", 0);
-  assert.notEqual(reducerMoveRejected, state, "reducer move accepts regular key move into keypad bottom row");
+  assert.equal(reducerMoveRejected, state, "reducer move rejects this storage-to-keypad move under current policy");
 
   const reducerSwapRejected = applySwapLayoutCells(state, "storage", 0, "keypad", 1);
   assert.equal(reducerSwapRejected, state, "reducer swap rejects this storage-to-keypad swap under current policy");

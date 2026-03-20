@@ -80,6 +80,9 @@ type ResolvedExecutionPolicy = {
   calculatorId: CalculatorId;
 };
 
+const hasDualCalculatorInstances = (state: GameState): boolean =>
+  Boolean(state.calculators?.g && state.calculators?.f);
+
 const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
   const services = options.services ?? getAppServices();
   const unlockCatalog = services.contentProvider.unlockCatalog;
@@ -266,7 +269,7 @@ export const resolveActionCalculatorId = (state: GameState, action: Action): Cal
 export const resolveExecutionPolicyForAction = (state: GameState, action: Action): ResolvedExecutionPolicy => {
   const targetCalculatorId = resolveActionCalculatorId(state, action);
   const calculatorId = targetCalculatorId ?? resolveActiveCalculatorId(state);
-  if (state.calculators?.f && state.calculators?.g && targetCalculatorId) {
+  if (hasDualCalculatorInstances(state) && targetCalculatorId) {
     const projected = projectCalculatorToLegacy(state, targetCalculatorId);
     return {
       decision: classifyExecutionPolicyAction(projected, action),
@@ -279,33 +282,34 @@ export const resolveExecutionPolicyForAction = (state: GameState, action: Action
   };
 };
 
-export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {
-  const hasDualCalculators = Boolean(state.calculators?.g && state.calculators?.f);
-  let nextState: GameState;
-  if (!hasDualCalculators) {
+const reduceWithProjectionScope = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
+  if (!hasDualCalculatorInstances(state)) {
     const reduced = reduceLegacy(state, action, options);
     if (state.calculators?.f) {
-      nextState = commitLegacyProjection(state, reduced, "f");
-    } else {
-      nextState = reduced;
+      return commitLegacyProjection(state, reduced, "f");
     }
+    return reduced;
+  }
+
+  const targetCalculatorId = resolveActionCalculatorId(state, action);
+  if (!targetCalculatorId) {
+    return reduceLegacy(state, action, options);
+  }
+
+  const projected = projectCalculatorToLegacy(state, targetCalculatorId);
+  const reduced = reduceLegacy(projected, action, options);
+  return commitLegacyProjection(state, reduced, targetCalculatorId);
+};
+
+export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {
+  let nextState: GameState;
+  if (hasDualCalculatorInstances(state) && action.type === "SET_ACTIVE_CALCULATOR") {
+    nextState = {
+      ...state,
+      activeCalculatorId: action.calculatorId,
+    };
   } else {
-    const withInstances = state;
-    if (action.type === "SET_ACTIVE_CALCULATOR") {
-      nextState = {
-        ...withInstances,
-        activeCalculatorId: action.calculatorId,
-      };
-    } else {
-      const targetCalculatorId = resolveActionCalculatorId(withInstances, action);
-      if (!targetCalculatorId) {
-        nextState = reduceLegacy(withInstances, action, options);
-      } else {
-        const projected = projectCalculatorToLegacy(withInstances, targetCalculatorId);
-        const reduced = reduceLegacy(projected, action, options);
-        nextState = commitLegacyProjection(withInstances, reduced, targetCalculatorId);
-      }
-    }
+    nextState = reduceWithProjectionScope(state, action, options);
   }
   return normalizeRuntimeStateInvariants(nextState);
 };

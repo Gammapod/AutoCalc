@@ -1,6 +1,6 @@
 ﻿# AutoCalc Implementation Details (Current Runtime Contract)
 
-Last updated: 2026-03-19
+Last updated: 2026-03-20
 Scope: Runtime behavior implemented in `src/` and active shell rendering in `src/`.
 
 ## Architecture Overview
@@ -12,6 +12,11 @@ Primary layers:
 3. Infrastructure (`src/infra`): rational/euclidean/symbolic math, persistence codecs/repos.
 4. UI (`src/ui`): shell rendering, module renderers, read-model adapters.
 5. App bootstrap/store (`src/app`): mode resolution, store wiring, scheduler, debug controls.
+
+Reducer orchestration notes:
+
+- `src/domain/reducer.ts` owns calculator-target projection orchestration (`project -> reduce -> commit`) for dual-calculator actions.
+- `src/domain/reducer.input.core.ts` is the single owner of key-action dispatch handler mapping (wrapper `reducer.input.ts` re-exports this core path).
 
 ## Runtime Key Types
 

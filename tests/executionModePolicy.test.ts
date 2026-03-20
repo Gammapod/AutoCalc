@@ -114,8 +114,54 @@ export const runExecutionModePolicyTests = (): void => {
     "visualizer toggle remains allowed during execution mode",
   );
   assert.deepEqual(
+    classifyExecutionPolicyAction(
+      active,
+      { type: "SWAP_LAYOUT_CELLS", fromSurface: "keypad", fromIndex: 0, toSurface: "storage", toIndex: 0 },
+    ),
+    { decision: "reject" },
+    "swap touching active keypad surface is rejected during execution mode",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(active, { type: "UPGRADE_KEYPAD_ROW" }),
+    { decision: "reject" },
+    "keypad row upgrade is rejected during execution mode",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(active, { type: "UPGRADE_KEYPAD_COLUMN" }),
+    { decision: "reject" },
+    "keypad column upgrade is rejected during execution mode",
+  );
+  assert.deepEqual(
     classifyExecutionPolicyAction(active, { type: "AUTO_STEP_TICK" }),
     { decision: "allow" },
     "AUTO_STEP_TICK passes through policy classifier",
+  );
+
+  const dual = reducer(reducer(base, { type: "UNLOCK_ALL" }), { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" });
+  const dualActive: GameState = {
+    ...dual,
+    ui: {
+      ...dual.ui,
+      buttonFlags: {
+        ...dual.ui.buttonFlags,
+        [EXECUTION_PAUSE_FLAG]: true,
+      },
+    },
+  };
+  assert.deepEqual(
+    classifyExecutionPolicyAction(
+      dualActive,
+      { type: "MOVE_LAYOUT_CELL", fromSurface: "keypad_g", fromIndex: 0, toSurface: "storage", toIndex: 0 },
+    ),
+    { decision: "allow" },
+    "dual-calculator layout mutation on non-active keypad is allowed during execution mode",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(
+      dualActive,
+      { type: "MOVE_LAYOUT_CELL", fromSurface: "keypad_f", fromIndex: 0, toSurface: "storage", toIndex: 0 },
+    ),
+    { decision: "reject" },
+    "dual-calculator layout mutation on active keypad is rejected during execution mode",
   );
 };

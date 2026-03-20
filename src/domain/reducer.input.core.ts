@@ -737,6 +737,31 @@ const evaluateExecutionPlan = (
   };
 };
 
+const finalizeTerminalExecution = (
+  finalized: GameState,
+  evaluation: EvaluatedExecution,
+  options: {
+    clearStepProgress?: boolean;
+  } = {},
+): GameState => {
+  const nextEntry = toRollEntry(evaluation);
+  const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
+  const nextRollEntries = appendStepRow(withSeed, nextEntry);
+  const withRollBase: GameState = {
+    ...finalized,
+    calculator: {
+      ...finalized.calculator,
+      total: evaluation.nextTotal,
+      pendingNegativeTotal: false,
+      rollEntries: nextRollEntries,
+      ...(options.clearStepProgress ? { stepProgress: createInitialStepProgressState() } : {}),
+    },
+  };
+  const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
+  const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
+  return applyUnlocks(withOverflowMarker, getUnlockCatalog());
+};
+
 export const applyEquals = (state: GameState): GameState => {
   const equalsKey = KEY_ID.exec_equals;
   if (!isKeyUsableForInput(state, equalsKey)) {
@@ -746,23 +771,7 @@ export const applyEquals = (state: GameState): GameState => {
   const finalized = withClearedStepProgress(finalizeDraftingSlot(state));
   const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
   const evaluation = evaluateExecutionPlan(finalized, finalized.calculator.total, executionPlan);
-  const nextEntry = toRollEntry(evaluation);
-  const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
-  const nextRollEntries = appendStepRow(withSeed, nextEntry);
-
-  const withRollBase: GameState = {
-    ...finalized,
-    calculator: {
-      ...finalized.calculator,
-      total: evaluation.nextTotal,
-      pendingNegativeTotal: false,
-      rollEntries: nextRollEntries,
-    },
-  };
-  const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
-
-  const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
-  return applyUnlocks(withOverflowMarker, getUnlockCatalog());
+  return finalizeTerminalExecution(finalized, evaluation);
 };
 
 export const applyEqualsFromStepProgress = (state: GameState): GameState => {
@@ -784,23 +793,7 @@ export const applyEqualsFromStepProgress = (state: GameState): GameState => {
   }
 
   const evaluation = evaluateExecutionPlan(finalized, stepProgress.currentTotal, remainingStages);
-  const nextEntry = toRollEntry(evaluation);
-  const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
-  const nextRollEntries = appendStepRow(withSeed, nextEntry);
-
-  const withRollBase: GameState = {
-    ...finalized,
-    calculator: {
-      ...finalized.calculator,
-      total: evaluation.nextTotal,
-      pendingNegativeTotal: false,
-      rollEntries: nextRollEntries,
-      stepProgress: createInitialStepProgressState(),
-    },
-  };
-  const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
-  const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
-  return applyUnlocks(withOverflowMarker, getUnlockCatalog());
+  return finalizeTerminalExecution(finalized, evaluation, { clearStepProgress: true });
 };
 
 export const applyStepThrough = (state: GameState): GameState => {
@@ -876,22 +869,7 @@ const applyStepThroughInternal = (
     );
   }
 
-  const nextEntry = toRollEntry(evaluation);
-  const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
-  const nextRollEntries = appendStepRow(withSeed, nextEntry);
-  const withRollBase: GameState = {
-    ...finalized,
-    calculator: {
-      ...finalized.calculator,
-      total: evaluation.nextTotal,
-      pendingNegativeTotal: false,
-      rollEntries: nextRollEntries,
-      stepProgress: createInitialStepProgressState(),
-    },
-  };
-  const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
-  const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
-  return applyUnlocks(withOverflowMarker, getUnlockCatalog());
+  return finalizeTerminalExecution(finalized, evaluation, { clearStepProgress: true });
 };
 
 export const canAutoStepProgress = (state: GameState): boolean => {
