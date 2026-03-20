@@ -8,6 +8,7 @@ The following must remain equivalent across mobile and desktop shells:
 2. Unlock progression behavior and completion state transitions.
 3. Layout movement/swap validity constraints.
 4. Persistence schema behavior (save/load/migration outcomes).
+5. Execution-gated rejected inputs are non-mutating and parity-equivalent across dispatch paths.
 
 ## Allowed Divergence
 
@@ -41,6 +42,7 @@ The visualizer surface is governed by these invariants:
 2. `contracts/parity-long-traces`: deterministic multi-step parity traces.
 3. `contracts/parity-seeded-fuzz`: reproducible seeded randomized parity runs.
 4. `contracts/ui-action-emission`: UI interaction to action mapping contracts.
+5. `contracts/execution-gate-parity`: execution-gated rejection parity and non-mutation contracts.
 
 ## Visualizer-Specific Test Coverage
 

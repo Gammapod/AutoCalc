@@ -70,6 +70,8 @@ The Global State Interface governs session continuity, progression capability st
   Rationale: locked actions must not create hidden state change paths.
 - `FS-UP-07` (MUST): A key installed on a calculator keypad is press-usable even while locked, and locked installed keys are immobile. For locked installed toggle behavior: (a) settings-toggle keys are forced ON and cannot be toggled OFF until unlocked; (b) play/pause is excluded from forced-ON lock behavior; (c) if one or more locked visualizer keys are installed, exactly one locked visualizer is forced-active, chosen by keypad scan order.
   Rationale: installed locked keys are explicit progression affordances, with deterministic locked-toggle and visualizer-selection behavior and no locked-key relocation.
+- `FS-UP-08` (SHALL): Execution-gated rejected inputs should not contribute to progression evidence (including key-press-count-based unlock progress), unless explicitly defined by a specific unlock rule.
+  Rationale: rejected execution-gated input is normally non-progress behavior while permitting explicit progression-rule exceptions.
 
 #### 3.1.4 Traceability (Global State)
 
@@ -88,6 +90,7 @@ The Global State Interface governs session continuity, progression capability st
 | FS-UP-05 | Key catalog/type is separate from runtime unlock flags | `domain/button-registry-contract`, `domain/key-action-handlers-contract`, `domain/key-catalog-normalization` | contract + unit | none |
 | FS-UP-06 | Locked capabilities are inert | `reducer/input`, `domain/key-unlocks` | unit | none |
 | FS-UP-07 | Installed locked keys are usable but immobile; settings toggles forced ON; play/pause excluded; one locked visualizer forced-active by keypad scan order | `domain/key-unlocks`, `domain/layout-rules-invariants`, `ui-module/calculator-keypad-render` | unit + contract + integration | partial: settings-toggle forced-ON, play/pause exclusion, and locked-visualizer keypad-order selection lack dedicated contract assertions |
+| FS-UP-08 | Execution-gated rejected inputs should not normally advance progression evidence, except explicit rule-defined cases | `contracts/execution-gate-parity`, `domain/unlock-engine` | contract + unit | partial: explicit exception-bearing unlock rules may intentionally diverge |
 
 ### 3.2 Calculator State Interface
 
@@ -148,6 +151,10 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: prevents duplicate roll/terminal writes.
 - `FS-FB-07` (MUST): If step-through capability is absent, step-specific behavior is inert.
   Rationale: unavailable capabilities cannot leak behavior.
+- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating.
+  Rationale: execution cadence and deterministic state transitions require mode-gated mutation boundaries.
+- `FS-FB-09` (MUST): Auto-step intermediate progress is preview-only. Roll/history and terminal total commit exactly once, only on completion/finalization of the execution path.
+  Rationale: prevents duplicate terminal writes and preserves roll as terminal execution history.
 
 #### 3.2.3 Traceability (Calculator State)
 
@@ -169,6 +176,8 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-FB-05 | Step-through terminal equivalence with full execution | `reducer/input`, `ui-integration/mobile-shell`, `ui-integration/desktop-shell` | unit + workflow/integration | none |
 | FS-FB-06 | Finalization writes one terminal outcome per completion path | `reducer/input`, `persistence` | unit | partial: no dedicated long-trace finalization stress suite |
 | FS-FB-07 | Step behavior inert when capability absent | `reducer/input`, `ui-integration/mobile-shell` | unit + integration | none |
+| FS-FB-08 | Auto-step mode gates calculator mutation inputs; rejected actions are non-mutating unless designated as execution-interrupting | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout` | contract + unit | partial: full auto-step action-family matrix coverage pending |
+| FS-FB-09 | Auto-step intermediate progress is preview-only; roll/terminal commit exactly once on completion | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | partial: no dedicated auto-step completion stress suite |
 
 #### 3.2.4 Traceability (Multi-Calculator Session Model)
 
@@ -200,7 +209,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 |---|---|---|---|---|
 | FS-BND-01 | Global gating cannot directly mutate execution outside actions | `v2/import-boundary`, `app/bootstrap-boundary` | contract + boundary | gap: no direct action-bypass mutation test |
 | FS-BND-02 | Calculator does not own unlock predicate/effect definitions | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership tested indirectly |
-| FS-BND-03 | Shell divergence allowed; outcomes must remain equivalent | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity`, `contracts/ui-action-emission` | integration + parity + contract | none |
+| FS-BND-03 | Shell divergence allowed; outcomes must remain equivalent | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity`, `contracts/ui-action-emission`, `contracts/execution-gate-parity` | integration + parity + contract | none |
 | FS-BND-04 | Contracts remain implementation-independent | `app/bootstrap-boundary`, `contracts/shim-inventory`, `browser/import-safety` | boundary + contract | partial: semantic independence asserted via import boundaries |
 | FS-BND-06 | Calculator lifecycle changes require explicit actions/effects | `domain/unlock-engine`, `reducer/lifecycle` | unit | gap: no explicit lifecycle-event contract yet |
 
@@ -249,6 +258,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
 5. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.
 6. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
+7. `FS-FB-08`, `FS-FB-09`, and `FS-UP-08` are newly defined and currently only partially covered; explicit auto-step execution-mode matrices and exception-bearing progression fixtures are pending.
 
 ### 7.3 Fixture-only parity/fuzz coverage flags
 
