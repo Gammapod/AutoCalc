@@ -25,9 +25,14 @@ export const createStoreSubscriptionCoordinator = (
   },
 ): (() => void) => {
   let previousStateForCues = options.initialState;
-  return store.subscribe((state) => {
+  return store.subscribe(() => {
+    const latestBeforeSync = store.getState();
+    options.syncAutoStepScheduler?.(latestBeforeSync);
     const latest = store.getState();
-    options.syncAutoStepScheduler?.(latest);
+    if (latest !== latestBeforeSync) {
+      // syncAutoStepScheduler dispatched an action; nested subscription pass will process the newest state.
+      return;
+    }
     const previous = previousStateForCues;
     previousStateForCues = latest;
 

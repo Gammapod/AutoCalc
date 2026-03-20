@@ -63,6 +63,7 @@ export const createAutoStepScheduler = (store: Store, options: AutoStepScheduler
       return;
     }
 
+    const wasRunning = intervalHandle !== null;
     starting = true;
     try {
       if (intervalHandle !== null) {
@@ -73,6 +74,9 @@ export const createAutoStepScheduler = (store: Store, options: AutoStepScheduler
         dispatchAction({ type: "AUTO_STEP_TICK" });
       }, nextIntervalMs);
       activeIntervalMs = nextIntervalMs;
+      if (!wasRunning) {
+        dispatchAction({ type: "AUTO_STEP_TICK" });
+      }
     } finally {
       starting = false;
     }

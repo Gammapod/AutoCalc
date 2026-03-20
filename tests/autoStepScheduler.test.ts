@@ -90,6 +90,7 @@ export const runAutoStepSchedulerTests = (): void => {
   scheduler.sync(store.getState());
   assert.equal(timers.activeCount(), 1, "scheduler starts when play/pause turns on");
   assert.equal(timers.setMsHistory[0], expectedInitialIntervalMs, "tick rate is derived from epsilon multiplier");
+  assert.equal(countAutoTicks(store.actions), 1, "enabling auto-step dispatches first AUTO_STEP_TICK immediately");
 
   const beforeTickCount = countAutoTicks(store.actions);
   timers.tick();
@@ -104,6 +105,7 @@ export const runAutoStepSchedulerTests = (): void => {
   scheduler.sync(store.getState());
   assert.equal(timers.setCalls, 2, "epsilon-driven speed changes retime interval");
   assert.equal(timers.clearCalls, 1, "retime clears prior interval");
+  assert.equal(countAutoTicks(store.actions), beforeTickCount + 1, "retime does not dispatch an extra immediate AUTO_STEP_TICK");
 
   store.dispatch({ type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG });
   scheduler.sync(store.getState());
