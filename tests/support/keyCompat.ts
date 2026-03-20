@@ -101,7 +101,7 @@ export const memory = (keyLike: KeyLike): MemoryKey => {
 
 export const execution = (keyLike: KeyLike): ExecKey => {
   const keyId = resolveKeyId(keyLike);
-  if (keyId !== KEY_ID.exec_equals && keyId !== KEY_ID.exec_step_through) {
+  if (keyId !== KEY_ID.exec_equals && keyId !== KEY_ID.exec_play_pause && keyId !== KEY_ID.exec_step_through) {
     throw new Error(`Expected execution key, received: ${keyLike}`);
   }
   return keyId;

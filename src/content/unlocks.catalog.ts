@@ -63,16 +63,6 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetLabel: "++",
   },
   {
-    id: "unlock_equals_on_total_at_least_10",
-    description: "Unlock = when total reaches at least 10.",
-    predicate: { type: "total_at_least", value: 10n },
-    effect: { type: "unlock_execution", key: KEY_ID.exec_equals },
-    once: true,
-    domainNodeId: "NN",
-    targetNodeId: "Eequals_unlock",
-    targetLabel: "=",
-  },
-  {
     id: "unlock_step_expansion_on_total_at_least_10",
     description: "Unlock [ ??? ] when total reaches at least 10.",
     predicate: { type: "total_at_least", value: 10n },

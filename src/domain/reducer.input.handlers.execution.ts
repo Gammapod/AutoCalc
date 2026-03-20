@@ -1,4 +1,5 @@
 import {
+  applyAutoStepTick,
   applyEquals,
   applyEqualsFromStepProgress,
   applyStepThrough,
@@ -11,3 +12,5 @@ export const handleEqualsInput = (state: GameState): GameState =>
 export const handleStepThroughInput = (state: GameState): GameState =>
   applyStepThrough(state);
 
+export const handleAutoStepTick = (state: GameState): GameState =>
+  applyAutoStepTick(state);

@@ -26,6 +26,7 @@ export const buildActionFixtures = (): Action[] => {
     { type: "RESET_ALLOCATOR_DEVICE" },
     { type: "ALLOCATOR_RETURN_PRESSED" },
     { type: "ALLOCATOR_ALLOCATE_PRESSED" },
+    { type: "AUTO_STEP_TICK" },
   ];
 };
 

@@ -1,13 +1,9 @@
 import { createStore } from "./store.js";
 import { initialState } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
-import { playProgrammaticKeyPressFeedback } from "../ui/modules/input/pressFeedback.js";
 import { createShellRenderer } from "../ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
 import { createInteractionRuntime } from "./interactionRuntime.js";
-import {
-  createAutoEqualsScheduler,
-} from "./autoEqualsScheduler.js";
 import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
 import { subscribeCueTelemetry } from "./workflows/cueTelemetry.js";
 import { createAllocatorCueCoordinator, getAllocatorIncreaseFromUnlocks } from "./allocatorCueCoordinator.js";
@@ -15,6 +11,7 @@ import { createUnlockRevealCoordinator, createUnlockTracker } from "./unlockCueC
 import { resolveBootstrapUiRefs } from "../ui/bootstrap/bootstrapUiRefs.js";
 import { createBootstrapUiController } from "../ui/bootstrap/bootstrapUiController.js";
 import { createResetRunHandler, createStoreSubscriptionCoordinator } from "./bootstrap/subscriptionCoordinator.js";
+import { createAutoStepScheduler } from "./autoStepScheduler.js";
 import type { Action, GameState } from "../domain/types.js";
 import { resolveAppMode } from "./appMode.js";
 import { createSandboxState } from "../domain/sandboxPreset.js";
@@ -89,17 +86,6 @@ const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}):
   return store.dispatch(action);
 };
 
-const autoEqualsScheduler = createAutoEqualsScheduler(store, {
-  dispatchAction: (action) => {
-    dispatchWithRuntimeGate(action);
-  },
-  onAutoKeyActivated: (key) => {
-    window.requestAnimationFrame(() => {
-      playProgrammaticKeyPressFeedback(root, key);
-    });
-  },
-});
-
 const uiShellMode = resolveUiShellMode(window.location, {
   ...processEnv,
   ...importMetaEnv,
@@ -169,6 +155,7 @@ const allocatorCueCoordinator = createAllocatorCueCoordinator({
 });
 
 const unlockTracker = createUnlockTracker(store.getState());
+const autoStepScheduler = createAutoStepScheduler(store);
 
 const unsubscribeCueTelemetry =
   ENABLE_CUE_TELEMETRY_DEBUG
@@ -178,12 +165,14 @@ const unsubscribeCueTelemetry =
     : () => {};
 
 const unsubscribe = createStoreSubscriptionCoordinator(store, {
-  autoEqualsScheduler,
   unlockTracker,
   allocatorCueCoordinator,
   unlockRevealCoordinator,
   getAllocatorIncreaseFromUnlocks: (previous, latest) => getAllocatorIncreaseFromUnlocks(previous, latest, services),
   renderAndPersistState,
+  syncAutoStepScheduler: (state) => {
+    autoStepScheduler.sync(state);
+  },
   initialState: store.getState(),
 });
 
@@ -233,13 +222,13 @@ uiController = createBootstrapUiController({
 });
 
 redraw();
-autoEqualsScheduler.startIfNeeded();
+autoStepScheduler.startIfNeeded();
 
 window.__autoCalcBootstrapCleanup__ = () => {
   uiController?.dispose();
   uiController = null;
   unsubscribe();
+  autoStepScheduler.dispose();
   unsubscribeCueTelemetry();
   shellRenderer.dispose();
-  autoEqualsScheduler.dispose();
 };

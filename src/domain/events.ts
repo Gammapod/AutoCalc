@@ -37,7 +37,8 @@ export type DomainEvent =
   | { type: "AllocatorAllocatePressed"; calculatorId?: CalculatorId }
   | { type: "LambdaControlSet"; value: LambdaControl; calculatorId?: CalculatorId }
   | { type: "SessionControlEquationsSet"; calculatorId: CalculatorId; equations: Record<ControlField, ControlEquation> }
-  | { type: "ActiveCalculatorSet"; calculatorId: CalculatorId };
+  | { type: "ActiveCalculatorSet"; calculatorId: CalculatorId }
+  | { type: "AutoStepTicked"; calculatorId?: CalculatorId };
 
 const assertNever = (value: never): never => {
   throw new Error(`Unhandled variant: ${JSON.stringify(value)}`);
@@ -126,6 +127,9 @@ export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "SET_ACTIVE_CALCULATOR") {
     return { type: "ActiveCalculatorSet", calculatorId: action.calculatorId };
   }
+  if (action.type === "AUTO_STEP_TICK") {
+    return { type: "AutoStepTicked", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
+  }
   return assertNever(action);
 };
 
@@ -211,6 +215,9 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   }
   if (event.type === "ActiveCalculatorSet") {
     return { type: "SET_ACTIVE_CALCULATOR", calculatorId: event.calculatorId };
+  }
+  if (event.type === "AutoStepTicked") {
+    return { type: "AUTO_STEP_TICK", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   return assertNever(event);
 };

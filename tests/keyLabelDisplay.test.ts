@@ -2,7 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { formatKeyCellLabel } from "../src/ui/modules/calculatorStorageCore.js";
 import { formatKeyLabel } from "../src/ui/shared/readModel.js";
-import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { k } from "./support/keyCompat.js";
 
@@ -25,18 +25,18 @@ export const runKeyLabelDisplayTests = (): void => {
   const equalsCell = { kind: "key", key: k("=") } as const;
   assert.equal(formatKeyCellLabel(base, equalsCell), "=", "cell label delegates to key label rendering");
 
-  const autoEqualsToggleCell = { kind: "key", key: k("="), behavior: { type: "toggle_flag" as const, flag: AUTO_EQUALS_FLAG } } as const;
-  assert.equal(formatKeyCellLabel(base, autoEqualsToggleCell), "\u25B6", "auto-equals toggle key renders play icon while off");
+  const playPauseToggleCell = { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag" as const, flag: EXECUTION_PAUSE_FLAG } } as const;
+  assert.equal(formatKeyCellLabel(base, playPauseToggleCell), "\u25B6", "play/pause toggle renders play icon while off");
   const withAutoOn = {
     ...base,
     ui: {
       ...base.ui,
       buttonFlags: {
         ...base.ui.buttonFlags,
-        [AUTO_EQUALS_FLAG]: true,
+        [EXECUTION_PAUSE_FLAG]: true,
       },
     },
   };
-  assert.equal(formatKeyCellLabel(withAutoOn, autoEqualsToggleCell), "\u275A\u275A", "auto-equals toggle key renders pause icon while on");
+  assert.equal(formatKeyCellLabel(withAutoOn, playPauseToggleCell), "\u275A\u275A", "play/pause toggle renders pause icon while on");
 };
 

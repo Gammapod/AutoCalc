@@ -38,6 +38,7 @@ const overrideHandlerById: Record<ButtonHandlerOverrideId, KeyActionHandlerId> =
   memory_adjust_plus: "apply_memory",
   memory_adjust_minus: "apply_memory",
   execute_equals: "apply_equals",
+  execute_play_pause: "apply_toggle_noop",
   execute_step_through: "apply_step_through",
   unary_operator_commit_slot: "apply_unary_operator",
 };

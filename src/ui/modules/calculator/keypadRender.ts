@@ -5,11 +5,10 @@ import { resolveKeyId, toLegacyKey } from "../../../domain/keyPresentation.js";
 import type { Action, GameState, Key, KeyCell } from "../../../domain/types.js";
 import { bindDraggableCell, bindDropTargetCell } from "../input/dragDrop.js";
 import { bindQuickTapPressFeedback, shouldSuppressClick } from "../input/pressFeedback.js";
-import { buildKeyButtonAction, formatKeyCellLabel, isAutoEqualsToggleCell, isToggleFlagActive } from "../calculatorStorageCore.js";
+import { buildKeyButtonAction, formatKeyCellLabel, isToggleFlagActive } from "../calculatorStorageCore.js";
 import { getKeyVisualGroup } from "./dom.js";
 import { setKeyButtonLabel } from "./keyLabelFit.js";
 import { readToggleAnimation, queueToggleAnimation } from "./unlockTracking.js";
-import { AUTO_EQUALS_FLAG } from "../../../domain/state.js";
 
 const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => {
   const slotLabel = document.createElement("span");
@@ -108,9 +107,6 @@ export const renderKeypadCells = (
       }
       if (shouldSuppressClick(root)) {
         return;
-      }
-      if (state.ui.buttonFlags[AUTO_EQUALS_FLAG] && !isAutoEqualsToggleCell(cell as KeyCell)) {
-        dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG, ...(options.calculatorId ? { calculatorId: options.calculatorId } : {}) });
       }
       queueToggleAnimation(root, state, cell as KeyCell);
       const action = buildKeyButtonAction(cell as KeyCell);

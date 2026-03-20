@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { MAX_ROLL_ENTRIES } from "../src/domain/rollEntries.js";
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
+import { KEY_ID } from "../src/domain/keyPresentation.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
 
@@ -66,6 +67,91 @@ export const runReducerInputTests = (): void => {
   );
 
   const fullyUnlocked = reducer(legacyInitialState(), { type: "UNLOCK_ALL" });
+  const executionGateBase: GameState = {
+    ...base,
+    calculators: undefined,
+    calculatorOrder: undefined,
+    activeCalculatorId: undefined,
+    perCalculatorCompletedUnlockIds: undefined,
+    sessionControlProfiles: undefined,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: Math.max(base.unlocks.maxSlots, 1),
+      valueExpression: {
+        ...base.unlocks.valueExpression,
+        [k("1")]: true,
+      },
+      slotOperators: {
+        ...base.unlocks.slotOperators,
+        [op("+")]: true,
+      },
+      utilities: {
+        ...base.unlocks.utilities,
+        [k("\u2190")]: true,
+      },
+      execution: {
+        ...base.unlocks.execution,
+        [KEY_ID.exec_play_pause]: true,
+        [k("=")]: true,
+      },
+    },
+    ui: {
+      ...base.ui,
+      keyLayout: [
+        { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } },
+        { kind: "key", key: k("1") },
+        { kind: "key", key: op("+") },
+        { kind: "key", key: k("\u2190") },
+        { kind: "key", key: k("=") },
+      ],
+      keypadColumns: 5,
+      keypadRows: 1,
+      buttonFlags: {},
+    },
+    calculator: {
+      ...base.calculator,
+      total: r(5n),
+      draftingSlot: { operator: op("+"), operandInput: "9", isNegative: false },
+      operationSlots: [{ operator: op("+"), operand: 1n }],
+    },
+  };
+  const withPauseOn = reducer(executionGateBase, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG });
+  assert.equal(Boolean(withPauseOn.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), true, "play/pause toggle turns execution pause on");
+  const withPauseOff = reducer(withPauseOn, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG });
+  assert.equal(Boolean(withPauseOff.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "play/pause toggle turns execution pause off");
+
+  const digitRejectedWhilePaused = reducer(withPauseOn, { type: "PRESS_KEY", key: k("1") });
+  assert.deepEqual(
+    digitRejectedWhilePaused.calculator,
+    withPauseOn.calculator,
+    "digit input rejection preserves calculator state while execution pause is active",
+  );
+  assert.equal(
+    (digitRejectedWhilePaused.ui.invalidExecutionGateNonce ?? 0),
+    (withPauseOn.ui.invalidExecutionGateNonce ?? 0) + 1,
+    "digit input rejection increments execution gate nonce",
+  );
+
+  const operatorRejectedWhilePaused = reducer(withPauseOn, { type: "PRESS_KEY", key: op("+") });
+  assert.deepEqual(
+    operatorRejectedWhilePaused.calculator,
+    withPauseOn.calculator,
+    "operator input rejection preserves calculator state while execution pause is active",
+  );
+  assert.equal(
+    (operatorRejectedWhilePaused.ui.invalidExecutionGateNonce ?? 0),
+    (withPauseOn.ui.invalidExecutionGateNonce ?? 0) + 1,
+    "operator input rejection increments execution gate nonce",
+  );
+
+  const backspaceInterruptsAndClearsPause = reducer(withPauseOn, { type: "PRESS_KEY", key: k("\u2190") });
+  assert.equal(Boolean(backspaceInterruptsAndClearsPause.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "utility key press clears execution pause");
+  assert.notDeepEqual(backspaceInterruptsAndClearsPause.calculator, withPauseOn.calculator, "utility key still executes after clearing pause");
+
+  const equalsInterruptsAndClearsPause = reducer(withPauseOn, { type: "PRESS_KEY", key: k("=") });
+  assert.equal(Boolean(equalsInterruptsAndClearsPause.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "execution key press clears execution pause");
+  assert.equal(equalsInterruptsAndClearsPause.calculator.rollEntries.length > 0, true, "execution key still executes after clearing pause");
+
   const firstFreshDigit = applyKeyAction(fullyUnlocked, "9");
   assert.deepEqual(firstFreshDigit.calculator.total, r(9n), "first total digit on fresh cleared save is accepted");
   const blockedFreshSecondDigit = applyKeyAction(firstFreshDigit, "8");
@@ -210,6 +296,52 @@ export const runReducerInputTests = (): void => {
   assert.equal(afterSecondStep.calculator.stepProgress.active, false, "terminal step-through clears session");
   assert.deepEqual(afterSecondStep.calculator.total, r(9n), "terminal step-through commits final total");
   assert.equal(afterSecondStep.calculator.rollEntries.length, 2, "terminal step-through appends seed and final step exactly once");
+
+  const autoStepSeed: GameState = {
+    ...fullyUnlocked,
+    keyPressCounts: { [k("1")]: 3 },
+    ui: {
+      ...fullyUnlocked.ui,
+      keyLayout: [{ kind: "key", key: k("=") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+      buttonFlags: {
+        ...fullyUnlocked.ui.buttonFlags,
+        [EXECUTION_PAUSE_FLAG]: true,
+      },
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(2n),
+      operationSlots: [{ operator: op("+"), operand: 3n }, { operator: op("*"), operand: 4n }],
+    },
+  };
+  const autoStepTick1 = reducer(autoStepSeed, { type: "AUTO_STEP_TICK" });
+  assert.equal(autoStepTick1.calculator.stepProgress.active, true, "AUTO_STEP_TICK starts step progress with no step key on keypad");
+  assert.deepEqual(autoStepTick1.calculator.total, r(2n), "first AUTO_STEP_TICK keeps preview-only total");
+  assert.equal(autoStepTick1.calculator.rollEntries.length, 0, "first AUTO_STEP_TICK does not append roll rows");
+  assert.deepEqual(autoStepTick1.keyPressCounts, autoStepSeed.keyPressCounts, "AUTO_STEP_TICK does not increment key press counts");
+
+  const autoStepTick2 = reducer(autoStepTick1, { type: "AUTO_STEP_TICK" });
+  assert.equal(autoStepTick2.calculator.stepProgress.active, false, "terminal AUTO_STEP_TICK clears step progress");
+  assert.deepEqual(autoStepTick2.calculator.total, r(20n), "terminal AUTO_STEP_TICK commits final total");
+  assert.equal(autoStepTick2.calculator.rollEntries.length, 2, "terminal AUTO_STEP_TICK commits seed and final step exactly once");
+  assert.deepEqual(autoStepTick2.keyPressCounts, autoStepSeed.keyPressCounts, "AUTO_STEP_TICK terminal commit still does not increment key press counts");
+
+  const autoStepIdle = reducer(
+    {
+      ...autoStepTick2,
+      ui: {
+        ...autoStepTick2.ui,
+        buttonFlags: {
+          ...autoStepTick2.ui.buttonFlags,
+          [EXECUTION_PAUSE_FLAG]: true,
+        },
+      },
+    },
+    { type: "AUTO_STEP_TICK" },
+  );
+  assert.deepEqual(autoStepIdle, autoStepTick2, "AUTO_STEP_TICK is idempotent when no runnable step path exists");
 
   const equalsFromPartial = applyKeyAction(afterFirstStep, "=");
   assert.deepEqual(equalsFromPartial.calculator.total, r(9n), "equals during partial step continues from cursor");

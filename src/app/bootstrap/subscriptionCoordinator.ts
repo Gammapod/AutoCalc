@@ -1,9 +1,5 @@
 import type { Action, GameState, Store } from "../../domain/types.js";
 
-type AutoEqualsScheduler = {
-  sync: (state: GameState) => void;
-};
-
 type UnlockTracker = {
   hasNewUnlock: (state: GameState) => boolean;
 };
@@ -19,19 +15,19 @@ type UnlockRevealCoordinator = {
 export const createStoreSubscriptionCoordinator = (
   store: Store,
   options: {
-    autoEqualsScheduler: AutoEqualsScheduler;
     unlockTracker: UnlockTracker;
     allocatorCueCoordinator: AllocatorCueCoordinator;
     unlockRevealCoordinator: UnlockRevealCoordinator;
     getAllocatorIncreaseFromUnlocks: (previous: GameState, latest: GameState) => number;
     renderAndPersistState: (state: GameState) => void;
+    syncAutoStepScheduler?: (state: GameState) => void;
     initialState: GameState;
   },
 ): (() => void) => {
   let previousStateForCues = options.initialState;
   return store.subscribe((state) => {
-    options.autoEqualsScheduler.sync(state);
     const latest = store.getState();
+    options.syncAutoStepScheduler?.(latest);
     const previous = previousStateForCues;
     previousStateForCues = latest;
 

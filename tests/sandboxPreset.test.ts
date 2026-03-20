@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createSandboxState } from "../src/domain/sandboxPreset.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../src/domain/state.js";
 
 const keyAt = (state: ReturnType<typeof createSandboxState>, row: number, col: number): string | null => {
   const index = toIndexFromCoord({ row, col }, state.ui.keypadColumns, state.ui.keypadRows);
@@ -52,10 +52,10 @@ export const runSandboxPresetTests = (): void => {
     { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG },
     "R7C5 is mod-zero toggle behavior",
   );
-  assert.equal(keyAt(sandbox, 7, 1), KEY_ID.exec_equals, "R7C1 is play/pause key id");
+  assert.equal(keyAt(sandbox, 7, 1), KEY_ID.exec_play_pause, "R7C1 is play/pause key id");
   assert.deepEqual(
     behaviorAt(sandbox, 7, 1),
-    { type: "toggle_flag", flag: "execution.pause" },
+    { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG },
     "R7C1 is play/pause behavior",
   );
   assert.equal(keyAt(sandbox, 6, 5), KEY_ID.op_gcd, "R6C5 is gcd");

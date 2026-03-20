@@ -4,6 +4,7 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { KEY_ID, resolveKeyId, toLegacyKey } from "./keyPresentation.js";
 import {
   DELTA_RANGE_CLAMP_FLAG,
+  EXECUTION_PAUSE_FLAG,
   MOD_ZERO_TO_DELTA_FLAG,
   STEP_EXPANSION_FLAG,
   STORAGE_COLUMNS,
@@ -59,6 +60,9 @@ const canonicalCellForKey = (key: Key): KeyCell => {
   }
   if (key === KEY_ID.toggle_step_expansion) {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } };
+  }
+  if (key === KEY_ID.exec_play_pause) {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } };
   }
   return { kind: "key", key };
 };

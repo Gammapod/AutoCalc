@@ -1,9 +1,10 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { installDomHarness } from "./helpers/domHarness.js";
-import { AUTO_EQUALS_FLAG, initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
 import { renderKeypadCells } from "../src/ui/modules/calculator/keypadRender.js";
 import type { Action, GameState } from "../src/domain/types.js";
+import { KEY_ID } from "../src/domain/keyPresentation.js";
 
 export const runUiModuleCalculatorKeypadRenderTests = (): void => {
   const harness = installDomHarness();
@@ -68,7 +69,7 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
         ...singleKeyState.ui,
         buttonFlags: {
           ...singleKeyState.ui.buttonFlags,
-          [AUTO_EQUALS_FLAG]: true,
+          [EXECUTION_PAUSE_FLAG]: true,
         },
       },
     };
@@ -80,7 +81,33 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     });
     const autoOffButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("1")}']`);
     autoOffButton?.click();
-    assert.equal(dispatches.length, 4, "non-toggle key press dispatches auto-off toggle plus key press while auto-equals is active");
+    assert.equal(dispatches.length, 3, "non-toggle key press dispatches only key press while play/pause is active");
+
+    const playPauseState: GameState = {
+      ...singleKeyState,
+      ui: {
+        ...singleKeyState.ui,
+        keyLayout: [{ kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...singleKeyState.unlocks,
+        execution: {
+          ...singleKeyState.unlocks.execution,
+          [KEY_ID.exec_play_pause]: true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, playPauseState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const playPauseButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${KEY_ID.exec_play_pause}']`);
+    playPauseButton?.click();
+    assert.equal(dispatches.length, 4, "play/pause key click dispatches one toggle action");
 
     const unaryState: GameState = {
       ...initialState(),

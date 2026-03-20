@@ -193,4 +193,10 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     primaryExpectation: "equals_executes_drafted_plus_one",
     edgeCaseExpectation: "equals_division_by_zero_sets_nan",
   },
+  {
+    key: KEY_ID.exec_play_pause,
+    lockModel: "always_unlocked",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
 ];

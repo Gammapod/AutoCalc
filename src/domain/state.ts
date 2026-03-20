@@ -10,7 +10,9 @@ export const SAVE_SCHEMA_VERSION = 20;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
-export const AUTO_EQUALS_FLAG = "execution.pause";
+export const EXECUTION_PAUSE_FLAG = "execution.pause";
+// Backward-compatible alias retained while downstream modules migrate naming.
+export const AUTO_EQUALS_FLAG = EXECUTION_PAUSE_FLAG;
 export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";
 export const MOD_ZERO_TO_DELTA_FLAG = "settings.mod_zero_to_delta";
 export const STEP_EXPANSION_FLAG = "settings.step_expansion";
@@ -31,7 +33,7 @@ export const OPERATION_SLOTS_MAX = 4;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
-const DEFAULT_KEYPAD_KEYS: readonly Key[] = [KEY_ID.exec_equals];
+const DEFAULT_KEYPAD_KEYS: readonly Key[] = [KEY_ID.exec_step_through];
 const isDefaultDrawerExecutionCell = (cell: LayoutCell): cell is KeyCell =>
   cell.kind === "key" && DEFAULT_KEYPAD_KEYS.includes(cell.key) && !cell.behavior;
 
@@ -158,9 +160,8 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.digit_2 },
   { kind: "key", key: KEY_ID.digit_3 },
   { kind: "key", key: KEY_ID.digit_0 },
-  { kind: "key", key: KEY_ID.exec_equals },
+  { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } },
   { kind: "key", key: KEY_ID.exec_step_through },
-  { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: AUTO_EQUALS_FLAG } },
 ];
 
 export const initialState = (): GameState => {
@@ -221,6 +222,7 @@ export const initialState = (): GameState => {
       activeVisualizer: "total",
       memoryVariable: "α",
       buttonFlags: {},
+      invalidExecutionGateNonce: 0,
     },
     keyPressCounts: {},
     allocatorReturnPressCount: 0,

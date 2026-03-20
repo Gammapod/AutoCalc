@@ -5,6 +5,7 @@ import { KEY_ID } from "./keyPresentation.js";
 import {
   defaultStorageLayout,
   DELTA_RANGE_CLAMP_FLAG,
+  EXECUTION_PAUSE_FLAG,
   initialState,
   MOD_ZERO_TO_DELTA_FLAG,
   STORAGE_COLUMNS,
@@ -36,7 +37,7 @@ const SANDBOX_LAYOUT_ENTRIES: ReadonlyArray<{
     col: 5,
     cell: { kind: "key", key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } },
   },
-  { row: 7, col: 1, cell: { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: "execution.pause" } } },
+  { row: 7, col: 1, cell: { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } } },
 
   { row: 6, col: 5, cell: { kind: "key", key: KEY_ID.op_gcd } },
   { row: 6, col: 4, cell: { kind: "key", key: KEY_ID.util_undo } },

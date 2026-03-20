@@ -54,6 +54,7 @@ export const KEY_ID = {
   viz_eigen_allocator: "viz_eigen_allocator",
   viz_algebraic: "viz_algebraic",
   exec_equals: "exec_equals",
+  exec_play_pause: "exec_play_pause",
   exec_step_through: "exec_step_through",
 } as const;
 
@@ -115,7 +116,7 @@ export type VisualizerKeyId =
   | typeof KEY_ID.viz_circle
   | typeof KEY_ID.viz_eigen_allocator
   | typeof KEY_ID.viz_algebraic;
-export type ExecKeyId = typeof KEY_ID.exec_equals | typeof KEY_ID.exec_step_through;
+export type ExecKeyId = typeof KEY_ID.exec_equals | typeof KEY_ID.exec_play_pause | typeof KEY_ID.exec_step_through;
 export type ValueAtomKeyId = DigitKeyId | ConstantKeyId;
 export type OperatorKeyId = BinaryOperatorKeyId | UnaryOperatorKeyId;
 
@@ -189,6 +190,7 @@ const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
   ["\u03BB", { keyId: KEY_ID.viz_eigen_allocator, buttonFace: "\u03BB" }],
   ["ALG", { keyId: KEY_ID.viz_algebraic, buttonFace: "ALG" }],
   ["=", { keyId: KEY_ID.exec_equals, buttonFace: "=" }],
+  ["\u25B6", { keyId: KEY_ID.exec_play_pause, buttonFace: "\u25B6" }],
   ["\u25BB", { keyId: KEY_ID.exec_step_through, buttonFace: "[ \u25BA\u2758 ]" }],
 ]);
 

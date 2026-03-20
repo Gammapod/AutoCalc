@@ -15,7 +15,7 @@ import { applyLifecycleAction } from "./reducer.lifecycle.js";
 import { applyToggleFlag } from "./reducer.flags.js";
 import { clearOperationEntry, withStepProgressCleared } from "./reducer.stateBuilders.js";
 import { applyUnlocks } from "./unlocks.js";
-import { resolveKeyId } from "./keyPresentation.js";
+import { KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import {
   adjustAxis,
@@ -27,6 +27,17 @@ import { commitLegacyProjection, projectCalculatorToLegacy, resolveActiveCalcula
 import { getBaseControlProfile } from "./controlProfileRuntime.js";
 import { projectControlFromState } from "./controlProjection.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
+import {
+  clearExecutionModeFlagsForInterrupt,
+  isExecutionGatedMutationAction,
+  isExecutionGatedInputKey,
+  isExecutionInterruptingKey,
+  isExecutionModeActive,
+  isExecutionToggleFlag,
+  markInvalidExecutionGateInput,
+} from "./executionModePolicy.js";
+import { handleAutoStepTick } from "./reducer.input.handlers.execution.js";
+import { EXECUTION_PAUSE_FLAG } from "./state.js";
 import type {
   Action,
   CalculatorId,
@@ -70,8 +81,26 @@ type ReducerOptions = {
 const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
   const services = options.services ?? getAppServices();
   const unlockCatalog = services.contentProvider.unlockCatalog;
+  if (action.type !== "AUTO_STEP_TICK" && isExecutionGatedMutationAction(state, action)) {
+    return markInvalidExecutionGateInput(state);
+  }
   if (action.type === "PRESS_KEY") {
-    return applyKeyAction(state, resolveKeyId(action.key));
+    const resolvedKey = resolveKeyId(action.key);
+    if (isExecutionModeActive(state)) {
+      if (isExecutionGatedInputKey(resolvedKey)) {
+        return markInvalidExecutionGateInput(state);
+      }
+      if (isExecutionInterruptingKey(resolvedKey)) {
+        return applyKeyAction(clearExecutionModeFlagsForInterrupt(state, resolvedKey), resolvedKey);
+      }
+    }
+    return applyKeyAction(state, resolvedKey);
+  }
+  if (action.type === "AUTO_STEP_TICK") {
+    if (!state.ui.buttonFlags[EXECUTION_PAUSE_FLAG]) {
+      return state;
+    }
+    return handleAutoStepTick(state);
   }
 
   const lifecycleHandled = applyLifecycleAction(state, action);
@@ -120,6 +149,10 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     return upgraded !== state ? withStepProgressCleared(upgraded) : upgraded;
   }
   if (action.type === "TOGGLE_FLAG") {
+    if (isExecutionToggleFlag(state, action.flag)) {
+      const cleared = clearExecutionModeFlagsForInterrupt(state, KEY_ID.exec_play_pause);
+      return applyToggleFlag(cleared, action.flag);
+    }
     return applyToggleFlag(state, action.flag);
   }
   if (action.type === "TOGGLE_VISUALIZER") {
@@ -210,6 +243,7 @@ const resolveActionCalculatorId = (state: GameState, action: Action): Calculator
     || action.type === "ALLOCATOR_RETURN_PRESSED"
     || action.type === "ALLOCATOR_ALLOCATE_PRESSED"
     || action.type === "LAMBDA_SET_CONTROL"
+    || action.type === "AUTO_STEP_TICK"
   ) {
     return resolveActiveCalculatorId(state);
   }

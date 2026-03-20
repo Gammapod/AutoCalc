@@ -1,7 +1,7 @@
 import { keyToVisualizerId } from "./buttonRegistry.js";
-import { resolveKeyId, toLegacyKey } from "./keyPresentation.js";
+import { KEY_ID, resolveKeyId, toLegacyKey } from "./keyPresentation.js";
 import type { Action, GameState, KeyButtonBehavior, KeyCell, VisualizerId } from "./types.js";
-import { AUTO_EQUALS_FLAG } from "./state.js";
+import { EXECUTION_PAUSE_FLAG } from "./state.js";
 
 const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
 
@@ -22,9 +22,11 @@ export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => 
   return behavior.type === "toggle_flag" ? getButtonFlag(state, behavior.flag) : false;
 };
 
-export const isAutoEqualsToggleCell = (cell: KeyCell): boolean => {
+export const isPlayPauseToggleCell = (cell: KeyCell): boolean => {
   const behavior = getKeyButtonBehavior(cell);
-  return behavior.type === "toggle_flag" && behavior.flag === AUTO_EQUALS_FLAG;
+  return behavior.type === "toggle_flag"
+    && behavior.flag === EXECUTION_PAUSE_FLAG
+    && cell.key === KEY_ID.exec_play_pause;
 };
 
 export const getToggleAnimationIdForCell = (cell: KeyCell): string | null => {

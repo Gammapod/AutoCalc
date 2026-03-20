@@ -18,6 +18,7 @@ import {
   bindOrUpdateSlotMarquee,
   clearToggleAnimations,
   getCalculatorLayoutRuntimeState,
+  triggerExecutionGateRejectBlink,
 } from "./runtime.js";
 import { ensureKeyLabelResizeListener, fitKeyLabelsInContainer } from "./keyLabelFit.js";
 import { renderTotalDisplay } from "./totalDisplay.js";
@@ -101,6 +102,7 @@ export const renderCalculatorV2Module = (
     root instanceof HTMLElement && root.dataset.calcInstanceId === "g"
       ? "g"
       : "f";
+  triggerExecutionGateRejectBlink(root, state.ui.invalidExecutionGateNonce);
   ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
   const slotEl = root.querySelector<HTMLElement>("[data-slot]");

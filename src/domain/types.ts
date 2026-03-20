@@ -596,6 +596,7 @@ export type GameState = {
     activeVisualizer: ActiveVisualizer;
     memoryVariable: MemoryVariable;
     buttonFlags: Record<string, boolean>;
+    invalidExecutionGateNonce?: number;
   };
   keyPressCounts: Partial<Record<Key, number>>;
   allocatorReturnPressCount?: number;
@@ -749,6 +750,11 @@ export type SetActiveCalculatorAction = {
   calculatorId: CalculatorId;
 };
 
+export type AutoStepTickAction = {
+  type: "AUTO_STEP_TICK";
+  calculatorId?: CalculatorId;
+};
+
 export type Action =
   | PressKeyAction
   | ResetRunAction
@@ -771,7 +777,8 @@ export type Action =
   | AllocatorAllocatePressedAction
   | LambdaSetControlAction
   | SetSessionControlEquationsAction
-  | SetActiveCalculatorAction;
+  | SetActiveCalculatorAction
+  | AutoStepTickAction;
 
 export type Store = {
   getState: () => GameState;

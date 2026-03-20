@@ -76,7 +76,20 @@ export const runReducerLifecycleTests = (): void => {
   const blankNoop = reducer(base, { type: "TOGGLE_FLAG", flag: "   " });
   assert.deepEqual(blankNoop, base, "blank flag names are ignored");
 
-  const deltaOn = reducer(base, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
+  const settingsToggleBase: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      utilities: {
+        ...base.unlocks.utilities,
+        [KEY_ID.toggle_delta_range_clamp]: true,
+        [KEY_ID.toggle_mod_zero_to_delta]: true,
+        [KEY_ID.toggle_step_expansion]: true,
+      },
+    },
+  };
+
+  const deltaOn = reducer(settingsToggleBase, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
   assert.equal(deltaOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range settings toggle turns on");
   const modOn = reducer(deltaOn, { type: "TOGGLE_FLAG", flag: MOD_ZERO_TO_DELTA_FLAG });
   assert.equal(Boolean(modOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]), false, "mod-range toggle clears delta-range toggle");
@@ -143,7 +156,7 @@ export const runReducerLifecycleTests = (): void => {
     ...base,
     ui: {
       ...base.ui,
-      keyLayout: [{ kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: "execution.pause" } }],
+      keyLayout: [{ kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: "execution.pause" } }],
       keypadColumns: 1,
       keypadRows: 1,
       buttonFlags: {},
@@ -152,7 +165,7 @@ export const runReducerLifecycleTests = (): void => {
       ...base.unlocks,
       execution: {
         ...base.unlocks.execution,
-        [KEY_ID.exec_equals]: false,
+        [KEY_ID.exec_play_pause]: false,
       },
     },
   };

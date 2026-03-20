@@ -753,11 +753,20 @@ export const applyEqualsFromStepProgress = (state: GameState): GameState => {
 };
 
 export const applyStepThrough = (state: GameState): GameState => {
+  return applyStepThroughInternal(state, { requireStepThroughKeyOnKeypad: true });
+};
+
+const applyStepThroughInternal = (
+  state: GameState,
+  options: {
+    requireStepThroughKeyOnKeypad: boolean;
+  },
+): GameState => {
   const stepKey = KEY_ID.exec_step_through;
-  if (!hasStepThroughOnKeypad(state)) {
+  if (options.requireStepThroughKeyOnKeypad && !hasStepThroughOnKeypad(state)) {
     return withClearedStepProgress(state);
   }
-  if (!isKeyUsableForInput(state, stepKey)) {
+  if (options.requireStepThroughKeyOnKeypad && !isKeyUsableForInput(state, stepKey)) {
     return state;
   }
 
@@ -822,6 +831,25 @@ export const applyStepThrough = (state: GameState): GameState => {
   const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
   const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
   return applyUnlocks(withOverflowMarker, getUnlockCatalog());
+};
+
+export const canAutoStepProgress = (state: GameState): boolean => {
+  const finalized = finalizeDraftingSlot(state);
+  if (finalized.calculator.operationSlots.length === 0) {
+    return false;
+  }
+  const progress = finalized.calculator.stepProgress;
+  if (!progress.active) {
+    return true;
+  }
+  return Boolean(progress.currentTotal) && progress.nextSlotIndex < finalized.calculator.operationSlots.length;
+};
+
+export const applyAutoStepTick = (state: GameState): GameState => {
+  if (!canAutoStepProgress(state)) {
+    return state;
+  }
+  return applyStepThroughInternal(state, { requireStepThroughKeyOnKeypad: false });
 };
 
 export const applyC = (state: GameState): GameState => {

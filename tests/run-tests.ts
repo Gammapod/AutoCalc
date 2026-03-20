@@ -22,7 +22,6 @@ import { runStorageDisplayTests } from "./storageDisplay.test.js";
 import { runDragDropBehaviorTests } from "./dragDropBehavior.test.js";
 import { runReducerAllocatorDeviceTests } from "./reducer.allocator-device.test.js";
 import { runButtonBehaviorTests } from "./buttonBehavior.test.js";
-import { runAutoEqualsSchedulerTests } from "./autoEqualsScheduler.test.js";
 import { runAnalysisReportTests } from "./analysisReport.test.js";
 import { runKeypadLayoutModelTests } from "./keypadLayoutModel.test.js";
 import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
@@ -87,10 +86,12 @@ import { runUiShellTransformsTests } from "./uiShell.transforms.test.js";
 import { runUiShellMenuA11yTests } from "./uiShell.menuA11y.test.js";
 import { runUiModuleCalculatorMotionTests } from "./uiModule.calculatorMotion.test.js";
 import { runUiModuleCalculatorKeypadRenderTests } from "./uiModule.calculatorKeypadRender.test.js";
+import { runUiModuleCalculatorRejectBlinkTests } from "./uiModule.calculatorRejectBlink.test.js";
 import { runUiModuleCalculatorSlotMarqueeTests } from "./uiModule.calculatorSlotMarquee.test.js";
 import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
+import { runAutoStepSchedulerTests } from "./autoStepScheduler.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
 import { runContentProviderWiringContractTests } from "./contentProviderWiring.contract.test.js";
 import { runCapabilitySemanticsParityContractTests } from "./capabilitySemanticsParity.contract.test.js";
@@ -115,7 +116,6 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/storage-display", runStorageDisplayTests],
   ["ui/drag-drop-behavior", runDragDropBehaviorTests],
   ["ui/button-behavior", runButtonBehaviorTests],
-  ["app/auto-equals-scheduler", runAutoEqualsSchedulerTests],
   ["app/analysis-report", runAnalysisReportTests],
   ["domain/keypad-layout-model", runKeypadLayoutModelTests],
   ["domain/number-domain-analysis", runNumberDomainAnalysisTests],
@@ -187,10 +187,12 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-shell/menu-a11y", runUiShellMenuA11yTests],
   ["ui-module/calculator-motion", runUiModuleCalculatorMotionTests],
   ["ui-module/calculator-keypad-render", runUiModuleCalculatorKeypadRenderTests],
+  ["ui-module/calculator-reject-blink", runUiModuleCalculatorRejectBlinkTests],
   ["ui-module/calculator-slot-marquee", runUiModuleCalculatorSlotMarqueeTests],
   ["ui/visualizer-fit-contract", runUiVisualizerFitContractTests],
   ["ui/complexity-gate", runUiComplexityGateTests],
   ["app/app-mode-resolver", runAppModeResolverTests],
+  ["app/auto-step-scheduler", runAutoStepSchedulerTests],
   ["domain/sandbox-preset", runSandboxPresetTests],
   ["contracts/content-provider-wiring", runContentProviderWiringContractTests],
   ["contracts/capability-semantics-parity", runCapabilitySemanticsParityContractTests],
