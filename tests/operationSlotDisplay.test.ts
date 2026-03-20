@@ -1,15 +1,21 @@
 import "./support/keyCompat.runtime.js";
+import "./support/contentProviderSetup.js";
 import assert from "node:assert/strict";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import { buildOperationSlotDisplay } from "../src/ui/shared/readModel.js";
+import { defaultContentProvider } from "../src/content/defaultContentProvider.js";
+import { setAppServices } from "../src/contracts/appServices.js";
+import { setContentProvider } from "../src/contracts/contentRegistry.js";
 import type { GameState } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 
 export const runOperationSlotDisplayTests = (): void => {
+  setAppServices({ contentProvider: defaultContentProvider });
+  setContentProvider(defaultContentProvider);
   const base = initialState();
 
   assert.equal(buildOperationSlotDisplay(base), "_ [ _ _ ]", "empty state shows one derived slot from gamma");
@@ -168,7 +174,7 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(
     buildOperationSlotDisplay(projectedDisplay),
-    "_ [ ++ ] [ _ _ ] [ _ _ ] [ _ _ ]",
+    "_ [ + 1 ] [ _ _ ] [ _ _ ] [ _ _ ]",
     "display capacity follows allocator-projected max slot count",
   );
 

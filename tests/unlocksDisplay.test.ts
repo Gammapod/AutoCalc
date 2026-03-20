@@ -23,7 +23,8 @@ export const runUnlocksDisplayTests = (): void => {
     completedUnlockIds: ["unlock_4_on_linear_growth_run_7"],
   };
   const completedRows = buildUnlockRows(completedState, unlockCatalog);
-  assert.equal(completedRows[0]?.state, "completed", "completed unlock is marked completed");
+  const completedRow = completedRows.find((row) => row.id === "unlock_4_on_linear_growth_run_7");
+  assert.equal(completedRow?.state, "completed", "completed unlock is marked completed");
 
   const visibleRows = buildVisibleChecklistRows(base, { catalog: unlockCatalog });
   assert.equal(Array.isArray(visibleRows), true, "checklist visibility pipeline remains functional");

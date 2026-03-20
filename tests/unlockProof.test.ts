@@ -7,9 +7,9 @@ import type { UnlockDefinition } from "../src/domain/types.js";
 
 const fixtureCatalog: UnlockDefinition[] = [
   {
-    id: "unlock_digit_1_on_step_press",
-    description: "Unlock digit_1 once step-through is pressed at least once.",
-    predicate: { type: "key_press_count_at_least", key: KEY_ID.exec_step_through, count: 1 },
+    id: "unlock_digit_1_on_equals_press",
+    description: "Unlock digit_1 once equals is pressed at least once.",
+    predicate: { type: "key_press_count_at_least", key: KEY_ID.exec_equals, count: 1 },
     effect: { type: "unlock_digit", key: KEY_ID.digit_1 },
     once: true,
     domainNodeId: "NN",
@@ -49,11 +49,11 @@ export const runUnlockProofTests = (): void => {
     secondRun.report.unlockProofs,
     "proof results should be deterministic for same input",
   );
-  const provedPress = firstRun.report.unlockProofs.find((entry) => entry.unlockId === "unlock_digit_1_on_step_press");
+  const provedPress = firstRun.report.unlockProofs.find((entry) => entry.unlockId === "unlock_digit_1_on_equals_press");
   assert.equal(provedPress?.status, "proved", "press-count unlock should be provable from initial state");
   assert.ok(
-    (provedPress?.witness ?? []).some((action) => action.type === "PRESS_KEY" && action.key === KEY_ID.exec_step_through),
-    "proved witness should include step-through press",
+    (provedPress?.witness ?? []).some((action) => action.type === "PRESS_KEY" && action.key === KEY_ID.exec_equals),
+    "proved witness should include equals press",
   );
 
   const impossibleCatalog: UnlockDefinition[] = [

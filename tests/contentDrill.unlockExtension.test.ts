@@ -10,7 +10,7 @@ const CONTENT_DRILL_CATALOG: UnlockDefinition[] = [
   {
     id: "content_drill_unlock_9_on_increment_3",
     description: "Content drill: unlock 9 after three increments.",
-    predicate: { type: "key_press_count_at_least", key: execution("▻"), count: 3 },
+    predicate: { type: "key_press_count_at_least", key: execution("="), count: 3 },
     effect: { type: "unlock_digit", key: valueExpr("9") },
     once: true,
     domainNodeId: "NN",
@@ -29,9 +29,9 @@ const runActions = (actions: Action[]) => {
 
 export const runContentDrillUnlockExtensionTests = (): void => {
   const before = runActions([
-    { type: "PRESS_KEY", key: k("▻") },
-    { type: "PRESS_KEY", key: k("▻") },
-    { type: "PRESS_KEY", key: k("▻") },
+    { type: "PRESS_KEY", key: k("=") },
+    { type: "PRESS_KEY", key: k("=") },
+    { type: "PRESS_KEY", key: k("=") },
   ]);
 
   assert.equal(before.unlocks.valueExpression[valueExpr("9")], false, "drill key remains locked before applying drill catalog");
@@ -40,5 +40,6 @@ export const runContentDrillUnlockExtensionTests = (): void => {
   assert.equal(after.unlocks.valueExpression[valueExpr("9")], true, "drill unlock applies from catalog-only content change");
   assert.ok(after.completedUnlockIds.includes("content_drill_unlock_9_on_increment_3"), "drill unlock id is recorded");
 };
+
 
 

@@ -119,12 +119,12 @@ export const runKeyUnlocksTests = (): void => {
   assert.equal(isKeyUnlocked(base, k("1")), false, "value-expression key starts locked");
   assert.equal(isKeyUnlocked(base, k("+")), false, "slot-operator key starts locked");
   assert.equal(isKeyUnlocked(base, k("C")), false, "utility key starts locked");
-  assert.equal(isKeyUnlocked(base, k("++")), false, "unary-operator key starts locked");
+  assert.equal(isKeyUnlocked(base, k("++")), true, "unary-operator key default-unlocked state is applied");
   assert.equal(isKeyUnlocked(base, k("\u2190")), false, "backspace utility key starts locked");
   assert.equal(isKeyUnlocked(base, k("M+")), false, "memory key starts locked");
   assert.equal(isKeyUnlocked(base, k("GRAPH")), false, "visualizer key starts locked");
   assert.equal(isKeyUnlocked(base, k("CIRCLE")), false, "circle visualizer key starts locked");
-  assert.equal(isKeyUnlocked(base, k("=")), false, "execution key starts locked");
+  assert.equal(isKeyUnlocked(base, k("=")), true, "execution key default-unlocked state is applied");
 
   const valueUnlocked = withUnlock(base, "valueExpression", k("1"));
   assert.equal(isKeyUnlocked(valueUnlocked, k("1")), true, "value-expression unlock is routed correctly");

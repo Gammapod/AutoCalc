@@ -133,8 +133,18 @@ export const runDragDropBehaviorTests = (): void => {
 
   const emptyStorageIndex = withExecutionMovedOffKeypad.ui.storageLayout.findIndex((cell) => cell === null);
   assert.ok(emptyStorageIndex >= 0, "test state includes an empty storage slot");
+  const withLockedExecutionOnKeypad: GameState = {
+    ...withStorageKey,
+    unlocks: {
+      ...withStorageKey.unlocks,
+      execution: {
+        ...withStorageKey.unlocks.execution,
+        [k("=")]: false,
+      },
+    },
+  };
   const allowedExecutionMoveOutOfKeypad = classifyDropAction(
-    withStorageKey,
+    withLockedExecutionOnKeypad,
     { surface: "keypad", index: 0 },
     { surface: "storage", index: emptyStorageIndex },
   );

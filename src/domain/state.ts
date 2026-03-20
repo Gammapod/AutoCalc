@@ -34,7 +34,7 @@ export const OPERATION_SLOTS_MAX = 4;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
-const DEFAULT_KEYPAD_KEYS: readonly Key[] = [KEY_ID.exec_step_through];
+const DEFAULT_KEYPAD_KEYS: readonly Key[] = [KEY_ID.exec_equals];
 const isDefaultDrawerExecutionCell = (cell: LayoutCell): cell is KeyCell =>
   cell.kind === "key" && DEFAULT_KEYPAD_KEYS.includes(cell.key) && !cell.behavior;
 

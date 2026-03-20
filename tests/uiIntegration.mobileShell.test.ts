@@ -374,11 +374,11 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "domain indicator switches to NaN (red) styling when total is NaN",
     );
 
-    const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("▻")}']`);
+    const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("=")}']`);
     assert.ok(keyButton, "calculator key exists after mobile render");
     click(keyButton as HTMLButtonElement);
     assert.equal(
-      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("▻")),
+      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("=")),
       true,
       "clicking a rendered key dispatches PRESS_KEY action",
     );
