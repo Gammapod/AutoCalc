@@ -3,6 +3,7 @@ import Algebrite from "algebrite";
 import * as keyCompat from "./support/keyCompat.js";
 import { runEngineTests } from "./engine.test.js";
 import { runReducerInputTests } from "./reducer.input.test.js";
+import { runExecutionModePolicyTests } from "./executionModePolicy.test.js";
 import { runReducerLayoutTests } from "./reducer.layout.test.js";
 import { runReducerLifecycleTests } from "./reducer.lifecycle.test.js";
 import { runReducerUnlockTests } from "./reducer.unlocks.test.js";
@@ -107,6 +108,7 @@ import { runMultiCalculatorContractTests } from "./multiCalculator.contract.test
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
   ["reducer/input", runReducerInputTests],
+  ["domain/execution-mode-policy", runExecutionModePolicyTests],
   ["reducer/layout", runReducerLayoutTests],
   ["reducer/allocator-device", runReducerAllocatorDeviceTests],
   ["reducer/lifecycle", runReducerLifecycleTests],

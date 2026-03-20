@@ -1,4 +1,4 @@
-import type { Action, GameState, Store } from "../../domain/types.js";
+import type { Action, GameState, Store, UiEffect } from "../../domain/types.js";
 
 type UnlockTracker = {
   hasNewUnlock: (state: GameState) => boolean;
@@ -19,8 +19,9 @@ export const createStoreSubscriptionCoordinator = (
     allocatorCueCoordinator: AllocatorCueCoordinator;
     unlockRevealCoordinator: UnlockRevealCoordinator;
     getAllocatorIncreaseFromUnlocks: (previous: GameState, latest: GameState) => number;
-    renderAndPersistState: (state: GameState) => void;
+    renderAndPersistState: (state: GameState, uiEffects: UiEffect[]) => void;
     syncAutoStepScheduler?: (state: GameState) => void;
+    consumeUiEffects?: () => UiEffect[];
     initialState: GameState;
   },
 ): (() => void) => {
@@ -35,6 +36,7 @@ export const createStoreSubscriptionCoordinator = (
     }
     const previous = previousStateForCues;
     previousStateForCues = latest;
+    const uiEffects = options.consumeUiEffects?.() ?? [];
 
     const hasNewUnlock = options.unlockTracker.hasNewUnlock(latest);
     const maxPointIncreaseFromUnlocks = options.getAllocatorIncreaseFromUnlocks(previous, latest);
@@ -53,7 +55,7 @@ export const createStoreSubscriptionCoordinator = (
       return;
     }
 
-    options.renderAndPersistState(latest);
+    options.renderAndPersistState(latest, uiEffects);
   });
 };
 

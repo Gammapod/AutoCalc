@@ -5,6 +5,13 @@ import type { GameState } from "../../domain/types.js";
 const LEGACY_GREATER_OPERATOR = "op_greater";
 
 const stripLegacyGreaterFromState = (state: GameState): GameState => {
+  const stripLegacyUiRejectNonce = (ui: GameState["ui"]): GameState["ui"] => {
+    const nextUi = { ...ui } as GameState["ui"] & { invalidExecutionGateNonce?: number };
+    if ("invalidExecutionGateNonce" in nextUi) {
+      delete nextUi.invalidExecutionGateNonce;
+    }
+    return nextUi;
+  };
   const scrubLayout = (layout: GameState["ui"]["keyLayout"]): GameState["ui"]["keyLayout"] =>
     layout.map((cell) =>
       cell.kind === "key" && String(cell.key) === LEGACY_GREATER_OPERATOR
@@ -45,7 +52,7 @@ const stripLegacyGreaterFromState = (state: GameState): GameState => {
       keyPressCounts: scrubKeyPressCounts,
       unlocks: scrubUnlocks,
       ui: {
-        ...state.ui,
+        ...stripLegacyUiRejectNonce(state.ui),
         keyLayout: scrubLayout(state.ui.keyLayout),
         storageLayout: scrubStorage(state.ui.storageLayout),
       },
@@ -60,7 +67,7 @@ const stripLegacyGreaterFromState = (state: GameState): GameState => {
     keyPressCounts: scrubKeyPressCounts,
     unlocks: scrubUnlocks,
     ui: {
-      ...state.ui,
+      ...stripLegacyUiRejectNonce(state.ui),
       keyLayout: scrubLayout(state.ui.keyLayout),
       storageLayout: scrubStorage(state.ui.storageLayout),
     },
@@ -72,7 +79,7 @@ const stripLegacyGreaterFromState = (state: GameState): GameState => {
             ...f,
             calculator: scrubCalculator(f.calculator),
             ui: {
-              ...f.ui,
+              ...stripLegacyUiRejectNonce(f.ui),
               keyLayout: scrubLayout(f.ui.keyLayout),
               storageLayout: scrubStorage(f.ui.storageLayout),
             },
@@ -85,7 +92,7 @@ const stripLegacyGreaterFromState = (state: GameState): GameState => {
             ...g,
             calculator: scrubCalculator(g.calculator),
             ui: {
-              ...g.ui,
+              ...stripLegacyUiRejectNonce(g.ui),
               keyLayout: scrubLayout(g.ui.keyLayout),
               storageLayout: scrubStorage(g.ui.storageLayout),
             },

@@ -1,4 +1,4 @@
-import type { Action, GameState } from "../../domain/types.js";
+import type { Action, GameState, UiEffect } from "../../domain/types.js";
 import { renderCalculatorV2Module } from "./calculator/render.js";
 import { renderStorageV2Module } from "./storage/render.js";
 import { renderInputV2Module } from "./input/render.js";
@@ -10,8 +10,11 @@ export const renderCalculatorStorageV2Module = (
   dispatch: (action: Action) => unknown,
   options: {
     inputBlocked: boolean;
+    uiEffects: UiEffect[];
   },
 ): void => {
+  const executionRejectCountFor = (calculatorId: "g" | "f"): number =>
+    options.uiEffects.filter((effect) => effect.type === "execution_gate_rejected" && effect.calculatorId === calculatorId).length;
   const calculatorDevice = root.querySelector<HTMLElement>("[data-calc-device]");
   const switchRow = calculatorDevice?.querySelector<HTMLElement>("[data-calc-switch-row]");
   const fInstance = calculatorDevice?.querySelector<HTMLElement>("[data-calc-instance-id='f']");
@@ -50,6 +53,7 @@ export const renderCalculatorStorageV2Module = (
       const projected = projectCalculatorToLegacy(state, id);
       renderCalculatorV2Module(instanceEl, projected, dispatch, {
         inputBlocked: options.inputBlocked,
+        executionGateRejectCount: executionRejectCountFor(id),
       });
     });
   } else if (calculatorDevice && fInstance) {
@@ -63,10 +67,12 @@ export const renderCalculatorStorageV2Module = (
     }
     renderCalculatorV2Module(fInstance, state, dispatch, {
       inputBlocked: options.inputBlocked,
+      executionGateRejectCount: executionRejectCountFor("f"),
     });
   } else {
     renderCalculatorV2Module(root, state, dispatch, {
       inputBlocked: options.inputBlocked,
+      executionGateRejectCount: executionRejectCountFor(resolveActiveCalculatorId(state)),
     });
   }
   renderStorageV2Module(root, state, dispatch, {

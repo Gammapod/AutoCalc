@@ -1,6 +1,6 @@
 # AutoCalc Functional Specification
 
-Last updated: 2026-03-19
+Last updated: 2026-03-20
 Status: Draft v2 (design-truth restructure)
 Purpose: Define player-facing functional truth, independent of implementation structure.
 
@@ -143,7 +143,7 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: execution order is core gameplay truth.
 - `FS-FB-03` (MUST): Value/number behavior is capability-gated by unlocked key state.
   Rationale: progression must control expression power.
-- `FS-FB-04` (SHALL): Alternate settings modify execution only through explicit modeled flags.
+- `FS-FB-04` (SHALL): Alternate settings modify execution only through explicit modeled flags; when wrap-mode settings are enabled, execution appends a terminal synthetic wrap stage that is included in step order/targeting.
   Rationale: optional behavior must stay declarative and testable.
 - `FS-FB-05` (MUST): Step-through partial execution preserves terminal equivalence with full execution when completion scope is equal.
   Rationale: step-through is an interaction mode, not a different math system.
@@ -151,7 +151,7 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: prevents duplicate roll/terminal writes.
 - `FS-FB-07` (MUST): If step-through capability is absent, step-specific behavior is inert.
   Rationale: unavailable capabilities cannot leak behavior.
-- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating.
+- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating for calculator/progression state, while UI-only feedback effects are allowed.
   Rationale: execution cadence and deterministic state transitions require mode-gated mutation boundaries.
 - `FS-FB-09` (MUST): Auto-step intermediate progress is preview-only. Roll/history and terminal total commit exactly once, only on completion/finalization of the execution path.
   Rationale: prevents duplicate terminal writes and preserves roll as terminal execution history.
@@ -176,7 +176,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-FB-05 | Step-through terminal equivalence with full execution | `reducer/input`, `ui-integration/mobile-shell`, `ui-integration/desktop-shell` | unit + workflow/integration | none |
 | FS-FB-06 | Finalization writes one terminal outcome per completion path | `reducer/input`, `persistence` | unit | partial: no dedicated long-trace finalization stress suite |
 | FS-FB-07 | Step behavior inert when capability absent | `reducer/input`, `ui-integration/mobile-shell` | unit + integration | none |
-| FS-FB-08 | Auto-step mode gates calculator mutation inputs; rejected actions are non-mutating unless designated as execution-interrupting | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout` | contract + unit | partial: full auto-step action-family matrix coverage pending |
+| FS-FB-08 | Auto-step mode gates calculator mutation inputs; rejected actions are non-mutating for calculator/progression state unless designated as execution-interrupting | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
 | FS-FB-09 | Auto-step intermediate progress is preview-only; roll/terminal commit exactly once on completion | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | partial: no dedicated auto-step completion stress suite |
 
 #### 3.2.4 Traceability (Multi-Calculator Session Model)
@@ -258,7 +258,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
 5. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.
 6. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
-7. `FS-FB-08`, `FS-FB-09`, and `FS-UP-08` are newly defined and currently only partially covered; explicit auto-step execution-mode matrices and exception-bearing progression fixtures are pending.
+7. `FS-FB-09` and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress and exception-bearing progression fixtures are pending.
 
 ### 7.3 Fixture-only parity/fuzz coverage flags
 

@@ -1,4 +1,4 @@
-import type { GameState, Key } from "../domain/types.js";
+import type { GameState, Key, UiEffect } from "../domain/types.js";
 import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
 import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
 
@@ -74,7 +74,7 @@ type UnlockRevealCoordinatorDeps = {
   playShellCue: (target: "calculator" | "storage") => Promise<void>;
   setInputBlocked: (blocked: boolean) => void;
   redraw: () => void;
-  renderAndPersistState: (state: GameState) => void;
+  renderAndPersistState: (state: GameState, uiEffects?: UiEffect[]) => void;
   focusStoragePanel: () => void;
 };
 
@@ -98,7 +98,7 @@ export const createUnlockRevealCoordinator = ({
         setInputBlocked,
         redraw,
         applyStateMutation: () => {
-          renderAndPersistState(stateAtUnlock);
+          renderAndPersistState(stateAtUnlock, []);
         },
         setShellFocusView: () => {
           focusStoragePanel();

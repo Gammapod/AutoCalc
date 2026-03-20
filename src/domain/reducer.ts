@@ -28,18 +28,13 @@ import { getBaseControlProfile } from "./controlProfileRuntime.js";
 import { projectControlFromState } from "./controlProjection.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 import {
-  clearExecutionModeFlags,
-  clearExecutionModeFlagsForInterrupt,
-  clearExecutionModeFlagsForInterruptByFlag,
-  isExecutionGatedMutationAction,
-  isExecutionGatedInputKey,
-  isExecutionInterruptingKey,
+  applyExecutionInterrupt,
+  classifyExecutionPolicyAction,
   isExecutionModeActive,
-  isExecutionToggleFlag,
-  markInvalidExecutionGateInput,
+  type ExecutionPolicyResult,
 } from "./executionModePolicy.js";
 import { handleAutoStepTick } from "./reducer.input.handlers.execution.js";
-import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "./state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG } from "./state.js";
 import type {
   Action,
   CalculatorId,
@@ -80,26 +75,22 @@ type ReducerOptions = {
   services?: AppServices;
 };
 
-const EXECUTION_INTERRUPTIBLE_SETTINGS_FLAGS = new Set<string>([
-  DELTA_RANGE_CLAMP_FLAG,
-  MOD_ZERO_TO_DELTA_FLAG,
-]);
+type ResolvedExecutionPolicy = {
+  decision: ExecutionPolicyResult;
+  calculatorId: CalculatorId;
+};
 
 const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
   const services = options.services ?? getAppServices();
   const unlockCatalog = services.contentProvider.unlockCatalog;
-  if (action.type !== "AUTO_STEP_TICK" && isExecutionGatedMutationAction(state, action)) {
-    return markInvalidExecutionGateInput(state);
+  const executionPolicy = classifyExecutionPolicyAction(state, action);
+  if (executionPolicy.decision === "reject") {
+    return state;
   }
   if (action.type === "PRESS_KEY") {
     const resolvedKey = resolveKeyId(action.key);
-    if (isExecutionModeActive(state)) {
-      if (isExecutionGatedInputKey(resolvedKey)) {
-        return markInvalidExecutionGateInput(state);
-      }
-      if (isExecutionInterruptingKey(resolvedKey)) {
-        return applyKeyAction(clearExecutionModeFlagsForInterrupt(state, resolvedKey), resolvedKey);
-      }
+    if (executionPolicy.decision === "interrupt_and_run") {
+      return applyKeyAction(applyExecutionInterrupt(state, executionPolicy.interrupt), resolvedKey);
     }
     return applyKeyAction(state, resolvedKey);
   }
@@ -172,12 +163,8 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     return upgraded !== state ? withStepProgressCleared(upgraded) : upgraded;
   }
   if (action.type === "TOGGLE_FLAG") {
-    if (isExecutionToggleFlag(state, action.flag)) {
-      const cleared = clearExecutionModeFlagsForInterruptByFlag(state, action.flag);
-      return applyToggleFlag(cleared, action.flag);
-    }
-    if (EXECUTION_INTERRUPTIBLE_SETTINGS_FLAGS.has(action.flag)) {
-      return applyToggleFlag(clearExecutionModeFlags(state), action.flag);
+    if (executionPolicy.decision === "interrupt_and_run") {
+      return applyToggleFlag(applyExecutionInterrupt(state, executionPolicy.interrupt), action.flag);
     }
     return applyToggleFlag(state, action.flag);
   }
@@ -251,7 +238,7 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
   return state;
 };
 
-const resolveActionCalculatorId = (state: GameState, action: Action): CalculatorId | null => {
+export const resolveActionCalculatorId = (state: GameState, action: Action): CalculatorId | null => {
   if ("calculatorId" in action && action.calculatorId) {
     return action.calculatorId;
   }
@@ -274,6 +261,22 @@ const resolveActionCalculatorId = (state: GameState, action: Action): Calculator
     return resolveActiveCalculatorId(state);
   }
   return null;
+};
+
+export const resolveExecutionPolicyForAction = (state: GameState, action: Action): ResolvedExecutionPolicy => {
+  const targetCalculatorId = resolveActionCalculatorId(state, action);
+  const calculatorId = targetCalculatorId ?? resolveActiveCalculatorId(state);
+  if (state.calculators?.f && state.calculators?.g && targetCalculatorId) {
+    const projected = projectCalculatorToLegacy(state, targetCalculatorId);
+    return {
+      decision: classifyExecutionPolicyAction(projected, action),
+      calculatorId,
+    };
+  }
+  return {
+    decision: classifyExecutionPolicyAction(state, action),
+    calculatorId,
+  };
 };
 
 export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {

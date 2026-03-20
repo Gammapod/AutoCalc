@@ -99,13 +99,14 @@ export const renderCalculatorV2Module = (
   dispatch: (action: Action) => unknown,
   options: {
     inputBlocked: boolean;
+    executionGateRejectCount?: number;
   },
 ): void => {
   const calculatorId: "g" | "f" =
     root instanceof HTMLElement && root.dataset.calcInstanceId === "g"
       ? "g"
       : "f";
-  triggerExecutionGateRejectBlink(root, state.ui.invalidExecutionGateNonce);
+  triggerExecutionGateRejectBlink(root, options.executionGateRejectCount ?? 0);
   ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
   const slotEl = root.querySelector<HTMLElement>("[data-slot]");

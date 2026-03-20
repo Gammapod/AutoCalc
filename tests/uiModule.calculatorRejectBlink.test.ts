@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { renderCalculatorV2Module } from "../src/ui/modules/calculator/render.js";
 import { disposeCalculatorV2Module } from "../src/ui/modules/calculator/runtime.js";
-import type { Action, GameState } from "../src/domain/types.js";
+import type { Action } from "../src/domain/types.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 
 const noopDispatch = (_action: Action): Action => _action;
@@ -24,14 +24,10 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       "baseline render has no reject blink class",
     );
 
-    const firstRejected: GameState = {
-      ...initialState(),
-      ui: {
-        ...initialState().ui,
-        invalidExecutionGateNonce: 1,
-      },
-    };
-    renderCalculatorV2Module(harness.root, firstRejected, noopDispatch, { inputBlocked: false });
+    renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
+      inputBlocked: false,
+      executionGateRejectCount: 1,
+    });
     assert.equal(
       displayWindow.classList.contains("display--slot-reject-blink"),
       true,
@@ -39,21 +35,20 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
     );
 
     displayWindow.classList.remove("display--slot-reject-blink");
-    renderCalculatorV2Module(harness.root, firstRejected, noopDispatch, { inputBlocked: false });
+    renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
+      inputBlocked: false,
+      executionGateRejectCount: 0,
+    });
     assert.equal(
       displayWindow.classList.contains("display--slot-reject-blink"),
       false,
       "unchanged nonce does not retrigger reject blink",
     );
 
-    const secondRejected: GameState = {
-      ...firstRejected,
-      ui: {
-        ...firstRejected.ui,
-        invalidExecutionGateNonce: 2,
-      },
-    };
-    renderCalculatorV2Module(harness.root, secondRejected, noopDispatch, { inputBlocked: false });
+    renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
+      inputBlocked: false,
+      executionGateRejectCount: 2,
+    });
     assert.equal(
       displayWindow.classList.contains("display--slot-reject-blink"),
       true,

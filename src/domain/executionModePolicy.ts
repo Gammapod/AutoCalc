@@ -1,6 +1,11 @@
 import { getButtonDefinition } from "./buttonRegistry.js";
 import { KEY_ID, resolveKeyId, toLegacyKey, type KeyLike } from "./keyPresentation.js";
-import { EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG } from "./state.js";
+import {
+  DELTA_RANGE_CLAMP_FLAG,
+  EXECUTION_PAUSE_EQUALS_FLAG,
+  EXECUTION_PAUSE_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+} from "./state.js";
 import type { Action, GameState, Key, KeyCell } from "./types.js";
 
 const isKeyCell = (cell: GameState["ui"]["keyLayout"][number] | GameState["ui"]["storageLayout"][number]): cell is KeyCell =>
@@ -89,6 +94,11 @@ const getExecutionToggleFlags = (ui: GameState["ui"]): Set<string> => {
   return flags;
 };
 
+const EXECUTION_INTERRUPTIBLE_SETTINGS_FLAGS = new Set<string>([
+  DELTA_RANGE_CLAMP_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+]);
+
 export const listExecutionToggleFlags = (state: GameState): Set<string> => getExecutionToggleFlags(state.ui);
 
 export const isExecutionModeActive = (state: GameState): boolean => {
@@ -128,6 +138,16 @@ export const clearExecutionModeFlags = (state: GameState): GameState => {
 
 export const isExecutionToggleFlag = (state: GameState, flag: string): boolean =>
   listExecutionToggleFlags(state).has(flag);
+
+export type ExecutionPolicyInterrupt =
+  | { type: "clear_all" }
+  | { type: "clear_all_except_flag"; flag: string }
+  | { type: "clear_all_except_key"; keyLike: KeyLike };
+
+export type ExecutionPolicyResult =
+  | { decision: "allow" }
+  | { decision: "reject" }
+  | { decision: "interrupt_and_run"; interrupt: ExecutionPolicyInterrupt };
 
 export const clearExecutionModeFlagsForInterrupt = (state: GameState, keyLike: KeyLike): GameState => {
   if (!isExecutionCategoryKey(keyLike)) {
@@ -194,6 +214,16 @@ export const clearExecutionModeFlagsForInterruptByFlag = (state: GameState, keep
   };
 };
 
+export const applyExecutionInterrupt = (state: GameState, interrupt: ExecutionPolicyInterrupt): GameState => {
+  if (interrupt.type === "clear_all") {
+    return clearExecutionModeFlags(state);
+  }
+  if (interrupt.type === "clear_all_except_flag") {
+    return clearExecutionModeFlagsForInterruptByFlag(state, interrupt.flag);
+  }
+  return clearExecutionModeFlagsForInterrupt(state, interrupt.keyLike);
+};
+
 export const isExecutionInterruptingKey = (keyLike: KeyLike): boolean => {
   const resolved = tryResolveKey(keyLike);
   if (!resolved) {
@@ -250,9 +280,6 @@ export const isExecutionGatedMutationAction = (state: GameState, action: Action)
   if (!isExecutionModeActive(state)) {
     return false;
   }
-  if (action.type === "PRESS_KEY") {
-    return isExecutionGatedInputKey(action.key);
-  }
   if (action.type === "MOVE_LAYOUT_CELL" || action.type === "SWAP_LAYOUT_CELLS") {
     return touchesActiveCalculatorSurface(state, action.fromSurface, action.toSurface);
   }
@@ -261,6 +288,50 @@ export const isExecutionGatedMutationAction = (state: GameState, action: Action)
     || action.type === "UPGRADE_KEYPAD_ROW"
     || action.type === "UPGRADE_KEYPAD_COLUMN"
   );
+};
+
+export const classifyExecutionPolicyAction = (state: GameState, action: Action): ExecutionPolicyResult => {
+  if (action.type === "TOGGLE_FLAG") {
+    if (isExecutionToggleFlag(state, action.flag)) {
+      return {
+        decision: "interrupt_and_run",
+        interrupt: { type: "clear_all_except_flag", flag: action.flag },
+      };
+    }
+    if (isExecutionModeActive(state) && EXECUTION_INTERRUPTIBLE_SETTINGS_FLAGS.has(action.flag)) {
+      return {
+        decision: "interrupt_and_run",
+        interrupt: { type: "clear_all" },
+      };
+    }
+    return { decision: "allow" };
+  }
+
+  if (action.type === "PRESS_KEY") {
+    const resolvedKey = tryResolveKey(action.key);
+    if (!resolvedKey || !isExecutionModeActive(state)) {
+      return { decision: "allow" };
+    }
+    if (isExecutionGatedInputKey(resolvedKey)) {
+      return { decision: "reject" };
+    }
+    if (isExecutionInterruptingKey(resolvedKey)) {
+      return {
+        decision: "interrupt_and_run",
+        interrupt: { type: "clear_all_except_key", keyLike: resolvedKey },
+      };
+    }
+    return { decision: "allow" };
+  }
+
+  if (action.type === "AUTO_STEP_TICK") {
+    return { decision: "allow" };
+  }
+
+  if (isExecutionGatedMutationAction(state, action)) {
+    return { decision: "reject" };
+  }
+  return { decision: "allow" };
 };
 
 export const clearExecutionToggleFlagsForKey = (state: GameState, keyLike: KeyLike): GameState => {
@@ -287,13 +358,5 @@ export const clearExecutionToggleFlagsForKey = (state: GameState, keyLike: KeyLi
     },
   };
 };
-
-export const markInvalidExecutionGateInput = (state: GameState): GameState => ({
-  ...state,
-  ui: {
-    ...state.ui,
-    invalidExecutionGateNonce: (state.ui.invalidExecutionGateNonce ?? 0) + 1,
-  },
-});
 
 export const isExecutionStepThroughKey = (key: Key): boolean => key === KEY_ID.exec_step_through;

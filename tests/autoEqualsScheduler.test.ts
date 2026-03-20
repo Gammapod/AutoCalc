@@ -246,6 +246,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
         [AUTO_EQUALS_FLAG]: true,
         "another.flag": true,
       },
+      ...({ invalidExecutionGateNonce: 7 } as Record<string, unknown>),
     },
   };
   const normalized = normalizeLoadedStateForRuntime(loadedWithAuto);
@@ -254,6 +255,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   }
   assert.equal(Boolean(normalized.ui.buttonFlags[AUTO_EQUALS_FLAG]), false, "runtime load clears auto-equals flag");
   assert.equal(Boolean(normalized.ui.buttonFlags["another.flag"]), true, "runtime load preserves other flags");
+  assert.equal("invalidExecutionGateNonce" in normalized.ui, false, "runtime load strips legacy execution-gate nonce");
 
   const missingLockedCatalogKeyState: GameState = {
     ...initialState(),

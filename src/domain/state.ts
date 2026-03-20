@@ -223,7 +223,6 @@ export const initialState = (): GameState => {
       activeVisualizer: "total",
       memoryVariable: "α",
       buttonFlags: {},
-      invalidExecutionGateNonce: 0,
     },
     keyPressCounts: {},
     allocatorReturnPressCount: 0,

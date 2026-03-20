@@ -91,6 +91,7 @@ export const createDesktopShellRenderer = (root: Element, rendererOptions: { ser
     applyDesktopA11yMarkers(root);
     renderCalculatorStorageV2Module(root, state, dispatch, {
       inputBlocked: options.inputBlocked ?? false,
+      uiEffects: options.uiEffects ?? [],
     });
     renderVisualizerHost(root, state);
     renderChecklistV2Module(root, state, { services: rendererOptions.services });

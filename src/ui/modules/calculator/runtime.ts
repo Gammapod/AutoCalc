@@ -6,7 +6,6 @@ export type CalculatorModuleState = {
   pendingToggleAnimationByFlag: Record<string, "on" | "off">;
   previousUnlockSnapshot: Record<string, boolean> | null;
   keyLabelResizeBound: boolean;
-  lastInvalidExecutionGateNonce: number;
   slotMarquee: {
     intervalId: ReturnType<typeof setInterval> | null;
     offsetChars: number;
@@ -30,7 +29,6 @@ const createCalculatorModuleState = (): CalculatorModuleState => ({
   pendingToggleAnimationByFlag: {},
   previousUnlockSnapshot: null,
   keyLabelResizeBound: false,
-  lastInvalidExecutionGateNonce: 0,
   slotMarquee: {
     intervalId: null,
     offsetChars: 0,
@@ -66,7 +64,6 @@ export const getCalculatorModuleState = (root: Element): CalculatorModuleState =
     created.pendingToggleAnimationByFlag = {};
     created.previousUnlockSnapshot = null;
     created.keyLabelResizeBound = false;
-    created.lastInvalidExecutionGateNonce = 0;
     created.slotMarquee = {
       intervalId: null,
       offsetChars: 0,
@@ -93,7 +90,6 @@ export const getCalculatorModuleState = (root: Element): CalculatorModuleState =
     created.pendingToggleAnimationByFlag = {};
     created.previousUnlockSnapshot = null;
     created.keyLabelResizeBound = false;
-    created.lastInvalidExecutionGateNonce = 0;
     created.slotMarquee = {
       intervalId: null,
       offsetChars: 0,
@@ -136,13 +132,11 @@ export const clearToggleAnimations = (root: Element): void => {
   getCalculatorModuleState(root).pendingToggleAnimationByFlag = {};
 };
 
-export const triggerExecutionGateRejectBlink = (root: Element, nonce: number | null | undefined): void => {
-  const state = getCalculatorModuleState(root);
-  const normalizedNonce = Math.max(0, Math.trunc(nonce ?? 0));
-  if (normalizedNonce <= 0 || normalizedNonce === state.lastInvalidExecutionGateNonce) {
+export const triggerExecutionGateRejectBlink = (root: Element, rejectCount: number | null | undefined): void => {
+  const normalizedRejectCount = Math.max(0, Math.trunc(rejectCount ?? 0));
+  if (normalizedRejectCount <= 0) {
     return;
   }
-  state.lastInvalidExecutionGateNonce = normalizedNonce;
   const displayWindow = root.querySelector<HTMLElement>("[data-display-window]");
   if (!displayWindow) {
     return;

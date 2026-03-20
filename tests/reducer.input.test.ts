@@ -121,27 +121,13 @@ export const runReducerInputTests = (): void => {
   assert.equal(Boolean(withPauseOff.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "play/pause toggle turns execution pause off");
 
   const digitRejectedWhilePaused = reducer(withPauseOn, { type: "PRESS_KEY", key: k("1") });
-  assert.deepEqual(
-    digitRejectedWhilePaused.calculator,
-    withPauseOn.calculator,
-    "digit input rejection preserves calculator state while execution pause is active",
-  );
-  assert.equal(
-    (digitRejectedWhilePaused.ui.invalidExecutionGateNonce ?? 0),
-    (withPauseOn.ui.invalidExecutionGateNonce ?? 0) + 1,
-    "digit input rejection increments execution gate nonce",
-  );
+  assert.deepEqual(digitRejectedWhilePaused, withPauseOn, "digit input rejection is non-mutating while execution pause is active");
 
   const operatorRejectedWhilePaused = reducer(withPauseOn, { type: "PRESS_KEY", key: op("+") });
   assert.deepEqual(
-    operatorRejectedWhilePaused.calculator,
-    withPauseOn.calculator,
-    "operator input rejection preserves calculator state while execution pause is active",
-  );
-  assert.equal(
-    (operatorRejectedWhilePaused.ui.invalidExecutionGateNonce ?? 0),
-    (withPauseOn.ui.invalidExecutionGateNonce ?? 0) + 1,
-    "operator input rejection increments execution gate nonce",
+    operatorRejectedWhilePaused,
+    withPauseOn,
+    "operator input rejection is non-mutating while execution pause is active",
   );
 
   const backspaceInterruptsAndClearsPause = reducer(withPauseOn, { type: "PRESS_KEY", key: k("\u2190") });
@@ -269,7 +255,16 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(afterModWrap.calculator.total, r(1n), "mod-wrap toggle maps 100 to 1 for maxDigits=2");
   assert.equal(afterModWrap.calculator.rollEntries.at(-1)?.error, undefined, "mod-wrap path does not emit overflow error");
 
-  const equalsSource = legacyInitialState();
+  const equalsSource: GameState = {
+    ...legacyInitialState(),
+    unlocks: {
+      ...legacyInitialState().unlocks,
+      execution: {
+        ...legacyInitialState().unlocks.execution,
+        [k("=")]: true,
+      },
+    },
+  };
   const afterEquals = applyKeyAction(equalsSource, "=");
   assert.deepEqual(afterEquals.calculator.total, r(0n), "equals with no operations keeps total unchanged");
   assert.deepEqual(
@@ -314,6 +309,11 @@ export const runReducerInputTests = (): void => {
 
   const autoStepSeed: GameState = {
     ...fullyUnlocked,
+    calculators: undefined,
+    calculatorOrder: undefined,
+    activeCalculatorId: undefined,
+    perCalculatorCompletedUnlockIds: undefined,
+    sessionControlProfiles: undefined,
     keyPressCounts: { [k("1")]: 3 },
     ui: {
       ...fullyUnlocked.ui,
@@ -343,20 +343,24 @@ export const runReducerInputTests = (): void => {
   assert.equal(autoStepTick2.calculator.rollEntries.length, 2, "terminal AUTO_STEP_TICK commits seed and final step exactly once");
   assert.deepEqual(autoStepTick2.keyPressCounts, autoStepSeed.keyPressCounts, "AUTO_STEP_TICK terminal commit still does not increment key press counts");
 
-  const autoStepIdle = reducer(
-    {
-      ...autoStepTick2,
-      ui: {
-        ...autoStepTick2.ui,
-        buttonFlags: {
-          ...autoStepTick2.ui.buttonFlags,
-          [EXECUTION_PAUSE_FLAG]: true,
-        },
+  const autoStepIdleSource: GameState = {
+    ...autoStepTick2,
+    ui: {
+      ...autoStepTick2.ui,
+      buttonFlags: {
+        ...autoStepTick2.ui.buttonFlags,
+        [EXECUTION_PAUSE_FLAG]: true,
       },
     },
-    { type: "AUTO_STEP_TICK" },
-  );
-  assert.deepEqual(autoStepIdle, autoStepTick2, "AUTO_STEP_TICK is idempotent when no runnable step path exists");
+    calculator: {
+      ...autoStepTick2.calculator,
+      operationSlots: [],
+      draftingSlot: null,
+    },
+  };
+  const autoStepIdle = reducer(autoStepIdleSource, { type: "AUTO_STEP_TICK" });
+  assert.deepEqual(autoStepIdle.calculator, autoStepIdleSource.calculator, "AUTO_STEP_TICK is idempotent when no runnable step path exists");
+  assert.deepEqual(autoStepIdle.keyPressCounts, autoStepIdleSource.keyPressCounts, "AUTO_STEP_TICK idle path preserves key-press counts");
 
   const equalsFromPartial = applyKeyAction(afterFirstStep, "=");
   assert.deepEqual(equalsFromPartial.calculator.total, r(9n), "equals during partial step continues from cursor");

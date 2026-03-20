@@ -596,7 +596,6 @@ export type GameState = {
     activeVisualizer: ActiveVisualizer;
     memoryVariable: MemoryVariable;
     buttonFlags: Record<string, boolean>;
-    invalidExecutionGateNonce?: number;
   };
   keyPressCounts: Partial<Record<Key, number>>;
   allocatorReturnPressCount?: number;
@@ -780,10 +779,17 @@ export type Action =
   | SetActiveCalculatorAction
   | AutoStepTickAction;
 
+export type UiEffect =
+  | {
+      type: "execution_gate_rejected";
+      calculatorId: CalculatorId;
+    };
+
 export type Store = {
   getState: () => GameState;
   dispatch: (action: Action) => Action;
   subscribe: (subscriber: (state: GameState) => void) => () => void;
+  consumeUiEffects?: () => UiEffect[];
 };
 
 

@@ -1,4 +1,5 @@
 import type { Action, GameState } from "../domain/types.js";
+import type { UiEffect } from "../domain/types.js";
 import { createShellController } from "./shellController.js";
 import type { SnapId } from "./shellModel.js";
 import { createTouchRearrangeController } from "./touchRearrangeController.js";
@@ -32,6 +33,7 @@ export type ShellRenderer = {
 
 export type ShellRenderOptions = {
   inputBlocked?: boolean;
+  uiEffects?: UiEffect[];
 };
 
 const playElementCueAnimation = async (
@@ -296,6 +298,7 @@ export const createShellRenderer = (root: Element, rendererOptions: { services?:
     const refs = ensureShellRefs();
     renderCalculatorStorageV2Module(root, state, dispatch, {
       inputBlocked: runtimeState.latestInputBlocked,
+      uiEffects: options.uiEffects ?? [],
     });
     renderVisualizerHost(root, state);
     renderChecklistV2Module(root, state, { services: rendererOptions.services });

@@ -13,42 +13,20 @@ const runParityRejectionCase = (
   label: string,
   state: GameState,
   action: Action,
-  options: { expectExecutionGateNonce: boolean },
+  options: { expectRejectUiEffect: boolean },
 ): void => {
   const reduced = reducer(state, action);
-  const commandReduced = executeCommand(state, { type: "DispatchAction", action }).state;
-  assert.deepEqual(
-    reduced.calculator,
-    state.calculator,
-    `${label}: reducer path preserves calculator state for execution-gated rejection`,
+  const commandResult = executeCommand(state, { type: "DispatchAction", action });
+  const commandReduced = commandResult.state;
+  assert.deepEqual(reduced, state, `${label}: reducer path is non-mutating for execution-gated rejection`);
+  assert.deepEqual(commandReduced, state, `${label}: command path is non-mutating for execution-gated rejection`);
+  assert.equal(
+    commandResult.uiEffects.length,
+    options.expectRejectUiEffect ? 1 : 0,
+    `${label}: command emits expected reject UI effect count`,
   );
-  assert.deepEqual(
-    commandReduced.calculator,
-    state.calculator,
-    `${label}: command path preserves calculator state for execution-gated rejection`,
-  );
-  if (options.expectExecutionGateNonce) {
-    assert.equal(
-      (reduced.ui.invalidExecutionGateNonce ?? 0),
-      (state.ui.invalidExecutionGateNonce ?? 0) + 1,
-      `${label}: reducer path increments rejection nonce`,
-    );
-    assert.equal(
-      (commandReduced.ui.invalidExecutionGateNonce ?? 0),
-      (state.ui.invalidExecutionGateNonce ?? 0) + 1,
-      `${label}: command path increments rejection nonce`,
-    );
-  } else {
-    assert.equal(
-      (reduced.ui.invalidExecutionGateNonce ?? 0),
-      (state.ui.invalidExecutionGateNonce ?? 0),
-      `${label}: reducer path keeps rejection nonce stable`,
-    );
-    assert.equal(
-      (commandReduced.ui.invalidExecutionGateNonce ?? 0),
-      (state.ui.invalidExecutionGateNonce ?? 0),
-      `${label}: command path keeps rejection nonce stable`,
-    );
+  if (options.expectRejectUiEffect) {
+    assert.equal(commandResult.uiEffects[0]?.type, "execution_gate_rejected", `${label}: reject UI effect type is execution-gate`);
   }
 
   const parity = compareParity(reduced, commandReduced);
@@ -72,7 +50,7 @@ export const runContractsExecutionGateParityTests = (): void => {
     "active-roll digit rejection",
     activeRollState,
     { type: "PRESS_KEY", key: k("1") },
-    { expectExecutionGateNonce: false },
+    { expectRejectUiEffect: false },
   );
 
   const pausedStateSeed: GameState = {
@@ -123,14 +101,14 @@ export const runContractsExecutionGateParityTests = (): void => {
     "execution-pause digit rejection",
     pausedState,
     { type: "PRESS_KEY", key: k("1") },
-    { expectExecutionGateNonce: true },
+    { expectRejectUiEffect: true },
   );
 
   runParityRejectionCase(
     "execution-pause operator rejection",
     pausedState,
     { type: "PRESS_KEY", key: op("+") },
-    { expectExecutionGateNonce: true },
+    { expectRejectUiEffect: true },
   );
 
   const runParityAcceptedCase = (label: string, state: GameState, action: Action): void => {

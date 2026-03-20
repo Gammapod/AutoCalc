@@ -12,7 +12,7 @@ import { resolveBootstrapUiRefs } from "../ui/bootstrap/bootstrapUiRefs.js";
 import { createBootstrapUiController } from "../ui/bootstrap/bootstrapUiController.js";
 import { createResetRunHandler, createStoreSubscriptionCoordinator } from "./bootstrap/subscriptionCoordinator.js";
 import { createAutoStepScheduler } from "./autoStepScheduler.js";
-import type { Action, GameState } from "../domain/types.js";
+import type { Action, GameState, UiEffect } from "../domain/types.js";
 import { resolveAppMode } from "./appMode.js";
 import { createSandboxState } from "../domain/sandboxPreset.js";
 import { normalizeLoadedStateForRuntime } from "../infra/persistence/runtimeLoadNormalizer.js";
@@ -95,9 +95,10 @@ const shellRenderer = createShellRenderer(root, { mode: uiShellMode, services })
 document.body.setAttribute("data-ui-shell", uiShellMode);
 document.body.setAttribute("data-app-mode", appMode);
 
-const renderApp = (state: GameState): void => {
+const renderApp = (state: GameState, uiEffects: UiEffect[] = []): void => {
   shellRenderer.render(state, dispatchWithRuntimeGate, {
     inputBlocked: interactionRuntime.isInputBlocked(),
+    uiEffects,
   });
 };
 
@@ -105,12 +106,12 @@ let uiController: ReturnType<typeof createBootstrapUiController> | null = null;
 
 const redraw = (): void => {
   const state = store.getState();
-  renderApp(state);
+  renderApp(state, []);
   uiController?.syncUi(state);
 };
 
-const renderAndPersistState = (state: GameState): void => {
-  renderApp(state);
+const renderAndPersistState = (state: GameState, uiEffects: UiEffect[] = []): void => {
+  renderApp(state, uiEffects);
   uiController?.syncUi(state);
   if (appMode === "game") {
     storageRepo.save(state);
@@ -173,6 +174,7 @@ const unsubscribe = createStoreSubscriptionCoordinator(store, {
   syncAutoStepScheduler: (state) => {
     autoStepScheduler.sync(state);
   },
+  consumeUiEffects: () => store.consumeUiEffects?.() ?? [],
   initialState: store.getState(),
 });
 
