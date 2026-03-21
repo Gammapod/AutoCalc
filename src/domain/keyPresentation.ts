@@ -184,7 +184,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
   [KEY_ID.viz_graph, { buttonFace: "GRAPH" }],
   [KEY_ID.viz_feed, { buttonFace: "FEED" }],
-  [KEY_ID.viz_factorization, { buttonFace: "\u{1D6B7}\u{1D45D}\u{1D49}" }],
+  [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],
   [KEY_ID.viz_circle, { buttonFace: "\u25EF" }],
   [KEY_ID.viz_eigen_allocator, { buttonFace: "\u03BB" }],
   [KEY_ID.viz_algebraic, { buttonFace: "ALG" }],

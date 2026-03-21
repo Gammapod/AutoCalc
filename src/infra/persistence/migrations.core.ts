@@ -206,6 +206,8 @@ export type SerializableRollEntryV13 = {
   y: string;
   remainder?: string;
   error?: SerializableRollErrorEntry;
+  origin?: "normal" | "roll_inverse";
+  analysisIgnored?: boolean;
   symbolic?: {
     exprText: string;
     truncated: boolean;
@@ -1313,6 +1315,8 @@ const isSerializableRollEntryV13 = (value: unknown): value is SerializableRollEn
   isCalculatorValueString(value.y) &&
   (value.remainder === undefined || isRationalString(value.remainder)) &&
   (value.error === undefined || isRollErrorEntry({ ...value.error, rollIndex: 0 })) &&
+  (value.origin === undefined || value.origin === "normal" || value.origin === "roll_inverse") &&
+  (value.analysisIgnored === undefined || isBoolean(value.analysisIgnored)) &&
   (value.symbolic === undefined || isSerializableSymbolicRollPayload(value.symbolic)) &&
   (value.factorization === undefined || isSerializableFactorizationPayload(value.factorization));
 

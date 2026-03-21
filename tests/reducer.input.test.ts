@@ -12,6 +12,7 @@ import { legacyInitialState } from "./support/legacyState.js";
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
+const analysisRows = (entries: RollEntry[]): RollEntry[] => entries.filter((entry) => !entry.analysisIgnored);
 
 export const runReducerInputTests = (): void => {
   const base = legacyInitialState();
@@ -304,7 +305,7 @@ export const runReducerInputTests = (): void => {
     "roll-inverse rejects when roll length is 1",
   );
 
-  const rollInverseRejectSeedMatch: GameState = {
+  const rollInverseSeedMatchAllowed: GameState = {
     ...fullyUnlocked,
     calculator: {
       ...fullyUnlocked.calculator,
@@ -312,11 +313,13 @@ export const runReducerInputTests = (): void => {
       rollEntries: re(r(5n), r(7n), r(5n)),
     },
   };
+  const afterRollInverseSeedMatch = applyKeyAction(rollInverseSeedMatchAllowed, "exec_roll_inverse");
   assert.deepEqual(
-    applyKeyAction(rollInverseRejectSeedMatch, "exec_roll_inverse"),
-    rollInverseRejectSeedMatch,
-    "roll-inverse rejects when current row equals seed",
+    afterRollInverseSeedMatch.calculator.total,
+    r(7n),
+    "roll-inverse allows current=seed and appends predecessor of first matched instance in scan range",
   );
+  assert.deepEqual(afterRollInverseSeedMatch.calculator.rollEntries.at(-1)?.y, r(7n), "roll-inverse appends predecessor when current equals seed");
 
   const rollInverseRejectError: GameState = {
     ...fullyUnlocked,
@@ -385,6 +388,69 @@ export const runReducerInputTests = (): void => {
   const afterRollInverseMultiple = applyKeyAction(rollInverseMultipleMatch, "exec_roll_inverse");
   assert.deepEqual(afterRollInverseMultiple.calculator.total, r(4n), "roll-inverse uses predecessor of earliest match in scan range");
   assert.deepEqual(afterRollInverseMultiple.calculator.rollEntries.at(-1)?.y, r(4n), "roll-inverse appends predecessor of earliest match");
+
+  const forwardOnlySource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(0n),
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
+      rollEntries: [],
+      rollAnalysis: { stopReason: "none", cycle: null },
+    },
+  };
+  const forwardEq1 = applyKeyAction(forwardOnlySource, "exec_equals");
+  const forwardEq2 = applyKeyAction(forwardEq1, "exec_equals");
+  assert.deepEqual(
+    forwardEq2.calculator.rollEntries.map((entry) => entry.y),
+    [r(0n), r(1n), r(2n)],
+    "setup path builds [0,1,2]",
+  );
+
+  const forwardInv1 = applyKeyAction(forwardEq2, "exec_roll_inverse");
+  assert.deepEqual(
+    forwardInv1.calculator.rollEntries.map((entry) => entry.y),
+    [r(0n), r(1n), r(2n), r(1n)],
+    "inverse appends visible predecessor row",
+  );
+  assert.equal(Boolean(forwardInv1.calculator.rollEntries[2]?.analysisIgnored), true, "inverse marks exited tail row ignored");
+  assert.equal(Boolean(forwardInv1.calculator.rollEntries[3]?.analysisIgnored), true, "inverse row is ignored for analysis");
+  assert.deepEqual(
+    analysisRows(forwardInv1.calculator.rollEntries).map((entry) => entry.y),
+    [r(0n), r(1n)],
+    "analysis projection treats inverse as undo-like rewind",
+  );
+
+  const forwardEq3 = applyKeyAction(forwardInv1, "exec_equals");
+  const forwardEq4 = applyKeyAction(forwardEq3, "exec_equals");
+  assert.deepEqual(
+    analysisRows(forwardEq4.calculator.rollEntries).map((entry) => entry.y),
+    [r(0n), r(1n), r(2n), r(3n)],
+    "analysis projection regrows on forward equals rows",
+  );
+
+  const forwardInv2 = applyKeyAction(forwardEq4, "exec_roll_inverse");
+  assert.equal(Boolean(forwardInv2.calculator.rollEntries[5]?.analysisIgnored), true, "second inverse marks prior forward tail ignored");
+  assert.equal(Boolean(forwardInv2.calculator.rollEntries[6]?.analysisIgnored), true, "second inverse appended row is ignored");
+
+  const forwardUndo = applyKeyAction(forwardInv2, "util_undo");
+  assert.deepEqual(
+    analysisRows(forwardUndo.calculator.rollEntries).map((entry) => entry.y),
+    [r(0n), r(1n), r(2n), r(3n)],
+    "undo after inverse recomputes ignored flags and restores forward-only projection",
+  );
+
+  const forwardEq5 = applyKeyAction(forwardUndo, "exec_equals");
+  const forwardInv3 = applyKeyAction(forwardEq5, "exec_roll_inverse");
+  const forwardEq6 = applyKeyAction(forwardInv3, "exec_equals");
+  const forwardEq7 = applyKeyAction(forwardEq6, "exec_equals");
+  assert.deepEqual(
+    analysisRows(forwardEq7.calculator.rollEntries).map((entry) => entry.y),
+    [r(0n), r(1n), r(2n), r(3n), r(4n), r(5n)],
+    "forward-only analysis path ignores inverse detours and remains monotonic",
+  );
+  assert.equal(forwardEq7.calculator.rollAnalysis.stopReason, "none", "forward-only path does not falsely lock cycle analysis");
+  assert.equal(forwardEq7.calculator.rollAnalysis.cycle, null, "forward-only path keeps cycle metadata clear");
 
   const stepThroughSource: GameState = {
     ...fullyUnlocked,
@@ -823,7 +889,11 @@ export const runReducerInputTests = (): void => {
   };
   const afterUndo = applyKeyAction(undoSource, "util_undo");
   assert.deepEqual(afterUndo.calculator.total, r(5n), "UNDO restores prior trajectory value");
-  assert.deepEqual(afterUndo.calculator.rollEntries, re(r(5n)), "UNDO removes last step and keeps seed row");
+  assert.deepEqual(
+    afterUndo.calculator.rollEntries.map((entry) => entry.y),
+    [r(5n)],
+    "UNDO removes last step and keeps seed row",
+  );
   assert.equal(afterUndo.calculator.stepProgress.active, false, "UNDO cancels active step session");
 
   const memoryCycleLocked = legacyInitialState();

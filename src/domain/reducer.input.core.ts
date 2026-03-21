@@ -25,6 +25,8 @@ import {
   addIntToRational,
   appendSeedIfMissing,
   appendStepRow,
+  buildAnalysisRollProjection,
+  normalizeAnalysisIgnoredRollEntries,
   createRollEntry,
   divRational,
   getXk,
@@ -426,6 +428,14 @@ const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
   });
 };
 
+const toRollEntryWithPatch = (
+  evaluation: EvaluatedExecution,
+  patch: Partial<Pick<RollEntry, "origin" | "analysisIgnored">> = {},
+): RollEntry => ({
+  ...toRollEntry(evaluation),
+  ...patch,
+});
+
 const isDiagnosticRationalValue = (
   value: GameState["calculator"]["total"],
 ): value is Extract<GameState["calculator"]["total"], { kind: "rational" }> => value.kind === "rational";
@@ -449,8 +459,8 @@ const withInvalidRollAnalysis = (base: GameState): GameState => ({
   calculator: {
     ...base.calculator,
     rollAnalysis: {
-      ...base.calculator.rollAnalysis,
       stopReason: "invalid",
+      cycle: null,
     },
   },
 });
@@ -531,8 +541,6 @@ const resolveRollDiagnosticContext = (base: GameState): RollDiagnosticContext | 
   };
 };
 
-const isInvalidDiagnosticContext = (context: RollDiagnosticContext): boolean => context.invalid;
-
 const resolveRollDiagnosticPatch = (
   context: RollDiagnosticContext,
   operationSlots: GameState["calculator"]["operationSlots"],
@@ -547,10 +555,7 @@ const resolveRollDiagnosticPatch = (
     d2 = subRational(d1, previousD1);
   }
 
-  // r1 is undefined when previous value is zero (division by zero); keep diagnostics valid
-  // for growth-order checks that rely on d1/d2.
   const r1 = divRational(context.currentX.value, context.previousX.value);
-
   const previousPeerMinus =
     context.nextIndex === 1
       ? toRationalCalculatorValue(addIntToRational(context.seed.value, -1n))
@@ -579,7 +584,7 @@ const resolveRollDiagnosticPatch = (
   };
 };
 
-const withRollDiagnosticsApplied = (
+const withIncrementalRollDiagnosticsApplied = (
   base: GameState,
   operationSlots: GameState["calculator"]["operationSlots"],
 ): GameState => {
@@ -587,7 +592,7 @@ const withRollDiagnosticsApplied = (
   if (!context) {
     return base;
   }
-  if (isInvalidDiagnosticContext(context)) {
+  if (context.invalid) {
     return withInvalidRollAnalysis(base);
   }
 
@@ -615,6 +620,202 @@ const withRollDiagnosticsApplied = (
       rollEntries: context.rollEntries,
     },
   };
+};
+
+const clearRollDiagnosticFields = (entry: RollEntry): RollEntry => {
+  const {
+    d1: _d1,
+    d2: _d2,
+    r1: _r1,
+    seedMinus1Y: _seedMinus1Y,
+    seedPlus1Y: _seedPlus1Y,
+    ...rest
+  } = entry;
+  return rest;
+};
+
+const withRollDiagnosticsApplied = (
+  base: GameState,
+  operationSlots: GameState["calculator"]["operationSlots"],
+): GameState => {
+  const requiresAnalysisProjection = base.calculator.rollEntries.some(
+    (entry, index) => index > 0 && (entry.origin === "roll_inverse" || entry.analysisIgnored),
+  );
+  if (!requiresAnalysisProjection) {
+    return withIncrementalRollDiagnosticsApplied(base, operationSlots);
+  }
+
+  const rollEntries = normalizeAnalysisIgnoredRollEntries(base.calculator.rollEntries)
+    .map((entry) => clearRollDiagnosticFields(entry));
+  const projection = buildAnalysisRollProjection(rollEntries);
+  const baseRollState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries,
+      rollAnalysis: {
+        stopReason: "none" as const,
+        cycle: null,
+      },
+    },
+  };
+  if (projection.length < 2) {
+    return baseRollState;
+  }
+
+  const seed = projection[0]?.entry.y;
+  if (!seed || !isDiagnosticRationalValue(seed)) {
+    return {
+      ...baseRollState,
+      calculator: {
+        ...baseRollState.calculator,
+        rollAnalysis: {
+          stopReason: "invalid",
+          cycle: null,
+        },
+      },
+    };
+  }
+
+  for (let analysisIndex = 1; analysisIndex < projection.length; analysisIndex += 1) {
+    const currentProjection = projection[analysisIndex];
+    const previousProjection = projection[analysisIndex - 1];
+    if (!currentProjection || !previousProjection) {
+      continue;
+    }
+
+    const current = rollEntries[currentProjection.rawIndex];
+    const previous = rollEntries[previousProjection.rawIndex];
+    const currentX = current?.y;
+    const previousX = previous?.y;
+    if (
+      !current
+      || !previous
+      || !currentX
+      || !previousX
+      || !isDiagnosticRationalValue(currentX)
+      || !isDiagnosticRationalValue(previousX)
+      || current.error
+    ) {
+      return {
+        ...baseRollState,
+        calculator: {
+          ...baseRollState.calculator,
+          rollEntries,
+          rollAnalysis: {
+            stopReason: "invalid",
+            cycle: null,
+          },
+        },
+      };
+    }
+
+    const cycleMatchAnalysisIndex = projection
+      .slice(0, analysisIndex)
+      .findIndex((candidate) => calculatorValueEquals(candidate.entry.y, current.y));
+    if (cycleMatchAnalysisIndex >= 0) {
+      const cycleStart = projection[cycleMatchAnalysisIndex];
+      if (!cycleStart) {
+        return {
+          ...baseRollState,
+          calculator: {
+            ...baseRollState.calculator,
+            rollEntries,
+            rollAnalysis: {
+              stopReason: "invalid",
+              cycle: null,
+            },
+          },
+        };
+      }
+      return {
+        ...baseRollState,
+        calculator: {
+          ...baseRollState.calculator,
+          rollEntries,
+          rollAnalysis: {
+            stopReason: "cycle",
+            cycle: {
+              i: cycleStart.rawIndex,
+              j: currentProjection.rawIndex,
+              transientLength: cycleMatchAnalysisIndex,
+              periodLength: analysisIndex - cycleMatchAnalysisIndex,
+            },
+          },
+        },
+      };
+    }
+
+    const d1 = subRational(currentX.value, previousX.value);
+    let d2: RollEntry["d2"] = null;
+    if (analysisIndex >= 2) {
+      const previousD1 = previous.d1;
+      if (!previousD1) {
+        return {
+          ...baseRollState,
+          calculator: {
+            ...baseRollState.calculator,
+            rollEntries,
+            rollAnalysis: {
+              stopReason: "invalid",
+              cycle: null,
+            },
+          },
+        };
+      }
+      d2 = subRational(d1, previousD1);
+    }
+
+    const r1 = divRational(currentX.value, previousX.value);
+    const previousPeerMinus =
+      analysisIndex === 1
+        ? toRationalCalculatorValue(addIntToRational(seed.value, -1n))
+        : (previous.seedMinus1Y ?? null);
+    const previousPeerPlus =
+      analysisIndex === 1
+        ? toRationalCalculatorValue(addIntToRational(seed.value, 1n))
+        : (previous.seedPlus1Y ?? null);
+    if (!previousPeerMinus || !previousPeerPlus) {
+      return {
+        ...baseRollState,
+        calculator: {
+          ...baseRollState.calculator,
+          rollEntries,
+          rollAnalysis: {
+            stopReason: "invalid",
+            cycle: null,
+          },
+        },
+      };
+    }
+
+    const seedMinus1Y = computePeerStepValue(previousPeerMinus, operationSlots);
+    const seedPlus1Y = computePeerStepValue(previousPeerPlus, operationSlots);
+    if (!seedMinus1Y || !seedPlus1Y) {
+      return {
+        ...baseRollState,
+        calculator: {
+          ...baseRollState.calculator,
+          rollEntries,
+          rollAnalysis: {
+            stopReason: "invalid",
+            cycle: null,
+          },
+        },
+      };
+    }
+
+    rollEntries[currentProjection.rawIndex] = {
+      ...current,
+      d1,
+      d2,
+      r1: r1 ?? null,
+      seedMinus1Y,
+      seedPlus1Y,
+    };
+  }
+
+  return baseRollState;
 };
 
 export const hasStepThroughOnKeypad = (state: GameState): boolean =>
@@ -742,9 +943,10 @@ const finalizeTerminalExecution = (
   evaluation: EvaluatedExecution,
   options: {
     clearStepProgress?: boolean;
+    rollEntryPatch?: Partial<Pick<RollEntry, "origin" | "analysisIgnored">>;
   } = {},
 ): GameState => {
-  const nextEntry = toRollEntry(evaluation);
+  const nextEntry = toRollEntryWithPatch(evaluation, options.rollEntryPatch);
   const withSeed = appendSeedIfMissing(finalized.calculator.rollEntries, finalized.calculator.total);
   const nextRollEntries = appendStepRow(withSeed, nextEntry);
   const withRollBase: GameState = {
@@ -810,7 +1012,28 @@ export const applyRollInverse = (state: GameState): GameState => {
   if (!nextTotal) {
     return state;
   }
-  return finalizeTerminalExecution(finalized, { nextTotal });
+  const rollEntries = [...finalized.calculator.rollEntries];
+  const tailIndex = rollEntries.length - 1;
+  const tail = tailIndex >= 0 ? rollEntries[tailIndex] : null;
+  if (tail) {
+    rollEntries[tailIndex] = {
+      ...tail,
+      analysisIgnored: true,
+    };
+  }
+  const withInverseTailIgnored: GameState = {
+    ...finalized,
+    calculator: {
+      ...finalized.calculator,
+      rollEntries,
+    },
+  };
+  return finalizeTerminalExecution(withInverseTailIgnored, { nextTotal }, {
+    rollEntryPatch: {
+      origin: "roll_inverse",
+      analysisIgnored: true,
+    },
+  });
 };
 
 export const applyStepThrough = (state: GameState): GameState => {
@@ -1082,7 +1305,7 @@ export const applyUndo = (state: GameState): GameState => {
 
   const nextRollEntries = withClearedStep.calculator.rollEntries.slice(0, -1);
   const nextTotal = nextRollEntries[nextRollEntries.length - 1]?.y ?? createResetCalculatorState().total;
-  return {
+  const withPoppedRoll: GameState = {
     ...withClearedStep,
     calculator: {
       ...withClearedStep.calculator,
@@ -1096,6 +1319,7 @@ export const applyUndo = (state: GameState): GameState => {
       singleDigitInitialTotalEntry: nextRollEntries.length === 0,
     },
   };
+  return withRollDiagnosticsApplied(withPoppedRoll, withPoppedRoll.calculator.operationSlots);
 };
 
 export const isDigit = (key: Key): boolean => isDigitKeyId(key);

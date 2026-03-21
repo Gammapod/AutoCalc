@@ -30,6 +30,46 @@ export const createRollEntry = (
   ...patch,
 });
 
+const withAnalysisIgnored = (entry: RollEntry, analysisIgnored: boolean): RollEntry => {
+  const { analysisIgnored: _analysisIgnored, ...rest } = entry;
+  if (!analysisIgnored) {
+    return rest;
+  }
+  return {
+    ...rest,
+    analysisIgnored: true,
+  };
+};
+
+export const normalizeAnalysisIgnoredRollEntries = (rollEntries: RollEntry[]): RollEntry[] => {
+  const normalized = rollEntries.map((entry, index) => withAnalysisIgnored(
+    entry,
+    index === 0 ? false : entry.origin === "roll_inverse",
+  ));
+  for (let index = 1; index < normalized.length; index += 1) {
+    if (normalized[index]?.origin !== "roll_inverse") {
+      continue;
+    }
+    for (let prior = index - 1; prior >= 1; prior -= 1) {
+      if (!normalized[prior]?.analysisIgnored) {
+        normalized[prior] = withAnalysisIgnored(normalized[prior], true);
+        break;
+      }
+    }
+  }
+  return normalized;
+};
+
+export type RollAnalysisProjectionEntry = {
+  rawIndex: number;
+  entry: RollEntry;
+};
+
+export const buildAnalysisRollProjection = (rollEntries: RollEntry[]): RollAnalysisProjectionEntry[] =>
+  rollEntries.flatMap((entry, rawIndex) =>
+    entry.analysisIgnored ? [] : [{ rawIndex, entry }],
+  );
+
 export const appendSeedIfMissing = (rollEntries: RollEntry[], seed: CalculatorValue): RollEntry[] =>
   rollEntries.length === 0 ? [createRollEntry(seed)] : rollEntries;
 

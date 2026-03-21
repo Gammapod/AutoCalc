@@ -265,7 +265,11 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       "util_undo",
     );
     const next = applyKeyAction(state, "util_undo");
-    assert.deepEqual(next.calculator.rollEntries, re(r(3n), r(5n)), "UNDO should pop one roll entry");
+    assert.deepEqual(
+      next.calculator.rollEntries.map((entry) => entry.y),
+      [r(3n), r(5n)],
+      "UNDO should pop one roll entry",
+    );
     assert.deepEqual(next.calculator.total, r(5n), "UNDO should set total to previous roll entry");
     return;
   }

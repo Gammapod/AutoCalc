@@ -8,12 +8,7 @@ export const shouldRejectRollInverseExecution = (rollEntries: RollEntry[]): bool
   if (rollEntries.length >= MAX_ROLL_ENTRIES || rollEntries.length <= 1) {
     return true;
   }
-  const seed = rollEntries[0];
-  const current = rollEntries[rollEntries.length - 1];
-  if (!seed || !current) {
-    return true;
-  }
-  return calculatorValueEquals(current.y, seed.y);
+  return false;
 };
 
 export const resolveRollInverseNextTotal = (rollEntries: RollEntry[]): CalculatorValue | null => {

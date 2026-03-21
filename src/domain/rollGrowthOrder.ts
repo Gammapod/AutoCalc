@@ -1,3 +1,4 @@
+import { buildAnalysisRollProjection } from "./rollEntries.js";
 import type { GameState, RationalValue, RollEntry } from "./types.js";
 
 export type LocalGrowthOrder = "constant" | "linear" | "quadratic" | "exponential" | "radical" | "logarithmic" | "unknown";
@@ -163,9 +164,14 @@ export const classifyLocalGrowthOrder = (state: GameState, targetIndex: number =
   if (targetIndex < 1) {
     return "unknown";
   }
-  const samples = state.calculator.rollEntries
-    .slice(1, targetIndex + 1)
-    .map((entry, offset) => toGrowthSample(entry, offset + 1))
+  const projection = buildAnalysisRollProjection(state.calculator.rollEntries)
+    .filter((item) => item.rawIndex <= targetIndex);
+  if (projection.length < 2) {
+    return "unknown";
+  }
+  const samples = projection
+    .slice(1)
+    .map((item, offset) => toGrowthSample(item.entry, offset + 1))
     .filter((entry): entry is GrowthSample => Boolean(entry));
   const window = samples.slice(-GROWTH_WINDOW_SIZE);
   if (window.length < GROWTH_WINDOW_SIZE) {

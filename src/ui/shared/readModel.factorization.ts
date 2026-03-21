@@ -1,7 +1,7 @@
 import { computeOverflowBoundary } from "../../domain/calculatorValue.js";
 import { classifyLocalGrowthOrder as classifyLocalGrowthOrderShared, type LocalGrowthOrder } from "../../domain/rollGrowthOrder.js";
 import { getRollYPrimeFactorization } from "../../domain/rollDerived.js";
-import { getStepRows } from "../../domain/rollEntries.js";
+import { buildAnalysisRollProjection } from "../../domain/rollEntries.js";
 import type {
   GameState,
   PrimeFactorTerm,
@@ -191,7 +191,10 @@ const resolveOrbitHeuristicState = (state: GameState): OrbitHeuristicState => {
   if (state.calculator.rollAnalysis.stopReason === "cycle") {
     return "none";
   }
-  const stepRows = getStepRows(state.calculator.rollEntries).slice(-HEURISTIC_HORIZON);
+  const stepRows = buildAnalysisRollProjection(state.calculator.rollEntries)
+    .slice(1)
+    .map((item) => item.entry)
+    .slice(-HEURISTIC_HORIZON);
   if (isCycleLikelyHeuristic(stepRows, state.unlocks.maxTotalDigits)) {
     return "cycle_likely";
   }
@@ -340,9 +343,10 @@ export const buildFactorizationPanelViewModel = (state: GameState): Factorizatio
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
   const cycleDetected = Boolean(cycle);
   const orbitHeuristic = cycleDetected ? "none" : resolveOrbitHeuristicState(state);
+  const shouldShowChaosHeuristic = orbitHeuristic === "chaos_like" && growthOrder !== "exponential";
   const growthLabel = cycleDetected
     ? `O(f_\u03BC) = ${growthOrder}`
-    : orbitHeuristic === "chaos_like"
+    : shouldShowChaosHeuristic
       ? "O(f) = chaos?"
       : orbitHeuristic === "cycle_likely"
         ? "O(f) = cycle-likely"

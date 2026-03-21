@@ -178,6 +178,8 @@ export type RationalPrimeFactorization = {
   denominator: PrimeFactorTerm[];
 };
 
+export type RollEntryOrigin = "normal" | "roll_inverse";
+
 export type RollEntry = {
   y: CalculatorValue;
   remainder?: RationalValue;
@@ -192,6 +194,8 @@ export type RollEntry = {
   r1?: RationalValue | null;
   seedMinus1Y?: CalculatorValue | null;
   seedPlus1Y?: CalculatorValue | null;
+  origin?: RollEntryOrigin;
+  analysisIgnored?: boolean;
 };
 
 export type RollCycleMetadata = {

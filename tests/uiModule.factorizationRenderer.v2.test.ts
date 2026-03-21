@@ -187,8 +187,23 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     ]);
     assert.equal(
       buildFactorizationPanelViewModel(chaosLikeState).growthLabel,
+      "O(f) = exponential",
+      "chaos-like heuristic does not override a confident exponential classification",
+    );
+
+    const chaosLikeIrregularState = withRoll([
+      { y: r(1n) },
+      step(2n, { d1: rv(1n), d2: rv(0n), r1: rv(2n), seedMinus1Y: r(1n), seedPlus1Y: r(3n) }),
+      step(5n, { d1: rv(3n), d2: rv(2n), r1: rv(5n, 2n), seedMinus1Y: r(3n), seedPlus1Y: r(7n) }),
+      step(9n, { d1: rv(4n), d2: rv(1n), r1: rv(9n, 5n), seedMinus1Y: r(5n), seedPlus1Y: r(13n) }),
+      step(18n, { d1: rv(9n), d2: rv(5n), r1: rv(2n), seedMinus1Y: r(10n), seedPlus1Y: r(26n) }),
+      step(35n, { d1: rv(17n), d2: rv(8n), r1: rv(35n, 18n), seedMinus1Y: r(19n), seedPlus1Y: r(51n) }),
+      step(67n, { d1: rv(32n), d2: rv(15n), r1: rv(67n, 35n), seedMinus1Y: r(35n), seedPlus1Y: r(99n) }),
+    ]);
+    assert.equal(
+      buildFactorizationPanelViewModel(chaosLikeIrregularState).growthLabel,
       "O(f) = chaos?",
-      "monotone divergence over the required horizon triggers chaos-like gating",
+      "monotone divergence over the required horizon still triggers chaos-like gating for non-exponential runs",
     );
 
     const bothHeuristicsState = withRoll([
