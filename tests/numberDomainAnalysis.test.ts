@@ -44,6 +44,7 @@ export const runNumberDomainAnalysisTests = (): void => {
       description: "fixture",
       predicate: { type: "total_at_least", value: 1n },
       effect: { type: "unlock_digit", key: valueExpr("digit_1") },
+      sufficientKeySets: [[valueExpr("digit_1")]],
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture",

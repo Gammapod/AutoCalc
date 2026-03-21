@@ -574,12 +574,16 @@ export type UnlockDefinition = {
   description: string;
   predicate: UnlockPredicate;
   effect: UnlockEffect;
+  sufficientKeySets: SufficiencyRequirement[][];
   once: boolean;
   difficulty?: "normal" | "difficult";
   domainNodeId: NumberDomainNodeId;
   targetNodeId: string;
   targetLabel?: string;
 };
+
+export type SufficiencyToken = "digit_nonzero";
+export type SufficiencyRequirement = Key | SufficiencyToken;
 
 export type GameState = {
   calculator: CalculatorState;

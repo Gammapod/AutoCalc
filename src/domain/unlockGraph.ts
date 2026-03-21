@@ -4,18 +4,12 @@ export type {
   GraphNode,
   GraphEdge,
   UnlockGraph,
-  UnlockTargetDescriptor,
-  ConditionStatus,
+  UnlockGraphDiagnosticReason,
+  UnlockGraphDiagnostic,
+  UnlockGraphCanonicalUnlock,
+  UnlockGraphTargetType,
   UnlockGraphAnalysis,
   UnlockGraphReport,
-  UnlockProofStatus,
-  ImpossibleCertificate,
-  ProofAction,
-  ProofBounds,
-  UnlockProofRecord,
-  ProofLayer,
-  UnlockProofCacheStats,
-  UnlockProofReport,
 } from "./unlockGraph.types.js";
 
 export { buildUnlockGraph } from "./unlockGraph.rules.js";
@@ -26,10 +20,5 @@ export {
   formatUnlockGraphMermaid,
 } from "./unlockGraph.format.js";
 export {
-  filterUnlockGraphToIncomingUnlockKeys,
   deriveUnlockedKeysFromState,
 } from "./unlockGraph.filters.js";
-export {
-  buildUnlockProofReport,
-  formatUnlockProofReport,
-} from "./unlockProof.js";

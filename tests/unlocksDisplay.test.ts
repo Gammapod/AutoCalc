@@ -35,6 +35,7 @@ export const runUnlocksDisplayTests = (): void => {
       description: "total eq",
       predicate: { type: "total_equals", value: 11n },
       effect: { type: "unlock_digit", key: valueExpr("digit_4") },
+      sufficientKeySets: [[valueExpr("digit_1")]],
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Idigits",

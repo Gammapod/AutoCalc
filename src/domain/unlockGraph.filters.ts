@@ -116,4 +116,3 @@ export const deriveUnlockedKeysFromState = (state: GameState): Key[] => {
   }
   return keys.sort(compareKeys);
 };
-

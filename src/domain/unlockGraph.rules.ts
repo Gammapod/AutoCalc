@@ -1,11 +1,19 @@
-import type { Key, UnlockDefinition, UnlockEffect } from "./types.js";
+import type { Key, SufficiencyRequirement, SufficiencyToken, UnlockDefinition, UnlockEffect } from "./types.js";
+import { KEY_ID } from "./keyPresentation.js";
 import { getPredicateCapabilitySpec, type CapabilityId } from "./predicateCapabilitySpec.js";
 import {
   capabilityToFunctionProviderIds,
   staticFunctionCapabilityProviders,
   type FunctionSufficiencySpec,
 } from "./functionCapabilityProviders.js";
-import type { GraphEdge, GraphNode, UnlockGraph, UnlockTargetDescriptor } from "./unlockGraph.types.js";
+import type {
+  GraphEdge,
+  GraphNode,
+  UnlockGraph,
+  UnlockGraphAnalysis,
+  UnlockGraphCanonicalUnlock,
+  UnlockGraphDiagnostic,
+} from "./unlockGraph.types.js";
 
 type FunctionRule = {
   id: string;
@@ -16,6 +24,28 @@ type FunctionRule = {
 };
 
 export const compareKeys = (a: Key, b: Key): number => a.localeCompare(b);
+const isExecutionKey = (key: Key): boolean => key.startsWith("exec_");
+const compareRequirements = (a: SufficiencyRequirement, b: SufficiencyRequirement): number => a.localeCompare(b);
+
+const SUFFICIENCY_TOKEN_KEYS: Record<SufficiencyToken, Key[]> = {
+  digit_nonzero: [
+    KEY_ID.digit_1,
+    KEY_ID.digit_2,
+    KEY_ID.digit_3,
+    KEY_ID.digit_4,
+    KEY_ID.digit_5,
+    KEY_ID.digit_6,
+    KEY_ID.digit_7,
+    KEY_ID.digit_8,
+    KEY_ID.digit_9,
+  ],
+};
+const SUFFICIENCY_TOKEN_LABELS: Record<SufficiencyToken, string> = {
+  digit_nonzero: "digit_1..digit_9",
+};
+
+const compareNodeLabels = (a: GraphNode, b: GraphNode): number =>
+  a.label.localeCompare(b.label) || a.id.localeCompare(b.id);
 
 const normalizeClause = (clause: readonly Key[]): Key[] => [...new Set(clause)].sort(compareKeys);
 
@@ -49,95 +79,30 @@ const defineFunctionRule = (input: Omit<FunctionRule, "isSatisfied" | "sufficien
   };
 };
 
-const dedupeGraphEdges = (edges: GraphEdge[]): GraphEdge[] => {
-  const seen = new Set<string>();
-  const deduped: GraphEdge[] = [];
-  for (const edge of edges) {
-    const signature = `${edge.from}|${edge.to}|${edge.type}|${edge.label ?? ""}`;
-    if (seen.has(signature)) {
-      continue;
-    }
-    seen.add(signature);
-    deduped.push(edge);
-  }
-  return deduped;
-};
-
 const pressFunctionId = (key: Key): string => `fn.press_target_key.${key}`;
-const isLegacyCapacityNoopEffect = (effect: UnlockEffect): boolean =>
-  effect.type === "increase_max_total_digits" || effect.type === "unlock_second_slot";
 
-const unlockEffectTarget = (effect: UnlockEffect): UnlockTargetDescriptor => {
+const keyFromEffect = (effect: UnlockEffect): Key | null => {
   if (
-    effect.type === "unlock_digit" ||
-    effect.type === "unlock_slot_operator" ||
-    effect.type === "unlock_utility" ||
-    effect.type === "unlock_memory" ||
-    effect.type === "unlock_execution" ||
-    effect.type === "unlock_visualizer"
+    effect.type === "unlock_digit"
+    || effect.type === "unlock_slot_operator"
+    || effect.type === "unlock_utility"
+    || effect.type === "unlock_memory"
+    || effect.type === "unlock_execution"
+    || effect.type === "unlock_visualizer"
   ) {
-    return {
-      id: `key.${effect.key}`,
-      type: "key",
-      label: effect.key,
-      key: effect.key,
-    };
+    return effect.key;
   }
-  if (effect.type === "increase_allocator_max_points") {
-    return { id: "effect.allocator.max_points", type: "effect_target", label: "allocator.max_points" };
-  }
-  if (effect.type === "increase_max_total_digits") {
-    return { id: "effect.calculator.max_total_digits", type: "effect_target", label: "calculator.max_total_digits" };
-  }
-  if (effect.type === "unlock_second_slot") {
-    return { id: "effect.calculator.second_slot", type: "effect_target", label: "calculator.second_slot" };
-  }
-  if (effect.type === "upgrade_keypad_column") {
-    return { id: "effect.keypad.columns", type: "effect_target", label: "keypad.columns" };
-  }
-  if (effect.type === "upgrade_keypad_row") {
-    return { id: "effect.keypad.rows", type: "effect_target", label: "keypad.rows" };
-  }
-  if (effect.type === "unlock_calculator") {
-    return { id: `effect.calculator.${effect.calculatorId}.unlocked`, type: "effect_target", label: `calculator.${effect.calculatorId}` };
-  }
-  return {
-    id: `effect.move_key_to_coord.${effect.key}.r${effect.row}.c${effect.col}`,
-    type: "effect_target",
-    label: `move(${effect.key})@r${effect.row},c${effect.col}`,
-  };
+  return null;
 };
 
-export const unlockTargetsFromEffect = (unlock: UnlockDefinition): UnlockTargetDescriptor[] =>
-  isLegacyCapacityNoopEffect(unlock.effect) ? [] : [unlockEffectTarget(unlock.effect)];
-
-export const unlockedKeyFromEffect = (unlock: UnlockDefinition): Key | null => {
-  const target = unlockTargetsFromEffect(unlock)[0];
-  if (!target) {
-    return null;
-  }
-  return target.type === "key" ? target.key ?? null : null;
-};
-
-export const allKnownEffectTargets = (catalog: UnlockDefinition[]): UnlockTargetDescriptor[] => {
-  const descriptors = new Map<string, UnlockTargetDescriptor>();
-  for (const unlock of catalog) {
-    for (const target of unlockTargetsFromEffect(unlock)) {
-      if (target.type !== "effect_target") {
-        continue;
-      }
-      descriptors.set(target.id, target);
-    }
-  }
-  return [...descriptors.values()].sort((a, b) => a.id.localeCompare(b.id));
-};
+export const unlockedKeyFromEffect = (unlock: UnlockDefinition): Key | null => keyFromEffect(unlock.effect);
 
 export const allKnownKeys = (catalog: UnlockDefinition[], startingKeys: Key[]): Key[] => {
   const keys = new Set<Key>(startingKeys);
   for (const unlock of catalog) {
-    const target = unlockEffectTarget(unlock.effect);
-    if (target.type === "key" && target.key) {
-      keys.add(target.key);
+    const targetKey = keyFromEffect(unlock.effect);
+    if (targetKey) {
+      keys.add(targetKey);
     }
     if (unlock.effect.type === "move_key_to_coord") {
       keys.add(unlock.effect.key);
@@ -156,7 +121,7 @@ export const allKnownKeys = (catalog: UnlockDefinition[], startingKeys: Key[]): 
       keys.add(key);
     }
   }
-  return [...keys].sort();
+  return [...keys].sort(compareKeys);
 };
 
 const resolveFunctionIdsForCapability = (unlock: UnlockDefinition, capability: CapabilityId): string[] => {
@@ -228,97 +193,200 @@ export const requiredFunctionIdsForUnlock = (unlock: UnlockDefinition, functionR
   return [...functionIds].sort();
 };
 
-export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[]): UnlockGraph => {
-  const functionRules = buildFunctionRules(catalog);
-  const keys = allKnownKeys(catalog, startingKeys);
-  const effectTargets = allKnownEffectTargets(catalog);
+const isValidTargetNodeId = (value: string): boolean => value.trim().length > 0;
 
-  const keyNodes: GraphNode[] = keys.map((key) => ({
-    id: `key.${key}`,
-    type: "key",
-    label: key,
-  }));
-  const functionNodes: GraphNode[] = [...functionRules.values()].map((rule) => ({
-    id: rule.id,
-    type: "function",
-    label: rule.label,
-  }));
-  const sufficientSetNodes: GraphNode[] = [];
-  const effectTargetNodes: GraphNode[] = effectTargets.map((target) => ({
-    id: target.id,
-    type: "effect_target",
-    label: target.label,
-  }));
-  const conditionNodes: GraphNode[] = catalog.map((unlock) => ({
-    id: `cond.${unlock.id}`,
-    type: "condition",
-    label: unlock.id,
-  }));
+const normalizeKeySet = (keySet: readonly Key[]): Key[] => [...new Set(keySet)].sort(compareKeys);
+const normalizeRequirementSet = (set: readonly SufficiencyRequirement[]): SufficiencyRequirement[] =>
+  [...new Set(set)].sort(compareRequirements);
 
-  const edges: GraphEdge[] = [];
-  const globalSetNodeByClause = new Map<string, string>();
-  let nextGlobalSetIndex = 0;
-  for (const rule of functionRules.values()) {
-    for (const clause of rule.sufficiency) {
-      if (clause.length === 1) {
-        edges.push({
-          from: `key.${clause[0]}`,
-          to: rule.id,
-          type: "sufficient",
-        });
-        continue;
-      }
-      const clauseKey = clause.join("|");
-      let setNodeId = globalSetNodeByClause.get(clauseKey);
-      if (!setNodeId) {
-        setNodeId = `set.global.${nextGlobalSetIndex}`;
-        nextGlobalSetIndex += 1;
-        globalSetNodeByClause.set(clauseKey, setNodeId);
-        sufficientSetNodes.push({
-          id: setNodeId,
-          type: "sufficient_set",
-          label: clause.join(" & "),
-        });
-      }
-      for (const key of clause) {
-        edges.push({
-          from: `key.${key}`,
-          to: setNodeId,
-          type: "necessary",
-        });
-      }
-      edges.push({
-        from: setNodeId,
-        to: rule.id,
-        type: "sufficient",
-      });
-    }
+const isSufficiencyToken = (value: SufficiencyRequirement): value is SufficiencyToken =>
+  Object.prototype.hasOwnProperty.call(SUFFICIENCY_TOKEN_KEYS, value);
+
+const expandRequirementToKeys = (requirement: SufficiencyRequirement): Key[] =>
+  isSufficiencyToken(requirement)
+    ? SUFFICIENCY_TOKEN_KEYS[requirement]
+    : [requirement as Key];
+
+const targetNodeIdFromUnlock = (unlock: UnlockDefinition): string => `target.${unlock.targetNodeId}`;
+
+const nodeLabelFromUnlock = (unlock: UnlockDefinition): string =>
+  unlock.targetLabel?.trim().length ? unlock.targetLabel : unlock.targetNodeId;
+
+const canonicalTargetForUnlock = (unlock: UnlockDefinition): {
+  targetNodeId: string;
+  targetLabel: string;
+  targetType: "key" | "non_key";
+} => {
+  const targetKey = unlockedKeyFromEffect(unlock);
+  if (targetKey) {
+    return {
+      targetNodeId: `key.${targetKey}`,
+      targetLabel: targetKey,
+      targetType: "key",
+    };
   }
+  return {
+    targetNodeId: targetNodeIdFromUnlock(unlock),
+    targetLabel: nodeLabelFromUnlock(unlock),
+    targetType: "non_key",
+  };
+};
+
+const dedupeGraphEdges = (edges: GraphEdge[]): GraphEdge[] => {
+  const seen = new Set<string>();
+  const deduped: GraphEdge[] = [];
+  for (const edge of edges) {
+    const signature = `${edge.from}|${edge.to}|${edge.type}|${edge.unlockId ?? ""}`;
+    if (seen.has(signature)) {
+      continue;
+    }
+    seen.add(signature);
+    deduped.push(edge);
+  }
+  return deduped;
+};
+
+const toDiagnosticsSortKey = (entry: UnlockGraphDiagnostic): string =>
+  `${entry.unlockId}|${entry.reason}|${entry.detail}`;
+
+const analyzeCatalog = (catalog: UnlockDefinition[], startingKeys: Key[]): UnlockGraphAnalysis => {
+  const knownKeySet = new Set<Key>(allKnownKeys(catalog, startingKeys));
+  const starting = [...new Set(startingKeys)].sort(compareKeys);
+  const canonicalUnlocks: UnlockGraphCanonicalUnlock[] = [];
+  const diagnostics: UnlockGraphDiagnostic[] = [];
 
   for (const unlock of catalog) {
-    const conditionNodeId = `cond.${unlock.id}`;
-    const requiredFunctions = requiredFunctionIdsForUnlock(unlock, functionRules);
-    for (const functionId of requiredFunctions) {
-      const rule = functionRules.get(functionId);
-      edges.push({
-        from: conditionNodeId,
-        to: functionId,
-        type: "requires",
-        label: rule?.rule,
+    if (!isValidTargetNodeId(unlock.targetNodeId)) {
+      diagnostics.push({
+        unlockId: unlock.id,
+        reason: "invalid_target_node_id",
+        detail: "targetNodeId must be non-empty",
       });
+      continue;
     }
 
-    for (const target of unlockTargetsFromEffect(unlock)) {
+    if (!Array.isArray(unlock.sufficientKeySets) || unlock.sufficientKeySets.length === 0) {
+      diagnostics.push({
+        unlockId: unlock.id,
+        reason: "missing_sufficient_key_sets",
+        detail: "sufficientKeySets must contain at least one key set",
+      });
+      continue;
+    }
+
+    const normalizedSets = unlock.sufficientKeySets.map((set) => normalizeRequirementSet(set));
+    const setWithExecutionKey = normalizedSets.find((set) =>
+      set.some((requirement) => expandRequirementToKeys(requirement).some((key) => isExecutionKey(key))));
+    if (setWithExecutionKey) {
+      diagnostics.push({
+        unlockId: unlock.id,
+        reason: "execution_key_in_sufficient_set",
+        detail: `execution keys are not allowed in sufficient sets: ${setWithExecutionKey.join(", ")}`,
+      });
+      continue;
+    }
+    const canonicalSourceRequirements = normalizedSets[0] ?? [];
+    if (canonicalSourceRequirements.length === 0) {
+      diagnostics.push({
+        unlockId: unlock.id,
+        reason: "empty_sufficient_key_set",
+        detail: "canonical sufficient key set (index 0) is empty",
+      });
+      continue;
+    }
+
+    const canonicalSourceKeysExpanded = [...new Set(
+      canonicalSourceRequirements.flatMap((requirement) => expandRequirementToKeys(requirement)),
+    )].sort(compareKeys);
+
+    const unknownKeys = canonicalSourceKeysExpanded.filter((key) => !knownKeySet.has(key));
+    if (unknownKeys.length > 0) {
+      diagnostics.push({
+        unlockId: unlock.id,
+        reason: "unknown_key_in_sufficient_set",
+        detail: `canonical set contains unknown keys: ${unknownKeys.join(", ")}`,
+      });
+      continue;
+    }
+
+    const target = canonicalTargetForUnlock(unlock);
+    canonicalUnlocks.push({
+      unlockId: unlock.id,
+      targetNodeId: target.targetNodeId,
+      targetLabel: target.targetLabel,
+      targetType: target.targetType,
+      effectType: unlock.effect.type,
+      canonicalSourceRequirements,
+      canonicalSourceKeysExpanded,
+      sufficientSetCount: normalizedSets.length,
+    });
+  }
+
+  canonicalUnlocks.sort((a, b) => a.unlockId.localeCompare(b.unlockId));
+  diagnostics.sort((a, b) => toDiagnosticsSortKey(a).localeCompare(toDiagnosticsSortKey(b)));
+
+  return {
+    startingKeys: starting,
+    knownKeys: [...knownKeySet].sort(compareKeys),
+    canonicalUnlocks,
+    diagnostics,
+  };
+};
+
+export const analyzeUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[]): UnlockGraphAnalysis =>
+  analyzeCatalog(catalog, startingKeys);
+
+const tokenNodeId = (token: SufficiencyToken): string => `token.${token}`;
+
+export const buildUnlockGraph = (catalog: UnlockDefinition[], startingKeys: Key[]): UnlockGraph => {
+  const analysis = analyzeCatalog(catalog, startingKeys);
+  const nodesById = new Map<string, GraphNode>();
+  const edges: GraphEdge[] = [];
+
+  for (const key of analysis.knownKeys) {
+    nodesById.set(`key.${key}`, {
+      id: `key.${key}`,
+      type: "key",
+      label: key,
+    });
+  }
+
+  for (const unlock of analysis.canonicalUnlocks) {
+    if (unlock.targetType === "non_key") {
+      nodesById.set(unlock.targetNodeId, {
+        id: unlock.targetNodeId,
+        type: "unlock_target",
+        label: unlock.targetLabel,
+      });
+    }
+    for (const requirement of unlock.canonicalSourceRequirements) {
+      const sourceNodeId = isSufficiencyToken(requirement)
+        ? tokenNodeId(requirement)
+        : `key.${requirement}`;
+      if (isSufficiencyToken(requirement)) {
+        nodesById.set(sourceNodeId, {
+          id: sourceNodeId,
+          type: "sufficiency_token",
+          label: SUFFICIENCY_TOKEN_LABELS[requirement],
+        });
+      } else {
+        nodesById.set(sourceNodeId, {
+          id: sourceNodeId,
+          type: "key",
+          label: requirement,
+        });
+      }
       edges.push({
-        from: conditionNodeId,
-        to: target.id,
+        from: sourceNodeId,
+        to: unlock.targetNodeId,
         type: "unlocks",
+        unlockId: unlock.unlockId,
       });
     }
   }
 
   return {
-    nodes: [...keyNodes, ...functionNodes, ...sufficientSetNodes, ...effectTargetNodes, ...conditionNodes],
+    nodes: [...nodesById.values()].sort(compareNodeLabels),
     edges: dedupeGraphEdges(edges),
   };
 };

@@ -1,7 +1,7 @@
-import type { Key } from "./types.js";
+import type { Key, SufficiencyRequirement, UnlockEffect } from "./types.js";
 
-export type GraphNodeType = "key" | "function" | "condition" | "sufficient_set" | "effect_target";
-export type GraphEdgeType = "necessary" | "sufficient" | "requires" | "unlocks";
+export type GraphNodeType = "key" | "unlock_target" | "sufficiency_token";
+export type GraphEdgeType = "unlocks";
 
 export type GraphNode = {
   id: string;
@@ -13,7 +13,7 @@ export type GraphEdge = {
   from: string;
   to: string;
   type: GraphEdgeType;
-  label?: string;
+  unlockId?: string;
 };
 
 export type UnlockGraph = {
@@ -21,41 +21,46 @@ export type UnlockGraph = {
   edges: GraphEdge[];
 };
 
-export type UnlockTargetDescriptor = {
-  id: string;
-  type: "key" | "effect_target";
-  label: string;
-  key?: Key;
+export type UnlockGraphDiagnosticReason =
+  | "missing_sufficient_key_sets"
+  | "empty_sufficient_key_set"
+  | "execution_key_in_sufficient_set"
+  | "unknown_key_in_sufficient_set"
+  | "invalid_target_node_id";
+
+export type UnlockGraphDiagnostic = {
+  unlockId: string;
+  reason: UnlockGraphDiagnosticReason;
+  detail: string;
 };
 
-export type ConditionStatus = {
+export type UnlockGraphTargetType = "key" | "non_key";
+
+export type UnlockGraphCanonicalUnlock = {
   unlockId: string;
-  reachable: boolean;
-  unlockedKey: Key | null;
-  unlockedTargets: string[];
-  requiredFunctions: string[];
-  missingFunctions: string[];
+  targetNodeId: string;
+  targetLabel: string;
+  targetType: UnlockGraphTargetType;
+  effectType: UnlockEffect["type"];
+  canonicalSourceRequirements: SufficiencyRequirement[];
+  canonicalSourceKeysExpanded: Key[];
+  sufficientSetCount: number;
 };
 
 export type UnlockGraphAnalysis = {
   startingKeys: Key[];
-  reachableConditionIds: string[];
-  blockedConditionIds: string[];
-  unlockedKeysReached: Key[];
-  unreachableKeys: Key[];
-  reachedEffectTargets: string[];
-  unreachableEffectTargets: string[];
-  conditionStatuses: ConditionStatus[];
-  keyCycles: Key[][];
+  knownKeys: Key[];
+  canonicalUnlocks: UnlockGraphCanonicalUnlock[];
+  diagnostics: UnlockGraphDiagnostic[];
 };
 
 export type UnlockGraphReport = {
   generatedAtIso: string;
   graph: UnlockGraph;
   analysis: UnlockGraphAnalysis;
-  proof?: UnlockProofReport;
 };
 
+// Legacy unlock-proof report types remain for unlockProof module compatibility.
 export type UnlockProofStatus = "proved" | "impossible" | "unknown";
 
 export type ImpossibleCertificate = {

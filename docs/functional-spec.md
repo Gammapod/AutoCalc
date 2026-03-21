@@ -72,14 +72,14 @@ The Global State Interface governs session continuity, progression capability st
   Rationale: installed locked keys are explicit progression affordances, with deterministic locked-toggle and visualizer-selection behavior and no locked-key relocation.
 - `FS-UP-08` (SHALL): Execution-gated rejected inputs should not contribute to progression evidence (including key-press-count-based unlock progress), unless explicitly defined by a specific unlock rule.
   Rationale: rejected execution-gated input is normally non-progress behavior while permitting explicit progression-rule exceptions.
-- `FS-UP-09` (MUST): Unlock graph report is key-only. Nodes are keys only. Directed edges represent one proven unlock dependency from sufficient source keys to unlocked target key.
-  Rationale: the report should model progression connectivity, not internal proof machinery.
-- `FS-UP-10` (MUST): Before traversal, keys are partitioned into `starting`, `unconditioned`, and `candidate`. `starting` keys are unlocked in initial state. `unconditioned` keys have no graph-eligible unlock condition. `candidate` keys are all remaining keys requiring reachability checks. `starting` and `unconditioned` are reported as separate subgraphs and are not traversal targets.
-  Rationale: explicit partitioning keeps the graph concise and prevents unnecessary proof churn.
-- `FS-UP-11` (MUST): Reachability is solved in iterative passes from the known key set. Pass 0 known set is `starting`. In each pass, if a candidate key has one or more reachable unlock conditions, exactly one canonical proof edge is recorded and the key becomes known for the next pass. Canonical winner policy: smallest sufficient key set, then lexical tie-break.
-  Rationale: deterministic single-method proof avoids over-connected graphs while preserving explainability.
-- `FS-UP-12` (MUST): Traversal terminates on fixed-point (no newly proven keys), full accounting of all candidates, or configured depth/timeout limit. Remaining candidate keys are classified as unresolved. Non-key unlock effects are excluded from graph structure and reported in diagnostics only.
-  Rationale: bounded execution and explicit unresolved reporting preserve utility under complex catalogs.
+- `FS-UP-09` (MUST): Unlock graph report is built from unlock-authored sufficiency metadata. Each unlock definition declares one or more sufficient key sets, and the first set is canonical for graphing/reporting.
+  Rationale: report truth is explicit content metadata, not runtime inference.
+- `FS-UP-10` (MUST): Graph nodes include key nodes and unlock target nodes. Directed edges represent canonical sufficiency dependencies from source keys to unlock targets.
+  Rationale: target-node modeling supports both key and non-key unlock effects in one graph contract.
+- `FS-UP-11` (MUST): Structural validation is strict: each unlock must provide at least one sufficient key set; canonical set must be non-empty; canonical keys must reference known key identities; target node id must be valid.
+  Rationale: deterministic static reporting requires hard validation guards.
+- `FS-UP-12` (MUST): Dynamic proving/traversal is not part of build-time unlock graph generation. Invalid unlock metadata is excluded from graph edges and surfaced in diagnostics.
+  Rationale: removing search/proof execution keeps reporting deterministic and bounded.
 
 #### 3.1.4 Traceability (Global State)
 
@@ -99,10 +99,10 @@ The Global State Interface governs session continuity, progression capability st
 | FS-UP-06 | Locked capabilities are inert | `reducer/input`, `domain/key-unlocks` | unit | none |
 | FS-UP-07 | Installed locked keys are usable but immobile; settings toggles forced ON; play/pause excluded; one locked visualizer forced-active by keypad scan order | `domain/key-unlocks`, `domain/layout-rules-invariants`, `ui-module/calculator-keypad-render` | unit + contract + integration | partial: settings-toggle forced-ON, play/pause exclusion, and locked-visualizer keypad-order selection lack dedicated contract assertions |
 | FS-UP-08 | Execution-gated rejected inputs should not normally advance progression evidence, except explicit rule-defined cases | `contracts/execution-gate-parity`, `domain/unlock-engine` | contract + unit | partial: explicit exception-bearing unlock rules may intentionally diverge |
-| FS-UP-09 | Unlock graph report is key-only (key nodes and directed key unlock dependencies) | `domain/unlock-graph`, `scripts/generate-unlock-graph-report` | unit + workflow | partial: no explicit key-only node schema assertion yet |
-| FS-UP-10 | Unlock graph traversal partitions keys into starting/unconditioned/candidate classes | `domain/unlock-graph`, `domain/unlock-graph-filters` | unit | partial: no dedicated partition-classification fixture matrix yet |
-| FS-UP-11 | Iterative reachability records exactly one canonical proof edge per newly proven key | `domain/unlock-graph`, `domain/unlock-proof` | unit | partial: canonical tie-break determinism fixture not yet explicit |
-| FS-UP-12 | Traversal stops at fixed-point/full-accounting/limit and classifies unresolved keys; non-key effects remain diagnostics-only | `domain/unlock-graph`, `domain/unlock-proof`, `scripts/generate-unlock-graph-report` | unit + workflow | partial: depth/timeout unresolved-classification contract not yet explicit |
+| FS-UP-09 | Unlock graph uses unlock-authored sufficient key sets; first set is canonical | `domain/unlock-graph`, `scripts/generate-unlock-graph-report` | unit + workflow | partial: no catalog-wide required-field contract suite yet |
+| FS-UP-10 | Graph includes key and unlock-target nodes with directed canonical dependency edges | `domain/unlock-graph` | unit | partial: additional fixture coverage for mixed target kinds desirable |
+| FS-UP-11 | Strict structural validation for sufficient sets and target ids | `domain/unlock-graph`, `domain/key-catalog-normalization` | unit + contract | partial: no dedicated malformed-catalog matrix beyond core fixtures |
+| FS-UP-12 | Build report is static (no traversal/proof), with invalid rows surfaced via diagnostics | `domain/unlock-graph`, `scripts/generate-unlock-graph-report` | unit + workflow | partial: no separate contract for diagnostic-category completeness |
 
 ### 3.2 Calculator State Interface
 

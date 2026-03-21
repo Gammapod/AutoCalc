@@ -12,6 +12,7 @@ const CONTENT_DRILL_CATALOG: UnlockDefinition[] = [
     description: "Content drill: unlock 9 after three increments.",
     predicate: { type: "key_press_count_at_least", key: execution("exec_equals"), count: 3 },
     effect: { type: "unlock_digit", key: valueExpr("digit_9") },
+    sufficientKeySets: [[valueExpr("digit_1")]],
     once: true,
     domainNodeId: "NN",
     targetNodeId: "I9_content_drill",
