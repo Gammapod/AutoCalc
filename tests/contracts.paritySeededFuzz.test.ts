@@ -11,18 +11,18 @@ export const runContractsParitySeededFuzzTests = (): void => {
   assert.ok(SEEDED_PARITY_RUNS.length > 0, "seeded parity fixtures remain registered");
 
   const keyPool = [
-    k("0"),
-    k("1"),
-    k("2"),
-    k("+"),
-    k("-"),
-    k("*"),
-    k("/"),
-    k("="),
-    k("C"),
-    k("UNDO"),
-    k("GRAPH"),
-    k("FEED"),
+    k("digit_0"),
+    k("digit_1"),
+    k("digit_2"),
+    k("op_add"),
+    k("op_sub"),
+    k("op_mul"),
+    k("op_div"),
+    k("exec_equals"),
+    k("util_clear_all"),
+    k("util_undo"),
+    k("viz_graph"),
+    k("viz_feed"),
   ] as const;
 
   const createRng = (seed: number): (() => number) => {
@@ -68,5 +68,6 @@ export const runContractsParitySeededFuzzTests = (): void => {
     }
   }
 };
+
 
 

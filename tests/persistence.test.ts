@@ -137,3 +137,4 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(loadedNan?.calculator.total, toNanCalculatorValue(), "NaN total round-trips");
   assert.equal(loadedNan?.calculator.rollEntries[1]?.y.kind, "nan", "NaN roll entries round-trip");
 };
+

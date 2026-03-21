@@ -17,3 +17,4 @@ export const runUiShellTransformsTests = (): void => {
   assert.equal(getSnapOffset("middle", refs), 100, "middle snap offset is sectionCalc-top minus track-top");
   assert.equal(getSnapOffset("bottom", refs), 200, "bottom snap offset is keys-top minus track-top");
 };
+

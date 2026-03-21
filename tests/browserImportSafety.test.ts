@@ -20,3 +20,4 @@ export const runBrowserImportSafetyTests = (): void => {
     "euclidean engine must not import bare algebrite specifier in browser path",
   );
 };
+

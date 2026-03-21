@@ -1,7 +1,7 @@
 import { keyToVisualizerId } from "./buttonRegistry.js";
 import { iterUnlockedButtons } from "./buttonStateAccess.js";
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
-import { KEY_ID, resolveKeyId, toLegacyKey } from "./keyPresentation.js";
+import { KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import {
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
@@ -166,7 +166,7 @@ const firstLockedInstalledSettingToggle = (layout: LayoutCell[], unlocked: Set<K
   return null;
 };
 
-const toVisualizerId = (key: Key): VisualizerId | null => keyToVisualizerId(toLegacyKey(resolveKeyId(key)));
+const toVisualizerId = (key: Key): VisualizerId | null => keyToVisualizerId(resolveKeyId(key));
 
 const firstLockedInstalledVisualizer = (layout: LayoutCell[], unlocked: Set<Key>): VisualizerId | null => {
   for (const cell of layout) {

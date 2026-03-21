@@ -81,3 +81,4 @@ export const runSandboxPresetTests = (): void => {
   assert.ok(Object.values(sandbox.unlocks.execution).every(Boolean), "sandbox unlocks all execution keys");
   assert.equal(sandbox.unlocks.uiUnlocks.storageVisible, false, "sandbox hides storage drawer");
 };
+

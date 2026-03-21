@@ -21,7 +21,7 @@ export const runReducerWrapTailExecutionTests = (): void => {
     sessionControlProfiles: undefined,
     ui: {
       ...fullyUnlocked.ui,
-      keyLayout: [{ kind: "key", key: k("\u25BB") }],
+      keyLayout: [{ kind: "key", key: k("exec_step_through") }],
       keypadColumns: 1,
       keypadRows: 1,
       buttonFlags: {
@@ -36,22 +36,22 @@ export const runReducerWrapTailExecutionTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(99n),
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
 
-  const afterFirstWrapStep = applyKeyAction(stepThroughWrapSource, "\u25BB");
+  const afterFirstWrapStep = applyKeyAction(stepThroughWrapSource, "exec_step_through");
   assert.equal(afterFirstWrapStep.calculator.stepProgress.active, true, "step-through keeps session active with trailing wrap stage");
   assert.equal(afterFirstWrapStep.calculator.stepProgress.nextSlotIndex, 1, "cursor advances to synthetic wrap stage");
   assert.deepEqual(afterFirstWrapStep.calculator.stepProgress.currentTotal, r(100n), "first step stores unwrapped slot result");
   assert.equal(afterFirstWrapStep.calculator.rollEntries.length, 0, "non-terminal wrap stage path does not append roll entries");
 
-  const afterSecondWrapStep = applyKeyAction(afterFirstWrapStep, "\u25BB");
+  const afterSecondWrapStep = applyKeyAction(afterFirstWrapStep, "exec_step_through");
   assert.equal(afterSecondWrapStep.calculator.stepProgress.active, false, "terminal wrap stage clears session");
   assert.deepEqual(afterSecondWrapStep.calculator.total, r(-98n), "terminal wrap stage applies delta wrapping");
   assert.equal(afterSecondWrapStep.calculator.rollEntries.length, 2, "terminal wrap stage commits seed and final step once");
 
-  const equalsFromPartialWrap = applyKeyAction(afterFirstWrapStep, "=");
+  const equalsFromPartialWrap = applyKeyAction(afterFirstWrapStep, "exec_equals");
   assert.deepEqual(equalsFromPartialWrap.calculator.total, r(-98n), "equals from partial run includes pending wrap stage");
   assert.equal(equalsFromPartialWrap.calculator.stepProgress.active, false, "equals from partial with wrap clears session");
 
@@ -64,7 +64,7 @@ export const runReducerWrapTailExecutionTests = (): void => {
     sessionControlProfiles: undefined,
     ui: {
       ...fullyUnlocked.ui,
-      keyLayout: [{ kind: "key", key: k("=") }],
+      keyLayout: [{ kind: "key", key: k("exec_equals") }],
       keypadColumns: 1,
       keypadRows: 1,
       buttonFlags: {
@@ -80,7 +80,7 @@ export const runReducerWrapTailExecutionTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(99n),
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
 
@@ -94,3 +94,4 @@ export const runReducerWrapTailExecutionTests = (): void => {
   assert.deepEqual(autoStepWrapTick2.calculator.total, r(-98n), "terminal wrap AUTO_STEP_TICK applies wrapping");
   assert.equal(autoStepWrapTick2.calculator.rollEntries.length, 2, "terminal wrap AUTO_STEP_TICK commits seed and final step once");
 };
+

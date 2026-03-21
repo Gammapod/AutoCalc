@@ -34,3 +34,4 @@ export const runUiShellRightMenuTests = (): void => {
   assert.equal(shouldCloseMenuFromSwipe(95, 0), false, "short right swipe does not close menu");
   assert.equal(shouldCloseMenuFromSwipe(120, 140), false, "mostly-vertical swipe does not close menu");
 };
+

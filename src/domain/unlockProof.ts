@@ -3,7 +3,6 @@ import { keyCatalog } from "../contracts/keyCatalog.js";
 import { reducer } from "./reducer.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 import { applyEffect } from "./unlocks.js";
-import { toKeyId } from "./keyPresentation.js";
 import { isKeyUsableForInput } from "./keyUnlocks.js";
 import type { Action, GameState, Key, UnlockDefinition } from "./types.js";
 import type {
@@ -100,7 +99,7 @@ const actionSortKey = (action: ProofAction): string =>
 
 const actionUniverseForState = (state: GameState): ProofAction[] => {
   const keyActions: ProofAction[] = keyCatalog
-    .map((entry) => toKeyId(entry.key))
+    .map((entry) => entry.key)
     .filter((key): key is Key => isKeyUsableForInput(state, key))
     .sort((a, b) => a.localeCompare(b))
     .map((key) => ({ type: "PRESS_KEY", key }));
@@ -429,7 +428,7 @@ const collectFrontierUnlockedKeys = (frontier: FrontierState[]): Set<Key> => {
 
 const collectFrontierUsableKeys = (frontier: FrontierState[]): Set<Key> => {
   const keys = new Set<Key>();
-  const allKeys = keyCatalog.map((entry) => toKeyId(entry.key));
+  const allKeys = keyCatalog.map((entry) => entry.key);
   for (const entry of frontier) {
     for (const key of allKeys) {
       if (isKeyUsableForInput(entry.state, key)) {

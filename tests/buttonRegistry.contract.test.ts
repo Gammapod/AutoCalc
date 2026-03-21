@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { buttonRegistry } from "../src/domain/buttonRegistry.js";
-import { toKeyId } from "../src/domain/keyPresentation.js";
 import { keyCatalog } from "../src/content/keyCatalog.js";
 import { keyRuntimeCatalog } from "../src/content/keyRuntimeCatalog.js";
 import { isButtonUnlocked, iterUnlockedButtons, setButtonUnlocked } from "../src/domain/buttonStateAccess.js";
@@ -26,7 +25,7 @@ export const runButtonRegistryContractTests = (): void => {
     ...Object.keys(state.unlocks.execution),
   ]);
   const runtimeLegacyUnlockKeys = sort(Object.keys(state.unlocks.valueExpression));
-  const registryUnlockKeys = sort(buttonRegistry.map((entry) => toKeyId(entry.key)));
+  const registryUnlockKeys = sort(buttonRegistry.map((entry) => entry.key));
   assert.deepEqual(
     registryUnlockKeys,
     runtimePrimaryUnlockKeys,
@@ -39,12 +38,12 @@ export const runButtonRegistryContractTests = (): void => {
   );
   assert.deepEqual(
     registryUnlockKeys,
-    sort(keyRuntimeCatalog.map((entry) => toKeyId(entry.key as Parameters<typeof toKeyId>[0]))),
+    sort(keyRuntimeCatalog.map((entry) => entry.key)),
     "runtime key catalog must stay parity-aligned with button registry keys",
   );
 
   const defaultUnlockedByRegistry = sort(
-    buttonRegistry.filter((entry) => entry.defaultUnlocked).map((entry) => toKeyId(entry.key)),
+    buttonRegistry.filter((entry) => entry.defaultUnlocked).map((entry) => entry.key),
   );
   const defaultUnlockedByState = sort(iterUnlockedButtons(state));
   assert.deepEqual(defaultUnlockedByState, defaultUnlockedByRegistry, "default unlocked state must come from button registry metadata");
@@ -56,3 +55,4 @@ export const runButtonRegistryContractTests = (): void => {
     assert.equal(isButtonUnlocked(relockedState, entry.key), false, `${entry.key} can be marked locked via state access helper`);
   }
 };
+

@@ -91,3 +91,4 @@ export const badComplexityFixture = (): number => {
   value += 1;
   return value;
 };
+

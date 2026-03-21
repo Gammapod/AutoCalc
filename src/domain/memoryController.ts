@@ -4,15 +4,13 @@ import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { isMemoryKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import { projectControlFromState } from "./controlProjection.js";
 
-const MEMORY_VARIABLE_CYCLE: readonly MemoryVariable[] = ["alpha", "beta", "gamma"].map((symbol) =>
-  symbol === "alpha" ? "α" : symbol === "beta" ? "β" : "γ",
-) as readonly MemoryVariable[];
+const MEMORY_VARIABLE_CYCLE: readonly MemoryVariable[] = ["\u03B1", "\u03B2", "\u03B3"];
 
 const memoryVariableToAxis = (memoryVariable: MemoryVariable): "alpha" | "beta" | "gamma" => {
-  if (memoryVariable === "α") {
+  if (memoryVariable === "\u03B1") {
     return "alpha";
   }
-  if (memoryVariable === "β") {
+  if (memoryVariable === "\u03B2") {
     return "beta";
   }
   return "gamma";

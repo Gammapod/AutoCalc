@@ -21,7 +21,7 @@ const collectSourceFiles = (dir: string): string[] => {
 export const runContentRegistryBoundaryTests = (): void => {
   const srcFiles = collectSourceFiles(resolve(process.cwd(), "src"));
   for (const file of srcFiles) {
-    const normalized = file.replaceAll("\\", "/");
+    const normalized = file.replaceAll("\\", "op_div");
     if (
       normalized.endsWith("/src/contracts/contentRegistry.ts")
       || normalized.endsWith("/src/contracts/appServices.ts")
@@ -36,3 +36,4 @@ export const runContentRegistryBoundaryTests = (): void => {
     );
   }
 };
+

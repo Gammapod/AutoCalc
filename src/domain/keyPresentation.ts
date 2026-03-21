@@ -1,4 +1,4 @@
-﻿import { buttonRegistry, isButtonKey, type ButtonKey } from "./buttonRegistry.js";
+import { buttonRegistry } from "./buttonRegistry.js";
 
 export const KEY_ID = {
   digit_0: "digit_0",
@@ -122,86 +122,79 @@ export type OperatorKeyId = BinaryOperatorKeyId | UnaryOperatorKeyId;
 
 export type KeyPresentation = {
   keyId: KeyId;
-  legacyKey: ButtonKey;
   buttonFace: string;
   operatorInlineFace?: string;
   operatorSlotFace?: string;
   operatorAlgebraicFace?: string;
 };
 
-type KeyPresentationSeed = Omit<KeyPresentation, "legacyKey">;
+type KeyPresentationSeed = Omit<KeyPresentation, "keyId">;
 
-const FACTORIZATION_LEGACY_KEY = buttonRegistry.find((entry) => ("visualizerId" in entry ? entry.visualizerId : undefined) === "factorization")?.key;
-if (!FACTORIZATION_LEGACY_KEY) {
-  throw new Error("Missing factorization key in button registry.");
-}
-
-const keySeedByLegacy = new Map<ButtonKey, KeyPresentationSeed>([
-  ["0", { keyId: KEY_ID.digit_0, buttonFace: "0" }],
-  ["1", { keyId: KEY_ID.digit_1, buttonFace: "1" }],
-  ["2", { keyId: KEY_ID.digit_2, buttonFace: "2" }],
-  ["3", { keyId: KEY_ID.digit_3, buttonFace: "3" }],
-  ["4", { keyId: KEY_ID.digit_4, buttonFace: "4" }],
-  ["5", { keyId: KEY_ID.digit_5, buttonFace: "5" }],
-  ["6", { keyId: KEY_ID.digit_6, buttonFace: "6" }],
-  ["7", { keyId: KEY_ID.digit_7, buttonFace: "7" }],
-  ["8", { keyId: KEY_ID.digit_8, buttonFace: "8" }],
-  ["9", { keyId: KEY_ID.digit_9, buttonFace: "9" }],
-  ["pi", { keyId: KEY_ID.const_pi, buttonFace: "\u03C0" }],
-  ["e", { keyId: KEY_ID.const_e, buttonFace: "e" }],
-  ["+", { keyId: KEY_ID.op_add, buttonFace: "+", operatorInlineFace: "+", operatorSlotFace: "+", operatorAlgebraicFace: "+" }],
-  ["-", { keyId: KEY_ID.op_sub, buttonFace: "-", operatorInlineFace: "-", operatorSlotFace: "-", operatorAlgebraicFace: "-" }],
-  ["*", { keyId: KEY_ID.op_mul, buttonFace: "\u00D7", operatorInlineFace: "\u00D7", operatorSlotFace: "\u00D7", operatorAlgebraicFace: "\u00D7" }],
-  ["^", { keyId: KEY_ID.op_pow, buttonFace: "^", operatorInlineFace: "^", operatorSlotFace: "^", operatorAlgebraicFace: "^" }],
-  ["/", { keyId: KEY_ID.op_div, buttonFace: "\u00F7", operatorInlineFace: "\u00F7", operatorSlotFace: "\u00F7", operatorAlgebraicFace: "\u00F7" }],
-  ["#", { keyId: KEY_ID.op_euclid_div, buttonFace: "\u2AFD", operatorInlineFace: "\u2AFD", operatorSlotFace: "\u2AFD", operatorAlgebraicFace: "\u2AFD" }],
-  ["\u27E1", { keyId: KEY_ID.op_mod, buttonFace: "\u27E1", operatorInlineFace: "\u27E1", operatorSlotFace: "\u25C7", operatorAlgebraicFace: "\u27E1" }],
-  ["\u21BA", { keyId: KEY_ID.op_rotate_left, buttonFace: "\u21BA", operatorInlineFace: "\u21BA", operatorSlotFace: "\u21BA", operatorAlgebraicFace: "\u21BA" }],
-  ["\u2A51", { keyId: KEY_ID.op_gcd, buttonFace: "\u22C0", operatorInlineFace: "\u22C0", operatorSlotFace: "\u22C0", operatorAlgebraicFace: "\u22C0" }],
-  ["\u2A52", { keyId: KEY_ID.op_lcm, buttonFace: "\u22C1", operatorInlineFace: "\u22C1", operatorSlotFace: "\u22C1", operatorAlgebraicFace: "\u22C1" }],
-  ["MAX", { keyId: KEY_ID.op_max, buttonFace: "\u2567", operatorInlineFace: "\u2567", operatorSlotFace: "\u2567", operatorAlgebraicFace: "\u2567" }],
-  ["MIN", { keyId: KEY_ID.op_min, buttonFace: "\u2564", operatorInlineFace: "\u2564", operatorSlotFace: "\u2564", operatorAlgebraicFace: "\u2564" }],
-  ["++", { keyId: KEY_ID.unary_inc, buttonFace: "+ +", operatorInlineFace: "++", operatorSlotFace: "++", operatorAlgebraicFace: "++" }],
-  ["--", { keyId: KEY_ID.unary_dec, buttonFace: "\u2212 \u2212", operatorInlineFace: "\u2212\u2212", operatorSlotFace: "\u2212\u2212", operatorAlgebraicFace: "\u2212\u2212" }],
-  ["-n", { keyId: KEY_ID.unary_neg, buttonFace: "\u00B1", operatorInlineFace: "\u00B1", operatorSlotFace: "\u00B1", operatorAlgebraicFace: "\u00B1" }],
-  ["\u03C3", { keyId: KEY_ID.unary_sigma, buttonFace: "\u03C3", operatorInlineFace: "\u03C3", operatorSlotFace: "\u03C3", operatorAlgebraicFace: "\u03C3" }],
-  ["\u03C6", { keyId: KEY_ID.unary_phi, buttonFace: "\u03C6", operatorInlineFace: "\u03C6", operatorSlotFace: "\u03C6", operatorAlgebraicFace: "\u03C6" }],
-  ["\u03A9", { keyId: KEY_ID.unary_omega, buttonFace: "\u03A9", operatorInlineFace: "\u03A9", operatorSlotFace: "\u03A9", operatorAlgebraicFace: "\u03A9" }],
-  ["NOT", { keyId: KEY_ID.unary_not, buttonFace: "\u00AC", operatorInlineFace: "\u00AC", operatorSlotFace: "\u00AC", operatorAlgebraicFace: "\u00AC" }],
-  ["CTZ", { keyId: KEY_ID.unary_collatz, buttonFace: "Ctz", operatorInlineFace: "Ctz", operatorSlotFace: "Ctz", operatorAlgebraicFace: "Ctz" }],
-  ["SORT", { keyId: KEY_ID.unary_sort_asc, buttonFace: "\u21E1d", operatorInlineFace: "\u21E1d", operatorSlotFace: "\u21E1", operatorAlgebraicFace: "\u21E1d" }],
-  ["FLOOR", { keyId: KEY_ID.unary_floor, buttonFace: "\u230An\u230B", operatorInlineFace: "\u230An\u230B", operatorSlotFace: "\u230An\u230B", operatorAlgebraicFace: "\u230An\u230B" }],
-  ["CEIL", { keyId: KEY_ID.unary_ceil, buttonFace: "\u2308n\u2309", operatorInlineFace: "\u2308n\u2309", operatorSlotFace: "\u2308n\u2309", operatorAlgebraicFace: "\u2308n\u2309" }],
-  ["REV", { keyId: KEY_ID.unary_mirror_digits, buttonFace: "\u21CBd", operatorInlineFace: "\u21CBd", operatorSlotFace: "\u21CB", operatorAlgebraicFace: "\u21CBd" }],
-  ["C", { keyId: KEY_ID.util_clear_all, buttonFace: "C" }],
-  ["\u2190", { keyId: KEY_ID.util_backspace, buttonFace: "\u2190" }],
-  ["UNDO", { keyId: KEY_ID.util_undo, buttonFace: "\u2936" }],
-  ["\u03B1,\u03B2,\u03B3", { keyId: KEY_ID.memory_cycle_variable, buttonFace: "\u03B1,\u03B2,\u03B3" }],
-  ["M+", { keyId: KEY_ID.memory_adjust_plus, buttonFace: "M+" }],
-  ["M\u2013", { keyId: KEY_ID.memory_adjust_minus, buttonFace: "M\u2013" }],
-  ["M\u2192", { keyId: KEY_ID.memory_recall, buttonFace: "M\u2192" }],
-  ["\u27E1[-\u{1D6FF}, \u{1D6FF})", { keyId: KEY_ID.toggle_delta_range_clamp, buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
-  ["\u27E1[0, \u{1D6FF})", { keyId: KEY_ID.toggle_mod_zero_to_delta, buttonFace: "\u27E1[0, \u{1D6FF})" }],
-  ["[ ??? ]", { keyId: KEY_ID.toggle_step_expansion, buttonFace: "[ ??? ]" }],
-  ["GRAPH", { keyId: KEY_ID.viz_graph, buttonFace: "GRAPH" }],
-  ["FEED", { keyId: KEY_ID.viz_feed, buttonFace: "FEED" }],
-  [FACTORIZATION_LEGACY_KEY, { keyId: KEY_ID.viz_factorization, buttonFace: "\u{1D6B7}\u{1D45D}\u{1D49}" }],
-  ["CIRCLE", { keyId: KEY_ID.viz_circle, buttonFace: "\u25EF" }],
-  ["\u03BB", { keyId: KEY_ID.viz_eigen_allocator, buttonFace: "\u03BB" }],
-  ["ALG", { keyId: KEY_ID.viz_algebraic, buttonFace: "ALG" }],
-  ["=", { keyId: KEY_ID.exec_equals, buttonFace: "=" }],
-  ["\u25B6", { keyId: KEY_ID.exec_play_pause, buttonFace: "\u25B6" }],
-  ["\u25BB", { keyId: KEY_ID.exec_step_through, buttonFace: "[ \u25BA\u2758 ]" }],
+const keySeedById = new Map<KeyId, KeyPresentationSeed>([
+  [KEY_ID.digit_0, { buttonFace: "0" }],
+  [KEY_ID.digit_1, { buttonFace: "1" }],
+  [KEY_ID.digit_2, { buttonFace: "2" }],
+  [KEY_ID.digit_3, { buttonFace: "3" }],
+  [KEY_ID.digit_4, { buttonFace: "4" }],
+  [KEY_ID.digit_5, { buttonFace: "5" }],
+  [KEY_ID.digit_6, { buttonFace: "6" }],
+  [KEY_ID.digit_7, { buttonFace: "7" }],
+  [KEY_ID.digit_8, { buttonFace: "8" }],
+  [KEY_ID.digit_9, { buttonFace: "9" }],
+  [KEY_ID.const_pi, { buttonFace: "\u03C0" }],
+  [KEY_ID.const_e, { buttonFace: "e" }],
+  [KEY_ID.op_add, { buttonFace: "+", operatorInlineFace: "+", operatorSlotFace: "+", operatorAlgebraicFace: "+" }],
+  [KEY_ID.op_sub, { buttonFace: "-", operatorInlineFace: "-", operatorSlotFace: "-", operatorAlgebraicFace: "-" }],
+  [KEY_ID.op_mul, { buttonFace: "\u00D7", operatorInlineFace: "\u00D7", operatorSlotFace: "\u00D7", operatorAlgebraicFace: "\u00D7" }],
+  [KEY_ID.op_pow, { buttonFace: "^", operatorInlineFace: "^", operatorSlotFace: "^", operatorAlgebraicFace: "^" }],
+  [KEY_ID.op_div, { buttonFace: "\u00F7", operatorInlineFace: "\u00F7", operatorSlotFace: "\u00F7", operatorAlgebraicFace: "\u00F7" }],
+  [KEY_ID.op_euclid_div, { buttonFace: "\u2AFD", operatorInlineFace: "\u2AFD", operatorSlotFace: "\u2AFD", operatorAlgebraicFace: "\u2AFD" }],
+  [KEY_ID.op_mod, { buttonFace: "\u27E1", operatorInlineFace: "\u27E1", operatorSlotFace: "\u25C7", operatorAlgebraicFace: "\u27E1" }],
+  [KEY_ID.op_rotate_left, { buttonFace: "\u21BA", operatorInlineFace: "\u21BA", operatorSlotFace: "\u21BA", operatorAlgebraicFace: "\u21BA" }],
+  [KEY_ID.op_gcd, { buttonFace: "\u22C0", operatorInlineFace: "\u22C0", operatorSlotFace: "\u22C0", operatorAlgebraicFace: "\u22C0" }],
+  [KEY_ID.op_lcm, { buttonFace: "\u22C1", operatorInlineFace: "\u22C1", operatorSlotFace: "\u22C1", operatorAlgebraicFace: "\u22C1" }],
+  [KEY_ID.op_max, { buttonFace: "\u2567", operatorInlineFace: "\u2567", operatorSlotFace: "\u2567", operatorAlgebraicFace: "\u2567" }],
+  [KEY_ID.op_min, { buttonFace: "\u2564", operatorInlineFace: "\u2564", operatorSlotFace: "\u2564", operatorAlgebraicFace: "\u2564" }],
+  [KEY_ID.unary_inc, { buttonFace: "+ +", operatorInlineFace: "++", operatorSlotFace: "++", operatorAlgebraicFace: "++" }],
+  [KEY_ID.unary_dec, { buttonFace: "\u2212 \u2212", operatorInlineFace: "\u2212\u2212", operatorSlotFace: "\u2212\u2212", operatorAlgebraicFace: "\u2212\u2212" }],
+  [KEY_ID.unary_neg, { buttonFace: "\u00B1", operatorInlineFace: "\u00B1", operatorSlotFace: "\u00B1", operatorAlgebraicFace: "\u00B1" }],
+  [KEY_ID.unary_sigma, { buttonFace: "\u03C3", operatorInlineFace: "\u03C3", operatorSlotFace: "\u03C3", operatorAlgebraicFace: "\u03C3" }],
+  [KEY_ID.unary_phi, { buttonFace: "\u03C6", operatorInlineFace: "\u03C6", operatorSlotFace: "\u03C6", operatorAlgebraicFace: "\u03C6" }],
+  [KEY_ID.unary_omega, { buttonFace: "\u03A9", operatorInlineFace: "\u03A9", operatorSlotFace: "\u03A9", operatorAlgebraicFace: "\u03A9" }],
+  [KEY_ID.unary_not, { buttonFace: "\u00AC", operatorInlineFace: "\u00AC", operatorSlotFace: "\u00AC", operatorAlgebraicFace: "\u00AC" }],
+  [KEY_ID.unary_collatz, { buttonFace: "Ctz", operatorInlineFace: "Ctz", operatorSlotFace: "Ctz", operatorAlgebraicFace: "Ctz" }],
+  [KEY_ID.unary_sort_asc, { buttonFace: "\u21E1d", operatorInlineFace: "\u21E1d", operatorSlotFace: "\u21E1", operatorAlgebraicFace: "\u21E1d" }],
+  [KEY_ID.unary_floor, { buttonFace: "\u230An\u230B", operatorInlineFace: "\u230An\u230B", operatorSlotFace: "\u230An\u230B", operatorAlgebraicFace: "\u230An\u230B" }],
+  [KEY_ID.unary_ceil, { buttonFace: "\u2308n\u2309", operatorInlineFace: "\u2308n\u2309", operatorSlotFace: "\u2308n\u2309", operatorAlgebraicFace: "\u2308n\u2309" }],
+  [KEY_ID.unary_mirror_digits, { buttonFace: "\u21CBd", operatorInlineFace: "\u21CBd", operatorSlotFace: "\u21CB", operatorAlgebraicFace: "\u21CBd" }],
+  [KEY_ID.util_clear_all, { buttonFace: "C" }],
+  [KEY_ID.util_backspace, { buttonFace: "\u2190" }],
+  [KEY_ID.util_undo, { buttonFace: "\u2936" }],
+  [KEY_ID.memory_cycle_variable, { buttonFace: "\u03B1,\u03B2,\u03B3" }],
+  [KEY_ID.memory_adjust_plus, { buttonFace: "M+" }],
+  [KEY_ID.memory_adjust_minus, { buttonFace: "M\u2013" }],
+  [KEY_ID.memory_recall, { buttonFace: "M\u2192" }],
+  [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
+  [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "\u27E1[0, \u{1D6FF})" }],
+  [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
+  [KEY_ID.viz_graph, { buttonFace: "GRAPH" }],
+  [KEY_ID.viz_feed, { buttonFace: "FEED" }],
+  [KEY_ID.viz_factorization, { buttonFace: "\u{1D6B7}\u{1D45D}\u{1D49}" }],
+  [KEY_ID.viz_circle, { buttonFace: "\u25EF" }],
+  [KEY_ID.viz_eigen_allocator, { buttonFace: "\u03BB" }],
+  [KEY_ID.viz_algebraic, { buttonFace: "ALG" }],
+  [KEY_ID.exec_equals, { buttonFace: "=" }],
+  [KEY_ID.exec_play_pause, { buttonFace: "\u25B6" }],
+  [KEY_ID.exec_step_through, { buttonFace: "[ \u25BA\u2758 ]" }],
 ]);
 
 const entries: KeyPresentation[] = buttonRegistry.map((entry) => {
-  const seed = keySeedByLegacy.get(entry.key);
+  const seed = keySeedById.get(entry.key);
   if (!seed) {
     throw new Error(`Missing key presentation seed for ${entry.key}`);
   }
   return {
-    keyId: seed.keyId,
-    legacyKey: entry.key,
+    keyId: entry.key,
     buttonFace: seed.buttonFace,
     ...(seed.operatorInlineFace ? { operatorInlineFace: seed.operatorInlineFace } : {}),
     ...(seed.operatorSlotFace ? { operatorSlotFace: seed.operatorSlotFace } : {}),
@@ -209,48 +202,14 @@ const entries: KeyPresentation[] = buttonRegistry.map((entry) => {
   };
 });
 
-const duplicateKeyIds = new Set<KeyId>();
-const keyIdSeen = new Set<KeyId>();
-for (const entry of entries) {
-  if (keyIdSeen.has(entry.keyId)) {
-    duplicateKeyIds.add(entry.keyId);
-  }
-  keyIdSeen.add(entry.keyId);
-}
-if (duplicateKeyIds.size > 0) {
-  throw new Error(`Duplicate key ids detected: ${Array.from(duplicateKeyIds).join(", ")}`);
-}
-
-const keyByLegacy = new Map<ButtonKey, KeyPresentation>(entries.map((entry) => [entry.legacyKey, entry]));
 const keyById = new Map<KeyId, KeyPresentation>(entries.map((entry) => [entry.keyId, entry]));
 
 export const keyPresentationCatalog = entries;
-export type LegacyKey = ButtonKey;
-export type KeyLike = KeyId | LegacyKey;
 
-export const isLegacyKey = (value: string): value is LegacyKey => isButtonKey(value);
 export const isKeyId = (value: string): value is KeyId => keyById.has(value as KeyId);
+export const resolveKeyId = (keyId: KeyId): KeyId => keyId;
 
-export const toKeyId = (legacyKey: LegacyKey): KeyId => {
-  const entry = keyByLegacy.get(legacyKey);
-  if (!entry) {
-    throw new Error(`Unsupported legacy key: ${legacyKey}`);
-  }
-  return entry.keyId;
-};
-
-export const toLegacyKey = (keyId: KeyId): LegacyKey => {
-  const entry = keyById.get(keyId);
-  if (!entry) {
-    throw new Error(`Unsupported key id: ${keyId}`);
-  }
-  return entry.legacyKey;
-};
-
-export const resolveKeyId = (keyLike: KeyLike): KeyId => (isKeyId(keyLike) ? keyLike : toKeyId(keyLike));
-
-const getPresentation = (keyLike: KeyLike): KeyPresentation => {
-  const keyId = resolveKeyId(keyLike);
+const getPresentation = (keyId: KeyId): KeyPresentation => {
   const entry = keyById.get(keyId);
   if (!entry) {
     throw new Error(`Missing key presentation entry for ${keyId}`);
@@ -258,22 +217,22 @@ const getPresentation = (keyLike: KeyLike): KeyPresentation => {
   return entry;
 };
 
-export const getKeyInternalRef = (keyLike: KeyLike): string => resolveKeyId(keyLike);
+export const getKeyInternalRef = (keyId: KeyId): string => keyId;
 
-export const getKeyButtonFaceLabel = (keyLike: KeyLike): string => getPresentation(keyLike).buttonFace;
+export const getKeyButtonFaceLabel = (keyId: KeyId): string => getPresentation(keyId).buttonFace;
 
-export const getOperatorInlineFaceLabel = (keyLike: KeyLike): string => {
-  const entry = getPresentation(keyLike);
+export const getOperatorInlineFaceLabel = (keyId: KeyId): string => {
+  const entry = getPresentation(keyId);
   return entry.operatorInlineFace ?? entry.buttonFace;
 };
 
-export const getOperatorSlotFaceLabel = (keyLike: KeyLike): string => {
-  const entry = getPresentation(keyLike);
+export const getOperatorSlotFaceLabel = (keyId: KeyId): string => {
+  const entry = getPresentation(keyId);
   return entry.operatorSlotFace ?? entry.operatorInlineFace ?? entry.buttonFace;
 };
 
-export const getOperatorAlgebraicFaceLabel = (keyLike: KeyLike): string => {
-  const entry = getPresentation(keyLike);
+export const getOperatorAlgebraicFaceLabel = (keyId: KeyId): string => {
+  const entry = getPresentation(keyId);
   return entry.operatorAlgebraicFace ?? entry.operatorInlineFace ?? entry.buttonFace;
 };
 
@@ -329,19 +288,17 @@ const MEMORY_KEY_ID_SET = new Set<MemoryKeyId>([
   KEY_ID.memory_recall,
 ]);
 
-export const isDigitKeyId = (keyLike: KeyLike): keyLike is DigitKeyId => DIGIT_KEY_ID_SET.has(resolveKeyId(keyLike) as DigitKeyId);
-export const isBinaryOperatorKeyId = (keyLike: KeyLike): keyLike is BinaryOperatorKeyId =>
-  BINARY_OPERATOR_KEY_ID_SET.has(resolveKeyId(keyLike) as BinaryOperatorKeyId);
-export const isUnaryOperatorId = (keyLike: KeyLike): keyLike is UnaryOperatorKeyId =>
-  UNARY_OPERATOR_KEY_ID_SET.has(resolveKeyId(keyLike) as UnaryOperatorKeyId);
-export const isMemoryKeyId = (keyLike: KeyLike): keyLike is MemoryKeyId =>
-  MEMORY_KEY_ID_SET.has(resolveKeyId(keyLike) as MemoryKeyId);
-export const isNaturalDivisorOperatorKeyId = (keyLike: KeyLike): boolean => {
-  const keyId = resolveKeyId(keyLike);
+export const isDigitKeyId = (keyId: KeyId): keyId is DigitKeyId => DIGIT_KEY_ID_SET.has(keyId as DigitKeyId);
+export const isBinaryOperatorKeyId = (keyId: KeyId): keyId is BinaryOperatorKeyId =>
+  BINARY_OPERATOR_KEY_ID_SET.has(keyId as BinaryOperatorKeyId);
+export const isUnaryOperatorId = (keyId: KeyId): keyId is UnaryOperatorKeyId =>
+  UNARY_OPERATOR_KEY_ID_SET.has(keyId as UnaryOperatorKeyId);
+export const isMemoryKeyId = (keyId: KeyId): keyId is MemoryKeyId =>
+  MEMORY_KEY_ID_SET.has(keyId as MemoryKeyId);
+export const isNaturalDivisorOperatorKeyId = (keyId: KeyId): boolean => {
   return keyId === KEY_ID.op_euclid_div || keyId === KEY_ID.op_mod;
 };
-export const isUnsupportedSymbolicOperatorKeyId = (keyLike: KeyLike): boolean => {
-  const keyId = resolveKeyId(keyLike);
+export const isUnsupportedSymbolicOperatorKeyId = (keyId: KeyId): boolean => {
   return keyId === KEY_ID.op_euclid_div
     || keyId === KEY_ID.op_mod
     || keyId === KEY_ID.op_pow
@@ -349,7 +306,6 @@ export const isUnsupportedSymbolicOperatorKeyId = (keyLike: KeyLike): boolean =>
     || keyId === KEY_ID.op_gcd
     || keyId === KEY_ID.op_lcm;
 };
-export const isConstantKeyId = (keyLike: KeyLike): keyLike is ConstantKeyId => {
-  const keyId = resolveKeyId(keyLike);
+export const isConstantKeyId = (keyId: KeyId): keyId is ConstantKeyId => {
   return keyId === KEY_ID.const_pi || keyId === KEY_ID.const_e;
 };

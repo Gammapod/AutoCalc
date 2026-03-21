@@ -157,11 +157,11 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     const heightAfterTallGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
     assert.equal(heightAfterTallGrowth > heightAtBaseline, true, "desktop min-height grows once rows exceed 2-row baseline");
 
-    const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("=")}']`);
+    const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("exec_equals")}']`);
     assert.ok(keyButton, "calculator key exists after desktop render");
     click(keyButton as HTMLButtonElement);
     assert.equal(
-      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("=")),
+      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("exec_equals")),
       true,
       "clicking a rendered key dispatches PRESS_KEY action on desktop shell",
     );
@@ -177,14 +177,14 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       ...projected,
       ui: {
         ...projected.ui,
-        keyLayout: [{ kind: "key" as const, key: k("\u25BB") }, { kind: "key" as const, key: k("=") }],
+        keyLayout: [{ kind: "key" as const, key: k("exec_step_through") }, { kind: "key" as const, key: k("exec_equals") }],
         keypadColumns: 2,
         keypadRows: 1,
       },
       calculator: {
         ...projected.calculator,
         total: { kind: "rational" as const, value: { num: 1n, den: 1n } },
-        operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
+        operationSlots: [{ operator: op("op_add"), operand: 2n }, { operator: op("op_mul"), operand: 3n }],
       },
     }));
     renderer.render(withStepKey, dispatch, {
@@ -194,7 +194,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     assert.ok(stepTokenBefore, "desktop shell highlights slot token when step key is present");
     assert.equal(stepTokenBefore?.textContent?.includes("[ + 2 ]"), true, "desktop highlight starts on first slot token");
 
-    const steppedOnce = reducer(withStepKey, { type: "PRESS_KEY", key: k("\u25BB") });
+    const steppedOnce = reducer(withStepKey, { type: "PRESS_KEY", key: k("exec_step_through") });
     renderer.render(steppedOnce, dispatch, {
             inputBlocked: false,
     });
@@ -202,7 +202,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     assert.ok(stepTokenAfterOne, "desktop step highlight remains visible after one step");
     assert.equal(stepTokenAfterOne?.textContent?.includes("[ \u00D7 3 ]"), true, "desktop highlight advances to next slot token");
 
-    const steppedThenEquals = reducer(steppedOnce, { type: "PRESS_KEY", key: k("=") });
+    const steppedThenEquals = reducer(steppedOnce, { type: "PRESS_KEY", key: k("exec_equals") });
     assert.deepEqual(
       steppedThenEquals.calculator.total,
       { kind: "rational", value: { num: 9n, den: 1n } },
@@ -214,4 +214,5 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     harness.teardown();
   }
 };
+
 

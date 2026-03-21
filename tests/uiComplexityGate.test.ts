@@ -12,3 +12,4 @@ export const runUiComplexityGateTests = (): void => {
   const failing = spawnSync("node", [script, `--files=${fixture}`], { encoding: "utf8" });
   assert.notEqual(failing.status, 0, "complexity script should fail for intentionally complex fixture");
 };
+

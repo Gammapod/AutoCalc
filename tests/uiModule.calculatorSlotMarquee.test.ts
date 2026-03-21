@@ -47,11 +47,11 @@ export const runUiModuleCalculatorSlotMarqueeTests = (): void => {
       calculator: {
         ...initialState().calculator,
         operationSlots: [
-          { operator: op("+"), operand: 11111n },
-          { operator: op("-"), operand: 22222n },
-          { operator: op("*"), operand: 33333n },
-          { operator: op("/"), operand: 44444n },
-          { operator: op("#"), operand: 55555n },
+          { operator: op("op_add"), operand: 11111n },
+          { operator: op("op_sub"), operand: 22222n },
+          { operator: op("op_mul"), operand: 33333n },
+          { operator: op("op_div"), operand: 44444n },
+          { operator: op("op_euclid_div"), operand: 55555n },
         ],
       },
     };
@@ -119,3 +119,4 @@ export const runUiModuleCalculatorSlotMarqueeTests = (): void => {
     harness.teardown();
   }
 };
+

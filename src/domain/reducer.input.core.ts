@@ -64,6 +64,7 @@ import {
   resolveMemoryRecallDigit,
 } from "./memoryController.js";
 import {
+  getButtonFace,
   isBinaryOperatorKeyId,
   isConstantKeyId,
   isDigitKeyId,
@@ -71,7 +72,6 @@ import {
   isUnaryOperatorId,
   KEY_ID,
   resolveKeyId,
-  toLegacyKey,
   type ConstantKeyId,
 } from "./keyPresentation.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
@@ -196,7 +196,7 @@ export const applyDigit = (state: GameState, key: Key): GameState => {
   if (!isKeyUsableForInput(state, key)) {
     return state;
   }
-  return applyDigitValue(state, toLegacyKey(key) as Digit);
+  return applyDigitValue(state, getButtonFace(key) as Digit);
 };
 
 export const applyConstantValue = (state: GameState, constant: ConstantKeyId): GameState => {

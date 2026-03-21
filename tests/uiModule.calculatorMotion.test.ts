@@ -35,11 +35,11 @@ export const runUiModuleCalculatorMotionTests = (): void => {
       ...baseline,
       ui: {
         ...baseline.ui,
-        keyLayout: [{ kind: "key" as const, key: k("\u25BB") }, { kind: "key" as const, key: k("+") }],
+        keyLayout: [{ kind: "key" as const, key: k("exec_step_through") }, { kind: "key" as const, key: k("op_add") }],
       },
       calculator: {
         ...baseline.calculator,
-        operationSlots: [{ operator: op("+"), operand: 1n }],
+        operationSlots: [{ operator: op("op_add"), operand: 1n }],
       },
     };
     assert.deepEqual(
@@ -53,3 +53,4 @@ export const runUiModuleCalculatorMotionTests = (): void => {
     harness.teardown();
   }
 };
+

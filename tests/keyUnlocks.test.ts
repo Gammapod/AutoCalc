@@ -116,43 +116,43 @@ const withUnlock = (state: GameState, path: "valueExpression" | "slotOperators" 
 
 export const runKeyUnlocksTests = (): void => {
   const base = initialState();
-  assert.equal(isKeyUnlocked(base, k("1")), false, "value-expression key starts locked");
-  assert.equal(isKeyUnlocked(base, k("+")), false, "slot-operator key starts locked");
-  assert.equal(isKeyUnlocked(base, k("C")), false, "utility key starts locked");
-  assert.equal(isKeyUnlocked(base, k("++")), true, "unary-operator key default-unlocked state is applied");
-  assert.equal(isKeyUnlocked(base, k("\u2190")), false, "backspace utility key starts locked");
-  assert.equal(isKeyUnlocked(base, k("M+")), false, "memory key starts locked");
-  assert.equal(isKeyUnlocked(base, k("GRAPH")), false, "visualizer key starts locked");
-  assert.equal(isKeyUnlocked(base, k("CIRCLE")), false, "circle visualizer key starts locked");
-  assert.equal(isKeyUnlocked(base, k("=")), true, "execution key default-unlocked state is applied");
+  assert.equal(isKeyUnlocked(base, k("digit_1")), false, "value-expression key starts locked");
+  assert.equal(isKeyUnlocked(base, k("op_add")), false, "slot-operator key starts locked");
+  assert.equal(isKeyUnlocked(base, k("util_clear_all")), false, "utility key starts locked");
+  assert.equal(isKeyUnlocked(base, k("unary_inc")), true, "unary-operator key default-unlocked state is applied");
+  assert.equal(isKeyUnlocked(base, k("util_backspace")), false, "backspace utility key starts locked");
+  assert.equal(isKeyUnlocked(base, k("memory_adjust_plus")), false, "memory key starts locked");
+  assert.equal(isKeyUnlocked(base, k("viz_graph")), false, "visualizer key starts locked");
+  assert.equal(isKeyUnlocked(base, k("viz_circle")), false, "circle visualizer key starts locked");
+  assert.equal(isKeyUnlocked(base, k("exec_equals")), true, "execution key default-unlocked state is applied");
 
-  const valueUnlocked = withUnlock(base, "valueExpression", k("1"));
-  assert.equal(isKeyUnlocked(valueUnlocked, k("1")), true, "value-expression unlock is routed correctly");
+  const valueUnlocked = withUnlock(base, "valueExpression", k("digit_1"));
+  assert.equal(isKeyUnlocked(valueUnlocked, k("digit_1")), true, "value-expression unlock is routed correctly");
 
-  const slotUnlocked = withUnlock(base, "slotOperators", k("+"));
-  assert.equal(isKeyUnlocked(slotUnlocked, k("+")), true, "slot-operator unlock is routed correctly");
-  const unaryUnlocked = withUnlock(base, "unaryOperators", k("++"));
-  assert.equal(isKeyUnlocked(unaryUnlocked, k("++")), true, "unary-operator unlock is routed correctly");
+  const slotUnlocked = withUnlock(base, "slotOperators", k("op_add"));
+  assert.equal(isKeyUnlocked(slotUnlocked, k("op_add")), true, "slot-operator unlock is routed correctly");
+  const unaryUnlocked = withUnlock(base, "unaryOperators", k("unary_inc"));
+  assert.equal(isKeyUnlocked(unaryUnlocked, k("unary_inc")), true, "unary-operator unlock is routed correctly");
 
-  const utilityUnlocked = withUnlock(base, "utilities", k("C"));
-  assert.equal(isKeyUnlocked(utilityUnlocked, k("C")), true, "utility unlock is routed correctly");
-  const backspaceUnlocked = withUnlock(base, "utilities", k("\u2190"));
-  assert.equal(isKeyUnlocked(backspaceUnlocked, k("\u2190")), true, "backspace utility unlock is routed correctly");
+  const utilityUnlocked = withUnlock(base, "utilities", k("util_clear_all"));
+  assert.equal(isKeyUnlocked(utilityUnlocked, k("util_clear_all")), true, "utility unlock is routed correctly");
+  const backspaceUnlocked = withUnlock(base, "utilities", k("util_backspace"));
+  assert.equal(isKeyUnlocked(backspaceUnlocked, k("util_backspace")), true, "backspace utility unlock is routed correctly");
 
-  const memoryUnlocked = withUnlock(base, "memory", k("M+"));
-  assert.equal(isKeyUnlocked(memoryUnlocked, k("M+")), true, "memory unlock is routed correctly");
+  const memoryUnlocked = withUnlock(base, "memory", k("memory_adjust_plus"));
+  assert.equal(isKeyUnlocked(memoryUnlocked, k("memory_adjust_plus")), true, "memory unlock is routed correctly");
 
-  const visualizerUnlocked = withUnlock(base, "visualizers", k("FEED"));
-  assert.equal(isKeyUnlocked(visualizerUnlocked, k("FEED")), true, "visualizer unlock is routed correctly");
+  const visualizerUnlocked = withUnlock(base, "visualizers", k("viz_feed"));
+  assert.equal(isKeyUnlocked(visualizerUnlocked, k("viz_feed")), true, "visualizer unlock is routed correctly");
 
-  const executionUnlocked = withUnlock(base, "execution", k("="));
-  assert.equal(isKeyUnlocked(executionUnlocked, k("=")), true, "execution unlock is routed correctly");
+  const executionUnlocked = withUnlock(base, "execution", k("exec_equals"));
+  assert.equal(isKeyUnlocked(executionUnlocked, k("exec_equals")), true, "execution unlock is routed correctly");
 
   const lockedInstalledOnKeypad: GameState = {
     ...base,
     ui: {
       ...base.ui,
-      keyLayout: [{ kind: "key", key: k("=") }],
+      keyLayout: [{ kind: "key", key: k("exec_equals") }],
       keypadColumns: 1,
       keypadRows: 1,
     },
@@ -160,21 +160,22 @@ export const runKeyUnlocksTests = (): void => {
       ...base.unlocks,
       execution: {
         ...base.unlocks.execution,
-        [k("=")]: false,
+        [k("exec_equals")]: false,
       },
     },
   };
   assert.equal(
-    isKeyUsableForInput(lockedInstalledOnKeypad, k("=")),
+    isKeyUsableForInput(lockedInstalledOnKeypad, k("exec_equals")),
     true,
     "installed locked keys are still usable for input",
   );
   assert.equal(
-    isKeyUsableForInput(base, k("C")),
+    isKeyUsableForInput(base, k("util_clear_all")),
     false,
     "locked keys that are not installed are not usable",
   );
 
-  assert.throws(() => isKeyUnlocked(base, "NOT_A_KEY" as Key), /Unsupported legacy key/, "unknown keys fail closed");
+  assert.throws(() => isKeyUnlocked(base, "NOT_A_KEY" as Key), /Unsupported key id/, "unknown keys fail closed");
 };
+
 

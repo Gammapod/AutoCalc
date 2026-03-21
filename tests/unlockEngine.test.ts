@@ -230,7 +230,7 @@ export const runUnlockEngineTests = (): void => {
 
   const operationEquals: UnlockPredicate = {
     type: "operation_equals",
-    slots: [{ operator: op("+"), operand: 1n }],
+    slots: [{ operator: op("op_add"), operand: 1n }],
   };
   assertCriteriaConsistency(
     operationEquals,
@@ -238,7 +238,7 @@ export const runUnlockEngineTests = (): void => {
       ...base,
       calculator: {
         ...base.calculator,
-        draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
+        draftingSlot: { operator: op("op_add"), operandInput: "digit_1", isNegative: false },
       },
     },
     "operation_equals met",
@@ -255,7 +255,7 @@ export const runUnlockEngineTests = (): void => {
       calculator: {
         ...base.calculator,
         total: r(10n),
-        operationSlots: [{ operator: op("#"), operand: 4n }],
+        operationSlots: [{ operator: op("op_euclid_div"), operand: 4n }],
       },
     },
     "operation_first_euclid_equivalent_modulo met",
@@ -267,7 +267,7 @@ export const runUnlockEngineTests = (): void => {
       calculator: {
         ...base.calculator,
         total: r(10n),
-        operationSlots: [{ operator: op("+"), operand: 4n }],
+        operationSlots: [{ operator: op("op_add"), operand: 4n }],
       },
     },
     "operation_first_euclid_equivalent_modulo unmet when first op is not #",
@@ -279,7 +279,7 @@ export const runUnlockEngineTests = (): void => {
       calculator: {
         ...base.calculator,
         total: r(10n),
-        operationSlots: [{ operator: op("#"), operand: 4n }, { operator: op("+"), operand: 1n }],
+        operationSlots: [{ operator: op("op_euclid_div"), operand: 4n }, { operator: op("op_add"), operand: 1n }],
       },
     },
     "operation_first_euclid_equivalent_modulo unmet when combined differs from modulo baseline",
@@ -291,7 +291,7 @@ export const runUnlockEngineTests = (): void => {
       calculator: {
         ...base.calculator,
         total: r(10n),
-        operationSlots: [{ operator: op("#"), operand: 0n }],
+        operationSlots: [{ operator: op("op_euclid_div"), operand: 0n }],
       },
     },
     "operation_first_euclid_equivalent_modulo unmet on division by zero",
@@ -344,5 +344,6 @@ export const runUnlockEngineTests = (): void => {
   );
   assertCriteriaConsistency(allocatorAllocateSeen, base, "allocator_allocate_press_count_at_least unmet");
 };
+
 
 

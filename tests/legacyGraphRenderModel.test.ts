@@ -31,3 +31,4 @@ export const runLegacyGraphRenderModelTests = (): void => {
   );
   assert.deepEqual(buildGraphYWindow(0), { min: -9, max: 9 }, "legacy y-window clamps minimum digit count to one");
 };
+

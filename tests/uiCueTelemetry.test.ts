@@ -51,3 +51,4 @@ export const runUiCueTelemetryTests = async (): Promise<void> => {
   }
   assert.equal(sequenced.some((event) => event.phase === "done"), true, "telemetry captures coordinator lifecycle events");
 };
+

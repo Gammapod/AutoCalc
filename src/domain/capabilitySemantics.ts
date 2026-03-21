@@ -1,7 +1,7 @@
 import { keyCatalog } from "../contracts/keyCatalog.js";
 import type { CapabilityId } from "./predicateCapabilitySpec.js";
 import type { GameState, Key, LayoutCell, UnlockPredicate } from "./types.js";
-import { isBinaryOperatorKeyId, isUnaryOperatorId, KEY_ID, toKeyId } from "./keyPresentation.js";
+import { isBinaryOperatorKeyId, isUnaryOperatorId, KEY_ID } from "./keyPresentation.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
 
 export type SufficientClause = readonly Key[];
@@ -49,17 +49,17 @@ const uniqueClauses = (clauses: Array<Array<Key>>): Key[][] => {
 
 const clause = (...keys: Array<Key | null>): Key[] => keys.filter((key): key is Key => key !== null);
 
-const hasKey = (key: Key): boolean => keyCatalog.some((entry) => toKeyId(entry.key) === key);
+const hasKey = (key: Key): boolean => keyCatalog.some((entry) => entry.key === key);
 
 const keysMatching = (predicate: (key: Key) => boolean): Key[] =>
   keyCatalog
-    .map((entry) => toKeyId(entry.key))
+    .map((entry) => entry.key)
     .filter(predicate);
 
 const valueAtomKeys = (): Key[] =>
   keyCatalog
     .filter((entry) => entry.unlockGroup === "valueAtoms")
-    .map((entry) => toKeyId(entry.key));
+    .map((entry) => entry.key);
 
 const binaryOperatorKeys = (): Key[] => keysMatching((key) => isBinaryOperatorKeyId(key));
 const unaryOperatorKeys = (): Key[] => keysMatching((key) => isUnaryOperatorId(key));

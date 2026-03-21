@@ -35,3 +35,4 @@ export const runReducerAllocatorDeviceTests = (): void => {
   assert.equal(reset.lambdaControl.maxPoints, withSlots.lambdaControl.maxPoints, "reset preserves max points");
   assertAllocatorInvariant(reset);
 };
+

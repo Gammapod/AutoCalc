@@ -376,3 +376,4 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(firstHost.dataset.v2VisualizerTransition, "enter", "first root transition is independent");
   assert.equal(secondHost.dataset.v2VisualizerTransition, "enter", "second root transition is independent");
 };
+

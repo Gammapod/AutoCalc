@@ -169,8 +169,8 @@ const proofFixtures: ProofFixture[] = [
     predicateType: "roll_contains_value",
     sufficientSetId: "roll_contains_value_via_equal_execution",
     predicate: { type: "roll_contains_value", value: 0n },
-    buildInitialState: () => buildStateWithUnlockedKeys(["+", "0", "="]),
-    script: ["+", "0", "="],
+    buildInitialState: () => buildStateWithUnlockedKeys(["op_add", "digit_0", "exec_equals"]),
+    script: ["op_add", "digit_0", "exec_equals"],
   },
   {
     id: "proof_roll_contains_domain_type_natural",
@@ -178,7 +178,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "roll_contains_domain_type_via_roll_growth",
     predicate: { type: "roll_contains_domain_type", domainType: "natural" },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["="]),
+      ...buildStateWithUnlockedKeys(["exec_equals"]),
       calculator: {
         ...initialState().calculator,
         rollEntries: re(r(1n)),
@@ -192,7 +192,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "equal_run_via_repeatable_no_change",
     predicate: { type: "roll_ends_with_equal_run", length: 5 },
     buildInitialState: () => {
-      const unlocked = buildStateWithUnlockedKeys(["="]);
+      const unlocked = buildStateWithUnlockedKeys(["exec_equals"]);
       return {
         ...unlocked,
         calculator: {
@@ -205,7 +205,7 @@ const proofFixtures: ProofFixture[] = [
             r(0n),
             r(0n),
           ),
-          operationSlots: [{ operator: op("+"), operand: 0n }],
+          operationSlots: [{ operator: op("op_add"), operand: 0n }],
           draftingSlot: null,
         },
       };
@@ -218,7 +218,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "incrementing_run_via_plus_one_execution",
     predicate: { type: "roll_ends_with_incrementing_run", length: 5, step: 1n },
     buildInitialState: () => {
-      const unlocked = buildStateWithUnlockedKeys(["="]);
+      const unlocked = buildStateWithUnlockedKeys(["exec_equals"]);
       return {
         ...unlocked,
         calculator: {
@@ -231,7 +231,7 @@ const proofFixtures: ProofFixture[] = [
             r(4n),
             r(5n),
           ),
-          operationSlots: [{ operator: op("+"), operand: 1n }],
+          operationSlots: [{ operator: op("op_add"), operand: 1n }],
           draftingSlot: null,
         },
       };
@@ -244,7 +244,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "alternating_sign_constant_abs_via_repeatable_negation",
     predicate: { type: "roll_ends_with_alternating_sign_constant_abs_run", length: 7 },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["=", "+", "1", "5"]),
+      ...buildStateWithUnlockedKeys(["exec_equals", "op_add", "digit_1", "digit_5"]),
       calculator: {
         ...initialState().calculator,
         rollEntries: re(r(5n), r(-5n), r(5n), r(-5n), r(5n), r(-5n), r(5n)),
@@ -258,7 +258,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "constant_step_run_via_repeatable_arithmetic",
     predicate: { type: "roll_ends_with_constant_step_run", length: 7, minAbsStep: 2n },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["=", "+", "7"]),
+      ...buildStateWithUnlockedKeys(["exec_equals", "op_add", "digit_7"]),
       calculator: {
         ...initialState().calculator,
         rollEntries: re(r(5n), r(12n), r(19n), r(26n), r(33n), r(40n), r(47n)),
@@ -272,7 +272,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "growth_order_run_via_roll_growth",
     predicate: { type: "roll_ends_with_growth_order_run", order: "linear", length: 7 },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["=", "+", "4"]),
+      ...buildStateWithUnlockedKeys(["exec_equals", "op_add", "digit_4"]),
       calculator: {
         ...initialState().calculator,
         rollEntries: linearGrowthEntries(12, 2n),
@@ -286,7 +286,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "opposite_pair_cycle_via_sign_alternation",
     predicate: { type: "roll_cycle_is_opposite_pair" },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["=", "-n", "2"]),
+      ...buildStateWithUnlockedKeys(["exec_equals", "unary_neg", "digit_2"]),
       calculator: {
         ...initialState().calculator,
         rollEntries: re(r(2n), r(-2n), r(2n), r(-2n)),
@@ -304,11 +304,11 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "euclid_equivalent_modulo_via_operation_eval",
     predicate: { type: "operation_first_euclid_equivalent_modulo" },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["=", "#"]),
+      ...buildStateWithUnlockedKeys(["exec_equals", "op_euclid_div"]),
       calculator: {
         ...initialState().calculator,
         total: r(10n),
-        operationSlots: [{ operator: op("#"), operand: 4n }],
+        operationSlots: [{ operator: op("op_euclid_div"), operand: 4n }],
       },
     }),
     script: [],
@@ -319,7 +319,7 @@ const proofFixtures: ProofFixture[] = [
     sufficientSetId: "sequence_suffix_via_roll_growth",
     predicate: { type: "roll_ends_with_sequence", sequence: [47n, 40n, 33n, 26n, 19n, 12n, 5n] },
     buildInitialState: () => ({
-      ...buildStateWithUnlockedKeys(["=", "-", "7"]),
+      ...buildStateWithUnlockedKeys(["exec_equals", "op_sub", "digit_7"]),
       calculator: {
         ...initialState().calculator,
         rollEntries: re(r(47n), r(40n), r(33n), r(26n), r(19n), r(12n), r(5n)),
@@ -331,9 +331,9 @@ const proofFixtures: ProofFixture[] = [
     id: "proof_key_press_count_plus_once",
     predicateType: "key_press_count_at_least",
     sufficientSetId: "key_press_count_by_pressing_key",
-    predicate: { type: "key_press_count_at_least", key: k("+"), count: 1 },
-    buildInitialState: () => buildStateWithUnlockedKeys(["+"]),
-    script: ["+"],
+    predicate: { type: "key_press_count_at_least", key: k("op_add"), count: 1 },
+    buildInitialState: () => buildStateWithUnlockedKeys(["op_add"]),
+    script: ["op_add"],
   },
   {
     id: "proof_overflow_error_seen_via_increment_overflow",
@@ -395,8 +395,8 @@ const proofFixtures: ProofFixture[] = [
     id: "proof_keys_unlocked_all_add_mul",
     predicateType: "keys_unlocked_all",
     sufficientSetId: "keys_unlocked_all_via_targeted_unlocks",
-    predicate: { type: "keys_unlocked_all", keys: [op("+"), op("*")] },
-    buildInitialState: () => buildStateWithUnlockedKeys(["+", "*"]),
+    predicate: { type: "keys_unlocked_all", keys: [op("op_add"), op("op_mul")] },
+    buildInitialState: () => buildStateWithUnlockedKeys(["op_add", "op_mul"]),
     script: [],
   },
   {
@@ -532,4 +532,5 @@ export const runPredicateCapabilitySpecTests = (): void => {
     );
   }
 };
+
 

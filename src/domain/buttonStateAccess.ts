@@ -2,7 +2,7 @@ import {
   buttonRegistry,
   getButtonDefinition,
 } from "./buttonRegistry.js";
-import { resolveKeyId, toKeyId, toLegacyKey, type KeyLike } from "./keyPresentation.js";
+import { resolveKeyId } from "./keyPresentation.js";
 import type { GameState, Key } from "./types.js";
 
 const withValueExpressionMirror = (
@@ -26,9 +26,9 @@ const withValueExpressionMirror = (
   },
 });
 
-export const isButtonUnlocked = (state: GameState, key: KeyLike): boolean => {
+export const isButtonUnlocked = (state: GameState, key: Key): boolean => {
   const keyId = resolveKeyId(key);
-  const definition = getButtonDefinition(toLegacyKey(keyId));
+  const definition = getButtonDefinition(keyId);
   if (!definition) {
     return false;
   }
@@ -59,9 +59,9 @@ export const isButtonUnlocked = (state: GameState, key: KeyLike): boolean => {
   return Boolean(state.unlocks.execution[keyId as keyof GameState["unlocks"]["execution"]]);
 };
 
-export const setButtonUnlocked = (state: GameState, key: KeyLike, unlocked: boolean): GameState => {
+export const setButtonUnlocked = (state: GameState, key: Key, unlocked: boolean): GameState => {
   const keyId = resolveKeyId(key);
-  const definition = getButtonDefinition(toLegacyKey(keyId));
+  const definition = getButtonDefinition(keyId);
   if (!definition) {
     return state;
   }
@@ -171,4 +171,4 @@ export const setButtonUnlocked = (state: GameState, key: KeyLike, unlocked: bool
 export const iterUnlockedButtons = (state: GameState): Key[] =>
   buttonRegistry
     .filter((entry) => isButtonUnlocked(state, entry.key))
-    .map((entry) => toKeyId(entry.key));
+    .map((entry) => entry.key);

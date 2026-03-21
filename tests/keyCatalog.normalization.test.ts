@@ -14,15 +14,14 @@ export const runKeyCatalogNormalizationTests = (): void => {
   const catalogKeys = [...keys].sort((a, b) => a.localeCompare(b));
   assert.deepEqual(runtimeKeys, catalogKeys, "runtime adapter key set must stay aligned with normalized catalog");
 
-  const presentationKeys = keyPresentationCatalog.map((entry) => entry.legacyKey).sort((a, b) => a.localeCompare(b));
+  const presentationKeys = keyPresentationCatalog.map((entry) => entry.keyId).sort((a, b) => a.localeCompare(b));
   assert.deepEqual(presentationKeys, catalogKeys, "key presentation catalog must define every key exactly once");
 
   const internalRefs = keys.map((key) => getKeyInternalRef(key));
   assert.equal(new Set(internalRefs).size, internalRefs.length, "key internal refs must be unique");
 
   const fromCanonical = keyPresentationCatalog.map((entry) => getKeyInternalRef(entry.keyId)).sort((a, b) => a.localeCompare(b));
-  const fromLegacy = keyPresentationCatalog.map((entry) => getKeyInternalRef(entry.legacyKey)).sort((a, b) => a.localeCompare(b));
-  assert.deepEqual(fromCanonical, fromLegacy, "canonical and legacy key paths resolve to the same key ids");
+  assert.deepEqual(fromCanonical, catalogKeys, "catalog and presentation key paths resolve to the same key ids");
   assert.ok(fromCanonical.every((id) => isKeyId(id)), "all internal refs resolve to canonical key ids");
 
   for (const entry of keyPresentationCatalog) {
@@ -34,7 +33,7 @@ export const runKeyCatalogNormalizationTests = (): void => {
   }
 
   const valueAtoms = keyCatalog.filter((entry) => entry.unlockGroup === "valueAtoms").map((entry) => entry.key);
-  assert.ok(valueAtoms.includes("0") && valueAtoms.includes("9"), "digit literals belong to valueAtoms group");
+  assert.ok(valueAtoms.includes("digit_0") && valueAtoms.includes("digit_9"), "digit literals belong to valueAtoms group");
 
   const state = initialState();
   for (const cell of state.ui.keyLayout) {
@@ -59,7 +58,7 @@ export const runKeyCatalogNormalizationTests = (): void => {
 
   for (const entry of keyCatalog) {
     if (entry.behaviorKind === "visualizer") {
-      if (entry.key === "GRAPH" || entry.key === "FEED" || entry.key === "CIRCLE") {
+      if (entry.key === "viz_graph" || entry.key === "viz_feed" || entry.key === "viz_circle") {
         assert.ok(("visualizerId" in entry ? entry.visualizerId : undefined), `visualizer key ${entry.key} must define visualizerId`);
       }
     }
@@ -75,3 +74,4 @@ export const runKeyCatalogNormalizationTests = (): void => {
 
   assert.ok(staticFunctionCapabilityProviders.length > 0, "generated capability providers should be present");
 };
+

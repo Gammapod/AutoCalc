@@ -19,3 +19,4 @@ export const runContractsParityLongTracesTests = (): void => {
     assert.equal(parity.ok, true, `long-trace parity mismatch fixture=${fixture.id}`);
   }
 };
+

@@ -17,15 +17,15 @@ const createScenarioState = (): GameState => {
       ...base.unlocks,
       valueExpression: {
         ...base.unlocks.valueExpression,
-        [k("1")]: true,
+        [k("digit_1")]: true,
       },
       utilities: {
         ...base.unlocks.utilities,
-        ...utilityUnlockPatch([["C", true], ["UNDO", true]]),
+        ...utilityUnlockPatch([["util_clear_all", true], ["util_undo", true]]),
       },
       execution: {
         ...base.unlocks.execution,
-        [execution("=")]: true,
+        [execution("exec_equals")]: true,
       },
     },
     ui: {
@@ -34,16 +34,16 @@ const createScenarioState = (): GameState => {
       keypadRows: 2,
       keyLayout: [
         { kind: "placeholder", area: "empty" },
-        { kind: "key", key: k("1") },
+        { kind: "key", key: k("digit_1") },
         { kind: "placeholder", area: "empty" },
-        { kind: "key", key: k("=") },
+        { kind: "key", key: k("exec_equals") },
         { kind: "placeholder", area: "empty" },
         { kind: "placeholder", area: "empty" },
       ],
       storageLayout: [
-        { kind: "key", key: k("UNDO") },
-        { kind: "key", key: k("=") },
-        { kind: "key", key: k("C") },
+        { kind: "key", key: k("util_undo") },
+        { kind: "key", key: k("exec_equals") },
+        { kind: "key", key: k("util_clear_all") },
         ...base.ui.storageLayout.slice(3),
       ],
     },
@@ -76,12 +76,12 @@ export const runLayoutRulesEquivalenceTests = (): void => {
       ...state.unlocks,
       slotOperators: {
         ...state.unlocks.slotOperators,
-        [k("+")]: false,
+        [k("op_add")]: false,
       },
     },
     ui: {
       ...state.ui,
-      keyLayout: state.ui.keyLayout.map((cell, index) => (index === 1 ? { kind: "key", key: k("+") } : cell)),
+      keyLayout: state.ui.keyLayout.map((cell, index) => (index === 1 ? { kind: "key", key: k("op_add") } : cell)),
     },
   };
   assertClassifierParity(
@@ -121,6 +121,7 @@ export const runLayoutRulesEquivalenceTests = (): void => {
     "shared evaluator rejects swaps that would move locked keypad keys off-calculator",
   );
 };
+
 
 
 

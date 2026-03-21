@@ -25,3 +25,4 @@ export const runUiShellTouchRearrangeBottomSnapGateTests = (): void => {
     "touch rearrange is disabled while right menu is open",
   );
 };
+

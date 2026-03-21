@@ -31,7 +31,7 @@ export const runUiModuleStorageV2Tests = (): void => {
       "storage module renders storage slots",
     );
 
-    const unaryStorageCell = { kind: "key", key: k("++") } as const;
+    const unaryStorageCell = { kind: "key", key: k("unary_inc") } as const;
     const unaryState = {
       ...state,
       ui: {
@@ -43,14 +43,14 @@ export const runUiModuleStorageV2Tests = (): void => {
         maxSlots: 1,
         unaryOperators: {
           ...state.unlocks.unaryOperators,
-          [k("++")]: true,
+          [k("unary_inc")]: true,
         },
       },
     };
     renderStorageV2Module(harness.root, unaryState, noopDispatch, {
       inputBlocked: false,
     });
-    const unaryButton = harness.root.querySelector<HTMLButtonElement>(`[data-storage-keys] button[data-key='${k("++")}']`);
+    const unaryButton = harness.root.querySelector<HTMLButtonElement>(`[data-storage-keys] button[data-key='${k("unary_inc")}']`);
     assert.equal(unaryButton?.classList.contains("key--group-slot_operator"), true, "storage unary key uses operator group styling");
     assert.equal(unaryButton?.classList.contains("key--unary-operator"), true, "storage unary key receives unary stripe class");
   } finally {
@@ -72,6 +72,7 @@ export const runUiModuleStorageV2Tests = (): void => {
     "storage wrapper file removed",
   );
 };
+
 
 
 

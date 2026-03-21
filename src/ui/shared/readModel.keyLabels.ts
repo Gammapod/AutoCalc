@@ -10,7 +10,6 @@ import {
   isDigitKeyId,
   KEY_ID,
   resolveKeyId,
-  toLegacyKey,
 } from "../../domain/keyPresentation.js";
 import type {
   CalculatorValue,
@@ -48,7 +47,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (isDigitKeyId(key)) {
     return "value_expression";
   }
-  if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.unlockGroup === "unaryOperators") {
+  if (getButtonDefinition(resolveKeyId(key))?.unlockGroup === "unaryOperators") {
     return "slot_operator";
   }
   if (isBinaryOperatorKeyId(key)) {
@@ -57,13 +56,13 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   if (key === KEY_ID.util_clear_all || key === KEY_ID.util_undo || key === KEY_ID.util_backspace) {
     return "utility";
   }
-  if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.category === "settings") {
+  if (getButtonDefinition(resolveKeyId(key))?.category === "settings") {
     return "settings";
   }
-  if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.category === "memory") {
+  if (getButtonDefinition(resolveKeyId(key))?.category === "memory") {
     return "memory";
   }
-  if (getButtonDefinition(toLegacyKey(resolveKeyId(key)))?.behaviorKind === "visualizer") {
+  if (getButtonDefinition(resolveKeyId(key))?.behaviorKind === "visualizer") {
     return "visualizers";
   }
   return "execution";

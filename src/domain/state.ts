@@ -2,7 +2,7 @@ import { fromKeyLayoutArray, toIndexFromCoord } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, getLambdaDerivedValues } from "./lambdaControl.js";
-import { KEY_ID, toKeyId } from "./keyPresentation.js";
+import { KEY_ID } from "./keyPresentation.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
@@ -56,7 +56,7 @@ const buildUnlockRecord = <B extends UnlockGroup>(group: B): UnlockGroupRecord<B
     if (entry.unlockGroup !== group) {
       continue;
     }
-    record[toKeyId(entry.key)] = entry.defaultUnlocked;
+    record[entry.key] = entry.defaultUnlocked;
   }
   return record as UnlockGroupRecord<B>;
 };

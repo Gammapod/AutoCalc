@@ -44,3 +44,4 @@ export const runKeyUniverseContractGuardTests = (): void => {
   assert.ok(keyCatalog.length > 0, "canonical key catalog must stay populated");
   assert.ok(keyRuntimeCatalog.length > 0, "runtime key catalog must stay populated");
 };
+

@@ -1,7 +1,7 @@
 import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../../../domain/keypadLayoutModel.js";
 import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
-import { resolveKeyId, toLegacyKey } from "../../../domain/keyPresentation.js";
+import { resolveKeyId } from "../../../domain/keyPresentation.js";
 import type { Action, GameState, Key, KeyCell } from "../../../domain/types.js";
 import { bindDraggableCell, bindDropTargetCell } from "../input/dragDrop.js";
 import { bindQuickTapPressFeedback, shouldSuppressClick } from "../input/pressFeedback.js";
@@ -73,7 +73,7 @@ export const renderKeypadCells = (
       button.classList.add("key--locked-capability");
     }
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    if (getButtonDefinition(toLegacyKey(resolveKeyId(cell.key)))?.unlockGroup === "unaryOperators") {
+    if (getButtonDefinition(resolveKeyId(cell.key))?.unlockGroup === "unaryOperators") {
       button.classList.add("key--unary-operator");
     }
     if (unlocked && options.newlyUnlockedKeys.has(cell.key)) {

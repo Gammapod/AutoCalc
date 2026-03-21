@@ -12,3 +12,4 @@ export const legacyInitialState = (): GameState => {
     sessionControlProfiles: undefined,
   };
 };
+

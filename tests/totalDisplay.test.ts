@@ -92,3 +92,4 @@ export const runTotalDisplayTests = (): void => {
     "cleared model renders underscore with the bottom segment",
   );
 };
+

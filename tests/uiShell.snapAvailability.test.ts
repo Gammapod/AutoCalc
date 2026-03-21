@@ -38,3 +38,4 @@ export const runUiShellSnapAvailabilityTests = (): void => {
   assert.equal(withStorageModifyModel.defaultSnap, "middle", "default snap remains middle");
 };
 
+

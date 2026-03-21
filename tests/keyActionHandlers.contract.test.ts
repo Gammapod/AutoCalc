@@ -27,3 +27,4 @@ export const runKeyActionHandlersContractTests = (): void => {
     "catalog entries must remain coherent with handler behavior and overrides",
   );
 };
+

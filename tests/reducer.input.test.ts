@@ -20,7 +20,7 @@ export const runReducerInputTests = (): void => {
     ...base,
     ui: {
       ...base.ui,
-      keyLayout: [keyCell("1"), keyCell("2"), keyCell("0")],
+      keyLayout: [keyCell("digit_1"), keyCell("digit_2"), keyCell("digit_0")],
       keypadColumns: 3,
       keypadRows: 1,
     },
@@ -32,33 +32,33 @@ export const runReducerInputTests = (): void => {
       ...base.unlocks,
       valueAtoms: {
         ...base.unlocks.valueAtoms,
-        [k("0")]: true,
-        [k("1")]: true,
-        [k("2")]: true,
+        [k("digit_0")]: true,
+        [k("digit_1")]: true,
+        [k("digit_2")]: true,
       },
       valueExpression: {
         ...base.unlocks.valueExpression,
-        [k("0")]: true,
-        [k("1")]: true,
-        [k("2")]: true,
+        [k("digit_0")]: true,
+        [k("digit_1")]: true,
+        [k("digit_2")]: true,
       },
     },
   };
-  const freshFirstDigit = applyKeyAction(freshBootNoSaveState, "1");
+  const freshFirstDigit = applyKeyAction(freshBootNoSaveState, "digit_1");
   assert.deepEqual(freshFirstDigit.calculator.total, r(1n), "fresh boot accepts one initial total digit");
   assert.equal(
     freshFirstDigit.calculator.singleDigitInitialTotalEntry,
     false,
     "entering a seed digit marks seed as present",
   );
-  const freshBlockedSecondDigit = applyKeyAction(freshFirstDigit, "2");
+  const freshBlockedSecondDigit = applyKeyAction(freshFirstDigit, "digit_2");
   assert.deepEqual(
     freshBlockedSecondDigit.calculator.total,
     r(2n),
     "fresh boot replaces a second initial total digit",
   );
 
-  const freshZeroSeed = applyKeyAction(freshBootNoSaveState, "0");
+  const freshZeroSeed = applyKeyAction(freshBootNoSaveState, "digit_0");
   assert.deepEqual(freshZeroSeed.calculator.total, r(0n), "fresh boot accepts zero seed input");
   assert.equal(
     freshZeroSeed.calculator.singleDigitInitialTotalEntry,
@@ -79,30 +79,30 @@ export const runReducerInputTests = (): void => {
       maxSlots: Math.max(base.unlocks.maxSlots, 1),
       valueExpression: {
         ...base.unlocks.valueExpression,
-        [k("1")]: true,
+        [k("digit_1")]: true,
       },
       slotOperators: {
         ...base.unlocks.slotOperators,
-        [op("+")]: true,
+        [op("op_add")]: true,
       },
       utilities: {
         ...base.unlocks.utilities,
-        [k("\u2190")]: true,
+        [k("util_backspace")]: true,
       },
       execution: {
         ...base.unlocks.execution,
         [KEY_ID.exec_play_pause]: true,
-        [k("=")]: true,
+        [k("exec_equals")]: true,
       },
     },
     ui: {
       ...base.ui,
       keyLayout: [
         { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } },
-        { kind: "key", key: k("1") },
-        { kind: "key", key: op("+") },
-        { kind: "key", key: k("\u2190") },
-        { kind: "key", key: k("="), behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
+        { kind: "key", key: k("digit_1") },
+        { kind: "key", key: op("op_add") },
+        { kind: "key", key: k("util_backspace") },
+        { kind: "key", key: k("exec_equals"), behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
       ],
       keypadColumns: 5,
       keypadRows: 1,
@@ -111,8 +111,8 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(5n),
-      draftingSlot: { operator: op("+"), operandInput: "9", isNegative: false },
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      draftingSlot: { operator: op("op_add"), operandInput: "9", isNegative: false },
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
   const withPauseOn = reducer(executionGateBase, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG });
@@ -120,17 +120,17 @@ export const runReducerInputTests = (): void => {
   const withPauseOff = reducer(withPauseOn, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG });
   assert.equal(Boolean(withPauseOff.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "play/pause toggle turns execution pause off");
 
-  const digitRejectedWhilePaused = reducer(withPauseOn, { type: "PRESS_KEY", key: k("1") });
+  const digitRejectedWhilePaused = reducer(withPauseOn, { type: "PRESS_KEY", key: k("digit_1") });
   assert.deepEqual(digitRejectedWhilePaused, withPauseOn, "digit input rejection is non-mutating while execution pause is active");
 
-  const operatorRejectedWhilePaused = reducer(withPauseOn, { type: "PRESS_KEY", key: op("+") });
+  const operatorRejectedWhilePaused = reducer(withPauseOn, { type: "PRESS_KEY", key: op("op_add") });
   assert.deepEqual(
     operatorRejectedWhilePaused,
     withPauseOn,
     "operator input rejection is non-mutating while execution pause is active",
   );
 
-  const backspaceInterruptsAndClearsPause = reducer(withPauseOn, { type: "PRESS_KEY", key: k("\u2190") });
+  const backspaceInterruptsAndClearsPause = reducer(withPauseOn, { type: "PRESS_KEY", key: k("util_backspace") });
   assert.equal(Boolean(backspaceInterruptsAndClearsPause.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "utility key press clears execution pause");
   assert.notDeepEqual(backspaceInterruptsAndClearsPause.calculator, withPauseOn.calculator, "utility key still executes after clearing pause");
 
@@ -145,7 +145,7 @@ export const runReducerInputTests = (): void => {
       ...withEqualsPauseOn.calculator,
       total: r(2n),
       draftingSlot: null,
-      operationSlots: [{ operator: op("+"), operand: 3n }],
+      operationSlots: [{ operator: op("op_add"), operand: 3n }],
       rollEntries: [],
     },
   };
@@ -153,19 +153,19 @@ export const runReducerInputTests = (): void => {
   assert.equal(Boolean(afterEqualsAutoTick.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "equals toggle auto-clears after terminal auto-step roll update");
   assert.equal(afterEqualsAutoTick.calculator.rollEntries.length > 0, true, "equals toggle terminal auto-step commits roll update");
 
-  const firstFreshDigit = applyKeyAction(fullyUnlocked, "9");
+  const firstFreshDigit = applyKeyAction(fullyUnlocked, "digit_9");
   assert.deepEqual(firstFreshDigit.calculator.total, r(9n), "first total digit on fresh cleared save is accepted");
-  const blockedFreshSecondDigit = applyKeyAction(firstFreshDigit, "8");
+  const blockedFreshSecondDigit = applyKeyAction(firstFreshDigit, "digit_8");
   assert.deepEqual(
     blockedFreshSecondDigit.calculator.total,
     r(8n),
     "second total digit on fresh cleared save replaces first seed digit",
   );
 
-  const afterClear = applyKeyAction(fullyUnlocked, "C");
-  const firstTotalDigit = applyKeyAction(afterClear, "9");
+  const afterClear = applyKeyAction(fullyUnlocked, "util_clear_all");
+  const firstTotalDigit = applyKeyAction(afterClear, "digit_9");
   assert.deepEqual(firstTotalDigit.calculator.total, r(9n), "first total digit after clear is accepted");
-  const blockedSecondTotalDigit = applyKeyAction(firstTotalDigit, "8");
+  const blockedSecondTotalDigit = applyKeyAction(firstTotalDigit, "digit_8");
   assert.deepEqual(
     blockedSecondTotalDigit.calculator.total,
     r(8n),
@@ -177,10 +177,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(10n),
-      operationSlots: [{ operator: op("/"), operand: 0n }],
+      operationSlots: [{ operator: op("op_div"), operand: 0n }],
     },
   };
-  const afterDivByZero = applyKeyAction(divByZeroSource, "=");
+  const afterDivByZero = applyKeyAction(divByZeroSource, "exec_equals");
   assert.deepEqual(afterDivByZero.calculator.total, toNanCalculatorValue(), "division by zero sets total to NaN");
   assert.equal(afterDivByZero.calculator.rollEntries.at(-1)?.y.kind, "nan", "division by zero appends NaN roll row");
   assert.equal(afterDivByZero.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero records roll error code");
@@ -192,7 +192,7 @@ export const runReducerInputTests = (): void => {
       total: toNanCalculatorValue(),
     },
   };
-  const afterNanEquals = applyKeyAction(nanInputSource, "=");
+  const afterNanEquals = applyKeyAction(nanInputSource, "exec_equals");
   assert.deepEqual(afterNanEquals.calculator.total, toNanCalculatorValue(), "executing on NaN keeps NaN total");
   assert.equal(afterNanEquals.calculator.rollEntries.at(-1)?.error?.code, "NaN", "NaN execution records NaN error code");
 
@@ -205,10 +205,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(99n),
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
-  const afterOverflow = applyKeyAction(overflowSource, "=");
+  const afterOverflow = applyKeyAction(overflowSource, "exec_equals");
   assert.deepEqual(afterOverflow.calculator.total, r(99n), "overflow clamps to boundary value");
   assert.equal(
     afterOverflow.calculator.rollEntries.at(-1)?.error?.code,
@@ -226,7 +226,7 @@ export const runReducerInputTests = (): void => {
       },
     },
   };
-  const afterWrap = applyKeyAction(wrapSource, "=");
+  const afterWrap = applyKeyAction(wrapSource, "exec_equals");
   assert.deepEqual(afterWrap.calculator.total, r(-98n), "delta-wrap toggle maps 100 to -98 for maxDigits=2");
   assert.equal(afterWrap.calculator.rollEntries.at(-1)?.error, undefined, "delta-wrap path does not emit overflow error");
 
@@ -235,10 +235,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...wrapSource.calculator,
       total: r(98n),
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
-  const afterUpperEdgeWrap = applyKeyAction(wrapAtUpperEdgeSource, "=");
+  const afterUpperEdgeWrap = applyKeyAction(wrapAtUpperEdgeSource, "exec_equals");
   assert.deepEqual(afterUpperEdgeWrap.calculator.total, r(-99n), "delta-wrap toggle maps 98 + 1 to -99 for maxDigits=2");
 
   const modWrapSource: GameState = {
@@ -251,7 +251,7 @@ export const runReducerInputTests = (): void => {
       },
     },
   };
-  const afterModWrap = applyKeyAction(modWrapSource, "=");
+  const afterModWrap = applyKeyAction(modWrapSource, "exec_equals");
   assert.deepEqual(afterModWrap.calculator.total, r(1n), "mod-wrap toggle maps 100 to 1 for maxDigits=2");
   assert.equal(afterModWrap.calculator.rollEntries.at(-1)?.error, undefined, "mod-wrap path does not emit overflow error");
 
@@ -261,11 +261,11 @@ export const runReducerInputTests = (): void => {
       ...legacyInitialState().unlocks,
       execution: {
         ...legacyInitialState().unlocks.execution,
-        [k("=")]: true,
+        [k("exec_equals")]: true,
       },
     },
   };
-  const afterEquals = applyKeyAction(equalsSource, "=");
+  const afterEquals = applyKeyAction(equalsSource, "exec_equals");
   assert.deepEqual(afterEquals.calculator.total, r(0n), "equals with no operations keeps total unchanged");
   assert.deepEqual(
     afterEquals.calculator.rollEntries.map((entry) => entry.y),
@@ -273,7 +273,7 @@ export const runReducerInputTests = (): void => {
     "equals stores seed then first step in roll",
   );
   assert.equal(afterEquals.calculator.rollEntries[1]?.factorization, undefined, "zero roll result omits factorization payload");
-  const afterSecondEquals = applyKeyAction(afterEquals, "=");
+  const afterSecondEquals = applyKeyAction(afterEquals, "exec_equals");
   assert.deepEqual(afterSecondEquals.calculator.rollEntries[0]?.y, r(0n), "subsequent equals preserve seed at index 0");
 
   const stepThroughSource: GameState = {
@@ -285,24 +285,24 @@ export const runReducerInputTests = (): void => {
     sessionControlProfiles: undefined,
     ui: {
       ...fullyUnlocked.ui,
-      keyLayout: [{ kind: "key", key: k("\u25BB") }],
+      keyLayout: [{ kind: "key", key: k("exec_step_through") }],
       keypadColumns: 1,
       keypadRows: 1,
     },
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(1n),
-      operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
+      operationSlots: [{ operator: op("op_add"), operand: 2n }, { operator: op("op_mul"), operand: 3n }],
     },
   };
-  const afterFirstStep = applyKeyAction(stepThroughSource, "\u25BB");
+  const afterFirstStep = applyKeyAction(stepThroughSource, "exec_step_through");
   assert.equal(afterFirstStep.calculator.stepProgress.active, true, "first step-through press starts step session");
   assert.equal(afterFirstStep.calculator.stepProgress.nextSlotIndex, 1, "first step-through advances cursor by one slot");
   assert.equal(afterFirstStep.calculator.rollEntries.length, 0, "intermediate step-through does not append roll entries");
   assert.deepEqual(afterFirstStep.calculator.total, r(1n), "intermediate step-through leaves total unchanged");
   assert.deepEqual(afterFirstStep.calculator.stepProgress.currentTotal, r(3n), "first step-through stores per-step result");
 
-  const afterSecondStep = applyKeyAction(afterFirstStep, "\u25BB");
+  const afterSecondStep = applyKeyAction(afterFirstStep, "exec_step_through");
   assert.equal(afterSecondStep.calculator.stepProgress.active, false, "terminal step-through clears session");
   assert.deepEqual(afterSecondStep.calculator.total, r(9n), "terminal step-through commits final total");
   assert.equal(afterSecondStep.calculator.rollEntries.length, 2, "terminal step-through appends seed and final step exactly once");
@@ -314,10 +314,10 @@ export const runReducerInputTests = (): void => {
     activeCalculatorId: undefined,
     perCalculatorCompletedUnlockIds: undefined,
     sessionControlProfiles: undefined,
-    keyPressCounts: { [k("1")]: 3 },
+    keyPressCounts: { [k("digit_1")]: 3 },
     ui: {
       ...fullyUnlocked.ui,
-      keyLayout: [{ kind: "key", key: k("=") }],
+      keyLayout: [{ kind: "key", key: k("exec_equals") }],
       keypadColumns: 1,
       keypadRows: 1,
       buttonFlags: {
@@ -328,7 +328,7 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(2n),
-      operationSlots: [{ operator: op("+"), operand: 3n }, { operator: op("*"), operand: 4n }],
+      operationSlots: [{ operator: op("op_add"), operand: 3n }, { operator: op("op_mul"), operand: 4n }],
     },
   };
   const autoStepTick1 = reducer(autoStepSeed, { type: "AUTO_STEP_TICK" });
@@ -367,7 +367,7 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(autoStepIdle.calculator, autoStepIdleSource.calculator, "AUTO_STEP_TICK is idempotent when no runnable step path exists");
   assert.deepEqual(autoStepIdle.keyPressCounts, autoStepIdleSource.keyPressCounts, "AUTO_STEP_TICK idle path preserves key-press counts");
 
-  const equalsFromPartial = applyKeyAction(afterFirstStep, "=");
+  const equalsFromPartial = applyKeyAction(afterFirstStep, "exec_equals");
   assert.deepEqual(equalsFromPartial.calculator.total, r(9n), "equals during partial step continues from cursor");
   assert.equal(equalsFromPartial.calculator.stepProgress.active, false, "equals from partial clears step session");
 
@@ -375,12 +375,12 @@ export const runReducerInputTests = (): void => {
     ...afterFirstStep,
     ui: {
       ...afterFirstStep.ui,
-      keyLayout: [{ kind: "key", key: k("=") }],
+      keyLayout: [{ kind: "key", key: k("exec_equals") }],
       keypadColumns: 1,
       keypadRows: 1,
     },
   };
-  const afterAbsentStepKeyEquals = applyKeyAction(absentStepKeyState, "=");
+  const afterAbsentStepKeyEquals = applyKeyAction(absentStepKeyState, "exec_equals");
   assert.equal(afterAbsentStepKeyEquals.calculator.stepProgress.active, false, "session clears when step key is absent on keypad");
 
   const stepNoSlots = applyKeyAction(
@@ -388,14 +388,14 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked,
       ui: {
         ...fullyUnlocked.ui,
-        keyLayout: [{ kind: "key", key: k("\u25BB") }],
+        keyLayout: [{ kind: "key", key: k("exec_step_through") }],
       },
       calculator: {
         ...fullyUnlocked.calculator,
         operationSlots: [],
       },
     },
-    "\u25BB",
+    "exec_step_through",
   );
   assert.equal(stepNoSlots.calculator.stepProgress.active, false, "step-through with no slots is a no-op");
 
@@ -404,12 +404,12 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(0n),
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
   const rollIterations = MAX_ROLL_ENTRIES + 5;
   for (let index = 0; index < rollIterations; index += 1) {
-    longRollState = applyKeyAction(longRollState, "=");
+    longRollState = applyKeyAction(longRollState, "exec_equals");
   }
   assert.equal(longRollState.calculator.rollEntries.length, MAX_ROLL_ENTRIES, "roll pruning caps total entry count");
   assert.deepEqual(longRollState.calculator.rollEntries[0]?.y, r(0n), "roll pruning keeps seed row untouched");
@@ -432,48 +432,48 @@ export const runReducerInputTests = (): void => {
       rollEntries: re(r(5n)),
     },
   };
-  const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "1");
+  const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "digit_1");
   assert.deepEqual(afterActiveRollDigit, activeRollDigitNoOp, "digit key is no-op while roll is active");
 
-  const lockedUnaryFromKeypad = applyKeyAction(legacyInitialState(), "++");
-  assert.equal(lockedUnaryFromKeypad.keyPressCounts[uop("++")] ?? 0, 1, "locked keypad-installed unary key still counts as a press");
+  const lockedUnaryFromKeypad = applyKeyAction(legacyInitialState(), "unary_inc");
+  assert.equal(lockedUnaryFromKeypad.keyPressCounts[uop("unary_inc")] ?? 0, 1, "locked keypad-installed unary key still counts as a press");
 
-  const unaryPlus = applyKeyAction(fullyUnlocked, "++");
-  assert.deepEqual(unaryPlus.calculator.operationSlots, [{ kind: "unary", operator: uop("++") }], "++ appends unary slot");
+  const unaryPlus = applyKeyAction(fullyUnlocked, "unary_inc");
+  assert.deepEqual(unaryPlus.calculator.operationSlots, [{ kind: "unary", operator: uop("unary_inc") }], "++ appends unary slot");
   assert.equal(unaryPlus.calculator.draftingSlot, null, "++ does not create drafting slot");
 
-  const unaryMinus = applyKeyAction(fullyUnlocked, "--");
-  assert.deepEqual(unaryMinus.calculator.operationSlots, [{ kind: "unary", operator: uop("--") }], "-- appends unary slot");
+  const unaryMinus = applyKeyAction(fullyUnlocked, "unary_dec");
+  assert.deepEqual(unaryMinus.calculator.operationSlots, [{ kind: "unary", operator: uop("unary_dec") }], "-- appends unary slot");
 
-  const unaryNegate = applyKeyAction(fullyUnlocked, "-n");
-  assert.deepEqual(unaryNegate.calculator.operationSlots, [{ kind: "unary", operator: uop("-n") }], "-n appends unary slot");
+  const unaryNegate = applyKeyAction(fullyUnlocked, "unary_neg");
+  assert.deepEqual(unaryNegate.calculator.operationSlots, [{ kind: "unary", operator: uop("unary_neg") }], "-n appends unary slot");
 
   const unaryAfterFilledDrafting = applyKeyAction(
     applyKeyAction(
-      applyKeyAction(fullyUnlocked, "5"),
-      "-",
+      applyKeyAction(fullyUnlocked, "digit_5"),
+      "op_sub",
     ),
-    "2",
+    "digit_2",
   );
-  const unaryAfterFilledDraftingResult = applyKeyAction(unaryAfterFilledDrafting, "++");
+  const unaryAfterFilledDraftingResult = applyKeyAction(unaryAfterFilledDrafting, "unary_inc");
   assert.deepEqual(
     unaryAfterFilledDraftingResult.calculator.operationSlots,
-    [{ kind: "binary", operator: op("-"), operand: 2n }, { kind: "unary", operator: uop("++") }],
+    [{ kind: "binary", operator: op("op_sub"), operand: 2n }, { kind: "unary", operator: uop("unary_inc") }],
     "unary after filled draft commits binary draft first, then appends unary slot",
   );
   assert.equal(unaryAfterFilledDraftingResult.calculator.draftingSlot, null, "unary after filled draft clears drafting slot");
 
   const unaryAfterEmptyDrafting = applyKeyAction(
-    applyKeyAction(fullyUnlocked, "5"),
-    "-",
+    applyKeyAction(fullyUnlocked, "digit_5"),
+    "op_sub",
   );
-  const unaryAfterEmptyDraftingResult = applyKeyAction(unaryAfterEmptyDrafting, "++");
+  const unaryAfterEmptyDraftingResult = applyKeyAction(unaryAfterEmptyDrafting, "unary_inc");
   assert.deepEqual(
     unaryAfterEmptyDraftingResult.calculator.operationSlots,
-    [{ kind: "unary", operator: uop("++") }],
+    [{ kind: "unary", operator: uop("unary_inc") }],
     "unary after empty draft discards draft and appends unary slot",
   );
-  const digitAfterUnaryWithNoDraft = applyKeyAction(unaryAfterEmptyDraftingResult, "2");
+  const digitAfterUnaryWithNoDraft = applyKeyAction(unaryAfterEmptyDraftingResult, "digit_2");
   assert.deepEqual(
     digitAfterUnaryWithNoDraft.calculator.total,
     r(5n),
@@ -481,7 +481,7 @@ export const runReducerInputTests = (): void => {
   );
   assert.deepEqual(
     digitAfterUnaryWithNoDraft.calculator.operationSlots,
-    [{ kind: "unary", operator: uop("++") }],
+    [{ kind: "unary", operator: uop("unary_inc") }],
     "digit after unary without drafting keeps unary slot unchanged",
   );
 
@@ -491,15 +491,15 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.calculator,
       total: r(5n),
       rollEntries: re(r(5n)),
-      operationSlots: [{ operator: op("+"), operand: 9n }],
-      draftingSlot: { operator: op("-"), operandInput: "2", isNegative: false },
+      operationSlots: [{ operator: op("op_add"), operand: 9n }],
+      draftingSlot: { operator: op("op_sub"), operandInput: "2", isNegative: false },
     },
   };
-  const activeRollUnary = applyKeyAction(activeRollUnarySource, "++");
+  const activeRollUnary = applyKeyAction(activeRollUnarySource, "unary_inc");
   assert.equal(activeRollUnary.calculator.rollEntries.length, 0, "unary key clears active roll before insertion");
   assert.deepEqual(
     activeRollUnary.calculator.operationSlots,
-    [{ kind: "unary", operator: uop("++") }],
+    [{ kind: "unary", operator: uop("unary_inc") }],
     "unary key appends unary slot after roll clear",
   );
 
@@ -508,10 +508,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(10n),
-      operationSlots: [{ operator: op("\u27E1"), operand: 4n }],
+      operationSlots: [{ operator: op("op_mod"), operand: 4n }],
     },
   };
-  const afterModuloExecution = applyKeyAction(moduloExecutionSource, "=");
+  const afterModuloExecution = applyKeyAction(moduloExecutionSource, "exec_equals");
   assert.deepEqual(afterModuloExecution.calculator.rollEntries[0]?.y, r(10n), "first equals stores current seed at index 0");
   assert.deepEqual(afterModuloExecution.calculator.total, r(2n), "modulo execution sets total to the modulo component");
   assert.deepEqual(
@@ -530,10 +530,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(12345n),
-      operationSlots: [{ operator: op("\u21BA"), operand: -2n }],
+      operationSlots: [{ operator: op("op_rotate_left"), operand: -2n }],
     },
   };
-  const afterRotateExecution = applyKeyAction(rotateExecutionSource, "=");
+  const afterRotateExecution = applyKeyAction(rotateExecutionSource, "exec_equals");
   assert.deepEqual(afterRotateExecution.calculator.total, r(45123n), "rotate-left supports negative shift as right rotation");
 
   const gcdExecutionSource: GameState = {
@@ -541,10 +541,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("\u2A51"), operand: 18n }],
+      operationSlots: [{ operator: op("op_gcd"), operand: 18n }],
     },
   };
-  const afterGcdExecution = applyKeyAction(gcdExecutionSource, "=");
+  const afterGcdExecution = applyKeyAction(gcdExecutionSource, "exec_equals");
   assert.deepEqual(afterGcdExecution.calculator.total, r(6n), "gcd operator returns greatest common divisor");
 
   const lcmExecutionSource: GameState = {
@@ -552,10 +552,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("\u2A52"), operand: 18n }],
+      operationSlots: [{ operator: op("op_lcm"), operand: 18n }],
     },
   };
-  const afterLcmExecution = applyKeyAction(lcmExecutionSource, "=");
+  const afterLcmExecution = applyKeyAction(lcmExecutionSource, "exec_equals");
   assert.deepEqual(afterLcmExecution.calculator.total, r(36n), "lcm operator returns least common multiple");
 
   const sigmaExecutionSource: GameState = {
@@ -563,10 +563,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(6n),
-      operationSlots: [{ kind: "unary", operator: uop("\u03C3") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_sigma") }],
     },
   };
-  const afterSigmaExecution = applyKeyAction(sigmaExecutionSource, "=");
+  const afterSigmaExecution = applyKeyAction(sigmaExecutionSource, "exec_equals");
   assert.deepEqual(afterSigmaExecution.calculator.total, r(12n), "sigma unary returns sum of divisors");
 
   const phiExecutionSource: GameState = {
@@ -574,10 +574,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(13n),
-      operationSlots: [{ kind: "unary", operator: uop("\u03C6") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_phi") }],
     },
   };
-  const afterPhiExecution = applyKeyAction(phiExecutionSource, "=");
+  const afterPhiExecution = applyKeyAction(phiExecutionSource, "exec_equals");
   assert.deepEqual(afterPhiExecution.calculator.total, r(12n), "phi unary returns Euler totient");
 
   const omegaExecutionSource: GameState = {
@@ -585,10 +585,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(153n),
-      operationSlots: [{ kind: "unary", operator: uop("\u03A9") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_omega") }],
     },
   };
-  const afterOmegaExecution = applyKeyAction(omegaExecutionSource, "=");
+  const afterOmegaExecution = applyKeyAction(omegaExecutionSource, "exec_equals");
   assert.deepEqual(afterOmegaExecution.calculator.total, r(3n), "omega unary returns prime factors with multiplicity");
 
   const sigmaZeroExecutionSource: GameState = {
@@ -596,10 +596,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(0n),
-      operationSlots: [{ kind: "unary", operator: uop("\u03C3") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_sigma") }],
     },
   };
-  const afterSigmaZeroExecution = applyKeyAction(sigmaZeroExecutionSource, "=");
+  const afterSigmaZeroExecution = applyKeyAction(sigmaZeroExecutionSource, "exec_equals");
   assert.deepEqual(afterSigmaZeroExecution.calculator.total, toNanCalculatorValue(), "sigma at zero returns NaN");
   assert.equal(afterSigmaZeroExecution.calculator.rollEntries.at(-1)?.error?.code, "NaN", "sigma at zero records NaN input error");
 
@@ -609,12 +609,12 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.calculator,
       total: r(0n),
       operationSlots: [
-        { operator: op("+"), operand: { type: "constant", value: "pi" } },
-        { operator: op("-"), operand: { type: "constant", value: "pi" } },
+        { operator: op("op_add"), operand: { type: "constant", value: "pi" } },
+        { operator: op("op_sub"), operand: { type: "constant", value: "pi" } },
       ],
     },
   };
-  const afterPiCancellation = applyKeyAction(symbolicPiCancellationSource, "=");
+  const afterPiCancellation = applyKeyAction(symbolicPiCancellationSource, "exec_equals");
   assert.deepEqual(afterPiCancellation.calculator.total, r(0n), "symbolic pi cancellation resolves to exact rational");
   assert.equal(afterPiCancellation.calculator.rollEntries.at(-1)?.error, undefined, "rational symbolic simplification is not an error");
   assert.ok(afterPiCancellation.calculator.rollEntries.at(-1)?.symbolic, "rational symbolic simplification records symbolic payload");
@@ -630,12 +630,12 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.calculator,
       total: r(1n),
       operationSlots: [
-        { operator: op("*"), operand: { type: "constant", value: "e" } },
-        { operator: op("/"), operand: { type: "constant", value: "e" } },
+        { operator: op("op_mul"), operand: { type: "constant", value: "e" } },
+        { operator: op("op_div"), operand: { type: "constant", value: "e" } },
       ],
     },
   };
-  const afterECancellation = applyKeyAction(symbolicECancellationSource, "=");
+  const afterECancellation = applyKeyAction(symbolicECancellationSource, "exec_equals");
   assert.deepEqual(afterECancellation.calculator.total, r(1n), "symbolic e cancellation resolves to exact rational");
   assert.equal(afterECancellation.calculator.rollEntries.at(-1)?.error, undefined, "exact symbolic rational stays non-error");
   assert.ok(afterECancellation.calculator.rollEntries.at(-1)?.symbolic, "exact symbolic rational still records symbolic payload");
@@ -645,10 +645,10 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(1n),
-      operationSlots: [{ operator: op("+"), operand: { type: "constant", value: "pi" } }],
+      operationSlots: [{ operator: op("op_add"), operand: { type: "constant", value: "pi" } }],
     },
   };
-  const afterNonRationalSymbolic = applyKeyAction(symbolicNonRationalSource, "=");
+  const afterNonRationalSymbolic = applyKeyAction(symbolicNonRationalSource, "exec_equals");
   assert.deepEqual(afterNonRationalSymbolic.calculator.total, toNanCalculatorValue(), "non-rational symbolic total is rejected in default visualizer");
   assert.equal(afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.error?.code, "ALG", "non-rational symbolic result records ALG error");
   assert.ok(afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.symbolic, "non-rational symbolic result records symbolic payload");
@@ -659,8 +659,8 @@ export const runReducerInputTests = (): void => {
   );
 
   const euclidDraftConstantBlocked = applyKeyAction(
-    applyKeyAction(fullyUnlocked, "#"),
-    "pi",
+    applyKeyAction(fullyUnlocked, "op_euclid_div"),
+    "const_pi",
   );
   assert.equal(
     euclidDraftConstantBlocked.calculator.draftingSlot?.operandInput,
@@ -673,14 +673,14 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked,
       calculator: {
         ...fullyUnlocked.calculator,
-        operationSlots: [{ operator: op("#"), operand: -4n }],
+        operationSlots: [{ operator: op("op_euclid_div"), operand: -4n }],
       },
     },
-    "7",
+    "digit_7",
   );
   assert.deepEqual(
     euclidDigitRewriteNormalizesSign.calculator.operationSlots,
-    [{ operator: op("#"), operand: 7n }],
+    [{ operator: op("op_euclid_div"), operand: 7n }],
     "digit rewrite on euclidean divisor always normalizes to natural number",
   );
 
@@ -692,7 +692,7 @@ export const runReducerInputTests = (): void => {
       rollEntries: re(r(9n)),
     },
   };
-  const afterC = applyKeyAction(clearSeedSource, "C");
+  const afterC = applyKeyAction(clearSeedSource, "util_clear_all");
   assert.equal(afterC.calculator.rollEntries.length, 0, "C clears roll entries");
   assert.equal(afterC.calculator.rollAnalysis.stopReason, "none", "C resets roll analysis state");
 
@@ -711,13 +711,13 @@ export const runReducerInputTests = (): void => {
       },
     },
   };
-  const afterUndo = applyKeyAction(undoSource, "UNDO");
+  const afterUndo = applyKeyAction(undoSource, "util_undo");
   assert.deepEqual(afterUndo.calculator.total, r(5n), "UNDO restores prior trajectory value");
   assert.deepEqual(afterUndo.calculator.rollEntries, re(r(5n)), "UNDO removes last step and keeps seed row");
   assert.equal(afterUndo.calculator.stepProgress.active, false, "UNDO cancels active step session");
 
   const memoryCycleLocked = legacyInitialState();
-  const afterLockedMemoryCycle = applyKeyAction(memoryCycleLocked, "α,β,γ");
+  const afterLockedMemoryCycle = applyKeyAction(memoryCycleLocked, "memory_cycle_variable");
   assert.equal(afterLockedMemoryCycle.ui.memoryVariable, "α", "locked memory-cycle key does not change selected variable");
 
   const memoryCycleUnlocked: GameState = {
@@ -726,15 +726,15 @@ export const runReducerInputTests = (): void => {
       ...legacyInitialState().unlocks,
       memory: {
         ...legacyInitialState().unlocks.memory,
-        [k("α,β,γ")]: true,
+        [k("memory_cycle_variable")]: true,
       },
     },
   };
-  const afterFirstMemoryCycle = applyKeyAction(memoryCycleUnlocked, "α,β,γ");
+  const afterFirstMemoryCycle = applyKeyAction(memoryCycleUnlocked, "memory_cycle_variable");
   assert.equal(afterFirstMemoryCycle.ui.memoryVariable, "β", "memory-cycle key advances α to β");
-  const afterSecondMemoryCycle = applyKeyAction(afterFirstMemoryCycle, "α,β,γ");
+  const afterSecondMemoryCycle = applyKeyAction(afterFirstMemoryCycle, "memory_cycle_variable");
   assert.equal(afterSecondMemoryCycle.ui.memoryVariable, "γ", "memory-cycle key advances β to γ");
-  const afterThirdMemoryCycle = applyKeyAction(afterSecondMemoryCycle, "α,β,γ");
+  const afterThirdMemoryCycle = applyKeyAction(afterSecondMemoryCycle, "memory_cycle_variable");
   assert.equal(afterThirdMemoryCycle.ui.memoryVariable, "α", "memory-cycle key wraps γ to α");
 
   const memoryPlusBase = legacyInitialState();
@@ -755,15 +755,15 @@ export const runReducerInputTests = (): void => {
       ...memoryPlusBase.unlocks,
       memory: {
         ...memoryPlusBase.unlocks.memory,
-        [k("M+")]: true,
+        [k("memory_adjust_plus")]: true,
       },
     },
   };
-  const plusAlpha = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "α" } }, "M+");
+  const plusAlpha = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "α" } }, "memory_adjust_plus");
   assert.equal(plusAlpha.ui.keypadColumns, memoryPlusBaseColumns + 1, "M+ with α increases keypad columns");
-  const plusBeta = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "β" } }, "M+");
+  const plusBeta = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "β" } }, "memory_adjust_plus");
   assert.equal(plusBeta.ui.keypadRows, memoryPlusBaseRows + 1, "M+ with β increases keypad rows");
-  const plusGamma = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "γ" } }, "M+");
+  const plusGamma = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "γ" } }, "memory_adjust_plus");
   assert.equal(plusGamma.unlocks.maxSlots, memoryPlusBaseSlots + 1, "M+ with γ increases operation slot count");
 
   const memoryMinusBase = legacyInitialState();
@@ -791,7 +791,7 @@ export const runReducerInputTests = (): void => {
       ...memoryMinusBase.unlocks,
       memory: {
         ...memoryMinusBase.unlocks.memory,
-        [k("M–")]: true,
+        [k("memory_adjust_minus")]: true,
       },
     },
     ui: {
@@ -800,11 +800,11 @@ export const runReducerInputTests = (): void => {
       keypadRows: 2,
     },
   };
-  const minusAlpha = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "α" } }, "M–");
+  const minusAlpha = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "α" } }, "memory_adjust_minus");
   assert.equal(minusAlpha.ui.keypadColumns, 1, "M– with α decreases keypad columns");
-  const minusBeta = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "β" } }, "M–");
+  const minusBeta = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "β" } }, "memory_adjust_minus");
   assert.equal(minusBeta.ui.keypadRows, 1, "M– with β decreases keypad rows");
-  const minusGamma = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "γ" } }, "M–");
+  const minusGamma = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "γ" } }, "memory_adjust_minus");
   assert.equal(minusGamma.unlocks.maxSlots, 1, "M– with γ respects gamma minimum once gamma has been raised");
   const withBackspaceUnlocked: GameState = {
     ...fullyUnlocked,
@@ -812,22 +812,22 @@ export const runReducerInputTests = (): void => {
       ...fullyUnlocked.unlocks,
       utilities: {
         ...fullyUnlocked.unlocks.utilities,
-        [k("\u2190")]: true,
+        [k("util_backspace")]: true,
       },
     },
   };
 
-  const backspaceLockedNoOp = applyKeyAction(legacyInitialState(), "\u2190");
+  const backspaceLockedNoOp = applyKeyAction(legacyInitialState(), "util_backspace");
   assert.deepEqual(backspaceLockedNoOp, legacyInitialState(), "locked backspace remains a no-op");
 
   const backspaceDraftingDelete: GameState = {
     ...withBackspaceUnlocked,
     calculator: {
       ...withBackspaceUnlocked.calculator,
-      draftingSlot: { operator: op("+"), operandInput: "9", isNegative: false },
+      draftingSlot: { operator: op("op_add"), operandInput: "9", isNegative: false },
     },
   };
-  const afterBackspaceDraftingDelete = applyKeyAction(backspaceDraftingDelete, "\u2190");
+  const afterBackspaceDraftingDelete = applyKeyAction(backspaceDraftingDelete, "util_backspace");
   assert.equal(
     afterBackspaceDraftingDelete.calculator.draftingSlot?.operandInput,
     "",
@@ -838,10 +838,10 @@ export const runReducerInputTests = (): void => {
     ...withBackspaceUnlocked,
     calculator: {
       ...withBackspaceUnlocked.calculator,
-      draftingSlot: { operator: op("+"), operandInput: "", isNegative: true },
+      draftingSlot: { operator: op("op_add"), operandInput: "", isNegative: true },
     },
   };
-  const afterBackspaceDraftingNegFlag = applyKeyAction(backspaceDraftingNegFlag, "\u2190");
+  const afterBackspaceDraftingNegFlag = applyKeyAction(backspaceDraftingNegFlag, "util_backspace");
   assert.equal(
     afterBackspaceDraftingNegFlag.calculator.draftingSlot?.isNegative,
     false,
@@ -858,9 +858,9 @@ export const runReducerInputTests = (): void => {
       draftingSlot: null,
     },
   };
-  const afterBackspaceSeedTrim = applyKeyAction(backspaceSeedTrim, "\u2190");
+  const afterBackspaceSeedTrim = applyKeyAction(backspaceSeedTrim, "util_backspace");
   assert.deepEqual(afterBackspaceSeedTrim.calculator.total, r(-4n), "backspace trims seed-entry magnitude and preserves sign");
-  const afterBackspaceSeedToZero = applyKeyAction(afterBackspaceSeedTrim, "\u2190");
+  const afterBackspaceSeedToZero = applyKeyAction(afterBackspaceSeedTrim, "util_backspace");
   assert.deepEqual(afterBackspaceSeedToZero.calculator.total, r(0n), "backspace turns single-digit seed magnitude into zero");
 
   const backspaceActiveRollNoOp: GameState = {
@@ -877,7 +877,7 @@ export const runReducerInputTests = (): void => {
       },
     },
   };
-  const afterBackspaceActiveRollNoOp = applyKeyAction(backspaceActiveRollNoOp, "\u2190");
+  const afterBackspaceActiveRollNoOp = applyKeyAction(backspaceActiveRollNoOp, "util_backspace");
   assert.equal(afterBackspaceActiveRollNoOp.calculator.stepProgress.active, false, "backspace cancels active step session");
   assert.deepEqual(afterBackspaceActiveRollNoOp.calculator.rollEntries, backspaceActiveRollNoOp.calculator.rollEntries, "backspace remains no-op on active roll entries");
 
@@ -886,22 +886,23 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...withBackspaceUnlocked.calculator,
       total: r(4n),
-      operationSlots: [{ operator: op("+"), operand: 1n }],
-      draftingSlot: { operator: op("-"), operandInput: "3", isNegative: false },
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
+      draftingSlot: { operator: op("op_sub"), operandInput: "3", isNegative: false },
     },
   };
-  const afterWalk1 = applyKeyAction(backspaceFunctionWalkStart, "\u2190");
+  const afterWalk1 = applyKeyAction(backspaceFunctionWalkStart, "util_backspace");
   assert.equal(afterWalk1.calculator.draftingSlot?.operandInput, "", "walk 1 clears trailing operand digit");
-  const afterWalk2 = applyKeyAction(afterWalk1, "\u2190");
-  assert.equal(afterWalk2.calculator.draftingSlot?.operator, op("+"), "walk 2 removes current operator and restores previous slot operator");
+  const afterWalk2 = applyKeyAction(afterWalk1, "util_backspace");
+  assert.equal(afterWalk2.calculator.draftingSlot?.operator, op("op_add"), "walk 2 removes current operator and restores previous slot operator");
   assert.equal(afterWalk2.calculator.draftingSlot?.operandInput, "1", "walk 2 restores previous slot operand");
-  const afterWalk3 = applyKeyAction(afterWalk2, "\u2190");
+  const afterWalk3 = applyKeyAction(afterWalk2, "util_backspace");
   assert.equal(afterWalk3.calculator.draftingSlot?.operandInput, "", "walk 3 clears restored operand digit");
-  const afterWalk4 = applyKeyAction(afterWalk3, "\u2190");
+  const afterWalk4 = applyKeyAction(afterWalk3, "util_backspace");
   assert.equal(afterWalk4.calculator.draftingSlot, null, "walk 4 removes restored operator");
-  const afterWalk5 = applyKeyAction(afterWalk4, "\u2190");
+  const afterWalk5 = applyKeyAction(afterWalk4, "util_backspace");
   assert.deepEqual(afterWalk5.calculator.total, r(0n), "walk 5 trims seed total value");
 };
+
 
 
 

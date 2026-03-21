@@ -114,3 +114,4 @@ export const runAutoStepSchedulerTests = (): void => {
   scheduler.dispose();
   assert.equal(timers.activeCount(), 0, "dispose leaves no active timers");
 };
+

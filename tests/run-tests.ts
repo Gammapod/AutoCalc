@@ -243,3 +243,4 @@ for (const [name, fn] of testsToRun) {
 if (passed === testsToRun.length) {
   console.log(`All ${passed} test groups passed.`);
 }
+

@@ -23,3 +23,4 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
     "input blocking overrides shell-specific keypad behavior",
   );
 };
+

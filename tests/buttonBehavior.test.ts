@@ -17,15 +17,15 @@ import { k, keyCell } from "./support/keyCompat.js";
 export const runButtonBehaviorTests = (): void => {
   resetInputLockStateForTests();
   const base = initialState();
-  const pressCell: KeyCell = keyCell("+");
+  const pressCell: KeyCell = keyCell("op_add");
   assert.deepEqual(
     buildKeyButtonAction(pressCell),
-    { type: "PRESS_KEY", key: k("+") },
+    { type: "PRESS_KEY", key: k("op_add") },
     "default button behavior dispatches PRESS_KEY",
   );
   assert.equal(isToggleFlagActive(base, pressCell), false, "press behavior never reports toggle-active");
 
-  const toggleCell: KeyCell = keyCell("1", { type: "toggle_flag", flag: "sticky.negate" });
+  const toggleCell: KeyCell = keyCell("digit_1", { type: "toggle_flag", flag: "sticky.negate" });
   assert.deepEqual(
     buildKeyButtonAction(toggleCell),
     { type: "TOGGLE_FLAG", flag: "sticky.negate" },
@@ -45,19 +45,19 @@ export const runButtonBehaviorTests = (): void => {
   };
   assert.equal(isToggleFlagActive(withToggleFlag, toggleCell), true, "toggle is active when its flag is set");
 
-  const feedToggleCell: KeyCell = keyCell("FEED");
+  const feedToggleCell: KeyCell = keyCell("viz_feed");
   assert.deepEqual(
     buildKeyButtonAction(feedToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key dispatches visualizer toggle action",
   );
-  const circleToggleCell: KeyCell = keyCell("CIRCLE");
+  const circleToggleCell: KeyCell = keyCell("viz_circle");
   assert.deepEqual(
     buildKeyButtonAction(circleToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
     "CIRCLE key dispatches visualizer toggle action",
   );
-  const eigenAllocatorToggleCell: KeyCell = keyCell("\u03BB");
+  const eigenAllocatorToggleCell: KeyCell = keyCell("viz_eigen_allocator");
   assert.deepEqual(
     buildKeyButtonAction(eigenAllocatorToggleCell),
     { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" },
@@ -90,4 +90,5 @@ export const runButtonBehaviorTests = (): void => {
 
   resetInputLockStateForTests();
 };
+
 

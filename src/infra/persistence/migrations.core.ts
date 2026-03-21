@@ -13,10 +13,8 @@ import { resizeKeyLayout } from "../../domain/reducer.layout.js";
 import {
   isBinaryOperatorKeyId,
   isKeyId,
-  isLegacyKey,
   isUnaryOperatorId,
   KEY_ID,
-  resolveKeyId,
 } from "../../domain/keyPresentation.js";
 import { migrateV6PlusToLatest } from "./migrations/v6plus.js";
 import type {
@@ -271,7 +269,7 @@ const isBinarySlotOperator = (value: unknown): value is Slot["operator"] =>
   isString(value) && isBinaryOperatorKeyId(value as never);
 const isUnarySlotOperator = (value: unknown): value is Slot["operator"] =>
   isString(value) && isUnaryOperatorId(value as never);
-const isKnownKey = (value: unknown): value is Key => isString(value) && (isLegacyKey(value as never) || isKeyId(value as never));
+const isKnownKey = (value: unknown): value is Key => isString(value) && isKeyId(value as never);
 const isLegacyCeKey = (value: unknown): boolean =>
   value === LEGACY_CE_KEY || value === LEGACY_CE_KEY_ID;
 const isLegacyGreaterKey = (value: unknown): boolean =>
@@ -394,7 +392,7 @@ const stripCeFromLayoutCells = (layout: unknown): LayoutCell[] | undefined => {
       const behavior = isObject(cell.behavior) ? (cell.behavior as KeyCell["behavior"]) : undefined;
       next.push({
         kind: "key",
-        key: resolveKeyId(cell.key),
+        key: cell.key as Key,
         ...(behavior ? { behavior } : {}),
       });
     }
@@ -428,7 +426,7 @@ const stripCeFromStorageSlots = (layout: unknown): Array<KeyCell | null> | undef
     }
     next.push({
       kind: "key",
-      key: resolveKeyId(cell.key),
+      key: cell.key as Key,
       ...(isBoolean(cell.wide) ? { wide: cell.wide } : {}),
       ...(isBoolean(cell.tall) ? { tall: cell.tall } : {}),
       ...(isObject(cell.behavior) ? { behavior: cell.behavior as KeyCell["behavior"] } : {}),
@@ -669,7 +667,7 @@ const normalizeKeyLayout = (layout?: LayoutCell[]): LayoutCell[] => {
       (cell) => cell.kind === "placeholder" && cell.area === mapping.area,
     );
     if (placeholderIndex >= 0) {
-      normalized[placeholderIndex] = { kind: "key", key: resolveKeyId(mapping.key) };
+      normalized[placeholderIndex] = { kind: "key", key: mapping.key };
     }
   }
 

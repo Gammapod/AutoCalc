@@ -1,5 +1,5 @@
 import { getButtonDefinition } from "./buttonRegistry.js";
-import { KEY_ID, resolveKeyId, toLegacyKey, type KeyLike } from "./keyPresentation.js";
+import { KEY_ID } from "./keyPresentation.js";
 import {
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
@@ -11,28 +11,12 @@ import type { Action, GameState, Key, KeyCell } from "./types.js";
 const isKeyCell = (cell: GameState["ui"]["keyLayout"][number] | GameState["ui"]["storageLayout"][number]): cell is KeyCell =>
   Boolean(cell && cell.kind === "key");
 
-const tryResolveKey = (key: KeyLike): Key | null => {
-  try {
-    return resolveKeyId(key);
-  } catch {
-    return null;
-  }
-};
-
-const isExecutionCategoryKey = (key: KeyLike): boolean => {
-  const resolved = tryResolveKey(key);
-  if (!resolved) {
-    return false;
-  }
-  const definition = getButtonDefinition(toLegacyKey(resolved));
+const isExecutionCategoryKey = (key: Key): boolean => {
+  const definition = getButtonDefinition(key);
   return definition?.category === "execution";
 };
 
-const getExecutionToggleFlagsForKey = (ui: GameState["ui"], keyLike: KeyLike): Set<string> => {
-  const key = tryResolveKey(keyLike);
-  if (!key) {
-    return new Set<string>();
-  }
+const getExecutionToggleFlagsForKey = (ui: GameState["ui"], key: Key): Set<string> => {
   const flags = new Set<string>();
   if (key === KEY_ID.exec_play_pause) {
     flags.add(EXECUTION_PAUSE_FLAG);
@@ -44,8 +28,7 @@ const getExecutionToggleFlagsForKey = (ui: GameState["ui"], keyLike: KeyLike): S
     if (!isKeyCell(cell)) {
       continue;
     }
-    const resolved = tryResolveKey(cell.key);
-    if (!resolved || resolved !== key) {
+    if (cell.key !== key) {
       continue;
     }
     if (cell.behavior?.type === "toggle_flag") {
@@ -56,8 +39,7 @@ const getExecutionToggleFlagsForKey = (ui: GameState["ui"], keyLike: KeyLike): S
     if (!isKeyCell(cell)) {
       continue;
     }
-    const resolved = tryResolveKey(cell.key);
-    if (!resolved || resolved !== key) {
+    if (cell.key !== key) {
       continue;
     }
     if (cell.behavior?.type === "toggle_flag") {
@@ -142,24 +124,23 @@ export const isExecutionToggleFlag = (state: GameState, flag: string): boolean =
 export type ExecutionPolicyInterrupt =
   | { type: "clear_all" }
   | { type: "clear_all_except_flag"; flag: string }
-  | { type: "clear_all_except_key"; keyLike: KeyLike };
+  | { type: "clear_all_except_key"; key: Key };
 
 export type ExecutionPolicyResult =
   | { decision: "allow" }
   | { decision: "reject" }
   | { decision: "interrupt_and_run"; interrupt: ExecutionPolicyInterrupt };
 
-export const clearExecutionModeFlagsForInterrupt = (state: GameState, keyLike: KeyLike): GameState => {
-  if (!isExecutionCategoryKey(keyLike)) {
+export const clearExecutionModeFlagsForInterrupt = (state: GameState, key: Key): GameState => {
+  if (!isExecutionCategoryKey(key)) {
     return clearExecutionModeFlags(state);
   }
-  const resolvedKey = tryResolveKey(keyLike);
   const executionFlags = getExecutionToggleFlags(state.ui);
-  const keepFlags = resolvedKey === KEY_ID.exec_play_pause
+  const keepFlags = key === KEY_ID.exec_play_pause
     ? new Set<string>([EXECUTION_PAUSE_FLAG])
-    : resolvedKey === KEY_ID.exec_equals
+    : key === KEY_ID.exec_equals
       ? new Set<string>([EXECUTION_PAUSE_EQUALS_FLAG])
-    : getExecutionToggleFlagsForKey(state.ui, keyLike);
+    : getExecutionToggleFlagsForKey(state.ui, key);
   if (executionFlags.size === 0) {
     return state;
   }
@@ -221,15 +202,11 @@ export const applyExecutionInterrupt = (state: GameState, interrupt: ExecutionPo
   if (interrupt.type === "clear_all_except_flag") {
     return clearExecutionModeFlagsForInterruptByFlag(state, interrupt.flag);
   }
-  return clearExecutionModeFlagsForInterrupt(state, interrupt.keyLike);
+  return clearExecutionModeFlagsForInterrupt(state, interrupt.key);
 };
 
-export const isExecutionInterruptingKey = (keyLike: KeyLike): boolean => {
-  const resolved = tryResolveKey(keyLike);
-  if (!resolved) {
-    return false;
-  }
-  const definition = getButtonDefinition(toLegacyKey(resolved));
+export const isExecutionInterruptingKey = (key: Key): boolean => {
+  const definition = getButtonDefinition(key);
   if (!definition) {
     return false;
   }
@@ -240,15 +217,11 @@ export const isExecutionInterruptingKey = (keyLike: KeyLike): boolean => {
   );
 };
 
-export const isExecutionGatedInputKey = (keyLike: KeyLike): boolean => {
-  if (isExecutionInterruptingKey(keyLike)) {
+export const isExecutionGatedInputKey = (key: Key): boolean => {
+  if (isExecutionInterruptingKey(key)) {
     return false;
   }
-  const resolved = tryResolveKey(keyLike);
-  if (!resolved) {
-    return false;
-  }
-  const definition = getButtonDefinition(toLegacyKey(resolved));
+  const definition = getButtonDefinition(key);
   if (!definition) {
     return false;
   }
@@ -308,17 +281,16 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
   }
 
   if (action.type === "PRESS_KEY") {
-    const resolvedKey = tryResolveKey(action.key);
-    if (!resolvedKey || !isExecutionModeActive(state)) {
+    if (!isExecutionModeActive(state)) {
       return { decision: "allow" };
     }
-    if (isExecutionGatedInputKey(resolvedKey)) {
+    if (isExecutionGatedInputKey(action.key)) {
       return { decision: "reject" };
     }
-    if (isExecutionInterruptingKey(resolvedKey)) {
+    if (isExecutionInterruptingKey(action.key)) {
       return {
         decision: "interrupt_and_run",
-        interrupt: { type: "clear_all_except_key", keyLike: resolvedKey },
+        interrupt: { type: "clear_all_except_key", key: action.key },
       };
     }
     return { decision: "allow" };
@@ -334,8 +306,8 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
   return { decision: "allow" };
 };
 
-export const clearExecutionToggleFlagsForKey = (state: GameState, keyLike: KeyLike): GameState => {
-  const clearFlags = getExecutionToggleFlagsForKey(state.ui, keyLike);
+export const clearExecutionToggleFlagsForKey = (state: GameState, key: Key): GameState => {
+  const clearFlags = getExecutionToggleFlagsForKey(state.ui, key);
   if (clearFlags.size === 0) {
     return state;
   }

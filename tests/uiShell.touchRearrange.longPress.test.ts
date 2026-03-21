@@ -12,7 +12,7 @@ export const runUiShellTouchRearrangeLongPressTests = (): void => {
     1,
     100,
     200,
-    { surface: "storage", index: 0, key: k("C") },
+    { surface: "storage", index: 0, key: k("util_clear_all") },
     null,
   );
   assert.equal(started, true, "touch press can start in idle mode");
@@ -26,13 +26,14 @@ export const runUiShellTouchRearrangeLongPressTests = (): void => {
     2,
     100,
     200,
-    { surface: "storage", index: 0, key: k("C") },
+    { surface: "storage", index: 0, key: k("util_clear_all") },
     null,
   );
   const activated = controller.forceActivateCarryForTests();
   assert.equal(activated, true, "forced activation switches controller to carrying mode");
   assert.equal(controller.isCarrying(), true, "controller reports carrying mode");
 };
+
 
 
 

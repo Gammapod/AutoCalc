@@ -19,7 +19,7 @@ const collectTsFiles = (dir: string): string[] => {
   return files;
 };
 
-const normalize = (value: string): string => value.replaceAll("\\", "/");
+const normalize = (value: string): string => value.replaceAll("\\", "op_div");
 
 export const runV2ImportBoundaryTests = (): void => {
   const root = resolve(process.cwd(), "src");
@@ -44,3 +44,4 @@ export const runV2ImportBoundaryTests = (): void => {
     `src must not use root-style src/* imports or src_legacy_tmp imports. Offenders: ${offenders.join(", ")}`,
   );
 };
+

@@ -1,6 +1,6 @@
 import "../support/keyCompat.runtime.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../../src/domain/calculatorValue.js";
-import { resolveKeyId, type KeyLike } from "../../src/domain/keyPresentation.js";
+import { resolveKeyId, type KeyId } from "../../src/domain/keyPresentation.js";
 import { initialState } from "../../src/domain/state.js";
 import { legacyInitialState } from "../support/legacyState.js";
 import type { ErrorCode, ExecutionErrorKind, GameState, KeyInput, RollEntry } from "../../src/domain/types.js";
@@ -14,7 +14,7 @@ export type SlotInputStateProjection = {
   draftingSlot?: GameState["calculator"]["draftingSlot"];
   roll?: GameState["calculator"]["total"][];
   rollErrors?: Array<{ rollIndex: number; code: ErrorCode; kind: ExecutionErrorKind }>;
-  keyPressCounts?: Partial<Record<KeyLike, number>>;
+  keyPressCounts?: Partial<Record<KeyId, number>>;
 };
 
 export type SlotInputScenario = {
@@ -190,27 +190,27 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     id: "legacy.start_drafting_and_digit",
     description: "Operator starts drafting; digit fills drafting operand.",
     tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(base, ["+", "1"]),
-    keySequence: ["+", "1"],
+    initialState: withUnlockedKeys(base, ["op_add", "digit_1"]),
+    keySequence: ["op_add", "digit_1"],
     expectedProjection: {
       operationSlots: [],
-      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
+      draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
       roll: [],
-      keyPressCounts: keyCounts([["+", 1], ["1", 1]]),
+      keyPressCounts: keyCounts([["op_add", 1], ["digit_1", 1]]),
     },
   },
   {
     id: "legacy.equals_clears_empty_drafting_slot",
     description: "Executing with half-filled slot drops drafting slot and executes committed slots only.",
     tags: ["legacy_contract", "target_spec"],
-    initialState: withUnlockedKeys(base, ["+", "="]),
-    keySequence: ["+", "="],
+    initialState: withUnlockedKeys(base, ["op_add", "exec_equals"]),
+    keySequence: ["op_add", "exec_equals"],
     expectedProjection: {
       operationSlots: [],
       draftingSlot: null,
       total: r(0n),
       roll: [r(0n)],
-      keyPressCounts: keyCounts([["+", 1], ["=", 1]]),
+      keyPressCounts: keyCounts([["op_add", 1], ["exec_equals", 1]]),
     },
     targetProjection: {
       draftingSlot: null,
@@ -220,12 +220,12 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     id: "target.replace_operator_on_empty_operand",
     description: "Desired: if drafting has operator and empty operand, new operator replaces it.",
     tags: ["target_spec"],
-    initialState: withUnlockedKeys(base, ["+", "-"]),
-    keySequence: ["+", "-"],
+    initialState: withUnlockedKeys(base, ["op_add", "op_sub"]),
+    keySequence: ["op_add", "op_sub"],
     targetProjection: {
       operationSlots: [],
-      draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
-      keyPressCounts: keyCounts([["+", 1], ["-", 1]]),
+      draftingSlot: { operator: op("op_sub"), operandInput: "", isNegative: false },
+      keyPressCounts: keyCounts([["op_add", 1], ["op_sub", 1]]),
     },
   },
   {
@@ -238,32 +238,32 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(0n),
-          operationSlots: [{ operator: op("+"), operand: 1n }],
+          operationSlots: [{ operator: op("op_add"), operand: 1n }],
           draftingSlot: null,
         },
       },
-      ["2"],
+      ["digit_2"],
     ),
-    keySequence: ["2"],
+    keySequence: ["digit_2"],
     targetProjection: {
       total: r(0n),
-      operationSlots: [{ operator: op("+"), operand: 2n }],
+      operationSlots: [{ operator: op("op_add"), operand: 2n }],
       draftingSlot: null,
       roll: [],
-      keyPressCounts: keyCounts([["2", 1]]),
+      keyPressCounts: keyCounts([["digit_2", 1]]),
     },
   },
   {
     id: "target.digit_replaces_filled_drafting_operand",
     description: "Desired: typing another digit into a filled drafting operand replaces it.",
     tags: ["target_spec"],
-    initialState: withUnlockedKeys(base, ["+", "1", "2"]),
-    keySequence: ["+", "1", "2"],
+    initialState: withUnlockedKeys(base, ["op_add", "digit_1", "digit_2"]),
+    keySequence: ["op_add", "digit_1", "digit_2"],
     targetProjection: {
       operationSlots: [],
-      draftingSlot: { operator: op("+"), operandInput: "2", isNegative: false },
+      draftingSlot: { operator: op("op_add"), operandInput: "2", isNegative: false },
       roll: [],
-      keyPressCounts: keyCounts([["+", 1], ["1", 1], ["2", 1]]),
+      keyPressCounts: keyCounts([["op_add", 1], ["digit_1", 1], ["digit_2", 1]]),
     },
   },
   {
@@ -282,15 +282,15 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           total: r(3n),
         },
       },
-      ["+", "1"],
+      ["op_add", "digit_1"],
     ),
-    keySequence: ["+", "1", "1"],
+    keySequence: ["op_add", "digit_1", "digit_1"],
     targetProjection: {
       total: r(3n),
       operationSlots: [],
-      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
+      draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
       roll: [],
-      keyPressCounts: keyCounts([["+", 1], ["1", 2]]),
+      keyPressCounts: keyCounts([["op_add", 1], ["digit_1", 2]]),
     },
   },
   {
@@ -309,15 +309,15 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           singleDigitInitialTotalEntry: true,
         },
       },
-      ["1", "2"],
+      ["digit_1", "digit_2"],
     ),
-    keySequence: ["1", "2"],
+    keySequence: ["digit_1", "digit_2"],
     targetProjection: {
       total: r(2n),
       operationSlots: [],
       draftingSlot: null,
       roll: [],
-      keyPressCounts: keyCounts([["1", 1], ["2", 1]]),
+      keyPressCounts: keyCounts([["digit_1", 1], ["digit_2", 1]]),
     },
   },
   {
@@ -331,19 +331,19 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           ...base.calculator,
           total: r(7n),
           rollEntries: re(r(5n), r(7n)),
-          operationSlots: [{ operator: op("-"), operand: 2n }],
-          draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
+          operationSlots: [{ operator: op("op_sub"), operand: 2n }],
+          draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
         },
       },
-      ["C"],
+      ["util_clear_all"],
     ),
-    keySequence: ["C"],
+    keySequence: ["util_clear_all"],
     expectedProjection: {
       total: r(0n),
       roll: [],
       operationSlots: [],
       draftingSlot: null,
-      keyPressCounts: keyCounts([["C", 1]]),
+      keyPressCounts: keyCounts([["util_clear_all", 1]]),
     },
   },
   {
@@ -361,22 +361,22 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           ...base.calculator,
           total: r(10n),
           operationSlots: [
-            { operator: op("-"), operand: 2n },
-            { operator: op("*"), operand: 3n },
+            { operator: op("op_sub"), operand: 2n },
+            { operator: op("op_mul"), operand: 3n },
           ],
         },
       },
-      ["="],
+      ["exec_equals"],
     ),
-    keySequence: ["="],
+    keySequence: ["exec_equals"],
     expectedProjection: {
       total: r(24n),
       operationSlots: [
-        { operator: op("-"), operand: 2n },
-        { operator: op("*"), operand: 3n },
+        { operator: op("op_sub"), operand: 2n },
+        { operator: op("op_mul"), operand: 3n },
       ],
       roll: [r(24n)],
-      keyPressCounts: keyCounts([["=", 1]]),
+      keyPressCounts: keyCounts([["exec_equals", 1]]),
     },
   },
   {
@@ -389,17 +389,17 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(10n),
-          operationSlots: [{ operator: op("/"), operand: 0n }],
+          operationSlots: [{ operator: op("op_div"), operand: 0n }],
         },
       },
-      ["="],
+      ["exec_equals"],
     ),
-    keySequence: ["="],
+    keySequence: ["exec_equals"],
     expectedProjection: {
       total: toNanCalculatorValue(),
       roll: [toNanCalculatorValue()],
       rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
-      keyPressCounts: keyCounts([["=", 1]]),
+      keyPressCounts: keyCounts([["exec_equals", 1]]),
     },
   },
   {
@@ -416,16 +416,16 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(99n),
-          operationSlots: [{ operator: op("+"), operand: 1n }],
+          operationSlots: [{ operator: op("op_add"), operand: 1n }],
         },
       },
-      ["="],
+      ["exec_equals"],
     ),
-    keySequence: ["="],
+    keySequence: ["exec_equals"],
     expectedProjection: {
       total: r(99n),
       rollErrors: [{ rollIndex: 0, code: "x∉[-R,R]", kind: "overflow" }],
-      keyPressCounts: keyCounts([["=", 1]]),
+      keyPressCounts: keyCounts([["exec_equals", 1]]),
     },
   },
   {
@@ -441,9 +441,9 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           rollEntries: re(r(5n)),
         },
       },
-      ["1"],
+      ["digit_1"],
     ),
-    keySequence: ["1"],
+    keySequence: ["digit_1"],
     expectedProjection: {
       total: r(5n),
       roll: [r(5n)],
@@ -463,18 +463,18 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
           ...base.calculator,
           total: r(5n),
           rollEntries: re(r(5n)),
-          operationSlots: [{ operator: op("+"), operand: 2n }],
+          operationSlots: [{ operator: op("op_add"), operand: 2n }],
         },
       },
-      ["-"],
+      ["op_sub"],
     ),
-    keySequence: ["-"],
+    keySequence: ["op_sub"],
     expectedProjection: {
       total: r(5n),
       roll: [],
       operationSlots: [],
-      draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
-      keyPressCounts: keyCounts([["-", 1]]),
+      draftingSlot: { operator: op("op_sub"), operandInput: "", isNegative: false },
+      keyPressCounts: keyCounts([["op_sub", 1]]),
     },
   },
   {
@@ -486,22 +486,23 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         ...base,
         calculator: {
           ...base.calculator,
-          draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
+          draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
         },
       },
-      ["-"],
+      ["op_sub"],
     ),
-    keySequence: ["-"],
+    keySequence: ["op_sub"],
     targetProjection: {
-      operationSlots: [{ kind: "binary", operator: op("+"), operand: 1n }],
+      operationSlots: [{ kind: "binary", operator: op("op_add"), operand: 1n }],
       draftingSlot: null,
-      keyPressCounts: keyCounts([["-", 1]]),
+      keyPressCounts: keyCounts([["op_sub", 1]]),
     },
   },
 ];
 
 export const getSlotInputScenariosByTag = (tag: SlotInputScenarioTag): SlotInputScenario[] =>
   slotInputScenarios.filter((scenario) => scenario.tags.includes(tag));
+
 
 
 

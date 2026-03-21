@@ -111,3 +111,4 @@ export const runMultiCalculatorContractTests = (): void => {
     assert.deepEqual(projectedMain.keyPressCounts, legacy.keyPressCounts, `single-calculator key-count parity must hold (${action.type})`);
   }
 };
+

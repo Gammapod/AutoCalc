@@ -66,3 +66,4 @@ export const runUiShellModeResolverTests = (): void => {
     "mobile-like runtime falls back to mobile shell",
   );
 };
+

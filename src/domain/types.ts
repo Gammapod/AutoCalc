@@ -7,7 +7,6 @@ import type {
   DigitKeyId,
   ExecKeyId,
   KeyId,
-  KeyLike,
   MemoryKeyId,
   UtilityKeyId,
   UnaryOperatorKeyId,
@@ -16,7 +15,7 @@ import type {
 } from "./keyPresentation.js";
 
 
-export type Digit = DigitKeyId;
+export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 export type BinarySlotOperator = BinaryOperatorKeyId;
 export type UnaryOperatorKey = UnaryOperatorKeyId;
 export type UnaryOperator = UnaryOperatorKey;
@@ -31,12 +30,12 @@ export type StepKey = never;
 export type VisualizerKey = VisualizerKeyId;
 export type VisualizerId = ButtonVisualizerId;
 export type ActiveVisualizer = "total" | VisualizerId;
-export type MemoryVariable = "α" | "β" | "γ";
+export type MemoryVariable = "\u03B1" | "\u03B2" | "\u03B3";
 export type CalculatorId = "g" | "f";
 export type ExecKey = ExecKeyId;
 export type Key = KeyId;
 export type CanonicalKeyId = KeyId;
-export type KeyInput = KeyLike;
+export type KeyInput = KeyId;
 export type KeyCategory = ButtonCategory;
 export type KeyCell = {
   kind: "key";
@@ -156,7 +155,7 @@ export type CalculatorValue =
       kind: "nan";
     };
 
-export type ErrorCode = "x∉[-R,R]" | "n/0" | "NaN" | "ALG";
+export type ErrorCode = "x\u2209[-R,R]" | "n/0" | "NaN" | "ALG";
 
 export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input" | "symbolic_result";
 

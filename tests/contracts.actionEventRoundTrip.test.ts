@@ -32,3 +32,4 @@ export const runContractsActionEventRoundTripTests = (): void => {
     "TOGGLE_VISUALIZER maps through explicit visualizer branch",
   );
 };
+

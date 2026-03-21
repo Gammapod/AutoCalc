@@ -1,5 +1,5 @@
 import { keyToVisualizerId } from "./buttonRegistry.js";
-import { KEY_ID, resolveKeyId, toLegacyKey } from "./keyPresentation.js";
+import { KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import type { Action, GameState, KeyButtonBehavior, KeyCell, VisualizerId } from "./types.js";
 import { EXECUTION_PAUSE_FLAG } from "./state.js";
 
@@ -8,7 +8,7 @@ const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
 const getButtonFlag = (state: GameState, flag: string): boolean => Boolean(state.ui.buttonFlags[flag]);
 
 export const resolveVisualizerForKey = (key: KeyCell["key"]): VisualizerId | null => {
-  return keyToVisualizerId(toLegacyKey(resolveKeyId(key)));
+  return keyToVisualizerId(resolveKeyId(key));
 };
 
 export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => cell.behavior ?? PRESS_KEY_BEHAVIOR;

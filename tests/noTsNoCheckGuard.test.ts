@@ -34,3 +34,4 @@ export const runNoTsNoCheckGuardTests = (): void => {
   }
   assert.deepEqual(offenders, [], `tests must not contain @ts-${"nocheck"}; offenders: ${offenders.join(", ")}`);
 };
+

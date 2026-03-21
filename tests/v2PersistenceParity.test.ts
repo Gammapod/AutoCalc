@@ -40,3 +40,4 @@ export const runV2PersistenceParityTests = (): void => {
   const malformed = loadFromRawSave("{");
   assert.equal(malformed.state, null, "raw loader rejects malformed JSON");
 };
+

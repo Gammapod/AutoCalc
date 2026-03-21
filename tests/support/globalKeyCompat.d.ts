@@ -1,4 +1,4 @@
-import type { KeyLike, KeyId } from "../../src/domain/keyPresentation.js";
+import type { KeyId } from "../../src/domain/keyPresentation.js";
 import type {
   BinarySlotOperator,
   ExecKey,
@@ -13,35 +13,36 @@ import type {
 } from "../../src/domain/types.js";
 
 declare global {
-  const k: (keyLike: KeyLike) => Key;
-  const op: (keyLike: KeyLike) => BinarySlotOperator;
-  const uop: (keyLike: KeyLike) => UnaryOperator;
-  const slotOp: (keyLike: KeyLike) => SlotOperator;
-  const keyCounts: (entries: Array<[KeyLike, number]>) => Partial<Record<KeyId, number>>;
-  const valueExpr: (keyLike: KeyLike) => ValueExpressionKey;
-  const utility: (keyLike: KeyLike) => UtilityKey;
-  const memory: (keyLike: KeyLike) => MemoryKey;
-  const execution: (keyLike: KeyLike) => ExecKey;
-  const visualizer: (keyLike: KeyLike) => VisualizerKey;
-  const keyCell: (keyLike: KeyLike, behavior?: KeyCell["behavior"]) => KeyCell;
+  const k: (keyId: KeyId) => Key;
+  const op: (keyId: KeyId) => BinarySlotOperator;
+  const uop: (keyId: KeyId) => UnaryOperator;
+  const slotOp: (keyId: KeyId) => SlotOperator;
+  const keyCounts: (entries: Array<[KeyId, number]>) => Partial<Record<KeyId, number>>;
+  const valueExpr: (keyId: KeyId) => ValueExpressionKey;
+  const utility: (keyId: KeyId) => UtilityKey;
+  const memory: (keyId: KeyId) => MemoryKey;
+  const execution: (keyId: KeyId) => ExecKey;
+  const visualizer: (keyId: KeyId) => VisualizerKey;
+  const keyCell: (keyId: KeyId, behavior?: KeyCell["behavior"]) => KeyCell;
   const valueExpressionUnlockPatch: (
-    entries: Array<[KeyLike, boolean]>,
+    entries: Array<[KeyId, boolean]>,
   ) => Partial<Record<ValueExpressionKey, boolean>>;
   const slotOperatorUnlockPatch: (
-    entries: Array<[KeyLike, boolean]>,
+    entries: Array<[KeyId, boolean]>,
   ) => Partial<Record<SlotOperator, boolean>>;
   const utilityUnlockPatch: (
-    entries: Array<[KeyLike, boolean]>,
+    entries: Array<[KeyId, boolean]>,
   ) => Partial<Record<UtilityKey, boolean>>;
   const memoryUnlockPatch: (
-    entries: Array<[KeyLike, boolean]>,
+    entries: Array<[KeyId, boolean]>,
   ) => Partial<Record<MemoryKey, boolean>>;
   const executionUnlockPatch: (
-    entries: Array<[KeyLike, boolean]>,
+    entries: Array<[KeyId, boolean]>,
   ) => Partial<Record<ExecKey, boolean>>;
   const visualizerUnlockPatch: (
-    entries: Array<[KeyLike, boolean]>,
+    entries: Array<[KeyId, boolean]>,
   ) => Partial<Record<VisualizerKey, boolean>>;
 }
 
 export {};
+

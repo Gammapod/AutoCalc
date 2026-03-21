@@ -12,15 +12,15 @@ const withTwoByTwoKeypad = (state: GameState): GameState => ({
     ...state.unlocks,
     valueExpression: {
       ...state.unlocks.valueExpression,
-      [k("1")]: true,
+      [k("digit_1")]: true,
     },
     utilities: {
       ...state.unlocks.utilities,
-      [utility("C")]: true,
+      [utility("util_clear_all")]: true,
     },
     execution: {
       ...state.unlocks.execution,
-      [execution("=")]: true,
+      [execution("exec_equals")]: true,
     },
   },
   ui: {
@@ -30,10 +30,10 @@ const withTwoByTwoKeypad = (state: GameState): GameState => ({
     keyLayout: [
       { kind: "placeholder", area: "empty" },
       { kind: "placeholder", area: "empty" },
-      { kind: "key", key: k("1") },
-      { kind: "key", key: k("=") },
+      { kind: "key", key: k("digit_1") },
+      { kind: "key", key: k("exec_equals") },
     ],
-    storageLayout: [{ kind: "key", key: k("C") }, ...state.ui.storageLayout.slice(1)],
+    storageLayout: [{ kind: "key", key: k("util_clear_all") }, ...state.ui.storageLayout.slice(1)],
   },
 });
 
@@ -96,7 +96,7 @@ export const runLayoutRulesInvariantTests = (): void => {
       ...base.unlocks,
       execution: {
         ...base.unlocks.execution,
-        [execution("=")]: false,
+        [execution("exec_equals")]: false,
       },
     },
   };
@@ -138,6 +138,7 @@ export const runLayoutRulesInvariantTests = (): void => {
   const stepHighlights = buildStepBodyHighlightRegions(base);
   assert.deepEqual(stepHighlights, [], "no step highlight regions are generated without a step key");
 };
+
 
 
 

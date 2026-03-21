@@ -38,3 +38,4 @@ export const pointer = (
   } as MouseEventInit);
   target.dispatchEvent(event);
 };
+

@@ -16,21 +16,21 @@ const buildExecutionPolicySeed = (): GameState => {
       ...base.unlocks,
       valueExpression: {
         ...base.unlocks.valueExpression,
-        [k("1")]: true,
+        [k("digit_1")]: true,
       },
       slotOperators: {
         ...base.unlocks.slotOperators,
-        [op("+")]: true,
+        [op("op_add")]: true,
       },
       utilities: {
         ...base.unlocks.utilities,
-        [k("←")]: true,
+        [k("util_backspace")]: true,
         [KEY_ID.toggle_delta_range_clamp]: true,
       },
       execution: {
         ...base.unlocks.execution,
         [KEY_ID.exec_play_pause]: true,
-        [k("=")]: true,
+        [k("exec_equals")]: true,
       },
       visualizers: {
         ...base.unlocks.visualizers,
@@ -41,9 +41,9 @@ const buildExecutionPolicySeed = (): GameState => {
       ...base.ui,
       keyLayout: [
         { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } },
-        { kind: "key", key: k("1") },
-        { kind: "key", key: op("+") },
-        { kind: "key", key: k("←") },
+        { kind: "key", key: k("digit_1") },
+        { kind: "key", key: op("op_add") },
+        { kind: "key", key: k("util_backspace") },
         { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
         { kind: "key", key: KEY_ID.viz_graph },
       ],
@@ -58,18 +58,18 @@ export const runExecutionModePolicyTests = (): void => {
   const active = reducer(base, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG });
 
   assert.deepEqual(
-    classifyExecutionPolicyAction(base, { type: "PRESS_KEY", key: k("1") }),
+    classifyExecutionPolicyAction(base, { type: "PRESS_KEY", key: k("digit_1") }),
     { decision: "allow" },
     "inactive execution mode allows value input",
   );
   assert.deepEqual(
-    classifyExecutionPolicyAction(active, { type: "PRESS_KEY", key: k("1") }),
+    classifyExecutionPolicyAction(active, { type: "PRESS_KEY", key: k("digit_1") }),
     { decision: "reject" },
     "active execution mode rejects value input",
   );
   assert.deepEqual(
-    classifyExecutionPolicyAction(active, { type: "PRESS_KEY", key: k("←") }),
-    { decision: "interrupt_and_run", interrupt: { type: "clear_all_except_key", keyLike: KEY_ID.util_backspace } },
+    classifyExecutionPolicyAction(active, { type: "PRESS_KEY", key: k("util_backspace") }),
+    { decision: "interrupt_and_run", interrupt: { type: "clear_all_except_key", key: KEY_ID.util_backspace } },
     "utility input interrupts execution mode",
   );
   assert.deepEqual(
@@ -165,3 +165,4 @@ export const runExecutionModePolicyTests = (): void => {
     "dual-calculator layout mutation on active keypad is rejected during execution mode",
   );
 };
+

@@ -1,4 +1,4 @@
-﻿import "./support/keyCompat.runtime.js";
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { initialState } from "../src/domain/state.js";
@@ -34,7 +34,7 @@ export const runUnlocksDisplayTests = (): void => {
       id: "u_total_eq",
       description: "total eq",
       predicate: { type: "total_equals", value: 11n },
-      effect: { type: "unlock_digit", key: valueExpr("4") },
+      effect: { type: "unlock_digit", key: valueExpr("digit_4") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "Idigits",
@@ -47,3 +47,4 @@ export const runUnlocksDisplayTests = (): void => {
   });
   assert.equal(typeof debugRows[0]?.analysisStatus === "string", true, "debug rows include analysis status metadata");
 };
+

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { resolveKeyId, type KeyLike } from "../../src/domain/keyPresentation.js";
+import { resolveKeyId, type KeyId } from "../../src/domain/keyPresentation.js";
 import type { GameState, KeyInput } from "../../src/domain/types.js";
 import type { SlotInputScenario, SlotInputStateProjection } from "./slotInput.contractFixtures.js";
 
@@ -59,8 +59,8 @@ const assertDefinedProjectionField = <K extends keyof SlotInputStateProjection>(
 ): void => {
   if (field === "keyPressCounts") {
     const actualCounts = result.projection.keyPressCounts ?? {};
-    for (const [key, count] of Object.entries(expected as Partial<Record<KeyLike, number>>)) {
-      const keyId = resolveKeyId(key as KeyLike);
+    for (const [key, count] of Object.entries(expected as Partial<Record<KeyId, number>>)) {
+      const keyId = resolveKeyId(key as KeyId);
       assert.equal(
         actualCounts[keyId] ?? 0,
         count,
@@ -92,3 +92,4 @@ export const assertScenarioResult = (
     );
   }
 };
+

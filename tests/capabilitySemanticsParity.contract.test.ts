@@ -6,7 +6,7 @@ import {
   resolveCapabilityFromContext,
 } from "../src/domain/capabilitySemantics.js";
 import { capabilityToFunctionProviderIds, staticFunctionCapabilityProviders } from "../src/domain/functionCapabilityProviders.js";
-import { resolveKeyId, toKeyId } from "../src/domain/keyPresentation.js";
+import { resolveKeyId } from "../src/domain/keyPresentation.js";
 import { initialState } from "../src/domain/state.js";
 import type { GameState, KeyInput, UnlockPredicate } from "../src/domain/types.js";
 
@@ -130,7 +130,7 @@ const evaluateByRuntimeSemantics = (
 
 const availableKeySet = (state: GameState): Set<string> => {
   const isAvailable = createAvailabilityReader(state, "all_unlocked");
-  const keys = keyCatalog.map((entry) => toKeyId(entry.key)).filter((key) => isAvailable(key));
+  const keys = keyCatalog.map((entry) => entry.key).filter((key) => isAvailable(key));
   return new Set(keys);
 };
 
@@ -142,22 +142,22 @@ export const runCapabilitySemanticsParityContractTests = (): void => {
   }> = [
     {
       id: "step_plus_via_unary_increment",
-      state: withUnlockedKeys(["=", "++"]),
+      state: withUnlockedKeys(["exec_equals", "unary_inc"]),
       capabilities: ["step_plus_one", "roll_growth", "roll_incrementing_run"],
     },
     {
       id: "step_plus_via_plus_and_one",
-      state: withUnlockedKeys(["=", "+", "1"]),
+      state: withUnlockedKeys(["exec_equals", "op_add", "digit_1"]),
       capabilities: ["step_plus_one", "roll_growth", "roll_incrementing_run"],
     },
     {
       id: "roll_equal_run_requires_zero_or_one_operand",
-      state: withUnlockedKeys(["=", "+", "0", "*", "1"]),
+      state: withUnlockedKeys(["exec_equals", "op_add", "digit_0", "op_mul", "digit_1"]),
       capabilities: ["roll_equal_run"],
     },
     {
       id: "division_by_zero_error_requires_equals_divide_zero",
-      state: withUnlockedKeys(["=", "/", "0"]),
+      state: withUnlockedKeys(["exec_equals", "op_div", "digit_0"]),
       capabilities: ["division_by_zero_error"],
     },
   ];
@@ -175,3 +175,4 @@ export const runCapabilitySemanticsParityContractTests = (): void => {
     }
   }
 };
+

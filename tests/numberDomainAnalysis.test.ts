@@ -1,4 +1,4 @@
-﻿import "./support/keyCompat.runtime.js";
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { analyzeNumberDomains, analyzeUnlockSpecRows } from "../src/domain/analysis.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
@@ -43,7 +43,7 @@ export const runNumberDomainAnalysisTests = (): void => {
       id: "fixture_total_at_least",
       description: "fixture",
       predicate: { type: "total_at_least", value: 1n },
-      effect: { type: "unlock_digit", key: valueExpr("1") },
+      effect: { type: "unlock_digit", key: valueExpr("digit_1") },
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture",
@@ -55,14 +55,15 @@ export const runNumberDomainAnalysisTests = (): void => {
       ...base.unlocks,
       unaryOperators: {
         ...base.unlocks.unaryOperators,
-        [uop("++")]: true,
+        [uop("unary_inc")]: true,
       },
       execution: {
         ...base.unlocks.execution,
-        [execution("=")]: true,
+        [execution("exec_equals")]: true,
       },
     },
   };
   const unaryRows = analyzeUnlockSpecRows(unaryIncrementOnly, { useAllUnlockedKeys: true }, unaryIncrementCatalog);
   assert.equal(unaryRows[0]?.status, "possible", "unary ++ plus execute keeps step_plus_one capability");
 };
+

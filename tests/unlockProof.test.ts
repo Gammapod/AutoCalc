@@ -14,7 +14,7 @@ const fixtureCatalog: UnlockDefinition[] = [
     once: true,
     domainNodeId: "NN",
     targetNodeId: "fixture_1",
-    targetLabel: "1",
+    targetLabel: "digit_1",
   },
   {
     id: "unlock_digit_2_on_digit_1",
@@ -24,7 +24,7 @@ const fixtureCatalog: UnlockDefinition[] = [
     once: true,
     domainNodeId: "NN",
     targetNodeId: "fixture_2",
-    targetLabel: "2",
+    targetLabel: "digit_2",
   },
 ];
 
@@ -65,7 +65,7 @@ export const runUnlockProofTests = (): void => {
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture_3",
-      targetLabel: "3",
+      targetLabel: "digit_3",
     },
   ];
   const impossibleRun = buildUnlockProofReport(impossibleCatalog, {
@@ -104,7 +104,7 @@ export const runUnlockProofTests = (): void => {
       once: true,
       domainNodeId: "NN",
       targetNodeId: "fixture_4",
-      targetLabel: "4",
+      targetLabel: "digit_4",
     },
   ];
   const cacheInvalidated = buildUnlockProofReport(changedCatalog, {
@@ -116,3 +116,4 @@ export const runUnlockProofTests = (): void => {
   });
   assert.equal(cacheInvalidated.report.cache.cacheHitLayers, 0, "catalog change should invalidate cached layers");
 };
+

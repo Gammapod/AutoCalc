@@ -4,3 +4,4 @@ import { setContentProvider } from "../../src/contracts/contentRegistry.js";
 
 setAppServices({ contentProvider: defaultContentProvider });
 setContentProvider(defaultContentProvider);
+

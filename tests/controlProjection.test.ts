@@ -39,3 +39,4 @@ export const runControlProjectionTests = (): void => {
   assert.equal(gammaGateClamp.fields.gamma, 1, "f gamma min gate clamps below-1 decrements after gate is raised");
   assert.equal(gammaGateClamp.control.gamma, 1, "canonical control preserves gamma min gate clamp");
 };
+

@@ -7,7 +7,7 @@ import { actionFromEvent, eventFromAction } from "../../src/domain/events.js";
 export const buildActionFixtures = (): Action[] => {
   const state = initialState();
   return [
-    { type: "PRESS_KEY", key: k("1") },
+    { type: "PRESS_KEY", key: k("digit_1") },
     { type: "RESET_RUN" },
     { type: "HYDRATE_SAVE", state },
     { type: "UNLOCK_ALL" },
@@ -35,5 +35,6 @@ export const buildDomainEventFixtures = (): DomainEvent[] => buildActionFixtures
 export const roundTripAction = (action: Action): Action => actionFromEvent(eventFromAction(action));
 
 export const roundTripEvent = (event: DomainEvent): DomainEvent => eventFromAction(actionFromEvent(event));
+
 
 

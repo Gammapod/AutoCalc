@@ -20,7 +20,7 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
     },
     ui: {
       ...base.ui,
-      keyLayout: [{ kind: "key", key: k("\u25BB") }, { kind: "key", key: k("=") }],
+      keyLayout: [{ kind: "key", key: k("exec_step_through") }, { kind: "key", key: k("exec_equals") }],
       keypadColumns: 2,
       keypadRows: 1,
       buttonFlags: {
@@ -31,7 +31,7 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(99n),
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
       stepProgress: {
         active: true,
         seedTotal: r(99n),
@@ -54,7 +54,7 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
     },
     ui: {
       ...base.ui,
-      keyLayout: [{ kind: "key", key: k("\u25BB") }],
+      keyLayout: [{ kind: "key", key: k("exec_step_through") }],
       keypadColumns: 1,
       keypadRows: 1,
       buttonFlags: {
@@ -79,3 +79,4 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
   assert.equal(onlyWrapStage.stepTargetTokenIndex, 0, "single synthetic wrap stage is targetable when no user slots exist");
   assert.equal(onlyWrapStage.deltaWrapSuffix, null, "single-stage wrap rendering uses inline base token");
 };
+

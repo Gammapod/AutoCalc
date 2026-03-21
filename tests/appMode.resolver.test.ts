@@ -28,3 +28,4 @@ export const runAppModeResolverTests = (): void => {
     "env APP_MODE_TARGET sandbox is honored when query absent",
   );
 };
+

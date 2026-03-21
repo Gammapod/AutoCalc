@@ -31,7 +31,7 @@ export const runUiModuleInputV2Tests = (): void => {
       },
       valueExpression: {
         ...state.unlocks.valueExpression,
-        "1": true,
+        "digit_1": true,
       },
     },
     ui: {
@@ -45,7 +45,7 @@ export const runUiModuleInputV2Tests = (): void => {
       ],
       keypadColumns: 5,
       keypadRows: 1,
-      storageLayout: [{ kind: "key", key: k("1") } as const, ...state.ui.storageLayout.slice(1)],
+      storageLayout: [{ kind: "key", key: k("digit_1") } as const, ...state.ui.storageLayout.slice(1)],
     },
   };
   const action = classifyDropAction(
@@ -100,6 +100,7 @@ export const runUiModuleInputV2Tests = (): void => {
 
   resetInputLockStateForTests();
 };
+
 
 
 

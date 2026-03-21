@@ -38,3 +38,4 @@ export const runUiMotionLifecycleBridgeTests = async (): Promise<void> => {
   await awaitMotionSettled("layout-none");
   assert.ok(true, "awaiting an unknown channel is a no-op");
 };
+

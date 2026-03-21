@@ -99,3 +99,4 @@ export const runGraphDisplayTests = (): void => {
   assert.deepEqual(buildGraphYWindow(0), { min: -9, max: 9 }, "y-axis helper clamps minimum digit count to one");
 };
 
+

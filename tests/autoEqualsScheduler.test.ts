@@ -89,7 +89,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
     ...initialState(),
     calculator: {
       ...initialState().calculator,
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   });
   const autoActivatedKeys: Key[] = [];
@@ -108,7 +108,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   const expectedInitialIntervalMs = 1000 / projectControlFromState(store.getState()).autoEqualsRateMultiplier;
   scheduler.sync(store.getState());
   assert.equal(countExecutorPresses(store.actions), 1, "toggling on dispatches immediate executor press once");
-  assert.equal(countExecutorPressesForKey(store.actions, execution("=")), 1, "fallback path presses first installed execution key");
+  assert.equal(countExecutorPressesForKey(store.actions, execution("exec_equals")), 1, "fallback path presses first installed execution key");
   assert.equal(timers.setCalls, 1, "toggling on creates one interval");
   assert.equal(timers.setMsHistory[0], expectedInitialIntervalMs, "default speed follows control-derived epsilon rate");
   assert.equal(timers.activeCount(), 1, "interval remains active while on");
@@ -131,11 +131,11 @@ export const runAutoEqualsSchedulerTests = (): void => {
   const afterTickPresses = countExecutorPresses(store.actions);
   assert.ok(afterTickPresses >= beforeTickPresses, "interval tick never regresses executor press count");
   assert.ok(
-    countExecutorPressesForKey(store.actions, execution("=")) >= 1,
+    countExecutorPressesForKey(store.actions, execution("exec_equals")) >= 1,
     "auto scheduler uses equals key when available",
   );
   assert.ok(
-    autoActivatedKeys.length >= 1 && autoActivatedKeys.every((key) => key === execution("=")),
+    autoActivatedKeys.length >= 1 && autoActivatedKeys.every((key) => key === execution("exec_equals")),
     "scheduler reports activated executor keys for press animation hooks",
   );
 
@@ -143,14 +143,14 @@ export const runAutoEqualsSchedulerTests = (): void => {
     ...initialState(),
     calculator: {
       ...initialState().calculator,
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
     completedUnlockIds: ["unlock_allocator_point_on_first_natural_result"],
     unlocks: {
       ...initialState().unlocks,
       execution: {
         ...initialState().unlocks.execution,
-        ...executionUnlockPatch([["=", true]]),
+        ...executionUnlockPatch([["exec_equals", true]]),
       },
     },
   };
@@ -160,14 +160,14 @@ export const runAutoEqualsSchedulerTests = (): void => {
   validStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   validScheduler.sync(validStore.getState());
   assert.equal(
-    countExecutorPressesForKey(validStore.actions, execution("=")),
+    countExecutorPressesForKey(validStore.actions, execution("exec_equals")),
     1,
     "valid equations still trigger immediate equals when toggled on",
   );
   validTimers.tick();
   validTimers.tick();
   assert.equal(
-    countExecutorPressesForKey(validStore.actions, execution("=")),
+    countExecutorPressesForKey(validStore.actions, execution("exec_equals")),
     3,
     "valid equations keep auto-equals running past the second attempt",
   );
@@ -179,7 +179,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
       ...initialState().unlocks,
       execution: {
         ...initialState().unlocks.execution,
-        ...executionUnlockPatch([["=", false]]),
+        ...executionUnlockPatch([["exec_equals", false]]),
       },
     },
     ui: {
@@ -193,7 +193,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
   invalidStore.dispatch({ type: "TOGGLE_FLAG", flag: AUTO_EQUALS_FLAG });
   invalidScheduler.sync(invalidStore.getState());
   assert.equal(
-    countExecutorPressesForKey(invalidStore.actions, execution("=")),
+    countExecutorPressesForKey(invalidStore.actions, execution("exec_equals")),
     0,
     "without an installed executor key, scheduler performs no immediate executor press",
   );
@@ -337,7 +337,7 @@ export const runAutoEqualsSchedulerTests = (): void => {
     calculator: {
       ...initialState().calculator,
       operationSlots: [{ operator: "op_greater", operand: 3n }],
-      draftingSlot: { operator: "op_greater", operandInput: "7", isNegative: false },
+      draftingSlot: { operator: "op_greater", operandInput: "digit_7", isNegative: false },
     },
     keyPressCounts: {
       ...initialState().keyPressCounts,
@@ -378,4 +378,5 @@ export const runAutoEqualsSchedulerTests = (): void => {
     "runtime load removes legacy op_greater storage keys",
   );
 };
+
 

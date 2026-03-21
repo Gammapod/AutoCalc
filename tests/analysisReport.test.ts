@@ -31,3 +31,4 @@ export const runAnalysisReportTests = (): void => {
     "formatNumberDomainReport scope comparison prints both scope summaries",
   );
 };
+

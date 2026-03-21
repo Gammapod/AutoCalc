@@ -22,11 +22,11 @@ export const runStorageDisplayTests = (): void => {
     ui: {
       ...base.ui,
       storageLayout: [
-        { kind: "key", key: k("+") },
-        { kind: "key", key: k("1") },
+        { kind: "key", key: k("op_add") },
+        { kind: "key", key: k("digit_1") },
         null,
-        { kind: "key", key: k("3") },
-        { kind: "key", key: k("UNDO") },
+        { kind: "key", key: k("digit_3") },
+        { kind: "key", key: k("util_undo") },
         ...base.ui.storageLayout.slice(5),
       ],
     },
@@ -38,8 +38,8 @@ export const runStorageDisplayTests = (): void => {
       },
       valueExpression: {
         ...base.unlocks.valueExpression,
-        [k("1")]: true,
-        [k("3")]: true,
+        [k("digit_1")]: true,
+        [k("digit_3")]: true,
       },
     },
   };
@@ -58,17 +58,17 @@ export const runStorageDisplayTests = (): void => {
       ...orderedState.unlocks,
       execution: {
         ...orderedState.unlocks.execution,
-        [k("=")]: true,
+        [k("exec_equals")]: true,
       },
     },
     ui: {
       ...orderedState.ui,
       storageLayout: [
-        { kind: "key", key: k("1") },
-        { kind: "key", key: k("=") },
+        { kind: "key", key: k("digit_1") },
+        { kind: "key", key: k("exec_equals") },
         null,
-        { kind: "key", key: k("+") },
-        { kind: "key", key: k("UNDO") },
+        { kind: "key", key: k("op_add") },
+        { kind: "key", key: k("util_undo") },
         ...orderedState.ui.storageLayout.slice(5),
       ],
       buttonFlags: {
@@ -122,6 +122,7 @@ export const runStorageDisplayTests = (): void => {
     "switching segments toggles target on and prior segment off",
   );
 };
+
 
 
 

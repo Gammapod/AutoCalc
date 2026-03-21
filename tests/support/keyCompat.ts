@@ -7,7 +7,6 @@ import {
   resolveKeyId,
   KEY_ID,
   type KeyId,
-  type KeyLike,
 } from "../../src/domain/keyPresentation.js";
 import type {
   BinarySlotOperator,
@@ -22,36 +21,36 @@ import type {
   UnaryOperator,
 } from "../../src/domain/types.js";
 
-export const k = (keyLike: KeyLike): Key => resolveKeyId(keyLike);
+export const k = (keyId: KeyId): Key => resolveKeyId(keyId);
 
-export const op = (keyLike: KeyLike): BinarySlotOperator => {
-  const keyId = resolveKeyId(keyLike);
-  if (!isBinaryOperatorKeyId(keyId)) {
-    throw new Error(`Expected binary operator key, received: ${keyLike}`);
+export const op = (keyId: KeyId): BinarySlotOperator => {
+  const resolved = resolveKeyId(keyId);
+  if (!isBinaryOperatorKeyId(resolved)) {
+    throw new Error(`Expected binary operator key, received: ${keyId}`);
   }
-  return keyId;
+  return resolved;
 };
 
-export const uop = (keyLike: KeyLike): UnaryOperator => {
-  const keyId = resolveKeyId(keyLike);
-  if (!isUnaryOperatorId(keyId)) {
-    throw new Error(`Expected unary operator key, received: ${keyLike}`);
+export const uop = (keyId: KeyId): UnaryOperator => {
+  const resolved = resolveKeyId(keyId);
+  if (!isUnaryOperatorId(resolved)) {
+    throw new Error(`Expected unary operator key, received: ${keyId}`);
   }
-  return keyId;
+  return resolved;
 };
 
-export const keys = (keyLikes: readonly KeyLike[]): Key[] => keyLikes.map((keyLike) => k(keyLike));
+export const keys = (keyIds: readonly KeyId[]): Key[] => keyIds.map((keyId) => k(keyId));
 
-export const slotOp = (keyLike: KeyLike): SlotOperator => {
-  const keyId = resolveKeyId(keyLike);
-  if (!isBinaryOperatorKeyId(keyId) && !isUnaryOperatorId(keyId)) {
-    throw new Error(`Expected slot operator key, received: ${keyLike}`);
+export const slotOp = (keyId: KeyId): SlotOperator => {
+  const resolved = resolveKeyId(keyId);
+  if (!isBinaryOperatorKeyId(resolved) && !isUnaryOperatorId(resolved)) {
+    throw new Error(`Expected slot operator key, received: ${keyId}`);
   }
-  return keyId;
+  return resolved;
 };
 
-export const keyCounts = (entries: Array<[KeyLike, number]>): Partial<Record<KeyId, number>> =>
-  Object.fromEntries(entries.map(([keyLike, count]) => [k(keyLike), count]));
+export const keyCounts = (entries: Array<[KeyId, number]>): Partial<Record<KeyId, number>> =>
+  Object.fromEntries(entries.map(([keyId, count]) => [k(keyId), count]));
 
 const utilitySet = new Set<UtilityKey>([
   KEY_ID.util_clear_all,
@@ -71,85 +70,85 @@ const visualizerSet = new Set<VisualizerKey>([
   KEY_ID.viz_algebraic,
 ]);
 
-export const valueExpr = (keyLike: KeyLike): ValueExpressionKey => {
-  const keyId = resolveKeyId(keyLike);
+export const valueExpr = (keyId: KeyId): ValueExpressionKey => {
+  const resolved = resolveKeyId(keyId);
   if (
-    !isDigitKeyId(keyId) &&
-    keyId !== KEY_ID.const_pi &&
-    keyId !== KEY_ID.const_e
+    !isDigitKeyId(resolved) &&
+    resolved !== KEY_ID.const_pi &&
+    resolved !== KEY_ID.const_e
   ) {
-    throw new Error(`Expected value-expression key, received: ${keyLike}`);
+    throw new Error(`Expected value-expression key, received: ${keyId}`);
   }
-  return keyId;
+  return resolved;
 };
 
-export const utility = (keyLike: KeyLike): UtilityKey => {
-  const keyId = resolveKeyId(keyLike);
-  if (!utilitySet.has(keyId as UtilityKey)) {
-    throw new Error(`Expected utility key, received: ${keyLike}`);
+export const utility = (keyId: KeyId): UtilityKey => {
+  const resolved = resolveKeyId(keyId);
+  if (!utilitySet.has(resolved as UtilityKey)) {
+    throw new Error(`Expected utility key, received: ${keyId}`);
   }
-  return keyId as UtilityKey;
+  return resolved as UtilityKey;
 };
 
-export const memory = (keyLike: KeyLike): MemoryKey => {
-  const keyId = resolveKeyId(keyLike);
-  if (!isMemoryKeyId(keyId)) {
-    throw new Error(`Expected memory key, received: ${keyLike}`);
+export const memory = (keyId: KeyId): MemoryKey => {
+  const resolved = resolveKeyId(keyId);
+  if (!isMemoryKeyId(resolved)) {
+    throw new Error(`Expected memory key, received: ${keyId}`);
   }
-  return keyId;
+  return resolved;
 };
 
-export const execution = (keyLike: KeyLike): ExecKey => {
-  const keyId = resolveKeyId(keyLike);
-  if (keyId !== KEY_ID.exec_equals && keyId !== KEY_ID.exec_play_pause && keyId !== KEY_ID.exec_step_through) {
-    throw new Error(`Expected execution key, received: ${keyLike}`);
+export const execution = (keyId: KeyId): ExecKey => {
+  const resolved = resolveKeyId(keyId);
+  if (resolved !== KEY_ID.exec_equals && resolved !== KEY_ID.exec_play_pause && resolved !== KEY_ID.exec_step_through) {
+    throw new Error(`Expected execution key, received: ${keyId}`);
   }
-  return keyId;
+  return resolved;
 };
 
-export const visualizer = (keyLike: KeyLike): VisualizerKey => {
-  const keyId = resolveKeyId(keyLike);
-  if (!visualizerSet.has(keyId as VisualizerKey)) {
-    throw new Error(`Expected visualizer key, received: ${keyLike}`);
+export const visualizer = (keyId: KeyId): VisualizerKey => {
+  const resolved = resolveKeyId(keyId);
+  if (!visualizerSet.has(resolved as VisualizerKey)) {
+    throw new Error(`Expected visualizer key, received: ${keyId}`);
   }
-  return keyId as VisualizerKey;
+  return resolved as VisualizerKey;
 };
 
-export const keyCell = (keyLike: KeyLike, behavior?: KeyCell["behavior"]): KeyCell => ({
+export const keyCell = (keyId: KeyId, behavior?: KeyCell["behavior"]): KeyCell => ({
   kind: "key",
-  key: k(keyLike),
+  key: k(keyId),
   ...(behavior ? { behavior } : {}),
 });
 
 export const valueExpressionUnlockPatch = (
-  entries: Array<[KeyLike, boolean]>,
+  entries: Array<[KeyId, boolean]>,
 ): Partial<Record<ValueExpressionKey, boolean>> =>
-  Object.fromEntries(entries.map(([keyLike, enabled]) => [valueExpr(keyLike), enabled]));
+  Object.fromEntries(entries.map(([keyId, enabled]) => [valueExpr(keyId), enabled]));
 
 export const slotOperatorUnlockPatch = (
-  entries: Array<[KeyLike, boolean]>,
+  entries: Array<[KeyId, boolean]>,
 ): Partial<Record<SlotOperator, boolean>> =>
-  Object.fromEntries(entries.map(([keyLike, enabled]) => [slotOp(keyLike), enabled]));
+  Object.fromEntries(entries.map(([keyId, enabled]) => [slotOp(keyId), enabled]));
 
 export const utilityUnlockPatch = (
-  entries: Array<[KeyLike, boolean]>,
+  entries: Array<[KeyId, boolean]>,
 ): Partial<Record<UtilityKey, boolean>> =>
-  Object.fromEntries(entries.map(([keyLike, enabled]) => [utility(keyLike), enabled]));
+  Object.fromEntries(entries.map(([keyId, enabled]) => [utility(keyId), enabled]));
 
 export const memoryUnlockPatch = (
-  entries: Array<[KeyLike, boolean]>,
+  entries: Array<[KeyId, boolean]>,
 ): Partial<Record<MemoryKey, boolean>> =>
-  Object.fromEntries(entries.map(([keyLike, enabled]) => [memory(keyLike), enabled]));
+  Object.fromEntries(entries.map(([keyId, enabled]) => [memory(keyId), enabled]));
 
 export const executionUnlockPatch = (
-  entries: Array<[KeyLike, boolean]>,
+  entries: Array<[KeyId, boolean]>,
 ): Partial<Record<ExecKey, boolean>> =>
-  Object.fromEntries(entries.map(([keyLike, enabled]) => [execution(keyLike), enabled]));
+  Object.fromEntries(entries.map(([keyId, enabled]) => [execution(keyId), enabled]));
 
 export const visualizerUnlockPatch = (
-  entries: Array<[KeyLike, boolean]>,
+  entries: Array<[KeyId, boolean]>,
 ): Partial<Record<VisualizerKey, boolean>> =>
-  Object.fromEntries(entries.map(([keyLike, enabled]) => [visualizer(keyLike), enabled]));
+  Object.fromEntries(entries.map(([keyId, enabled]) => [visualizer(keyId), enabled]));
 
 export const asKeyId = (value: string): KeyId => {
   if (!isKeyId(value)) {
@@ -157,3 +156,4 @@ export const asKeyId = (value: string): KeyId => {
   }
   return value;
 };
+

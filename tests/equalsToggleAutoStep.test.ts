@@ -18,7 +18,7 @@ export const runEqualsToggleAutoStepTests = (): void => {
       maxSlots: 2,
       execution: {
         ...legacyInitialState().unlocks.execution,
-        ...executionUnlockPatch([["=", true]]),
+        ...executionUnlockPatch([["exec_equals", true]]),
       },
     },
     ui: {
@@ -33,7 +33,7 @@ export const runEqualsToggleAutoStepTests = (): void => {
     calculator: {
       ...legacyInitialState().calculator,
       total: r(2n),
-      operationSlots: [{ operator: op("+"), operand: 3n }],
+      operationSlots: [{ operator: op("op_add"), operand: 3n }],
       draftingSlot: null,
       rollEntries: [],
     },
@@ -46,6 +46,7 @@ export const runEqualsToggleAutoStepTests = (): void => {
   assert.equal(Boolean(afterAutoTick.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "= toggle auto-clears after terminal roll commit");
   assert.equal(afterAutoTick.calculator.rollEntries.length > 0, true, "AUTO_STEP_TICK committed a roll update");
 
-  const pressEqualsStillExecutes = reducer(base, { type: "PRESS_KEY", key: execution("=") });
-  assert.equal(pressEqualsStillExecutes.calculator.rollEntries.length > 0, true, "direct PRESS_KEY '=' retains execution semantics");
+  const pressEqualsStillExecutes = reducer(base, { type: "PRESS_KEY", key: execution("exec_equals") });
+  assert.equal(pressEqualsStillExecutes.calculator.rollEntries.length > 0, true, "direct PRESS_KEY 'exec_equals' retains execution semantics");
 };
+

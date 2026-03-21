@@ -1,4 +1,5 @@
 import type { KeyBehaviorKind, KeyHandlerOverrideId } from "./keyCatalog.js";
+import type { KeyId } from "../domain/keyPresentation.js";
 
 export type KeyRuntimeUnlockBucket =
   | "valueExpression"
@@ -13,7 +14,7 @@ export type KeyRuntimeUnlockBucket =
 
 export type KeyRuntimeBehaviorKind = KeyBehaviorKind;
 export type KeyRuntimeCatalogEntry = {
-  key: string;
+  key: KeyId;
   category: string;
   unlockBucket: KeyRuntimeUnlockBucket;
   defaultUnlocked: boolean;

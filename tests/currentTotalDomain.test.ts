@@ -50,3 +50,4 @@ export const runCurrentTotalDomainTests = (): void => {
   };
   assert.equal(getCurrentTotalDomainSymbol(nan), "\u2205", "NaN total maps to null set");
 };
+

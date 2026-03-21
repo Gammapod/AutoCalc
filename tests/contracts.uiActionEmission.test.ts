@@ -9,7 +9,7 @@ import {
 import { k, keyCell } from "./support/keyCompat.js";
 
 export const runContractsUiActionEmissionTests = (): void => {
-  const graphCell: KeyCell = keyCell("GRAPH");
+  const graphCell: KeyCell = keyCell("viz_graph");
   const graphAction = buildKeyButtonAction(graphCell);
   assert.deepEqual(
     graphAction,
@@ -17,14 +17,14 @@ export const runContractsUiActionEmissionTests = (): void => {
     "GRAPH key emits visualizer toggle action",
   );
 
-  const feedCell: KeyCell = keyCell("FEED");
+  const feedCell: KeyCell = keyCell("viz_feed");
   const feedAction = buildKeyButtonAction(feedCell);
   assert.deepEqual(
     feedAction,
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key emits visualizer toggle action",
   );
-  const circleCell: KeyCell = keyCell("CIRCLE");
+  const circleCell: KeyCell = keyCell("viz_circle");
   const circleAction = buildKeyButtonAction(circleCell);
   assert.deepEqual(
     circleAction,
@@ -32,9 +32,9 @@ export const runContractsUiActionEmissionTests = (): void => {
     "CIRCLE key emits visualizer toggle action",
   );
 
-  const digitCell: KeyCell = keyCell("1");
+  const digitCell: KeyCell = keyCell("digit_1");
   const digitAction = buildKeyButtonAction(digitCell);
-  assert.deepEqual(digitAction, { type: "PRESS_KEY", key: k("1") }, "digit key emits press action");
+  assert.deepEqual(digitAction, { type: "PRESS_KEY", key: k("digit_1") }, "digit key emits press action");
 
   const moveAction = buildLayoutDropDispatchAction(
     { surface: "keypad", index: 1 },
@@ -69,4 +69,5 @@ export const runContractsUiActionEmissionTests = (): void => {
     "mobile keeps keypad interactive",
   );
 };
+
 

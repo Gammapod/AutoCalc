@@ -29,3 +29,4 @@ export const runV2RulesAdaptersTests = (): void => {
     "criteria builder matches analysis criteria output",
   );
 };
+

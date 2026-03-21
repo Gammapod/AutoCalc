@@ -40,16 +40,16 @@ const runParityRejectionCase = (
 export const runContractsExecutionGateParityTests = (): void => {
   const activeRollState: GameState = [
     { type: "UNLOCK_ALL" } as const,
-    { type: "PRESS_KEY", key: k("1") } as const,
-    { type: "PRESS_KEY", key: op("+") } as const,
-    { type: "PRESS_KEY", key: k("1") } as const,
-    { type: "PRESS_KEY", key: k("=") } as const,
+    { type: "PRESS_KEY", key: k("digit_1") } as const,
+    { type: "PRESS_KEY", key: op("op_add") } as const,
+    { type: "PRESS_KEY", key: k("digit_1") } as const,
+    { type: "PRESS_KEY", key: k("exec_equals") } as const,
   ].reduce((state, action) => reducer(state, action), initialState());
 
   runParityRejectionCase(
     "active-roll digit rejection",
     activeRollState,
-    { type: "PRESS_KEY", key: k("1") },
+    { type: "PRESS_KEY", key: k("digit_1") },
     { expectRejectUiEffect: false },
   );
 
@@ -60,30 +60,30 @@ export const runContractsExecutionGateParityTests = (): void => {
       maxSlots: Math.max(legacyInitialState().unlocks.maxSlots, 1),
       valueExpression: {
         ...legacyInitialState().unlocks.valueExpression,
-        [k("1")]: true,
+        [k("digit_1")]: true,
       },
       slotOperators: {
         ...legacyInitialState().unlocks.slotOperators,
-        [op("+")]: true,
+        [op("op_add")]: true,
       },
       utilities: {
         ...legacyInitialState().unlocks.utilities,
-        [k("\u2190")]: true,
+        [k("util_backspace")]: true,
       },
       execution: {
         ...legacyInitialState().unlocks.execution,
         [KEY_ID.exec_play_pause]: true,
-        [k("=")]: true,
+        [k("exec_equals")]: true,
       },
     },
     ui: {
       ...legacyInitialState().ui,
       keyLayout: [
         { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } },
-        { kind: "key", key: k("1") },
-        { kind: "key", key: op("+") },
-        { kind: "key", key: k("="), behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
-        { kind: "key", key: k("\u2190") },
+        { kind: "key", key: k("digit_1") },
+        { kind: "key", key: op("op_add") },
+        { kind: "key", key: k("exec_equals"), behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
+        { kind: "key", key: k("util_backspace") },
       ],
       keypadColumns: 5,
       keypadRows: 1,
@@ -91,8 +91,8 @@ export const runContractsExecutionGateParityTests = (): void => {
     calculator: {
       ...legacyInitialState().calculator,
       total: { kind: "rational", value: { num: 3n, den: 1n } },
-      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
-      operationSlots: [{ operator: op("+"), operand: 2n }],
+      draftingSlot: { operator: op("op_add"), operandInput: "digit_1", isNegative: false },
+      operationSlots: [{ operator: op("op_add"), operand: 2n }],
     },
   };
   const pausedState = reducer(pausedStateSeed, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG });
@@ -100,14 +100,14 @@ export const runContractsExecutionGateParityTests = (): void => {
   runParityRejectionCase(
     "execution-pause digit rejection",
     pausedState,
-    { type: "PRESS_KEY", key: k("1") },
+    { type: "PRESS_KEY", key: k("digit_1") },
     { expectRejectUiEffect: true },
   );
 
   runParityRejectionCase(
     "execution-pause operator rejection",
     pausedState,
-    { type: "PRESS_KEY", key: op("+") },
+    { type: "PRESS_KEY", key: op("op_add") },
     { expectRejectUiEffect: true },
   );
   runParityRejectionCase(
@@ -153,7 +153,7 @@ export const runContractsExecutionGateParityTests = (): void => {
   runParityAcceptedCase(
     "execution-pause utility interrupt",
     pausedState,
-    { type: "PRESS_KEY", key: k("\u2190") },
+    { type: "PRESS_KEY", key: k("util_backspace") },
   );
 
   runParityAcceptedCase(
@@ -168,7 +168,7 @@ export const runContractsExecutionGateParityTests = (): void => {
       ...pausedState.calculator,
       total: { kind: "rational", value: { num: 2n, den: 1n } },
       rollEntries: [],
-      operationSlots: [{ operator: op("+"), operand: 3n }, { operator: op("*"), operand: 2n }],
+      operationSlots: [{ operator: op("op_add"), operand: 3n }, { operator: op("op_mul"), operand: 2n }],
       stepProgress: {
         active: false,
         seedTotal: null,
@@ -187,3 +187,4 @@ export const runContractsExecutionGateParityTests = (): void => {
     `auto-step tick parity remains equivalent (${JSON.stringify(autoStepParity.mismatches)})`,
   );
 };
+

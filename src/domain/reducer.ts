@@ -15,7 +15,7 @@ import { applyLifecycleAction } from "./reducer.lifecycle.js";
 import { applyToggleFlag } from "./reducer.flags.js";
 import { clearOperationEntry, withStepProgressCleared } from "./reducer.stateBuilders.js";
 import { applyUnlocks } from "./unlocks.js";
-import { KEY_ID, resolveKeyId } from "./keyPresentation.js";
+import { KEY_ID } from "./keyPresentation.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import {
   adjustAxis,
@@ -91,11 +91,10 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     return state;
   }
   if (action.type === "PRESS_KEY") {
-    const resolvedKey = resolveKeyId(action.key);
     if (executionPolicy.decision === "interrupt_and_run") {
-      return applyKeyAction(applyExecutionInterrupt(state, executionPolicy.interrupt), resolvedKey);
+      return applyKeyAction(applyExecutionInterrupt(state, executionPolicy.interrupt), action.key);
     }
-    return applyKeyAction(state, resolvedKey);
+    return applyKeyAction(state, action.key);
   }
   if (action.type === "AUTO_STEP_TICK") {
     if (!isExecutionModeActive(state)) {

@@ -37,3 +37,4 @@ export const runDomainLegacySymbolGuardTests = (): void => {
     `Found legacy symbol equality checks in domain files:\n${violations.join("\n")}`,
   );
 };
+

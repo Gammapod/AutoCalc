@@ -1,4 +1,4 @@
-﻿import "./support/keyCompat.runtime.js";
+import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { installDomHarness } from "./helpers/domHarness.js";
 import { initialState } from "../src/domain/state.js";
@@ -36,8 +36,8 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
         ...initialState().calculator,
         total: r(5n),
         operationSlots: [
-          { operator: op("+"), operand: 1n },
-          { operator: op("*"), operand: 3n },
+          { operator: op("op_add"), operand: 1n },
+          { operator: op("op_mul"), operand: 3n },
         ],
       },
     };
@@ -46,7 +46,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
     assert.match(committedText, /(?:\u{1D453}\u2080\(\u{1D465}\)|f_0)\s*=\s*5/u, "pre-roll seed line uses current seed value");
     assert.match(
       committedText,
-      /\((?:\u{1D453}\u2099\(\u{1D465}\)|f_n)\s*\+\s*1\)\s*(?:�|×|\*)\s*3/u,
+      /\((?:\u{1D453}\u2099\(\u{1D465}\)|f_n)\s*\+\s*1\)\s*(?:\u00D7|\\*)\s*3/u,
       "recurrence builds from committed slots",
     );
 
@@ -54,7 +54,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
       ...initialState(),
       calculator: {
         ...initialState().calculator,
-        draftingSlot: { operator: op("+"), operandInput: "", isNegative: false },
+        draftingSlot: { operator: op("op_add"), operandInput: "", isNegative: false },
       },
     };
     renderAlgebraicVisualizerPanel(harness.root, stateWithPartialDraft);
@@ -70,8 +70,8 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
         ...initialState().calculator,
         total: r(0n),
         operationSlots: [
-          { operator: op("+"), operand: { type: "constant", value: "pi" } },
-          { operator: op("-"), operand: { type: "constant", value: "pi" } },
+          { operator: op("op_add"), operand: { type: "constant", value: "pi" } },
+          { operator: op("op_sub"), operand: { type: "constant", value: "pi" } },
         ],
         rollEntries: [
           {
@@ -88,7 +88,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
       ...stateWithRelevantSimplifiedRoll,
       calculator: {
         ...stateWithRelevantSimplifiedRoll.calculator,
-        operationSlots: [{ operator: op("+"), operand: 1n }],
+        operationSlots: [{ operator: op("op_add"), operand: 1n }],
       },
     };
     renderAlgebraicVisualizerPanel(harness.root, stateWithBuilderChangedAfterRoll);
@@ -103,11 +103,11 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
       calculator: {
         ...initialState().calculator,
         total: r(12n),
-        operationSlots: [{ operator: op("#"), operand: 5n }],
+        operationSlots: [{ operator: op("op_euclid_div"), operand: 5n }],
         rollEntries: [
           {
             y: r(2n),
-            symbolic: { exprText: "(f_n(x)#5)", truncated: false, renderText: "2" },
+            symbolic: { exprText: "(f_n(x)#5)", truncated: false, renderText: "digit_2" },
           },
         ],
       },
@@ -118,5 +118,6 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
     harness.teardown();
   }
 };
+
 
 

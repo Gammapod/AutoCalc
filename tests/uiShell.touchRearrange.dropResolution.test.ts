@@ -19,7 +19,7 @@ const buildRearrangeState = (): GameState => {
     { kind: "placeholder", area: "empty" },
     { kind: "placeholder", area: "empty" },
     { kind: "placeholder", area: "empty" },
-    { kind: "key", key: k("=") },
+    { kind: "key", key: k("exec_equals") },
   ];
   return withCalculatorProjection({
     ...base,
@@ -31,15 +31,15 @@ const buildRearrangeState = (): GameState => {
       },
       utilities: {
         ...base.unlocks.utilities,
-        [utility("C")]: true,
+        [utility("util_clear_all")]: true,
       },
       execution: {
         ...base.unlocks.execution,
-        [execution("=")]: true,
+        [execution("exec_equals")]: true,
       },
       valueExpression: {
         ...base.unlocks.valueExpression,
-        [k("1")]: true,
+        [k("digit_1")]: true,
       },
     },
   }, "f", (projected) => ({
@@ -49,7 +49,7 @@ const buildRearrangeState = (): GameState => {
       keypadColumns: 4,
       keypadRows: 1,
       keyLayout,
-      storageLayout: [{ kind: "key", key: utility("C") }, ...projected.ui.storageLayout.slice(1)],
+      storageLayout: [{ kind: "key", key: utility("util_clear_all") }, ...projected.ui.storageLayout.slice(1)],
     },
   }));
 };
@@ -62,7 +62,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     moveActions.push(action);
     return action;
   });
-  moveController.startPress(1, 30, 40, { surface: "storage", index: 0, key: k("C") }, null);
+  moveController.startPress(1, 30, 40, { surface: "storage", index: 0, key: k("util_clear_all") }, null);
   moveController.forceActivateCarryForTests();
   moveController.move(1, 60, 70, () => ({
     target: { surface: "keypad_f", index: 0 },
@@ -81,10 +81,10 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     ui: {
       ...projected.ui,
       keyLayout: [
-        { kind: "key", key: k("1") },
+        { kind: "key", key: k("digit_1") },
         { kind: "placeholder", area: "empty" },
         { kind: "placeholder", area: "empty" },
-        { kind: "key", key: k("=") },
+        { kind: "key", key: k("exec_equals") },
       ],
     },
   }));
@@ -94,7 +94,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     swapActions.push(action);
     return action;
   });
-  swapController.startPress(2, 30, 40, { surface: "storage", index: 0, key: k("C") }, null);
+  swapController.startPress(2, 30, 40, { surface: "storage", index: 0, key: k("util_clear_all") }, null);
   swapController.forceActivateCarryForTests();
   swapController.move(2, 60, 70, () => ({
     target: { surface: "keypad_f", index: 0 },
@@ -128,7 +128,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     crossActions.push(action);
     return action;
   });
-  crossController.startPress(3, 30, 40, { surface: "keypad_f", index: 3, key: k("=") }, null);
+  crossController.startPress(3, 30, 40, { surface: "keypad_f", index: 3, key: k("exec_equals") }, null);
   crossController.forceActivateCarryForTests();
   crossController.move(3, 60, 70, () => ({
     target: { surface: "keypad_g", index: 2 },
@@ -142,6 +142,7 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     "cross-calculator move dispatch targets keypad_f -> keypad_g surfaces",
   );
 };
+
 
 
 

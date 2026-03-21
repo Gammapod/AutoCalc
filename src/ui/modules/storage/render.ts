@@ -2,7 +2,7 @@ import type { Action, GameState, KeyCell } from "../../../domain/types.js";
 import { STORAGE_COLUMNS } from "../../../domain/state.js";
 import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
 import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
-import { resolveKeyId, toLegacyKey } from "../../../domain/keyPresentation.js";
+import { resolveKeyId } from "../../../domain/keyPresentation.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
 import { formatKeyCellLabel, getToggleAnimationIdForCell, isToggleFlagActive } from "../calculatorStorageCore.js";
 import { readToggleAnimation as readToggleAnimationById } from "../calculator/runtime.js";
@@ -153,7 +153,7 @@ const renderStorageButton = (
   button.type = "button";
   button.className = "key key--storage key--storage-unlocked key--draggable";
   button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-  if (getButtonDefinition(toLegacyKey(resolveKeyId(cell.key)))?.unlockGroup === "unaryOperators") {
+  if (getButtonDefinition(resolveKeyId(cell.key))?.unlockGroup === "unaryOperators") {
     button.classList.add("key--unary-operator");
   }
   if (newlyUnlockedKeys.has(cell.key)) {

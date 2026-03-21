@@ -28,7 +28,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: op("+"), operandInput: "", isNegative: false },
+      draftingSlot: { operator: op("op_add"), operandInput: "", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(draftingOperatorOnly), "_ [ + _ ]", "drafting slot shows operator before operand");
@@ -41,7 +41,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: op("+"), operandInput: "", isNegative: true },
+      draftingSlot: { operator: op("op_add"), operandInput: "", isNegative: true },
     },
   };
   assert.equal(
@@ -58,7 +58,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: false },
+      draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(draftingWithOperand), "_ [ + 1 ]", "drafting slot shows operand when provided");
@@ -71,7 +71,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: op("*"), operandInput: "", isNegative: false },
+      draftingSlot: { operator: op("op_mul"), operandInput: "", isNegative: false },
     },
   };
   assert.equal(
@@ -88,7 +88,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      draftingSlot: { operator: op("+"), operandInput: "1", isNegative: true },
+      draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: true },
     },
   };
   assert.equal(
@@ -105,7 +105,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
   assert.equal(
@@ -122,8 +122,8 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: op("+"), operand: 1n }],
-      draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
+      draftingSlot: { operator: op("op_sub"), operandInput: "", isNegative: false },
     },
   };
   assert.equal(
@@ -149,8 +149,8 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: op("+"), operand: 1n }],
-      draftingSlot: { operator: op("-"), operandInput: "", isNegative: false },
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
+      draftingSlot: { operator: op("op_sub"), operandInput: "", isNegative: false },
     },
   };
   assert.equal(buildOperationSlotDisplay(overflowState), "_ [ + 1 ]", "overflow state truncates display to max slot capacity");
@@ -169,7 +169,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...projectedCapacity,
     calculator: {
       ...projectedCapacity.calculator,
-      operationSlots: [{ operator: op("+"), operand: 1n }],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
   assert.equal(
@@ -186,7 +186,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: op("*"), operand: 2n }],
+      operationSlots: [{ operator: op("op_mul"), operand: 2n }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedMultiply), "_ [ \u00D7 2 ]", "committed multiply slot renders operator as \u00D7");
@@ -199,7 +199,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: op("#"), operand: 3n }],
+      operationSlots: [{ operator: op("op_euclid_div"), operand: 3n }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedEuclidean), "_ [ \u2AFD 3 ]", "committed euclidean slot renders operator as \u2AFD");
@@ -212,7 +212,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: op("\u27E1"), operand: 3n }],
+      operationSlots: [{ operator: op("op_mod"), operand: 3n }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedModulo), "_ [ \u25C7 3 ]", "committed modulo slot renders operator as \u25C7");
@@ -225,7 +225,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ operator: op("\u2A51"), operand: 3n }],
+      operationSlots: [{ operator: op("op_gcd"), operand: 3n }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedGcd), "_ [ \u22C0 3 ]", "committed gcd slot renders operator as \u22C0");
@@ -234,7 +234,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...committedGcd,
     calculator: {
       ...committedGcd.calculator,
-      operationSlots: [{ operator: op("\u2A52"), operand: 3n }],
+      operationSlots: [{ operator: op("op_lcm"), operand: 3n }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedLcm), "_ [ \u22C1 3 ]", "committed lcm slot renders operator as \u22C1");
@@ -247,7 +247,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     calculator: {
       ...base.calculator,
-      operationSlots: [{ kind: "unary", operator: uop("++") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_inc") }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedUnaryInc), "_ [ ++ ]", "committed unary increment slot renders ++ token");
@@ -256,7 +256,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...committedUnaryInc,
     calculator: {
       ...committedUnaryInc.calculator,
-      operationSlots: [{ kind: "unary", operator: uop("--") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_dec") }],
     },
   };
   assert.equal(buildOperationSlotDisplay(committedUnaryDec), "_ [ \u2013 \u2013 ]", "committed unary decrement slot renders en-dash pair token");
@@ -269,7 +269,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     ui: {
       ...base.ui,
-      keyLayout: [{ kind: "key", key: k("\u25BB") }],
+      keyLayout: [{ kind: "key", key: k("exec_step_through") }],
       buttonFlags: {
         ...base.ui.buttonFlags,
         "settings.step_expansion": true,
@@ -278,7 +278,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(1n),
-      operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
+      operationSlots: [{ operator: op("op_add"), operand: 2n }, { operator: op("op_mul"), operand: 3n }],
       stepProgress: {
         active: true,
         seedTotal: r(1n),
@@ -302,7 +302,7 @@ export const runOperationSlotDisplayTests = (): void => {
     },
     ui: {
       ...base.ui,
-      keyLayout: [{ kind: "key", key: k("\u25BB") }],
+      keyLayout: [{ kind: "key", key: k("exec_step_through") }],
       buttonFlags: {
         ...base.ui.buttonFlags,
         "settings.step_expansion": true,
@@ -311,7 +311,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(5n),
-      operationSlots: [{ operator: op("+"), operand: 3n }],
+      operationSlots: [{ operator: op("op_add"), operand: 3n }],
       stepProgress: {
         active: false,
         seedTotal: null,
@@ -331,7 +331,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...steppedAdditionExpansion,
     calculator: {
       ...steppedAdditionExpansion.calculator,
-      operationSlots: [{ operator: op("-"), operand: 3n }],
+      operationSlots: [{ operator: op("op_sub"), operand: 3n }],
     },
   };
   assert.equal(
@@ -344,7 +344,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...steppedAdditionExpansion,
     calculator: {
       ...steppedAdditionExpansion.calculator,
-      operationSlots: [{ operator: op("/"), operand: 3n }],
+      operationSlots: [{ operator: op("op_div"), operand: 3n }],
     },
   };
   assert.equal(
@@ -358,7 +358,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...steppedAdditionExpansion.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("#"), operand: 5n }],
+      operationSlots: [{ operator: op("op_euclid_div"), operand: 5n }],
     },
   };
   assert.equal(
@@ -372,7 +372,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...steppedAdditionExpansion.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("\u27E1"), operand: 5n }],
+      operationSlots: [{ operator: op("op_mod"), operand: 5n }],
     },
   };
   assert.equal(
@@ -386,7 +386,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...steppedAdditionExpansion.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("\u21BA"), operand: 3n }],
+      operationSlots: [{ operator: op("op_rotate_left"), operand: 3n }],
     },
   };
   assert.equal(
@@ -400,7 +400,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...steppedAdditionExpansion.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("\u2A51"), operand: 3n }],
+      operationSlots: [{ operator: op("op_gcd"), operand: 3n }],
     },
   };
   assert.equal(
@@ -414,7 +414,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...steppedAdditionExpansion.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("\u2A52"), operand: 3n }],
+      operationSlots: [{ operator: op("op_lcm"), operand: 3n }],
     },
   };
   assert.equal(
@@ -428,7 +428,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...steppedAdditionExpansion.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("MAX"), operand: 3n }],
+      operationSlots: [{ operator: op("op_max"), operand: 3n }],
     },
   };
   assert.equal(
@@ -442,7 +442,7 @@ export const runOperationSlotDisplayTests = (): void => {
     calculator: {
       ...steppedAdditionExpansion.calculator,
       total: r(12n),
-      operationSlots: [{ operator: op("MIN"), operand: 3n }],
+      operationSlots: [{ operator: op("op_min"), operand: 3n }],
     },
   };
   assert.equal(
@@ -455,7 +455,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...steppedAdditionExpansion,
     calculator: {
       ...steppedAdditionExpansion.calculator,
-      operationSlots: [{ kind: "unary", operator: uop("++") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_inc") }],
     },
   };
   assert.equal(
@@ -468,7 +468,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...steppedAdditionExpansion,
     calculator: {
       ...steppedAdditionExpansion.calculator,
-      operationSlots: [{ kind: "unary", operator: uop("--") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_dec") }],
     },
   };
   assert.equal(
@@ -481,7 +481,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...steppedAdditionExpansion,
     calculator: {
       ...steppedAdditionExpansion.calculator,
-      operationSlots: [{ kind: "unary", operator: uop("-n") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_neg") }],
     },
   };
   assert.equal(
@@ -494,7 +494,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...steppedAdditionExpansion,
     calculator: {
       ...steppedAdditionExpansion.calculator,
-      operationSlots: [{ kind: "unary", operator: uop("\u03A9") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_omega") }],
     },
   };
   assert.equal(
@@ -507,7 +507,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...steppedAdditionExpansion,
     calculator: {
       ...steppedAdditionExpansion.calculator,
-      operationSlots: [{ kind: "unary", operator: uop("\u03C6") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_phi") }],
     },
   };
   assert.equal(
@@ -520,7 +520,7 @@ export const runOperationSlotDisplayTests = (): void => {
     ...steppedAdditionExpansion,
     calculator: {
       ...steppedAdditionExpansion.calculator,
-      operationSlots: [{ kind: "unary", operator: uop("\u03C3") }],
+      operationSlots: [{ kind: "unary", operator: uop("unary_sigma") }],
     },
   };
   assert.equal(
@@ -545,3 +545,4 @@ export const runOperationSlotDisplayTests = (): void => {
     "expansion toggle is a no-op when no valid step target exists",
   );
 };
+

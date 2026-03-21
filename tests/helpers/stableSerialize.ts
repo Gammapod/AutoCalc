@@ -28,3 +28,4 @@ export const stableSerialize = (value: unknown): string => {
 
   return JSON.stringify(walk(value));
 };
+

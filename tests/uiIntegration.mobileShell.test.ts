@@ -374,11 +374,11 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "domain indicator switches to NaN (red) styling when total is NaN",
     );
 
-    const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("=")}']`);
+    const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("exec_equals")}']`);
     assert.ok(keyButton, "calculator key exists after mobile render");
     click(keyButton as HTMLButtonElement);
     assert.equal(
-      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("=")),
+      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("exec_equals")),
       true,
       "clicking a rendered key dispatches PRESS_KEY action",
     );
@@ -393,14 +393,14 @@ export const runUiIntegrationMobileShellTests = (): void => {
       ...projected,
       ui: {
         ...projected.ui,
-        keyLayout: [{ kind: "key", key: k("\u25BB") }, { kind: "key", key: k("=") }],
+        keyLayout: [{ kind: "key", key: k("exec_step_through") }, { kind: "key", key: k("exec_equals") }],
         keypadColumns: 2,
         keypadRows: 1,
       },
       calculator: {
         ...projected.calculator,
         total: r(1n),
-        operationSlots: [{ operator: op("+"), operand: 2n }, { operator: op("*"), operand: 3n }],
+        operationSlots: [{ operator: op("op_add"), operand: 2n }, { operator: op("op_mul"), operand: 3n }],
       },
     }));
     renderer.render(withStepKey, dispatch, {
@@ -410,7 +410,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     assert.ok(stepTokenBefore, "slot token is highlighted when step key is present on keypad");
     assert.equal(stepTokenBefore?.textContent?.includes("[ + 2 ]"), true, "inactive step target highlights first slot token");
 
-    const steppedOnce = reducer(withStepKey, { type: "PRESS_KEY", key: k("\u25BB") });
+    const steppedOnce = reducer(withStepKey, { type: "PRESS_KEY", key: k("exec_step_through") });
     renderer.render(steppedOnce, dispatch, {
             inputBlocked: false,
     });
@@ -418,7 +418,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     assert.ok(stepTokenAfterOne, "slot token remains highlighted after first step-through");
     assert.equal(stepTokenAfterOne?.textContent?.includes("[ \u00D7 3 ]"), true, "step target highlight moves to next slot token after one step");
 
-    const steppedThenEquals = reducer(steppedOnce, { type: "PRESS_KEY", key: k("=") });
+    const steppedThenEquals = reducer(steppedOnce, { type: "PRESS_KEY", key: k("exec_equals") });
     assert.deepEqual(
       steppedThenEquals.calculator.total,
       r(9n),
@@ -429,7 +429,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       ...projected,
       ui: {
         ...projected.ui,
-        keyLayout: [{ kind: "key", key: k("=") }],
+        keyLayout: [{ kind: "key", key: k("exec_equals") }],
       },
     }));
     renderer.render(withoutStepKey, dispatch, {
@@ -446,6 +446,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     harness.teardown();
   }
 };
+
 
 
 
