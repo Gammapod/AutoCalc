@@ -44,8 +44,8 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_dec_on_total_at_least_10",
-    description: "Unlock -- when total reaches at least 10.",
-    predicate: { type: "total_at_least", value: 10n },
+    description: "Unlock -- when total reaches at least 30.",
+    predicate: { type: "total_at_least", value: 30n },
     effect: { type: "unlock_slot_operator", key: KEY_ID.unary_dec },
     once: true,
     domainNodeId: "NN",
