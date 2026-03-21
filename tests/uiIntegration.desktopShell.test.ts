@@ -1,6 +1,6 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import type { Action } from "../src/domain/types.js";
 import { reducer } from "../src/domain/reducer.js";
 import { createShellRenderer } from "../src/ui/renderAdapter.js";
@@ -161,9 +161,9 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     assert.ok(keyButton, "calculator key exists after desktop render");
     click(keyButton as HTMLButtonElement);
     assert.equal(
-      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("exec_equals")),
+      dispatched.some((action) => action.type === "TOGGLE_FLAG" && action.flag === EXECUTION_PAUSE_EQUALS_FLAG),
       true,
-      "clicking a rendered key dispatches PRESS_KEY action on desktop shell",
+      "clicking a rendered key dispatches equals toggle action on desktop shell",
     );
 
     const baseStepState = initialState();
@@ -202,11 +202,13 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     assert.ok(stepTokenAfterOne, "desktop step highlight remains visible after one step");
     assert.equal(stepTokenAfterOne?.textContent?.includes("[ \u00D7 3 ]"), true, "desktop highlight advances to next slot token");
 
-    const steppedThenEquals = reducer(steppedOnce, { type: "PRESS_KEY", key: k("exec_equals") });
+    const withEqualsAutoOn = reducer(steppedOnce, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
+    const afterAutoTick = reducer(withEqualsAutoOn, { type: "AUTO_STEP_TICK" });
+    const steppedThenEquals = reducer(afterAutoTick, { type: "AUTO_STEP_TICK" });
     assert.deepEqual(
       steppedThenEquals.calculator.total,
       { kind: "rational", value: { num: 9n, den: 1n } },
-      "desktop mixed step-through then equals continues from partial cursor",
+      "desktop mixed step-through then equals-toggle auto-step continues from partial cursor",
     );
 
     renderer.dispose();

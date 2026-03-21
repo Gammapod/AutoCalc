@@ -1,7 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { installDomHarness } from "./helpers/domHarness.js";
-import { EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
 import { renderKeypadCells } from "../src/ui/modules/calculator/keypadRender.js";
 import type { Action, GameState } from "../src/domain/types.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
@@ -108,6 +108,36 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     const playPauseButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${KEY_ID.exec_play_pause}']`);
     playPauseButton?.click();
     assert.equal(dispatches.length, 4, "play/pause key click dispatches one toggle action");
+
+    const equalsToggleState: GameState = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key", key: KEY_ID.exec_equals }],
+        keypadColumns: 1,
+        keypadRows: 1,
+        buttonFlags: {
+          ...initialState().ui.buttonFlags,
+          [EXECUTION_PAUSE_EQUALS_FLAG]: true,
+        },
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        execution: {
+          ...initialState().unlocks.execution,
+          [KEY_ID.exec_equals]: true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, equalsToggleState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const equalsButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${KEY_ID.exec_equals}']`);
+    assert.equal(equalsButton?.classList.contains("key--toggle-active"), true, "= key renders as physically toggled while auto-step mode is active");
+    assert.equal(equalsButton?.getAttribute("aria-pressed"), "true", "= key sets aria-pressed while auto-step mode is active");
 
     const unaryState: GameState = {
       ...initialState(),

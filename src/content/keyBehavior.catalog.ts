@@ -12,7 +12,7 @@ export type KeyPrimaryExpectationKind =
   | "backspace_deletes_last_input"
   | "undo_pops_roll"
   | "graph_counts_only"
-  | "equals_executes_drafted_plus_one"
+  | "equals_toggles_auto_step_mode"
   | "roll_inverse_executes_predecessor"
   | "memory_recall_sets_input"
   | "memory_adjusts_allocator";
@@ -25,7 +25,7 @@ export type KeyEdgeExpectationKind =
   | "backspace_noop_when_nothing_to_delete"
   | "undo_noop_when_roll_empty"
   | "graph_does_not_mutate_calculator_state"
-  | "equals_division_by_zero_sets_nan"
+  | "equals_toggle_division_by_zero_sets_nan"
   | "roll_inverse_rejects_on_error"
   | "memory_recall_noop_on_active_roll"
   | "memory_adjust_noop_without_budget_or_bounds";
@@ -192,8 +192,8 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   {
     key: KEY_ID.exec_equals,
     lockModel: "always_unlocked",
-    primaryExpectation: "equals_executes_drafted_plus_one",
-    edgeCaseExpectation: "equals_division_by_zero_sets_nan",
+    primaryExpectation: "equals_toggles_auto_step_mode",
+    edgeCaseExpectation: "equals_toggle_division_by_zero_sets_nan",
   },
   {
     key: KEY_ID.exec_play_pause,

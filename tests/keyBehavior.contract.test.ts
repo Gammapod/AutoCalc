@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { keyBehaviorCatalog } from "../src/content/keyBehavior.catalog.js";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { reducer } from "../src/domain/reducer.js";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
-import { CHECKLIST_UNLOCK_ID } from "../src/domain/state.js";
+import { CHECKLIST_UNLOCK_ID, EXECUTION_PAUSE_EQUALS_FLAG } from "../src/domain/state.js";
 import { getButtonFace, isDigitKeyId, KEY_ID, resolveKeyId } from "../src/domain/keyPresentation.js";
 import { resolveMemoryRecallDigit } from "../src/domain/memoryController.js";
 import type { GameState, Key, KeyInput, RollEntry } from "../src/domain/types.js";
@@ -15,6 +16,21 @@ import { legacyInitialState } from "./support/legacyState.js";
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
+
+const runEqualsToggleToCompletion = (state: GameState): GameState => {
+  let next = reducer(state, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
+  for (let index = 0; index < 32; index += 1) {
+    if (!next.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]) {
+      break;
+    }
+    const stepped = reducer(next, { type: "AUTO_STEP_TICK" });
+    if (stepped === next) {
+      break;
+    }
+    next = stepped;
+  }
+  return next;
+};
 
 const runtimeKeysFromInitialUnlocks = (): Key[] => {
   const state = legacyInitialState();
@@ -282,14 +298,15 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "equals_executes_drafted_plus_one") {
+  if (kind === "equals_toggles_auto_step_mode") {
     let state = unlockKey(legacyInitialState(), "exec_equals");
     state = unlockKey(state, "op_add");
     state = unlockKey(state, "digit_1");
     state = applyKeyAction(state, "op_add");
     state = applyKeyAction(state, "digit_1");
-    const next = applyKeyAction(state, "exec_equals");
+    const next = runEqualsToggleToCompletion(state);
     assert.deepEqual(next.calculator.total, r(1n), "= should execute drafted operation sequence");
+    assert.equal(Boolean(next.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "= toggle clears after terminal commit");
     return;
   }
 
@@ -510,7 +527,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "equals_division_by_zero_sets_nan") {
+  if (kind === "equals_toggle_division_by_zero_sets_nan") {
     const base = legacyInitialState();
     const state: GameState = {
       ...unlockKey(base, "exec_equals"),
@@ -520,9 +537,10 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         operationSlots: [{ operator: op("op_div"), operand: 0n }],
       },
     };
-    const next = applyKeyAction(state, "exec_equals");
+    const next = runEqualsToggleToCompletion(state);
     assert.deepEqual(next.calculator.total, toNanCalculatorValue(), "division by zero should set total to NaN");
     assert.equal(next.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero should record error code");
+    assert.equal(Boolean(next.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "= toggle clears after terminal error commit");
     return;
   }
 

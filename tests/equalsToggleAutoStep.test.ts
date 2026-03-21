@@ -1,5 +1,6 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
+import { toNanCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG } from "../src/domain/state.js";
@@ -46,7 +47,56 @@ export const runEqualsToggleAutoStepTests = (): void => {
   assert.equal(Boolean(afterAutoTick.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "= toggle auto-clears after terminal roll commit");
   assert.equal(afterAutoTick.calculator.rollEntries.length > 0, true, "AUTO_STEP_TICK committed a roll update");
 
-  const pressEqualsStillExecutes = reducer(base, { type: "PRESS_KEY", key: execution("exec_equals") });
-  assert.equal(pressEqualsStillExecutes.calculator.rollEntries.length > 0, true, "direct PRESS_KEY 'exec_equals' retains execution semantics");
+  const fromLegacyPress = reducer(base, { type: "PRESS_KEY", key: execution("exec_equals") });
+  assert.equal(
+    Boolean(fromLegacyPress.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]),
+    true,
+    "legacy PRESS_KEY '=' is normalized into equals-toggle activation",
+  );
+
+  const multiStageSource: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      total: r(1n),
+      operationSlots: [{ operator: op("op_add"), operand: 2n }, { operator: op("op_mul"), operand: 3n }],
+      rollEntries: [],
+      stepProgress: {
+        active: false,
+        seedTotal: null,
+        currentTotal: null,
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
+    },
+  };
+  const multiOn = reducer(multiStageSource, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
+  const multiTick1 = reducer(multiOn, { type: "AUTO_STEP_TICK" });
+  assert.equal(Boolean(multiTick1.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), true, "equals toggle remains active during intermediate auto-step");
+  assert.equal(multiTick1.calculator.rollEntries.length, 0, "intermediate auto-step keeps roll preview-only");
+  const multiTick2 = reducer(multiTick1, { type: "AUTO_STEP_TICK" });
+  assert.equal(Boolean(multiTick2.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "equals toggle clears on terminal auto-step commit");
+  assert.deepEqual(multiTick2.calculator.total, r(9n), "multi-stage auto-step reaches terminal total");
+
+  const errorSource: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      total: r(10n),
+      operationSlots: [{ operator: op("op_div"), operand: 0n }],
+      rollEntries: [],
+      stepProgress: {
+        active: false,
+        seedTotal: null,
+        currentTotal: null,
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
+    },
+  };
+  const errorOn = reducer(errorSource, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
+  const errorTick = reducer(errorOn, { type: "AUTO_STEP_TICK" });
+  assert.equal(Boolean(errorTick.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "equals toggle clears on terminal error commit");
+  assert.deepEqual(errorTick.calculator.total, toNanCalculatorValue(), "division-by-zero path still commits terminal NaN");
 };
 

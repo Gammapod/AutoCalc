@@ -83,20 +83,32 @@ type ResolvedExecutionPolicy = {
 const hasDualCalculatorInstances = (state: GameState): boolean =>
   Boolean(state.calculators?.g && state.calculators?.f);
 
+const normalizeLegacyEqualsPress = (action: Action): Action => {
+  if (action.type !== "PRESS_KEY" || action.key !== KEY_ID.exec_equals) {
+    return action;
+  }
+  return {
+    type: "TOGGLE_FLAG",
+    flag: EXECUTION_PAUSE_EQUALS_FLAG,
+    ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}),
+  };
+};
+
 const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
   const services = options.services ?? getAppServices();
   const unlockCatalog = services.contentProvider.unlockCatalog;
-  const executionPolicy = classifyExecutionPolicyAction(state, action);
+  const normalizedAction = normalizeLegacyEqualsPress(action);
+  const executionPolicy = classifyExecutionPolicyAction(state, normalizedAction);
   if (executionPolicy.decision === "reject") {
     return state;
   }
-  if (action.type === "PRESS_KEY") {
+  if (normalizedAction.type === "PRESS_KEY") {
     if (executionPolicy.decision === "interrupt_and_run") {
-      return applyKeyAction(applyExecutionInterrupt(state, executionPolicy.interrupt), action.key);
+      return applyKeyAction(applyExecutionInterrupt(state, executionPolicy.interrupt), normalizedAction.key);
     }
-    return applyKeyAction(state, action.key);
+    return applyKeyAction(state, normalizedAction.key);
   }
-  if (action.type === "AUTO_STEP_TICK") {
+  if (normalizedAction.type === "AUTO_STEP_TICK") {
     if (!isExecutionModeActive(state)) {
       return state;
     }
@@ -124,115 +136,127 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     return lifecycleHandled;
   }
 
-  if (action.type === "MOVE_KEY_SLOT") {
-    const moved = applyMoveKeySlot(state, action.fromIndex, action.toIndex);
+  if (normalizedAction.type === "MOVE_KEY_SLOT") {
+    const moved = applyMoveKeySlot(state, normalizedAction.fromIndex, normalizedAction.toIndex);
     return moved !== state ? withStepProgressCleared(moved) : moved;
   }
-  if (action.type === "SWAP_KEY_SLOTS") {
-    const swapped = applySwapKeySlots(state, action.firstIndex, action.secondIndex);
+  if (normalizedAction.type === "SWAP_KEY_SLOTS") {
+    const swapped = applySwapKeySlots(state, normalizedAction.firstIndex, normalizedAction.secondIndex);
     return swapped !== state ? withStepProgressCleared(swapped) : swapped;
   }
-  if (action.type === "MOVE_LAYOUT_CELL") {
-    const moved = applyMoveLayoutCell(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
+  if (normalizedAction.type === "MOVE_LAYOUT_CELL") {
+    const moved = applyMoveLayoutCell(
+      state,
+      normalizedAction.fromSurface,
+      normalizedAction.fromIndex,
+      normalizedAction.toSurface,
+      normalizedAction.toIndex,
+    );
     if (moved !== state) {
-      if (action.fromSurface !== action.toSurface) {
+      if (normalizedAction.fromSurface !== normalizedAction.toSurface) {
         return clearOperationEntry(moved);
       }
       return withStepProgressCleared(moved);
     }
     return moved;
   }
-  if (action.type === "SWAP_LAYOUT_CELLS") {
-    const swapped = applySwapLayoutCells(state, action.fromSurface, action.fromIndex, action.toSurface, action.toIndex);
+  if (normalizedAction.type === "SWAP_LAYOUT_CELLS") {
+    const swapped = applySwapLayoutCells(
+      state,
+      normalizedAction.fromSurface,
+      normalizedAction.fromIndex,
+      normalizedAction.toSurface,
+      normalizedAction.toIndex,
+    );
     if (swapped !== state) {
-      if (action.fromSurface !== action.toSurface) {
+      if (normalizedAction.fromSurface !== normalizedAction.toSurface) {
         return clearOperationEntry(swapped);
       }
       return withStepProgressCleared(swapped);
     }
     return swapped;
   }
-  if (action.type === "SET_KEYPAD_DIMENSIONS") {
-    const resized = applySetKeypadDimensions(state, action.columns, action.rows);
+  if (normalizedAction.type === "SET_KEYPAD_DIMENSIONS") {
+    const resized = applySetKeypadDimensions(state, normalizedAction.columns, normalizedAction.rows);
     return resized !== state ? withStepProgressCleared(resized) : resized;
   }
-  if (action.type === "UPGRADE_KEYPAD_ROW") {
+  if (normalizedAction.type === "UPGRADE_KEYPAD_ROW") {
     const upgraded = applyUpgradeKeypadRow(state);
     return upgraded !== state ? withStepProgressCleared(upgraded) : upgraded;
   }
-  if (action.type === "UPGRADE_KEYPAD_COLUMN") {
+  if (normalizedAction.type === "UPGRADE_KEYPAD_COLUMN") {
     const upgraded = applyUpgradeKeypadColumn(state);
     return upgraded !== state ? withStepProgressCleared(upgraded) : upgraded;
   }
-  if (action.type === "TOGGLE_FLAG") {
+  if (normalizedAction.type === "TOGGLE_FLAG") {
     if (executionPolicy.decision === "interrupt_and_run") {
-      return applyToggleFlag(applyExecutionInterrupt(state, executionPolicy.interrupt), action.flag);
+      return applyToggleFlag(applyExecutionInterrupt(state, executionPolicy.interrupt), normalizedAction.flag);
     }
-    return applyToggleFlag(state, action.flag);
+    return applyToggleFlag(state, normalizedAction.flag);
   }
-  if (action.type === "TOGGLE_VISUALIZER") {
-    return applyToggleVisualizer(state, action.visualizer);
+  if (normalizedAction.type === "TOGGLE_VISUALIZER") {
+    return applyToggleVisualizer(state, normalizedAction.visualizer);
   }
-  if (action.type === "ALLOCATOR_ADJUST") {
+  if (normalizedAction.type === "ALLOCATOR_ADJUST") {
     const projection = projectControlFromState(state);
-    const axis = allocatorFieldToAxis(action.field);
+    const axis = allocatorFieldToAxis(normalizedAction.field);
     if (!axis) {
       return state;
     }
-    const nextControl = adjustAxis(projection.control, projection.profile, axis, action.delta);
+    const nextControl = adjustAxis(projection.control, projection.profile, axis, normalizedAction.delta);
     if (nextControl === projection.control) {
       return state;
     }
     return applyUnlocks(applyAllocatorRuntimeProjection(state, nextControl), unlockCatalog);
   }
-  if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
+  if (normalizedAction.type === "ALLOCATOR_SET_MAX_POINTS") {
     const projection = projectControlFromState(state);
-    const nextControl = withMaxPointsSet(projection.control, projection.profile, action.value);
+    const nextControl = withMaxPointsSet(projection.control, projection.profile, normalizedAction.value);
     if (nextControl === projection.control) {
       return state;
     }
     return applyAllocatorRuntimeProjection(state, nextControl);
   }
-  if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
+  if (normalizedAction.type === "ALLOCATOR_ADD_MAX_POINTS") {
     const projection = projectControlFromState(state);
-    const nextControl = withMaxPointsAdded(projection.control, projection.profile, action.amount);
+    const nextControl = withMaxPointsAdded(projection.control, projection.profile, normalizedAction.amount);
     if (nextControl === projection.control) {
       return state;
     }
     return applyAllocatorRuntimeProjection(state, nextControl);
   }
-  if (action.type === "RESET_ALLOCATOR_DEVICE") {
+  if (normalizedAction.type === "RESET_ALLOCATOR_DEVICE") {
     const projection = projectControlFromState(state);
     return applyAllocatorRuntimeProjection(state, resetLambdaAdjustments(projection.control, projection.profile));
   }
-  if (action.type === "ALLOCATOR_RETURN_PRESSED") {
+  if (normalizedAction.type === "ALLOCATOR_RETURN_PRESSED") {
     const withCount: GameState = {
       ...state,
       allocatorReturnPressCount: (state.allocatorReturnPressCount ?? 0) + 1,
     };
     return applyUnlocks(withCount, unlockCatalog);
   }
-  if (action.type === "ALLOCATOR_ALLOCATE_PRESSED") {
+  if (normalizedAction.type === "ALLOCATOR_ALLOCATE_PRESSED") {
     const withCount: GameState = {
       ...state,
       allocatorAllocatePressCount: (state.allocatorAllocatePressCount ?? 0) + 1,
     };
     return applyUnlocks(withCount, unlockCatalog);
   }
-  if (action.type === "LAMBDA_SET_CONTROL") {
-    return applyUnlocks(applyAllocatorRuntimeProjection(state, action.value), unlockCatalog);
+  if (normalizedAction.type === "LAMBDA_SET_CONTROL") {
+    return applyUnlocks(applyAllocatorRuntimeProjection(state, normalizedAction.value), unlockCatalog);
   }
-  if (action.type === "SET_SESSION_CONTROL_EQUATIONS") {
-    const baseProfile = getBaseControlProfile(action.calculatorId);
+  if (normalizedAction.type === "SET_SESSION_CONTROL_EQUATIONS") {
+    const baseProfile = getBaseControlProfile(normalizedAction.calculatorId);
     const merged = {
       ...baseProfile,
-      equations: action.equations,
+      equations: normalizedAction.equations,
     };
     const withSessionProfiles: GameState = {
       ...state,
       sessionControlProfiles: {
         ...state.sessionControlProfiles,
-        [action.calculatorId]: merged,
+        [normalizedAction.calculatorId]: merged,
       },
     };
     return applyAllocatorRuntimeProjection(withSessionProfiles, withSessionProfiles.lambdaControl);
@@ -266,17 +290,18 @@ export const resolveActionCalculatorId = (state: GameState, action: Action): Cal
 };
 
 export const resolveExecutionPolicyForAction = (state: GameState, action: Action): ResolvedExecutionPolicy => {
-  const targetCalculatorId = resolveActionCalculatorId(state, action);
+  const normalizedAction = normalizeLegacyEqualsPress(action);
+  const targetCalculatorId = resolveActionCalculatorId(state, normalizedAction);
   const calculatorId = targetCalculatorId ?? resolveActiveCalculatorId(state);
   if (hasDualCalculatorInstances(state) && targetCalculatorId) {
     const projected = projectCalculatorToLegacy(state, targetCalculatorId);
     return {
-      decision: classifyExecutionPolicyAction(projected, action),
+      decision: classifyExecutionPolicyAction(projected, normalizedAction),
       calculatorId,
     };
   }
   return {
-    decision: classifyExecutionPolicyAction(state, action),
+    decision: classifyExecutionPolicyAction(state, normalizedAction),
     calculatorId,
   };
 };

@@ -1,6 +1,6 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import type { Action, GameState, RollEntry } from "../src/domain/types.js";
 import { reducer } from "../src/domain/reducer.js";
 import { createShellRenderer } from "../src/ui/renderAdapter.js";
@@ -378,9 +378,9 @@ export const runUiIntegrationMobileShellTests = (): void => {
     assert.ok(keyButton, "calculator key exists after mobile render");
     click(keyButton as HTMLButtonElement);
     assert.equal(
-      dispatched.some((action) => action.type === "PRESS_KEY" && action.key === k("exec_equals")),
+      dispatched.some((action) => action.type === "TOGGLE_FLAG" && action.flag === EXECUTION_PAUSE_EQUALS_FLAG),
       true,
-      "clicking a rendered key dispatches PRESS_KEY action",
+      "clicking a rendered key dispatches equals toggle action",
     );
 
     const withStepKey = withCalculatorProjection({
@@ -418,11 +418,13 @@ export const runUiIntegrationMobileShellTests = (): void => {
     assert.ok(stepTokenAfterOne, "slot token remains highlighted after first step-through");
     assert.equal(stepTokenAfterOne?.textContent?.includes("[ \u00D7 3 ]"), true, "step target highlight moves to next slot token after one step");
 
-    const steppedThenEquals = reducer(steppedOnce, { type: "PRESS_KEY", key: k("exec_equals") });
+    const withEqualsAutoOn = reducer(steppedOnce, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
+    const afterAutoTick = reducer(withEqualsAutoOn, { type: "AUTO_STEP_TICK" });
+    const steppedThenEquals = reducer(afterAutoTick, { type: "AUTO_STEP_TICK" });
     assert.deepEqual(
       steppedThenEquals.calculator.total,
       r(9n),
-      "mixed step-through then equals continues remaining slots from partial cursor",
+      "mixed step-through then equals-toggle auto-step continues remaining slots from partial cursor",
     );
 
     const withoutStepKey = withCalculatorProjection(steppedOnce, "f", (projected) => ({

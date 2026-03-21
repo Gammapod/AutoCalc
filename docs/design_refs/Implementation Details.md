@@ -45,19 +45,19 @@ Multi-calculator fields:
 
 ## Execution Semantics
 
-### `=` execution
+### `=` equals-toggle auto-step
 
-- Finalizes drafting slot (if valid), then executes committed slots left-to-right.
-- Appends roll output deterministically.
-- Euclidean operators preserve remainder metadata.
-- Errors (`overflow`, `division_by_zero`, `nan_input`, `symbolic_result`) are recorded via roll/error channels.
+- `=` toggles `execution.pause.equals` ON/OFF.
+- When toggled ON, auto-step mode runs step-through progression over `AUTO_STEP_TICK` cycles.
+- Intermediate auto-step state is preview-only (`stepProgress` advances; roll/total do not terminal-commit yet).
+- On terminal completion (success or error), roll/total commit exactly once and the equals toggle auto-clears.
 
 ### `▻` step-through execution
 
 - Executes exactly one slot per key press when step-through key is available.
 - Maintains `stepProgress` intermediate state.
 - Final completion commits terminal roll output once.
-- `=` after partial stepping completes remaining slots (does not restart).
+- `=` toggle from partial stepping resumes from cursor and completes remaining stages (does not restart).
 
 ### Operator Families
 

@@ -1,6 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import type { KeyCell } from "../src/domain/types.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG } from "../src/domain/state.js";
 import {
   buildKeyButtonAction,
   buildLayoutDropDispatchAction,
@@ -35,6 +36,13 @@ export const runContractsUiActionEmissionTests = (): void => {
   const digitCell: KeyCell = keyCell("digit_1");
   const digitAction = buildKeyButtonAction(digitCell);
   assert.deepEqual(digitAction, { type: "PRESS_KEY", key: k("digit_1") }, "digit key emits press action");
+  const equalsCell: KeyCell = keyCell("exec_equals");
+  const equalsAction = buildKeyButtonAction(equalsCell);
+  assert.deepEqual(
+    equalsAction,
+    { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
+    "= key emits equals auto-step toggle action",
+  );
 
   const moveAction = buildLayoutDropDispatchAction(
     { surface: "keypad", index: 1 },

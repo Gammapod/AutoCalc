@@ -163,10 +163,10 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: prevents duplicate roll/terminal writes.
 - `FS-FB-07` (MUST): If step-through capability is absent, step-specific behavior is inert.
   Rationale: unavailable capabilities cannot leak behavior.
-- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating for calculator/progression state, while UI-only feedback effects are allowed.
-  Rationale: execution cadence and deterministic state transitions require mode-gated mutation boundaries.
+- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. `=` is the toggle entrypoint for this mode (`execution.pause.equals`). While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating for calculator/progression state, while UI-only feedback effects are allowed.
+  Rationale: execution cadence and deterministic state transitions require mode-gated mutation boundaries, with explicit toggle-driven entry.
 - `FS-FB-09` (MUST): Auto-step intermediate progress is preview-only. Roll/history and terminal total commit exactly once, only on completion/finalization of the execution path.
-  Rationale: prevents duplicate terminal writes and preserves roll as terminal execution history.
+  Rationale: prevents duplicate terminal writes and preserves roll as terminal execution history. For equals-toggle mode, the flag auto-clears on terminal roll/total commit.
 
 #### 3.2.3 Traceability (Calculator State)
 
@@ -188,7 +188,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-FB-05 | Step-through terminal equivalence with full execution | `reducer/input`, `ui-integration/mobile-shell`, `ui-integration/desktop-shell` | unit + workflow/integration | none |
 | FS-FB-06 | Finalization writes one terminal outcome per completion path | `reducer/input`, `persistence` | unit | partial: no dedicated long-trace finalization stress suite |
 | FS-FB-07 | Step behavior inert when capability absent | `reducer/input`, `ui-integration/mobile-shell` | unit + integration | none |
-| FS-FB-08 | Auto-step mode gates calculator mutation inputs; rejected actions are non-mutating for calculator/progression state unless designated as execution-interrupting | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
+| FS-FB-08 | `=` toggles auto-step mode; while active, calculator mutation inputs are gated and rejected actions are non-mutating unless execution-interrupting | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
 | FS-FB-09 | Auto-step intermediate progress is preview-only; roll/terminal commit exactly once on completion | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | partial: no dedicated auto-step completion stress suite |
 
 #### 3.2.4 Traceability (Multi-Calculator Session Model)

@@ -1,6 +1,6 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import {
   buildKeyButtonAction,
   isToggleFlagActive,
@@ -44,6 +44,25 @@ export const runButtonBehaviorTests = (): void => {
     },
   };
   assert.equal(isToggleFlagActive(withToggleFlag, toggleCell), true, "toggle is active when its flag is set");
+
+  const equalsCell: KeyCell = keyCell("exec_equals");
+  assert.deepEqual(
+    buildKeyButtonAction(equalsCell),
+    { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
+    "= key dispatches equals-toggle action",
+  );
+  assert.equal(isToggleFlagActive(base, equalsCell), false, "= is inactive before equals flag is set");
+  const withEqualsFlag: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      buttonFlags: {
+        ...base.ui.buttonFlags,
+        [EXECUTION_PAUSE_EQUALS_FLAG]: true,
+      },
+    },
+  };
+  assert.equal(isToggleFlagActive(withEqualsFlag, equalsCell), true, "= reports active while equals auto-step is on");
 
   const feedToggleCell: KeyCell = keyCell("viz_feed");
   assert.deepEqual(

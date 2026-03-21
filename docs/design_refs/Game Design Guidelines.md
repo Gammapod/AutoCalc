@@ -10,7 +10,7 @@ AutoCalc is a calculator-first progression game where unlocks expand available i
 ## 2. Core Gameplay Loop
 
 1. Use unlocked keys to modify total or draft operation slots.
-2. Execute with `=` (commit all slots left-to-right) or `▻` (step-through one slot at a time).
+2. Execute via toggle-driven auto-step with `=` (enters auto step-through and auto-clears at terminal commit) or manual step-through with `▻` (one slot per press).
 3. Record outcomes in roll/error/remainder channels where applicable.
 4. Evaluate unlock predicates.
 5. Apply unlock effects that expand key access, layout, and progression capacity.
