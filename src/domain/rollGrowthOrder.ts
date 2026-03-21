@@ -14,7 +14,7 @@ type GrowthSample = {
   y: number;
   d1: RationalValue;
   d2: RationalValue | null;
-  r1: RationalValue;
+  r1: RationalValue | null;
 };
 
 const normalizeRational = (value: RationalValue): RationalValue => {
@@ -131,7 +131,7 @@ const classifyNonlinearGrowth = (samples: GrowthSample[]): "radical" | "logarith
 };
 
 const toGrowthSample = (entry: RollEntry, index: number): GrowthSample | null => {
-  if (index <= 0 || entry.error || entry.y.kind !== "rational" || !entry.d1 || !entry.r1) {
+  if (index <= 0 || entry.error || entry.y.kind !== "rational" || !entry.d1) {
     return null;
   }
   const y = Number(entry.y.value.num) / Number(entry.y.value.den);
@@ -143,7 +143,7 @@ const toGrowthSample = (entry: RollEntry, index: number): GrowthSample | null =>
     y,
     d1: entry.d1,
     d2: entry.d2 ?? null,
-    r1: entry.r1,
+    r1: entry.r1 ?? null,
   };
 };
 
@@ -186,7 +186,7 @@ export const classifyLocalGrowthOrder = (state: GameState, targetIndex: number =
   }
 
   const r1First = r1Values[0];
-  if (absRationalGreaterThanOne(r1First) && r1Values.every((value) => rationalsEqual(value, r1First))) {
+  if (r1First && absRationalGreaterThanOne(r1First) && r1Values.every((value) => value !== null && rationalsEqual(value, r1First))) {
     return "exponential";
   }
 
@@ -199,4 +199,3 @@ export const classifyLocalGrowthOrder = (state: GameState, targetIndex: number =
 
   return classifyNonlinearGrowth(window);
 };
-

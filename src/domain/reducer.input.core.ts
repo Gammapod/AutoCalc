@@ -546,10 +546,9 @@ const resolveRollDiagnosticPatch = (
     d2 = subRational(d1, previousD1);
   }
 
+  // r1 is undefined when previous value is zero (division by zero); keep diagnostics valid
+  // for growth-order checks that rely on d1/d2.
   const r1 = divRational(context.currentX.value, context.previousX.value);
-  if (!r1) {
-    return null;
-  }
 
   const previousPeerMinus =
     context.nextIndex === 1
@@ -573,7 +572,7 @@ const resolveRollDiagnosticPatch = (
   return {
     d1,
     d2,
-    r1,
+    r1: r1 ?? null,
     seedMinus1Y,
     seedPlus1Y,
   };
