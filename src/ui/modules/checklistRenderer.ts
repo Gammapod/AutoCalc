@@ -6,6 +6,9 @@ type ChecklistRenderOptions = {
   services?: AppServices;
 };
 
+const UNLOCK_CHECKBOX_UNCHECKED = "[\u00A0\u00A0]";
+const UNLOCK_CHECKBOX_CHECKED = "[\u00D7]";
+
 const appendChecklistQuickstartGuide = (container: Element, services: AppServices): void => {
   const text = services.contentProvider.uiText.checklist.quickstartItems;
   const guideEl = document.createElement("div");
@@ -80,7 +83,8 @@ export const renderChecklistV2Module = (root: Element, state: GameState, options
       }
       const hintEl = document.createElement("span");
       hintEl.className = "unlock-hint";
-      hintEl.textContent = hintByUnlockId.get(row.id) ?? "";
+      const checkbox = row.state === "completed" ? UNLOCK_CHECKBOX_CHECKED : UNLOCK_CHECKBOX_UNCHECKED;
+      hintEl.textContent = `${checkbox} ${hintByUnlockId.get(row.id) ?? ""}`;
       rowEl.appendChild(hintEl);
       const nameEl = document.createElement("span");
       nameEl.className = "unlock-name";

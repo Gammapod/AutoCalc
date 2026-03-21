@@ -18,7 +18,7 @@ export const uiText: UiText = {
     headerHint: "Hint",
     headerReward: "Reward",
     emptyAttemptable: "No currently attemptable unlocks from active keypad layout.",
-    quickstartTitle: "Feature Overview",
+    quickstartTitle: "Feature Overview - GAME STILL IN PROTOTYPE STATE",
     quickstartItems: {
       unlockKeys: "Make calculations to unlock more convenient calculator keys.",
       debugPanel: "Use unlocks and keypad growth controls in the debug panel to expand your machine.",
