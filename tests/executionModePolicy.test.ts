@@ -62,6 +62,36 @@ export const runExecutionModePolicyTests = (): void => {
     { decision: "allow" },
     "inactive execution mode allows value input",
   );
+  const rollInverseRejectState: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries: [
+        { y: { kind: "rational", value: { num: 1n, den: 1n } } },
+      ],
+    },
+  };
+  assert.deepEqual(
+    classifyExecutionPolicyAction(rollInverseRejectState, { type: "PRESS_KEY", key: k("exec_roll_inverse") }),
+    { decision: "reject" },
+    "roll-inverse semantic rejection triggers policy reject even when execution mode is inactive",
+  );
+  const rollInverseAllowedState: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries: [
+        { y: { kind: "rational", value: { num: 1n, den: 1n } } },
+        { y: { kind: "rational", value: { num: 2n, den: 1n } } },
+        { y: { kind: "rational", value: { num: 3n, den: 1n } } },
+      ],
+    },
+  };
+  assert.deepEqual(
+    classifyExecutionPolicyAction(rollInverseAllowedState, { type: "PRESS_KEY", key: k("exec_roll_inverse") }),
+    { decision: "allow" },
+    "roll-inverse policy allows valid semantic input when execution mode is inactive",
+  );
   assert.deepEqual(
     classifyExecutionPolicyAction(active, { type: "PRESS_KEY", key: k("digit_1") }),
     { decision: "reject" },

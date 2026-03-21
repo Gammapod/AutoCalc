@@ -16,7 +16,8 @@ export type KeyActionHandlerId =
   | "apply_backspace"
   | "apply_undo"
   | "apply_equals"
-  | "apply_step_through";
+  | "apply_step_through"
+  | "apply_roll_inverse";
 
 const behaviorHandlerByKind: Record<ButtonBehaviorKind, KeyActionHandlerId> = {
   digit: "apply_digit",
@@ -40,6 +41,7 @@ const overrideHandlerById: Record<ButtonHandlerOverrideId, KeyActionHandlerId> =
   execute_equals: "apply_equals",
   execute_play_pause: "apply_toggle_noop",
   execute_step_through: "apply_step_through",
+  execute_roll_inverse: "apply_roll_inverse",
   unary_operator_commit_slot: "apply_unary_operator",
 };
 

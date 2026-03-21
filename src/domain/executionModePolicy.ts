@@ -6,6 +6,7 @@ import {
   EXECUTION_PAUSE_FLAG,
   MOD_ZERO_TO_DELTA_FLAG,
 } from "./state.js";
+import { shouldRejectRollInverseExecution } from "./rollInverseExecution.js";
 import type { Action, GameState, Key, KeyCell } from "./types.js";
 
 const isKeyCell = (cell: GameState["ui"]["keyLayout"][number] | GameState["ui"]["storageLayout"][number]): cell is KeyCell =>
@@ -281,6 +282,12 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
   }
 
   if (action.type === "PRESS_KEY") {
+    if (
+      action.key === KEY_ID.exec_roll_inverse
+      && shouldRejectRollInverseExecution(state.calculator.rollEntries)
+    ) {
+      return { decision: "reject" };
+    }
     if (!isExecutionModeActive(state)) {
       return { decision: "allow" };
     }

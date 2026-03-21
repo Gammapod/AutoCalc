@@ -163,6 +163,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.digit_0 },
   { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } },
   { kind: "key", key: KEY_ID.exec_step_through },
+  { kind: "key", key: KEY_ID.exec_roll_inverse },
 ];
 
 export const initialState = (): GameState => {

@@ -100,7 +100,12 @@ export const memory = (keyId: KeyId): MemoryKey => {
 
 export const execution = (keyId: KeyId): ExecKey => {
   const resolved = resolveKeyId(keyId);
-  if (resolved !== KEY_ID.exec_equals && resolved !== KEY_ID.exec_play_pause && resolved !== KEY_ID.exec_step_through) {
+  if (
+    resolved !== KEY_ID.exec_equals
+    && resolved !== KEY_ID.exec_play_pause
+    && resolved !== KEY_ID.exec_step_through
+    && resolved !== KEY_ID.exec_roll_inverse
+  ) {
     throw new Error(`Expected execution key, received: ${keyId}`);
   }
   return resolved;

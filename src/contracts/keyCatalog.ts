@@ -38,6 +38,7 @@ export type KeyHandlerOverrideId =
   | "execute_equals"
   | "execute_step_through"
   | "execute_play_pause"
+  | "execute_roll_inverse"
   | "unary_operator_commit_slot";
 
 export type KeyTrait =
@@ -131,6 +132,7 @@ export const keyCatalog = [
   { key: "exec_equals", category: "execution", unlockGroup: "execution", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "toggle", inputFamily: "toggle", valueRole: "none", traits: withBaseTraits(["can_execute", "can_change_total"]), handlerOverrideId: "execute_equals" },
   { key: "exec_play_pause", category: "execution", unlockGroup: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute"]), handlerOverrideId: "execute_play_pause" },
   { key: "exec_step_through", category: "execution", unlockGroup: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute"]), handlerOverrideId: "execute_step_through" },
+  { key: "exec_roll_inverse", category: "execution", unlockGroup: "execution", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "execute", inputFamily: "execution", valueRole: "none", traits: withBaseTraits(["can_execute"]), handlerOverrideId: "execute_roll_inverse" },
 ] as const satisfies readonly KeyCatalogEntry[];
 
 export type KeyCatalogRecord = (typeof keyCatalog)[number];

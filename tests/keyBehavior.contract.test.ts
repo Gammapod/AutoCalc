@@ -289,6 +289,24 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
+  if (kind === "roll_inverse_executes_predecessor") {
+    const state = unlockKey(
+      {
+        ...legacyInitialState(),
+        calculator: {
+          ...legacyInitialState().calculator,
+          total: r(3n),
+          rollEntries: re(r(1n), r(2n), r(3n)),
+        },
+      },
+      KEY_ID.exec_roll_inverse,
+    );
+    const next = applyKeyAction(state, KEY_ID.exec_roll_inverse);
+    assert.deepEqual(next.calculator.total, r(2n), "[ _ _ ]^-1 should set total to predecessor of first matching current value");
+    assert.deepEqual(next.calculator.rollEntries.at(-1)?.y, r(2n), "[ _ _ ]^-1 should append predecessor row value");
+    return;
+  }
+
   if (kind === "memory_recall_sets_input") {
     let state = unlockKey(legacyInitialState(), KEY_ID.memory_recall);
     state = unlockKey(state, KEY_ID.memory_cycle_variable);
@@ -501,6 +519,28 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     const next = applyKeyAction(state, "exec_equals");
     assert.deepEqual(next.calculator.total, toNanCalculatorValue(), "division by zero should set total to NaN");
     assert.equal(next.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero should record error code");
+    return;
+  }
+
+  if (kind === "roll_inverse_rejects_on_error") {
+    const base = legacyInitialState();
+    const state = unlockKey(
+      {
+        ...base,
+        calculator: {
+          ...base.calculator,
+          total: r(4n),
+          rollEntries: [
+            { y: r(1n) },
+            { y: toNanCalculatorValue(), error: { code: "NaN", kind: "nan_input" } },
+            { y: r(4n) },
+          ],
+        },
+      },
+      KEY_ID.exec_roll_inverse,
+    );
+    const next = applyKeyAction(state, KEY_ID.exec_roll_inverse);
+    assert.deepEqual(next, state, "[ _ _ ]^-1 should reject when any roll row has an error");
     return;
   }
 

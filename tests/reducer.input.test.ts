@@ -276,6 +276,116 @@ export const runReducerInputTests = (): void => {
   const afterSecondEquals = applyKeyAction(afterEquals, "exec_equals");
   assert.deepEqual(afterSecondEquals.calculator.rollEntries[0]?.y, r(0n), "subsequent equals preserve seed at index 0");
 
+  const rollInverseRejectEmpty: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(0n),
+      rollEntries: [],
+    },
+  };
+  assert.deepEqual(
+    applyKeyAction(rollInverseRejectEmpty, "exec_roll_inverse"),
+    rollInverseRejectEmpty,
+    "roll-inverse rejects when roll is empty",
+  );
+
+  const rollInverseRejectLengthOne: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(5n),
+      rollEntries: re(r(5n)),
+    },
+  };
+  assert.deepEqual(
+    applyKeyAction(rollInverseRejectLengthOne, "exec_roll_inverse"),
+    rollInverseRejectLengthOne,
+    "roll-inverse rejects when roll length is 1",
+  );
+
+  const rollInverseRejectSeedMatch: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(5n),
+      rollEntries: re(r(5n), r(7n), r(5n)),
+    },
+  };
+  assert.deepEqual(
+    applyKeyAction(rollInverseRejectSeedMatch, "exec_roll_inverse"),
+    rollInverseRejectSeedMatch,
+    "roll-inverse rejects when current row equals seed",
+  );
+
+  const rollInverseRejectError: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(4n),
+      rollEntries: [
+        { y: r(1n) },
+        { y: toNanCalculatorValue(), error: { code: "NaN", kind: "nan_input" } },
+        { y: r(4n) },
+      ],
+    },
+  };
+  assert.deepEqual(
+    applyKeyAction(rollInverseRejectError, "exec_roll_inverse"),
+    rollInverseRejectError,
+    "roll-inverse rejects when any roll row has error",
+  );
+
+  const rollInverseRejectAtCap: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(4999n),
+      rollEntries: Array.from({ length: MAX_ROLL_ENTRIES }, (_, index) => ({ y: r(BigInt(index)) })),
+    },
+  };
+  assert.deepEqual(
+    applyKeyAction(rollInverseRejectAtCap, "exec_roll_inverse"),
+    rollInverseRejectAtCap,
+    "roll-inverse rejects when roll length has reached pruning cap",
+  );
+
+  const rollInverseCurrentOnlyMatch: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(3n),
+      rollEntries: re(r(1n), r(2n), r(3n)),
+    },
+  };
+  const afterRollInverseCurrentOnly = applyKeyAction(rollInverseCurrentOnlyMatch, "exec_roll_inverse");
+  assert.deepEqual(afterRollInverseCurrentOnly.calculator.total, r(2n), "roll-inverse appends immediate previous row when current is first match");
+  assert.deepEqual(afterRollInverseCurrentOnly.calculator.rollEntries.at(-1)?.y, r(2n), "roll-inverse appends expected predecessor value");
+
+  const rollInverseIndexOneMatch: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(7n),
+      rollEntries: re(r(5n), r(7n), r(9n), r(7n)),
+    },
+  };
+  const afterRollInverseIndexOne = applyKeyAction(rollInverseIndexOneMatch, "exec_roll_inverse");
+  assert.deepEqual(afterRollInverseIndexOne.calculator.total, r(5n), "roll-inverse can return seed when earliest match is at index 1");
+  assert.deepEqual(afterRollInverseIndexOne.calculator.rollEntries.at(-1)?.y, r(5n), "roll-inverse appends seed predecessor for index-1 match");
+
+  const rollInverseMultipleMatch: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(8n),
+      rollEntries: re(r(4n), r(8n), r(6n), r(8n), r(8n)),
+    },
+  };
+  const afterRollInverseMultiple = applyKeyAction(rollInverseMultipleMatch, "exec_roll_inverse");
+  assert.deepEqual(afterRollInverseMultiple.calculator.total, r(4n), "roll-inverse uses predecessor of earliest match in scan range");
+  assert.deepEqual(afterRollInverseMultiple.calculator.rollEntries.at(-1)?.y, r(4n), "roll-inverse appends predecessor of earliest match");
+
   const stepThroughSource: GameState = {
     ...fullyUnlocked,
     calculators: undefined,

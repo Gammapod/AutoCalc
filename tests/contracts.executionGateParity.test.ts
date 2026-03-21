@@ -53,6 +53,43 @@ export const runContractsExecutionGateParityTests = (): void => {
     { expectRejectUiEffect: false },
   );
 
+  const rollInverseRejectedState: GameState = {
+    ...legacyInitialState(),
+    unlocks: {
+      ...legacyInitialState().unlocks,
+      execution: {
+        ...legacyInitialState().unlocks.execution,
+        [k("exec_roll_inverse")]: true,
+      },
+    },
+    ui: {
+      ...legacyInitialState().ui,
+      keyLayout: [{ kind: "key", key: k("exec_roll_inverse") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+    calculator: {
+      ...legacyInitialState().calculator,
+      total: { kind: "rational", value: { num: 1n, den: 1n } },
+      rollEntries: [{ y: { kind: "rational", value: { num: 1n, den: 1n } } }],
+    },
+  };
+  {
+    const action: Action = { type: "PRESS_KEY", key: k("exec_roll_inverse") };
+    const reduced = reducer(rollInverseRejectedState, action);
+    const commandResult = executeCommand(rollInverseRejectedState, { type: "DispatchAction", action });
+    assert.equal(commandResult.uiEffects.length, 1, "roll-inverse semantic rejection emits exactly one reject UI effect");
+    assert.equal(commandResult.uiEffects[0]?.type, "execution_gate_rejected", "roll-inverse semantic rejection uses execution-gate reject effect");
+    assert.deepEqual(reduced.calculator, rollInverseRejectedState.calculator, "roll-inverse semantic rejection preserves calculator state");
+    assert.deepEqual(commandResult.state.calculator, rollInverseRejectedState.calculator, "command path preserves calculator state on roll-inverse reject");
+    const parity = compareParity(reduced, commandResult.state);
+    assert.equal(
+      parity.ok,
+      true,
+      `roll-inverse reject parity remains equivalent (${JSON.stringify(parity.mismatches)})`,
+    );
+  }
+
   const pausedStateSeed: GameState = {
     ...legacyInitialState(),
     unlocks: {
@@ -160,6 +197,45 @@ export const runContractsExecutionGateParityTests = (): void => {
     "execution-pause equals-toggle interrupt",
     pausedState,
     { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
+  );
+
+  const rollInverseAcceptedSeed: GameState = {
+    ...pausedState,
+    unlocks: {
+      ...pausedState.unlocks,
+      execution: {
+        ...pausedState.unlocks.execution,
+        [k("exec_roll_inverse")]: true,
+      },
+    },
+    ui: {
+      ...pausedState.ui,
+      buttonFlags: {},
+      keyLayout: [{ kind: "key", key: k("exec_roll_inverse") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+    calculator: {
+      ...pausedState.calculator,
+      total: { kind: "rational", value: { num: 3n, den: 1n } },
+      rollEntries: [
+        { y: { kind: "rational", value: { num: 1n, den: 1n } } },
+        { y: { kind: "rational", value: { num: 2n, den: 1n } } },
+        { y: { kind: "rational", value: { num: 3n, den: 1n } } },
+      ],
+    },
+  };
+  const rollInverseAcceptedAction: Action = { type: "PRESS_KEY", key: k("exec_roll_inverse") };
+  const acceptedReducer = reducer(rollInverseAcceptedSeed, rollInverseAcceptedAction);
+  const acceptedCommand = executeCommand(rollInverseAcceptedSeed, { type: "DispatchAction", action: rollInverseAcceptedAction });
+  assert.notDeepEqual(acceptedReducer, rollInverseAcceptedSeed, "roll-inverse accepted path mutates reducer state");
+  assert.notDeepEqual(acceptedCommand.state, rollInverseAcceptedSeed, "roll-inverse accepted path mutates command state");
+  assert.equal(acceptedCommand.uiEffects.length, 0, "roll-inverse accepted path emits no reject UI effect");
+  const acceptedParity = compareParity(acceptedReducer, acceptedCommand.state);
+  assert.equal(
+    acceptedParity.ok,
+    true,
+    `roll-inverse accepted parity remains equivalent (${JSON.stringify(acceptedParity.mismatches)})`,
   );
 
   const autoStepSeed: GameState = {

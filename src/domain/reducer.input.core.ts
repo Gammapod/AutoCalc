@@ -76,6 +76,7 @@ import {
 } from "./keyPresentation.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
 import { buildExecutionStagePlan, type ExecutionStage, type WrapStageMode } from "./executionPlan.js";
+import { resolveRollInverseNextTotal, shouldRejectRollInverseExecution } from "./rollInverseExecution.js";
 import { getAppServices } from "../contracts/appServices.js";
 
 export const getUnlockCatalog = () => getAppServices().contentProvider.unlockCatalog;
@@ -795,6 +796,23 @@ export const applyEqualsFromStepProgress = (state: GameState): GameState => {
   return finalizeTerminalExecution(finalized, evaluation, { clearStepProgress: true });
 };
 
+export const applyRollInverse = (state: GameState): GameState => {
+  const rollInverseKey = KEY_ID.exec_roll_inverse;
+  if (!isKeyUsableForInput(state, rollInverseKey)) {
+    return state;
+  }
+  if (shouldRejectRollInverseExecution(state.calculator.rollEntries)) {
+    return state;
+  }
+
+  const finalized = withClearedStepProgress(finalizeDraftingSlot(state));
+  const nextTotal = resolveRollInverseNextTotal(finalized.calculator.rollEntries);
+  if (!nextTotal) {
+    return state;
+  }
+  return finalizeTerminalExecution(finalized, { nextTotal });
+};
+
 export const applyStepThrough = (state: GameState): GameState => {
   return applyStepThroughInternal(state, { requireStepThroughKeyOnKeypad: true });
 };
@@ -1145,11 +1163,18 @@ const createKeyActionHandlers = (): Record<KeyActionHandlerId, (nextState: GameS
     nextState.calculator.stepProgress.active ? applyEqualsFromStepProgress(nextState) : applyEquals(nextState)
   ),
   apply_step_through: (nextState) => applyStepThrough(nextState),
+  apply_roll_inverse: (nextState) => applyRollInverse(nextState),
 });
 
 export const applyKeyActionCore = (state: GameState, keyLike: KeyInput): GameState => {
   const stepAwareState = hasStepThroughOnKeypad(state) ? state : withClearedStepProgress(state);
   const key = resolveKeyId(keyLike);
+  if (
+    key === KEY_ID.exec_roll_inverse
+    && shouldRejectRollInverseExecution(stepAwareState.calculator.rollEntries)
+  ) {
+    return stepAwareState;
+  }
   // Input precedence:
   // 1) active-roll digit keys are hard no-op
   // 2) active-roll operator keys clear current operation entry before handling

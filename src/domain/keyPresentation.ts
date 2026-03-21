@@ -56,6 +56,7 @@ export const KEY_ID = {
   exec_equals: "exec_equals",
   exec_play_pause: "exec_play_pause",
   exec_step_through: "exec_step_through",
+  exec_roll_inverse: "exec_roll_inverse",
 } as const;
 
 export type KeyId = (typeof KEY_ID)[keyof typeof KEY_ID];
@@ -116,7 +117,11 @@ export type VisualizerKeyId =
   | typeof KEY_ID.viz_circle
   | typeof KEY_ID.viz_eigen_allocator
   | typeof KEY_ID.viz_algebraic;
-export type ExecKeyId = typeof KEY_ID.exec_equals | typeof KEY_ID.exec_play_pause | typeof KEY_ID.exec_step_through;
+export type ExecKeyId =
+  | typeof KEY_ID.exec_equals
+  | typeof KEY_ID.exec_play_pause
+  | typeof KEY_ID.exec_step_through
+  | typeof KEY_ID.exec_roll_inverse;
 export type ValueAtomKeyId = DigitKeyId | ConstantKeyId;
 export type OperatorKeyId = BinaryOperatorKeyId | UnaryOperatorKeyId;
 
@@ -186,6 +191,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.exec_equals, { buttonFace: "=" }],
   [KEY_ID.exec_play_pause, { buttonFace: "\u25B6" }],
   [KEY_ID.exec_step_through, { buttonFace: "[ \u25BA\u2758 ]" }],
+  [KEY_ID.exec_roll_inverse, { buttonFace: "(=)\u207B\u00B9" }],
 ]);
 
 const entries: KeyPresentation[] = buttonRegistry.map((entry) => {

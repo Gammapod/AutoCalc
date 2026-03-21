@@ -13,6 +13,7 @@ export type KeyPrimaryExpectationKind =
   | "undo_pops_roll"
   | "graph_counts_only"
   | "equals_executes_drafted_plus_one"
+  | "roll_inverse_executes_predecessor"
   | "memory_recall_sets_input"
   | "memory_adjusts_allocator";
 
@@ -25,6 +26,7 @@ export type KeyEdgeExpectationKind =
   | "undo_noop_when_roll_empty"
   | "graph_does_not_mutate_calculator_state"
   | "equals_division_by_zero_sets_nan"
+  | "roll_inverse_rejects_on_error"
   | "memory_recall_noop_on_active_roll"
   | "memory_adjust_noop_without_budget_or_bounds";
 
@@ -198,5 +200,12 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     lockModel: "always_unlocked",
     primaryExpectation: "graph_counts_only",
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
+    key: KEY_ID.exec_roll_inverse,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "roll_inverse_executes_predecessor",
+    edgeCaseExpectation: "roll_inverse_rejects_on_error",
   },
 ];
