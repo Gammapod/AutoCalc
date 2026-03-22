@@ -184,7 +184,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
   [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "\u27E1[0, \u{1D6FF})" }],
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
-  [KEY_ID.toggle_binary_mode, { buttonFace: "base\u2082" }],
+  [KEY_ID.toggle_binary_mode, { buttonFace: "b\u2082" }],
   [KEY_ID.viz_graph, { buttonFace: "GRAPH" }],
   [KEY_ID.viz_feed, { buttonFace: "FEED" }],
   [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],
