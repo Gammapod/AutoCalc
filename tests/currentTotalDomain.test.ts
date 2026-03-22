@@ -20,6 +20,16 @@ export const runCurrentTotalDomainTests = (): void => {
   };
   assert.equal(getCurrentTotalDomainSymbol(natural), "\u2115", "non-negative integers map to naturals");
 
+  const prime = {
+    ...initialState(),
+    calculator: {
+      ...initialState().calculator,
+      total: toRationalCalculatorValue({ num: 97n, den: 1n }),
+      rollEntries: re(toRationalCalculatorValue({ num: 97n, den: 1n })),
+    },
+  };
+  assert.equal(getCurrentTotalDomainSymbol(prime), "\u2119", "primes map to prime subdomain");
+
   const integer = {
     ...initialState(),
     calculator: {

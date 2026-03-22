@@ -1,7 +1,7 @@
 import type { CalculatorValue, PrimeFactorTerm, RationalPrimeFactorization, RationalValue, RollEntry } from "./types.js";
 import { expressionToAlgebriteString } from "./expression.js";
 
-export type RollValueDomain = "\u2205" | "\u2115" | "\u2124" | "\u211A";
+export type RollValueDomain = "\u2205" | "\u2119" | "\u2115" | "\u2124" | "\u211A";
 
 export type RollEntryDerived = {
   x: number;
@@ -14,6 +14,26 @@ export type RollEntryDerived = {
 };
 
 const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);
+
+const isPrimeInteger = (value: bigint): boolean => {
+  if (value < 2n) {
+    return false;
+  }
+  if (value === 2n) {
+    return true;
+  }
+  if (value % 2n === 0n) {
+    return false;
+  }
+  let candidate = 3n;
+  while (candidate * candidate <= value) {
+    if (value % candidate === 0n) {
+      return false;
+    }
+    candidate += 2n;
+  }
+  return true;
+};
 
 const toAlgebriteRationalString = (value: RationalValue): string =>
   value.den === 1n ? value.num.toString() : `${value.num.toString()}/${value.den.toString()}`;
@@ -62,7 +82,13 @@ export const getRollYDomain = (value: CalculatorValue): RollValueDomain => {
   if (value.kind === "nan" || value.kind === "expr") {
     return "\u2205";
   }
-  return value.value.den === 1n ? (value.value.num >= 0n ? "\u2115" : "\u2124") : "\u211A";
+  if (value.value.den === 1n) {
+    if (isPrimeInteger(value.value.num)) {
+      return "\u2119";
+    }
+    return value.value.num >= 0n ? "\u2115" : "\u2124";
+  }
+  return "\u211A";
 };
 
 export const getRationalPrimeFactorization = (value: RationalValue): RationalPrimeFactorization | undefined => {

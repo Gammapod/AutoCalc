@@ -222,11 +222,6 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   stack.className = "total-display-stack";
   const metaRow = document.createElement("div");
   metaRow.className = "total-meta-row";
-  const baseIndicator = document.createElement("span");
-  baseIndicator.className = "total-base-indicator";
-  baseIndicator.textContent = binaryModeEnabled ? "BIN" : "";
-  baseIndicator.setAttribute("aria-hidden", binaryModeEnabled ? "false" : "true");
-  metaRow.appendChild(baseIndicator);
   const domainIndicator = document.createElement("span");
   domainIndicator.className = "total-domain-indicator";
   if (shouldRenderClearedPlaceholder) {
@@ -255,6 +250,11 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
 
   const primaryDisplay = document.createElement("div");
   primaryDisplay.className = "total-primary-display";
+  const baseIndicator = document.createElement("span");
+  baseIndicator.className = "total-base-indicator";
+  baseIndicator.textContent = binaryModeEnabled ? "| BIN |" : "";
+  baseIndicator.setAttribute("aria-hidden", binaryModeEnabled ? "false" : "true");
+  primaryDisplay.appendChild(baseIndicator);
   primaryDisplay.appendChild(domainIndicator);
   if (shouldRenderClearedPlaceholder) {
     const slotModels = buildClearedTotalSlotModel(state.unlocks.maxTotalDigits);

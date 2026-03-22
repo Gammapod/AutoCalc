@@ -17,6 +17,10 @@ export const runRollDerivedTests = (): void => {
   assert.equal(getRollYAlgebriteString(toNanCalculatorValue()), "NaN", "nan y converts to NaN token");
 
   assert.equal(getRollYDomain(r(0n)), "\u2115", "zero is classified as natural for roll domain projection");
+  assert.equal(getRollYDomain(r(2n)), "\u2119", "prime naturals map to prime subdomain");
+  assert.equal(getRollYDomain(r(97n)), "\u2119", "larger primes map to prime subdomain");
+  assert.equal(getRollYDomain(r(1n)), "\u2115", "one remains natural, not prime");
+  assert.equal(getRollYDomain(r(4n)), "\u2115", "composite naturals remain natural");
   assert.equal(getRollYDomain(r(-2n)), "\u2124", "negative integers map to integers");
   assert.equal(getRollYDomain(r(7n, 3n)), "\u211A", "fractions map to rationals");
   assert.equal(getRollYDomain(toNanCalculatorValue()), "\u2205", "nan maps to null set domain marker");

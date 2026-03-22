@@ -67,6 +67,8 @@
         --v2-feed-visible-rows: 7;
         --v2-visualizer-fixed-width: 460px;
         --v2-visualizer-scale: 1;
+        --v2-visualizer-baseline-offset: 12px;
+        --v2-visualizer-inactive-offset: calc(var(--v2-visualizer-baseline-offset) + 16px);
         --v2-visualizer-window-height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
         --v2-visualizer-effective-height: calc(var(--v2-visualizer-window-height) * var(--v2-visualizer-scale));
         --allocator-surface-top: #8e96a3;
@@ -765,20 +767,21 @@
         right: 0;
         height: var(--total-meta-height);
         display: grid;
-        grid-template-columns: auto 1fr;
+        grid-template-columns: 1fr;
         align-items: center;
         column-gap: 8px;
       }
 
       .total-base-indicator {
+        position: absolute;
+        right: 0;
+        top: -16px;
         font-family: "Consolas", "Courier New", monospace;
-        font-size: clamp(10px, 1.4vw, 12px);
+        font-size: clamp(10px, 1.6vw, 12px);
         letter-spacing: 0.08em;
-        color: #f6d66b;
-        text-shadow: 0 0 6px rgba(246, 214, 107, 0.45);
-        text-transform: uppercase;
-        justify-self: start;
-        padding-left: 2px;
+        color: #7eb8ff;
+        text-shadow: 0 0 6px rgba(126, 184, 255, 0.48);
+        white-space: nowrap;
       }
 
       .total-base-indicator[aria-hidden="true"] {
@@ -2280,7 +2283,7 @@
         width: 100%;
         height: var(--v2-visualizer-effective-height);
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         transform-origin: top center;
         overflow: hidden;
         transition:
@@ -2291,12 +2294,12 @@
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-transition="enter"],
       body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-transition="enter"] {
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
       }
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-transition="exit"],
       body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-transition="exit"] {
-        transform: translateY(12px);
+        transform: translateY(calc(var(--v2-visualizer-baseline-offset) + 12px));
       }
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"],
@@ -2311,7 +2314,7 @@
         margin-bottom: 0;
         height: var(--v2-visualizer-effective-height);
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2321,7 +2324,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
         max-height: var(--v2-visualizer-effective-height);
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         opacity: 1;
         pointer-events: auto;
       }
@@ -2329,7 +2332,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher {
         max-height: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         opacity: 0;
         pointer-events: none;
       }
@@ -2352,7 +2355,7 @@
         justify-content: flex-start;
         white-space: pre;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2362,7 +2365,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2381,7 +2384,7 @@
         flex-direction: column;
         justify-content: flex-start;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2391,7 +2394,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="factorization"] .v2-factorization-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="factorization"] .v2-factorization-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2403,7 +2406,7 @@
         justify-content: flex-end;
         align-items: center;
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2426,6 +2429,7 @@
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel]:not([data-v2-visualizer-panel="total"]) .v2-total-panel .total-memory-row {
         visibility: visible;
       }
+      /* TODO: extract .total-memory-row into a shared visualizer footer below panel content. */
 
       body[data-ui-shell="mobile"] .v2-circle-panel,
       body[data-ui-shell="desktop"] .v2-circle-panel {
@@ -2435,7 +2439,7 @@
         justify-content: center;
         align-items: center;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2451,7 +2455,7 @@
         justify-content: center;
         align-items: center;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2461,7 +2465,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="eigen_allocator"] .v2-eigen-allocator-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="eigen_allocator"] .v2-eigen-allocator-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2476,7 +2480,7 @@
         flex-direction: column;
         gap: 6px;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2486,7 +2490,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="algebraic"] .v2-algebraic-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="algebraic"] .v2-algebraic-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2594,7 +2598,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="circle"] .v2-circle-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="circle"] .v2-circle-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2672,13 +2676,13 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher {
         opacity: 0;
-        transform: translateY(-12px);
+        transform: translateY(calc(var(--v2-visualizer-baseline-offset) - 12px));
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(calc(var(--v2-visualizer-baseline-offset) + 12px));
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-table,

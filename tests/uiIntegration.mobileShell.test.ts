@@ -1,6 +1,6 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
+import { BINARY_MODE_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import type { Action, GameState, RollEntry } from "../src/domain/types.js";
 import { reducer } from "../src/domain/reducer.js";
 import { createShellRenderer } from "../src/ui/renderAdapter.js";
@@ -207,11 +207,38 @@ export const runUiIntegrationMobileShellTests = (): void => {
     const totalPanel = harness.root.querySelector<HTMLElement>("[data-v2-total-panel]");
     assert.ok(totalPanel, "total panel is mounted");
     const hiddenDomainOnCleared = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
+    const hiddenBinOnDecimal = totalPanel?.querySelector<HTMLElement>(".total-base-indicator");
     assert.equal(
       hiddenDomainOnCleared?.getAttribute("aria-hidden"),
       "true",
       "domain indicator is hidden when total display is the cleared placeholder",
     );
+    assert.equal(
+      hiddenBinOnDecimal?.getAttribute("aria-hidden"),
+      "true",
+      "binary badge is hidden in decimal mode",
+    );
+
+    const withBinaryBadge = withCalculatorProjection(withTotal, "f", (projected) => ({
+      ...projected,
+      calculator: {
+        ...projected.calculator,
+        total: r(5n),
+      },
+      ui: {
+        ...projected.ui,
+        buttonFlags: {
+          ...projected.ui.buttonFlags,
+          [BINARY_MODE_FLAG]: true,
+        },
+      },
+    }));
+    renderer.render(withBinaryBadge, dispatch, {
+            inputBlocked: false,
+    });
+    const binaryBadge = totalPanel?.querySelector<HTMLElement>(".total-base-indicator");
+    assert.equal(binaryBadge?.getAttribute("aria-hidden"), "false", "binary badge is visible in binary mode");
+    assert.equal(binaryBadge?.textContent, "| BIN |", "binary badge renders framed token");
     const withErrorTotal = withCalculatorProjection(withTotal, "f", (projected) => ({
       ...projected,
       calculator: {
@@ -233,7 +260,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       true,
       "total panel enters error color mode when latest roll entry has an error",
     );
-    assert.equal(domainIndicatorWithError?.textContent, "ℕ", "domain indicator renders latest y domain symbol");
+    assert.equal(domainIndicatorWithError?.textContent, "ℙ", "domain indicator renders latest y domain symbol");
     assert.equal(
       domainIndicatorWithError?.classList.contains("total-domain-indicator--nan"),
       false,

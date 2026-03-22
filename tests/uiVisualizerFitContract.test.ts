@@ -28,5 +28,15 @@ export const runUiVisualizerFitContractTests = (): void => {
     true,
     "visualizer host CSS contract includes fit-overflow state selector",
   );
+  assert.equal(
+    css.includes("--v2-visualizer-baseline-offset"),
+    true,
+    "visualizer host defines a shared resting baseline offset token",
+  );
+  assert.equal(
+    css.includes("shared visualizer footer"),
+    true,
+    "visualizer host CSS keeps a TODO marker for shared footer refactor",
+  );
 };
 
