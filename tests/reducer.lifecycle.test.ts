@@ -3,10 +3,12 @@ import { applyLifecycleAction } from "../src/domain/reducer.lifecycle.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import {
+  BINARY_MODE_FLAG,
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
   EXECUTION_PAUSE_FLAG,
   MOD_ZERO_TO_DELTA_FLAG,
+  OVERFLOW_ERROR_SEEN_ID,
   STEP_EXPANSION_FLAG,
   initialState,
 } from "../src/domain/state.js";
@@ -133,6 +135,50 @@ export const runReducerLifecycleTests = (): void => {
   );
   assert.equal(stepExpansionToggled.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "step expansion no longer clears delta-range toggle");
   assert.equal(Boolean(stepExpansionToggled.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]), false, "delta-range/mod-range exclusivity remains unchanged");
+
+  const binaryOverflowSource: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      total: { kind: "rational", value: { num: 9n, den: 1n } },
+      rollEntries: [],
+    },
+    unlocks: {
+      ...base.unlocks,
+      maxTotalDigits: 2,
+      utilities: {
+        ...base.unlocks.utilities,
+        [KEY_ID.toggle_binary_mode]: true,
+      },
+    },
+    ui: {
+      ...base.ui,
+      buttonFlags: {},
+    },
+  };
+  const binaryOverflowed = reducer(binaryOverflowSource, { type: "TOGGLE_FLAG", flag: BINARY_MODE_FLAG });
+  assert.equal(binaryOverflowed.ui.buttonFlags[BINARY_MODE_FLAG], true, "binary mode toggle turns on");
+  assert.deepEqual(
+    binaryOverflowed.calculator.total,
+    { kind: "rational", value: { num: 3n, den: 1n } },
+    "enabling binary mode clamps total to the binary boundary for maxTotalDigits",
+  );
+  assert.equal(binaryOverflowed.calculator.rollEntries.length, 2, "binary overflow appends seed row and overflow row");
+  assert.deepEqual(
+    binaryOverflowed.calculator.rollEntries[0]?.y,
+    { kind: "rational", value: { num: 9n, den: 1n } },
+    "binary overflow seed row preserves pre-clamp total",
+  );
+  assert.equal(
+    binaryOverflowed.calculator.rollEntries.at(-1)?.error?.code,
+    "x∉[-R,R]",
+    "binary overflow row records overflow code",
+  );
+  assert.equal(
+    binaryOverflowed.completedUnlockIds.includes(OVERFLOW_ERROR_SEEN_ID),
+    true,
+    "binary overflow marks overflow unlock marker",
+  );
 
   const graphOn = reducer(base, { type: "TOGGLE_VISUALIZER", visualizer: "graph" });
   assert.equal(graphOn.ui.activeVisualizer, "graph", "GRAPH visualizer toggles on");

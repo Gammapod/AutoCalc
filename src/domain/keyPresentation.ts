@@ -47,6 +47,7 @@ export const KEY_ID = {
   toggle_delta_range_clamp: "toggle_delta_range_clamp",
   toggle_mod_zero_to_delta: "toggle_mod_zero_to_delta",
   toggle_step_expansion: "toggle_step_expansion",
+  toggle_binary_mode: "toggle_binary_mode",
   viz_graph: "viz_graph",
   viz_feed: "viz_feed",
   viz_factorization: "viz_factorization",
@@ -109,7 +110,8 @@ export type UtilityKeyId =
   | typeof KEY_ID.util_undo
   | typeof KEY_ID.toggle_delta_range_clamp
   | typeof KEY_ID.toggle_mod_zero_to_delta
-  | typeof KEY_ID.toggle_step_expansion;
+  | typeof KEY_ID.toggle_step_expansion
+  | typeof KEY_ID.toggle_binary_mode;
 export type VisualizerKeyId =
   | typeof KEY_ID.viz_graph
   | typeof KEY_ID.viz_feed
@@ -182,6 +184,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
   [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "\u27E1[0, \u{1D6FF})" }],
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
+  [KEY_ID.toggle_binary_mode, { buttonFace: "base\u2082" }],
   [KEY_ID.viz_graph, { buttonFace: "GRAPH" }],
   [KEY_ID.viz_feed, { buttonFace: "FEED" }],
   [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],

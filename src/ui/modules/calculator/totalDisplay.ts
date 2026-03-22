@@ -1,6 +1,7 @@
 import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { projectControlFromState } from "../../../domain/controlProjection.js";
+import { BINARY_MODE_FLAG } from "../../../domain/state.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 import {
@@ -107,6 +108,7 @@ const renderSevenSegmentValue = (
   value: CalculatorValue,
   unlockedDigits: number,
   pendingNegative: boolean,
+  radix: number,
   options: {
     fractionAsToken?: boolean;
   } = {},
@@ -143,7 +145,7 @@ const renderSevenSegmentValue = (
     return;
   }
 
-  const slotModels = buildTotalSlotModel(value, unlockedDigits);
+  const slotModels = buildTotalSlotModel(value, unlockedDigits, radix);
 
   const firstActiveIndex = slotModels.findIndex((slot) => slot.state === "active");
   const signSlotIndex = isNegative && firstActiveIndex > 0 ? firstActiveIndex - 1 : -1;
@@ -155,6 +157,8 @@ const renderSevenSegmentValue = (
 };
 
 export const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
+  const binaryModeEnabled = Boolean(state.ui.buttonFlags[BINARY_MODE_FLAG]);
+  const displayRadix = binaryModeEnabled ? 2 : 10;
   const projection = projectControlFromState(state);
   const buildMemoryStatusRow = (): HTMLElement => {
     const row = document.createElement("div");
@@ -218,6 +222,11 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   stack.className = "total-display-stack";
   const metaRow = document.createElement("div");
   metaRow.className = "total-meta-row";
+  const baseIndicator = document.createElement("span");
+  baseIndicator.className = "total-base-indicator";
+  baseIndicator.textContent = binaryModeEnabled ? "BIN" : "";
+  baseIndicator.setAttribute("aria-hidden", binaryModeEnabled ? "false" : "true");
+  metaRow.appendChild(baseIndicator);
   const domainIndicator = document.createElement("span");
   domainIndicator.className = "total-domain-indicator";
   if (shouldRenderClearedPlaceholder) {
@@ -256,12 +265,22 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     totalEl.setAttribute("aria-label", "Total _");
     return;
   }
-  totalEl.setAttribute("aria-label", `Total ${shouldDisplayAlgLabel ? "ALG" : calculatorValueToDisplayString(state.calculator.total)}`);
+  const defaultDisplayLabel = (() => {
+    if (shouldDisplayAlgLabel) {
+      return "ALG";
+    }
+    if (binaryModeEnabled && state.calculator.total.kind === "rational" && state.calculator.total.value.den === 1n) {
+      return state.calculator.total.value.num.toString(2);
+    }
+    return calculatorValueToDisplayString(state.calculator.total);
+  })();
+  totalEl.setAttribute("aria-label", `Total ${defaultDisplayLabel}`);
   renderSevenSegmentValue(
     primaryDisplay,
     state.calculator.total,
     state.unlocks.maxTotalDigits,
     state.calculator.pendingNegativeTotal,
+    displayRadix,
   );
   stack.appendChild(primaryDisplay);
   stack.appendChild(buildMemoryStatusRow());

@@ -61,9 +61,10 @@ export const calculatorValueToRational = (value: CalculatorValue): RationalValue
   return null;
 };
 
-export const computeOverflowBoundary = (maxDigits: number): bigint => {
+export const computeOverflowBoundary = (maxDigits: number, radix: number = 10): bigint => {
   const safeDigits = Math.max(1, maxDigits);
-  return (10n ** BigInt(safeDigits)) - 1n;
+  const safeRadix = Math.max(2, Math.trunc(radix));
+  return (BigInt(safeRadix) ** BigInt(safeDigits)) - 1n;
 };
 
 const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);

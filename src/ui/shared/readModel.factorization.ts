@@ -1,4 +1,5 @@
 import { computeOverflowBoundary } from "../../domain/calculatorValue.js";
+import { BINARY_MODE_FLAG } from "../../domain/state.js";
 import { classifyLocalGrowthOrder as classifyLocalGrowthOrderShared, type LocalGrowthOrder } from "../../domain/rollGrowthOrder.js";
 import { getRollYPrimeFactorization } from "../../domain/rollDerived.js";
 import { buildAnalysisRollProjection } from "../../domain/rollEntries.js";
@@ -162,11 +163,11 @@ const isChaosLikeHeuristic = (stepRows: RollEntry[]): boolean => {
   return (last / first) >= CHAOS_DIVERGENCE_RATIO_THRESHOLD;
 };
 
-const isCycleLikelyHeuristic = (stepRows: RollEntry[], maxTotalDigits: number): boolean => {
+const isCycleLikelyHeuristic = (stepRows: RollEntry[], maxTotalDigits: number, radix: number): boolean => {
   if (stepRows.length < HEURISTIC_MIN_SAMPLES) {
     return false;
   }
-  const boundary = computeOverflowBoundary(maxTotalDigits);
+  const boundary = computeOverflowBoundary(maxTotalDigits, radix);
   const seen = new Set<string>();
   let hasRepeat = false;
   for (const entry of stepRows) {
@@ -195,7 +196,8 @@ const resolveOrbitHeuristicState = (state: GameState): OrbitHeuristicState => {
     .slice(1)
     .map((item) => item.entry)
     .slice(-HEURISTIC_HORIZON);
-  if (isCycleLikelyHeuristic(stepRows, state.unlocks.maxTotalDigits)) {
+  const displayRadix = state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
+  if (isCycleLikelyHeuristic(stepRows, state.unlocks.maxTotalDigits, displayRadix)) {
     return "cycle_likely";
   }
   if (isChaosLikeHeuristic(stepRows)) {

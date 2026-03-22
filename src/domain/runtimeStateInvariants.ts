@@ -3,6 +3,7 @@ import { iterUnlockedButtons } from "./buttonStateAccess.js";
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import {
+  BINARY_MODE_FLAG,
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
   EXECUTION_PAUSE_FLAG,
@@ -19,12 +20,14 @@ const SETTINGS_TOGGLE_KEYS: readonly Key[] = [
   KEY_ID.toggle_delta_range_clamp,
   KEY_ID.toggle_mod_zero_to_delta,
   KEY_ID.toggle_step_expansion,
+  KEY_ID.toggle_binary_mode,
 ];
 
 const SETTING_FLAG_BY_KEY: Partial<Record<Key, string>> = {
   [KEY_ID.toggle_delta_range_clamp]: DELTA_RANGE_CLAMP_FLAG,
   [KEY_ID.toggle_mod_zero_to_delta]: MOD_ZERO_TO_DELTA_FLAG,
   [KEY_ID.toggle_step_expansion]: STEP_EXPANSION_FLAG,
+  [KEY_ID.toggle_binary_mode]: BINARY_MODE_FLAG,
 } as const;
 
 const normalizeStorageLength = (storageLayout: Array<KeyCell | null>): Array<KeyCell | null> => {
@@ -61,6 +64,9 @@ const canonicalCellForKey = (key: Key): KeyCell => {
   }
   if (key === KEY_ID.toggle_step_expansion) {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } };
+  }
+  if (key === KEY_ID.toggle_binary_mode) {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } };
   }
   if (key === KEY_ID.exec_play_pause) {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } };
@@ -199,6 +205,10 @@ const applyLockedInstalledToggleSemantics = (
     }
     if (STEP_EXPANSION_FLAG in nextFlags) {
       delete nextFlags[STEP_EXPANSION_FLAG];
+      flagsChanged = true;
+    }
+    if (BINARY_MODE_FLAG in nextFlags) {
+      delete nextFlags[BINARY_MODE_FLAG];
       flagsChanged = true;
     }
     const forcedFlag = SETTING_FLAG_BY_KEY[forcedSetting];

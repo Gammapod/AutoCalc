@@ -59,6 +59,7 @@ const utilitySet = new Set<UtilityKey>([
   KEY_ID.toggle_delta_range_clamp,
   KEY_ID.toggle_mod_zero_to_delta,
   KEY_ID.toggle_step_expansion,
+  KEY_ID.toggle_binary_mode,
 ]);
 
 const visualizerSet = new Set<VisualizerKey>([

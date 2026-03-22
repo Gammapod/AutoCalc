@@ -36,6 +36,7 @@ import {
 import { isKeyUsableForInput } from "./keyUnlocks.js";
 import { clearOperationEntry, createInitialStepProgressState, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import {
+  BINARY_MODE_FLAG,
   CHECKLIST_UNLOCK_ID,
   OVERFLOW_ERROR_SEEN_ID,
 } from "./state.js";
@@ -101,6 +102,8 @@ const withDigit = (source: string, digit: Digit): string => {
 const isNaturalDivisorOperator = (operator: Key): boolean => isNaturalDivisorOperatorKeyId(operator);
 const toExpressionConstant = (constantKey: ConstantKeyId): "pi" | "e" =>
   constantKey === KEY_ID.const_e ? "e" : "pi";
+const getDisplayRadix = (state: GameState): 2 | 10 =>
+  state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
 
 const getMagnitudeText = (total: GameState["calculator"]["total"]): string => {
   if (!isRationalCalculatorValue(total) || !isInteger(total.value)) {
@@ -283,6 +286,10 @@ const applyDigitValue = (state: GameState, digit: Digit): GameState => {
   }
 
   const nextMagnitude = BigInt(nextTotalMagnitudeInput);
+  const boundary = computeOverflowBoundary(state.unlocks.maxTotalDigits, getDisplayRadix(state));
+  if (nextMagnitude > boundary) {
+    return state;
+  }
   const shouldBeNegative =
     (isRationalCalculatorValue(state.calculator.total) && state.calculator.total.value.num < 0n) ||
     state.calculator.pendingNegativeTotal;
@@ -367,8 +374,8 @@ const euclideanModuloBigInt = (value: bigint, modulus: bigint): bigint => {
   return remainder < 0n ? remainder + modulus : remainder;
 };
 
-const applyOverflowPolicy = (value: RationalValue, maxDigits: number): EvaluatedExecution => {
-  const boundary = computeOverflowBoundary(maxDigits);
+const applyOverflowPolicy = (value: RationalValue, maxDigits: number, radix: number = 10): EvaluatedExecution => {
+  const boundary = computeOverflowBoundary(maxDigits, radix);
   if (!exceedsMagnitudeBoundary(value, boundary)) {
     return { nextTotal: toRationalCalculatorValue(value) };
   }
@@ -383,12 +390,13 @@ const applyWrapStage = (
   total: GameState["calculator"]["total"],
   mode: WrapStageMode,
   maxDigits: number,
+  radix: number = 10,
 ): EvaluatedExecution => {
   if (!isRationalCalculatorValue(total)) {
     return { nextTotal: total };
   }
   const value = total.value;
-  const boundary = computeOverflowBoundary(maxDigits);
+  const boundary = computeOverflowBoundary(maxDigits, radix);
   if (value.den === 1n) {
     if (mode === "mod_zero_to_delta") {
       const wrapped = euclideanModuloBigInt(value.num, boundary);
@@ -398,7 +406,7 @@ const applyWrapStage = (
     const wrapped = euclideanModuloBigInt(value.num + boundary, ringWidth) - boundary;
     return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
   }
-  return applyOverflowPolicy(value, maxDigits);
+  return applyOverflowPolicy(value, maxDigits, radix);
 };
 
 const markOverflowErrorSeen = (state: GameState): GameState => {
@@ -885,7 +893,7 @@ const evaluateExecutionOutcomeForSlots = (
     }
     const overflowChecked = options.deferOverflowToWrapStage
       ? { nextTotal: toRationalCalculatorValue(rationalized) }
-      : applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits);
+      : applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, getDisplayRadix(state));
     return {
       ...overflowChecked,
       symbolic: toSymbolicPayload(expressionKey, symbolicText),
@@ -895,7 +903,7 @@ const evaluateExecutionOutcomeForSlots = (
 
   const overflowChecked = options.deferOverflowToWrapStage
     ? { nextTotal: toRationalCalculatorValue(execution.total.value) }
-    : applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits);
+    : applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, getDisplayRadix(state));
   return {
     ...overflowChecked,
     euclidRemainder: execution.euclidRemainder,
@@ -931,7 +939,7 @@ const evaluateExecutionPlan = (
     return evaluation;
   }
 
-  const wrapped = applyWrapStage(evaluation.nextTotal, wrapStage.mode, state.unlocks.maxTotalDigits);
+  const wrapped = applyWrapStage(evaluation.nextTotal, wrapStage.mode, state.unlocks.maxTotalDigits, getDisplayRadix(state));
   return {
     ...wrapped,
     ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
@@ -1086,7 +1094,12 @@ const applyStepThroughInternal = (
       [stage.slot],
       { deferOverflowToWrapStage },
     )
-    : applyWrapStage(stepProgress.currentTotal, stage.mode, finalized.unlocks.maxTotalDigits);
+    : applyWrapStage(
+      stepProgress.currentTotal,
+      stage.mode,
+      finalized.unlocks.maxTotalDigits,
+      getDisplayRadix(finalized),
+    );
   const nextResults = [...stepProgress.executedSlotResults, evaluation.nextTotal];
   const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + 1 >= executionPlan.length;
 

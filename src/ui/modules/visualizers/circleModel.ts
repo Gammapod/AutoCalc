@@ -2,7 +2,7 @@ import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { computeOverflowBoundary } from "../../../domain/calculatorValue.js";
 import { toStepCount } from "../../../domain/rollEntries.js";
 import type { GameState, RollEntry } from "../../../domain/types.js";
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../../../domain/state.js";
+import { BINARY_MODE_FLAG, DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../../../domain/state.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "./graphModel.js";
 
 export type CircleRenderMode = "radial" | "residue_wheel";
@@ -57,8 +57,9 @@ const toFiniteEntryValue = (entry: RollEntry): number | null => {
 export const detectResidueWheelSpec = (state: GameState): ResidueWheelSpec | null => {
   const deltaRangeWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
   const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
+  const displayRadix = state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
   if (deltaRangeWrapEnabled || modZeroToDeltaEnabled) {
-    const boundary = Number(computeOverflowBoundary(state.unlocks.maxTotalDigits));
+    const boundary = Number(computeOverflowBoundary(state.unlocks.maxTotalDigits, displayRadix));
     if (!Number.isFinite(boundary) || boundary <= 0) {
       return null;
     }
@@ -130,7 +131,7 @@ export const projectRadialPoints = (
 ): RadialProjection => {
   const points = buildGraphPoints(state.calculator.rollEntries);
   const xWindow = buildGraphXWindow(toStepCount(state.calculator.rollEntries));
-  const yWindow = buildGraphYWindow(state.unlocks.maxTotalDigits);
+  const yWindow = buildGraphYWindow(state.unlocks.maxTotalDigits, state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10);
   const maxMagnitude = Math.max(Math.abs(yWindow.min), Math.abs(yWindow.max), 1);
   const angularStepCount = Math.max(1, FALLBACK_ANGULAR_STEP_COUNT);
   const dots: CircleDot[] = [];

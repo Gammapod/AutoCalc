@@ -37,12 +37,13 @@ export type TotalSlotModel = {
 const clampUnlockedDigits = (value: number): number =>
   Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, value));
 
-export const buildTotalSlotModel = (total: CalculatorValue, unlockedDigits: number): TotalSlotModel[] => {
+export const buildTotalSlotModel = (total: CalculatorValue, unlockedDigits: number, radix: number = 10): TotalSlotModel[] => {
   const numericTotal = isRationalCalculatorValue(total) ? total.value : { num: 0n, den: 1n };
   const clampedUnlocked = clampUnlockedDigits(unlockedDigits);
   const lockedCount = MAX_UNLOCKED_TOTAL_DIGITS - clampedUnlocked;
   const magnitude = numericTotal.num < 0n ? -numericTotal.num : numericTotal.num;
-  const renderedDigits = magnitude.toString().slice(-clampedUnlocked);
+  const safeRadix = Math.max(2, Math.trunc(radix));
+  const renderedDigits = magnitude.toString(safeRadix).slice(-clampedUnlocked);
   const leadingUnlockedCount = clampedUnlocked - renderedDigits.length;
   const slots: TotalSlotModel[] = [];
 

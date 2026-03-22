@@ -7,9 +7,11 @@ export { buildGraphPoints, isGraphRenderable, type GraphPoint };
 
 export const buildGraphYWindow = (
   unlockedTotalDigits: number,
+  radix: number = 10,
 ): { min: number; max: number } => {
   const clampedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
-  const maxMagnitude = Math.pow(10, clampedDigits) - 1;
+  const safeRadix = Math.max(2, Math.trunc(radix));
+  const maxMagnitude = Math.pow(safeRadix, clampedDigits) - 1;
   return { min: -maxMagnitude, max: maxMagnitude };
 };
 

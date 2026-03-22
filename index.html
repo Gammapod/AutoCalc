@@ -765,9 +765,24 @@
         right: 0;
         height: var(--total-meta-height);
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: auto 1fr;
         align-items: center;
         column-gap: 8px;
+      }
+
+      .total-base-indicator {
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(10px, 1.4vw, 12px);
+        letter-spacing: 0.08em;
+        color: #f6d66b;
+        text-shadow: 0 0 6px rgba(246, 214, 107, 0.45);
+        text-transform: uppercase;
+        justify-self: start;
+        padding-left: 2px;
+      }
+
+      .total-base-indicator[aria-hidden="true"] {
+        visibility: hidden;
       }
 
       .total-domain-indicator {

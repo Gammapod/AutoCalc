@@ -1,4 +1,5 @@
 import type { GameState } from "../../domain/types.js";
+import { BINARY_MODE_FLAG } from "../../domain/state.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
 import { toStepCount } from "../../domain/rollEntries.js";
 import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
@@ -98,9 +99,9 @@ const getGrapherRuntime = (root: Element): GrapherModuleState => {
   return created;
 };
 
-const buildGraphOptions = (hasPoints: boolean, maxXIndex: number, unlockedTotalDigits: number): GraphOptions => {
+const buildGraphOptions = (hasPoints: boolean, maxXIndex: number, unlockedTotalDigits: number, radix: number): GraphOptions => {
   const xWindow = buildGraphXWindow(maxXIndex);
-  const bounds = buildGraphYWindow(unlockedTotalDigits);
+  const bounds = buildGraphYWindow(unlockedTotalDigits, radix);
   const defaultWindowMax = buildGraphXWindow(0).max;
   const makeXAxisTickLabelCallback =
     (axisMax: number) =>
@@ -221,7 +222,8 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
 
   const points = buildGraphPoints(state.calculator.rollEntries);
   const hasPoints = isGraphRenderable(state.calculator.rollEntries);
-  const options = buildGraphOptions(hasPoints, toStepCount(state.calculator.rollEntries), state.unlocks.maxTotalDigits);
+  const displayRadix = state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
+  const options = buildGraphOptions(hasPoints, toStepCount(state.calculator.rollEntries), state.unlocks.maxTotalDigits, displayRadix);
   const pointBackgroundColor = points.map((point) => {
     if (point.kind === "remainder") {
       return "#ffd84d";
