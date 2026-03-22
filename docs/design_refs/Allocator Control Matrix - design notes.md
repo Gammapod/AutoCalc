@@ -19,6 +19,11 @@ debug behavior:
 - the input values/settable values should not have a debug override
 - there should be a debug command to increase lambda by 1 point
 
+CHANGED: 3/22/2026
+IMPLEMENTED: [date when finished]
+
+<---CHANGE START (clear when finished)
+
 f matrix:
 ALLOCATOR  ,==,"<
  | 1    0    0    0    0 |   |α|   |α' -> ↔↔↔    |
@@ -30,7 +35,7 @@ ALLOCATOR  ,==,"<
 Symbol | Starting values | min..max Values | Settable?
 -------|-----------------|-----------------|-----------
 α      | 3               | 1..8            | yes
-β      | 2               | 1..8            | yes
+β      | 3               | 1..8            | yes
 γ      | 1               | 1..8            | yes
 δ      | ('1)            | ('1)..('10)     | no
 ϵ      | ('0)            | ('0)..('none)   | no
@@ -40,6 +45,7 @@ delta increases proportionally to alpha and beta and gamma, with the effect of a
 
 epsilon increases slightly, proportionally to all the other values in equal measure. intent: the step speed should go up as complexity rises and the possible length of roll gets longer
 
+CHANGE END--->  (clear when finished)
 
 g matrix:
 ALLOCATOR  ,==,"<
