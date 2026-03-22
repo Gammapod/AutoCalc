@@ -34,9 +34,9 @@ export const runUiVisualizerFitContractTests = (): void => {
     "visualizer host defines a shared resting baseline offset token",
   );
   assert.equal(
-    css.includes("shared visualizer footer"),
+    css.includes("data-v2-total-footer"),
     true,
-    "visualizer host CSS keeps a TODO marker for shared footer refactor",
+    "visualizer host markup includes shared total footer container",
   );
 };
 

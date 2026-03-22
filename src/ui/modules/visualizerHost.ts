@@ -130,6 +130,7 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const eigenAllocatorPanel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
+  const totalFooter = root.querySelector<HTMLElement>("[data-v2-total-footer]");
   if (host) {
     host.dataset.v2VisualizerPanel = "total";
     host.dataset.v2VisualizerTransition = "idle";
@@ -165,6 +166,9 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   }
   if (algebraicPanel) {
     algebraicPanel.setAttribute("aria-hidden", "true");
+  }
+  if (totalFooter) {
+    totalFooter.setAttribute("aria-hidden", "false");
   }
 };
 

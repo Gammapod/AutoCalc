@@ -206,6 +206,15 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     row.appendChild(variables);
     return row;
   };
+  const renderSharedMemoryFooter = (): void => {
+    const displayWindow = totalEl.closest("[data-display-window]");
+    const footer = displayWindow?.querySelector<HTMLElement>("[data-v2-total-footer]");
+    if (!footer) {
+      return;
+    }
+    footer.innerHTML = "";
+    footer.appendChild(buildMemoryStatusRow());
+  };
 
   const latestRollEntry = state.calculator.rollEntries.at(-1);
   const latestErrorCode = latestRollEntry?.error?.code;
@@ -218,6 +227,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     isClearedCalculatorState(state.calculator) && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress);
   totalEl.classList.toggle("total-display--error", hasLatestRollError);
   totalEl.innerHTML = "";
+  renderSharedMemoryFooter();
   const stack = document.createElement("div");
   stack.className = "total-display-stack";
   const metaRow = document.createElement("div");
@@ -260,7 +270,6 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     const slotModels = buildClearedTotalSlotModel(state.unlocks.maxTotalDigits);
     appendSevenSegmentFrame(primaryDisplay, slotModels);
     stack.appendChild(primaryDisplay);
-    stack.appendChild(buildMemoryStatusRow());
     totalEl.appendChild(stack);
     totalEl.setAttribute("aria-label", "Total _");
     return;
@@ -283,6 +292,5 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     displayRadix,
   );
   stack.appendChild(primaryDisplay);
-  stack.appendChild(buildMemoryStatusRow());
   totalEl.appendChild(stack);
 };

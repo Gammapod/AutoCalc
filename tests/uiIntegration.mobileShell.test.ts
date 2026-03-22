@@ -89,7 +89,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     renderer.render(withGraph, dispatch, {
             inputBlocked: false,
     });
-    const memoryRowOutsideTotal = harness.root.querySelector<HTMLElement>("[data-v2-total-panel] .total-memory-row");
+    const memoryRowOutsideTotal = harness.root.querySelector<HTMLElement>("[data-v2-total-footer] .total-memory-row");
     assert.ok(memoryRowOutsideTotal, "memory row remains mounted while a non-total visualizer is active");
     assert.equal(
       memoryRowOutsideTotal?.textContent?.includes("\u03BB ="),
