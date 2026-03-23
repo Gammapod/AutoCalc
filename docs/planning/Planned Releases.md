@@ -1,6 +1,6 @@
 # Release v0.9.0: Pre-Launch
 
-## Milestone: Unlock Rule Systematization (Design)
+## Planned Release: Unlock Rule Systematization (Design)
 
 Goal: define a regular, generalizable unlock-criteria framework for each key type so progression authoring is consistent and scalable.
 
@@ -23,9 +23,9 @@ Goal: define a regular, generalizable unlock-criteria framework for each key typ
 - Every current key type has documented, regular unlock-rule guidance.
 - New unlock authoring can be done by applying templates rather than inventing bespoke rules.
 - At least one full pass over current unlock catalog confirms criteria can be classified against the new framework.
-- Milestone is considered Done when regular, generalizable rules for unlock criteria exist for each key type.
+- Planned Release is considered Done when regular, generalizable rules for unlock criteria exist for each key type.
 
-## Milestone: Consolidated UX Policy
+## Planned Release: Consolidated UX Policy
 
 Goal: unify color/interaction language into a current-state plus target-state UX policy.
 
@@ -41,7 +41,7 @@ Goal: unify color/interaction language into a current-state plus target-state UX
 - Conflicting or duplicate color/meaning rules are removed.
 - Review-flag UX-language items are resolved or retired.
 
-## Milestone: Replace Checklist
+## Planned Release: Replace Checklist
 
 Goal: remove checklist-first progression UX and replace it with contextual hints inside the calculator experience.
 
@@ -63,7 +63,7 @@ Goal: remove checklist-first progression UX and replace it with contextual hints
 - Predicate-to-hint mapping defined for current unlock catalog.
 - UI and behavior tests updated for hint rendering and checklist removal.
 
-## Milestone: Consolidated Mobile/Desktop Parity UI Policy
+## Planned Release: Consolidated Mobile/Desktop Parity UI Policy
 
 Goal: convert directional shell sizing guidance into one testable policy for mobile and desktop behavior.
 
@@ -79,7 +79,7 @@ Goal: convert directional shell sizing guidance into one testable policy for mob
 - All accepted target rules have corresponding test or verification criteria.
 - Superseded policy fragments are removed from archived docs and review backlog.
 
-## Milestone: Consolidated Visualizer Policy
+## Planned Release: Consolidated Visualizer Policy
 
 Goal: define a concrete visualizer policy with current behavior and staged future contracts.
 
@@ -97,7 +97,7 @@ Goal: define a concrete visualizer policy with current behavior and staged futur
 
 # Release v1.0.0: Content Backlog
 
-Purpose: track implementable, self-contained features that do not require milestone framing.
+Purpose: track implementable, self-contained features that do not require Planned Release framing.
 
 ## Operators
 When implementing, every operator key MUST have all of the following defined:
@@ -210,7 +210,7 @@ The following require integer inputs, and return NaN otherwise:
 
 - `Function display`: Prime factorization visualizer should display the user-defined function expanded - if the user's function is `5 [ - 4 ] [ Ω ] [ × 8 ] [ ^ 2 ] [ ++ ]`, the visualizer should show `f_0 = 5, f_x = ++(( Ω(f_x-1 - 4) × 8) ^ 2)`. Binary operations are added to the right and unary operators are added to the left, parentheses as needed.
 
-# Post-release: full version backlog
+# Post-v1.0.0: full version backlog
 
 ## Unary Operators
 

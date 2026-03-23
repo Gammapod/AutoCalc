@@ -19,25 +19,26 @@ debug behavior:
 - the input values/settable values should not have a debug override
 - there should be a debug command to increase lambda by 1 point
 
-CHANGED: 3/22/2026
+CHANGES TO F MATRIX
+PLANNED: 3/22/2026
 IMPLEMENTED: [date when finished]
 
 <---CHANGE START (clear when finished)
 
 f matrix:
 ALLOCATOR  ,==,"<
- | 1    0    0    0    0 |   |α|   |α' -> ↔↔↔    |
- | 0    1    0    0    0 |   |β|   |β' -> ↕↕↕    |
- | 0    0    1    0    0 | × |γ| = |γ' -> [_ _]  |
- | 0.25 0.25 0.5  0    0 |   |1|   |δ' -> dig++  |
- | 0.1  0.1  0.1  0.1  0 |   |1|   |ϵ' -> tick++ |
+ | 1    0    0    0    0 |   |α-2|   | ↔↔↔↔↔ |
+ | 0    1    0    0    0 |   |β-2|   | ↕↕↕↕↕ |
+ | 0    0    1    0    0 | × |γ-1| = | [_ _] |
+ | 0.5  0.5  1    0    0 |   | 1 |   | dig++ |
+ | 0.1  0.1  0.1  0.1  0 |   | 1 |   | tick+ |
 
 Symbol | Starting values | min..max Values | Settable?
 -------|-----------------|-----------------|-----------
-α      | 3               | 1..8            | yes
-β      | 3               | 1..8            | yes
+α      | 2               | 2..8            | yes
+β      | 3               | 2..8            | yes
 γ      | 1               | 1..8            | yes
-δ      | ('1)            | ('1)..('10)     | no
+δ      | ('1)            | ('1)..('13)     | no
 ϵ      | ('0)            | ('0)..('none)   | no
 
 in words:
@@ -70,3 +71,30 @@ beta is fixed at 2, and alpha starts at 4, but decreases proportionally to gamma
 delta should resolve to 8, and cannot be changed by the player. intent: fix digits on calculator g to 8 
 
 epsilon increases proportionally with gamma. intent: speed should rise sharply as complexity of steps increases
+
+NEW MATRIX
+PLANNED: 3/22/2026
+IMPLEMENTED: [date when finished]
+
+<---CHANGE START (clear when finished)
+
+Menu matrix:
+ALLOCATOR  ,==,"<
+ | 1    0    0    0    0 |   |1|   | ↔↔↔↔↔ |
+ | 0    1    0    0    0 |   |5|   | ↕↕↕↕↕ |
+ | 0    0    1    0    0 | × |0| = | [_ _] |
+ | 0    0    0    1    0 |   |0|   | dig++ |
+ | 0    0    0    0    1 |   |0|   | tick+ |
+
+Symbol | Starting values | min..max Values | Settable?
+-------|-----------------|-----------------|-----------
+α      | ('1)            | ('1)            | no
+β      | ('5)            | ('5)            | no
+γ      | ('0)            | ('0)            | no
+δ      | ('0)            | ('0)            | no
+ϵ      | ('0)            | ('0)            | no
+
+in words:
+the Menu calculator always has 1 column, 5 rows, and nothing for the other values.
+
+CHANGE END--->  (clear when finished)
