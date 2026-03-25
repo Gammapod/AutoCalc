@@ -68,8 +68,8 @@ export const runReducerUnlockTests = (): void => {
   );
   assert.equal(
     atTen.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === utility("toggle_step_expansion")),
-    true,
-    "[ ??? ] remains on keypad when unlocked",
+    false,
+    "[ ??? ] does not auto-install on keypad when unlocked",
   );
   assert.equal(
     atTen.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === uop("unary_inc")),
@@ -78,8 +78,8 @@ export const runReducerUnlockTests = (): void => {
   );
   assert.equal(
     atTen.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === utility("toggle_step_expansion")),
-    false,
-    "[ ??? ] is removed from storage when already installed on keypad",
+    true,
+    "[ ??? ] remains in storage when unlocked but not pre-installed",
   );
 
   const withError = applyUnlocks(

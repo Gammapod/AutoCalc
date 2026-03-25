@@ -1,8 +1,5 @@
 Truth 1: Game Tuning
 
-Status: Reference only (non-authoritative).
-Authoritative sources: `docs/calc-spec.md`, `docs/functional-spec.md`.
-
 Last Edited: 3/22/2026
 
 α - keypad width
@@ -73,11 +70,11 @@ g matrix:
 
 Symbol | Starting values | min..max Values | Settable?
 -------|-----------------|-----------------|-----------
-α      | ('4)            | ('1)..('4)      | no
-β      | ('2)            | ('2)..('2)      | no
-γ      | 3               | 0..11           | yes
-δ      | ('8)            | ('8)..('8)      | no
-ϵ      | ('0)            | ('0)..('none)   | no
+ α     | ('4)            | ('1)..('4)      | no
+ β     | ('2)            | ('2)..('2)      | no
+ γ     | 3               | 0..11           | yes
+ δ     | ('8)            | ('8)..('8)      | no
+ ϵ     | ('0)            | ('0)..('none)   | no
 
 initial keypad layout:
 
@@ -111,25 +108,25 @@ Menu matrix:
 
 Symbol | Starting values | min..max Values | Settable?
 -------|-----------------|-----------------|-----------
-α      | ('1)            | ('1)            | no
-β      | ('6)            | ('6)            | no
-γ      | ('0)            | ('0)            | no
-δ      | ('0)            | ('0)            | no
-ϵ      | ('0)            | ('0)            | no
+ α     | ('1)            | ('1)            | no
+ β     | ('6)            | ('6)            | no
+ γ     | ('0)            | ('0)            | no
+ δ     | ('0)            | ('0)            | no
+ ϵ     | ('0)            | ('0)            | no
 
     | C1:       |
     |-----------|
 R6: | viz_title |
-R5: | viz_notes |
+R5: | (empty)   |
 R4: | Continue  |
 R3: | New Game  |
-R2: | Settings  |
+R2: | Sandox    |
 R1: | Quit Game |
 
 in words:
 the Menu calculator always has 1 column, 6 rows, and nothing for the other values.
 
-its loadout contains game control keys
+its loadout contains game control keys (all locked with no unlock conditions)
 
 CHANGE END--->  (clear when finished)
 

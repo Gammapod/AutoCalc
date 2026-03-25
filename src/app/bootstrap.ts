@@ -14,10 +14,15 @@ import { createResetRunHandler, createStoreSubscriptionCoordinator } from "./boo
 import { createAutoStepScheduler } from "./autoStepScheduler.js";
 import type { Action, GameState, UiEffect } from "../domain/types.js";
 import { resolveAppMode } from "./appMode.js";
+import { resolveAppShellTarget } from "./appShellTarget.js";
+import { signalQuitApplication } from "./quitSignal.js";
 import { createSandboxState } from "../domain/sandboxPreset.js";
+import { createMainMenuState } from "../domain/mainMenuPreset.js";
 import { normalizeLoadedStateForRuntime } from "../infra/persistence/runtimeLoadNormalizer.js";
 import { setAppServices } from "../contracts/appServices.js";
 import { defaultContentProvider } from "../content/defaultContentProvider.js";
+import type { AppMode } from "../contracts/appMode.js";
+import { resolveModeManifest } from "../domain/modeManifest.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -55,21 +60,38 @@ const appMode = resolveAppMode(window.location, {
   ...processEnv,
   ...importMetaEnv,
 });
+const appShellTarget = resolveAppShellTarget(window.location, {
+  ...processEnv,
+  ...importMetaEnv,
+});
 const loaded = appMode === "game" ? storageRepo.load() : null;
 const runtimeLoaded = appMode === "game" ? normalizeLoadedStateForRuntime(loaded) : null;
-const bootState = runtimeLoaded ??
-  (appMode === "sandbox"
-    ? createSandboxState()
-    : (() => {
-      const fresh = initialState();
-      return {
-        ...fresh,
-        calculator: {
-          ...fresh.calculator,
-          singleDigitInitialTotalEntry: true,
-        },
-      };
-    })());
+const createFreshGameState = (): GameState => {
+  const fresh = initialState();
+  return {
+    ...fresh,
+    calculator: {
+      ...fresh.calculator,
+      singleDigitInitialTotalEntry: true,
+    },
+  };
+};
+const modeManifest = resolveModeManifest(appMode);
+const bootStateBase = runtimeLoaded ?? modeManifest.createBootState({
+  createFreshGameState,
+  createSandboxState,
+  createMainMenuState,
+});
+const bootState: GameState = {
+  ...bootStateBase,
+  ui: {
+    ...bootStateBase.ui,
+    buttonFlags: {
+      ...bootStateBase.ui.buttonFlags,
+      ...modeManifest.modeButtonFlags,
+    },
+  },
+};
 const store = createStore(bootState, services);
 const interactionRuntime = createInteractionRuntime();
 
@@ -91,9 +113,22 @@ const uiShellMode = resolveUiShellMode(window.location, {
   ...importMetaEnv,
 });
 
+const resolveAppVersionToken = (): string => {
+  const importMetaVersion = importMetaEnv?.APP_VERSION;
+  if (typeof importMetaVersion === "string" && importMetaVersion.trim()) {
+    return importMetaVersion.trim();
+  }
+  const processVersion = processEnv?.npm_package_version;
+  if (typeof processVersion === "string" && processVersion.trim()) {
+    return processVersion.trim();
+  }
+  return "0.8.9";
+};
+
 const shellRenderer = createShellRenderer(root, { mode: uiShellMode, services });
 document.body.setAttribute("data-ui-shell", uiShellMode);
 document.body.setAttribute("data-app-mode", appMode);
+document.body.dataset.appVersion = resolveAppVersionToken();
 
 const renderApp = (state: GameState, uiEffects: UiEffect[] = []): void => {
   shellRenderer.render(state, dispatchWithRuntimeGate, {
@@ -116,6 +151,12 @@ const renderAndPersistState = (state: GameState, uiEffects: UiEffect[] = []): vo
   if (appMode === "game") {
     storageRepo.save(state);
   }
+};
+
+const getAppModeUrl = (location: Location, mode: AppMode): string => {
+  const url = new URL(location.href);
+  url.searchParams.set("mode", mode);
+  return url.toString();
 };
 
 const cueCoordinator = createCueLifecycleCoordinator();
@@ -175,6 +216,18 @@ const unsubscribe = createStoreSubscriptionCoordinator(store, {
     autoStepScheduler.sync(state);
   },
   consumeUiEffects: () => store.consumeUiEffects?.() ?? [],
+  onQuitApplication: () => {
+    signalQuitApplication(appShellTarget);
+  },
+  onRequestModeTransition: (mode, savePolicy) => {
+    if (savePolicy === "save_current") {
+      storageRepo.save(store.getState());
+    }
+    if (savePolicy === "clear_save") {
+      storageRepo.clear();
+    }
+    window.location.assign(getAppModeUrl(window.location, mode));
+  },
   initialState: store.getState(),
 });
 

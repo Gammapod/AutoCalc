@@ -2,7 +2,7 @@ import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../../../domain/keypadLayoutModel.js";
 import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
 import { resolveKeyId } from "../../../domain/keyPresentation.js";
-import type { Action, GameState, Key, KeyCell } from "../../../domain/types.js";
+import type { Action, CalculatorId, GameState, Key, KeyCell } from "../../../domain/types.js";
 import { bindDraggableCell, bindDropTargetCell } from "../input/dragDrop.js";
 import { bindQuickTapPressFeedback, shouldSuppressClick } from "../input/pressFeedback.js";
 import { buildKeyButtonAction, formatKeyCellLabel, isToggleFlagActive } from "../calculatorStorageCore.js";
@@ -34,7 +34,7 @@ export const renderKeypadCells = (
   state: GameState,
   dispatch: (action: Action) => unknown,
   options: {
-    calculatorId?: "g" | "f";
+    calculatorId?: CalculatorId;
     calculatorKeysLocked: boolean;
     newlyUnlockedKeys: Set<Key>;
     bindUnlockAnimationLock: (element: HTMLElement) => void;
@@ -42,6 +42,8 @@ export const renderKeypadCells = (
 ): void => {
   const keypadSurface = options.calculatorId === "g"
     ? "keypad_g"
+    : options.calculatorId === "menu"
+      ? "keypad_menu"
     : options.calculatorId === "f"
       ? "keypad_f"
       : "keypad";

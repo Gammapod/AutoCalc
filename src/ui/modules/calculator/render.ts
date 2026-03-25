@@ -1,4 +1,4 @@
-import type { Action, GameState } from "../../../domain/types.js";
+import type { Action, CalculatorId, GameState } from "../../../domain/types.js";
 import { buildStepBodyHighlightRegions, resolveStepBodyHighlightRects } from "../../stepHighlight.js";
 import { resolveLayoutMotionIntent } from "../../layout/motionCoordinator.js";
 import { beginMotionCycle, completeMotionCycle } from "../../layout/motionLifecycleBridge.js";
@@ -102,10 +102,12 @@ export const renderCalculatorV2Module = (
     executionGateRejectCount?: number;
   },
 ): void => {
-  const calculatorId: "g" | "f" =
+  const calculatorId: CalculatorId =
     root instanceof HTMLElement && root.dataset.calcInstanceId === "g"
       ? "g"
-      : "f";
+      : root instanceof HTMLElement && root.dataset.calcInstanceId === "menu"
+        ? "menu"
+        : "f";
   triggerExecutionGateRejectBlink(root, options.executionGateRejectCount ?? 0);
   ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");

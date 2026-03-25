@@ -15,7 +15,9 @@ export type KeyPrimaryExpectationKind =
   | "equals_toggles_auto_step_mode"
   | "roll_inverse_executes_predecessor"
   | "memory_recall_sets_input"
-  | "memory_adjusts_allocator";
+  | "memory_adjusts_allocator"
+  | "system_key_requests_mode_transition"
+  | "system_key_requests_quit";
 
 export type KeyEdgeExpectationKind =
   | "digit_replaces_full_operand_digit"
@@ -28,7 +30,8 @@ export type KeyEdgeExpectationKind =
   | "equals_toggle_division_by_zero_sets_nan"
   | "roll_inverse_rejects_on_error"
   | "memory_recall_noop_on_active_roll"
-  | "memory_adjust_noop_without_budget_or_bounds";
+  | "memory_adjust_noop_without_budget_or_bounds"
+  | "system_key_leaves_domain_state_unchanged";
 
 export type KeyBehaviorSpec = {
   key: Key;
@@ -121,6 +124,41 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "undo_noop_when_roll_empty",
   },
   {
+    key: KEY_ID.system_save_quit_main_menu,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "system_key_requests_mode_transition",
+    edgeCaseExpectation: "system_key_leaves_domain_state_unchanged",
+  },
+  {
+    key: KEY_ID.system_quit_game,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "system_key_requests_quit",
+    edgeCaseExpectation: "system_key_leaves_domain_state_unchanged",
+  },
+  {
+    key: KEY_ID.system_mode_sandbox,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "system_key_requests_mode_transition",
+    edgeCaseExpectation: "system_key_leaves_domain_state_unchanged",
+  },
+  {
+    key: KEY_ID.system_mode_game,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "system_key_requests_mode_transition",
+    edgeCaseExpectation: "system_key_leaves_domain_state_unchanged",
+  },
+  {
+    key: KEY_ID.system_new_game,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "system_key_requests_mode_transition",
+    edgeCaseExpectation: "system_key_leaves_domain_state_unchanged",
+  },
+  {
     key: KEY_ID.memory_cycle_variable,
     lockModel: "unlockable",
     unlockPathPolicy: "none_planned",
@@ -157,6 +195,13 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   },
   {
     key: KEY_ID.viz_feed,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
+    key: KEY_ID.viz_title,
     lockModel: "unlockable",
     unlockPathPolicy: "none_planned",
     primaryExpectation: "graph_counts_only",

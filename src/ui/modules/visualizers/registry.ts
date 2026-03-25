@@ -11,6 +11,7 @@ import {
   clearFactorizationVisualizerPanel,
   renderFactorizationVisualizerPanel,
 } from "./factorizationRenderer.js";
+import { clearTitleVisualizerPanel, renderTitleVisualizerPanel } from "./titleRenderer.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -34,6 +35,16 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     },
     render: renderFeedVisualizerPanel,
     clear: clearFeedVisualizerPanel,
+  },
+  {
+    id: "title",
+    fit: {
+      kind: "text_wrap_clamp",
+      overflow: "forbid_scroll",
+      budget: { topPx: 8, bodyPx: 118, bottomPx: 8, maxLines: 3 },
+    },
+    render: renderTitleVisualizerPanel,
+    clear: clearTitleVisualizerPanel,
   },
   {
     id: "factorization",

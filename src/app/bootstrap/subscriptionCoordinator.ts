@@ -1,4 +1,5 @@
 import type { Action, GameState, Store, UiEffect } from "../../domain/types.js";
+import type { AppMode } from "../../contracts/appMode.js";
 
 type UnlockTracker = {
   hasNewUnlock: (state: GameState) => boolean;
@@ -22,6 +23,8 @@ export const createStoreSubscriptionCoordinator = (
     renderAndPersistState: (state: GameState, uiEffects: UiEffect[]) => void;
     syncAutoStepScheduler?: (state: GameState) => void;
     consumeUiEffects?: () => UiEffect[];
+    onQuitApplication?: () => void;
+    onRequestModeTransition?: (mode: AppMode, savePolicy: "none" | "save_current" | "clear_save") => void;
     initialState: GameState;
   },
 ): (() => void) => {
@@ -37,6 +40,18 @@ export const createStoreSubscriptionCoordinator = (
     const previous = previousStateForCues;
     previousStateForCues = latest;
     const uiEffects = options.consumeUiEffects?.() ?? [];
+    const quitEffect = uiEffects.find((effect): effect is Extract<UiEffect, { type: "quit_application" }> =>
+      effect.type === "quit_application");
+    if (quitEffect) {
+      options.onQuitApplication?.();
+      return;
+    }
+    const modeTransitionEffect = uiEffects.find((effect): effect is Extract<UiEffect, { type: "request_mode_transition" }> =>
+      effect.type === "request_mode_transition");
+    if (modeTransitionEffect) {
+      options.onRequestModeTransition?.(modeTransitionEffect.targetMode, modeTransitionEffect.savePolicy);
+      return;
+    }
 
     const hasNewUnlock = options.unlockTracker.hasNewUnlock(latest);
     const maxPointIncreaseFromUnlocks = options.getAllocatorIncreaseFromUnlocks(previous, latest);

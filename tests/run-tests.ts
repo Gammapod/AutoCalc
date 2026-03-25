@@ -96,6 +96,12 @@ import { runAppModeResolverTests } from "./appMode.resolver.test.js";
 import { runAutoStepSchedulerTests } from "./autoStepScheduler.test.js";
 import { runEqualsToggleAutoStepTests } from "./equalsToggleAutoStep.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
+import { runMainMenuPresetTests } from "./mainMenuPreset.test.js";
+import { runSystemKeysModeSwitchEffectsTests } from "./systemKeys.modeSwitchEffects.test.js";
+import { runSystemKeyIntentRegistryContractTests } from "./systemKeyIntentRegistry.contract.test.js";
+import { runQuitSignalTests } from "./quitSignal.test.js";
+import { runModeManifestTests } from "./modeManifest.test.js";
+import { runCalculatorSeedManifestTests } from "./calculatorSeedManifest.test.js";
 import { runContentProviderWiringContractTests } from "./contentProviderWiring.contract.test.js";
 import { runCapabilitySemanticsParityContractTests } from "./capabilitySemanticsParity.contract.test.js";
 import { runShimInventoryTests } from "./shimInventory.test.js";
@@ -200,6 +206,12 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["app/auto-step-scheduler", runAutoStepSchedulerTests],
   ["domain/equals-toggle-auto-step", runEqualsToggleAutoStepTests],
   ["domain/sandbox-preset", runSandboxPresetTests],
+  ["domain/main-menu-preset", runMainMenuPresetTests],
+  ["domain/system-keys-mode-switch-effects", runSystemKeysModeSwitchEffectsTests],
+  ["contracts/system-key-intent-registry", runSystemKeyIntentRegistryContractTests],
+  ["app/quit-signal", runQuitSignalTests],
+  ["domain/mode-manifest", runModeManifestTests],
+  ["domain/calculator-seed-manifest", runCalculatorSeedManifestTests],
   ["contracts/content-provider-wiring", runContentProviderWiringContractTests],
   ["contracts/capability-semantics-parity", runCapabilitySemanticsParityContractTests],
   ["contracts/key-universe-guard", runKeyUniverseContractGuardTests],

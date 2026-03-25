@@ -1,9 +1,10 @@
-import { fromKeyLayoutArray, toIndexFromCoord } from "./keypadLayoutModel.js";
+import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 import { buildAllocatorSnapshot, createDefaultLambdaControl, getLambdaDerivedValues } from "./lambdaControl.js";
 import { KEY_ID } from "./keyPresentation.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
+import { applyCalculatorSeedPlacements } from "./calculatorSeedManifest.js";
 
 export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 20;
@@ -126,11 +127,17 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.memory_adjust_minus },
   { kind: "key", key: KEY_ID.memory_recall },
   { kind: "key", key: KEY_ID.memory_cycle_variable },
+  { kind: "key", key: KEY_ID.system_save_quit_main_menu },
   { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
   { kind: "key", key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } },
   { kind: "key", key: KEY_ID.toggle_step_expansion, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } },
   { kind: "key", key: KEY_ID.toggle_binary_mode, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } },
+  { kind: "key", key: KEY_ID.system_quit_game },
+  { kind: "key", key: KEY_ID.system_mode_game },
+  { kind: "key", key: KEY_ID.system_new_game },
+  { kind: "key", key: KEY_ID.system_mode_sandbox },
   { kind: "key", key: KEY_ID.viz_feed },
+  { kind: "key", key: KEY_ID.viz_title },
   { kind: "key", key: KEY_ID.viz_factorization },
   { kind: "key", key: KEY_ID.viz_circle },
   { kind: "key", key: KEY_ID.viz_graph },
@@ -185,25 +192,12 @@ export const initialState = (): GameState => {
   const lambdaDerived = getLambdaDerivedValues(lambdaControl, fProfile);
   const initialColumns = lambdaDerived.effectiveFields.alpha;
   const initialRows = lambdaDerived.effectiveFields.beta;
-  const keyLayout = defaultDrawerKeyLayout(initialColumns, initialRows);
-  const startupPlacements: Array<{ row: number; col: number; cell: LayoutCell }> = [
-    { row: 2, col: 1, cell: { kind: "key", key: KEY_ID.unary_inc } },
-    {
-      row: 2,
-      col: 3,
-      cell: {
-        kind: "key",
-        key: KEY_ID.toggle_step_expansion,
-        behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG },
-      },
-    },
-  ];
-  for (const placement of startupPlacements) {
-    const index = toIndexFromCoord({ row: placement.row, col: placement.col }, initialColumns, initialRows);
-    if (index >= 0 && index < keyLayout.length) {
-      keyLayout[index] = placement.cell;
-    }
-  }
+  const keyLayout = applyCalculatorSeedPlacements(
+    "f",
+    defaultDrawerKeyLayout(initialColumns, initialRows),
+    initialColumns,
+    initialRows,
+  );
   const base: GameState = {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
@@ -276,3 +270,4 @@ export const initialState = (): GameState => {
     sessionControlProfiles: {},
   };
 };
+

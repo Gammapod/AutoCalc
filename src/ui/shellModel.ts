@@ -14,9 +14,11 @@ const SNAP_ORDER: SnapId[] = ["middle", "bottom"];
 export const snapOrder = (): readonly SnapId[] => SNAP_ORDER;
 
 export const buildShellViewModel = (state: GameState): ShellViewModel => {
+  const isMainMenuMode = Boolean(state.ui.buttonFlags["mode.main_menu"]);
+  const storageContentVisible = state.ui.buttonFlags["mode.storage_content_visible"] ?? !isMainMenuMode;
   const availableSnaps: SnapId[] = [];
   availableSnaps.push("middle");
-  if (state.unlocks.uiUnlocks.storageVisible) {
+  if (state.unlocks.uiUnlocks.storageVisible || !storageContentVisible) {
     availableSnaps.push("bottom");
   }
 

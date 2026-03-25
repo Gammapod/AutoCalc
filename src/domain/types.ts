@@ -31,7 +31,7 @@ export type VisualizerKey = VisualizerKeyId;
 export type VisualizerId = ButtonVisualizerId;
 export type ActiveVisualizer = "total" | VisualizerId;
 export type MemoryVariable = "\u03B1" | "\u03B2" | "\u03B3";
-export type CalculatorId = "g" | "f";
+export type CalculatorId = "g" | "f" | "menu";
 export type ExecKey = ExecKeyId;
 export type Key = KeyId;
 export type CanonicalKeyId = KeyId;
@@ -693,7 +693,7 @@ export type SwapKeySlotsAction = {
   secondIndex: number;
 };
 
-export type LayoutSurface = "keypad" | "keypad_f" | "keypad_g" | "storage";
+export type LayoutSurface = "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
 
 export type MoveLayoutCellAction = {
   type: "MOVE_LAYOUT_CELL";
@@ -827,6 +827,14 @@ export type UiEffect =
   | {
       type: "execution_gate_rejected";
       calculatorId: CalculatorId;
+    }
+  | {
+      type: "request_mode_transition";
+      targetMode: "game" | "sandbox" | "main_menu";
+      savePolicy: "none" | "save_current" | "clear_save";
+    }
+  | {
+      type: "quit_application";
     };
 
 export type Store = {

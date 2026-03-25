@@ -19,6 +19,7 @@ import {
 import { keyToVisualizerId } from "./buttonRegistry.js";
 import { resolveKeyId } from "./keyPresentation.js";
 import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface, VisualizerId } from "./types.js";
+import { isMultiCalculatorSession } from "./multiCalculator.js";
 
 export { isStorageLayoutValid } from "./layoutRules.js";
 
@@ -61,15 +62,18 @@ const appendKeyToStorage = (
 
 const emptyCell = (): LayoutCell => ({ kind: "placeholder", area: "empty" });
 
-const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" =>
-  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g";
+const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" =>
+  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g" || surface === "keypad_menu";
 
-const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): "f" | "g" | null => {
+const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): "f" | "g" | "menu" | null => {
   if (surface === "keypad_f") {
     return "f";
   }
   if (surface === "keypad_g") {
     return "g";
+  }
+  if (surface === "keypad_menu") {
+    return "menu";
   }
   if (surface === "keypad") {
     return state.activeCalculatorId ?? null;
@@ -90,6 +94,9 @@ const getSurfaceUi = (state: GameState, surface: LayoutSurface): GameState["ui"]
   }
   if (surface === "keypad_g") {
     return state.calculators?.g?.ui ?? null;
+  }
+  if (surface === "keypad_menu") {
+    return state.calculators?.menu?.ui ?? null;
   }
   return null;
 };
@@ -179,6 +186,21 @@ const setSurfaceUi = (state: GameState, surface: LayoutSurface, ui: GameState["u
       },
     };
   }
+  if (surface === "keypad_menu") {
+    if (!state.calculators?.menu) {
+      return state;
+    }
+    return {
+      ...state,
+      calculators: {
+        ...state.calculators,
+        menu: {
+          ...state.calculators.menu,
+          ui: sharedStorageUi,
+        },
+      },
+    };
+  }
   return state;
 };
 
@@ -262,24 +284,29 @@ const hasOnlyExpectedKeyChanges = (
   allowedChanges: SurfaceIndex[],
 ): boolean => {
   const allow = new Set(allowedChanges.map((entry) => `${entry.surface}:${entry.index}`));
-  const hasDualKeypads = Boolean(previous.calculators?.g && previous.calculators?.f);
-  if (!hasDualKeypads) {
+  const hasMultiKeypads = isMultiCalculatorSession(previous);
+  if (!hasMultiKeypads) {
     for (const entry of allowedChanges) {
-      if (entry.surface === "keypad_f" || entry.surface === "keypad_g") {
+      if (entry.surface === "keypad_f" || entry.surface === "keypad_g" || entry.surface === "keypad_menu") {
         allow.add(`keypad:${entry.index}`);
       }
     }
   }
-  if (previous.calculators?.g && previous.calculators?.f && previous.activeCalculatorId) {
-    const activeSurface = previous.activeCalculatorId === "g" ? "keypad_g" : "keypad_f";
+  if (hasMultiKeypads && previous.activeCalculatorId) {
+    const activeSurface =
+      previous.activeCalculatorId === "g"
+        ? "keypad_g"
+        : previous.activeCalculatorId === "menu"
+          ? "keypad_menu"
+          : "keypad_f";
     for (const entry of allowedChanges) {
       if (entry.surface === "keypad") {
         allow.add(`${activeSurface}:${entry.index}`);
       }
     }
   }
-  const surfaces: LayoutSurface[] = hasDualKeypads
-    ? ["keypad_f", "keypad_g", "storage"]
+  const surfaces: LayoutSurface[] = hasMultiKeypads
+    ? ["keypad_f", "keypad_g", "keypad_menu", "storage"]
     : ["keypad", "storage"];
 
   for (const surface of surfaces) {

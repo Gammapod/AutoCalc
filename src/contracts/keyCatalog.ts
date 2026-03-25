@@ -31,6 +31,11 @@ export type KeyHandlerOverrideId =
   | "utility_clear_all"
   | "utility_backspace"
   | "utility_undo"
+  | "system_save_quit_main_menu"
+  | "system_quit_game"
+  | "system_switch_mode_game"
+  | "system_new_game"
+  | "system_switch_mode_sandbox"
   | "memory_cycle_variable"
   | "memory_recall_into_input"
   | "memory_adjust_plus"
@@ -57,7 +62,7 @@ export type KeyTrait =
   | "is_digit"
   | "is_visualizer";
 
-export type KeyVisualizerId = "graph" | "feed" | "circle" | "eigen_allocator" | "algebraic" | "factorization";
+export type KeyVisualizerId = "graph" | "feed" | "circle" | "eigen_allocator" | "algebraic" | "factorization" | "title";
 
 export type KeyCatalogEntry = {
   key: KeyId;
@@ -116,6 +121,11 @@ export const keyCatalog = [
   { key: "util_clear_all", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits(["can_reset"]), handlerOverrideId: "utility_clear_all" },
   { key: "util_backspace", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "utility_backspace" },
   { key: "util_undo", category: "utility", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits(["can_undo"]), handlerOverrideId: "utility_undo" },
+  { key: "system_save_quit_main_menu", category: "global_system", unlockGroup: "utilities", defaultUnlocked: true, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "system_save_quit_main_menu" },
+  { key: "system_quit_game", category: "global_system", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "system_quit_game" },
+  { key: "system_mode_game", category: "global_system", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "system_switch_mode_game" },
+  { key: "system_new_game", category: "global_system", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "system_new_game" },
+  { key: "system_mode_sandbox", category: "global_system", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "utility", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "system_switch_mode_sandbox" },
   { key: "memory_cycle_variable", category: "memory", unlockGroup: "memory", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "noop", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "memory_cycle_variable" },
   { key: "memory_adjust_plus", category: "memory", unlockGroup: "memory", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "noop", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "memory_adjust_plus" },
   { key: "memory_adjust_minus", category: "memory", unlockGroup: "memory", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "noop", inputFamily: "utility", valueRole: "none", traits: withBaseTraits([]), handlerOverrideId: "memory_adjust_minus" },
@@ -126,6 +136,7 @@ export const keyCatalog = [
   { key: "toggle_binary_mode", category: "settings", unlockGroup: "utilities", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "toggle", inputFamily: "toggle", valueRole: "none", traits: withBaseTraits([]) },
   { key: "viz_graph", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "graph" },
   { key: "viz_feed", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "feed" },
+  { key: "viz_title", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "title" },
   { key: "viz_factorization", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "factorization" },
   { key: "viz_circle", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "circle" },
   { key: "viz_eigen_allocator", category: "visualizer", unlockGroup: "visualizers", defaultUnlocked: false, supportsPressCount: true, behaviorKind: "visualizer", inputFamily: "visualizer", valueRole: "none", traits: withBaseTraits(["is_visualizer"]), visualizerId: "eigen_allocator" },

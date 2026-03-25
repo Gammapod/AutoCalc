@@ -5,6 +5,7 @@ import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
 import { reducer } from "../src/domain/reducer.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import { initialState } from "../src/domain/state.js";
+import { calculatorSeedManifest } from "../src/domain/calculatorSeedManifest.js";
 import { legacyInitialState } from "./support/legacyState.js";
 import type { GameState } from "../src/domain/types.js";
 
@@ -24,16 +25,27 @@ export const runReducerLayoutTests = (): void => {
   const baseline = normalizeRuntimeStateInvariants(legacyInitialState());
   const baselineLayout = baseline.ui.keyLayout;
   const baselineExpectedLayout = Array.from({ length: baselineLayout.length }, () => null as string | null);
-  const incIndex = toIndexFromCoord({ row: 2, col: 1 }, baseline.ui.keypadColumns, baseline.ui.keypadRows);
-  const stepExpansionIndex = toIndexFromCoord({ row: 2, col: 3 }, baseline.ui.keypadColumns, baseline.ui.keypadRows);
-  const equalsIndex = toIndexFromCoord({ row: 1, col: 1 }, baseline.ui.keypadColumns, baseline.ui.keypadRows);
+  const fSeed = calculatorSeedManifest.f.placements;
+  const coordFor = (key: string): { row: number; col: number } => {
+    const found = fSeed.find((placement) => placement.key === key);
+    if (!found) {
+      throw new Error(`missing f seed placement for ${key}`);
+    }
+    return { row: found.row, col: found.col };
+  };
+  const incCoord = coordFor(k("unary_inc"));
+  const saveQuitCoord = coordFor(k("system_save_quit_main_menu"));
+  const equalsCoord = coordFor(k("exec_equals"));
+  const incIndex = toIndexFromCoord(incCoord, baseline.ui.keypadColumns, baseline.ui.keypadRows);
+  const saveQuitIndex = toIndexFromCoord(saveQuitCoord, baseline.ui.keypadColumns, baseline.ui.keypadRows);
+  const equalsIndex = toIndexFromCoord(equalsCoord, baseline.ui.keypadColumns, baseline.ui.keypadRows);
   baselineExpectedLayout[incIndex] = k("unary_inc");
-  baselineExpectedLayout[stepExpansionIndex] = k("toggle_step_expansion");
+  baselineExpectedLayout[saveQuitIndex] = k("system_save_quit_main_menu");
   baselineExpectedLayout[equalsIndex] = k("exec_equals");
   assert.deepEqual(
     baselineLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
     baselineExpectedLayout,
-    "default keypad starts with [ ??? ] at R2C3, ++ at R2C1, and = at R1C1",
+    "default keypad starts with Save&Quit at R2C3, ++ at R1C2, and = at R1C1",
   );
   assert.equal(
     baseline.ui.storageLayout.some((cell) => cell?.key === k("digit_1")),
@@ -578,17 +590,17 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(resizedBigger.ui.keypadRows, 4, "set keypad dimensions updates rows");
   assert.equal(resizedBigger.ui.keyLayout.length, 20, "resizing up appends placeholder slots");
   assert.equal(
-    keyOrNull(resizedBigger.ui.keyLayout[indexAt(5, 4, 2, 3)]),
-    k("toggle_step_expansion"),
-    "[ ??? ] stays anchored at R2C3 when expanding",
+    keyOrNull(resizedBigger.ui.keyLayout[indexAt(5, 4, saveQuitCoord.row, saveQuitCoord.col)]),
+    k("system_save_quit_main_menu"),
+    "Save&Quit stays anchored at R2C3 when expanding",
   );
   assert.equal(
-    keyOrNull(resizedBigger.ui.keyLayout[indexAt(5, 4, 2, 1)]),
+    keyOrNull(resizedBigger.ui.keyLayout[indexAt(5, 4, incCoord.row, incCoord.col)]),
     k("unary_inc"),
-    "++ stays anchored at R2C1 when expanding",
+    "++ stays anchored at R1C2 when expanding",
   );
   assert.equal(
-    keyOrNull(resizedBigger.ui.keyLayout[indexAt(5, 4, 1, 1)]),
+    keyOrNull(resizedBigger.ui.keyLayout[indexAt(5, 4, equalsCoord.row, equalsCoord.col)]),
     k("exec_equals"),
     "= stays anchored at R1C1 when expanding",
   );
@@ -614,17 +626,17 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(resizedSmaller.ui.keypadColumns, 3, "resizing down updates columns");
   assert.equal(resizedSmaller.ui.keypadRows, 2, "resizing down updates rows");
   assert.equal(
-    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, 2, 3)]),
-    k("toggle_step_expansion"),
-    "[ ??? ] remains anchored at R2C3 after shrink",
+    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, saveQuitCoord.row, saveQuitCoord.col)]),
+    k("system_save_quit_main_menu"),
+    "Save&Quit remains anchored at R2C3 after shrink",
   );
   assert.equal(
-    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, 2, 1)]),
+    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, incCoord.row, incCoord.col)]),
     k("unary_inc"),
-    "++ remains anchored at R2C1 after shrink",
+    "++ remains anchored at R1C2 after shrink",
   );
   assert.equal(
-    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, 1, 1)]),
+    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, equalsCoord.row, equalsCoord.col)]),
     k("exec_equals"),
     "= remains anchored at R1C1 after shrink",
   );
@@ -675,19 +687,19 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(clampedResize.ui.keypadColumns, 8, "columns clamp to max bound");
   assert.equal(clampedResize.ui.keypadRows, 1, "rows clamp to min bound");
   assert.equal(
-    keyOrNull(clampedResize.ui.keyLayout[indexAt(8, 1, 1, 1)]),
+    keyOrNull(clampedResize.ui.keyLayout[indexAt(8, 1, equalsCoord.row, equalsCoord.col)]),
     k("exec_equals"),
     "= stays anchored at R1C1 after clamped resize",
   );
   assert.equal(
-    clampedResize.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === k("unary_inc")),
-    false,
-    "++ is evacuated off keypad when row 2 is removed",
+    keyOrNull(clampedResize.ui.keyLayout[indexAt(8, 1, incCoord.row, incCoord.col)]),
+    k("unary_inc"),
+    "++ remains anchored at R1C2 when row 2 is removed",
   );
   assert.equal(
-    clampedResize.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === k("toggle_step_expansion")),
+    clampedResize.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === k("system_save_quit_main_menu")),
     false,
-    "[ ??? ] is evacuated off keypad when row 2 is removed",
+    "Save&Quit is evacuated off keypad when row 2 is removed",
   );
 
   const upgradedRow = reducer(baseline, { type: "UPGRADE_KEYPAD_ROW" });
@@ -700,17 +712,17 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(upgradedRow.ui.keyLayout[0]?.kind, "placeholder", "row upgrade pushes keys down");
   assert.equal(upgradedRow.ui.keyLayout[1]?.kind, "placeholder", "row upgrade keeps top row empty");
   assert.equal(
-    keyOrNull(upgradedRow.ui.keyLayout[indexAt(upgradedRow.ui.keypadColumns, upgradedRow.ui.keypadRows, 2, 3)]),
-    k("toggle_step_expansion"),
-    "row upgrade preserves [ ??? ] anchor",
+    keyOrNull(upgradedRow.ui.keyLayout[indexAt(upgradedRow.ui.keypadColumns, upgradedRow.ui.keypadRows, saveQuitCoord.row, saveQuitCoord.col)]),
+    k("system_save_quit_main_menu"),
+    "row upgrade preserves Save&Quit anchor",
   );
   assert.equal(
-    keyOrNull(upgradedRow.ui.keyLayout[indexAt(upgradedRow.ui.keypadColumns, upgradedRow.ui.keypadRows, 2, 1)]),
+    keyOrNull(upgradedRow.ui.keyLayout[indexAt(upgradedRow.ui.keypadColumns, upgradedRow.ui.keypadRows, incCoord.row, incCoord.col)]),
     k("unary_inc"),
-    "row upgrade preserves ++ anchor",
+    "row upgrade preserves ++ anchor at R1C2",
   );
   assert.equal(
-    keyOrNull(upgradedRow.ui.keyLayout[indexAt(upgradedRow.ui.keypadColumns, upgradedRow.ui.keypadRows, 1, 1)]),
+    keyOrNull(upgradedRow.ui.keyLayout[indexAt(upgradedRow.ui.keypadColumns, upgradedRow.ui.keypadRows, equalsCoord.row, equalsCoord.col)]),
     k("exec_equals"),
     "row upgrade preserves = anchor",
   );
@@ -724,17 +736,17 @@ export const runReducerLayoutTests = (): void => {
   );
   assert.equal(upgradedColumn.ui.keyLayout[0]?.kind, "placeholder", "column upgrade pushes keys right");
   assert.equal(
-    keyOrNull(upgradedColumn.ui.keyLayout[indexAt(upgradedColumn.ui.keypadColumns, upgradedColumn.ui.keypadRows, 2, 3)]),
-    k("toggle_step_expansion"),
-    "column upgrade preserves [ ??? ] anchor",
+    keyOrNull(upgradedColumn.ui.keyLayout[indexAt(upgradedColumn.ui.keypadColumns, upgradedColumn.ui.keypadRows, saveQuitCoord.row, saveQuitCoord.col)]),
+    k("system_save_quit_main_menu"),
+    "column upgrade preserves Save&Quit anchor",
   );
   assert.equal(
-    keyOrNull(upgradedColumn.ui.keyLayout[indexAt(upgradedColumn.ui.keypadColumns, upgradedColumn.ui.keypadRows, 2, 1)]),
+    keyOrNull(upgradedColumn.ui.keyLayout[indexAt(upgradedColumn.ui.keypadColumns, upgradedColumn.ui.keypadRows, incCoord.row, incCoord.col)]),
     k("unary_inc"),
-    "column upgrade preserves ++ anchor",
+    "column upgrade preserves ++ anchor at R1C2",
   );
   assert.equal(
-    keyOrNull(upgradedColumn.ui.keyLayout[indexAt(upgradedColumn.ui.keypadColumns, upgradedColumn.ui.keypadRows, 1, 1)]),
+    keyOrNull(upgradedColumn.ui.keyLayout[indexAt(upgradedColumn.ui.keypadColumns, upgradedColumn.ui.keypadRows, equalsCoord.row, equalsCoord.col)]),
     k("exec_equals"),
     "column upgrade preserves = anchor",
   );

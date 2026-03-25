@@ -5,6 +5,7 @@ import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
+import { executeCommand } from "../src/domain/commands.js";
 import { CHECKLIST_UNLOCK_ID, EXECUTION_PAUSE_EQUALS_FLAG } from "../src/domain/state.js";
 import { getButtonFace, isDigitKeyId, KEY_ID, resolveKeyId } from "../src/domain/keyPresentation.js";
 import { resolveMemoryRecallDigit } from "../src/domain/memoryController.js";
@@ -411,6 +412,28 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     }
   }
 
+  if (kind === "system_key_requests_mode_transition") {
+    const state = unlockKey(legacyInitialState(), key);
+    const result = executeCommand(state, { type: "DispatchAction", action: { type: "PRESS_KEY", key } });
+    assert.equal(
+      result.uiEffects.some((effect) => effect.type === "request_mode_transition"),
+      true,
+      `${key} should emit request_mode_transition intent`,
+    );
+    return;
+  }
+
+  if (kind === "system_key_requests_quit") {
+    const state = unlockKey(legacyInitialState(), key);
+    const result = executeCommand(state, { type: "DispatchAction", action: { type: "PRESS_KEY", key } });
+    assert.equal(
+      result.uiEffects.some((effect) => effect.type === "quit_application"),
+      true,
+      `${key} should emit quit_application intent`,
+    );
+    return;
+  }
+
   throw new Error(`Unknown primary expectation kind: ${kind}`);
 };
 
@@ -633,6 +656,24 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       assert.equal(next.ui.keypadColumns, state.ui.keypadColumns, "M\u2013 no-op at lower bound should keep projected width");
       return;
     }
+  }
+
+  if (kind === "system_key_leaves_domain_state_unchanged") {
+    const state = unlockKey(
+      {
+        ...legacyInitialState(),
+        calculator: {
+          ...legacyInitialState().calculator,
+          total: r(11n),
+          rollEntries: re(r(11n)),
+          draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
+        },
+      },
+      key,
+    );
+    const next = applyKeyAction(state, key);
+    assert.deepEqual(next.calculator, state.calculator, `${key} should not mutate calculator domain state`);
+    return;
   }
 
   throw new Error(`Unknown edge expectation kind: ${kind}`);

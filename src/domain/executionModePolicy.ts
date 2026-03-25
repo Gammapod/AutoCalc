@@ -6,6 +6,7 @@ import {
   EXECUTION_PAUSE_FLAG,
   MOD_ZERO_TO_DELTA_FLAG,
 } from "./state.js";
+import { isMultiCalculatorSession, resolveActiveCalculatorId, toCalculatorSurface } from "./multiCalculator.js";
 import { shouldRejectRollInverseExecution } from "./rollInverseExecution.js";
 import type { Action, GameState, Key, KeyCell } from "./types.js";
 
@@ -235,13 +236,13 @@ export const isExecutionGatedInputKey = (key: Key): boolean => {
 
 const touchesActiveCalculatorSurface = (
   state: GameState,
-  fromSurface: "keypad" | "keypad_f" | "keypad_g" | "storage",
-  toSurface: "keypad" | "keypad_f" | "keypad_g" | "storage",
+  fromSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage",
+  toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage",
 ): boolean => {
-  if (!state.calculators?.g || !state.calculators?.f) {
+  if (!isMultiCalculatorSession(state)) {
     return fromSurface === "keypad" || toSurface === "keypad";
   }
-  const activeSurface = state.activeCalculatorId === "g" ? "keypad_g" : "keypad_f";
+  const activeSurface = toCalculatorSurface(resolveActiveCalculatorId(state));
   return (
     fromSurface === "keypad"
     || toSurface === "keypad"

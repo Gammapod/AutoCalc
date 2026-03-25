@@ -7,6 +7,7 @@ import { createShellRenderer } from "../src/ui/renderAdapter.js";
 import { click } from "./helpers/eventHarness.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 import { withCalculatorProjection } from "./helpers/dualCalculatorState.js";
+import { createMainMenuState } from "../src/domain/mainMenuPreset.js";
 
 export const runUiIntegrationDesktopShellTests = (): void => {
   const harness = installDomHarness("http://localhost:4173/index.html?ui=desktop");
@@ -165,6 +166,14 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       true,
       "clicking a rendered key dispatches equals toggle action on desktop shell",
     );
+
+    renderer.render(createMainMenuState(), dispatch, {
+            inputBlocked: false,
+    });
+    const storageShell = harness.root.querySelector<HTMLElement>(".storage");
+    const checklistShell = harness.root.querySelector<HTMLElement>(".checklist-shell");
+    assert.equal(storageShell?.hidden, false, "desktop main menu keeps storage container visible");
+    assert.equal(checklistShell?.hidden, false, "desktop main menu keeps checklist container visible");
 
     const baseStepState = initialState();
     const withStepKey = withCalculatorProjection({

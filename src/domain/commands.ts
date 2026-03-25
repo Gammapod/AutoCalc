@@ -4,6 +4,8 @@ import { applyEvent } from "./transition.js";
 import type { AppServices } from "../contracts/appServices.js";
 import { resolveExecutionPolicyForAction } from "./reducer.js";
 import type { UiEffect } from "./types.js";
+import { resolveSystemKeyIntent, mapSystemKeyIntentToUiEffect } from "./systemKeyIntentRegistry.js";
+import { isKeyUsableForInput } from "./keyUnlocks.js";
 
 export type DomainCommand = {
   type: "DispatchAction";
@@ -31,6 +33,12 @@ export const executeCommand = (
     const policy = resolveExecutionPolicyForAction(currentState, command.action);
     if (policy.decision.decision === "reject") {
       uiEffects.push({ type: "execution_gate_rejected", calculatorId: policy.calculatorId });
+    }
+    if (command.action.type === "PRESS_KEY" && isKeyUsableForInput(currentState, command.action.key)) {
+      const intent = resolveSystemKeyIntent(command.action.key);
+      if (intent) {
+        uiEffects.push(mapSystemKeyIntentToUiEffect(intent));
+      }
     }
   }
   const event = eventFromAction(command.action);

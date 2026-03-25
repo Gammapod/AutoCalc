@@ -23,7 +23,12 @@ import {
   withMaxPointsAdded,
   withMaxPointsSet,
 } from "./lambdaControl.js";
-import { commitLegacyProjection, projectCalculatorToLegacy, resolveActiveCalculatorId } from "./multiCalculator.js";
+import {
+  commitLegacyProjection,
+  isMultiCalculatorSession,
+  projectCalculatorToLegacy,
+  resolveActiveCalculatorId,
+} from "./multiCalculator.js";
 import { getBaseControlProfile } from "./controlProfileRuntime.js";
 import { projectControlFromState } from "./controlProjection.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
@@ -79,9 +84,6 @@ type ResolvedExecutionPolicy = {
   decision: ExecutionPolicyResult;
   calculatorId: CalculatorId;
 };
-
-const hasDualCalculatorInstances = (state: GameState): boolean =>
-  Boolean(state.calculators?.g && state.calculators?.f);
 
 const normalizeLegacyEqualsPress = (action: Action): Action => {
   if (action.type !== "PRESS_KEY" || action.key !== KEY_ID.exec_equals) {
@@ -293,7 +295,7 @@ export const resolveExecutionPolicyForAction = (state: GameState, action: Action
   const normalizedAction = normalizeLegacyEqualsPress(action);
   const targetCalculatorId = resolveActionCalculatorId(state, normalizedAction);
   const calculatorId = targetCalculatorId ?? resolveActiveCalculatorId(state);
-  if (hasDualCalculatorInstances(state) && targetCalculatorId) {
+  if (isMultiCalculatorSession(state) && targetCalculatorId) {
     const projected = projectCalculatorToLegacy(state, targetCalculatorId);
     return {
       decision: classifyExecutionPolicyAction(projected, normalizedAction),
@@ -307,7 +309,7 @@ export const resolveExecutionPolicyForAction = (state: GameState, action: Action
 };
 
 const reduceWithProjectionScope = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
-  if (!hasDualCalculatorInstances(state)) {
+  if (!isMultiCalculatorSession(state)) {
     const reduced = reduceLegacy(state, action, options);
     if (state.calculators?.f) {
       return commitLegacyProjection(state, reduced, "f");
@@ -327,7 +329,7 @@ const reduceWithProjectionScope = (state: GameState, action: Action, options: Re
 
 export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {
   let nextState: GameState;
-  if (hasDualCalculatorInstances(state) && action.type === "SET_ACTIVE_CALCULATOR") {
+  if (isMultiCalculatorSession(state) && action.type === "SET_ACTIVE_CALCULATOR" && state.calculators?.[action.calculatorId]) {
     nextState = {
       ...state,
       activeCalculatorId: action.calculatorId,

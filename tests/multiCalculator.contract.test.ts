@@ -3,10 +3,16 @@ import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import {
+  isMultiCalculatorSession,
+  materializeCalculator,
+  materializeCalculatorMenu,
   materializeCalculatorG,
+  fromCalculatorSurface,
   normalizeLegacyForMissingInstances,
   projectCalculatorToLegacy,
+  toCalculatorSurface,
 } from "../src/domain/multiCalculator.js";
+import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import type { Action, GameState } from "../src/domain/types.js";
 
 const toSingleCalculatorState = (state: GameState): GameState => ({
@@ -80,6 +86,72 @@ export const runMultiCalculatorContractTests = (): void => {
   );
   assert.equal(afterFFromActiveG.ui.keypadRows, 3, "targeted f layout action updates f rows");
   assert.deepEqual(afterGFromActiveG.ui, beforeGFromActiveG.ui, "targeted f layout action keeps g state unchanged");
+
+  const menuAndFOnly = materializeCalculatorMenu(initialState());
+  assert.equal(Boolean(menuAndFOnly.calculators?.menu), true, "menu materialization produces menu instance");
+  assert.equal(Boolean(menuAndFOnly.calculators?.g), false, "menu materialization does not implicitly add g");
+  assert.equal(isMultiCalculatorSession(menuAndFOnly), true, "menu+f session is recognized as multi-calculator");
+  const beforeMenuProjection = projectCalculatorToLegacy(menuAndFOnly, "menu");
+  const beforeFWithMenuProjection = projectCalculatorToLegacy(menuAndFOnly, "f");
+  const mutatedMenuOnly = reducer(menuAndFOnly, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad_menu",
+    fromIndex: 5,
+    toSurface: "keypad_menu",
+    toIndex: 1,
+  });
+  const afterMenuProjection = projectCalculatorToLegacy(mutatedMenuOnly, "menu");
+  const afterFWithMenuProjection = projectCalculatorToLegacy(mutatedMenuOnly, "f");
+  assert.notDeepEqual(afterMenuProjection.ui.keyLayout, beforeMenuProjection.ui.keyLayout, "menu-local keyslot mutation applies to menu");
+  assert.equal(
+    afterFWithMenuProjection.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === KEY_ID.system_quit_game),
+    false,
+    "menu-local keyslot mutation does not leak menu-only keys into f",
+  );
+
+  const crossMoveReady: GameState = {
+    ...menuAndFOnly,
+    unlocks: {
+      ...menuAndFOnly.unlocks,
+      utilities: {
+        ...menuAndFOnly.unlocks.utilities,
+        [KEY_ID.system_quit_game]: true,
+      },
+    },
+  };
+  const beforeCrossMenuProjection = projectCalculatorToLegacy(crossMoveReady, "menu");
+  const beforeCrossFProjection = projectCalculatorToLegacy(crossMoveReady, "f");
+  const menuSourceIndex = beforeCrossMenuProjection.ui.keyLayout.findIndex((cell) => cell.kind === "key" && cell.key === KEY_ID.system_quit_game);
+  const fDestinationIndex = beforeCrossFProjection.ui.keyLayout.findIndex((cell) => cell.kind === "placeholder");
+  assert.ok(menuSourceIndex >= 0, "menu keypad contains unlocked quit key for cross-surface move regression coverage");
+  assert.ok(fDestinationIndex >= 0, "f keypad contains at least one empty destination slot for cross-surface move regression coverage");
+  const movedAcrossCalculators = reducer(crossMoveReady, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad_menu",
+    fromIndex: menuSourceIndex,
+    toSurface: "keypad_f",
+    toIndex: fDestinationIndex,
+  });
+  const afterCrossMenu = projectCalculatorToLegacy(movedAcrossCalculators, "menu");
+  const afterCrossF = projectCalculatorToLegacy(movedAcrossCalculators, "f");
+  assert.notDeepEqual(afterCrossMenu.ui.keyLayout, beforeCrossMenuProjection.ui.keyLayout, "explicit cross-calculator move updates menu keypad");
+  assert.notDeepEqual(afterCrossF.ui.keyLayout, beforeCrossFProjection.ui.keyLayout, "explicit cross-calculator move updates f keypad");
+
+  const fullOrderState = materializeCalculatorG(materializeCalculatorMenu(initialState()));
+  const calculatorOrder = fullOrderState.calculatorOrder ?? [];
+  for (const calculatorId of calculatorOrder) {
+    assert.ok(controlProfiles[calculatorId], `control profile exists for calculator ${calculatorId}`);
+    const surface = toCalculatorSurface(calculatorId);
+    assert.equal(fromCalculatorSurface(surface), calculatorId, `surface mapping round-trips for ${calculatorId}`);
+    const once = materializeCalculator(initialState(), calculatorId);
+    const twice = materializeCalculator(initialState(), calculatorId);
+    assert.ok(once.calculators?.[calculatorId], `materializer creates calculator ${calculatorId}`);
+    assert.deepEqual(
+      once.calculators?.[calculatorId],
+      twice.calculators?.[calculatorId],
+      `materializer is deterministic for calculator ${calculatorId}`,
+    );
+  }
 
   const legacyOnly = toSingleCalculatorState(initialState());
   const normalizedOnce = normalizeLegacyForMissingInstances(legacyOnly);

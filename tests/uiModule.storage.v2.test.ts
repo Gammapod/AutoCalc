@@ -21,7 +21,7 @@ export const runUiModuleStorageV2Tests = (): void => {
     assert.ok(sortControls, "storage module renders sort controls mount");
     assert.equal(
       sortControls?.querySelectorAll(".storage-sort-button").length,
-      8,
+      9,
       "storage module renders all storage sort segments",
     );
     assert.equal(storage?.dataset.storageVisible, "true", "storage module marks storage as visible");
@@ -30,6 +30,31 @@ export const runUiModuleStorageV2Tests = (): void => {
       true,
       "storage module renders storage slots",
     );
+
+    const mainMenuState = {
+      ...state,
+      ui: {
+        ...state.ui,
+        buttonFlags: {
+          ...state.ui.buttonFlags,
+          "mode.main_menu": true,
+          "mode.storage_content_visible": false,
+        },
+      },
+      unlocks: {
+        ...state.unlocks,
+        uiUnlocks: {
+          ...state.unlocks.uiUnlocks,
+          storageVisible: false,
+        },
+      },
+    };
+    renderStorageV2Module(harness.root, mainMenuState, noopDispatch, {
+      inputBlocked: false,
+    });
+    const storageShell = harness.root.querySelector<HTMLElement>(".storage");
+    assert.equal(storageShell?.hidden, false, "main menu keeps storage shell visible");
+    assert.equal(storage?.dataset.storageVisible, "false", "main menu hides storage contents");
 
     const unaryStorageCell = { kind: "key", key: k("unary_inc") } as const;
     const unaryState = {

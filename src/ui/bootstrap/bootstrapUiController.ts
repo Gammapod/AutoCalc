@@ -52,17 +52,26 @@ const getUiShellToggleUrl = (location: Location, mode: UiShellMode): string => {
   return url.toString();
 };
 
-const getOppositeAppMode = (mode: AppMode): AppMode => (mode === "game" ? "sandbox" : "game");
+const getAppModeToggleTarget = (mode: AppMode): AppMode => {
+  if (mode === "game") {
+    return "sandbox";
+  }
+  if (mode === "sandbox") {
+    return "game";
+  }
+  return "game";
+};
 
 const getAppModeToggleUrl = (location: Location, mode: AppMode): string => {
   const url = new URL(location.href);
-  url.searchParams.set("mode", getOppositeAppMode(mode));
+  url.searchParams.set("mode", getAppModeToggleTarget(mode));
   return url.toString();
 };
 
 const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
 
-const toSelectedCalculatorId = (value: string): CalculatorId => (value === "g" ? "g" : "f");
+const toSelectedCalculatorId = (value: string): CalculatorId =>
+  value === "g" ? "g" : value === "menu" ? "menu" : "f";
 
 const renderMatrixEditor = (root: HTMLElement, equations: Record<ControlField, ControlEquation>): void => {
   const headers = ["out", "a", "b", "g", "d", "e", "c"];
@@ -152,7 +161,7 @@ export const createBootstrapUiController = ({
   };
 
   const syncAppModeToggleLink = (): void => {
-    const targetMode = getOppositeAppMode(appMode);
+    const targetMode = getAppModeToggleTarget(appMode);
     refs.toggleAppModeLink.textContent = targetMode === "sandbox"
       ? services.contentProvider.uiText.switches.sandbox
       : services.contentProvider.uiText.switches.game;

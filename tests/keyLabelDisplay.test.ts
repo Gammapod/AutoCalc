@@ -13,10 +13,13 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(k("op_mod")), "\u27E1", "modulo key label renders as \u27E1");
   assert.equal(formatKeyLabel(k("util_undo")), "\u21A9", "undo key label renders as \u21A9");
   assert.equal(formatKeyLabel(k("util_backspace")), "\u2190", "backspace key label remains left arrow");
+  assert.equal(formatKeyLabel(k("system_save_quit_main_menu")), "\uD83D\uDDAB\u27A0\u26ED", "Save&Quit key label renders canonical face");
+  assert.equal(formatKeyLabel(k("system_quit_game")), "Quit Game", "Quit Game key label renders canonical face");
   assert.equal(formatKeyLabel(k("op_add")), "+", "plus key label remains +");
   assert.equal(formatKeyLabel(k("exec_equals")), "=", "equals key label remains =");
   assert.equal(formatKeyLabel(k("digit_1")), "1", "digit label remains literal");
   assert.equal(formatKeyLabel(k("viz_feed")), "FEED", "FEED key label remains FEED");
+  assert.equal(formatKeyLabel(k("viz_title")), "TITLE", "TITLE key label remains TITLE");
   assert.equal(formatKeyLabel(k("toggle_binary_mode")), "b\u2082", "binary-mode settings key label renders canonical face");
   assert.equal(formatKeyLabel(k("toggle_mod_zero_to_delta")), "\u27E1[0, \u{1D6FF})", "mod-range settings key label renders canonical face");
   assert.equal(formatKeyLabel(KEY_ID.viz_factorization), "\u2315", "factorization visualizer key label renders canonical face");

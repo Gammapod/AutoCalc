@@ -1,1 +1,1 @@
-export type AppMode = "game" | "sandbox";
+export type AppMode = "game" | "sandbox" | "main_menu";

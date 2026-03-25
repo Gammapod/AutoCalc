@@ -1,7 +1,7 @@
 import type { Action, GameState } from "../domain/types.js";
 import type { UiEffect } from "../domain/types.js";
 import { createShellController } from "./shellController.js";
-import type { SnapId } from "./shellModel.js";
+import type { ShellViewModel, SnapId } from "./shellModel.js";
 import { createTouchRearrangeController } from "./touchRearrangeController.js";
 import { getMenuA11yState } from "./shellGesturePolicy.js";
 import { renderChecklistV2Module } from "./modules/checklistRenderer.js";
@@ -172,10 +172,12 @@ export const createShellRenderer = (root: Element, rendererOptions: { services?:
     );
   };
 
-  const setMenuModuleClass = (refs: ShellRefs): void => {
+  const setMenuModuleClass = (refs: ShellRefs, model: ShellViewModel): void => {
+    const checklistVisible = model.menuModules.includes("checklist");
     const active = controller.runtime.menuActiveModule;
-    refs.menuNavChecklist.setAttribute("aria-pressed", active === "checklist" ? "true" : "false");
-    refs.menuPanelChecklist.hidden = active !== "checklist";
+    refs.menuNavChecklist.hidden = !checklistVisible;
+    refs.menuNavChecklist.setAttribute("aria-pressed", checklistVisible && active === "checklist" ? "true" : "false");
+    refs.menuPanelChecklist.hidden = !checklistVisible || active !== "checklist";
   };
 
   const applyMenuA11yState = (refs: ShellRefs): void => {
@@ -191,12 +193,19 @@ export const createShellRenderer = (root: Element, rendererOptions: { services?:
     refs.controlsMenu.setAttribute("aria-expanded", menuOpen ? "true" : "false");
   };
 
-  const syncControlDisabledState = (refs: ShellRefs, state: GameState): void => {
+  const syncControlDisabledState = (refs: ShellRefs, state: GameState): ShellViewModel => {
     const model = controller.sync(state);
+    const hasMenuModules = model.menuModules.length > 0;
+    if (!hasMenuModules) {
+      controller.setMenuOpen(false);
+    }
+    refs.controlsMenu.hidden = !hasMenuModules;
+    refs.menu.hidden = !hasMenuModules;
     const gesturesBlocked = touchRearrange.isGestureBlocked() || runtimeState.latestInputBlocked;
     refs.controlsUp.disabled = gesturesBlocked || !controller.canSnapUp(model);
     refs.controlsDown.disabled = gesturesBlocked || !controller.canSnapDown(model);
-    refs.controlsMenu.disabled = gesturesBlocked;
+    refs.controlsMenu.disabled = !hasMenuModules || gesturesBlocked;
+    return model;
   };
 
   const syncViewportTouchAction = (refs: ShellRefs): void => {
@@ -208,8 +217,8 @@ export const createShellRenderer = (root: Element, rendererOptions: { services?:
 
   const syncSnapAndUi = (refs: ShellRefs, state: GameState, includeTransition: boolean): void => {
     refs.shell.dataset.v2InputBlocked = runtimeState.latestInputBlocked ? "true" : "false";
-    syncControlDisabledState(refs, state);
-    setMenuModuleClass(refs);
+    const model = syncControlDisabledState(refs, state);
+    setMenuModuleClass(refs, model);
     applyMenuA11yState(refs);
     syncViewportTouchAction(refs);
     applyTrackTransform(refs, includeTransition);

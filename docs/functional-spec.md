@@ -1,7 +1,7 @@
 Truth 1: Invariants
 # AutoCalc Functional Specification
 
-Last updated: 2026-03-20
+Last updated: 2026-03-25
 Status: Draft v2 (design-truth restructure)
 Purpose: Define player-facing functional truth, independent of implementation structure.
 
@@ -111,18 +111,20 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 #### 3.2.0 Multi-Calculator Session Model
 
-- `FS-MC-01` (MUST): A session supports one or more calculator instances.
-  Rationale: more calculators means a wider possibility space for puzzles.
+- `FS-MC-01` (MUST): A session supports one or more calculator instances, represented by coherent `calculatorOrder` + `calculators` state.
+  Rationale: more calculators means a wider possibility space for puzzles while keeping selection/lifecycle truth explicit.
 - `FS-MC-02` (MUST): Each calculator instance owns isolated execution-local state (total, drafting, slots, roll/history, control matrix variables, and step progress).
   Rationale: multi-calculator play requires local execution truth per instance.
 - `FS-MC-03` (MUST): Progression-owned unlock state remains global and shared across calculators unless explicitly defined otherwise.
   Rationale: progression ownership and auditability remain singular under global state.
-- `FS-MC-05` (MUST): Unlocking an additional calculator creates a deterministic initial calculator runtime state.
-  Rationale: newly granted calculators must be predictable and parity-testable.
+- `FS-MC-05` (MUST): Creating or unlocking an additional calculator (including configured bootstrap materialization) creates a deterministic initial calculator runtime state.
+  Rationale: newly integrated calculators must be predictable and parity-testable regardless of lifecycle entrypoint.
 - `FS-MC-07` (MUST): Save/load round-trip preserves all calculator instances and active-calculator selection.
   Rationale: session continuity must hold for multi-instance progression.
 - `FS-MC-08` (MUST): With only one unlocked calculator, behavior remains equivalent to single-calculator gameplay semantics.
   Rationale: multi-calculator rollout must preserve baseline play and existing progress compatibility.
+- `FS-MC-09` (MUST): Multi-calculator semantics are enabled when `calculatorOrder` contains more than one calculator id; behavior MUST NOT depend on specific calculator id pairs.
+  Rationale: id-agnostic routing prevents regressions when new calculators are introduced.
 
 #### 3.2.1 Core Calculator Surfaces
 
@@ -196,12 +198,13 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
-| FS-MC-01 | One-or-more calculators with exactly one active selection | `reducer/lifecycle`, `v2/parity`, `contracts/multi-calculator-invariants` | unit + parity + contract | partial: runtime path covered; invalid-id runtime guard not explicitly asserted |
+| FS-MC-01 | One-or-more calculators with exactly one active selection and coherent order/instance representation | `reducer/lifecycle`, `v2/parity`, `contracts/multi-calculator-invariants` | unit + parity + contract | partial: baseline coherence + guard coverage exists; broader malformed-state fixtures pending |
 | FS-MC-02 | Calculator execution-local state is isolated per instance | `reducer/input`, `contracts/slot-input-parity`, `contracts/multi-calculator-invariants` | unit + contract | partial: core targeted isolation covered; broader randomized isolation matrix pending |
 | FS-MC-03 | Unlock ownership remains global/shared | `domain/unlock-engine`, `contracts/content-provider-wiring`, `contracts/multi-calculator-invariants` | unit + contract | partial: global unlock scope covered; reversible/exception scope policies not yet modeled |
-| FS-MC-05 | Additional calculator initialization is deterministic | `reducer/lifecycle`, `persistence`, `contracts/multi-calculator-invariants` | unit + contract | partial: deterministic initialization covered; migration-triggered initialization fixtures pending |
+| FS-MC-05 | Additional calculator initialization is deterministic across unlock/bootstrap lifecycle entrypoints | `reducer/lifecycle`, `persistence`, `contracts/multi-calculator-invariants` | unit + contract | partial: deterministic initialization covered; migration-triggered initialization fixtures pending |
 | FS-MC-07 | Persistence preserves all instances and active selection | `persistence`, `v2/persistence-parity` | unit + contract | gap: multi-instance migration fixtures not defined |
 | FS-MC-08 | One-calculator mode preserves baseline semantics | `v2/parity`, `contracts/parity-long-traces`, `contracts/multi-calculator-invariants` | parity + contract | partial: baseline-compat fixture pair exists for core sequences; broader long-trace coverage expansion pending |
+| FS-MC-09 | Multi-calculator enablement and routing are driven by `calculatorOrder` cardinality/coherence, not specific id pairs | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `domain/execution-mode-policy` | contract + unit | partial: property-style coverage for larger calculator sets pending |
 
 ## 4. Cross-Interface Boundary Clauses
 
@@ -213,8 +216,8 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: interaction modality is allowed divergence; game outcome is not.
 - `FS-BND-04` (SHALL): Contract-layer definitions remain implementation-independent from app/ui/infra/content wiring.
   Rationale: contracts should encode stable semantics, not runtime coupling.
-- `FS-BND-06` (MUST): Additional calculator creation/removal occurs only through explicit domain actions/effects.
-  Rationale: calculator lifecycle transitions must remain auditable and deterministic.
+- `FS-BND-06` (MUST): Additional calculator creation/removal occurs through explicit domain actions/effects, except explicitly configured bootstrap materialization policy.
+  Rationale: calculator lifecycle transitions must remain auditable, deterministic, and policy-scoped.
 
 ### 4.1 Traceability (Boundaries)
 
@@ -224,7 +227,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-BND-02 | Calculator does not own unlock predicate/effect definitions | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership tested indirectly |
 | FS-BND-03 | Shell divergence allowed; outcomes must remain equivalent | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity`, `contracts/ui-action-emission`, `contracts/execution-gate-parity` | integration + parity + contract | none |
 | FS-BND-04 | Contracts remain implementation-independent | `app/bootstrap-boundary`, `contracts/shim-inventory`, `browser/import-safety` | boundary + contract | partial: semantic independence asserted via import boundaries |
-| FS-BND-06 | Calculator lifecycle changes require explicit actions/effects | `domain/unlock-engine`, `reducer/lifecycle` | unit | gap: no explicit lifecycle-event contract yet |
+| FS-BND-06 | Calculator lifecycle changes are explicit action/effect or explicit bootstrap policy | `domain/unlock-engine`, `reducer/lifecycle`, `contracts/multi-calculator-invariants` | unit + contract | partial: lifecycle-event matrix can expand with additional calculators |
 
 ## 5. Conceptual Contracts (Spec-Level Interfaces)
 
@@ -261,7 +264,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 
 1. `FS-CS-02` control matrix locality has no explicit dedicated contract/assertion suite.
 2. `FS-BND-01` action-bypass mutation prevention is not directly asserted as a behavior test.
-3. `FS-BND-06` calculator lifecycle explicitness has no action/event contract suite.
+3. `FS-BND-06` lifecycle explicitness now has baseline contract coverage; lifecycle-event matrix expansion remains pending.
 
 ### 7.2 Invariants with only partial or indirect coverage
 

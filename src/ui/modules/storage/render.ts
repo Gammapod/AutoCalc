@@ -25,6 +25,7 @@ const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: ReturnType<typeof get
   { label: "\u2A02", group: "slot_operator", ariaLabel: "Operator keys" },
   { label: "\u23CF", group: "utility", ariaLabel: "Utility keys" },
   { label: "\u2699", group: "settings", ariaLabel: "Settings keys" },
+  { label: "SYS", group: "global_system", ariaLabel: "Global system keys" },
   { label: "M", group: "memory", ariaLabel: "Memory keys" },
   { label: "\u25B6", group: "step", ariaLabel: "Step keys" },
   { label: "\u2191__", group: "visualizers", ariaLabel: "Visualizer keys" },
@@ -191,6 +192,18 @@ export const renderStorageV2Module = (
     throw new Error("Storage UI mount point is missing.");
   }
   const storageSortControlsEl = root.querySelector<HTMLElement>("[data-storage-sort-controls]");
+  const isMainMenuMode = Boolean(state.ui.buttonFlags["mode.main_menu"]);
+  const storageContentVisible = state.ui.buttonFlags["mode.storage_content_visible"] ?? !isMainMenuMode;
+  if (!storageContentVisible) {
+    storageEl.dataset.storageLocked = "true";
+    storageEl.innerHTML = "";
+    storageEl.setAttribute("aria-hidden", "true");
+    storageEl.setAttribute("data-storage-visible", "false");
+    if (storageSortControlsEl) {
+      storageSortControlsEl.innerHTML = "";
+    }
+    return;
+  }
   const storageLocked = options.inputBlocked;
   const runtimeState = getStorageModuleState(root);
   const currentSnapshot: Record<string, boolean> = {

@@ -4,7 +4,7 @@ export type { AppMode } from "../contracts/appMode.js";
 type LocationLike = { href: string } | URL | string;
 type EnvLike = Record<string, unknown> | undefined;
 
-const VALID_MODES = new Set<AppMode>(["game", "sandbox"]);
+const VALID_MODES = new Set<AppMode>(["game", "sandbox", "main_menu"]);
 
 const toAppMode = (value: unknown): AppMode | null => {
   if (typeof value !== "string") {
@@ -34,5 +34,5 @@ export const resolveAppMode = (location: LocationLike, env?: EnvLike): AppMode =
   if (envMode) {
     return envMode;
   }
-  return "sandbox";
+  return "main_menu";
 };

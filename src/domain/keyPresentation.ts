@@ -40,6 +40,11 @@ export const KEY_ID = {
   util_clear_all: "util_clear_all",
   util_backspace: "util_backspace",
   util_undo: "util_undo",
+  system_save_quit_main_menu: "system_save_quit_main_menu",
+  system_quit_game: "system_quit_game",
+  system_mode_game: "system_mode_game",
+  system_new_game: "system_new_game",
+  system_mode_sandbox: "system_mode_sandbox",
   memory_cycle_variable: "memory_cycle_variable",
   memory_adjust_plus: "memory_adjust_plus",
   memory_adjust_minus: "memory_adjust_minus",
@@ -50,6 +55,7 @@ export const KEY_ID = {
   toggle_binary_mode: "toggle_binary_mode",
   viz_graph: "viz_graph",
   viz_feed: "viz_feed",
+  viz_title: "viz_title",
   viz_factorization: "viz_factorization",
   viz_circle: "viz_circle",
   viz_eigen_allocator: "viz_eigen_allocator",
@@ -108,6 +114,11 @@ export type UtilityKeyId =
   | typeof KEY_ID.util_clear_all
   | typeof KEY_ID.util_backspace
   | typeof KEY_ID.util_undo
+  | typeof KEY_ID.system_save_quit_main_menu
+  | typeof KEY_ID.system_quit_game
+  | typeof KEY_ID.system_mode_game
+  | typeof KEY_ID.system_new_game
+  | typeof KEY_ID.system_mode_sandbox
   | typeof KEY_ID.toggle_delta_range_clamp
   | typeof KEY_ID.toggle_mod_zero_to_delta
   | typeof KEY_ID.toggle_step_expansion
@@ -115,6 +126,7 @@ export type UtilityKeyId =
 export type VisualizerKeyId =
   | typeof KEY_ID.viz_graph
   | typeof KEY_ID.viz_feed
+  | typeof KEY_ID.viz_title
   | typeof KEY_ID.viz_factorization
   | typeof KEY_ID.viz_circle
   | typeof KEY_ID.viz_eigen_allocator
@@ -177,16 +189,22 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.util_clear_all, { buttonFace: "C" }],
   [KEY_ID.util_backspace, { buttonFace: "\u2190" }],
   [KEY_ID.util_undo, { buttonFace: "\u21A9" }],
+  [KEY_ID.system_save_quit_main_menu, { buttonFace: "\u{1F5AB}\u27A0\u26ED" }],
+  [KEY_ID.system_quit_game, { buttonFace: "Quit Game" }],
+  [KEY_ID.system_mode_game, { buttonFace: "Continue" }],
+  [KEY_ID.system_new_game, { buttonFace: "New Game" }],
+  [KEY_ID.system_mode_sandbox, { buttonFace: "Sandbox" }],
   [KEY_ID.memory_cycle_variable, { buttonFace: "\u03B1,\u03B2,\u03B3" }],
   [KEY_ID.memory_adjust_plus, { buttonFace: "-\u03BB \u21D2 +\u03B1" }],
   [KEY_ID.memory_adjust_minus, { buttonFace: "+\u03BB \u21D0 -\u03B1" }],
   [KEY_ID.memory_recall, { buttonFace: "M\u2192" }],
-  [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
+  [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1F5AA}, \u{1D6FF})" }],
   [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "\u27E1[0, \u{1D6FF})" }],
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
   [KEY_ID.toggle_binary_mode, { buttonFace: "b\u2082" }],
   [KEY_ID.viz_graph, { buttonFace: "GRAPH" }],
   [KEY_ID.viz_feed, { buttonFace: "FEED" }],
+  [KEY_ID.viz_title, { buttonFace: "TITLE" }],
   [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],
   [KEY_ID.viz_circle, { buttonFace: "\u25EF" }],
   [KEY_ID.viz_eigen_allocator, { buttonFace: "\u03BB" }],

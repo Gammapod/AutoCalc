@@ -67,8 +67,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total");
   assert.deepEqual(
     VISUALIZER_REGISTRY.map((module) => module.id),
-    ["graph", "feed", "factorization", "circle", "eigen_allocator", "algebraic"],
-    "visualizer registry preserves graph/feed/factorization/circle order with eigen allocator and algebraic support",
+    ["graph", "feed", "title", "factorization", "circle", "eigen_allocator", "algebraic"],
+    "visualizer registry preserves graph/feed/title/factorization/circle order with eigen allocator and algebraic support",
   );
   for (const module of VISUALIZER_REGISTRY) {
     assert.equal(module.fit.overflow, "forbid_scroll", `${module.id} visualizer forbids scroll fallback`);
@@ -121,6 +121,14 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "circle", "circle visualizer resolves to circle panel");
+  const withTitleSelected: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      activeVisualizer: "title",
+    },
+  };
+  assert.equal(resolveActiveVisualizerPanel(withTitleSelected), "title", "title visualizer resolves to title panel");
 
   const withEigenSelected: GameState = {
     ...base,
@@ -145,6 +153,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const renderDisplayWindow = createFakeElement();
   const renderGraphDevice = createFakeElement();
   const renderFeedPanel = createFakeElement();
+  const renderTitlePanel = createFakeElement();
   const renderFactorizationPanel = createFakeElement();
   const renderCirclePanel = createFakeElement();
   const renderEigenAllocatorPanel = createFakeElement();
@@ -168,6 +177,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       if (selector === "[data-v2-feed-panel]") {
         return renderFeedPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-title-panel]") {
+        return renderTitlePanel as unknown as Element;
       }
       if (selector === "[data-v2-factorization-panel]") {
         return renderFactorizationPanel as unknown as Element;
@@ -205,6 +217,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderGraphDevice.attributes["aria-hidden"], "false", "graph panel is shown when graph is active");
   assert.equal(renderFeedPanel.innerHTML, "", "inactive feed panel is cleared during graph render");
   assert.equal(renderFeedPanel.attributes["aria-hidden"], "true", "inactive feed panel is hidden during graph render");
+  assert.equal(renderTitlePanel.innerHTML, "", "inactive title panel is cleared during graph render");
+  assert.equal(renderTitlePanel.attributes["aria-hidden"], "true", "inactive title panel is hidden during graph render");
   assert.equal(renderFactorizationPanel.innerHTML, "", "inactive factorization panel is cleared during graph render");
   assert.equal(renderFactorizationPanel.attributes["aria-hidden"], "true", "inactive factorization panel is hidden during graph render");
   assert.equal(renderCirclePanel.innerHTML, "", "inactive circle panel is cleared during graph render");
@@ -236,6 +250,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const host = createFakeElement();
   const graphDevice = createFakeElement();
   const feedPanel = createFakeElement();
+  const titlePanel = createFakeElement();
   const factorizationPanel = createFakeElement();
   const circlePanel = createFakeElement();
   const eigenAllocatorPanel = createFakeElement();
@@ -258,6 +273,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-feed-panel]") {
         return feedPanel as unknown as Element;
       }
+      if (selector === "[data-v2-title-panel]") {
+        return titlePanel as unknown as Element;
+      }
       if (selector === "[data-v2-factorization-panel]") {
         return factorizationPanel as unknown as Element;
       }
@@ -279,11 +297,13 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   };
   clearVisualizerHost(cleanupRoot as unknown as Element);
   assert.equal(feedPanel.innerHTML, "", "clearVisualizerHost clears feed rows");
+  assert.equal(titlePanel.innerHTML, "", "clearVisualizerHost clears title panel");
   assert.equal(factorizationPanel.innerHTML, "", "clearVisualizerHost clears factorization panel");
   assert.equal(circlePanel.innerHTML, "", "clearVisualizerHost clears circle panel");
   assert.equal(eigenAllocatorPanel.innerHTML, "", "clearVisualizerHost clears eigen allocator panel");
   assert.equal(algebraicPanel.innerHTML, "", "clearVisualizerHost clears algebraic panel");
   assert.equal(feedPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides feed panel");
+  assert.equal(titlePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides title panel");
   assert.equal(factorizationPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides factorization panel");
   assert.equal(circlePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides circle panel");
   assert.equal(eigenAllocatorPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides eigen allocator panel");
@@ -296,6 +316,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const firstHost = createFakeElement();
   const firstGraphDevice = createFakeElement();
   const firstFeedPanel = createFakeElement();
+  const firstTitlePanel = createFakeElement();
   const firstFactorizationPanel = createFakeElement();
   const firstCirclePanel = createFakeElement();
   const firstEigenAllocatorPanel = createFakeElement();
@@ -311,6 +332,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       if (selector === "[data-v2-feed-panel]") {
         return firstFeedPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-title-panel]") {
+        return firstTitlePanel as unknown as Element;
       }
       if (selector === "[data-v2-factorization-panel]") {
         return firstFactorizationPanel as unknown as Element;
@@ -335,6 +359,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const secondHost = createFakeElement();
   const secondGraphDevice = createFakeElement();
   const secondFeedPanel = createFakeElement();
+  const secondTitlePanel = createFakeElement();
   const secondFactorizationPanel = createFakeElement();
   const secondCirclePanel = createFakeElement();
   const secondEigenAllocatorPanel = createFakeElement();
@@ -350,6 +375,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       if (selector === "[data-v2-feed-panel]") {
         return secondFeedPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-title-panel]") {
+        return secondTitlePanel as unknown as Element;
       }
       if (selector === "[data-v2-factorization-panel]") {
         return secondFactorizationPanel as unknown as Element;

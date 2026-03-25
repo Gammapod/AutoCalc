@@ -16,12 +16,18 @@ export type DomainEvent =
   | { type: "UnlockAllRequested" }
   | { type: "KeySlotMoved"; fromIndex: number; toIndex: number }
   | { type: "KeySlotsSwapped"; firstIndex: number; secondIndex: number }
-  | { type: "LayoutCellMoved"; fromSurface: "keypad" | "keypad_f" | "keypad_g" | "storage"; fromIndex: number; toSurface: "keypad" | "keypad_f" | "keypad_g" | "storage"; toIndex: number }
+  | {
+      type: "LayoutCellMoved";
+      fromSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      fromIndex: number;
+      toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      toIndex: number;
+    }
   | {
       type: "LayoutCellsSwapped";
-      fromSurface: "keypad" | "keypad_f" | "keypad_g" | "storage";
+      fromSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
       fromIndex: number;
-      toSurface: "keypad" | "keypad_f" | "keypad_g" | "storage";
+      toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
       toIndex: number;
     }
   | { type: "KeypadDimensionsSet"; columns: number; rows: number }

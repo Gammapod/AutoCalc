@@ -19,7 +19,16 @@ import type {
   SlotOperator,
 } from "../../domain/types.js";
 
-export type KeyVisualGroup = "value_expression" | "slot_operator" | "utility" | "memory" | "step" | "settings" | "visualizers" | "execution";
+export type KeyVisualGroup =
+  | "value_expression"
+  | "slot_operator"
+  | "utility"
+  | "memory"
+  | "step"
+  | "settings"
+  | "global_system"
+  | "visualizers"
+  | "execution";
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
   getOperatorInlineFaceLabel(operator);
@@ -58,6 +67,9 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   }
   if (getButtonDefinition(resolveKeyId(key))?.category === "settings") {
     return "settings";
+  }
+  if (getButtonDefinition(resolveKeyId(key))?.category === "global_system") {
+    return "global_system";
   }
   if (getButtonDefinition(resolveKeyId(key))?.category === "memory") {
     return "memory";

@@ -47,6 +47,15 @@ export const renderChecklistV2Module = (root: Element, state: GameState, options
   if (!unlockEl) {
     throw new Error("Checklist mount point is missing.");
   }
+  const isMainMenuMode = Boolean(state.ui.buttonFlags["mode.main_menu"]);
+  const checklistContentVisible = state.ui.buttonFlags["mode.checklist_content_visible"] ?? !isMainMenuMode;
+  if (!checklistContentVisible) {
+    unlockEl.setAttribute("data-checklist-state", "closed");
+    unlockEl.setAttribute("data-checklist-animate", "false");
+    unlockEl.setAttribute("aria-hidden", "true");
+    unlockEl.innerHTML = "";
+    return;
+  }
 
   unlockEl.setAttribute("data-checklist-state", "open");
   unlockEl.setAttribute("data-checklist-animate", "false");

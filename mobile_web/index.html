@@ -38,6 +38,9 @@
         --key-settings-top: #e0b249;
         --key-settings-bottom: #ba8828;
         --key-settings-stroke: #7c5610;
+        --key-global-system-top: #9f7c43;
+        --key-global-system-bottom: #77572d;
+        --key-global-system-stroke: #4f381b;
         --key-memory-top: #8f66b7;
         --key-memory-bottom: #6f4897;
         --key-memory-stroke: #472c63;
@@ -664,6 +667,10 @@
       }
 
       .v2-algebraic-panel {
+        display: none;
+      }
+
+      .v2-title-panel {
         display: none;
       }
 
@@ -1415,6 +1422,12 @@
         color: #ffffff;
       }
 
+      .key--group-global_system {
+        border-color: var(--key-global-system-stroke);
+        background: linear-gradient(180deg, var(--key-global-system-top), var(--key-global-system-bottom));
+        color: #ffffff;
+      }
+
       .key--group-step {
         border-color: var(--key-step-stroke);
         background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
@@ -1451,7 +1464,7 @@
         filter: none;
       }
 
-      .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-settings):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
+      .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-settings):not(.key--group-global_system):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
         background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
       }
 
@@ -1473,6 +1486,10 @@
 
       .key.key--toggle-active.key--group-settings:not(:disabled) {
         background: linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
+      }
+
+      .key.key--toggle-active.key--group-global_system:not(:disabled) {
+        background: linear-gradient(180deg, var(--key-global-system-bottom), var(--key-global-system-top));
       }
 
       .key.key--toggle-active.key--group-step:not(:disabled) {
@@ -2291,6 +2308,52 @@
         pointer-events: auto;
       }
 
+      body[data-ui-shell="mobile"] .v2-title-panel,
+      body[data-ui-shell="desktop"] .v2-title-panel {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        padding: 10px 12px 30px;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: translateY(16px);
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="title"] .v2-title-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="title"] .v2-title-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-title-version,
+      body[data-ui-shell="desktop"] .v2-title-version {
+        position: absolute;
+        top: 8px;
+        left: 10px;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: 0.76rem;
+        line-height: 1;
+        letter-spacing: 0.04em;
+        color: #b4f1d3;
+        text-shadow: 0 0 6px rgba(180, 241, 211, 0.36);
+      }
+
+      body[data-ui-shell="mobile"] .v2-title-brand,
+      body[data-ui-shell="desktop"] .v2-title-brand {
+        font-family: "Franklin Gothic Medium", "Trebuchet MS", "Segoe UI", sans-serif;
+        font-size: clamp(1.8rem, 4.2vw, 2.35rem);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #d9ffe9;
+        text-shadow: 0 0 14px rgba(188, 255, 214, 0.4);
+      }
+
       body[data-ui-shell="mobile"] .v2-algebraic-equation,
       body[data-ui-shell="desktop"] .v2-algebraic-equation {
         width: 100%;
@@ -2574,7 +2637,9 @@
         body[data-ui-shell="mobile"] .v2-factorization-panel,
         body[data-ui-shell="desktop"] .v2-factorization-panel,
         body[data-ui-shell="mobile"] .v2-feed-panel,
-        body[data-ui-shell="desktop"] .v2-feed-panel {
+        body[data-ui-shell="desktop"] .v2-feed-panel,
+        body[data-ui-shell="mobile"] .v2-title-panel,
+        body[data-ui-shell="desktop"] .v2-title-panel {
           transition-duration: 1ms;
           transform: none;
         }
@@ -2814,6 +2879,7 @@
                         </div>
                       </section>
                       <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                      <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
                       <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                       <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
                       <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>

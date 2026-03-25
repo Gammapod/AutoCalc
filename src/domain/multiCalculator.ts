@@ -1,11 +1,10 @@
 import { buildAllocatorSnapshot, sanitizeLambdaControl } from "./lambdaControl.js";
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
-import { KEY_ID } from "./keyPresentation.js";
-import { KEYPAD_DEFAULT_COLUMNS, KEYPAD_DEFAULT_ROWS, defaultDrawerKeyLayout } from "./state.js";
-import type { CalculatorId, CalculatorInstanceState, GameState, Key } from "./types.js";
+import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
+import { createSeededKeyLayout } from "./calculatorSeedManifest.js";
 
-export const CALCULATOR_ORDER: readonly CalculatorId[] = ["f", "g"];
+export const CALCULATOR_ORDER: readonly CalculatorId[] = ["menu", "f", "g"];
 export const MAIN_CALCULATOR_ID: CalculatorId = "f";
 
 const cloneUi = (ui: GameState["ui"]): GameState["ui"] => ({
@@ -36,18 +35,7 @@ const createDefaultFCalculator = (state: GameState): CalculatorInstanceState => 
 });
 
 const createDefaultGCalculator = (): CalculatorInstanceState => {
-  const keypadColumns = 4;
-  const keypadRows = 2;
-  const keyLayout = defaultDrawerKeyLayout(keypadColumns, keypadRows);
-  const assign = (row: number, col: number, key: Key): void => {
-    const index = (keypadRows - row) * keypadColumns + (keypadColumns - col);
-    if (index >= 0 && index < keyLayout.length) {
-      keyLayout[index] = { kind: "key", key };
-    }
-  };
-  assign(2, 2, KEY_ID.toggle_binary_mode);
-  assign(2, 1, KEY_ID.exec_step_through);
-  assign(1, 1, KEY_ID.unary_not);
+  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout("g");
 
   const lambdaControl = sanitizeLambdaControl({
     maxPoints: controlProfiles.g.starts.gamma,
@@ -63,7 +51,7 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
     storageLayout: [],
     keypadColumns,
     keypadRows,
-    activeVisualizer: "total",
+    activeVisualizer,
     memoryVariable: "α",
     buttonFlags: {},
   };
@@ -96,7 +84,81 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
   };
 };
 
+const createDefaultMenuCalculator = (): CalculatorInstanceState => {
+  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout("menu");
+
+  const lambdaControl = sanitizeLambdaControl({
+    maxPoints: controlProfiles.menu.starts.gamma,
+    alpha: controlProfiles.menu.starts.alpha,
+    beta: controlProfiles.menu.starts.beta,
+    gamma: controlProfiles.menu.starts.gamma,
+    gammaMinRaised: false,
+  }, controlProfiles.menu);
+
+  const baseUi: GameState["ui"] = {
+    keyLayout,
+    keypadCells: fromKeyLayoutArray(keyLayout, keypadColumns, keypadRows),
+    storageLayout: [],
+    keypadColumns,
+    keypadRows,
+    activeVisualizer,
+    memoryVariable: "α",
+    buttonFlags: {},
+  };
+
+  return {
+    id: "menu",
+    symbol: "menu",
+    calculator: {
+      total: { kind: "rational", value: { num: 0n, den: 1n } },
+      pendingNegativeTotal: false,
+      singleDigitInitialTotalEntry: true,
+      rollEntries: [],
+      rollAnalysis: {
+        stopReason: "none",
+        cycle: null,
+      },
+      operationSlots: [],
+      draftingSlot: null,
+      stepProgress: {
+        active: false,
+        seedTotal: null,
+        currentTotal: null,
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
+    },
+    lambdaControl,
+    allocator: buildAllocatorSnapshot(lambdaControl, controlProfiles.menu),
+    ui: baseUi,
+  };
+};
+
+const resolveCalculatorOrder = (calculators: Partial<Record<CalculatorId, CalculatorInstanceState>>): CalculatorId[] =>
+  CALCULATOR_ORDER.filter((calculatorId) => Boolean(calculators[calculatorId]));
+
 export const ensureCalculatorInstances = (state: GameState): GameState => {
+  const calculators = state.calculators;
+  if (calculators && Object.keys(calculators).length > 0) {
+    const coherentOrder = (state.calculatorOrder ?? []).filter((calculatorId) => Boolean(calculators[calculatorId]));
+    const resolvedOrder = coherentOrder.length > 0 ? coherentOrder : resolveCalculatorOrder(calculators);
+    const resolvedActiveCalculatorId = state.activeCalculatorId && calculators[state.activeCalculatorId]
+      ? state.activeCalculatorId
+      : (resolvedOrder[0] ?? MAIN_CALCULATOR_ID);
+    if (
+      resolvedOrder.length === (state.calculatorOrder?.length ?? 0)
+      && resolvedOrder.every((id, index) => state.calculatorOrder?.[index] === id)
+      && resolvedActiveCalculatorId === state.activeCalculatorId
+    ) {
+      return state;
+    }
+    return {
+      ...state,
+      calculatorOrder: resolvedOrder,
+      activeCalculatorId: resolvedActiveCalculatorId,
+    };
+  }
+
   if (state.calculators?.f) {
     return state;
   }
@@ -104,29 +166,81 @@ export const ensureCalculatorInstances = (state: GameState): GameState => {
   return {
     ...state,
     calculators: { ...(state.calculators ?? {}), f },
-    calculatorOrder: state.calculators?.g ? [...CALCULATOR_ORDER] : ["f"],
+    calculatorOrder: ["f"],
     activeCalculatorId: state.activeCalculatorId ?? MAIN_CALCULATOR_ID,
   };
 };
 
-export const materializeCalculatorG = (state: GameState): GameState => {
+const hasCoherentCalculatorOrder = (state: GameState): boolean => {
+  const order = state.calculatorOrder ?? [];
+  if (order.length === 0) {
+    return false;
+  }
+  const calculators = state.calculators ?? {};
+  return order.every((calculatorId) => Boolean(calculators[calculatorId]));
+};
+
+export const isMultiCalculatorSession = (state: GameState): boolean => {
   const withInstances = ensureCalculatorInstances(state);
-  if (withInstances.calculators?.g) {
+  return (withInstances.calculatorOrder?.length ?? 0) > 1 && hasCoherentCalculatorOrder(withInstances);
+};
+
+export const materializeCalculatorMenu = (state: GameState): GameState => {
+  const withInstances = ensureCalculatorInstances(state);
+  if (withInstances.calculators?.menu) {
     return withInstances;
   }
+  const nextCalculators = {
+    ...withInstances.calculators,
+    menu: createDefaultMenuCalculator(),
+  };
   return {
     ...withInstances,
-    calculators: {
-      ...withInstances.calculators,
-      g: createDefaultGCalculator(),
-    },
-    calculatorOrder: [...CALCULATOR_ORDER],
+    calculators: nextCalculators,
+    calculatorOrder: resolveCalculatorOrder(nextCalculators),
     activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
   };
 };
 
-export const resolveActiveCalculatorId = (state: GameState): CalculatorId =>
-  state.activeCalculatorId ?? MAIN_CALCULATOR_ID;
+export const materializeCalculatorG = (state: GameState): GameState => {
+  const withInstances = ensureCalculatorInstances(materializeCalculator(state, "f"));
+  if (withInstances.calculators?.g) {
+    return withInstances;
+  }
+  const nextCalculators = {
+    ...withInstances.calculators,
+    g: createDefaultGCalculator(),
+  };
+  return {
+    ...withInstances,
+    calculators: nextCalculators,
+    calculatorOrder: resolveCalculatorOrder(nextCalculators),
+    activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
+  };
+};
+
+export const materializeCalculator = (state: GameState, calculatorId: CalculatorId): GameState => {
+  if (calculatorId === "f") {
+    return ensureCalculatorInstances(state);
+  }
+  if (calculatorId === "g") {
+    return materializeCalculatorG(state);
+  }
+  return materializeCalculatorMenu(state);
+};
+
+export const resolveActiveCalculatorId = (state: GameState): CalculatorId => {
+  if (state.activeCalculatorId) {
+    return state.activeCalculatorId;
+  }
+  const order = state.calculatorOrder ?? [];
+  if (order.length > 0) {
+    return order[0];
+  }
+  const calculators = state.calculators ?? {};
+  const fallback = resolveCalculatorOrder(calculators)[0];
+  return fallback ?? MAIN_CALCULATOR_ID;
+};
 
 export const projectCalculatorToLegacy = (state: GameState, calculatorId: CalculatorId): GameState => {
   const withInstances = ensureCalculatorInstances(state);
@@ -166,7 +280,7 @@ export const commitLegacyProjection = (previous: GameState, projected: GameState
       ...base.calculators,
       [calculatorId]: nextInstance,
     },
-    calculatorOrder: base.calculatorOrder ?? [...CALCULATOR_ORDER],
+    calculatorOrder: base.calculatorOrder ?? (base.calculators?.g ? ["f", "g"] : ["f"]),
     activeCalculatorId: projected.activeCalculatorId ?? calculatorId,
   };
 };
@@ -179,11 +293,11 @@ export const resolveFormulaSymbol = (state: GameState): "f" | "g" => {
 export const withActiveCalculator = (state: GameState, calculatorId: CalculatorId): GameState =>
   projectCalculatorToLegacy(ensureCalculatorInstances(state), calculatorId);
 
-export const toCalculatorSurface = (calculatorId: CalculatorId): "keypad_f" | "keypad_g" =>
-  calculatorId === "g" ? "keypad_g" : "keypad_f";
+export const toCalculatorSurface = (calculatorId: CalculatorId): "keypad_f" | "keypad_g" | "keypad_menu" =>
+  calculatorId === "g" ? "keypad_g" : calculatorId === "menu" ? "keypad_menu" : "keypad_f";
 
-export const fromCalculatorSurface = (surface: "keypad_f" | "keypad_g"): CalculatorId =>
-  surface === "keypad_g" ? "g" : "f";
+export const fromCalculatorSurface = (surface: "keypad_f" | "keypad_g" | "keypad_menu"): CalculatorId =>
+  surface === "keypad_g" ? "g" : surface === "keypad_menu" ? "menu" : "f";
 
 export const normalizeLegacyForMissingInstances = (state: GameState): GameState =>
   ensureCalculatorInstances(state);

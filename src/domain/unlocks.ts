@@ -7,7 +7,7 @@ import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 import { resolveActiveCalculatorId } from "./multiCalculator.js";
-import { materializeCalculatorG } from "./multiCalculator.js";
+import { materializeCalculator } from "./multiCalculator.js";
 import { commitLegacyProjection, projectCalculatorToLegacy } from "./multiCalculator.js";
 import { projectControlFromState } from "./controlProjection.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
@@ -216,7 +216,7 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
     });
   }
   if (effect.type === "increase_allocator_max_points_for_calculator") {
-    const baseState = effect.calculatorId === "g" ? materializeCalculatorG(state) : state;
+    const baseState = materializeCalculator(state, effect.calculatorId);
     const activeCalculatorId = resolveActiveCalculatorId(baseState);
     if (effect.calculatorId === activeCalculatorId) {
       const projection = projectControlFromState(baseState);
@@ -257,10 +257,7 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
     return moveKeyToCoord(state, effect);
   }
   if (effect.type === "unlock_calculator") {
-    if (effect.calculatorId === "g") {
-      return materializeCalculatorG(state);
-    }
-    return state;
+    return materializeCalculator(state, effect.calculatorId);
   }
   return state;
 };

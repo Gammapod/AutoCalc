@@ -12,7 +12,8 @@ import {
   STORAGE_COLUMNS,
   STORAGE_INITIAL_SLOTS,
 } from "./state.js";
-import type { GameState, Key, KeyCell, LayoutCell, VisualizerId } from "./types.js";
+import type { CalculatorId, GameState, Key, KeyCell, LayoutCell, VisualizerId } from "./types.js";
+import { isMultiCalculatorSession } from "./multiCalculator.js";
 
 const EMPTY_PLACEHOLDER: LayoutCell = { kind: "placeholder", area: "empty" };
 
@@ -76,9 +77,6 @@ const canonicalCellForKey = (key: Key): KeyCell => {
   }
   return { kind: "key", key };
 };
-
-const isDualCalculatorState = (state: GameState): boolean =>
-  Boolean(state.calculators?.f?.ui && state.calculators?.g?.ui);
 
 const dedupeKeyLayout = (layout: LayoutCell[], seen: Set<Key>): LayoutCell[] => {
   let next: LayoutCell[] | null = null;
@@ -234,7 +232,7 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
   const unlocked = new Set<Key>(iterUnlockedButtons(state));
   const seen = new Set<Key>();
 
-  if (!isDualCalculatorState(state)) {
+  if (!isMultiCalculatorSession(state)) {
     const keyLayout = dedupeKeyLayout(state.ui.keyLayout, seen);
     const filteredStorage = dedupeAndFilterStorage(state.ui.storageLayout, seen, unlocked);
     const storageLayout = ensureUnlockedKeysPresent(filteredStorage, seen, unlocked);
@@ -251,34 +249,46 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
     };
   }
 
-  const f = state.calculators!.f!;
-  const g = state.calculators!.g!;
-  const fLayout = dedupeKeyLayout(f.ui.keyLayout, seen);
-  const gLayout = dedupeKeyLayout(g.ui.keyLayout, seen);
+  const calculators = state.calculators ?? {};
+  const orderedCalculatorIds = (state.calculatorOrder ?? Object.keys(calculators) as CalculatorId[])
+    .filter((id) => Boolean(calculators[id]?.ui));
+  if (orderedCalculatorIds.length === 0) {
+    return state;
+  }
   const filteredStorage = dedupeAndFilterStorage(state.ui.storageLayout, seen, unlocked);
   const storageLayout = ensureUnlockedKeysPresent(filteredStorage, seen, unlocked);
 
-  const fLayoutUi = (fLayout === f.ui.keyLayout && storageLayout === f.ui.storageLayout)
-    ? f.ui
-    : withLayout(f.ui, fLayout, storageLayout);
-  const gLayoutUi = (gLayout === g.ui.keyLayout && storageLayout === g.ui.storageLayout)
-    ? g.ui
-    : withLayout(g.ui, gLayout, storageLayout);
-  const fUi = applyLockedInstalledToggleSemantics(fLayoutUi, unlocked);
-  const gUi = applyLockedInstalledToggleSemantics(gLayoutUi, unlocked);
-  const activeCalculatorId = state.activeCalculatorId === "g" ? "g" : "f";
-  const rootUi = activeCalculatorId === "g" ? gUi : fUi;
-  if (fUi === f.ui && gUi === g.ui && rootUi === state.ui) {
+  const nextCalculators = { ...calculators };
+  let calculatorsChanged = false;
+  const uiByCalculatorId: Partial<Record<CalculatorId, GameState["ui"]>> = {};
+  for (const calculatorId of orderedCalculatorIds) {
+    const instance = calculators[calculatorId];
+    if (!instance) {
+      continue;
+    }
+    const dedupedLayout = dedupeKeyLayout(instance.ui.keyLayout, seen);
+    const layoutUi = (dedupedLayout === instance.ui.keyLayout && storageLayout === instance.ui.storageLayout)
+      ? instance.ui
+      : withLayout(instance.ui, dedupedLayout, storageLayout);
+    const resolvedUi = applyLockedInstalledToggleSemantics(layoutUi, unlocked);
+    uiByCalculatorId[calculatorId] = resolvedUi;
+    if (resolvedUi !== instance.ui) {
+      calculatorsChanged = true;
+      nextCalculators[calculatorId] = { ...instance, ui: resolvedUi };
+    }
+  }
+
+  const activeCalculatorId = (state.activeCalculatorId && uiByCalculatorId[state.activeCalculatorId])
+    ? state.activeCalculatorId
+    : (orderedCalculatorIds[0] ?? "f");
+  const rootUi = uiByCalculatorId[activeCalculatorId] ?? state.ui;
+  if (!calculatorsChanged && rootUi === state.ui) {
     return state;
   }
 
   return {
     ...state,
     ui: rootUi,
-    calculators: {
-      ...state.calculators,
-      f: { ...f, ui: fUi },
-      g: { ...g, ui: gUi },
-    },
+    calculators: nextCalculators,
   };
 };
