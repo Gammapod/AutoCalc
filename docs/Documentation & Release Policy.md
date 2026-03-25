@@ -4,7 +4,7 @@ TODO (finished): Compare information in all existing docs against existing funct
 
 TODO (finished): Consolidate remaining information into categories; propose consolidations that will take the form of invariant files ux-spec and calc-spec, containing UX invariants and Calculator balancing details, respectively. Flag any contradictions for review before final versions. Any information not related to UX or content/feature balancing will be further processed.
 
-TODO: Consolidate remaining information into Planned Releases (see that doc for more detailed TODO). Any information not related to release plans will be further processed.
+TODO (finished): Consolidate remaining information into Planned Releases (see that doc for more detailed TODO). Any information not related to release plans will be further processed.
 
 TODO: Review any information not processed by the above rules; flag as potentially deletable.
 
