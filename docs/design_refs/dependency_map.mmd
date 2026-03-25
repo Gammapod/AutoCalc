@@ -1,146 +1,161 @@
+%% Truth 4: Keep
+
 flowchart TD
 
-%% subgraph Inputs ["Value Expression"]
-%%     Iim["i"]
-%%     Idigits["0-9"]
-%% end
-%% subgraph Utilities ["Utilities"]
-%%     Uc["C"]
-%%     Uce["CE"]
-%% end
-%% subgraph Expressable ["Expressable Values"]
-%%     NP["ℙ (2)"]
-%%     NN["ℕ (1)"]
-%%     NZ["ℤ (-1)"]
-%%     NQ["ℚ (1/2)"]
-%%     NA["𝔸 (√2)"]
-%%     NR["ℝ (π)"]
-%%     NC["ℂ (√-1)"]
-%%     NP --> NN --> NZ --> NQ --> NA --> NR --> NC
-%% end
+subgraph Numbers ["Numbers"]
 
-subgraph Digits ["Digit Manipulation"]
-    Dsort["d⇡"]
-    Dcount["d##"]
-    Ddigitn["a#b"]
-    Dmirror["d⇋"]
-    Ddigsum["dΣ"]
-    Ddigsq["d²Σ"]
+    subgraph Digits ["Digit Manipulation"]
+    %% Currently a dead-end; could lead to more complex cycles
+        Rdig["a⪼b"]
+        %% Primitive, takes last b digits of a (respects base setting)
+        %% Expanded form `[ a◇(10^b) ]`
+        Ddigitn["a#b"]
+        %% Expanded form `[ a⪼b - a⪼(b-1) ÷ 10^(b-1)) ]` <--- "10" changes respecting base
+        Ddigsum["dΣn"]
+        %% Expanded form `[ ..d#3 + d#2 + d#1 ] <--- as many entries as digits in operand (respecting current base)
+        Ddigsq["d²Σn"]
+        %% Expanded form `[ ..(d#2)^2 + (d#1)^2 ] <--- as many entries as digits in operand (respecting current base)
+        Dsort["d⇡n"]
+        Drotate["a⟲b"]
+        Dcount["d##n"]
+        Dmirror["d⇋n"]
+
+        Rdig -->|Generalize| Ddigitn
+        Ddigitn --> Dcount
+        Dcount --> Ddigsum
+        Dcount --> Ddigsq
+        Dsort --> Drotate
+        Dsort --> Dmirror
+    end
+
+    subgraph ComplexAlgebra ["ℂ×ℚ = {q + c × √-1 | a,b ∈ ℚ"]
+        Ri["n×i"]
+        %% Primitive
+        %% Expanded form `[ × √-1 ]`
+        Rradian["n×2π"]
+        Rimag["Im(n)"]
+        %% Returns the imaginary component (`b` from `a + b×i`) from part of n, 0 possible
+        Rreal["Re(n)"]
+        %% Returns the non-imaginary component (`a` from `a + b×i`) from part of n, 0 possible
+        Rmodulus["|n|"]
+        %% Expanded form `[ √(Im^2 + Re^2) ]`
+        Rdiv["a÷b"]
+        Rradical["b√a"]
+        %% Might need a better notation format
+
+        Ri --> Rimag --> Rmodulus
+        Ri --> Rreal --> Rmodulus
+        Ri --> Rradian --> Trig
+    end
+
+
+    subgraph Logic ["Logical Predicates"]
+        Lnot["¬n"]
+        %% Primitive
+        Llte["a≤b"]
+        %% Expanded form `[ ¬(a-b) ]
+        Llt["a\< b"]
+        %% Expanded form `[ (a≤b) × ¬(¬(a-b))]
+        Ldiv["a|b"]
+        %% Expanded form `[ ¬(a◇b) ]
+        Leq["a≡b"]
+        %% Expanded form `[ ¬((a<b) + (b<a)) ]
+        Umax["╧"]
+        %% Expanded form `[ ((a<b)×b) + ¬((a≤b)×a) ]`
+        Umin["╤"]  
+        %% Expanded form `[ ((a<b)×a) + ¬((a≤b)×b) ]`
+
+        Lnot --> Llte --> Llt
+        Lnot --> Ldiv
+        Llt --> Leq
+        Llt --> Umin
+        Llt --> Umax
+        Llte --> Dsort
+    end
+
+    subgraph Arithmetic ["ℕ (1) | ℤ (-1)"]
+        Ainc["++"]
+        %% Primitive
+        Aminus["a−b"]
+        Aplus["a\+b"]
+        Amul["a×b"]
+        Apow["a^b"]
+        Aneg["n±"]
+        Aeudiv["a⫽b"]
+        %% Primitive
+        Amod["a◇b"]
+        %% Expanded form `[ (a÷b) - (a⫽b) ]`
+        Afloor["⌊n⌋"]
+        %% Expanded form `[ a-a◇1 ]`
+        Aceil["⌈n⌉"]
+        %% Expanded form `[ ⌊n⌋++ ]`
+
+        Ainc -->|Iterate| Aplus
+        Aplus -->|Iterate| Amul
+        Amul -->|Iterate| Apow
+
+
+        Aplus -->|Invert| Aminus
+
+        Aminus --> Aneg
+        Afloor --> Aceil
+        Aeudiv --> Amod
+        Amod --> Afloor
+    end
+
+    subgraph Theory ["ℙ (2)"]
+    %% Has a lot of functions designed, but the way the user will interact with these is not planned yet
+        Tpadic["n∥p"]
+        %% Primitive
+        Tntop["ℙ(n)"]
+        %% Primitive
+        %% Returns nth prime. ℙ(3) = 5
+        Tpton["ℙ^-1(p)"]
+        %% Returns index of prime p. ℙ^-1(5) = 3
+        Texponent["e"]
+        Tprime_expansion["∏ ℙ^e"]
+        Tomega["Ω"]
+        %% Expanded form `[ Σe_p ]`
+        Ttotient["φ"]
+        %% Expanded form `[ n × ∏(1-p^-1) ]`
+        Tdivisor_sum["σ"]
+        %% Expanded form `[ Σ( (d|n) × d) ]`
+        Tgcd["⋀"]
+        %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
+        Tlcm["⋁"]
+        %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`
+        Tres["n⟐p"]
+        %% %% Expanded form `n⟐p -> n/(p^(n∥p))`
+        %% %% Expanded form `60⟐2=15 -> 60/(2^2)=15`
+
+        Tntop --> Ttotient
+
+        Tntop --> Tpton
+        Tprime_expansion --> Tomega
+        Tpton --> Tprime_expansion
+        Texponent --> Tgcd
+        Tntop --> Tgcd
+        Umax --> Tgcd
+
+        Tntop --> Tlcm
+        Umin --> Tlcm
+        Texponent --> Tlcm
+        Tntop --> Tpadic --> Texponent
+        Tpadic --> Tres
+    end
+Amod --> Digits
+Aminus --> Logic
+Amul --> Logic
+Aplus --> Logic
+Ldiv --> Theory
+Apow --> Theory
+Amod --> ComplexAlgebra
+Aneg --> Ri
+Rdiv --> Ri
+Rradical --> Ri
+Amul -->|Invert| ComplexAlgebra
+Apow -->|Invert| ComplexAlgebra
+Amod -->|a◇inf| ComplexAlgebra
+%% It's conceptual, just go with it for now
 end
 
-subgraph Logic ["Logical Predicates"]
-    Lnot["¬"]
-    %% Expanded form `[ ≤ 0 ]`
-    Llte["≤"]
-    %% Expanded form `[ ¬(a-b) ]
-    Llt["<"]
-    %% Expanded form `[ (a≤b) × ¬(¬(a-b))]
-    Ldiv["|"]
-    %% Expanded form `[ ¬(a◇b) ]
-    Leq["≡"]
-    %% Expanded form `[ ¬((a<b) + (b<a)) ]
-    Land["×"]
-    Lor["\+"]
-    
-    Lnot --> Llte --> Llt
-    Lnot --> Ldiv
-    Land --> Llt --> Leq
-    Lor --> Leq
-end
-
-subgraph Arithmetic ["Arithmetic"]
-    Ainc["++"]
-    Aminus["a−b"]
-    Aplus["a\+b"]
-    Amul["a×b"]
-    Aneg["n±"]
-    Aabs["|n|"]
-    %% Expanded form `[ (¬(n) × ±n) + ((0<n) × n) ]`
-    Adiv["a÷b"]
-    Afloor["⌊n⌋"]
-    %% Expanded form `[ a-a◇1 ]`
-    Aeudiv["a⫽b"]
-    %% Expanded form `[ a÷b - FrAC ] `
-    Aceil["⌈n⌉"]
-    %% Expanded form `[ ⌊n⌋++ ]`
-    Apow["a^b"]
-    Amod["a◇b"]
-    %% Expanded form `[ (a÷b) - (a⫽b) ]`
-
-    Ainc -->|Iterate| Aplus
-    Aplus -->|Iterate| Amul
-    Amul -->|Iterate| Apow
-
-    Amod --> Afloor
-    Adiv --> Aeudiv
-    Aeudiv --> Amod
-    Afloor --> Aceil
-
-    Aplus -->|Invert| Aminus
-    Amul -->|Invert| Adiv
-
-    Aminus --> Aneg    
-    Aneg --> Aabs
-end
-
-subgraph Theory ["Number Theory"]
-    Tntop["ℙ(n)"]
-    %% Returns nth prime. ℙ(3) = 5
-    Tpton["ℙ^-1(p)"]
-    %% Returns index of prime p. ℙ^-1(5) = 3
-    Tpadic["n∥p"]
-    %% Expanded form `?`
-    Texponent["e"]
-    Tprime_expansion["∏ ℙ^e"]
-    Tomega["Ω"]
-    %% Expanded form `[ Σe_p ]`
-    Ttotient["φ"]
-    %% Expanded form `[ n × ∏(1-p^-1) ]`
-    Tdivisor_sum["σ"]
-    %% Expanded form `[ Σ( (d|n) × d) ]`
-    Tgcd["⋀"]
-    %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
-    Tlcm["⋁"]
-    %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`
-    Tmax["╧"]
-    %% Expanded form `[ ((a<b)×b) + ¬((a≤b)×a) ]`
-    Tmin["╤"]  
-    %% Expanded form `[ ((a<b)×a) + ¬((a≤b)×b) ]`
-    Tres["n⟐p"]
-    %% %% Expanded form `n⟐p -> n/(p^(n∥p))`
-    %% %% Expanded form `60⟐2=15 -> 60/(2^2)=15`
-
-    Tntop --> Ttotient
-
-    Tntop --> Tpton --> Tprime_expansion --> Tomega
-
-    Tntop --> Tgcd
-    Texponent --> Tgcd
-    Tmax --> Tgcd
-
-    Tntop --> Tlcm
-    Texponent --> Tlcm
-    Tmin --> Tlcm
-    Tntop --> Tpadic --> Texponent
-    Tpadic --> Tres
-end
-
-Ldiv --> Tpadic
-Llt --> Aabs
-Amod --> Ldiv
-Apow --> Tprime_expansion
-Apow --> Tpadic
-Ldiv --> Tdivisor_sum
-Llt --> Tmin
-Llt --> Tmax
-Aminus --> Llte
-Amul --> Land
-Aplus --> Lor
-
-    %% 
-%% Idigits --> NN
-%% 
-%% Aneg --> NZ
-%% 
-%% Adiv --> NQ
-%% Iim --> NC

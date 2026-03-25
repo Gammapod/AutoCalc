@@ -1,3 +1,9 @@
+Truth 2: Releases
+
+TODO: For each planned release listed here, compare with temp_plan. Update each mileston with any relevant harmonizable details from temp_plan.
+
+TODO: Compare all planned releases against temp_plan. 
+
 # Release v0.9.0: Pre-Launch
 
 ## Planned Release: Unlock Rule Systematization (Design)

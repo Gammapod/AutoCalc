@@ -1,3 +1,4 @@
+Truth 1: Invariants
 # AutoCalc Functional Specification
 
 Last updated: 2026-03-20
