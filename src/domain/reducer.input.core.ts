@@ -36,9 +36,15 @@ import {
 import { isKeyUsableForInput } from "./keyUnlocks.js";
 import { clearOperationEntry, createInitialStepProgressState, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import {
+  BINARY_ADD_RESULT_ONE_SEEN_ID,
   BINARY_MODE_FLAG,
+  BINARY_MUL_RESULT_ZERO_SEEN_ID,
+  C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID,
   CHECKLIST_UNLOCK_ID,
+  NAN_RESULT_SEEN_ID,
   OVERFLOW_ERROR_SEEN_ID,
+  OVERFLOW_ERROR_IN_BINARY_MODE_SEEN_ID,
+  UNDO_WHILE_FEED_VISIBLE_SEEN_ID,
 } from "./state.js";
 import { resolveKeyActionHandlerId, type KeyActionHandlerId } from "./keyActionHandlers.js";
 import type {
@@ -549,6 +555,16 @@ const resolveRollDiagnosticContext = (base: GameState): RollDiagnosticContext | 
   };
 };
 
+const markCompletedUnlockId = (state: GameState, unlockId: string): GameState => {
+  if (state.completedUnlockIds.includes(unlockId)) {
+    return state;
+  }
+  return {
+    ...state,
+    completedUnlockIds: [...state.completedUnlockIds, unlockId],
+  };
+};
+
 const resolveRollDiagnosticPatch = (
   context: RollDiagnosticContext,
   operationSlots: GameState["calculator"]["operationSlots"],
@@ -969,7 +985,24 @@ const finalizeTerminalExecution = (
   };
   const withRoll = withRollDiagnosticsApplied(withRollBase, finalized.calculator.operationSlots);
   const withOverflowMarker = evaluation.errorKind === "overflow" ? markOverflowErrorSeen(withRoll) : withRoll;
-  return applyUnlocks(withOverflowMarker, getUnlockCatalog());
+  let withMarkers = withOverflowMarker;
+  if (evaluation.nextTotal.kind === "nan") {
+    withMarkers = markCompletedUnlockId(withMarkers, NAN_RESULT_SEEN_ID);
+  }
+  if (evaluation.errorKind === "overflow" && finalized.ui.buttonFlags[BINARY_MODE_FLAG]) {
+    withMarkers = markCompletedUnlockId(withMarkers, OVERFLOW_ERROR_IN_BINARY_MODE_SEEN_ID);
+  }
+  if (finalized.ui.buttonFlags[BINARY_MODE_FLAG] && evaluation.nextTotal.kind === "rational" && evaluation.nextTotal.value.den === 1n) {
+    const hasAdd = finalized.calculator.operationSlots.some((slot) => slot.kind !== "unary" && slot.operator === KEY_ID.op_add);
+    const hasMul = finalized.calculator.operationSlots.some((slot) => slot.kind !== "unary" && slot.operator === KEY_ID.op_mul);
+    if (hasAdd && evaluation.nextTotal.value.num === 1n) {
+      withMarkers = markCompletedUnlockId(withMarkers, BINARY_ADD_RESULT_ONE_SEEN_ID);
+    }
+    if (hasMul && evaluation.nextTotal.value.num === 0n) {
+      withMarkers = markCompletedUnlockId(withMarkers, BINARY_MUL_RESULT_ZERO_SEEN_ID);
+    }
+  }
+  return applyUnlocks(withMarkers, getUnlockCatalog());
 };
 
 export const applyEquals = (state: GameState): GameState => {
@@ -1149,8 +1182,11 @@ export const applyC = (state: GameState): GameState => {
   if (!isKeyUsableForInput(state, KEY_ID.util_clear_all)) {
     return state;
   }
-
-  const resetState: GameState = { ...state, calculator: createResetCalculatorState() };
+  const shouldMarkFunctionCleared = state.calculator.operationSlots.length >= 2;
+  const withMarker = shouldMarkFunctionCleared
+    ? markCompletedUnlockId(state, C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID)
+    : state;
+  const resetState: GameState = { ...withMarker, calculator: createResetCalculatorState() };
 
   if (resetState.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID)) {
     return resetState;
@@ -1332,7 +1368,10 @@ export const applyUndo = (state: GameState): GameState => {
       singleDigitInitialTotalEntry: nextRollEntries.length === 0,
     },
   };
-  return withRollDiagnosticsApplied(withPoppedRoll, withPoppedRoll.calculator.operationSlots);
+  const withUndoContextMarker = withClearedStep.ui.activeVisualizer === "feed"
+    ? markCompletedUnlockId(withPoppedRoll, UNDO_WHILE_FEED_VISIBLE_SEEN_ID)
+    : withPoppedRoll;
+  return withRollDiagnosticsApplied(withUndoContextMarker, withUndoContextMarker.calculator.operationSlots);
 };
 
 export const isDigit = (key: Key): boolean => isDigitKeyId(key);

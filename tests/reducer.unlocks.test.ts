@@ -119,21 +119,25 @@ export const runReducerUnlockTests = (): void => {
   assert.equal(Boolean(fOnly.calculators?.f), true, "f calculator is initialized");
   assert.equal(Boolean(fOnly.calculators?.g), false, "g calculator is hidden/uninitialized at start");
 
-  const withAddAndMulUnlocked: GameState = {
+    const powersOfTwoTail: GameState = {
     ...fOnly,
-    unlocks: {
-      ...fOnly.unlocks,
-      slotOperators: {
-        ...fOnly.unlocks.slotOperators,
-        [op("op_add")]: true,
-        [op("op_mul")]: true,
-      },
+    calculator: {
+      ...fOnly.calculator,
+      rollEntries: [
+        { y: r(1n) },
+        { y: r(2n) },
+        { y: r(4n) },
+        { y: r(8n) },
+        { y: r(16n) },
+        { y: r(32n) },
+        { y: r(64n) },
+      ],
     },
   };
-  const withG = applyUnlocks(withAddAndMulUnlocked, unlockCatalog);
-  assert.equal(Boolean(withG.calculators?.g), true, "g materializes once + and × are unlocked");
+  const withG = applyUnlocks(powersOfTwoTail, unlockCatalog);
+  assert.equal(Boolean(withG.calculators?.g), true, "g materializes once tail run of 7 is powers of 2");
   assert.equal(
-    withG.completedUnlockIds.includes("unlock_calculator_g_on_add_and_mul"),
+    withG.completedUnlockIds.includes("unlock_calculator_g_on_tail_powers_of_two_run_7"),
     true,
     "g unlock completion is recorded",
   );
@@ -216,4 +220,5 @@ export const runReducerUnlockTests = (): void => {
     "missing unlocked key is auto-repaired into storage",
   );
 };
+
 

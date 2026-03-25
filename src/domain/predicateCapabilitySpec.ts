@@ -29,6 +29,11 @@ export const ALL_PREDICATE_TYPES: PredicateType[] = [
   "allocator_allocate_press_count_at_least",
   "keypad_key_slots_at_least",
   "lambda_spent_points_dropped_to_zero_seen",
+  "completed_unlock_id_seen",
+  "roll_cycle_period_at_least",
+  "roll_cycle_transient_at_least",
+  "roll_cycle_diameter_at_least",
+  "roll_tail_powers_of_two_run",
 ];
 
 export type CapabilityId =
@@ -307,6 +312,75 @@ export const predicateCapabilitySpecRegistry: PredicateCapabilitySpecRegistry = 
         id: "lambda_spent_drop_to_zero_via_allocator_return",
         allOf: ["allocator_return_press"],
         rationale: "Allocator return operations can drive spent points from 1 down to 0.",
+      },
+    ],
+  },
+  completed_unlock_id_seen: {
+    predicateType: "completed_unlock_id_seen",
+    necessary: [
+      { capability: "execute_activation", reason: "Marker IDs are progression events produced by runtime interactions." },
+    ],
+    sufficientSets: [
+      {
+        id: "completed_unlock_id_seen_via_runtime_marker",
+        allOf: ["execute_activation"],
+        rationale: "When runtime emits and records the marker ID, predicate is satisfied.",
+      },
+    ],
+  },
+  roll_cycle_period_at_least: {
+    predicateType: "roll_cycle_period_at_least",
+    necessary: [
+      { capability: "execute_activation", reason: "Cycle metadata is only produced through execution." },
+      { capability: "roll_growth", reason: "Need an evolving roll to observe a cycle." },
+    ],
+    sufficientSets: [
+      {
+        id: "cycle_period_via_roll_growth",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "With execution and roll growth, periodic cycles can be observed.",
+      },
+    ],
+  },
+  roll_cycle_transient_at_least: {
+    predicateType: "roll_cycle_transient_at_least",
+    necessary: [
+      { capability: "execute_activation", reason: "Cycle metadata is only produced through execution." },
+      { capability: "roll_growth", reason: "Need an evolving roll to observe a cycle transient window." },
+    ],
+    sufficientSets: [
+      {
+        id: "cycle_transient_via_roll_growth",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "With execution and roll growth, transient pre-period length can be observed.",
+      },
+    ],
+  },
+  roll_cycle_diameter_at_least: {
+    predicateType: "roll_cycle_diameter_at_least",
+    necessary: [
+      { capability: "execute_activation", reason: "Cycle metadata and values emerge through execution." },
+      { capability: "roll_growth", reason: "Need roll evolution to capture a full cycle window." },
+    ],
+    sufficientSets: [
+      {
+        id: "cycle_diameter_via_roll_growth",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "A completed cycle window provides numeric spread (max-min) for diameter checks.",
+      },
+    ],
+  },
+  roll_tail_powers_of_two_run: {
+    predicateType: "roll_tail_powers_of_two_run",
+    necessary: [
+      { capability: "execute_activation", reason: "Tail runs are built from executed roll rows." },
+      { capability: "roll_growth", reason: "Need repeated roll growth to create a run." },
+    ],
+    sufficientSets: [
+      {
+        id: "tail_powers_of_two_via_roll_growth",
+        allOf: ["execute_activation", "roll_growth"],
+        rationale: "Execution-driven roll growth can realize integer tail runs of powers of two.",
       },
     ],
   },

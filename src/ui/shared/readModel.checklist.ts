@@ -67,6 +67,9 @@ const getUnlockName = (effect: UnlockEffect): string => {
   if (effect.type === "increase_allocator_max_points") {
     return "\u03BB++";
   }
+  if (effect.type === "increase_allocator_max_points_for_calculator") {
+    return `\u03BB(${effect.calculatorId})++`;
+  }
   if (effect.type === "upgrade_keypad_column") {
     return "keypadCols";
   }

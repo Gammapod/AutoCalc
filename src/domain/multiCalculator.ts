@@ -45,12 +45,9 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
       keyLayout[index] = { kind: "key", key };
     }
   };
-  assign(1, 1, KEY_ID.exec_step_through);
-  assign(1, 3, KEY_ID.op_mul);
-  assign(1, 4, KEY_ID.digit_0);
-  assign(2, 3, KEY_ID.op_add);
-  assign(2, 4, KEY_ID.digit_1);
-  assign(2, 1, KEY_ID.unary_not);
+  assign(2, 2, KEY_ID.toggle_binary_mode);
+  assign(2, 1, KEY_ID.exec_step_through);
+  assign(1, 1, KEY_ID.unary_not);
 
   const lambdaControl = sanitizeLambdaControl({
     maxPoints: controlProfiles.g.starts.gamma,

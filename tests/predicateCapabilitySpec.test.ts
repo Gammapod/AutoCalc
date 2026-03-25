@@ -165,12 +165,32 @@ const proofFixtures: ProofFixture[] = [
     script: [],
   },
   {
+    id: "proof_roll_length_at_least_two",
+    predicateType: "roll_length_at_least",
+    sufficientSetId: "roll_length_at_least_via_roll_growth",
+    predicate: { type: "roll_length_at_least", length: 2 },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["exec_equals"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(1n), r(2n)),
+      },
+    }),
+    script: [],
+  },
+  {
     id: "proof_roll_contains_0_via_plus0_equals",
     predicateType: "roll_contains_value",
     sufficientSetId: "roll_contains_value_via_equal_execution",
     predicate: { type: "roll_contains_value", value: 0n },
-    buildInitialState: () => buildStateWithUnlockedKeys(["op_add", "digit_0", "exec_equals"]),
-    script: ["op_add", "digit_0", "exec_equals"],
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["op_add", "digit_0", "exec_equals"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(0n)),
+      },
+    }),
+    script: [],
   },
   {
     id: "proof_roll_contains_domain_type_natural",
@@ -294,6 +314,77 @@ const proofFixtures: ProofFixture[] = [
           stopReason: "cycle",
           cycle: { i: 0, j: 2, transientLength: 0, periodLength: 2 },
         },
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_cycle_period_at_least_three",
+    predicateType: "roll_cycle_period_at_least",
+    sufficientSetId: "cycle_period_via_roll_growth",
+    predicate: { type: "roll_cycle_period_at_least", length: 3 },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["exec_equals"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(0n), r(6n), r(12n), r(0n)),
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 0, j: 3, transientLength: 0, periodLength: 3 },
+        },
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_cycle_transient_at_least_eleven",
+    predicateType: "roll_cycle_transient_at_least",
+    sufficientSetId: "cycle_transient_via_roll_growth",
+    predicate: { type: "roll_cycle_transient_at_least", length: 11 },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["exec_equals"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(
+          r(0n), r(1n), r(2n), r(3n), r(4n), r(5n), r(6n), r(7n), r(8n), r(9n), r(10n),
+          r(100n), r(101n), r(100n),
+        ),
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 11, j: 13, transientLength: 11, periodLength: 2 },
+        },
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_cycle_diameter_at_least_eleven",
+    predicateType: "roll_cycle_diameter_at_least",
+    sufficientSetId: "cycle_diameter_via_roll_growth",
+    predicate: { type: "roll_cycle_diameter_at_least", diameter: 11n },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["exec_equals"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(0n), r(12n), r(6n), r(0n)),
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 0, j: 3, transientLength: 0, periodLength: 3 },
+        },
+      },
+    }),
+    script: [],
+  },
+  {
+    id: "proof_tail_run_powers_of_two_len_7",
+    predicateType: "roll_tail_powers_of_two_run",
+    sufficientSetId: "tail_powers_of_two_via_roll_growth",
+    predicate: { type: "roll_tail_powers_of_two_run", length: 7 },
+    buildInitialState: () => ({
+      ...buildStateWithUnlockedKeys(["exec_equals"]),
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: re(r(1n), r(2n), r(4n), r(8n), r(16n), r(32n), r(64n)),
       },
     }),
     script: [],
@@ -440,6 +531,17 @@ const proofFixtures: ProofFixture[] = [
       ...initialState(),
       allocatorReturnPressCount: 1,
       completedUnlockIds: [LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID],
+    }),
+    script: [],
+  },
+  {
+    id: "proof_completed_unlock_marker_seen",
+    predicateType: "completed_unlock_id_seen",
+    sufficientSetId: "completed_unlock_id_seen_via_runtime_marker",
+    predicate: { type: "completed_unlock_id_seen", unlockId: "marker.test" },
+    buildInitialState: () => ({
+      ...initialState(),
+      completedUnlockIds: ["marker.test"],
     }),
     script: [],
   },

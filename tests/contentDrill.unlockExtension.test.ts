@@ -4,13 +4,13 @@ import { initialState } from "../src/domain/state.js";
 import { executeCommand } from "../src/domain/commands.js";
 import { applyUnlocks } from "../src/domain/unlocks.js";
 import type { Action, UnlockDefinition } from "../src/domain/types.js";
-import { execution, valueExpr } from "./support/keyCompat.js";
+import { utility, valueExpr } from "./support/keyCompat.js";
 
 const CONTENT_DRILL_CATALOG: UnlockDefinition[] = [
   {
     id: "content_drill_unlock_9_on_increment_3",
     description: "Content drill: unlock 9 after three increments.",
-    predicate: { type: "key_press_count_at_least", key: execution("exec_equals"), count: 3 },
+    predicate: { type: "key_press_count_at_least", key: utility("toggle_step_expansion"), count: 3 },
     effect: { type: "unlock_digit", key: valueExpr("digit_9") },
     sufficientKeySets: [[valueExpr("digit_1")]],
     once: true,
@@ -30,9 +30,9 @@ const runActions = (actions: Action[]) => {
 
 export const runContentDrillUnlockExtensionTests = (): void => {
   const before = runActions([
-    { type: "PRESS_KEY", key: k("exec_equals") },
-    { type: "PRESS_KEY", key: k("exec_equals") },
-    { type: "PRESS_KEY", key: k("exec_equals") },
+    { type: "PRESS_KEY", key: k("toggle_step_expansion") },
+    { type: "PRESS_KEY", key: k("toggle_step_expansion") },
+    { type: "PRESS_KEY", key: k("toggle_step_expansion") },
   ]);
 
   assert.equal(before.unlocks.valueExpression[valueExpr("digit_9")], false, "drill key remains locked before applying drill catalog");

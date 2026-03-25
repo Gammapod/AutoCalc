@@ -35,6 +35,11 @@ import type {
   TotalEqualsPredicate,
   KeypadKeySlotsAtLeastPredicate,
   LambdaSpentPointsDroppedToZeroSeenPredicate,
+  CompletedUnlockIdSeenPredicate,
+  RollCyclePeriodAtLeastPredicate,
+  RollCycleTransientAtLeastPredicate,
+  RollCycleDiameterAtLeastPredicate,
+  RollTailPowersOfTwoRunPredicate,
   UnlockPredicate,
 } from "./types.js";
 
@@ -437,6 +442,106 @@ const analyzeRollLengthAtLeast: PredicateAnalyzer<RollLengthAtLeastPredicate> = 
   };
 };
 
+const analyzeCompletedUnlockIdSeen: PredicateAnalyzer<CompletedUnlockIdSeenPredicate> = (predicate, state) => {
+  const isMet = state.completedUnlockIds.includes(predicate.unlockId);
+  return {
+    isMet,
+    criteria: [{ label: `${predicate.unlockId} seen`, checked: isMet }],
+  };
+};
+
+const analyzeRollCyclePeriodAtLeast: PredicateAnalyzer<RollCyclePeriodAtLeastPredicate> = (predicate, state) => {
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
+  const isMet = Boolean(cycle && cycle.periodLength >= predicate.length);
+  return {
+    isMet,
+    criteria: [{ label: `cycle length >= ${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
+const analyzeRollCycleTransientAtLeast: PredicateAnalyzer<RollCycleTransientAtLeastPredicate> = (predicate, state) => {
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
+  const isMet = Boolean(cycle && cycle.transientLength >= predicate.length);
+  return {
+    isMet,
+    criteria: [{ label: `transient length >= ${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
+type RationalComparable = {
+  num: bigint;
+  den: bigint;
+};
+
+const compareRational = (left: RationalComparable, right: RationalComparable): -1 | 0 | 1 => {
+  const leftCross = left.num * right.den;
+  const rightCross = right.num * left.den;
+  if (leftCross < rightCross) {
+    return -1;
+  }
+  if (leftCross > rightCross) {
+    return 1;
+  }
+  return 0;
+};
+
+const subtractRational = (left: RationalComparable, right: RationalComparable): RationalComparable => ({
+  num: left.num * right.den - right.num * left.den,
+  den: left.den * right.den,
+});
+
+const analyzeRollCycleDiameterAtLeast: PredicateAnalyzer<RollCycleDiameterAtLeastPredicate> = (predicate, state) => {
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
+  if (!cycle) {
+    return {
+      isMet: false,
+      criteria: [{ label: `cycle diameter >= ${predicate.diameter.toString()}`, checked: false }],
+    };
+  }
+  const cycleEntries = state.calculator.rollEntries.slice(cycle.i, cycle.j);
+  const cycleValues = cycleEntries
+    .map((entry) => (entry.y.kind === "rational" ? entry.y.value : null))
+    .filter((value): value is RationalComparable => value !== null);
+  if (cycleValues.length !== cycleEntries.length || cycleValues.length === 0) {
+    return {
+      isMet: false,
+      criteria: [{ label: `cycle diameter >= ${predicate.diameter.toString()}`, checked: false }],
+    };
+  }
+  let min = cycleValues[0];
+  let max = cycleValues[0];
+  for (const value of cycleValues.slice(1)) {
+    if (compareRational(value, min) < 0) {
+      min = value;
+    }
+    if (compareRational(value, max) > 0) {
+      max = value;
+    }
+  }
+  const diameter = subtractRational(max, min);
+  const meets = compareRational(diameter, { num: predicate.diameter, den: 1n }) >= 0;
+  return {
+    isMet: meets,
+    criteria: [{ label: `cycle diameter >= ${predicate.diameter.toString()}`, checked: meets }],
+  };
+};
+
+const isPositivePowerOfTwo = (value: bigint): boolean => value > 0n && (value & (value - 1n)) === 0n;
+
+const analyzeRollTailPowersOfTwoRun: PredicateAnalyzer<RollTailPowersOfTwoRunPredicate> = (predicate, state) => {
+  const tail = state.calculator.rollEntries.slice(-predicate.length);
+  const isMet = tail.length === predicate.length
+    && tail.every((entry) => (
+      entry.y.kind === "rational"
+      && entry.y.value.den === 1n
+      && isPositivePowerOfTwo(entry.y.value.num)
+    ));
+  return {
+    isMet,
+    criteria: [{ label: `tail powers-of-2 x${predicate.length.toString()}`, checked: isMet }],
+  };
+};
+
 const analyzers = {
   total_equals: analyzeTotalEquals,
   total_at_least: analyzeTotalAtLeast,
@@ -448,6 +553,11 @@ const analyzers = {
   operation_equals: analyzeOperationEquals,
   operation_first_euclid_equivalent_modulo: analyzeOperationFirstEuclidEquivalentModulo,
   roll_length_at_least: analyzeRollLengthAtLeast,
+  completed_unlock_id_seen: analyzeCompletedUnlockIdSeen,
+  roll_cycle_period_at_least: analyzeRollCyclePeriodAtLeast,
+  roll_cycle_transient_at_least: analyzeRollCycleTransientAtLeast,
+  roll_cycle_diameter_at_least: analyzeRollCycleDiameterAtLeast,
+  roll_tail_powers_of_two_run: analyzeRollTailPowersOfTwoRun,
   roll_ends_with_equal_run: analyzeRollEndsWithEqualRun,
   roll_ends_with_incrementing_run: analyzeRollEndsWithIncrementingRun,
   roll_ends_with_alternating_sign_constant_abs_run: analyzeRollEndsWithAlternatingSignConstantAbsRun,

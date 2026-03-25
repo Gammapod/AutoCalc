@@ -463,6 +463,31 @@ export type LambdaSpentPointsDroppedToZeroSeenPredicate = {
   type: "lambda_spent_points_dropped_to_zero_seen";
 };
 
+export type CompletedUnlockIdSeenPredicate = {
+  type: "completed_unlock_id_seen";
+  unlockId: string;
+};
+
+export type RollCyclePeriodAtLeastPredicate = {
+  type: "roll_cycle_period_at_least";
+  length: number;
+};
+
+export type RollCycleTransientAtLeastPredicate = {
+  type: "roll_cycle_transient_at_least";
+  length: number;
+};
+
+export type RollCycleDiameterAtLeastPredicate = {
+  type: "roll_cycle_diameter_at_least";
+  diameter: bigint;
+};
+
+export type RollTailPowersOfTwoRunPredicate = {
+  type: "roll_tail_powers_of_two_run";
+  length: number;
+};
+
 export type UnlockPredicate =
   | RollLengthAtLeastPredicate
   | TotalEqualsPredicate
@@ -489,7 +514,12 @@ export type UnlockPredicate =
   | AllocatorReturnPressCountAtLeastPredicate
   | AllocatorAllocatePressCountAtLeastPredicate
   | KeypadKeySlotsAtLeastPredicate
-  | LambdaSpentPointsDroppedToZeroSeenPredicate;
+  | LambdaSpentPointsDroppedToZeroSeenPredicate
+  | CompletedUnlockIdSeenPredicate
+  | RollCyclePeriodAtLeastPredicate
+  | RollCycleTransientAtLeastPredicate
+  | RollCycleDiameterAtLeastPredicate
+  | RollTailPowersOfTwoRunPredicate;
 
 export type UnlockUtilityEffect = {
   type: "unlock_utility";
@@ -508,6 +538,12 @@ export type IncreaseMaxTotalDigitsEffect = {
 
 export type IncreaseAllocatorMaxPointsEffect = {
   type: "increase_allocator_max_points";
+  amount: number;
+};
+
+export type IncreaseAllocatorMaxPointsForCalculatorEffect = {
+  type: "increase_allocator_max_points_for_calculator";
+  calculatorId: CalculatorId;
   amount: number;
 };
 
@@ -561,6 +597,7 @@ export type UnlockEffect =
   | UnlockMemoryEffect
   | IncreaseMaxTotalDigitsEffect
   | IncreaseAllocatorMaxPointsEffect
+  | IncreaseAllocatorMaxPointsForCalculatorEffect
   | UnlockSlotOperatorEffect
   | UnlockExecutionEffect
   | UnlockVisualizerEffect

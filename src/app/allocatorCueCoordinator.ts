@@ -13,10 +13,13 @@ const getAllocatorIncreaseByUnlockId = (services: AppServices): Map<string, numb
   }
   const built = new Map(
     services.contentProvider.unlockCatalog.flatMap((unlock) => {
-      if (unlock.effect.type !== "increase_allocator_max_points") {
-        return [];
+      if (unlock.effect.type === "increase_allocator_max_points") {
+        return [[unlock.id, unlock.effect.amount] as const];
       }
-      return [[unlock.id, unlock.effect.amount] as const];
+      if (unlock.effect.type === "increase_allocator_max_points_for_calculator") {
+        return [[unlock.id, unlock.effect.amount] as const];
+      }
+      return [];
     }),
   );
   allocatorIncreaseByUnlockIdCache.set(services, built);

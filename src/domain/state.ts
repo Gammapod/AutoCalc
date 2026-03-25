@@ -10,6 +10,15 @@ export const SAVE_SCHEMA_VERSION = 20;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
+export const LAMBDA_POINTS_AWARDED_SEEN_ID = "lambda_points_awarded_seen";
+export const LAMBDA_POINTS_SPENT_SEEN_ID = "lambda_points_spent_seen";
+export const LAMBDA_POINTS_REFUNDED_SEEN_ID = "lambda_points_refunded_seen";
+export const NAN_RESULT_SEEN_ID = "nan_result_seen";
+export const C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID = "c_cleared_function_two_slots_seen";
+export const UNDO_WHILE_FEED_VISIBLE_SEEN_ID = "undo_while_feed_visible_seen";
+export const OVERFLOW_ERROR_IN_BINARY_MODE_SEEN_ID = "overflow_error_in_binary_mode_seen";
+export const BINARY_ADD_RESULT_ONE_SEEN_ID = "binary_add_result_one_seen";
+export const BINARY_MUL_RESULT_ZERO_SEEN_ID = "binary_mul_result_zero_seen";
 export const EXECUTION_PAUSE_FLAG = "execution.pause";
 export const EXECUTION_PAUSE_EQUALS_FLAG = "execution.pause.equals";
 // Backward-compatible alias retained while downstream modules migrate naming.

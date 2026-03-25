@@ -8,6 +8,7 @@ import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } 
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 import { resolveActiveCalculatorId } from "./multiCalculator.js";
 import { materializeCalculatorG } from "./multiCalculator.js";
+import { commitLegacyProjection, projectCalculatorToLegacy } from "./multiCalculator.js";
 import { projectControlFromState } from "./controlProjection.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 
@@ -213,6 +214,34 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
       ...projection.control,
       maxPoints: projection.control.maxPoints + effect.amount,
     });
+  }
+  if (effect.type === "increase_allocator_max_points_for_calculator") {
+    const baseState = effect.calculatorId === "g" ? materializeCalculatorG(state) : state;
+    const activeCalculatorId = resolveActiveCalculatorId(baseState);
+    if (effect.calculatorId === activeCalculatorId) {
+      const projection = projectControlFromState(baseState);
+      return applyAllocatorRuntimeProjection(baseState, {
+        ...projection.control,
+        maxPoints: projection.control.maxPoints + effect.amount,
+      });
+    }
+    const projected = projectCalculatorToLegacy(baseState, effect.calculatorId);
+    const projection = projectControlFromState(projected);
+    const updatedProjected = applyAllocatorRuntimeProjection(projected, {
+      ...projection.control,
+      maxPoints: projection.control.maxPoints + effect.amount,
+    });
+    const committed = commitLegacyProjection(baseState, updatedProjected, effect.calculatorId);
+    if (activeCalculatorId === effect.calculatorId) {
+      return committed;
+    }
+    return projectCalculatorToLegacy(
+      {
+        ...committed,
+        activeCalculatorId,
+      },
+      activeCalculatorId,
+    );
   }
   if (effect.type === "unlock_second_slot") {
     // Slot capacity is allocator-projected; keep this effect as a backward-compatible no-op.

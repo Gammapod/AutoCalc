@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { executeCommand } from "../src/domain/commands.js";
 import { reducer } from "../src/domain/reducer.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
+import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import { compareParity } from "../src/compat/parityHarness.js";
 import type { Action, GameState } from "../src/domain/types.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
@@ -13,13 +14,18 @@ const runParityRejectionCase = (
   label: string,
   state: GameState,
   action: Action,
-  options: { expectRejectUiEffect: boolean },
+  options: { expectRejectUiEffect: boolean; expectStateMutation?: boolean },
 ): void => {
   const reduced = reducer(state, action);
   const commandResult = executeCommand(state, { type: "DispatchAction", action });
   const commandReduced = commandResult.state;
-  assert.deepEqual(reduced, state, `${label}: reducer path is non-mutating for execution-gated rejection`);
-  assert.deepEqual(commandReduced, state, `${label}: command path is non-mutating for execution-gated rejection`);
+  if (options.expectStateMutation) {
+    assert.notDeepEqual(reduced, state, `${label}: reducer path mutates due pre-dispatch normalization semantics`);
+    assert.notDeepEqual(commandReduced, state, `${label}: command path mutates due pre-dispatch normalization semantics`);
+  } else {
+    assert.deepEqual(reduced, state, `${label}: reducer path is non-mutating for execution-gated rejection`);
+    assert.deepEqual(commandReduced, state, `${label}: command path is non-mutating for execution-gated rejection`);
+  }
   assert.equal(
     commandResult.uiEffects.length,
     options.expectRejectUiEffect ? 1 : 0,
@@ -38,19 +44,31 @@ const runParityRejectionCase = (
 };
 
 export const runContractsExecutionGateParityTests = (): void => {
-  const activeRollState: GameState = [
-    { type: "UNLOCK_ALL" } as const,
-    { type: "PRESS_KEY", key: k("digit_1") } as const,
-    { type: "PRESS_KEY", key: op("op_add") } as const,
-    { type: "PRESS_KEY", key: k("digit_1") } as const,
-    { type: "PRESS_KEY", key: k("exec_equals") } as const,
-  ].reduce((state, action) => reducer(state, action), initialState());
+  const baseActive = initialState();
+  const activeRollState: GameState = normalizeRuntimeStateInvariants({
+    ...baseActive,
+    ui: {
+      ...baseActive.ui,
+      buttonFlags: {},
+      keyLayout: [{ kind: "key", key: KEY_ID.exec_step_through }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+    calculator: {
+      ...baseActive.calculator,
+      total: { kind: "rational", value: { num: 2n, den: 1n } },
+      rollEntries: [
+        { y: { kind: "rational", value: { num: 1n, den: 1n } } },
+        { y: { kind: "rational", value: { num: 2n, den: 1n } } },
+      ],
+    },
+  });
 
   runParityRejectionCase(
     "active-roll digit rejection",
     activeRollState,
     { type: "PRESS_KEY", key: k("digit_1") },
-    { expectRejectUiEffect: false },
+    { expectRejectUiEffect: false, expectStateMutation: true },
   );
 
   const rollInverseRejectedState: GameState = {

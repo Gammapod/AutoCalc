@@ -1,5 +1,10 @@
 import { applySetKeypadDimensions } from "./reducer.layout.js";
-import { LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID } from "./state.js";
+import {
+  LAMBDA_POINTS_AWARDED_SEEN_ID,
+  LAMBDA_POINTS_REFUNDED_SEEN_ID,
+  LAMBDA_POINTS_SPENT_SEEN_ID,
+  LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID,
+} from "./state.js";
 import type { GameState, LambdaControl } from "./types.js";
 import { projectControlFromInputs, projectControlFromState } from "./controlProjection.js";
 
@@ -19,6 +24,8 @@ export const applyAllocatorRuntimeProjection = (
   const nextControl = nextProjection.control;
   const previousSpent = previousProjection.budget.spent;
   const nextSpent = nextProjection.budget.spent;
+  const previousMaxPoints = previousProjection.budget.maxPoints;
+  const nextMaxPoints = nextProjection.budget.maxPoints;
   const markSpentDropSeen =
     previousSpent === 1
     && nextSpent === 0
@@ -26,12 +33,25 @@ export const applyAllocatorRuntimeProjection = (
   const withControl = lambdaControlEquals(nextControl, state.lambdaControl)
     ? state
     : { ...state, lambdaControl: nextControl };
-  const withMarker = markSpentDropSeen
-    ? {
+  const nextMarkerIds = new Set(withControl.completedUnlockIds);
+  if (markSpentDropSeen) {
+    nextMarkerIds.add(LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID);
+  }
+  if (nextMaxPoints > previousMaxPoints) {
+    nextMarkerIds.add(LAMBDA_POINTS_AWARDED_SEEN_ID);
+  }
+  if (nextSpent > previousSpent) {
+    nextMarkerIds.add(LAMBDA_POINTS_SPENT_SEEN_ID);
+  }
+  if (nextSpent < previousSpent) {
+    nextMarkerIds.add(LAMBDA_POINTS_REFUNDED_SEEN_ID);
+  }
+  const withMarker = nextMarkerIds.size === withControl.completedUnlockIds.length
+    ? withControl
+    : {
       ...withControl,
-      completedUnlockIds: [...withControl.completedUnlockIds, LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID],
-    }
-    : withControl;
+      completedUnlockIds: [...nextMarkerIds],
+    };
   const resized = applySetKeypadDimensions(withMarker, nextProjection.keypadColumns, nextProjection.keypadRows);
   const allocator = nextProjection.allocator;
   if (
