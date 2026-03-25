@@ -1,6 +1,8 @@
 Truth 2: Releases
 
-# Release v0.9.1: Main Menu + Session Control Surface
+# Release v0.9.1: Main Menu + Session Control Surface (Shipped 2026-03-25)
+
+Archived in `docs/planning/archive/Released_Milestones.md`.
 
 ### User Story
 As a player, I can start from a dedicated Main Menu mode and choose `Continue`, `New Game`, `Sandbox`, or `Quit Game`, with system/game control keys available from gameplay.

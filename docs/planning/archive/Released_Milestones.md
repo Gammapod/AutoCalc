@@ -179,3 +179,43 @@ Goal: define and de-risk multi-calculator progression through implementation-rea
 - Review-flag multi-calculator items are no longer undecided.
 - A no-regression path is documented for single-calculator saves and behavior parity.
 - At least one acceptance fixture is defined per phase boundary (Phase 0/1/2).
+
+# Release v0.9.1: Main Menu + Session Control Surface (Shipped 2026-03-25)
+
+Goal: ship a dedicated main menu flow and global system control family, then harden policy/contract seams for mode transitions and calculator integration.
+
+### Deliverables
+
+- Main menu mode and menu calculator:
+  - `main_menu` app mode added as a peer to `game` and `sandbox`.
+  - Main menu starts with only `menu` calculator visible/active.
+  - Title visualizer added (`v*.*.*` top-left, `AutoCalc` center).
+- Global system key family delivered:
+  - `Continue`, `New Game`, `Sandbox`, `Save&Quit`, `Quit Game`.
+  - `Save&Quit` saves then transitions to main menu.
+  - `New Game` clears save then transitions to game mode.
+  - `Quit Game` emits shell-targeted quit signal for `mobile_web_itch`.
+- Frozen startup/keypad baseline:
+  - `f` startup layout frozen as `#0 Save&Quit`, `#1 blank`, `#2 blank`, `#3 blank`, `#4 unary_inc`, `#5 exec_equals`.
+- Policy hardening (behavior-preserving):
+  - Canonical transition intent effect introduced (`request_mode_transition` with `savePolicy`).
+  - Single system-key intent registry adopted (no per-key branch chain in command execution).
+  - Mode policy manifest and calculator seed manifest added for deterministic, id-agnostic boot/layout behavior.
+  - Multi-calculator routing/lifecycle invariants reinforced via contract coverage.
+
+### Exit Criteria
+
+- Main menu launch and system key transitions are deterministic and shell-safe.
+- Storage/checklist shells remain visible in main menu while their contents are hidden by policy.
+- Multi-calculator keyspace isolation is preserved (`menu`, `f`, `g`) with no cross-calculator leakage unless explicit cross-surface action is performed.
+- Save compatibility preserved without schema bump.
+- Full regression suite green at release cut.
+
+### Validation Snapshot
+
+- Full suite passed at release: `108/108` test groups.
+- Added policy contracts:
+  - `contracts/system-key-intent-registry`
+  - `domain/mode-manifest`
+  - `domain/calculator-seed-manifest`
+  - `app/quit-signal`
