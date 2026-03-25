@@ -1,5 +1,8 @@
 Truth 1: Game Tuning
 
+Status: Reference only (non-authoritative).
+Authoritative sources: `docs/calc-spec.md`, `docs/functional-spec.md`.
+
 Last Edited: 3/22/2026
 
 α - keypad width

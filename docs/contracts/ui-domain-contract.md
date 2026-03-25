@@ -1,5 +1,8 @@
 # UI Domain Contract
 
+Status: Reference only (non-authoritative).
+Authoritative sources: `docs/ux-spec.md`, `docs/functional-spec.md`.
+
 ## Shared Invariants
 
 The following must remain equivalent across mobile and desktop shells:

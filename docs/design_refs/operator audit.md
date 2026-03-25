@@ -1,4 +1,7 @@
 # Unary and binary operator audit (user-interactable operator keys only).
+Status: Reference only (non-authoritative).
+Authoritative sources: `docs/calc-spec.md`, `docs/functional-spec.md`.
+
 Date: 03/19/2026
 Scope used: all KEY_ID.### op_* and KEY_ID.unary_* keys.
 Unlock source: current unlockCatalog; if no entry exists, marked as no catalog unlock path.

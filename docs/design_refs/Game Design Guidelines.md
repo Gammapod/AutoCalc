@@ -1,5 +1,8 @@
 ﻿# AutoCalc Game Design Guidelines
 
+Status: Reference only (non-authoritative).
+Authoritative sources: `docs/calc-spec.md`, `docs/functional-spec.md`.
+
 Last updated: 2026-03-19
 Scope: Current gameplay design constraints and progression model that match implemented behavior.
 

@@ -1,5 +1,8 @@
 # AutoCalc UX Guidelines
 
+Status: Reference only (non-authoritative).
+Authoritative sources: `docs/ux-spec.md`, `docs/functional-spec.md`.
+
 Last updated: 2026-03-19
 Scope: Current UX behavior that matches implemented runtime/UI behavior.
 

@@ -1,5 +1,8 @@
 ﻿# AutoCalc Implementation Details (Current Runtime Contract)
 
+Status: Reference only (non-authoritative).
+Authoritative sources: `docs/ux-spec.md`, `docs/calc-spec.md`, `docs/functional-spec.md`.
+
 Last updated: 2026-03-20
 Scope: Runtime behavior implemented in `src/` and active shell rendering in `src/`.
 
