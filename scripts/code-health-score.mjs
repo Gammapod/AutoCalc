@@ -18,6 +18,7 @@ const REQUIRED_DOCS = [
   "docs/functional-spec.md",
   "docs/release-windows.md",
   "docs/release-android.md",
+  "docs/release-itch.md",
 ];
 
 const ENFORCEMENT = {
@@ -256,4 +257,3 @@ if (!enforcePassed) {
   );
   process.exit(1);
 }
-

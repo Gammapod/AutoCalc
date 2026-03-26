@@ -186,6 +186,29 @@ git push origin vX.Y.Z
 
 See `docs/release-windows.md` for full operational runbook and troubleshooting.
 
+## Itch Auto-Publish (Web + Download)
+
+Tag-driven Itch pipeline:
+
+- Push a tag in strict semver format: `vX.Y.Z` or `vX.Y.Z-prerelease`
+- Workflow `release-itch.yml` runs verification, builds:
+  - web-playable Itch zip (`release/AutoCalc_itch_v<major>_<minor>_<patch>.zip`)
+  - downloadable Windows portable exe (`release/AutoCalc-<version>-win-x64-portable.exe`)
+- Workflow installs Butler and pushes both artifacts to Itch channels
+- Execution is gated by GitHub `release` Environment approval policy
+
+Required `release` Environment secrets:
+
+- `ITCH_BUTLER_API_KEY`
+- `ITCH_TARGET` (`username/game-name`)
+
+Optional channel variables (defaults shown):
+
+- `ITCH_CHANNEL_WEB` (`html5`)
+- `ITCH_CHANNEL_WINDOWS` (`windows`)
+
+See `docs/release-itch.md` for full setup and operational runbook.
+
 ## Android APK (Sideload First)
 
 Build mobile web assets + sync Capacitor Android + assemble release APK:
