@@ -172,6 +172,9 @@ const withRecordedDiagnosticsAction = (
   const keyId = resolveKeyFromAction(action);
   const operatorId = resolveOperatorFromAction(action);
   const noEffect = stableSignature(toDiagnosticsComparableState(previous)) === stableSignature(toDiagnosticsComparableState(next));
+  if (noEffect) {
+    return next;
+  }
   const visualizerToggled = action.type === "TOGGLE_VISUALIZER" && previous.ui.activeVisualizer !== next.ui.activeVisualizer;
 
   const lastActionTrace: GameState["ui"]["diagnostics"]["lastAction"] = {
@@ -179,7 +182,6 @@ const withRecordedDiagnosticsAction = (
     actionKind,
     ...(keyId ? { keyId } : {}),
     ...(operatorId ? { operatorId } : {}),
-    ...(noEffect ? { noEffect: true, blocked: true } : {}),
     ...(visualizerToggled ? { visualizerToggled: true } : {}),
   };
 

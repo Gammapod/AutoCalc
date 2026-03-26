@@ -747,6 +747,10 @@
         display: none;
       }
 
+      .v2-help-panel {
+        display: none;
+      }
+
       .display {
         border: 1px solid #515c6a;
         border-radius: 7px;
@@ -2511,6 +2515,52 @@
 
       body[data-ui-shell="mobile"] .v2-title-panel,
       body[data-ui-shell="desktop"] .v2-title-panel {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        padding: 10px 12px 30px;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: translateY(var(--v2-visualizer-inactive-offset));
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="title"] .v2-title-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="title"] .v2-title-panel {
+        opacity: 1;
+        transform: translateY(var(--v2-visualizer-baseline-offset));
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-title-version,
+      body[data-ui-shell="desktop"] .v2-title-version {
+        position: absolute;
+        top: 8px;
+        left: 10px;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: 0.76rem;
+        line-height: 1;
+        letter-spacing: 0.04em;
+        color: #b4f1d3;
+        text-shadow: 0 0 6px rgba(180, 241, 211, 0.36);
+      }
+
+      body[data-ui-shell="mobile"] .v2-title-brand,
+      body[data-ui-shell="desktop"] .v2-title-brand {
+        font-family: "Franklin Gothic Medium", "Trebuchet MS", "Segoe UI", sans-serif;
+        font-size: clamp(1.8rem, 4.2vw, 2.35rem);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #d9ffe9;
+        text-shadow: 0 0 14px rgba(188, 255, 214, 0.4);
+      }
+
+      body[data-ui-shell="mobile"] .v2-help-panel,
+      body[data-ui-shell="desktop"] .v2-help-panel {
         display: block;
         position: absolute;
         inset: 0;
@@ -2523,8 +2573,8 @@
           transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="title"] .v2-title-panel,
-      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="title"] .v2-title-panel {
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="help"] .v2-help-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="help"] .v2-help-panel {
         opacity: 1;
         transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
@@ -2841,7 +2891,9 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-eigen-allocator-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-eigen-allocator-panel,
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-title-panel,
-      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-title-panel {
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-title-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-help-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-help-panel {
         overflow: hidden;
       }
 
@@ -3181,7 +3233,8 @@
                             </div>
                           </section>
                           <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
-                          <section class="v2-title-panel" data-v2-title-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
                           <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
@@ -3208,7 +3261,8 @@
                             </div>
                           </section>
                           <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
-                          <section class="v2-title-panel" data-v2-title-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
                           <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
@@ -3235,7 +3289,8 @@
                             </div>
                           </section>
                           <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
-                          <section class="v2-title-panel" data-v2-title-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
                           <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>

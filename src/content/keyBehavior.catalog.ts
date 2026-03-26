@@ -208,6 +208,13 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
   },
   {
+    key: KEY_ID.viz_help,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
     key: KEY_ID.viz_factorization,
     lockModel: "unlockable",
     unlockPathPolicy: "none_planned",

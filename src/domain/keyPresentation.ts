@@ -56,6 +56,7 @@ export const KEY_ID = {
   viz_graph: "viz_graph",
   viz_feed: "viz_feed",
   viz_title: "viz_title",
+  viz_help: "viz_help",
   viz_factorization: "viz_factorization",
   viz_circle: "viz_circle",
   viz_eigen_allocator: "viz_eigen_allocator",
@@ -127,6 +128,7 @@ export type VisualizerKeyId =
   | typeof KEY_ID.viz_graph
   | typeof KEY_ID.viz_feed
   | typeof KEY_ID.viz_title
+  | typeof KEY_ID.viz_help
   | typeof KEY_ID.viz_factorization
   | typeof KEY_ID.viz_circle
   | typeof KEY_ID.viz_eigen_allocator
@@ -204,7 +206,8 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.toggle_binary_mode, { buttonFace: "b\u2082" }],
   [KEY_ID.viz_graph, { buttonFace: "GRAPH" }],
   [KEY_ID.viz_feed, { buttonFace: "FEED" }],
-  [KEY_ID.viz_title, { buttonFace: "HELP" }],
+  [KEY_ID.viz_title, { buttonFace: "TITLE" }],
+  [KEY_ID.viz_help, { buttonFace: "HELP" }],
   [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],
   [KEY_ID.viz_circle, { buttonFace: "\u25EF" }],
   [KEY_ID.viz_eigen_allocator, { buttonFace: "\u03BB" }],

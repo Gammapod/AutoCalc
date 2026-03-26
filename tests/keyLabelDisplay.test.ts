@@ -19,7 +19,8 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(k("exec_equals")), "=", "equals key label remains =");
   assert.equal(formatKeyLabel(k("digit_1")), "1", "digit label remains literal");
   assert.equal(formatKeyLabel(k("viz_feed")), "FEED", "FEED key label remains FEED");
-  assert.equal(formatKeyLabel(k("viz_title")), "HELP", "HELP key label remains HELP");
+  assert.equal(formatKeyLabel(k("viz_title")), "TITLE", "TITLE key label remains TITLE");
+  assert.equal(formatKeyLabel(k("viz_help")), "HELP", "HELP key label remains HELP");
   assert.equal(formatKeyLabel(k("toggle_binary_mode")), "b\u2082", "binary-mode settings key label renders canonical face");
   assert.equal(formatKeyLabel(k("toggle_mod_zero_to_delta")), "\u27E1[0, \u{1D6FF})", "mod-range settings key label renders canonical face");
   assert.equal(formatKeyLabel(KEY_ID.viz_factorization), "\u2315", "factorization visualizer key label renders canonical face");

@@ -12,6 +12,7 @@ import {
   renderFactorizationVisualizerPanel,
 } from "./factorizationRenderer.js";
 import { clearTitleVisualizerPanel, renderTitleVisualizerPanel } from "./titleRenderer.js";
+import { clearHelpVisualizerPanel, renderHelpVisualizerPanel } from "./helpRenderer.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -45,6 +46,16 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     },
     render: renderTitleVisualizerPanel,
     clear: clearTitleVisualizerPanel,
+  },
+  {
+    id: "help",
+    fit: {
+      kind: "text_wrap_clamp",
+      overflow: "forbid_scroll",
+      budget: { topPx: 8, bodyPx: 118, bottomPx: 8, maxLines: 9 },
+    },
+    render: renderHelpVisualizerPanel,
+    clear: clearHelpVisualizerPanel,
   },
   {
     id: "factorization",

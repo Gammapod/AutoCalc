@@ -43,7 +43,7 @@ Extend unlock evaluation to emit partial-progress output for multi-row condition
 - Indicator communicates proximity only and does not disclose full unlock condition text.
 - Scope is limited to default visualizer; hint overlays on other visualizers are out of scope.
 
-# Release v1.0.0: Content Backlog
+# Release vα.0.0: Content Backlog
 
 Purpose: track implementable, self-contained features that do not require Planned Release framing.
 
@@ -158,7 +158,7 @@ The following require integer inputs, and return NaN otherwise:
 
 - `Function display`: Prime factorization visualizer should display the user-defined function expanded - if the user's function is `5 [ - 4 ] [ Ω ] [ × 8 ] [ ^ 2 ] [ ++ ]`, the visualizer should show `f_0 = 5, f_x = ++(( Ω(f_x-1 - 4) × 8) ^ 2)`. Binary operations are added to the right and unary operators are added to the left, parentheses as needed.
 
-# Post-v1.0.0: full version backlog
+# Post-vα.0.0: full version backlog
 
 ## Planned Release: Replace Checklist
 
