@@ -14,6 +14,7 @@ import {
 } from "./state.js";
 import type { CalculatorId, GameState, Key, KeyCell, LayoutCell, VisualizerId } from "./types.js";
 import { isMultiCalculatorSession } from "./multiCalculator.js";
+import { createInitialUiDiagnosticsLastAction } from "./state.js";
 
 const EMPTY_PLACEHOLDER: LayoutCell = { kind: "placeholder", area: "empty" };
 
@@ -158,6 +159,25 @@ const withLayout = (ui: GameState["ui"], keyLayout: LayoutCell[], storageLayout:
   storageLayout,
 });
 
+const withNormalizedDiagnostics = (ui: GameState["ui"]): GameState["ui"] => {
+  const lastAction = ui.diagnostics?.lastAction;
+  if (
+    lastAction
+    && typeof lastAction.sequence === "number"
+    && Number.isInteger(lastAction.sequence)
+    && lastAction.sequence >= 0
+    && typeof lastAction.actionKind === "string"
+  ) {
+    return ui;
+  }
+  return {
+    ...ui,
+    diagnostics: {
+      lastAction: createInitialUiDiagnosticsLastAction(),
+    },
+  };
+};
+
 const firstLockedInstalledSettingToggle = (layout: LayoutCell[], unlocked: Set<Key>): Key | null => {
   for (const cell of layout) {
     if (cell.kind !== "key") {
@@ -229,33 +249,35 @@ const applyLockedInstalledToggleSemantics = (
 };
 
 export const normalizeRuntimeStateInvariants = (state: GameState): GameState => {
-  const unlocked = new Set<Key>(iterUnlockedButtons(state));
+  const rootUiNormalized = withNormalizedDiagnostics(state.ui);
+  const stateWithUi = rootUiNormalized === state.ui ? state : { ...state, ui: rootUiNormalized };
+  const unlocked = new Set<Key>(iterUnlockedButtons(stateWithUi));
   const seen = new Set<Key>();
 
-  if (!isMultiCalculatorSession(state)) {
-    const keyLayout = dedupeKeyLayout(state.ui.keyLayout, seen);
-    const filteredStorage = dedupeAndFilterStorage(state.ui.storageLayout, seen, unlocked);
+  if (!isMultiCalculatorSession(stateWithUi)) {
+    const keyLayout = dedupeKeyLayout(stateWithUi.ui.keyLayout, seen);
+    const filteredStorage = dedupeAndFilterStorage(stateWithUi.ui.storageLayout, seen, unlocked);
     const storageLayout = ensureUnlockedKeysPresent(filteredStorage, seen, unlocked);
-    const layoutUi = (keyLayout === state.ui.keyLayout && storageLayout === state.ui.storageLayout)
-      ? state.ui
-      : withLayout(state.ui, keyLayout, storageLayout);
+    const layoutUi = (keyLayout === stateWithUi.ui.keyLayout && storageLayout === stateWithUi.ui.storageLayout)
+      ? stateWithUi.ui
+      : withLayout(stateWithUi.ui, keyLayout, storageLayout);
     const nextUi = applyLockedInstalledToggleSemantics(layoutUi, unlocked);
-    if (nextUi === state.ui) {
-      return state;
+    if (nextUi === stateWithUi.ui) {
+      return stateWithUi;
     }
     return {
-      ...state,
+      ...stateWithUi,
       ui: nextUi,
     };
   }
 
-  const calculators = state.calculators ?? {};
-  const orderedCalculatorIds = (state.calculatorOrder ?? Object.keys(calculators) as CalculatorId[])
+  const calculators = stateWithUi.calculators ?? {};
+  const orderedCalculatorIds = (stateWithUi.calculatorOrder ?? Object.keys(calculators) as CalculatorId[])
     .filter((id) => Boolean(calculators[id]?.ui));
   if (orderedCalculatorIds.length === 0) {
-    return state;
+    return stateWithUi;
   }
-  const filteredStorage = dedupeAndFilterStorage(state.ui.storageLayout, seen, unlocked);
+  const filteredStorage = dedupeAndFilterStorage(stateWithUi.ui.storageLayout, seen, unlocked);
   const storageLayout = ensureUnlockedKeysPresent(filteredStorage, seen, unlocked);
 
   const nextCalculators = { ...calculators };
@@ -266,28 +288,29 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
     if (!instance) {
       continue;
     }
-    const dedupedLayout = dedupeKeyLayout(instance.ui.keyLayout, seen);
-    const layoutUi = (dedupedLayout === instance.ui.keyLayout && storageLayout === instance.ui.storageLayout)
-      ? instance.ui
-      : withLayout(instance.ui, dedupedLayout, storageLayout);
+    const normalizedInstanceUi = withNormalizedDiagnostics(instance.ui);
+    const dedupedLayout = dedupeKeyLayout(normalizedInstanceUi.keyLayout, seen);
+    const layoutUi = (dedupedLayout === normalizedInstanceUi.keyLayout && storageLayout === normalizedInstanceUi.storageLayout)
+      ? normalizedInstanceUi
+      : withLayout(normalizedInstanceUi, dedupedLayout, storageLayout);
     const resolvedUi = applyLockedInstalledToggleSemantics(layoutUi, unlocked);
     uiByCalculatorId[calculatorId] = resolvedUi;
-    if (resolvedUi !== instance.ui) {
+    if (resolvedUi !== instance.ui || normalizedInstanceUi !== instance.ui) {
       calculatorsChanged = true;
       nextCalculators[calculatorId] = { ...instance, ui: resolvedUi };
     }
   }
 
-  const activeCalculatorId = (state.activeCalculatorId && uiByCalculatorId[state.activeCalculatorId])
-    ? state.activeCalculatorId
+  const activeCalculatorId = (stateWithUi.activeCalculatorId && uiByCalculatorId[stateWithUi.activeCalculatorId])
+    ? stateWithUi.activeCalculatorId
     : (orderedCalculatorIds[0] ?? "f");
-  const rootUi = uiByCalculatorId[activeCalculatorId] ?? state.ui;
-  if (!calculatorsChanged && rootUi === state.ui) {
-    return state;
+  const rootUi = uiByCalculatorId[activeCalculatorId] ?? stateWithUi.ui;
+  if (!calculatorsChanged && rootUi === stateWithUi.ui) {
+    return stateWithUi;
   }
 
   return {
-    ...state,
+    ...stateWithUi,
     ui: rootUi,
     calculators: nextCalculators,
   };

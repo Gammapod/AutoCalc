@@ -626,6 +626,24 @@ export type UnlockDefinition = {
 export type SufficiencyToken = "digit_nonzero";
 export type SufficiencyRequirement = Key | SufficiencyToken;
 
+export type UiDiagnosticsLastActionKind =
+  | "none"
+  | "press_key"
+  | "toggle_visualizer"
+  | "toggle_flag"
+  | "execution_action"
+  | "system_action";
+
+export type UiDiagnosticsLastAction = {
+  sequence: number;
+  actionKind: UiDiagnosticsLastActionKind;
+  keyId?: Key;
+  operatorId?: SlotOperator;
+  blocked?: boolean;
+  noEffect?: boolean;
+  visualizerToggled?: boolean;
+};
+
 export type GameState = {
   calculator: CalculatorState;
   lambdaControl: LambdaControl;
@@ -640,6 +658,9 @@ export type GameState = {
     activeVisualizer: ActiveVisualizer;
     memoryVariable: MemoryVariable;
     buttonFlags: Record<string, boolean>;
+    diagnostics: {
+      lastAction: UiDiagnosticsLastAction;
+    };
   };
   keyPressCounts: Partial<Record<Key, number>>;
   allocatorReturnPressCount?: number;

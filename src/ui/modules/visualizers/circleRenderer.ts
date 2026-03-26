@@ -1,9 +1,10 @@
 import type { GameState } from "../../../domain/types.js";
+import { buildRollDiagnosticsSnapshot } from "../../../domain/diagnostics.js";
 import {
-  detectResidueWheelSpec,
+  detectResidueWheelSpecFromSnapshot,
   projectRadialPoints,
   projectResidueWheelPoints,
-  resolveCircleRenderMode,
+  resolveCircleRenderModeFromSnapshot,
   type CircleSegment,
 } from "./circleModel.js";
 
@@ -45,8 +46,11 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
   if (!circlePanel) {
     return;
   }
-  const mode = resolveCircleRenderMode(state);
-  const residueWheelSpec = mode === "residue_wheel" ? detectResidueWheelSpec(state) : null;
+  const diagnosticsSnapshot = buildRollDiagnosticsSnapshot(state);
+  const mode = resolveCircleRenderModeFromSnapshot(diagnosticsSnapshot);
+  const residueWheelSpec = mode === "residue_wheel"
+    ? detectResidueWheelSpecFromSnapshot(diagnosticsSnapshot)
+    : null;
 
   circlePanel.innerHTML = "";
   circlePanel.dataset.v2CircleMode = mode;

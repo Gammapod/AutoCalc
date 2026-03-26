@@ -51,7 +51,7 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     fit: {
       kind: "text_wrap_clamp",
       overflow: "forbid_scroll",
-      budget: { topPx: 8, bodyPx: 118, bottomPx: 8, maxLines: 5 },
+      budget: { topPx: 8, bodyPx: 118, bottomPx: 8, maxLines: 9 },
     },
     render: renderFactorizationVisualizerPanel,
     clear: clearFactorizationVisualizerPanel,

@@ -11,6 +11,7 @@ import {
   createLocalStorageRepo,
   loadFromRawSave,
 } from "../src/infra/persistence/localStorageRepo.js";
+import { serializeEnvelope } from "../src/infra/persistence/saveEnvelope.js";
 import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 
@@ -122,6 +123,23 @@ export const runPersistenceTests = (): void => {
   const badJson = loadFromRawSave("{");
   assert.equal(badJson.state, null, "invalid JSON fails safely");
   assert.equal(badJson.reason, LoadFailureReason.InvalidJson, "invalid JSON reason is reported");
+
+  const payloadMissingDiagnostics = structuredClone(base) as unknown as Record<string, unknown>;
+  const payloadMissingDiagnosticsUi = payloadMissingDiagnostics.ui as Record<string, unknown> | undefined;
+  if (payloadMissingDiagnosticsUi) {
+    delete payloadMissingDiagnosticsUi.diagnostics;
+  }
+  const missingDiagnostics = loadFromRawSave(serializeEnvelope({
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    savedAt: Date.now(),
+    state: payloadMissingDiagnostics,
+  }));
+  assert.ok(missingDiagnostics.state, "state without diagnostics metadata still loads");
+  assert.deepEqual(
+    missingDiagnostics.state?.ui.diagnostics.lastAction,
+    { sequence: 0, actionKind: "none" },
+    "missing diagnostics metadata falls back to neutral trace defaults",
+  );
 
   const nanRoundTrip = {
     ...base,

@@ -1,24 +1,6 @@
 Truth 2: Releases
 
-# Release v0.9.4: Unlock Proximity Radar (Hint System v1)
-
-### User Story
-As a player, I get near-unlock feedback on the default visualizer without revealing exact unlock condition text.
-
-### Pre-work
-Extend unlock evaluation to emit partial-progress output for multi-row conditions.
-
-### Pre-work Exit Criteria
-- Unlock engine can produce normalized progress for rolling-window predicates (for example, last N rows).
-- Partial-match output is available without changing unlock truth semantics.
-
-### User Story Exit Criteria
-- Default visualizer includes a proximity indicator that fills proportionally to strongest active near-match.
-- Partial success is supported for relevant multi-row unlock conditions.
-- Indicator communicates proximity only and does not disclose full unlock condition text.
-- Scope is limited to default visualizer; hint overlays on other visualizers are out of scope.
-
-# Release v0.9.5: Roll Analysis Visualizer Replacement
+# Release v0.9.4: Roll Analysis Visualizer Replacement
 
 ### User Story
 As a player, I can open a diagnostic visualizer showing what just happened and what the run currently indicates.
@@ -41,7 +23,25 @@ Define a stable presentation schema for analysis sections and `Last Key` descrip
 - Visualizer is diagnostic only and introduces no gameplay logic changes.
 
 ### Notes
-- `temp_plan.md` content is considered consolidated into archived/release entries through v0.9.5.
+- `temp_plan.md` content is considered consolidated into archived/release entries through v0.9.4.
+
+# Release v0.9.5: Unlock Proximity Radar (Hint System v1)
+
+### User Story
+As a player, I get near-unlock feedback on the default visualizer without revealing exact unlock condition text.
+
+### Pre-work
+Extend unlock evaluation to emit partial-progress output for multi-row conditions.
+
+### Pre-work Exit Criteria
+- Unlock engine can produce normalized progress for rolling-window predicates (for example, last N rows).
+- Partial-match output is available without changing unlock truth semantics.
+
+### User Story Exit Criteria
+- Default visualizer includes a proximity indicator that fills proportionally to strongest active near-match.
+- Partial success is supported for relevant multi-row unlock conditions.
+- Indicator communicates proximity only and does not disclose full unlock condition text.
+- Scope is limited to default visualizer; hint overlays on other visualizers are out of scope.
 
 # Release v1.0.0: Content Backlog
 

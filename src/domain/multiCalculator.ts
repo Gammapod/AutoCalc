@@ -3,6 +3,7 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 import { createSeededKeyLayout } from "./calculatorSeedManifest.js";
+import { createInitialUiDiagnosticsLastAction } from "./state.js";
 
 export const CALCULATOR_ORDER: readonly CalculatorId[] = ["menu", "f", "g"];
 export const MAIN_CALCULATOR_ID: CalculatorId = "f";
@@ -13,6 +14,9 @@ const cloneUi = (ui: GameState["ui"]): GameState["ui"] => ({
   keypadCells: ui.keypadCells.map((cell) => ({ ...cell, cell: { ...cell.cell } })),
   storageLayout: [...ui.storageLayout],
   buttonFlags: { ...ui.buttonFlags },
+  diagnostics: {
+    lastAction: { ...ui.diagnostics.lastAction },
+  },
 });
 
 const cloneCalculator = (calculator: GameState["calculator"]): GameState["calculator"] => ({
@@ -54,6 +58,9 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
     activeVisualizer,
     memoryVariable: "α",
     buttonFlags: {},
+    diagnostics: {
+      lastAction: createInitialUiDiagnosticsLastAction(),
+    },
   };
 
   return {
@@ -104,6 +111,9 @@ const createDefaultMenuCalculator = (): CalculatorInstanceState => {
     activeVisualizer,
     memoryVariable: "α",
     buttonFlags: {},
+    diagnostics: {
+      lastAction: createInitialUiDiagnosticsLastAction(),
+    },
   };
 
   return {
@@ -301,3 +311,4 @@ export const fromCalculatorSurface = (surface: "keypad_f" | "keypad_g" | "keypad
 
 export const normalizeLegacyForMissingInstances = (state: GameState): GameState =>
   ensureCalculatorInstances(state);
+

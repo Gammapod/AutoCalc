@@ -57,9 +57,9 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     }
 
     const defaultModel = buildFactorizationPanelViewModel(initialState());
-    assert.equal(defaultModel.seedLabel, "f\u2080 = \u2205", "default seed zero renders as empty-set factorization");
-    assert.equal(defaultModel.currentLabel, "f\u2099 = \u2205", "default pre-roll current entry is empty-set placeholder");
-    assert.equal(defaultModel.growthOrder, "unknown", "default growth order is unknown before roll diagnostics exist");
+    assert.equal(defaultModel.snapshot.factorization.seedLabel, "f\u2080 = \u2205", "default seed zero renders as empty-set factorization");
+    assert.equal(defaultModel.snapshot.factorization.currentLabel, "f\u2099 = \u2205", "default pre-roll current entry is empty-set placeholder");
+    assert.equal(defaultModel.snapshot.orbit.growthOrder, "unknown", "default growth order is unknown before roll diagnostics exist");
 
     const preRollSeedState: GameState = {
       ...initialState(),
@@ -69,7 +69,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       },
     };
     const preRollSeedModel = buildFactorizationPanelViewModel(preRollSeedState);
-    assert.match(preRollSeedModel.seedLabel, /f\u2080 = 2\u00B2 \u00D7 3\u00B9/u, "pre-roll seed factorization is derived from current total");
+    assert.match(preRollSeedModel.snapshot.factorization.seedLabel, /f\u2080 = 2\u00B2 \u00D7 3\u00B9/u, "pre-roll seed factorization is derived from current total");
 
     const nanSeedState: GameState = {
       ...initialState(),
@@ -78,7 +78,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
         total: toNanCalculatorValue(),
       },
     };
-    assert.equal(buildFactorizationPanelViewModel(nanSeedState).seedLabel, "f\u2080 = \u2205", "NaN seed renders empty-set placeholder");
+    assert.equal(buildFactorizationPanelViewModel(nanSeedState).snapshot.factorization.seedLabel, "f\u2080 = \u2205", "NaN seed renders empty-set placeholder");
 
     const linearState = withRoll([
       { y: r(2n) },
@@ -98,9 +98,9 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       }),
     ]);
     const linearModel = buildFactorizationPanelViewModel(linearState);
-    assert.equal(linearModel.growthOrder, "linear", "constant non-zero d1 over last five diagnostics resolves to linear");
-    assert.equal(linearModel.growthLabel, "O(f) = linear", "non-cycle growth label uses O(f)");
-    assert.match(linearModel.currentLabel, /f\u2099 = 2\u00B2 \u00D7 3\u00B9/u, "f_n retains latest stored factorization rendering");
+    assert.equal(linearModel.snapshot.orbit.growthOrder, "linear", "constant non-zero d1 over last five diagnostics resolves to linear");
+    assert.equal(linearModel.snapshot.orbit.growthLabel, "O(f) = linear", "non-cycle growth label uses O(f)");
+    assert.match(linearModel.snapshot.factorization.currentLabel, /f\u2099 = 2\u00B2 \u00D7 3\u00B9/u, "f_n retains latest stored factorization rendering");
 
     const constantState = withRoll([
       { y: r(9n) },
@@ -110,7 +110,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(9n, { d1: rv(0n), d2: rv(0n), r1: rv(1n) }),
       step(9n, { d1: rv(0n), d2: rv(0n), r1: rv(1n) }),
     ]);
-    assert.equal(buildFactorizationPanelViewModel(constantState).growthOrder, "constant", "all-zero d1 resolves to constant");
+    assert.equal(buildFactorizationPanelViewModel(constantState).snapshot.orbit.growthOrder, "constant", "all-zero d1 resolves to constant");
 
     const exponentialState = withRoll([
       { y: r(1n) },
@@ -120,7 +120,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(16n, { d1: rv(8n), d2: rv(4n), r1: rv(2n) }),
       step(32n, { d1: rv(16n), d2: rv(8n), r1: rv(2n) }),
     ]);
-    assert.equal(buildFactorizationPanelViewModel(exponentialState).growthOrder, "exponential", "constant |r1|>1 resolves to exponential");
+    assert.equal(buildFactorizationPanelViewModel(exponentialState).snapshot.orbit.growthOrder, "exponential", "constant |r1|>1 resolves to exponential");
 
     const quadraticState = withRoll([
       { y: r(0n) },
@@ -130,7 +130,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(16n, { d1: rv(7n), d2: rv(2n), r1: rv(16n, 9n) }),
       step(25n, { d1: rv(9n), d2: rv(2n), r1: rv(25n, 16n) }),
     ]);
-    assert.equal(buildFactorizationPanelViewModel(quadraticState).growthOrder, "quadratic", "constant non-zero d2 resolves to quadratic");
+    assert.equal(buildFactorizationPanelViewModel(quadraticState).snapshot.orbit.growthOrder, "quadratic", "constant non-zero d2 resolves to quadratic");
 
     const logarithmicState = withRoll([
       { y: r(0n) },
@@ -140,7 +140,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(138n, { d1: rv(7n), d2: rv(8n), r1: rv(5n, 4n) }),
       step(160n, { d1: rv(11n), d2: rv(13n), r1: rv(6n, 5n) }),
     ]);
-    assert.equal(buildFactorizationPanelViewModel(logarithmicState).growthOrder, "logarithmic", "AICc model selection can classify logarithmic sequences");
+    assert.equal(buildFactorizationPanelViewModel(logarithmicState).snapshot.orbit.growthOrder, "logarithmic", "AICc model selection can classify logarithmic sequences");
 
     const radicalState = withRoll([
       { y: r(100n) },
@@ -150,7 +150,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(200n, { d1: rv(13n), d2: rv(21n), r1: rv(2n, 1n) }),
       step(223n, { d1: rv(21n), d2: rv(34n), r1: rv(11n, 5n) }),
     ]);
-    assert.equal(buildFactorizationPanelViewModel(radicalState).growthOrder, "radical", "AICc model selection can classify sublinear power sequences");
+    assert.equal(buildFactorizationPanelViewModel(radicalState).snapshot.orbit.growthOrder, "radical", "AICc model selection can classify sublinear power sequences");
 
     const shortWindowState = withRoll([
       { y: r(1n) },
@@ -159,7 +159,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(4n, { d1: rv(1n), d2: rv(1n), r1: rv(4n, 3n) }),
       step(5n, { d1: rv(1n), d2: rv(1n), r1: rv(5n, 4n) }),
     ]);
-    assert.equal(buildFactorizationPanelViewModel(shortWindowState).growthOrder, "unknown", "fewer than five diagnostic samples resolves to unknown");
+    assert.equal(buildFactorizationPanelViewModel(shortWindowState).snapshot.orbit.growthOrder, "unknown", "fewer than five diagnostic samples resolves to unknown");
 
     const cycleLikelyState = withRoll([
       { y: r(3n) },
@@ -171,7 +171,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(8n, { d1: rv(1n), d2: rv(2n), r1: rv(8n, 7n) }),
     ]);
     assert.equal(
-      buildFactorizationPanelViewModel(cycleLikelyState).growthLabel,
+      buildFactorizationPanelViewModel(cycleLikelyState).snapshot.orbit.growthLabel,
       "O(f) = cycle-likely",
       "integer bounded repeated horizon triggers cycle-likely gating",
     );
@@ -186,7 +186,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(64n, { d1: rv(32n), d2: rv(16n), r1: rv(2n), seedMinus1Y: r(32n), seedPlus1Y: r(96n) }),
     ]);
     assert.equal(
-      buildFactorizationPanelViewModel(chaosLikeState).growthLabel,
+      buildFactorizationPanelViewModel(chaosLikeState).snapshot.orbit.growthLabel,
       "O(f) = exponential",
       "chaos-like heuristic does not override a confident exponential classification",
     );
@@ -201,7 +201,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(67n, { d1: rv(32n), d2: rv(15n), r1: rv(67n, 35n), seedMinus1Y: r(35n), seedPlus1Y: r(99n) }),
     ]);
     assert.equal(
-      buildFactorizationPanelViewModel(chaosLikeIrregularState).growthLabel,
+      buildFactorizationPanelViewModel(chaosLikeIrregularState).snapshot.orbit.growthLabel,
       "O(f) = chaos?",
       "monotone divergence over the required horizon still triggers chaos-like gating for non-exponential runs",
     );
@@ -216,7 +216,7 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       step(6n, { d1: rv(1n), d2: rv(2n), r1: rv(1n), seedMinus1Y: r(-26n), seedPlus1Y: r(38n) }),
     ]);
     assert.equal(
-      buildFactorizationPanelViewModel(bothHeuristicsState).growthLabel,
+      buildFactorizationPanelViewModel(bothHeuristicsState).snapshot.orbit.growthLabel,
       "O(f) = cycle-likely",
       "cycle-likely gating takes precedence when both chaos-like and cycle-likely conditions are satisfied",
     );
@@ -253,10 +253,10 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       },
     };
     const cycleModel = buildFactorizationPanelViewModel(cycleFrozenState);
-    assert.equal(cycleModel.growthOrder, "linear", "cycle freeze evaluates growth at detection index j");
-    assert.equal(cycleModel.growthLabel, "O(f_\u03BC) = linear", "cycle state switches growth label to O(f_\u03BC)");
-    assert.equal(cycleModel.transientLabel, "f^\u03BC = 2", "cycle state exposes transient length row");
-    assert.equal(cycleModel.cycleLabel, "f^\u27E1 = 3", "cycle state exposes period length row");
+    assert.equal(cycleModel.snapshot.orbit.growthOrder, "linear", "cycle freeze evaluates growth at detection index j");
+    assert.equal(cycleModel.snapshot.orbit.growthLabel, "O(f_\u03BC) = linear", "cycle state switches growth label to O(f_\u03BC)");
+    assert.equal(cycleModel.snapshot.orbit.transientLabel, "f^\u03BC = 2", "cycle state exposes transient length row");
+    assert.equal(cycleModel.snapshot.orbit.cycleLabel, "f^\u27E1 = 3", "cycle state exposes period length row");
 
     const cycleBypassChaosState: GameState = {
       ...chaosLikeState,
@@ -274,9 +274,9 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       },
     };
     const cycleBypassModel = buildFactorizationPanelViewModel(cycleBypassChaosState);
-    assert.match(cycleBypassModel.growthLabel, /^O\(f_\u03BC\) = /u, "cycle state bypasses non-cycle heuristic gates");
-    assert.equal(cycleBypassModel.growthLabel.includes("chaos?"), false, "cycle state does not display chaos? override");
-    assert.equal(cycleBypassModel.growthLabel.includes("cycle-likely"), false, "cycle state does not display cycle-likely override");
+    assert.match(cycleBypassModel.snapshot.orbit.growthLabel, /^O\(f_\u03BC\) = /u, "cycle state bypasses non-cycle heuristic gates");
+    assert.equal(cycleBypassModel.snapshot.orbit.growthLabel.includes("chaos?"), false, "cycle state does not display chaos? override");
+    assert.equal(cycleBypassModel.snapshot.orbit.growthLabel.includes("cycle-likely"), false, "cycle state does not display cycle-likely override");
 
     const withRationalLatest = withRoll([
       {
@@ -305,6 +305,15 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
     assert.equal(cycleRows.length, 2, "cycle metadata rows are marked with cycle styling class");
     const cycleSuperscripts = panel.querySelectorAll(".v2-factorization-row--cycle sup");
     assert.equal(cycleSuperscripts.length, 2, "cycle metadata labels render superscript glyphs");
+    assert.match(panel.textContent ?? "", /Last Key/u, "v0.9.4 wiring includes Last Key section");
+    assert.match(panel.textContent ?? "", /Next Operation/u, "v0.9.4 wiring includes Next Operation section");
+    assert.match(panel.textContent ?? "", /Orbit Analysis/u, "v0.9.4 wiring includes Orbit Analysis section");
+    assert.match(panel.textContent ?? "", /Domain/u, "v0.9.4 wiring includes Domain section");
+    assert.match(panel.textContent ?? "", /Prime Factorization/u, "v0.9.4 wiring includes Prime Factorization section");
+    assert.ok(
+      panel.querySelectorAll(".v2-factorization-row--section").length >= 5,
+      "v0.9.4 section headings are rendered with section styling",
+    );
 
     const errorLatestState: GameState = {
       ...withRationalLatest,
@@ -319,7 +328,8 @@ export const runUiModuleFactorizationRendererV2Tests = (): void => {
       },
     };
     renderFactorizationVisualizerPanel(harness.root, errorLatestState);
-    const currentRow = panel.querySelectorAll(".v2-factorization-row")[1];
+    const currentRow = Array.from(panel.querySelectorAll<HTMLElement>(".v2-factorization-row"))
+      .find((row) => row.textContent?.includes("f\u2099 ="));
     assert.ok(currentRow?.classList.contains("v2-factorization-row--error"), "f\u2099 row is highlighted as error when latest roll entry has an error");
   } finally {
     harness.teardown();

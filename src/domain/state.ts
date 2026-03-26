@@ -6,6 +6,11 @@ import { KEY_ID } from "./keyPresentation.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 import { applyCalculatorSeedPlacements } from "./calculatorSeedManifest.js";
 
+export const createInitialUiDiagnosticsLastAction = (): GameState["ui"]["diagnostics"]["lastAction"] => ({
+  sequence: 0,
+  actionKind: "none",
+});
+
 export const SAVE_KEY = "autocalc.v1.save";
 export const SAVE_SCHEMA_VERSION = 20;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
@@ -229,6 +234,9 @@ export const initialState = (): GameState => {
       activeVisualizer: "total",
       memoryVariable: "α",
       buttonFlags: {},
+      diagnostics: {
+        lastAction: createInitialUiDiagnosticsLastAction(),
+      },
     },
     keyPressCounts: {},
     allocatorReturnPressCount: 0,

@@ -1,8 +1,8 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
-import { computeOverflowBoundary } from "../../../domain/calculatorValue.js";
+import { buildRollDiagnosticsSnapshot } from "../../../domain/diagnostics.js";
 import { toStepCount } from "../../../domain/rollEntries.js";
 import type { GameState, RollEntry } from "../../../domain/types.js";
-import { BINARY_MODE_FLAG, DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../../../domain/state.js";
+import { BINARY_MODE_FLAG } from "../../../domain/state.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "./graphModel.js";
 
 export type CircleRenderMode = "radial" | "residue_wheel";
@@ -54,71 +54,19 @@ const toFiniteEntryValue = (entry: RollEntry): number | null => {
   return Number.isFinite(value) ? value : null;
 };
 
-export const detectResidueWheelSpec = (state: GameState): ResidueWheelSpec | null => {
-  const deltaRangeWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
-  const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
-  const displayRadix = state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
-  if (deltaRangeWrapEnabled || modZeroToDeltaEnabled) {
-    const boundary = Number(computeOverflowBoundary(state.unlocks.maxTotalDigits, displayRadix));
-    if (!Number.isFinite(boundary) || boundary <= 0) {
-      return null;
-    }
-    if (deltaRangeWrapEnabled) {
-      return {
-        cycleStartIndex: 0,
-        cycleEndIndex: -1,
-        wheelMin: -boundary,
-        wheelMaxExclusive: boundary,
-        span: boundary * 2,
-      };
-    }
-    return {
-      cycleStartIndex: 0,
-      cycleEndIndex: -1,
-      wheelMin: 0,
-      wheelMaxExclusive: boundary,
-      span: boundary,
-    };
-  }
+export const detectResidueWheelSpecFromSnapshot = (
+  snapshot: ReturnType<typeof buildRollDiagnosticsSnapshot>,
+): ResidueWheelSpec | null => snapshot.circleSemantics.residueWheelSpec;
 
-  if (state.calculator.rollAnalysis.stopReason !== "cycle") {
-    return null;
-  }
-  const cycle = state.calculator.rollAnalysis.cycle;
-  if (!cycle || state.calculator.rollEntries.length === 0) {
-    return null;
-  }
-  const maxRollIndex = state.calculator.rollEntries.length - 1;
-  if (maxRollIndex < 0) {
-    return null;
-  }
-  const cycleStartIndex = Math.max(0, Math.min(maxRollIndex, cycle.i));
-  const cycleEndIndex = Math.max(cycleStartIndex, Math.min(maxRollIndex, cycle.j));
-  const cycleValues = state.calculator.rollEntries
-    .slice(cycleStartIndex, cycleEndIndex + 1)
-    .map((entry) => toFiniteEntryValue(entry))
-    .filter((value): value is number => value !== null);
-  if (cycleValues.length === 0) {
-    return null;
-  }
-  const wheelMin = Math.floor(Math.min(...cycleValues));
-  const wheelMaxExclusive = Math.ceil(Math.max(...cycleValues));
-  const span = wheelMaxExclusive - wheelMin;
-  if (span <= 0) {
-    return null;
-  }
+export const detectResidueWheelSpec = (state: GameState): ResidueWheelSpec | null =>
+  detectResidueWheelSpecFromSnapshot(buildRollDiagnosticsSnapshot(state));
 
-  return {
-    cycleStartIndex,
-    cycleEndIndex,
-    wheelMin,
-    wheelMaxExclusive,
-    span,
-  };
-};
+export const resolveCircleRenderModeFromSnapshot = (
+  snapshot: ReturnType<typeof buildRollDiagnosticsSnapshot>,
+): CircleRenderMode => snapshot.circleSemantics.mode;
 
 export const resolveCircleRenderMode = (state: GameState): CircleRenderMode =>
-  detectResidueWheelSpec(state) ? "residue_wheel" : "radial";
+  resolveCircleRenderModeFromSnapshot(buildRollDiagnosticsSnapshot(state));
 
 export const toCanonicalWheelIndex = (valueIndex: number, span: number): number =>
   ((valueIndex % span) + span) % span;
