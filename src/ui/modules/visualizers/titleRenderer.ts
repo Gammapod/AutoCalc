@@ -1,6 +1,6 @@
 import type { GameState } from "../../../domain/types.js";
 
-const FALLBACK_APP_VERSION = "0.8.9";
+const FALLBACK_APP_VERSION = "0.9.4";
 
 const resolveAppVersion = (): string => {
   if (typeof document === "undefined") {

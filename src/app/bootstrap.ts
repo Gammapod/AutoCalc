@@ -122,7 +122,7 @@ const resolveAppVersionToken = (): string => {
   if (typeof processVersion === "string" && processVersion.trim()) {
     return processVersion.trim();
   }
-  return "0.8.9";
+  return "0.9.4";
 };
 
 const shellRenderer = createShellRenderer(root, { mode: uiShellMode, services });
