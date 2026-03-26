@@ -27,6 +27,16 @@ export const releaseNotes: ReleaseNotesCatalog = {
       ],
     },
     {
+      id: "release_v0_9_5",
+      releaseVersion: "v0.9.5",
+      channel: "released",
+      title: "Release Automation",
+      summary: "Implemented butler for automatic release patches.",
+      bullets: [
+        "If you can see this, it worked.",
+      ],
+    },
+    {
       id: "release_v0_9_4",
       releaseVersion: "v0.9.4",
       channel: "released",
