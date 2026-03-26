@@ -150,6 +150,13 @@ The Calculator State Interface governs calculator runtime models for one or more
 - `FS-CS-09` (SHALL): Semantic families are not conveyed by color alone; at least one additional cue (iconography, labeling, pattern, or motion state) is provided.
   Rationale: semantic readability and accessibility must not depend on color perception alone.
 
+#### 3.2.1.b Key Visual Affordance Ownership (UX-aligned)
+
+- `FS-CS-10` (MUST): Key visual affordance invariants are owned by `docs/ux-spec.md` (`UX-KVA-01` through `UX-KVA-05`) and treated as canonical UX truth.
+  Rationale: functional truth defines ownership boundaries while UX truth defines concrete visual invariants.
+- `FS-CS-11` (MUST): Functional-spec traceability for key visual affordance behavior maps to executable UI contract/integration suites.
+  Rationale: visual-affordance policy must remain auditable and test-linked, not implicit.
+
 #### 3.2.2 Function Builder and Operation Slots (Gameplay Spine)
 
 - `FS-FB-01` (MUST): Seed total semantics are deterministic and explicit.
@@ -184,6 +191,8 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-CS-07 | Memory/control-matrix/lambda share one semantic visual family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract assertion |
 | FS-CS-08 | Errors use distinct semantic visual family | `ui/total-display`, `ui/roll-display` | integration | partial: behavior tested, family-level visual contract absent |
 | FS-CS-09 | Semantic families are not color-only | `ui-shell/menu-a11y` | integration | gap: no dedicated accessibility contract for semantic family cues |
+| FS-CS-10 | Key visual affordance invariants are UX-owned (`UX-KVA-01`..`UX-KVA-05`) | `docs/ux-spec.md`, `docs/contracts/ui-domain-contract.md` | spec governance | none |
+| FS-CS-11 | Key visual affordance behavior maps to executable UI suites | `ui/visualizer-fit-contract`, `ui-module/calculator-keypad-render`, `ui-module/storage-v2` | contract + integration | partial: coverage is selector/token/assertion driven rather than pixel snapshot baseline |
 | FS-FB-01 | Deterministic seed semantics | `reducer/input`, `contracts/slot-input-target-spec` | unit + contract | partial: target-spec scenarios are selective |
 | FS-FB-02 | Deterministic slot execution order | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | none |
 | FS-FB-03 | Value/number behavior is capability-gated | `domain/key-unlocks`, `reducer/input`, `domain/key-behavior-contract` | unit + contract | none |
@@ -272,10 +281,11 @@ These are stable documentation interfaces for test/contract alignment, not code 
 2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
 3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but not yet as explicit contract clauses.
 4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
-5. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.
-6. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
-7. `FS-FB-09` and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress and exception-bearing progression fixtures are pending.
-8. `FS-UP-09`, `FS-UP-10`, `FS-UP-11`, and `FS-UP-12` are intentionally partial at introduction time; dedicated key-only schema, partition-matrix, canonical tie-break, and unresolved-classification fixtures/contracts are pending.
+5. `FS-CS-10` and `FS-CS-11` now pin ownership and executable mapping for key visual affordance invariants; coverage is policy/selector driven and intentionally does not require pixel-snapshot baselines.
+6. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.
+7. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
+8. `FS-FB-09` and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress and exception-bearing progression fixtures are pending.
+9. `FS-UP-09`, `FS-UP-10`, `FS-UP-11`, and `FS-UP-12` are intentionally partial at introduction time; dedicated key-only schema, partition-matrix, canonical tie-break, and unresolved-classification fixtures/contracts are pending.
 
 ### 7.3 Fixture-only parity/fuzz coverage flags
 

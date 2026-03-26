@@ -1,83 +1,5 @@
 Truth 2: Releases
 
-# Release v0.9.1: Main Menu + Session Control Surface (Shipped 2026-03-25)
-
-Archived in `docs/planning/archive/Released_Milestones.md`.
-
-### User Story
-As a player, I can start from a dedicated Main Menu mode and choose `Continue`, `New Game`, `Sandbox`, or `Quit Game`, with system/game control keys available from gameplay.
-
-### Pre-work
-Finalize allocator/menu calculator constants and default key placements referenced by allocator planning.
-
-### Pre-work Exit Criteria
-- Menu calculator baseline constants and keypad layout are frozen.
-- Initial game-state calculator `f` key placement is frozen:
-- `#0 Save&Quit`, `#1 blank`, `#2 blank`, `#3 blank`, `#4 unary_inc`, `#5 exec_equals`.
-
-### User Story Exit Criteria
-- New `main_menu` mode exists as a peer to `game` and `sandbox`.
-- Initial app state starts in Main Menu with `menu` calculator visible/unlocked and `f`/`g` locked.
-- Menu calculator includes Menu visualizer with version text `v*.*.*` (top-left) and `AutoCalc` center title.
-- Global system/game control family exists with:
-- `Continue`, `New Game`, `Sandbox`, `Save&Quit`, `Quit Game`.
-- `Save&Quit` saves and returns to Main Menu.
-- `Continue` loads save and transitions into normal game mode flow.
-
-# Release v0.9.2: Calculator G + Unlock/Lambda Trigger Expansion
-
-### User Story
-As a progressing player, I unlock calculator `g` and new keys/visualizers through concrete gameplay milestones, and both calculators receive lambda rewards from defined trigger events.
-
-### Pre-work
-Confirm all new unlock predicates and one-time reward conditions are representable in the predicate/unlock system without TODO-capability placeholders.
-
-### Pre-work Exit Criteria
-- Predicate catalog and unlock wiring support all listed conditions with concrete metadata.
-- Debug-unlock path is confirmed to reveal calculator `g` consistently with normal unlock flow.
-
-### User Story Exit Criteria
-- New unlock conditions are implemented:
-- `memory_adjust_plus`: first lambda point awarded.
-- `memory_cycle_variable`: first lambda point spent.
-- `viz_eigen_allocator`: first lambda point refunded.
-- `viz_feed`: first roll length > 20.
-- `exec_play_pause`: first roll length > 40.
-- `util_backspace`: first `C` that clears a function with 2 filled operation slots.
-- `util_undo`: first NaN result.
-- `exec_roll_inverse`: first undo used while feed visualizer is displayed.
-- `op_mod`: first cycle with length > 2.
-- `toggle_mod_zero_to_delta`: first overflow in base-2 mode.
-- `calculator g`: first run of 7 containing only powers of 2.
-- Calculator `g` appears immediately when unlocked, including debug unlock.
-- Calculator `g` initial keypad layout is applied:
-- `R2C2 toggle_binary_mode`, `R2C1 exec_step_through`, `R1C1 unary_not`; all keys still locked by default state.
-- Lambda-point one-time awards for calculator `f`:
-- first transient with length > 10, first cycle diameter > 10, first cycle length > 5.
-- Lambda-point one-time awards for calculator `g`:
-- first addition in base-2 mode yielding result 1, first multiplication in base-2 mode yielding result 0.
-- Unlock and one-time reward state persists across save/load.
-
-# Release v0.9.3: Key Family Taxonomy + Visual Identity Pass
-
-### User Story
-As a player, I can visually parse key roles faster through consistent key-family styling and subgroup striping.
-
-### Pre-work
-Freeze color tokens and settings subgroup mapping for visualizer/settings integration.
-
-### Pre-work Exit Criteria
-- Canonical token names exist for settings base color and subgroup stripe/text colors.
-- Mutual-exclusion subgroup mapping is finalized for visualizers, mod/wrap, `[ ??? ]`, and base-2.
-
-### User Story Exit Criteria
-- Visualizers and settings keys are unified into one `settings` key family.
-- Settings keys use darker-blue base color and bottom stripe styling.
-- Settings subgroup stripe/text colors are applied:
-- visualizers: light blue; mod/wrap settings: yellow; `[ ??? ]`: purple; base-2: orange.
-- Binary operators render a right-edge stripe instead of bottom stripe.
-- No key behavior changes are introduced in this release.
-
 # Release v0.9.4: Unlock Proximity Radar (Hint System v1)
 
 ### User Story
@@ -119,7 +41,7 @@ Define a stable presentation schema for analysis sections and `Last Key` descrip
 - Visualizer is diagnostic only and introduces no gameplay logic changes.
 
 ### Notes
-- `temp_plan.md` content is considered consolidated into release entries v0.9.1-v0.9.5.
+- `temp_plan.md` content is considered consolidated into archived/release entries through v0.9.5.
 
 # Release v1.0.0: Content Backlog
 

@@ -63,6 +63,19 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 - `UX-IA-03` (SHALL): Keyboard and screen-reader expectations are treated as quality-gate contract requirements.
 - `UX-IA-04` (SHALL): Mobile-responsive behavior preserves usable key interaction targets.
 
+### 2.6 Key visual affordance invariants
+
+- `UX-KVA-01` (MUST): Visualizer keys render in the unified `settings` visual family across keypad and storage surfaces.
+  Rationale: settings and visualizer controls share one visual family for consistent role parsing.
+- `UX-KVA-02` (MUST): Settings subgroup stripe accents are bottom-aligned and use LED semantics: untoggled = darkened off-state stripe, toggled = bright on-state stripe.
+  Rationale: toggle state must be readable from stripe luminance, not position changes.
+- `UX-KVA-03` (MUST): Binary operator accent treatment applies to binary operators only and must not apply to unary operators.
+  Rationale: binary vs unary role distinction must remain visually unambiguous.
+- `UX-KVA-04` (MUST): Binary operator accent geometry is a bottom-right triangular corner marker with a width-independent 45-degree diagonal.
+  Rationale: accent geometry must remain stable across responsive key widths.
+- `UX-KVA-05` (SHALL): Binary corner accent uses the default keycap white gradient family and follows active-state inversion behavior.
+  Rationale: accent luminance should harmonize with core keycap lighting language.
+
 ## 3. Traceability
 
 | Clause ID | Summary | Primary suites | Coverage type | Gap |
@@ -87,6 +100,11 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 | UX-IA-02 | Touch gesture intent determinism | `ui-integration/mobile-shell`, `ui/layout-engine` | integration + unit | partial: scenario matrix expansion pending |
 | UX-IA-03 | Keyboard/screen-reader baseline | `ui-shell/menu-a11y` | integration | partial: broader shell coverage pending |
 | UX-IA-04 | Mobile usable interaction targets | `ui-integration/mobile-shell` | integration | partial: explicit numeric threshold contract absent |
+| UX-KVA-01 | Visualizers use unified settings family | `ui-module/calculator-keypad-render`, `ui-module/storage-v2` | integration | none |
+| UX-KVA-02 | Settings stripe bottom placement and LED on/off semantics | `ui/visualizer-fit-contract` | contract | none |
+| UX-KVA-03 | Binary accent applies only to binary operators | `ui-module/calculator-keypad-render`, `ui-module/storage-v2`, `ui/visualizer-fit-contract` | integration + contract | none |
+| UX-KVA-04 | Binary corner accent geometry is 45-degree and width-independent | `ui/visualizer-fit-contract` | contract | none |
+| UX-KVA-05 | Binary corner accent matches default white keycap gradient behavior | `ui/visualizer-fit-contract` | contract | partial: visual token behavior is asserted without pixel snapshot baselines |
 
 ## 4. Out of Scope (Truth 1 UX)
 

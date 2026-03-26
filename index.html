@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AutoCalc v1 Slice</title>
     <link rel="stylesheet" href="./node_modules/katex/dist/katex.min.css" />
+    <link rel="stylesheet" href="./styles/key-visual-affordance.css" />
     <style>
       :root {
         --bg-top: #cfd4dc;
@@ -35,9 +36,33 @@
         --key-utility-top: #d55f5f;
         --key-utility-bottom: #a84040;
         --key-utility-stroke: #6e2424;
-        --key-settings-top: #e0b249;
-        --key-settings-bottom: #ba8828;
-        --key-settings-stroke: #7c5610;
+        --key-settings-top: #3a6da8;
+        --key-settings-bottom: #274f82;
+        --key-settings-stroke: #1d3e66;
+        --settings-subgroup-visualizers-stripe-on: #79c3ff;
+        --settings-subgroup-visualizers-text-on: #79c3ff;
+        --settings-subgroup-visualizers-stripe-off: #436b8c;
+        --settings-subgroup-visualizers-text-off: #436b8c;
+        --settings-subgroup-visualizers-stripe: var(--settings-subgroup-visualizers-stripe-on);
+        --settings-subgroup-visualizers-text: var(--settings-subgroup-visualizers-text-on);
+        --settings-subgroup-mod-wrap-stripe-on: #f2c14e;
+        --settings-subgroup-mod-wrap-text-on: #f2c14e;
+        --settings-subgroup-mod-wrap-stripe-off: #856a2b;
+        --settings-subgroup-mod-wrap-text-off: #856a2b;
+        --settings-subgroup-mod-wrap-stripe: var(--settings-subgroup-mod-wrap-stripe-on);
+        --settings-subgroup-mod-wrap-text: var(--settings-subgroup-mod-wrap-text-on);
+        --settings-subgroup-step-expansion-stripe-on: #63c26b;
+        --settings-subgroup-step-expansion-text-on: #63c26b;
+        --settings-subgroup-step-expansion-stripe-off: #366b3b;
+        --settings-subgroup-step-expansion-text-off: #366b3b;
+        --settings-subgroup-step-expansion-stripe: var(--settings-subgroup-step-expansion-stripe-on);
+        --settings-subgroup-step-expansion-text: var(--settings-subgroup-step-expansion-text-on);
+        --settings-subgroup-base2-stripe-on: #ff9f43;
+        --settings-subgroup-base2-text-on: #ff9f43;
+        --settings-subgroup-base2-stripe-off: #8c5725;
+        --settings-subgroup-base2-text-off: #8c5725;
+        --settings-subgroup-base2-stripe: var(--settings-subgroup-base2-stripe-on);
+        --settings-subgroup-base2-text: var(--settings-subgroup-base2-text-on);
         --key-global-system-top: #9f7c43;
         --key-global-system-bottom: #77572d;
         --key-global-system-stroke: #4f381b;
@@ -1297,11 +1322,6 @@
         color: #ffffff;
       }
 
-      .storage-sort-button[data-storage-sort-group="visualizers"] {
-        background: linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
-        color: #f6fbff;
-      }
-
       .storage-sort-button:hover:not(:disabled) {
         filter: brightness(1.07);
       }
@@ -1499,9 +1519,7 @@
 
       .key--group-slot_operator {
         border-color: var(--key-slot-operator-stroke);
-        background:
-          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, #d7dde4 80%, #bcc6d1 100%),
-          linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
+        background: linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
         color: #ffffff;
       }
 
@@ -1541,18 +1559,6 @@
         color: #ffffff;
       }
 
-      .key--group-visualizers {
-        border-color: var(--key-visualizers-stroke);
-        background: linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
-        color: #ffffff;
-      }
-
-      .key.key--group-visualizers[data-key="λ"] {
-        background:
-          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, var(--key-memory-top) 80%, var(--key-memory-bottom) 100%),
-          linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
-      }
-
       .key--group-execution {
         border-color: var(--key-execution-stroke);
         background: linear-gradient(180deg, var(--key-execution-top), var(--key-execution-bottom));
@@ -1571,7 +1577,7 @@
         filter: none;
       }
 
-      .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-settings):not(.key--group-global_system):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
+      .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-settings):not(.key--group-global_system):not(.key--group-step):not(.key--group-execution):not(:disabled) {
         background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
       }
 
@@ -1580,9 +1586,7 @@
       }
 
       .key.key--toggle-active.key--group-slot_operator:not(:disabled) {
-        background:
-          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, #c2cbd5 80%, #e0e5eb 100%),
-          linear-gradient(180deg, var(--key-slot-operator-bottom), var(--key-slot-operator-top));
+        background: linear-gradient(180deg, var(--key-slot-operator-bottom), var(--key-slot-operator-top));
       }
 
       .key.key--toggle-active.key--unary-operator:not(:disabled) {
@@ -1607,16 +1611,6 @@
 
       .key.key--toggle-active.key--group-step:not(:disabled) {
         background: linear-gradient(180deg, var(--key-step-bottom), var(--key-step-top));
-      }
-
-      .key.key--toggle-active.key--group-visualizers:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-visualizers-bottom), var(--key-visualizers-top));
-      }
-
-      .key.key--toggle-active.key--group-visualizers[data-key="λ"]:not(:disabled) {
-        background:
-          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, var(--key-memory-bottom) 80%, var(--key-memory-top) 100%),
-          linear-gradient(180deg, var(--key-visualizers-bottom), var(--key-visualizers-top));
       }
 
       .key.key--toggle-active.key--group-execution:not(:disabled) {
@@ -3265,7 +3259,3 @@
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>
-
-
-
-

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { initialState } from "../src/domain/state.js";
+import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { renderStorageV2Module } from "../src/ui/modules/storage/render.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 
@@ -21,7 +22,7 @@ export const runUiModuleStorageV2Tests = (): void => {
     assert.ok(sortControls, "storage module renders sort controls mount");
     assert.equal(
       sortControls?.querySelectorAll(".storage-sort-button").length,
-      9,
+      8,
       "storage module renders all storage sort segments",
     );
     assert.equal(storage?.dataset.storageVisible, "true", "storage module marks storage as visible");
@@ -78,6 +79,71 @@ export const runUiModuleStorageV2Tests = (): void => {
     const unaryButton = harness.root.querySelector<HTMLButtonElement>(`[data-storage-keys] button[data-key='${k("unary_inc")}']`);
     assert.equal(unaryButton?.classList.contains("key--group-slot_operator"), true, "storage unary key uses operator group styling");
     assert.equal(unaryButton?.classList.contains("key--unary-operator"), true, "storage unary key receives unary stripe class");
+
+    const binaryStorageCell = { kind: "key", key: k("op_add") } as const;
+    const binaryState = {
+      ...state,
+      ui: {
+        ...state.ui,
+        storageLayout: [binaryStorageCell, ...state.ui.storageLayout.slice(1)],
+      },
+      unlocks: {
+        ...state.unlocks,
+        maxSlots: 1,
+        slotOperators: {
+          ...state.unlocks.slotOperators,
+          [k("op_add")]: true,
+        },
+      },
+    };
+    renderStorageV2Module(harness.root, binaryState, noopDispatch, {
+      inputBlocked: false,
+    });
+    const binaryButton = harness.root.querySelector<HTMLButtonElement>(`[data-storage-keys] button[data-key='${k("op_add")}']`);
+    assert.equal(binaryButton?.classList.contains("key--group-slot_operator"), true, "storage binary key uses operator group styling");
+    assert.equal(binaryButton?.classList.contains("key--unary-operator"), false, "storage binary key does not receive unary-only stripe class");
+
+    const visualizerStorageCell = { kind: "key", key: k("viz_feed") } as const;
+    const visualizerState = {
+      ...state,
+      ui: {
+        ...state.ui,
+        storageLayout: [visualizerStorageCell, ...state.ui.storageLayout.slice(1)],
+      },
+      unlocks: {
+        ...state.unlocks,
+        visualizers: {
+          ...state.unlocks.visualizers,
+          [k("viz_feed")]: true,
+        },
+      },
+    };
+    renderStorageV2Module(harness.root, visualizerState, noopDispatch, {
+      inputBlocked: false,
+    });
+    const visualizerButton = harness.root.querySelector<HTMLButtonElement>(`[data-storage-keys] button[data-key='${k("viz_feed")}']`);
+    assert.equal(visualizerButton?.classList.contains("key--group-settings"), true, "storage visualizer key uses unified settings group styling");
+
+    const binaryModeStorageCell = { kind: "key", key: KEY_ID.toggle_binary_mode } as const;
+    const binaryModeState = {
+      ...state,
+      ui: {
+        ...state.ui,
+        storageLayout: [binaryModeStorageCell, ...state.ui.storageLayout.slice(1)],
+      },
+      unlocks: {
+        ...state.unlocks,
+        utilities: {
+          ...state.unlocks.utilities,
+          [KEY_ID.toggle_binary_mode]: true,
+        },
+      },
+    };
+    renderStorageV2Module(harness.root, binaryModeState, noopDispatch, {
+      inputBlocked: false,
+    });
+    const binaryModeButton = harness.root.querySelector<HTMLButtonElement>(`[data-storage-keys] button[data-key='${KEY_ID.toggle_binary_mode}']`);
+    assert.equal(binaryModeButton?.classList.contains("key--group-settings"), true, "storage binary mode key stays in settings group styling");
   } finally {
     harness.teardown();
   }

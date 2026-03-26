@@ -165,6 +165,98 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     const unaryButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("unary_inc")}']`);
     assert.equal(unaryButton?.classList.contains("key--group-slot_operator"), true, "unary key uses operator color group");
     assert.equal(unaryButton?.classList.contains("key--unary-operator"), true, "unary key receives unary stripe class");
+
+    const binaryState: GameState = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key", key: k("op_add") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        maxSlots: 1,
+        slotOperators: {
+          ...initialState().unlocks.slotOperators,
+          [k("op_add")]: true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, binaryState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const binaryButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("op_add")}']`);
+    assert.equal(binaryButton?.classList.contains("key--group-slot_operator"), true, "binary key uses operator group styling");
+    assert.equal(binaryButton?.classList.contains("key--unary-operator"), false, "binary key does not receive unary-only stripe class");
+    const cssRules = Array.from(harness.document.styleSheets)
+      .flatMap((sheet) => {
+        try {
+          return Array.from((sheet as CSSStyleSheet).cssRules).map((rule) => rule.cssText);
+        } catch {
+          return [];
+        }
+      });
+    const binaryAccentRule = cssRules.find((text) => text.includes(".key.key--group-slot_operator:not(.key--unary-operator)::after"));
+    assert.equal(Boolean(binaryAccentRule), true, "binary-only corner-accent pseudo-element CSS rule exists at runtime");
+    assert.equal(
+      binaryAccentRule?.includes("aspect-ratio: 1 / 1") && binaryAccentRule?.includes("clip-path: polygon(100% 0, 100% 100%, 0 100%)"),
+      true,
+      "binary-only corner-accent runtime rule keeps width-independent 45-degree triangle geometry",
+    );
+
+    const visualizerState: GameState = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key", key: k("viz_feed") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        visualizers: {
+          ...initialState().unlocks.visualizers,
+          [k("viz_feed")]: true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, visualizerState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const visualizerButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("viz_feed")}']`);
+    assert.equal(visualizerButton?.classList.contains("key--group-settings"), true, "visualizer key uses unified settings color group");
+
+    const binaryModeState: GameState = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key", key: KEY_ID.toggle_binary_mode }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        utilities: {
+          ...initialState().unlocks.utilities,
+          [KEY_ID.toggle_binary_mode]: true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, binaryModeState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const binaryModeButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${KEY_ID.toggle_binary_mode}']`);
+    assert.equal(binaryModeButton?.classList.contains("key--group-settings"), true, "binary mode key stays in settings group");
   } finally {
     harness.teardown();
   }

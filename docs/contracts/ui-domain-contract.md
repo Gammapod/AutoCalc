@@ -39,6 +39,18 @@ The visualizer surface is governed by these invariants:
 4. Inactive visualizer modules must clear their DOM state during host render to avoid stale panel artifacts.
 5. Mobile and desktop shells may vary in layout framing, but must share visualizer action/state outcomes.
 
+## Key Visual Affordance Contract
+
+These UX-owned visual invariants are cross-shell parity constraints and are not optional style variants:
+
+1. Visualizer keys render in the unified `settings` key visual family on keypad and storage surfaces.
+2. Settings subgroup stripe accents are bottom-aligned and use LED semantics: darkened when untoggled, bright when toggled.
+3. Binary operator accent treatment applies only to binary operators and excludes unary operators.
+4. Binary operator accent geometry is a bottom-right corner triangle with width-independent 45-degree diagonal.
+5. Binary corner accent should track default keycap white gradient treatment, including active-state inversion.
+
+Platform-specific visual divergence is allowed only outside these constraints.
+
 ## Test Contract Categories
 
 1. `contracts/ui-domain`: contract definition sanity checks.
@@ -53,6 +65,12 @@ The visualizer surface is governed by these invariants:
 2. Visualizer host active-panel selection and precedence is covered in `uiModule.visualizerHost.v2`.
 3. Graph model helpers (`points`, `x-window`, `y-window`, renderability) are covered by `graphDisplay`.
 4. Feed roll view-model behavior and graph/feed precedence is covered by `rollDisplay`.
+
+## Key Visual Affordance Test Coverage
+
+1. Unified settings-family class behavior for visualizer keys is covered by `ui-module/calculator-keypad-render` and `ui-module/storage-v2`.
+2. Settings stripe LED-state and placement constraints are covered by `ui/visualizer-fit-contract`.
+3. Binary-only corner accent scope and geometry constraints are covered by `ui/visualizer-fit-contract` with selector and token contract assertions.
 
 ## Layer Boundary Hardening
 

@@ -219,3 +219,46 @@ Goal: ship a dedicated main menu flow and global system control family, then har
   - `domain/mode-manifest`
   - `domain/calculator-seed-manifest`
   - `app/quit-signal`
+
+# Release v0.9.3: Key Family Taxonomy + Visual Identity Pass (Shipped 2026-03-26)
+
+Goal: improve key-role readability through unified settings family styling and explicit subgroup/operator accent rules.
+
+### Deliverables
+
+- Settings + visualizer family unification:
+  - Visualizer keys now render through `key--group-settings` on keypad and storage surfaces.
+  - Visualizer-specific rendering dependency on `key--group-visualizers` removed from UI paths.
+- Settings base + subgroup identity:
+  - Settings base moved to darker-blue palette.
+  - Subgroup mappings finalized:
+    - visualizers = all `viz_*`
+    - mod/wrap = `toggle_delta_range_clamp` + `toggle_mod_zero_to_delta`
+    - `[ ??? ]` = `toggle_step_expansion`
+    - base-2 = `toggle_binary_mode`
+  - Settings subgroup stripe logic standardized:
+    - bottom-aligned stripe for settings-family keys
+    - LED semantics for toggles (`off` when untoggled via darkened stripe token, `on` when toggled via bright stripe token)
+    - settings labels remain default white.
+- Binary operator accent finalization:
+  - Binary operators use a bottom-right corner triangle accent (binary-only; excludes unary operators).
+  - Triangle geometry is width-independent 45-degree.
+  - Triangle white gradient matches default keycap lighting (including active-state inversion).
+- Documentation/contracts:
+  - UX, contract, and functional docs updated with explicit key visual-affordance invariants and traceability (`UX-KVA-*`, `FS-CS-10`, `FS-CS-11`).
+
+### Exit Criteria
+
+- Unified settings/visualizer family behavior is stable on keypad and storage surfaces.
+- Settings subgroup stripe mapping, placement, and LED-state semantics are implemented as agreed.
+- Binary operator accent scope/geometry/lighting rules are implemented as agreed.
+- No domain action/type/schema behavior changes introduced by visual identity work.
+
+### Validation Snapshot
+
+- Build verification passed: `npm run build:web`.
+- Focused suites passed:
+  - `ui-module/calculator-keypad-render`
+  - `ui-module/storage-v2`
+  - `ui/visualizer-fit-contract`
+  - `contracts/ui-action-emission`

@@ -49,6 +49,29 @@ export const installDomHarness = (url: string = "http://localhost:4173/index.htm
   window.document.write(html);
   window.document.close();
 
+  const stylesheetLinks = Array.from(window.document.querySelectorAll('link[rel="stylesheet"]'));
+  for (const node of stylesheetLinks) {
+    const link = node as unknown as {
+      getAttribute: (name: string) => string | null;
+      parentNode: { insertBefore: (newNode: unknown, referenceNode: unknown) => void; removeChild: (child: unknown) => void } | null;
+    };
+    const href = link.getAttribute("href");
+    if (!href || !href.startsWith("./styles/")) {
+      continue;
+    }
+    const normalized = href.split("?")[0]?.split("#")[0];
+    if (!normalized) {
+      continue;
+    }
+    const cssPath = resolve(process.cwd(), normalized.replace(/^\.\//, ""));
+    const css = readFileSync(cssPath, "utf8");
+    const style = window.document.createElement("style");
+    style.setAttribute("data-test-inlined-stylesheet", normalized);
+    style.textContent = css;
+    link.parentNode?.insertBefore(style, node);
+    link.parentNode?.removeChild(node);
+  }
+
   const assignGlobal = (key: GlobalKey, value: unknown): void => {
     try {
       (globalThis as Record<string, unknown>)[key] = value;

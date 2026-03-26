@@ -14,7 +14,6 @@ const STORAGE_SORT_FLAG_BY_GROUP: Record<KeyVisualGroup, string> = {
   global_system: "storage.sort.global_system",
   memory: "storage.sort.memory",
   step: "storage.sort.step",
-  visualizers: "storage.sort.visualizers",
 };
 
 const STORAGE_SORT_SEGMENTS: KeyVisualGroup[] = [
@@ -26,7 +25,6 @@ const STORAGE_SORT_SEGMENTS: KeyVisualGroup[] = [
   "global_system",
   "memory",
   "step",
-  "visualizers",
 ];
 
 const getStorageSortFlag = (group: KeyVisualGroup): string => STORAGE_SORT_FLAG_BY_GROUP[group];

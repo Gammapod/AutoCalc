@@ -1,0 +1,129 @@
+.key.key--group-slot_operator:not(.key--unary-operator)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+.key.key--group-settings[data-key^="viz_"] {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent calc(80% - 1px),
+      var(--settings-subgroup-visualizers-text-off) calc(80% - 1px),
+      var(--settings-subgroup-visualizers-text-off) 80%,
+      var(--settings-subgroup-visualizers-stripe-off) 80%,
+      var(--settings-subgroup-visualizers-stripe-off) 100%
+    ),
+    linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
+}
+
+.key.key--group-settings[data-key="toggle_delta_range_clamp"],
+.key.key--group-settings[data-key="toggle_mod_zero_to_delta"] {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent calc(80% - 1px),
+      var(--settings-subgroup-mod-wrap-text-off) calc(80% - 1px),
+      var(--settings-subgroup-mod-wrap-text-off) 80%,
+      var(--settings-subgroup-mod-wrap-stripe-off) 80%,
+      var(--settings-subgroup-mod-wrap-stripe-off) 100%
+    ),
+    linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
+}
+
+.key.key--group-settings[data-key="toggle_step_expansion"] {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent calc(80% - 1px),
+      var(--settings-subgroup-step-expansion-text-off) calc(80% - 1px),
+      var(--settings-subgroup-step-expansion-text-off) 80%,
+      var(--settings-subgroup-step-expansion-stripe-off) 80%,
+      var(--settings-subgroup-step-expansion-stripe-off) 100%
+    ),
+    linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
+}
+
+.key.key--group-settings[data-key="toggle_binary_mode"] {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent calc(80% - 1px),
+      var(--settings-subgroup-base2-text-off) calc(80% - 1px),
+      var(--settings-subgroup-base2-text-off) 80%,
+      var(--settings-subgroup-base2-stripe-off) 80%,
+      var(--settings-subgroup-base2-stripe-off) 100%
+    ),
+    linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
+}
+
+.key.key--toggle-active.key--group-slot_operator:not(.key--unary-operator):not(:disabled)::after {
+  background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
+}
+
+.key.key--toggle-active.key--group-settings[data-key^="viz_"]:not(:disabled) {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent calc(80% - 1px),
+      var(--settings-subgroup-visualizers-text-on) calc(80% - 1px),
+      var(--settings-subgroup-visualizers-text-on) 80%,
+      var(--settings-subgroup-visualizers-stripe-on) 80%,
+      var(--settings-subgroup-visualizers-stripe-on) 100%
+    ),
+    linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
+}
+
+.key.key--toggle-active.key--group-settings[data-key="toggle_delta_range_clamp"]:not(:disabled),
+.key.key--toggle-active.key--group-settings[data-key="toggle_mod_zero_to_delta"]:not(:disabled) {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent calc(80% - 1px),
+      var(--settings-subgroup-mod-wrap-text-on) calc(80% - 1px),
+      var(--settings-subgroup-mod-wrap-text-on) 80%,
+      var(--settings-subgroup-mod-wrap-stripe-on) 80%,
+      var(--settings-subgroup-mod-wrap-stripe-on) 100%
+    ),
+    linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
+}
+
+.key.key--toggle-active.key--group-settings[data-key="toggle_step_expansion"]:not(:disabled) {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent calc(80% - 1px),
+      var(--settings-subgroup-step-expansion-text-on) calc(80% - 1px),
+      var(--settings-subgroup-step-expansion-text-on) 80%,
+      var(--settings-subgroup-step-expansion-stripe-on) 80%,
+      var(--settings-subgroup-step-expansion-stripe-on) 100%
+    ),
+    linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
+}
+
+.key.key--toggle-active.key--group-settings[data-key="toggle_binary_mode"]:not(:disabled) {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent calc(80% - 1px),
+      var(--settings-subgroup-base2-text-on) calc(80% - 1px),
+      var(--settings-subgroup-base2-text-on) 80%,
+      var(--settings-subgroup-base2-stripe-on) 80%,
+      var(--settings-subgroup-base2-stripe-on) 100%
+    ),
+    linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
+}

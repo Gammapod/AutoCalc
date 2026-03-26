@@ -27,7 +27,6 @@ export type KeyVisualGroup =
   | "step"
   | "settings"
   | "global_system"
-  | "visualizers"
   | "execution";
 
 export const formatOperatorForDisplay = (operator: SlotOperator): string =>
@@ -75,7 +74,7 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
     return "memory";
   }
   if (getButtonDefinition(resolveKeyId(key))?.behaviorKind === "visualizer") {
-    return "visualizers";
+    return "settings";
   }
   return "execution";
 };
