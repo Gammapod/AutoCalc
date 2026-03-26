@@ -60,9 +60,9 @@ const overrideEntries: Partial<Record<KeyId, KeyDiagnosticEntry>> = {
     longTemplate: "{keyFace} toggles feed display while preserving core calculator state.",
   },
   viz_title: {
-    title: "Title Visualizer",
-    shortTemplate: "{keyFace}: toggle title panel.",
-    longTemplate: "{keyFace} toggles title visualizer mode.",
+    title: "Help Visualizer",
+    shortTemplate: "{keyFace}: show last-key and next-operation help.",
+    longTemplate: "{keyFace} toggles the HELP visualizer focused on Last Key and Next Operation diagnostics.",
   },
   viz_circle: {
     title: "Circle Visualizer",
@@ -85,4 +85,3 @@ export const keyDiagnostics: Record<KeyId, KeyDiagnosticEntry> = {
   ...defaultEntries,
   ...overrideEntries,
 };
-

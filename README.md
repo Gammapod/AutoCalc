@@ -16,7 +16,10 @@ npm install
 npm run build
 ```
 
-Build also generates progression graph reports:
+`npm run build` is the fast/safe local build (app runtime only; no Itch zip).
+`npm run build:web:incremental` is the fastest local rebuild path (no clean; may leave stale files after renames/deletes).
+
+Build generates progression graph reports:
 
 - `dist/reports/unlock-graph-report.md`
 - `dist/reports/unlock-graph-report.json`
@@ -145,6 +148,19 @@ Release build (verify + package):
 ```bash
 npm run release:win:portable
 ```
+
+Optional explicit release packaging commands:
+
+```bash
+npm run build:release
+npm run build:desktop:release
+```
+
+Type-checking modes:
+
+- Daily local compile: `npm run build` (`src/**` only)
+- Full compile (includes tests): `npm run build:web:full`
+- Fast incremental app rebuild (no clean): `npm run build:web:incremental`
 
 Tag-driven GitHub release pipeline:
 

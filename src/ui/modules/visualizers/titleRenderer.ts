@@ -1,16 +1,9 @@
 import type { GameState } from "../../../domain/types.js";
+import { buildRollDiagnosticsSnapshot } from "../../../domain/diagnostics.js";
 
-const FALLBACK_APP_VERSION = "0.8.9";
-
-const resolveAppVersion = (): string => {
-  if (typeof document === "undefined") {
-    return `v${FALLBACK_APP_VERSION}`;
-  }
-  const versionToken = document.body.dataset.appVersion?.trim();
-  if (!versionToken) {
-    return `v${FALLBACK_APP_VERSION}`;
-  }
-  return versionToken.startsWith("v") ? versionToken : `v${versionToken}`;
+type HelpRow = {
+  text: string;
+  kind: "section" | "normal" | "placeholder";
 };
 
 export const clearTitleVisualizerPanel = (root: Element): void => {
@@ -22,7 +15,7 @@ export const clearTitleVisualizerPanel = (root: Element): void => {
   panel.setAttribute("aria-hidden", "true");
 };
 
-export const renderTitleVisualizerPanel = (root: Element, _state: GameState): void => {
+export const renderTitleVisualizerPanel = (root: Element, state: GameState): void => {
   const panel = root.querySelector<HTMLElement>("[data-v2-title-panel]");
   if (!panel) {
     return;
@@ -30,18 +23,35 @@ export const renderTitleVisualizerPanel = (root: Element, _state: GameState): vo
   panel.innerHTML = "";
   panel.setAttribute("aria-hidden", "false");
 
+  const snapshot = buildRollDiagnosticsSnapshot(state);
+  const rows: HelpRow[] = [
+    { text: "Last Key", kind: "section" },
+    { text: `${snapshot.lastKey.title}: ${snapshot.lastKey.short}`, kind: "normal" },
+    { text: snapshot.lastKey.long, kind: "normal" },
+    ...snapshot.lastKey.caveats.map((line) => ({ text: line, kind: "placeholder" as const })),
+    { text: "Next Operation", kind: "section" },
+    { text: snapshot.nextOperation.expandedShort, kind: snapshot.nextOperation.hasPendingOperation ? "normal" : "placeholder" },
+    { text: snapshot.nextOperation.expandedLong, kind: snapshot.nextOperation.hasPendingOperation ? "normal" : "placeholder" },
+  ];
+
   if (typeof document === "undefined") {
-    panel.textContent = `${resolveAppVersion()} AutoCalc`;
+    panel.textContent = rows.map((row) => row.text).join("\n");
     return;
   }
 
-  const version = document.createElement("div");
-  version.className = "v2-title-version";
-  version.textContent = resolveAppVersion();
-
-  const title = document.createElement("div");
-  title.className = "v2-title-brand";
-  title.textContent = "AutoCalc";
-
-  panel.append(version, title);
+  const table = document.createElement("div");
+  table.className = "v2-help-table";
+  for (const rowView of rows) {
+    const row = document.createElement("div");
+    row.className = "v2-help-row";
+    if (rowView.kind === "section") {
+      row.classList.add("v2-help-row--section");
+    }
+    if (rowView.kind === "placeholder") {
+      row.classList.add("v2-help-row--placeholder");
+    }
+    row.textContent = rowView.text;
+    table.appendChild(row);
+  }
+  panel.appendChild(table);
 };
