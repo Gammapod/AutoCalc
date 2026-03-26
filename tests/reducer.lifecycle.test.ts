@@ -23,6 +23,18 @@ export const runReducerLifecycleTests = (): void => {
   const reset = applyLifecycleAction(base, { type: "RESET_RUN" });
   assert.deepEqual(reset, initialState(), "RESET_RUN returns initial state");
   const baseline = initialState();
+  const seededKeyIds = new Set(
+    baseline.ui.keyLayout.flatMap((cell) => (cell.kind === "key" ? [cell.key] : [])),
+  );
+  const duplicatedSeededStorageKeys = baseline.ui.storageLayout
+    .filter((cell): cell is NonNullable<typeof baseline.ui.storageLayout[number]> => Boolean(cell && cell.kind === "key"))
+    .filter((cell) => seededKeyIds.has(cell.key))
+    .map((cell) => cell.key);
+  assert.deepEqual(
+    duplicatedSeededStorageKeys,
+    [],
+    "initial storage omits keys that are already seeded on the keypad",
+  );
   const baselineProjection = projectControlFromState(baseline, "f");
   assert.equal(baseline.ui.keypadColumns, baselineProjection.keypadColumns, "initial columns match projected alpha");
   assert.equal(baseline.ui.keypadRows, baselineProjection.keypadRows, "initial rows match projected beta");

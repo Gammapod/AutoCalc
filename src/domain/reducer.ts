@@ -39,7 +39,7 @@ import {
   isExecutionModeActive,
   type ExecutionPolicyResult,
 } from "./executionModePolicy.js";
-import { handleAutoStepTick } from "./reducer.input.handlers.execution.js";
+import { handleAutoStepTick, handleEqualsInput } from "./reducer.input.handlers.execution.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG } from "./state.js";
 import type {
   Action,
@@ -296,22 +296,26 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
       return state;
     }
     const stepped = handleAutoStepTick(state);
+    const fallbackEqualsApplied =
+      stepped === state && state.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]
+        ? handleEqualsInput(state)
+        : stepped;
     if (
-      stepped !== state
+      fallbackEqualsApplied !== state
       && state.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]
-      && stepped.calculator.rollEntries.length > state.calculator.rollEntries.length
+      && fallbackEqualsApplied.calculator.rollEntries.length > state.calculator.rollEntries.length
     ) {
-      const nextFlags = { ...stepped.ui.buttonFlags };
+      const nextFlags = { ...fallbackEqualsApplied.ui.buttonFlags };
       delete nextFlags[EXECUTION_PAUSE_EQUALS_FLAG];
       return {
-        ...stepped,
+        ...fallbackEqualsApplied,
         ui: {
-          ...stepped.ui,
+          ...fallbackEqualsApplied.ui,
           buttonFlags: nextFlags,
         },
       };
     }
-    return stepped;
+    return fallbackEqualsApplied;
   }
 
   const lifecycleHandled = applyLifecycleAction(state, action);

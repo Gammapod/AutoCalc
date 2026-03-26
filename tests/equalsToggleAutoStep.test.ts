@@ -98,5 +98,32 @@ export const runEqualsToggleAutoStepTests = (): void => {
   const errorTick = reducer(errorOn, { type: "AUTO_STEP_TICK" });
   assert.equal(Boolean(errorTick.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "equals toggle clears on terminal error commit");
   assert.deepEqual(errorTick.calculator.total, toNanCalculatorValue(), "division-by-zero path still commits terminal NaN");
+
+  const emptyPlanSource: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      total: r(0n),
+      operationSlots: [],
+      draftingSlot: null,
+      rollEntries: [],
+      stepProgress: {
+        active: false,
+        seedTotal: null,
+        currentTotal: null,
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
+    },
+  };
+  const emptyPlanOn = reducer(emptyPlanSource, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
+  const emptyPlanTick = reducer(emptyPlanOn, { type: "AUTO_STEP_TICK" });
+  assert.equal(
+    Boolean(emptyPlanTick.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]),
+    false,
+    "equals toggle clears when auto-step falls back to direct equals on an empty execution plan",
+  );
+  assert.deepEqual(emptyPlanTick.calculator.total, r(0n), "empty execution plan keeps total at 0");
+  assert.equal(emptyPlanTick.calculator.rollEntries.length > 0, true, "empty execution plan still commits a terminal roll entry");
 };
 

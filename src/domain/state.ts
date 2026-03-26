@@ -51,7 +51,7 @@ export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
 const DEFAULT_KEYPAD_KEYS: readonly Key[] = [KEY_ID.exec_equals];
-const isDefaultDrawerExecutionCell = (cell: LayoutCell): cell is KeyCell =>
+const isDefaultDrawerExecutionCell = (cell: LayoutCell): boolean =>
   cell.kind === "key" && DEFAULT_KEYPAD_KEYS.includes(cell.key) && !cell.behavior;
 
 type UnlockGroup = Exclude<ButtonUnlockGroup, "none">;
@@ -85,13 +85,22 @@ const combineValueExpressionUnlocks = (
   ...valueCompose,
 });
 
-export const defaultStorageKeys = (): KeyCell[] =>
-  defaultKeyLayout()
-    .filter((cell): cell is KeyCell => cell.kind === "key" && !isDefaultDrawerExecutionCell(cell))
-    .map((cell) => ({ ...cell }));
+export const defaultStorageKeys = (excluded: ReadonlySet<Key> = new Set<Key>()): KeyCell[] => {
+  const keys: KeyCell[] = [];
+  for (const cell of defaultKeyLayout()) {
+    if (cell.kind !== "key") {
+      continue;
+    }
+    if (isDefaultDrawerExecutionCell(cell) || excluded.has(cell.key)) {
+      continue;
+    }
+    keys.push({ ...cell });
+  }
+  return keys;
+};
 
-export const defaultStorageLayout = (): Array<KeyCell | null> => {
-  const keys = defaultStorageKeys();
+export const defaultStorageLayout = (excluded: ReadonlySet<Key> = new Set<Key>()): Array<KeyCell | null> => {
+  const keys = defaultStorageKeys(excluded);
   const slots: Array<KeyCell | null> = [...keys];
   const minSlots = Math.max(
     STORAGE_INITIAL_SLOTS,
@@ -204,6 +213,7 @@ export const initialState = (): GameState => {
     initialColumns,
     initialRows,
   );
+  const seededKeyIds = new Set<Key>(keyLayout.flatMap((cell) => (cell.kind === "key" ? [cell.key] : [])));
   const base: GameState = {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
@@ -229,7 +239,7 @@ export const initialState = (): GameState => {
     ui: {
       keyLayout,
       keypadCells: fromKeyLayoutArray(keyLayout, initialColumns, initialRows),
-      storageLayout: defaultStorageLayout(),
+      storageLayout: defaultStorageLayout(seededKeyIds),
       keypadColumns: initialColumns,
       keypadRows: initialRows,
       activeVisualizer: "total",
