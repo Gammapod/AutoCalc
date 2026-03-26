@@ -97,6 +97,12 @@ Code health scorecard (0-100) with CI enforcement:
 npm run ci:health
 ```
 
+Release-notes policy check (required for planned releases and in-game notes linkage):
+
+```bash
+npm run ci:verify:release-notes
+```
+
 Standards:
 
 - `perfection`: `>=95` and all hard gates pass

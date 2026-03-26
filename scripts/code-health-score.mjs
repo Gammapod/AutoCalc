@@ -108,6 +108,7 @@ const testPredicate = (filePath) => filePath.endsWith(".test.ts");
 const build = runCommand("Build", "npm run build:web");
 const boundaries = runCommand("Dependency boundaries", "npm run ci:verify:boundaries");
 const uiComplexity = runCommand("UI complexity", "npm run ci:verify:ui-complexity");
+const releaseNotesPolicy = runCommand("Release notes policy", "npm run ci:verify:release-notes");
 
 let tests = { status: 1, stdout: "", stderr: "Skipped because build failed." };
 if (build.status === 0) {
@@ -172,6 +173,7 @@ const hardGatesPass =
   build.status === 0 &&
   boundaries.status === 0 &&
   uiComplexity.status === 0 &&
+  releaseNotesPolicy.status === 0 &&
   tests.status === 0 &&
   failCount === 0;
 
@@ -194,6 +196,7 @@ const report = {
     buildPassed: build.status === 0,
     boundariesPassed: boundaries.status === 0,
     uiComplexityPassed: uiComplexity.status === 0,
+    releaseNotesPolicyPassed: releaseNotesPolicy.status === 0,
     testsPassed: tests.status === 0 && failCount === 0,
     testGroups: {
       passed: passCount,

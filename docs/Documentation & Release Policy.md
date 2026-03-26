@@ -28,6 +28,9 @@ Planned releases, both major and minor, are given a corresponding Planned Releas
 ### Every Planned Release must have:
 - User Story: Description in words. User-facing description and justification for feature. If there are no user-facing components, it is not a user story, it is pre-work.
 - User Story Exit Criteria: Succinct checklist. Concrete user-facing examples of how the feature should function, including exceptions and relationships to other systems if any.
+- Release Notes: A `### Release Notes` section that includes:
+- `Release Note ID: \`...\`` (must map to `src/content/releaseNotes.ts` for in-game display)
+- Player-facing summary text and highlights suitable for in-game reading.
 
 ### Every Planned Release should have:
 - Pre-work: Description in words. Prep-work or refactors required before the Planned Release can be started.

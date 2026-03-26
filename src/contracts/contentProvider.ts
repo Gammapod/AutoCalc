@@ -3,4 +3,5 @@ export type ContentProvider = {
   controlProfiles: Record<import("../domain/types.js").CalculatorId, import("../domain/types.js").ControlProfile>;
   uiText: import("./uiText.js").UiText;
   diagnostics: import("./diagnostics.js").DiagnosticsCatalog;
+  releaseNotes: import("./releaseNotes.js").ReleaseNotesCatalog;
 };

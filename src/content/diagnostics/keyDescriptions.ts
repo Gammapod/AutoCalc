@@ -64,10 +64,15 @@ const overrideEntries: Partial<Record<KeyId, KeyDiagnosticEntry>> = {
     shortTemplate: "{keyFace}: toggle title panel.",
     longTemplate: "{keyFace} toggles title visualizer mode.",
   },
+  viz_release_notes: {
+    title: "Release Notes Visualizer",
+    shortTemplate: "{keyFace}: toggle current-version release notes panel.",
+    longTemplate: "{keyFace} toggles release notes visualizer mode and shows notes for the current app version.",
+  },
   viz_help: {
     title: "Help Visualizer",
-    shortTemplate: "{keyFace}: show last-key and next-operation help.",
-    longTemplate: "{keyFace} toggles the HELP visualizer focused on Last Key and Next Operation diagnostics.",
+    shortTemplate: "{keyFace}: show diagnostics and release notes help.",
+    longTemplate: "{keyFace} toggles the HELP visualizer focused on Last Key, Next Operation, and latest release notes.",
   },
   viz_circle: {
     title: "Circle Visualizer",

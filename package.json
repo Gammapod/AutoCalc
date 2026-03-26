@@ -24,6 +24,7 @@
     "build:watch": "tsc -w -p tsconfig.app.json",
     "build:watch:full": "tsc -w -p tsconfig.json",
     "ci:verify": "npm run ci:health",
+    "ci:verify:release-notes": "node ./scripts/verify-release-notes.mjs",
     "ci:health": "node ./scripts/code-health-score.mjs --enforce=good-enough",
     "ci:verify:boundaries": "node ./scripts/check-boundaries.mjs",
     "ci:verify:parity": "npm run build:web:full && node ./dist/tests/run-tests.js --grep=\"^(v2/parity|v2/persistence-parity|contracts/parity-)\"",

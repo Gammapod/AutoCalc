@@ -1,29 +1,27 @@
 Truth 2: Releases
-
-# Release v0.9.6: Roll Analysis Visualizer Replacement
+# Release v0.9.6: Storage Drawer Replacement
 
 ### User Story
-As a player, I can open a diagnostic visualizer showing what just happened and what the run currently indicates.
+As a player, I can easily view and deploy my unlocked and unused keys.
 
 ### Pre-work
-Define a stable presentation schema for analysis sections and `Last Key` descriptions, including visualizer-key interaction caveats.
+Define a pleasant UX for navigating key storage.
 
 ### Pre-work Exit Criteria
-- Section contract is frozen for:
-- `Last Key`, `Next Operation`, `Orbit Analysis`, `Domain`, `Prime Factorization`.
-- `Last Key` copy behavior for visualizer-key interactions is resolved and documented.
+Unplanned - do not implement without planning pre-work first
 
 ### User Story Exit Criteria
-- Reworked roll analysis visualizer exposes all required categories:
-- Last Key: written explanation of most recent key effect.
-- Next Operation: current pending operation in words with algebraic relation text.
-- Orbit Analysis: transient length, transient growth order, cycle detection, and cycle diameter/range when cycle exists.
-- Domain: written description of detected number domain.
-- Prime Factorization: factorization of current function seed and latest row.
-- Visualizer is diagnostic only and introduces no gameplay logic changes.
+- Players should find a key they want without searching
+- Players should find relevant key families without knowing exactly what key they want
+- No key should be more than 2 menu clicks away (including tabs, filters, etc)
+- Scrolling should never be necessary
 
-### Notes
-- `temp_plan.md` content is considered consolidated into archived/release entries through v0.9.6.
+### Release Notes
+- Release Note ID: `release_v0_9_6`
+- Player-facing summary: Replaces the storage experience with a faster browsing flow for unlocked and unused keys.
+- Highlights:
+- Key discovery emphasizes families and quick retrieval.
+- Storage interactions target no-scroll, low-click access patterns.
 
 # Release v0.9.7: Unlock Proximity Radar (Hint System v1)
 
@@ -42,6 +40,13 @@ Extend unlock evaluation to emit partial-progress output for multi-row condition
 - Partial success is supported for relevant multi-row unlock conditions.
 - Indicator communicates proximity only and does not disclose full unlock condition text.
 - Scope is limited to default visualizer; hint overlays on other visualizers are out of scope.
+
+### Release Notes
+- Release Note ID: `release_v0_9_7`
+- Player-facing summary: Adds near-unlock radar hints that communicate progress without spoiling exact unlock conditions.
+- Highlights:
+- Proximity indicator tracks strongest current near-match.
+- Multi-row unlocks can show partial progress.
 
 # Release vα.0.0: Content Backlog
 
@@ -202,3 +207,4 @@ Goal: remove checklist-first progression UX and replace it with contextual hints
 ## Visualizer changes
 
 - `Prime domain`: In addition to natural numbers, integers, rationals, etc, I'd like to also label prime numbers as being in the prime domain, `ℙ`. It is a subdomain of the naturals.
+

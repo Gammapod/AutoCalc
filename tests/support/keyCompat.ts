@@ -71,6 +71,7 @@ const visualizerSet = new Set<VisualizerKey>([
   KEY_ID.viz_graph,
   KEY_ID.viz_feed,
   KEY_ID.viz_title,
+  KEY_ID.viz_release_notes,
   KEY_ID.viz_help,
   KEY_ID.viz_factorization,
   KEY_ID.viz_circle,

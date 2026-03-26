@@ -321,6 +321,9 @@ const normalizeActiveVisualizer = (value: unknown, flags: Record<string, boolean
     value === "total" ||
     value === "graph" ||
     value === "feed" ||
+    value === "title" ||
+    value === "help" ||
+    value === "release_notes" ||
     value === "factorization" ||
     value === "circle" ||
     value === "algebraic" ||

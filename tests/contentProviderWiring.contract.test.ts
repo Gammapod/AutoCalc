@@ -19,5 +19,6 @@ export const runContentProviderWiringContractTests = (): void => {
   assert.ok(provider.unlockCatalog.length > 0, "provider unlock catalog must be available after wiring");
   assert.ok(provider.uiText.analysis.title.length > 0, "provider UI text must be available after wiring");
   assert.ok(Object.keys(provider.diagnostics.keys).length > 0, "provider diagnostics key catalog must be available after wiring");
+  assert.ok(provider.releaseNotes.entries.length > 0, "provider release notes catalog must be available after wiring");
 };
 

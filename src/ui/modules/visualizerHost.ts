@@ -128,6 +128,7 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
   const factorizationPanel = root.querySelector<HTMLElement>("[data-v2-factorization-panel]");
   const titlePanel = root.querySelector<HTMLElement>("[data-v2-title-panel]");
+  const releaseNotesPanel = root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
   const helpPanel = root.querySelector<HTMLElement>("[data-v2-help-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const eigenAllocatorPanel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
@@ -165,6 +166,9 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   }
   if (helpPanel) {
     helpPanel.setAttribute("aria-hidden", "true");
+  }
+  if (releaseNotesPanel) {
+    releaseNotesPanel.setAttribute("aria-hidden", "true");
   }
   if (circlePanel) {
     circlePanel.setAttribute("aria-hidden", "true");
@@ -258,6 +262,9 @@ const resolvePanelElement = (root: Element, panel: VisualizerHostPanel): HTMLEle
   if (panel === "help") {
     return root.querySelector<HTMLElement>("[data-v2-help-panel]");
   }
+  if (panel === "release_notes") {
+    return root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
+  }
   if (panel === "circle") {
     return root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   }
@@ -335,6 +342,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const totalPanel = root.querySelector<HTMLElement>("[data-v2-total-panel]");
   const factorizationPanel = root.querySelector<HTMLElement>("[data-v2-factorization-panel]");
   const titlePanel = root.querySelector<HTMLElement>("[data-v2-title-panel]");
+  const releaseNotesPanel = root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
   const helpPanel = root.querySelector<HTMLElement>("[data-v2-help-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const eigenAllocatorPanel = root.querySelector<HTMLElement>("[data-v2-eigen-allocator-panel]");
@@ -377,6 +385,9 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   }
   if (helpPanel) {
     helpPanel.setAttribute("aria-hidden", activePanel === "help" ? "false" : "true");
+  }
+  if (releaseNotesPanel) {
+    releaseNotesPanel.setAttribute("aria-hidden", activePanel === "release_notes" ? "false" : "true");
   }
   if (circlePanel) {
     circlePanel.setAttribute("aria-hidden", activePanel === "circle" ? "false" : "true");

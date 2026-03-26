@@ -152,6 +152,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.system_mode_sandbox },
   { kind: "key", key: KEY_ID.viz_feed },
   { kind: "key", key: KEY_ID.viz_title },
+  { kind: "key", key: KEY_ID.viz_release_notes },
   { kind: "key", key: KEY_ID.viz_help },
   { kind: "key", key: KEY_ID.viz_factorization },
   { kind: "key", key: KEY_ID.viz_circle },

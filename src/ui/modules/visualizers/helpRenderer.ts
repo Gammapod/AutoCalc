@@ -1,5 +1,6 @@
 import { buildRollDiagnosticsSnapshot } from "../../../domain/diagnostics.js";
 import type { GameState } from "../../../domain/types.js";
+import { getAppServices } from "../../../contracts/appServices.js";
 
 type HelpRow = {
   text: string;
@@ -24,6 +25,7 @@ export const renderHelpVisualizerPanel = (root: Element, state: GameState): void
   panel.setAttribute("aria-hidden", "false");
 
   const snapshot = buildRollDiagnosticsSnapshot(state);
+  const latestReleaseNote = getAppServices().contentProvider.releaseNotes.entries[0] ?? null;
   const rows: HelpRow[] = [
     { text: "Last Key", kind: "section" },
     { text: `${snapshot.lastKey.title}: ${snapshot.lastKey.short}`, kind: "normal" },
@@ -32,6 +34,16 @@ export const renderHelpVisualizerPanel = (root: Element, state: GameState): void
     { text: "Next Operation", kind: "section" },
     { text: snapshot.nextOperation.expandedShort, kind: snapshot.nextOperation.hasPendingOperation ? "normal" : "placeholder" },
     { text: snapshot.nextOperation.expandedLong, kind: snapshot.nextOperation.hasPendingOperation ? "normal" : "placeholder" },
+    { text: "Release Notes", kind: "section" },
+    ...(latestReleaseNote
+      ? [
+        {
+          text: `${latestReleaseNote.releaseVersion} (${latestReleaseNote.channel}): ${latestReleaseNote.title}`,
+          kind: "normal" as const,
+        },
+        { text: latestReleaseNote.summary, kind: "normal" as const },
+      ]
+      : [{ text: "No release notes configured.", kind: "placeholder" as const }]),
   ];
 
   if (typeof document === "undefined") {

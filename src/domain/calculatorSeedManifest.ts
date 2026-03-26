@@ -31,6 +31,7 @@ const gPlacements: readonly SeedPlacement[] = [
 
 const menuPlacements: readonly SeedPlacement[] = [
   { row: 6, col: 1, key: KEY_ID.viz_title },
+  { row: 5, col: 1, key: KEY_ID.viz_release_notes },
   { row: 4, col: 1, key: KEY_ID.system_mode_game },
   { row: 3, col: 1, key: KEY_ID.system_new_game },
   { row: 2, col: 1, key: KEY_ID.system_mode_sandbox },
