@@ -1,52 +1,89 @@
 Truth 2: Releases
-# Release v0.9.6: Storage Drawer Replacement
+
+# Release v0.9.6: Unified Settings State Model
 
 ### User Story
-As a player, I can easily view and deploy my unlocked and unused keys.
+As a player, all settings-style keys behave consistently: I can immediately tell whether a setting is locked/unlocked and toggled/untoggled, and every settings key follows the same interaction rules.
 
 ### Pre-work
-Define a pleasant UX for navigating key storage.
+Inventory and unify settings behavior currently split across lock semantics, toggle flags, read-model projections, and key visual affordances.
 
 ### Pre-work Exit Criteria
-Unplanned - do not implement without planning pre-work first
+- Canonical definitions are documented for locked, unlocked, toggled, and untoggled in settings context.
+- A single settings-state mapping is defined from domain flags and unlock state to UI presentation state.
+- Existing exceptions (for example, play/pause lock behavior) are explicitly captured as named, testable rules.
 
 ### User Story Exit Criteria
-- Players should find a key they want without searching
-- Players should find relevant key families without knowing exactly what key they want
-- No key should be more than 2 menu clicks away (including tabs, filters, etc)
-- Scrolling should never be necessary
+- Settings keys and visualizer keys share one unified state vocabulary and rendering behavior across keypad and storage.
+- Locked settings-toggle keys obey deterministic forced-on semantics until unlocked (per functional-spec behavior).
+- Untoggled/toggled state is represented consistently (including LED stripe semantics) on all settings-family keys.
+- Behavior and projection contracts cover lock/toggle transitions, forced states, and cross-surface parity.
 
 ### Release Notes
 - Release Note ID: `release_v0_9_6`
-- Player-facing summary: Replaces the storage experience with a faster browsing flow for unlocked and unused keys.
+- Player-facing summary: Unifies settings behavior so lock state and toggle state are consistent across keypad and storage.
 - Highlights:
-- Key discovery emphasizes families and quick retrieval.
-- Storage interactions target no-scroll, low-click access patterns.
+- Settings and visualizer controls now follow one shared interaction model.
+- Lock state and toggle state now resolve through a single consistent runtime mapping.
 
-# Release v0.9.7: Unlock Proximity Radar (Hint System v1)
+# Release v0.9.7: Storage Drawer Replacement
 
 ### User Story
-As a player, I get near-unlock feedback on the default visualizer without revealing exact unlock condition text.
+As a player, I can quickly find and deploy unlocked keys from storage without searching or deep menu traversal.
+
+### Dependencies
+- Requires v0.9.6 unified settings-state contract to classify and render settings/visualizer key states consistently inside the drawer.
 
 ### Pre-work
-Extend unlock evaluation to emit partial-progress output for multi-row conditions.
+Finalize drawer information architecture, including family grouping, filter strategy, and one-step deployment interactions for unlocked keys.
 
 ### Pre-work Exit Criteria
-- Unlock engine can produce normalized progress for rolling-window predicates (for example, last N rows).
-- Partial-match output is available without changing unlock truth semantics.
+- Drawer taxonomy is defined using existing key categories (including unified settings family behavior from v0.9.6).
+- Navigation flow is specified with deterministic interaction behavior for keyboard/pointer/touch.
+- Performance and layout constraints are set for no-scroll operation in normal gameplay key counts.
 
 ### User Story Exit Criteria
-- Default visualizer includes a proximity indicator that fills proportionally to strongest active near-match.
-- Partial success is supported for relevant multi-row unlock conditions.
-- Indicator communicates proximity only and does not disclose full unlock condition text.
-- Scope is limited to default visualizer; hint overlays on other visualizers are out of scope.
+- Players can locate a desired key within two interactions (tabs/filters/deploy) without search.
+- Family-based browsing makes nearby relevant keys discoverable without exact key-name recall.
+- Drawer avoids scrolling in normal gameplay inventory sizes.
+- Storage interactions preserve lock/unlock correctness (`storage contains unlocked keys only`) and move/swap domain constraints.
 
 ### Release Notes
 - Release Note ID: `release_v0_9_7`
-- Player-facing summary: Adds near-unlock radar hints that communicate progress without spoiling exact unlock conditions.
+- Player-facing summary: Replaces storage browsing with a faster drawer flow for finding and deploying unlocked keys.
 - Highlights:
-- Proximity indicator tracks strongest current near-match.
-- Multi-row unlocks can show partial progress.
+- Key discovery emphasizes families and quick retrieval.
+- Storage interactions target low-click, no-scroll access patterns.
+
+# Release v0.9.8: Checklist to Visualizer Hints
+
+### User Story
+As a player, I get progression guidance directly in visualizer surfaces so I can pursue unlocks without opening a separate checklist panel.
+
+### Dependencies
+- Requires v0.9.6 unified settings/lock-toggle definitions so hint eligibility and key state messaging use one vocabulary.
+- Integrates after v0.9.7 drawer IA decisions to keep hint actions and key-retrieval flows consistent.
+
+### Pre-work
+Extend unlock evaluation to emit hint-friendly progress signals per predicate type while preserving unlock truth semantics.
+
+### Pre-work Exit Criteria
+- Unlock engine emits normalized partial-progress data for multi-row and threshold predicates.
+- Predicate-to-hint mapping exists for current unlock catalog with explicit non-spoiler redaction rules.
+- Hint prioritization policy is defined (for example, strongest near-match and actionable next step).
+
+### User Story Exit Criteria
+- Standalone checklist panel is removed from the primary progression UX path.
+- Default visualizer shows near-unlock hints that communicate progress without exposing full unlock condition text.
+- Hint rendering supports multiple predicate families (press counts, roll patterns, total thresholds, error-observation conditions).
+- UI and behavior tests cover hint selection, redaction rules, and checklist-surface retirement.
+
+### Release Notes
+- Release Note ID: `release_v0_9_8`
+- Player-facing summary: Replaces checklist-first progression with contextual visualizer hints that show progress without spoilers.
+- Highlights:
+- Visualizer hints surface actionable near-unlock guidance in-context.
+- Predicate-aware progress cues replace checklist scanning as the default progression loop.
 
 # Release vα.0.0: Content Backlog
 
@@ -164,28 +201,6 @@ The following require integer inputs, and return NaN otherwise:
 - `Function display`: Prime factorization visualizer should display the user-defined function expanded - if the user's function is `5 [ - 4 ] [ Ω ] [ × 8 ] [ ^ 2 ] [ ++ ]`, the visualizer should show `f_0 = 5, f_x = ++(( Ω(f_x-1 - 4) × 8) ^ 2)`. Binary operations are added to the right and unary operators are added to the left, parentheses as needed.
 
 # Post-vα.0.0: full version backlog
-
-## Planned Release: Replace Checklist
-
-Goal: remove checklist-first progression UX and replace it with contextual hints inside the calculator experience.
-
-### Direction
-
-- De-emphasize or remove standalone checklist panel from primary progression flow.
-- Show unlock-condition hints on/near relevant calculator surfaces and controls.
-- Hint style should vary by predicate type (examples: key press counts, roll sequence targets, total thresholds, error-observation goals).
-
-### Design Constraints
-
-- Preserve existing progression correctness in domain logic; this is a presentation/interaction shift, not a rule simplification.
-- Keep hints understandable without requiring external panel scanning.
-- Avoid overwhelming players; reveal only actionable or near-term hint context.
-
-### Exit Criteria
-
-- Checklist panel removed from active UX path.
-- Predicate-to-hint mapping defined for current unlock catalog.
-- UI and behavior tests updated for hint rendering and checklist removal.
 
 ## Unary Operators
 

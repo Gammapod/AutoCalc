@@ -2,6 +2,7 @@ Truth 2: Runbook
 # Itch Release Runbook
 
 This runbook covers automatic Itch uploads for web-playable and downloadable artifacts.
+For shared pipeline rules (triggers, tag semantics, approvals, and drift policy), see `docs/ci-cd-pipeline.md`.
 
 ## Scope
 
@@ -10,7 +11,7 @@ This runbook covers automatic Itch uploads for web-playable and downloadable art
 - Distribution channel: Itch via Butler
 - Workflow: `.github/workflows/release-itch.yml`
 
-## One-time setup
+## One-time setup (Itch-specific)
 
 ### 1. Create/confirm Itch channels
 
@@ -40,7 +41,7 @@ Set these repository/environment vars only if you want non-default channels:
 
 ```bash
 git tag vX.Y.Z
-git push origin vX.Y.Z
+git push <remote> vX.Y.Z
 ```
 
 3. Approve the `release` environment when prompted.

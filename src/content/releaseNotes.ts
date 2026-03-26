@@ -3,15 +3,27 @@ import type { ReleaseNotesCatalog } from "../contracts/releaseNotes.js";
 export const releaseNotes: ReleaseNotesCatalog = {
   entries: [
     {
+      id: "release_v0_9_8",
+      releaseVersion: "v0.9.8",
+      channel: "planned",
+      title: "Unified Settings State Model",
+      summary: "Unifies lock-state and toggle-state behavior for settings-family keys across keypad and storage.",
+      bullets: [
+        "Settings and visualizer controls share one interaction model.",
+        "Lock and toggle state resolve through one runtime mapping.",
+        "Cross-surface parity rules now use one settings-state vocabulary.",
+      ],
+    },
+    {
       id: "release_v0_9_7",
       releaseVersion: "v0.9.7",
       channel: "planned",
-      title: "Unlock Proximity Radar (Hint System v1)",
-      summary: "Adds near-unlock feedback in the default visualizer without revealing exact unlock conditions.",
+      title: "Checklist to Visualizer Hints",
+      summary: "Replaces checklist-first progression with contextual visualizer hints that preserve spoiler-safe unlock guidance.",
       bullets: [
-        "Default visualizer gains a proximity indicator tied to strongest active near-match.",
-        "Partial progress supports multi-row unlock predicates.",
-        "Hints reveal proximity only, not full condition text.",
+        "Hint surfaces move progression guidance into visualizer context.",
+        "Predicate-aware progress cues replace checklist scanning.",
+        "Hints communicate progress without exposing full unlock condition text.",
       ],
     },
     {

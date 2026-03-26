@@ -2,6 +2,7 @@ Truth 2: Runbook
 # Android APK Release Runbook
 
 This runbook covers Android APK build and artifact release for AutoCalc.
+For shared pipeline rules (triggers, tag semantics, approvals, and drift policy), see `docs/ci-cd-pipeline.md`.
 
 ## Scope
 
@@ -59,3 +60,4 @@ cat app-release.apk.sha256
 
 1. This is APK sideload-first. Play Store AAB publishing is intentionally deferred.
 2. If Android project has not been generated yet, sync script runs `npx cap add android` once.
+3. This workflow uploads artifacts to the workflow run and does not publish a GitHub Release entry.

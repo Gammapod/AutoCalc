@@ -2,6 +2,7 @@ Truth 2: Runbook
 # Windows Release Runbook
 
 This runbook covers signed Windows x64 portable releases published via GitHub Releases.
+For shared pipeline rules (triggers, tag semantics, approvals, and drift policy), see `docs/ci-cd-pipeline.md`.
 
 ## Scope
 
@@ -10,13 +11,13 @@ This runbook covers signed Windows x64 portable releases published via GitHub Re
 - Workflow: `.github/workflows/release-win-portable.yml`
 - Runtime default shell inside `.exe`: desktop (`?ui=desktop` at Electron entrypoint)
 
-## One-time setup
+## One-time setup (Windows-specific)
 
-### 1. Configure GitHub Environment
+### Configure GitHub Environment
 
 Create GitHub Environment named `release` and require manual approvers.
 
-### 2. Add release environment secrets
+### Add release environment secrets
 
 Add these secrets to Environment `release`:
 
@@ -24,18 +25,14 @@ Add these secrets to Environment `release`:
 - `WIN_CSC_KEY_PASSWORD`: Password for the certificate
 - `WIN_CSC_TSA_URL` (optional): Timestamp authority URL override
 
-### 3. Repository permissions
-
-The workflow requires `contents: write` to publish assets to GitHub Releases.
-
 ## Release flow
 
-1. Ensure default branch is green.
-2. Tag a release from the desired commit:
+1. Ensure target commit is release-ready.
+2. Push a semver tag for the target commit:
 
 ```bash
 git tag vX.Y.Z
-git push origin vX.Y.Z
+git push <remote> vX.Y.Z
 ```
 
 3. Open GitHub Actions and confirm workflow `Release Windows Portable` starts.
@@ -44,12 +41,9 @@ git push origin vX.Y.Z
    - `AutoCalc-<version>-win-x64-portable.exe`
    - `AutoCalc-<version>-win-x64-portable.exe.sha256`
 
-## What CI validates
+## Windows-specific CI validations
 
-- Tag format: `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-prerelease`
-- Clean checkout before release steps
 - Signing secrets present before packaging
-- Package version aligned to tag version
 - Exactly one `.exe` exists in `release/`
 - Artifact filename version matches the tag version
 - SHA256 checksum file generated for published artifact
@@ -80,7 +74,7 @@ If a release tag was pushed by mistake:
 1. Delete the tag remotely:
 
 ```bash
-git push --delete origin vX.Y.Z
+git push --delete <remote> vX.Y.Z
 ```
 
 2. Delete local tag:
