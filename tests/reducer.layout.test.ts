@@ -45,7 +45,7 @@ export const runReducerLayoutTests = (): void => {
   assert.deepEqual(
     baselineLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
     baselineExpectedLayout,
-    "default keypad starts with Save&Quit at R2C3, ++ at R1C2, and = at R1C1",
+    "default keypad starts with Save&Quit at R3C2, ++ at R1C2, and = at R1C1",
   );
   assert.equal(
     baseline.ui.storageLayout.some((cell) => cell?.key === k("digit_1")),
@@ -592,7 +592,7 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(
     keyOrNull(resizedBigger.ui.keyLayout[indexAt(5, 4, saveQuitCoord.row, saveQuitCoord.col)]),
     k("system_save_quit_main_menu"),
-    "Save&Quit stays anchored at R2C3 when expanding",
+    "Save&Quit stays anchored at R3C2 when expanding",
   );
   assert.equal(
     keyOrNull(resizedBigger.ui.keyLayout[indexAt(5, 4, incCoord.row, incCoord.col)]),
@@ -621,22 +621,22 @@ export const runReducerLayoutTests = (): void => {
   const stepClearedOnResize = reducer(stepActiveResizeSource, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 1 });
   assert.equal(stepClearedOnResize.calculator.stepProgress.active, false, "keypad resize clears active step session");
 
-  const resizedSmaller = reducer(resizedBigger, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 2 });
+  const resizedSmaller = reducer(resizedBigger, { type: "SET_KEYPAD_DIMENSIONS", columns: 2, rows: 3 });
   assert.equal(resizedSmaller.ui.keyLayout.length, 6, "resizing down truncates layout tail");
-  assert.equal(resizedSmaller.ui.keypadColumns, 3, "resizing down updates columns");
-  assert.equal(resizedSmaller.ui.keypadRows, 2, "resizing down updates rows");
+  assert.equal(resizedSmaller.ui.keypadColumns, 2, "resizing down updates columns");
+  assert.equal(resizedSmaller.ui.keypadRows, 3, "resizing down updates rows");
   assert.equal(
-    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, saveQuitCoord.row, saveQuitCoord.col)]),
+    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(2, 3, saveQuitCoord.row, saveQuitCoord.col)]),
     k("system_save_quit_main_menu"),
-    "Save&Quit remains anchored at R2C3 after shrink",
+    "Save&Quit remains anchored at R3C2 after shrink",
   );
   assert.equal(
-    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, incCoord.row, incCoord.col)]),
+    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(2, 3, incCoord.row, incCoord.col)]),
     k("unary_inc"),
     "++ remains anchored at R1C2 after shrink",
   );
   assert.equal(
-    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(3, 2, equalsCoord.row, equalsCoord.col)]),
+    keyOrNull(resizedSmaller.ui.keyLayout[indexAt(2, 3, equalsCoord.row, equalsCoord.col)]),
     k("exec_equals"),
     "= remains anchored at R1C1 after shrink",
   );
@@ -699,7 +699,7 @@ export const runReducerLayoutTests = (): void => {
   assert.equal(
     clampedResize.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === k("system_save_quit_main_menu")),
     false,
-    "Save&Quit is evacuated off keypad when row 2 is removed",
+    "Save&Quit is evacuated off keypad when rows above 1 are removed",
   );
 
   const upgradedRow = reducer(baseline, { type: "UPGRADE_KEYPAD_ROW" });

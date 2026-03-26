@@ -47,14 +47,14 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   const stepThroughOnKeypad = state.ui.keyLayout.some(
     (cell) => cell.kind === "key" && cell.key === KEY_ID.exec_step_through,
   );
+  const expansionEnabled = Boolean(state.ui.buttonFlags[STEP_EXPANSION_FLAG]);
   const stepProgress = state.calculator.stepProgress;
   const stepTargetIndex =
-    stepThroughOnKeypad && state.calculator.operationSlots.length > 0
+    (stepThroughOnKeypad || expansionEnabled) && state.calculator.operationSlots.length > 0
       ? stepProgress.active
         ? stepProgress.nextSlotIndex
         : 0
       : null;
-  const expansionEnabled = Boolean(state.ui.buttonFlags[STEP_EXPANSION_FLAG]);
 
   const filledTokens = state.calculator.operationSlots.map((slot, index) => {
     if (stepProgress.active && index < stepProgress.executedSlotResults.length) {

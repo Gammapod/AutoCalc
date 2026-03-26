@@ -1,7 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { buildOperationSlotDisplayModel } from "../src/ui/modules/calculator/viewModel.js";
-import { DELTA_RANGE_CLAMP_FLAG } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, STEP_EXPANSION_FLAG } from "../src/domain/state.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import type { GameState } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
@@ -78,5 +78,41 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
   const onlyWrapStage = buildOperationSlotDisplayModel(withOnlyWrapStage);
   assert.equal(onlyWrapStage.stepTargetTokenIndex, 0, "single synthetic wrap stage is targetable when no user slots exist");
   assert.equal(onlyWrapStage.deltaWrapSuffix, null, "single-stage wrap rendering uses inline base token");
+
+  const withExpansionNoStepKey: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      maxSlots: 2,
+    },
+    ui: {
+      ...base.ui,
+      keyLayout: [{ kind: "key", key: k("exec_equals") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+      buttonFlags: {
+        ...base.ui.buttonFlags,
+        [STEP_EXPANSION_FLAG]: true,
+      },
+    },
+    calculator: {
+      ...base.calculator,
+      total: r(1n),
+      operationSlots: [{ operator: op("op_add"), operand: 2n }, { operator: op("op_mul"), operand: 3n }],
+      stepProgress: {
+        active: false,
+        seedTotal: null,
+        currentTotal: null,
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
+    },
+  };
+  const expansionNoStepKey = buildOperationSlotDisplayModel(withExpansionNoStepKey);
+  assert.equal(
+    expansionNoStepKey.stepTargetTokenIndex,
+    0,
+    "step expansion toggle computes next-operation highlight even when step-through key is absent",
+  );
 };
 

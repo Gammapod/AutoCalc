@@ -951,19 +951,19 @@ export const runReducerInputTests = (): void => {
     ...memoryMinusBase,
     lambdaControl: {
       ...memoryMinusBase.lambdaControl,
-      maxPoints: 5,
-      alpha: 2,
-      beta: 2,
+      maxPoints: 8,
+      alpha: 3,
+      beta: 3,
       gamma: 1,
       gammaMinRaised: true,
     },
     allocator: {
       ...memoryMinusBase.allocator,
-      maxPoints: 5,
+      maxPoints: 8,
       allocations: {
         ...memoryMinusBase.allocator.allocations,
-        width: 2,
-        height: 2,
+        width: 3,
+        height: 3,
         slots: 1,
       },
     },
@@ -976,14 +976,14 @@ export const runReducerInputTests = (): void => {
     },
     ui: {
       ...memoryMinusBase.ui,
-      keypadColumns: 2,
-      keypadRows: 2,
+      keypadColumns: 3,
+      keypadRows: 3,
     },
   };
   const minusAlpha = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "α" } }, "memory_adjust_minus");
-  assert.equal(minusAlpha.ui.keypadColumns, 1, "M– with α decreases keypad columns");
+  assert.equal(minusAlpha.ui.keypadColumns, 2, "M– with α decreases keypad columns");
   const minusBeta = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "β" } }, "memory_adjust_minus");
-  assert.equal(minusBeta.ui.keypadRows, 1, "M– with β decreases keypad rows");
+  assert.equal(minusBeta.ui.keypadRows, 2, "M– with β decreases keypad rows");
   const minusGamma = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "γ" } }, "memory_adjust_minus");
   assert.equal(minusGamma.unlocks.maxSlots, 1, "M– with γ respects gamma minimum once gamma has been raised");
   const withBackspaceUnlocked: GameState = {

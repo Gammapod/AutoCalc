@@ -48,7 +48,7 @@ initial keypad layout:
 
     | C2:       | C1:       |
     |-----------|-----------|
-R3: | Save&Quit |           |
+R3: | Save&Quit | [ ??? ]   |
 R2: |           |           |
 R1: | ++        | =         |
 
@@ -93,12 +93,6 @@ epsilon increases proportionally with gamma. intent: speed should rise sharply a
 
 calculator g begins with a loadout conducive to binary/logic operations
 
-NEW MATRIX
-PLANNED: 3/22/2026
-IMPLEMENTED: [date when finished]
-
-<---CHANGE START (clear when finished)
-
 Menu matrix:
  | 1    0    0    0    0 |   |1|   | ↔↔↔↔↔ |
  | 0    1    0    0    0 |   |6|   | ↕↕↕↕↕ |
@@ -127,9 +121,6 @@ in words:
 the Menu calculator always has 1 column, 6 rows, and nothing for the other values.
 
 its loadout contains game control keys (all locked with no unlock conditions)
-
-CHANGE END--->  (clear when finished)
-
 
 NEW MATRIX
 PLANNED: [planning not complete, DO NOT IMPLEMENT]

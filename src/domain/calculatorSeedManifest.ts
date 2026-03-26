@@ -18,7 +18,7 @@ export type CalculatorSeedSpec = {
 };
 
 const fPlacements: readonly SeedPlacement[] = [
-  { row: 2, col: 3, key: KEY_ID.system_save_quit_main_menu },
+  { row: 3, col: 2, key: KEY_ID.system_save_quit_main_menu },
   { row: 1, col: 2, key: KEY_ID.unary_inc },
   { row: 1, col: 1, key: KEY_ID.exec_equals },
 ];
@@ -40,8 +40,8 @@ const menuPlacements: readonly SeedPlacement[] = [
 export const calculatorSeedManifest: Readonly<Record<CalculatorId, CalculatorSeedSpec>> = {
   f: {
     calculatorId: "f",
-    keypadColumns: 3,
-    keypadRows: 2,
+    keypadColumns: 2,
+    keypadRows: 3,
     activeVisualizer: "total",
     placements: fPlacements,
   },

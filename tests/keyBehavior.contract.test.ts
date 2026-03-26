@@ -366,11 +366,11 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         ...base,
         lambdaControl: {
           ...base.lambdaControl,
-          maxPoints: 5,
+          maxPoints: 8,
         },
         allocator: {
           ...base.allocator,
-          maxPoints: 5,
+          maxPoints: 8,
         },
         ui: {
           ...base.ui,
@@ -388,26 +388,26 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
         ...base,
         lambdaControl: {
           ...base.lambdaControl,
-          maxPoints: 5,
-          alpha: 2,
+          maxPoints: 8,
+          alpha: 3,
         },
         allocator: {
           ...base.allocator,
-          maxPoints: 5,
+          maxPoints: 8,
           allocations: {
             ...base.allocator.allocations,
-            width: 2,
+            width: 3,
           },
         },
         ui: {
           ...base.ui,
-          keypadColumns: 2,
+          keypadColumns: 3,
           memoryVariable: base.ui.memoryVariable,
         },
       }, "memory_adjust_minus");
       const next = applyKeyAction(state, "memory_adjust_minus");
-      assert.equal(next.allocator.allocations.width, 1, "M\u2013 should decrease selected allocator dimension");
-      assert.equal(next.ui.keypadColumns, 1, "M\u2013 on α should project to keypad column reduction");
+      assert.equal(next.allocator.allocations.width, 2, "M\u2013 should decrease selected allocator dimension");
+      assert.equal(next.ui.keypadColumns, 2, "M\u2013 on α should project to keypad column reduction");
       return;
     }
   }
@@ -636,14 +636,14 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         lambdaControl: {
           ...base.lambdaControl,
           maxPoints: 2,
-          alpha: 1,
+          alpha: 2,
         },
         allocator: {
           ...base.allocator,
           maxPoints: 2,
           allocations: {
             ...base.allocator.allocations,
-            width: 1,
+            width: 2,
           },
         },
         ui: {
@@ -652,7 +652,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         },
       }, "memory_adjust_minus");
       const next = applyKeyAction(state, "memory_adjust_minus");
-      assert.equal(next.allocator.allocations.width, 1, "M\u2013 should no-op at lower bound");
+      assert.equal(next.allocator.allocations.width, 2, "M\u2013 should no-op at lower bound");
       assert.equal(next.ui.keypadColumns, state.ui.keypadColumns, "M\u2013 no-op at lower bound should keep projected width");
       return;
     }

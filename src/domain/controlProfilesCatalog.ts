@@ -17,8 +17,8 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
   f: {
     id: "f",
     starts: {
-      alpha: 3,
-      beta: 2,
+      alpha: 2,
+      beta: 3,
       gamma: 1,
       delta: 1,
       epsilon: 0,
@@ -31,9 +31,9 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       epsilon: false,
     },
     bounds: {
-      alpha: { min: 1, max: 8 },
-      beta: { min: 1, max: 8 },
-      gamma: { min: 0, max: 4 },
+      alpha: { min: 2, max: 8 },
+      beta: { min: 2, max: 8 },
+      gamma: { min: 1, max: 8 },
       delta: { min: 1, max: null },
       epsilon: { min: 0, max: null },
     },

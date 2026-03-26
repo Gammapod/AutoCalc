@@ -327,6 +327,21 @@ export const runOperationSlotDisplayTests = (): void => {
     "inactive step target applies bespoke addition expansion",
   );
 
+  const steppedAdditionExpansionWithoutStepKey: GameState = {
+    ...steppedAdditionExpansion,
+    ui: {
+      ...steppedAdditionExpansion.ui,
+      keyLayout: [{ kind: "key", key: k("exec_equals") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedAdditionExpansionWithoutStepKey),
+    "5 [ ++ ++ ++ ]",
+    "step expansion still highlights and expands next operation when step-through key is absent",
+  );
+
   const steppedSubtractionExpansion: GameState = {
     ...steppedAdditionExpansion,
     calculator: {
