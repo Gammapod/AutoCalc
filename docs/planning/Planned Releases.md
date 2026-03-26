@@ -1,6 +1,6 @@
 Truth 2: Releases
 
-# Release v0.9.6: Unified Settings State Model
+# Release v0.9.7: Unified Settings State Model
 
 ### User Story
 As a player, all settings-style keys behave consistently: I can immediately tell whether a setting is locked/unlocked and toggled/untoggled, and every settings key follows the same interaction rules.
@@ -20,25 +20,25 @@ Inventory and unify settings behavior currently split across lock semantics, tog
 - Behavior and projection contracts cover lock/toggle transitions, forced states, and cross-surface parity.
 
 ### Release Notes
-- Release Note ID: `release_v0_9_6`
+- Release Note ID: `release_v0_9_7`
 - Player-facing summary: Unifies settings behavior so lock state and toggle state are consistent across keypad and storage.
 - Highlights:
 - Settings and visualizer controls now follow one shared interaction model.
 - Lock state and toggle state now resolve through a single consistent runtime mapping.
 
-# Release v0.9.7: Storage Drawer Replacement
+# Release v0.9.8: Storage Drawer Replacement
 
 ### User Story
 As a player, I can quickly find and deploy unlocked keys from storage without searching or deep menu traversal.
 
 ### Dependencies
-- Requires v0.9.6 unified settings-state contract to classify and render settings/visualizer key states consistently inside the drawer.
+- Requires v0.9.7 unified settings-state contract to classify and render settings/visualizer key states consistently inside the drawer.
 
 ### Pre-work
 Finalize drawer information architecture, including family grouping, filter strategy, and one-step deployment interactions for unlocked keys.
 
 ### Pre-work Exit Criteria
-- Drawer taxonomy is defined using existing key categories (including unified settings family behavior from v0.9.6).
+- Drawer taxonomy is defined using existing key categories (including unified settings family behavior from v0.9.7).
 - Navigation flow is specified with deterministic interaction behavior for keyboard/pointer/touch.
 - Performance and layout constraints are set for no-scroll operation in normal gameplay key counts.
 
@@ -49,20 +49,20 @@ Finalize drawer information architecture, including family grouping, filter stra
 - Storage interactions preserve lock/unlock correctness (`storage contains unlocked keys only`) and move/swap domain constraints.
 
 ### Release Notes
-- Release Note ID: `release_v0_9_7`
+- Release Note ID: `release_v0_9_8`
 - Player-facing summary: Replaces storage browsing with a faster drawer flow for finding and deploying unlocked keys.
 - Highlights:
 - Key discovery emphasizes families and quick retrieval.
 - Storage interactions target low-click, no-scroll access patterns.
 
-# Release v0.9.8: Checklist to Visualizer Hints
+# Release v0.9.9: Checklist to Visualizer Hints
 
 ### User Story
 As a player, I get progression guidance directly in visualizer surfaces so I can pursue unlocks without opening a separate checklist panel.
 
 ### Dependencies
-- Requires v0.9.6 unified settings/lock-toggle definitions so hint eligibility and key state messaging use one vocabulary.
-- Integrates after v0.9.7 drawer IA decisions to keep hint actions and key-retrieval flows consistent.
+- Requires v0.9.7 unified settings/lock-toggle definitions so hint eligibility and key state messaging use one vocabulary.
+- Integrates after v0.9.8 drawer IA decisions to keep hint actions and key-retrieval flows consistent.
 
 ### Pre-work
 Extend unlock evaluation to emit hint-friendly progress signals per predicate type while preserving unlock truth semantics.
@@ -79,7 +79,7 @@ Extend unlock evaluation to emit hint-friendly progress signals per predicate ty
 - UI and behavior tests cover hint selection, redaction rules, and checklist-surface retirement.
 
 ### Release Notes
-- Release Note ID: `release_v0_9_8`
+- Release Note ID: `release_v0_9_9`
 - Player-facing summary: Replaces checklist-first progression with contextual visualizer hints that show progress without spoilers.
 - Highlights:
 - Visualizer hints surface actionable near-unlock guidance in-context.
