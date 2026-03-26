@@ -300,9 +300,9 @@ export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPa
 
 export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const isDual = Boolean(state.calculators?.g && state.calculators?.f);
-  if (isDual) {
-    const calcInstances = root.querySelectorAll<HTMLElement>("[data-calc-instance-id]");
-    if (calcInstances.length > 0) {
+  const calcInstances = root.querySelectorAll<HTMLElement>("[data-calc-instance-id]");
+  if (calcInstances.length > 0) {
+    if (isDual) {
       calcInstances.forEach((instanceEl) => {
         const instanceId = instanceEl.dataset.calcInstanceId;
         if (instanceId !== "f" && instanceId !== "g") {
@@ -312,6 +312,11 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
       });
       return;
     }
+
+    calcInstances.forEach((instanceEl) => {
+      renderVisualizerHost(instanceEl, state);
+    });
+    return;
   }
 
   const runtime = getHostRuntime(root);

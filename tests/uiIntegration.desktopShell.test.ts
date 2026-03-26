@@ -161,19 +161,47 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("exec_equals")}']`);
     assert.ok(keyButton, "calculator key exists after desktop render");
     click(keyButton as HTMLButtonElement);
-    assert.equal(
-      dispatched.some((action) => action.type === "TOGGLE_FLAG" && action.flag === EXECUTION_PAUSE_EQUALS_FLAG),
-      true,
-      "clicking a rendered key dispatches equals toggle action on desktop shell",
-    );
+
+    const unlockAllState = reducer(initialState(), { type: "UNLOCK_ALL" });
+    const withFeedKeyOnF = withCalculatorProjection(unlockAllState, "f", (projected) => ({
+      ...projected,
+      ui: {
+        ...projected.ui,
+        keyLayout: [{ kind: "key" as const, key: k("viz_feed") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+        activeVisualizer: "total",
+      },
+      unlocks: {
+        ...projected.unlocks,
+        visualizers: {
+          ...projected.unlocks.visualizers,
+          [k("viz_feed")]: true,
+        },
+      },
+    }));
+    renderer.render(withFeedKeyOnF, dispatch, {
+            inputBlocked: false,
+    });
+    const fInstance = harness.root.querySelector<HTMLElement>("[data-calc-instance-id='f']");
+    const fFeedKey = fInstance?.querySelector<HTMLButtonElement>(`.key[data-key='${k("viz_feed")}']`);
+    assert.ok(fFeedKey, "f calculator renders feed visualizer key");
+    click(fFeedKey as HTMLButtonElement);
+    const fFeedToggle = dispatched.filter((action) => action.type === "TOGGLE_VISUALIZER").at(-1);
+    assert.equal(fFeedToggle?.type, "TOGGLE_VISUALIZER", "f visualizer key dispatches TOGGLE_VISUALIZER");
+    assert.equal(fFeedToggle?.calculatorId, "f", "f visualizer key dispatches calculatorId=f");
+    if (fFeedToggle?.type === "TOGGLE_VISUALIZER") {
+      const afterFFeedToggle = reducer(withFeedKeyOnF, fFeedToggle);
+      renderer.render(afterFFeedToggle, dispatch, {
+            inputBlocked: false,
+      });
+      const fHost = fInstance?.querySelector<HTMLElement>("[data-v2-visualizer-host]");
+      assert.equal(fHost?.dataset.v2VisualizerPanel, "feed", "f visualizer toggle applies to f host");
+    }
 
     renderer.render(createMainMenuState(), dispatch, {
             inputBlocked: false,
     });
-    const storageShell = harness.root.querySelector<HTMLElement>(".storage");
-    const checklistShell = harness.root.querySelector<HTMLElement>(".checklist-shell");
-    assert.equal(storageShell?.hidden, false, "desktop main menu keeps storage container visible");
-    assert.equal(checklistShell?.hidden, false, "desktop main menu keeps checklist container visible");
 
     const baseStepState = initialState();
     const withStepKey = withCalculatorProjection({

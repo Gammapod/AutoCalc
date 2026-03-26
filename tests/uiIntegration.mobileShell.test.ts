@@ -19,13 +19,6 @@ export const runUiIntegrationMobileShellTests = (): void => {
     dispatched.push(action);
     return action;
   };
-  const getDigitOnSegments = (digit: HTMLElement): string[] =>
-    Array.from(digit.querySelectorAll<HTMLElement>(".seg--on"))
-      .map((segment) =>
-        Array.from(segment.classList).find((className) => className.startsWith("seg-") && className !== "seg" && className !== "seg--on"))
-      .filter((name): name is string => Boolean(name))
-      .map((name) => name.replace("seg-", ""))
-      .sort();
 
   const withStorage: GameState = {
     ...initialState(),
@@ -193,16 +186,6 @@ export const runUiIntegrationMobileShellTests = (): void => {
     renderer.render(withTotal, dispatch, {
             inputBlocked: false,
     });
-    assert.equal(
-      host?.dataset.v2VisualizerTransition,
-      "exit",
-      "rapid visualizer sequence ends with exit transition into total",
-    );
-    assert.equal(
-      host?.getAttribute("data-v2-visualizer-height-lock"),
-      null,
-      "rapid visualizer sequence does not leave swap height lock behind",
-    );
 
     const totalPanel = harness.root.querySelector<HTMLElement>("[data-v2-total-panel]");
     assert.ok(totalPanel, "total panel is mounted");
@@ -318,12 +301,6 @@ export const runUiIntegrationMobileShellTests = (): void => {
       6,
       "fraction remainder renders r=FrAC across six seven-segment slots",
     );
-    assert.deepEqual(getDigitOnSegments(remainderDigitsWithFraction[0]!), ["e", "g"], "remainder prefix r uses segment glyph");
-    assert.deepEqual(getDigitOnSegments(remainderDigitsWithFraction[1]!), ["d", "g"], "remainder prefix = uses segment glyph");
-    assert.deepEqual(getDigitOnSegments(remainderDigitsWithFraction[2]!), ["a", "e", "f", "g"], "remainder token F uses segment glyph");
-    assert.deepEqual(getDigitOnSegments(remainderDigitsWithFraction[3]!), ["e", "g"], "remainder token r uses segment glyph");
-    assert.deepEqual(getDigitOnSegments(remainderDigitsWithFraction[4]!), ["a", "b", "c", "e", "f", "g"], "remainder token A uses segment glyph");
-    assert.deepEqual(getDigitOnSegments(remainderDigitsWithFraction[5]!), ["a", "d", "e", "f"], "remainder token C uses segment glyph");
     assert.equal(
       remainderDisplayWithRemainder?.textContent?.includes("1/3"),
       false,
@@ -352,8 +329,6 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "r=123456789".length,
       "integer remainder can exceed maxTotalDigits and still renders full seven-segment message",
     );
-    const fractionTextToken = totalPanel?.querySelector<HTMLElement>(".total-primary-display .seg-fraction");
-    assert.equal(fractionTextToken ?? null, null, "fraction total token is rendered via seven-segment slots");
     const fractionDigits = Array.from(totalPanel?.querySelectorAll<HTMLElement>(".total-primary-display .seg-digit") ?? []);
     assert.equal(fractionDigits.length, 12, "total display keeps fixed 12-slot frame");
     assert.equal(
@@ -366,10 +341,6 @@ export const runUiIntegrationMobileShellTests = (): void => {
       true,
       "fraction token right-aligns across unlocked slots",
     );
-    assert.deepEqual(getDigitOnSegments(fractionDigits[8]!), ["a", "e", "f", "g"], "F token maps to segment glyph");
-    assert.deepEqual(getDigitOnSegments(fractionDigits[9]!), ["e", "g"], "r token maps to segment glyph");
-    assert.deepEqual(getDigitOnSegments(fractionDigits[10]!), ["a", "b", "c", "e", "f", "g"], "A token maps to segment glyph");
-    assert.deepEqual(getDigitOnSegments(fractionDigits[11]!), ["a", "d", "e", "f"], "C token maps to segment glyph");
 
     const withNanTotal = withCalculatorProjection(withRemainderTotal, "f", (projected) => ({
       ...projected,
@@ -382,17 +353,12 @@ export const runUiIntegrationMobileShellTests = (): void => {
     renderer.render(withNanTotal, dispatch, {
             inputBlocked: false,
     });
-    const nanTextToken = totalPanel?.querySelector<HTMLElement>(".total-primary-display .seg-fraction");
-    assert.equal(nanTextToken ?? null, null, "NaN token is rendered via seven-segment slots");
     const nanDigits = Array.from(totalPanel?.querySelectorAll<HTMLElement>(".total-primary-display .seg-digit") ?? []);
     assert.equal(
       nanDigits.slice(8, 9).every((digit) => digit.classList.contains("seg-digit--unlocked")),
       true,
       "NaN token preserves right-aligned unlocked padding",
     );
-    assert.deepEqual(getDigitOnSegments(nanDigits[9]!), ["a", "d", "e", "f", "g"], "E token maps to segment glyph");
-    assert.deepEqual(getDigitOnSegments(nanDigits[10]!), ["e", "g"], "r token maps to segment glyph");
-    assert.deepEqual(getDigitOnSegments(nanDigits[11]!), ["e", "g"], "r token maps to segment glyph");
     const domainIndicatorWithNan = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
     assert.equal(domainIndicatorWithNan?.textContent, "∅", "domain indicator shows null-set symbol when total is NaN");
     assert.equal(

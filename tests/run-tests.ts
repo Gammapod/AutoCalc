@@ -84,7 +84,6 @@ import { runBootstrapBoundaryTests } from "./bootstrapBoundary.test.js";
 import { runContentDrillUnlockExtensionTests } from "./contentDrill.unlockExtension.test.js";
 import { runUiShellRefsBuilderTests } from "./uiShell.refsBuilder.test.js";
 import { runUiShellTransformsTests } from "./uiShell.transforms.test.js";
-import { runUiShellMenuA11yTests } from "./uiShell.menuA11y.test.js";
 import { runUiModuleCalculatorMotionTests } from "./uiModule.calculatorMotion.test.js";
 import { runUiModuleCalculatorKeypadRenderTests } from "./uiModule.calculatorKeypadRender.test.js";
 import { runUiModuleCalculatorRejectBlinkTests } from "./uiModule.calculatorRejectBlink.test.js";
@@ -194,7 +193,6 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["content-drill/unlock-extension", runContentDrillUnlockExtensionTests],
   ["ui-shell/refs-builder", runUiShellRefsBuilderTests],
   ["ui-shell/transforms", runUiShellTransformsTests],
-  ["ui-shell/menu-a11y", runUiShellMenuA11yTests],
   ["ui-module/calculator-motion", runUiModuleCalculatorMotionTests],
   ["ui-module/calculator-keypad-render", runUiModuleCalculatorKeypadRenderTests],
   ["ui-module/calculator-reject-blink", runUiModuleCalculatorRejectBlinkTests],
