@@ -95,7 +95,30 @@ jobs:
         run: |
           $butlerZip = Join-Path $env:RUNNER_TEMP "butler.zip"
           $butlerDir = Join-Path $env:RUNNER_TEMP "butler"
-          Invoke-WebRequest -Uri "https://broth.itch.ovh/butler/windows-amd64/LATEST/archive/default" -OutFile $butlerZip
+          $candidateUris = @(
+            "https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default",
+            "https://broth.itch.zone/butler/windows-amd64-head/LATEST/archive/default"
+          )
+          $downloaded = $false
+          foreach ($uri in $candidateUris) {
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+              try {
+                Invoke-WebRequest -Uri $uri -OutFile $butlerZip
+                $downloaded = $true
+                Write-Host "Downloaded butler from $uri (attempt $attempt)"
+                break
+              } catch {
+                Write-Warning "Butler download failed from $uri (attempt $attempt): $($_.Exception.Message)"
+                Start-Sleep -Seconds (2 * $attempt)
+              }
+            }
+            if ($downloaded) {
+              break
+            }
+          }
+          if (-not $downloaded) {
+            throw "Failed to download butler from all candidate sources."
+          }
           Expand-Archive -Path $butlerZip -DestinationPath $butlerDir -Force
           "$butlerDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           & (Join-Path $butlerDir "butler.exe") --version
