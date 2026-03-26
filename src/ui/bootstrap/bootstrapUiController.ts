@@ -5,6 +5,7 @@ import type { AppServices } from "../../contracts/appServices.js";
 import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
 import { serializeRollEntriesForDebug } from "../../infra/debug/rollStateSerializer.js";
 import { getEffectiveControlProfile } from "../../domain/controlProfileRuntime.js";
+import { getLambdaDerivedValues } from "../../domain/lambdaControl.js";
 
 type UiShellMode = "mobile" | "desktop";
 
@@ -106,6 +107,33 @@ const readMatrixEditor = (root: HTMLElement, fallback: Record<ControlField, Cont
     parsed[target] = next;
   }
   return parsed;
+};
+
+const copyTextToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall back to document-based copy path below.
+  }
+
+  try {
+    const fallbackTextarea = document.createElement("textarea");
+    fallbackTextarea.value = text;
+    fallbackTextarea.setAttribute("readonly", "true");
+    fallbackTextarea.style.position = "fixed";
+    fallbackTextarea.style.opacity = "0";
+    document.body.appendChild(fallbackTextarea);
+    fallbackTextarea.focus();
+    fallbackTextarea.select();
+    const copied = document.execCommand("copy");
+    document.body.removeChild(fallbackTextarea);
+    return copied;
+  } catch {
+    return false;
+  }
 };
 
 export const createBootstrapUiController = ({
@@ -248,6 +276,40 @@ export const createBootstrapUiController = ({
     });
     const equations = readMatrixEditor(refs.debugMatrixEditor, profile.equations);
     onSetSessionControlEquations(calculatorId, equations);
+  });
+
+  listen(refs.copyCalculatorSnapshotButton, "click", () => {
+    const state = getState();
+    const calculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f");
+    const selectedInstance = state.calculators?.[calculatorId];
+    const selectedProjected = selectedInstance ?? state;
+    const selectedProfile = getEffectiveControlProfile({
+      ...state,
+      activeCalculatorId: calculatorId,
+    });
+    const lambdaDerived = getLambdaDerivedValues(selectedProjected.lambdaControl, selectedProfile);
+    const snapshot = {
+      schema: "debug_calculator_snapshot_v1",
+      capturedAt: new Date().toISOString(),
+      calculatorId,
+      lambdaControl: selectedProjected.lambdaControl,
+      allocator: selectedProjected.allocator,
+      keypad: {
+        columns: selectedProjected.ui.keypadColumns,
+        rows: selectedProjected.ui.keypadRows,
+        keyLayout: selectedProjected.ui.keyLayout,
+      },
+      controlMatrix: {
+        equations: selectedProfile.equations,
+        effectiveFields: lambdaDerived.effectiveFields,
+      },
+    };
+    const serialized = JSON.stringify(snapshot, null, 2);
+    void copyTextToClipboard(serialized).then((copied) => {
+      refs.debugRollStateEl.textContent = copied
+        ? `Copied calculator snapshot for '${calculatorId}' to clipboard.\n\n${serialized}`
+        : `Clipboard copy failed. Snapshot JSON:\n\n${serialized}`;
+    });
   });
 
   listen(refs.debugCalculatorSelect, "change", () => {

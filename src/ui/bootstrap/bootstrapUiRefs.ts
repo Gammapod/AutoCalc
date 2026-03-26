@@ -16,6 +16,7 @@ export type BootstrapUiRefs = {
   addMaxPointsButton: HTMLButtonElement;
   debugMatrixEditor: HTMLElement;
   applyControlMatrixButton: HTMLButtonElement;
+  copyCalculatorSnapshotButton: HTMLButtonElement;
   debugRollStateEl: HTMLElement;
   toggleUiShellLink: HTMLAnchorElement;
   toggleAppModeLink: HTMLAnchorElement;
@@ -39,6 +40,7 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
   const addMaxPointsButton = doc.querySelector<HTMLButtonElement>("[data-debug-add-max-points]");
   const debugMatrixEditor = doc.querySelector<HTMLElement>("[data-debug-control-matrix]");
   const applyControlMatrixButton = doc.querySelector<HTMLButtonElement>("[data-debug-apply-control-matrix]");
+  const copyCalculatorSnapshotButton = doc.querySelector<HTMLButtonElement>("[data-debug-copy-calculator-snapshot]");
   const debugRollStateEl = doc.querySelector<HTMLElement>("[data-debug-roll-state]");
   const toggleUiShellLink = doc.querySelector<HTMLAnchorElement>("[data-debug-toggle-ui-shell]");
   const toggleAppModeLink = doc.querySelector<HTMLAnchorElement>("[data-debug-toggle-app-mode]");
@@ -61,6 +63,7 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     !addMaxPointsButton ||
     !debugMatrixEditor ||
     !applyControlMatrixButton ||
+    !copyCalculatorSnapshotButton ||
     !debugRollStateEl ||
     !toggleUiShellLink ||
     !toggleAppModeLink
@@ -86,6 +89,7 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     addMaxPointsButton,
     debugMatrixEditor,
     applyControlMatrixButton,
+    copyCalculatorSnapshotButton,
     debugRollStateEl,
     toggleUiShellLink,
     toggleAppModeLink,
