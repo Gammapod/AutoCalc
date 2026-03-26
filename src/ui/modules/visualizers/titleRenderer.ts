@@ -1,14 +1,13 @@
 import type { GameState } from "../../../domain/types.js";
-
-const FALLBACK_APP_VERSION = "0.9.4";
+import { APP_VERSION } from "../../../generated/appVersion.js";
 
 const resolveAppVersion = (): string => {
   if (typeof document === "undefined") {
-    return `v${FALLBACK_APP_VERSION}`;
+    return `v${APP_VERSION}`;
   }
   const versionToken = document.body.dataset.appVersion?.trim();
   if (!versionToken) {
-    return `v${FALLBACK_APP_VERSION}`;
+    return `v${APP_VERSION}`;
   }
   return versionToken.startsWith("v") ? versionToken : `v${versionToken}`;
 };

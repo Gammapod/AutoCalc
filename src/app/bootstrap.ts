@@ -23,6 +23,7 @@ import { setAppServices } from "../contracts/appServices.js";
 import { defaultContentProvider } from "../content/defaultContentProvider.js";
 import type { AppMode } from "../contracts/appMode.js";
 import { resolveModeManifest } from "../domain/modeManifest.js";
+import { APP_VERSION } from "../generated/appVersion.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -122,7 +123,7 @@ const resolveAppVersionToken = (): string => {
   if (typeof processVersion === "string" && processVersion.trim()) {
     return processVersion.trim();
   }
-  return "0.9.4";
+  return APP_VERSION;
 };
 
 const shellRenderer = createShellRenderer(root, { mode: uiShellMode, services });

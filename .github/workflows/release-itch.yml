@@ -90,7 +90,36 @@ jobs:
           Write-Host "Windows artifact: $($exe[0].FullName)"
           Write-Host "Web artifact: $($zip[0].FullName)"
 
+      - name: Resolve butler cache metadata
+        id: butler_meta
+        shell: pwsh
+        run: |
+          $channel = "windows-amd64"
+          $versionUri = "https://broth.itch.zone/butler/$channel/LATEST/version"
+          try {
+            $version = (Invoke-WebRequest -Uri $versionUri -UseBasicParsing).Content.Trim()
+          } catch {
+            Write-Warning "Failed to resolve butler version from $versionUri: $($_.Exception.Message)"
+            $version = "latest"
+          }
+          if (-not $version) {
+            $version = "latest"
+          }
+          "channel=$channel" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "Resolved butler cache metadata: channel=$channel version=$version"
+
+      - name: Restore butler cache
+        id: butler_cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/butler
+          key: butler-${{ runner.os }}-${{ steps.butler_meta.outputs.channel }}-${{ steps.butler_meta.outputs.version }}
+          restore-keys: |
+            butler-${{ runner.os }}-${{ steps.butler_meta.outputs.channel }}-
+
       - name: Install butler
+        if: steps.butler_cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $butlerZip = Join-Path $env:RUNNER_TEMP "butler.zip"
@@ -120,6 +149,14 @@ jobs:
             throw "Failed to download butler from all candidate sources."
           }
           Expand-Archive -Path $butlerZip -DestinationPath $butlerDir -Force
+
+      - name: Add butler to PATH
+        shell: pwsh
+        run: |
+          $butlerDir = Join-Path $env:RUNNER_TEMP "butler"
+          if (-not (Test-Path (Join-Path $butlerDir "butler.exe"))) {
+            throw "butler.exe not found at expected cache/install location: $butlerDir"
+          }
           "$butlerDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           & (Join-Path $butlerDir "butler.exe") --version
 
