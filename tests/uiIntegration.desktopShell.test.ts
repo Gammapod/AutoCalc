@@ -85,7 +85,7 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     );
     if (defaultRows >= 2) {
       assert.equal(
-        keys?.style.gridTemplateRows.includes("repeat(2, var(--desktop-key-height))"),
+        keys?.style.gridTemplateRows.includes(`repeat(${defaultRows.toString()}, var(--desktop-key-height))`),
         true,
         "desktop baseline rows use fixed-height row tracks",
       );
@@ -107,6 +107,10 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       );
     }
 
+    const oneByOneState = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 1, rows: 1 });
+    renderer.render(oneByOneState, dispatch, {
+            inputBlocked: false,
+    });
     const widthAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-width") ?? "0");
     const heightAtOneByOne = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
     const baselineState = reducer(initialState(), { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 2 });

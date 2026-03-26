@@ -30,7 +30,7 @@ const isValidLayoutIndex = (layoutLength: number, index: number): boolean =>
 const isKeyCell = (cell: LayoutCell | KeyCell | null): cell is KeyCell =>
   !!cell && cell.kind === "key";
 
-const isKeypadEmptyCell = (cell: LayoutCell): boolean => cell.kind === "placeholder";
+const isKeypadEmptyCell = (cell: LayoutCell | null): boolean => !!cell && cell.kind === "placeholder";
 const isStorageEmptyCell = (cell: KeyCell | null): boolean => cell === null;
 
 const nextStorageWithTrailingEmptyRow = (storageLayout: Array<KeyCell | null>): Array<KeyCell | null> => {
@@ -261,7 +261,7 @@ const sourceClearedCell = (surface: LayoutSurface): LayoutCell | null =>
   isKeypadSurface(surface) ? emptyCell() : null;
 
 const isEmptyCell = (surface: LayoutSurface, cell: LayoutCell | KeyCell | null): boolean =>
-  isKeypadSurface(surface) ? isKeypadEmptyCell(cell as LayoutCell) : isStorageEmptyCell(cell as KeyCell | null);
+  isKeypadSurface(surface) ? isKeypadEmptyCell(cell as LayoutCell | null) : isStorageEmptyCell(cell as KeyCell | null);
 
 const hasValidSurfaceIndex = (state: GameState, surface: LayoutSurface, index: number): boolean =>
   isValidLayoutIndex(getSurfaceLength(state, surface), index);

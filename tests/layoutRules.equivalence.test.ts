@@ -2,6 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { classifyDropAction as classifyDomainDropAction } from "../src/domain/layoutDragDrop.js";
 import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
+import { fromKeyLayoutArray } from "../src/domain/keypadLayoutModel.js";
 import { applyMoveLayoutCell, applySwapLayoutCells } from "../src/domain/reducer.layout.js";
 import { initialState } from "../src/domain/state.js";
 import { legacyInitialState } from "./support/legacyState.js";
@@ -11,6 +12,16 @@ type DragTarget = { surface: LayoutSurface; index: number };
 
 const createScenarioState = (): GameState => {
   const base = legacyInitialState();
+  const keypadColumns = 3;
+  const keypadRows = 2;
+  const keyLayout: GameState["ui"]["keyLayout"] = [
+    { kind: "placeholder", area: "empty" },
+    { kind: "key", key: k("digit_1") },
+    { kind: "placeholder", area: "empty" },
+    { kind: "key", key: k("exec_equals") },
+    { kind: "placeholder", area: "empty" },
+    { kind: "placeholder", area: "empty" },
+  ];
   return {
     ...base,
     unlocks: {
@@ -30,16 +41,10 @@ const createScenarioState = (): GameState => {
     },
     ui: {
       ...base.ui,
-      keypadColumns: 3,
-      keypadRows: 2,
-      keyLayout: [
-        { kind: "placeholder", area: "empty" },
-        { kind: "key", key: k("digit_1") },
-        { kind: "placeholder", area: "empty" },
-        { kind: "key", key: k("exec_equals") },
-        { kind: "placeholder", area: "empty" },
-        { kind: "placeholder", area: "empty" },
-      ],
+      keypadColumns,
+      keypadRows,
+      keyLayout,
+      keypadCells: fromKeyLayoutArray(keyLayout, keypadColumns, keypadRows),
       storageLayout: [
         { kind: "key", key: k("util_undo") },
         { kind: "key", key: k("exec_equals") },
@@ -90,11 +95,21 @@ export const runLayoutRulesEquivalenceTests = (): void => {
     { surface: "keypad", index: 1 },
   );
 
-  const reducerMoveRejected = applyMoveLayoutCell(state, "storage", 0, "keypad", 0);
-  assert.equal(reducerMoveRejected, state, "reducer move rejects this storage-to-keypad move under current policy");
+  const reducerMoveAllowed = applyMoveLayoutCell(state, "storage", 0, "keypad", 0);
+  assert.notEqual(reducerMoveAllowed, state, "reducer move allows this storage-to-keypad move under current policy");
+  assert.deepEqual(
+    reducerMoveAllowed.ui.keyLayout[0],
+    { kind: "key", key: k("util_undo") },
+    "reducer move writes source key into empty keypad destination",
+  );
 
-  const reducerSwapRejected = applySwapLayoutCells(state, "storage", 0, "keypad", 1);
-  assert.equal(reducerSwapRejected, state, "reducer swap rejects this storage-to-keypad swap under current policy");
+  const reducerSwapAllowed = applySwapLayoutCells(state, "storage", 0, "keypad", 1);
+  assert.notEqual(reducerSwapAllowed, state, "reducer swap allows this storage-to-keypad swap under current policy");
+  assert.deepEqual(
+    reducerSwapAllowed.ui.keyLayout[1],
+    { kind: "key", key: k("util_undo") },
+    "reducer swap writes source key into keypad destination",
+  );
 
   const reducerAllowsLockedKeypadDestination = applySwapLayoutCells(
     lockedKeypadDestination,

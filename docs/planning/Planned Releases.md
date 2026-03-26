@@ -1,6 +1,6 @@
 Truth 2: Releases
 
-# Release v0.9.4: Roll Analysis Visualizer Replacement
+# Release v0.9.6: Roll Analysis Visualizer Replacement
 
 ### User Story
 As a player, I can open a diagnostic visualizer showing what just happened and what the run currently indicates.
@@ -23,9 +23,9 @@ Define a stable presentation schema for analysis sections and `Last Key` descrip
 - Visualizer is diagnostic only and introduces no gameplay logic changes.
 
 ### Notes
-- `temp_plan.md` content is considered consolidated into archived/release entries through v0.9.4.
+- `temp_plan.md` content is considered consolidated into archived/release entries through v0.9.6.
 
-# Release v0.9.5: Unlock Proximity Radar (Hint System v1)
+# Release v0.9.7: Unlock Proximity Radar (Hint System v1)
 
 ### User Story
 As a player, I get near-unlock feedback on the default visualizer without revealing exact unlock condition text.

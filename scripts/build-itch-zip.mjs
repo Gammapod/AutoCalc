@@ -25,6 +25,7 @@ const zipPath = resolve(releaseDir, zipName);
 
 const requiredPaths = [
   resolve(root, "index.html"),
+  resolve(root, "styles", "key-visual-affordance.css"),
   resolve(root, "dist"),
   designRefsSource,
   resolve(root, "dist", "reports"),
@@ -77,6 +78,7 @@ const copyIntoStaging = (fromRootRelativePath, toStagingRelativePath = fromRootR
 
 // Build a fresh mobile_web payload in staging (avoid stale local mobile_web artifacts).
 copyIntoStaging("index.html", "mobile_web/index.html");
+copyIntoStaging("styles", "mobile_web/styles");
 copyRuntimeWebPayload(resolve(root, "dist"), resolve(stagingRoot, "mobile_web", "dist"));
 copyIntoStaging("node_modules/katex/dist/katex.min.css", "mobile_web/node_modules/katex/dist/katex.min.css");
 copyIntoStaging("node_modules/katex/dist/katex.min.js", "mobile_web/node_modules/katex/dist/katex.min.js");
@@ -90,6 +92,7 @@ cpSync(resolve(root, "dist", "reports"), resolve(stagingRoot, "dist", "reports")
 
 // Add itch-playable root structure.
 cpSync(resolve(stagingRoot, "mobile_web", "index.html"), resolve(stagingRoot, "index.html"));
+cpSync(resolve(stagingRoot, "mobile_web", "styles"), resolve(stagingRoot, "styles"), { recursive: true });
 cpSync(resolve(stagingRoot, "mobile_web", "dist"), resolve(stagingRoot, "dist"), { recursive: true });
 cpSync(resolve(stagingRoot, "mobile_web", "node_modules"), resolve(stagingRoot, "node_modules"), { recursive: true });
 cpSync(resolve(root, "dist", "reports"), resolve(stagingRoot, "dist", "reports"), { recursive: true });
@@ -104,6 +107,7 @@ const archive = spawnSync(
     "-C",
     stagingRoot,
     "index.html",
+    "styles",
     "dist",
     "node_modules",
     "mobile_web",

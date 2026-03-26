@@ -2,7 +2,8 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
-import { initialState } from "../src/domain/state.js";
+import { applyKeyActionCore } from "../src/domain/reducer.input.core.js";
+import { initialState, LAMBDA_POINTS_REFUNDED_SEEN_ID, LAMBDA_POINTS_SPENT_SEEN_ID } from "../src/domain/state.js";
 import { applyUnlocks } from "../src/domain/unlocks.js";
 import type { GameState } from "../src/domain/types.js";
 
@@ -51,10 +52,19 @@ export const runReducerUnlockTests = (): void => {
     },
     unlockCatalog,
   );
-  assert.equal(atTen.unlocks.unaryOperators[uop("unary_dec")], true, "-- unlocks at total >= 10");
+  assert.equal(atTen.unlocks.unaryOperators[uop("unary_dec")], false, "-- does not unlock from total >= 10 alone");
   assert.equal(atTen.unlocks.unaryOperators[uop("unary_inc")], true, "++ unlocks at total >= 10");
   assert.equal(atTen.unlocks.utilities[utility("toggle_step_expansion")], true, "[ ??? ] unlocks at total >= 10");
-  assert.equal(atTen.completedUnlockIds.includes("unlock_dec_on_total_at_least_10"), true, "-- unlock id is recorded");
+  assert.equal(
+    atTen.unlocks.execution[execution("exec_roll_inverse")],
+    true,
+    "roll inverse unlocks at total >= 10",
+  );
+  assert.equal(
+    atTen.completedUnlockIds.includes("unlock_roll_inverse_on_undo_while_feed_visible"),
+    true,
+    "roll-inverse unlock id is recorded",
+  );
   assert.equal(atTen.completedUnlockIds.includes("unlock_inc_on_total_at_least_10"), true, "++ unlock id is recorded");
   assert.equal(
     atTen.completedUnlockIds.includes("unlock_step_expansion_on_total_at_least_10"),
@@ -80,6 +90,83 @@ export const runReducerUnlockTests = (): void => {
     atTen.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === utility("toggle_step_expansion")),
     true,
     "[ ??? ] remains in storage when unlocked but not pre-installed",
+  );
+
+  const withDecreasingPair = applyUnlocks(
+    {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollEntries: [{ y: r(5n) }, { y: r(4n) }],
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(
+    withDecreasingPair.unlocks.unaryOperators[uop("unary_dec")],
+    true,
+    "-- unlocks when a roll entry is lower than the previous entry",
+  );
+  assert.equal(
+    withDecreasingPair.completedUnlockIds.includes("unlock_dec_on_total_at_least_10"),
+    true,
+    "-- unlock id is recorded",
+  );
+
+  const withNegativeSlopeRun = applyUnlocks(
+    {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        rollEntries: [{ y: r(20n) }, { y: r(17n) }, { y: r(14n) }, { y: r(11n) }, { y: r(8n) }, { y: r(5n) }, { y: r(2n) }],
+      },
+    },
+    unlockCatalog,
+  );
+  assert.equal(withNegativeSlopeRun.unlocks.slotOperators[op("op_sub")], true, "- unlocks on a run of 7 with negative slope");
+
+  const memorySpendSeed: GameState = {
+    ...base,
+    unlocks: {
+      ...base.unlocks,
+      memory: {
+        ...base.unlocks.memory,
+        [memory("memory_adjust_plus")]: true,
+      },
+    },
+    lambdaControl: {
+      ...base.lambdaControl,
+      maxPoints: base.lambdaControl.maxPoints + 1,
+    },
+  };
+  const afterFirstLambdaSpend = applyKeyActionCore(memorySpendSeed, memory("memory_adjust_plus"));
+  assert.equal(
+    afterFirstLambdaSpend.completedUnlockIds.includes(LAMBDA_POINTS_SPENT_SEEN_ID),
+    true,
+    "first lambda spend records spent-marker unlock id",
+  );
+  assert.equal(
+    afterFirstLambdaSpend.unlocks.memory[memory("memory_adjust_minus")],
+    true,
+    "first lambda spend unlocks memory adjust minus",
+  );
+  assert.equal(
+    afterFirstLambdaSpend.unlocks.memory[memory("memory_cycle_variable")],
+    false,
+    "memory cycle variable remains locked until first lambda refund",
+  );
+
+  const withRefundMarker = applyUnlocks(
+    {
+      ...base,
+      completedUnlockIds: [...base.completedUnlockIds, LAMBDA_POINTS_REFUNDED_SEEN_ID],
+    },
+    unlockCatalog,
+  );
+  assert.equal(
+    withRefundMarker.unlocks.memory[memory("memory_cycle_variable")],
+    true,
+    "first lambda refund unlocks memory cycle variable",
   );
 
   const withError = applyUnlocks(
