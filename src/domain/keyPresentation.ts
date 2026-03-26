@@ -198,7 +198,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.memory_adjust_plus, { buttonFace: "-\u03BB \u21D2 +\u03B1" }],
   [KEY_ID.memory_adjust_minus, { buttonFace: "+\u03BB \u21D0 -\u03B1" }],
   [KEY_ID.memory_recall, { buttonFace: "M\u2192" }],
-  [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1F5AA}, \u{1D6FF})" }],
+  [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
   [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "\u27E1[0, \u{1D6FF})" }],
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
   [KEY_ID.toggle_binary_mode, { buttonFace: "b\u2082" }],
