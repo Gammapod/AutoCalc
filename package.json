@@ -24,6 +24,7 @@
     "build:watch": "tsc -w -p tsconfig.app.json",
     "build:watch:full": "tsc -w -p tsconfig.json",
     "ci:verify": "npm run ci:health",
+    "ci:verify:release": "node ./scripts/code-health-score.mjs --enforce=perfection",
     "ci:verify:release-notes": "node ./scripts/verify-release-notes.mjs",
     "ci:health": "node ./scripts/code-health-score.mjs --enforce=good-enough",
     "ci:verify:boundaries": "node ./scripts/check-boundaries.mjs",
@@ -32,7 +33,7 @@
     "ci:verify:shell": "npm run build:web:full && node ./dist/tests/run-tests.js --grep=\"^(ui-shell/|ui-integration/(mobile-shell|desktop-shell)$)\"",
     "ci:verify:ui-complexity": "node ./scripts/check-ui-complexity.mjs",
     "dev:serve": "node ./scripts/dev-server.mjs",
-    "release:win:portable": "npm run ci:verify && npm run build:release && node ./scripts/build-desktop.mjs",
+    "release:win:portable": "npm run ci:verify:release && npm run build:release && node ./scripts/build-desktop.mjs",
     "test": "npm run ci:verify"
   },
   "devDependencies": {

@@ -3,6 +3,17 @@ import type { ReleaseNotesCatalog } from "../contracts/releaseNotes.js";
 export const releaseNotes: ReleaseNotesCatalog = {
   entries: [
     {
+      id: "release_v0_9_9",
+      releaseVersion: "v0.9.9",
+      channel: "planned",
+      title: "Checklist to Visualizer Hints",
+      summary: "Replaces checklist-first progression with contextual visualizer hints that show progress without spoilers.",
+      bullets: [
+        "Visualizer hints surface actionable near-unlock guidance in context.",
+        "Predicate-aware progress cues replace checklist scanning as the default progression loop.",
+      ],
+    },
+    {
       id: "release_v0_9_8",
       releaseVersion: "v0.9.8",
       channel: "planned",

@@ -40,6 +40,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify build and tests
+        run: npm run ci:verify:release
+
       - name: Build Android APK
         run: npm run build:android:apk
 

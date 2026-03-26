@@ -105,7 +105,7 @@ const countPatternMatches = async (dir, predicate, regex) => {
 const sourcePredicate = (filePath) => filePath.endsWith(".ts") && !filePath.endsWith(".d.ts");
 const testPredicate = (filePath) => filePath.endsWith(".test.ts");
 
-const build = runCommand("Build", "npm run build:web");
+const build = runCommand("Build", "npm run build:web:full");
 const boundaries = runCommand("Dependency boundaries", "npm run ci:verify:boundaries");
 const uiComplexity = runCommand("UI complexity", "npm run ci:verify:ui-complexity");
 const releaseNotesPolicy = runCommand("Release notes policy", "npm run ci:verify:release-notes");
@@ -255,6 +255,28 @@ const enforcePassed =
   );
 
 if (!enforcePassed) {
+  const failedChecks = [];
+  if (build.status !== 0) {
+    failedChecks.push("build");
+  }
+  if (boundaries.status !== 0) {
+    failedChecks.push("dependency boundaries");
+  }
+  if (uiComplexity.status !== 0) {
+    failedChecks.push("ui complexity");
+  }
+  if (releaseNotesPolicy.status !== 0) {
+    failedChecks.push("release notes policy");
+  }
+  if (tests.status !== 0 || failCount > 0) {
+    failedChecks.push("tests");
+  }
+  if (enforceTier === "perfection" && tsNoCheckCount > 0) {
+    failedChecks.push("@ts-nocheck count");
+  }
+  if (failedChecks.length > 0) {
+    console.error(`Failed checks: ${failedChecks.join(", ")}`);
+  }
   console.error(
     `Code health gate failed: expected ${enforceTier} (>=${threshold}) but got ${score} (${standard}).`,
   );

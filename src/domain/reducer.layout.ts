@@ -471,7 +471,27 @@ export const applyMoveLayoutCell = (
 
   const sourceCell = readSurfaceCell(state, fromSurface, fromIndex);
   const destinationCell = readSurfaceCell(state, toSurface, toIndex);
-  if (!isKeyCell(sourceCell) || !isEmptyCell(toSurface, destinationCell)) {
+  if (!isKeyCell(sourceCell)) {
+    return state;
+  }
+
+  if (fromSurface === toSurface && isKeypadSurface(fromSurface) && isKeyCell(destinationCell)) {
+    const sourceUi = getSurfaceUi(state, fromSurface);
+    if (!sourceUi) {
+      return state;
+    }
+    const columns = sourceUi.keypadColumns || KEYPAD_DEFAULT_COLUMNS;
+    const rows = sourceUi.keypadRows || KEYPAD_DEFAULT_ROWS;
+    const keyLayout = toKeyLayoutArray(getCurrentKeypadCells(sourceUi), columns, rows);
+    const nextLayout = [...keyLayout];
+    const [movedCell] = nextLayout.splice(fromIndex, 1);
+    nextLayout.splice(toIndex, 0, movedCell);
+    const nextKeypadCells = fromKeyLayoutArray(nextLayout, columns, rows);
+    const nextUi = withKeypadState(sourceUi, nextKeypadCells, columns, rows);
+    return setSurfaceUi(state, fromSurface, nextUi);
+  }
+
+  if (!isEmptyCell(toSurface, destinationCell)) {
     return state;
   }
   const moveDecision = evaluateLayoutDrop(
