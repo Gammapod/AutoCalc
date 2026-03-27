@@ -52,6 +52,7 @@ import type {
 } from "./types.js";
 import { getAppServices, type AppServices } from "../contracts/appServices.js";
 import { buttonRegistry } from "./buttonRegistry.js";
+import { applySettingsSelection } from "./settings.js";
 // Root reducer orchestrator: route actions to focused domain reducers.
 
 const visualizerKeyById = new Map<VisualizerId, Key>(
@@ -175,7 +176,7 @@ const withRecordedDiagnosticsAction = (
   if (noEffect) {
     return next;
   }
-  const visualizerToggled = action.type === "TOGGLE_VISUALIZER" && previous.ui.activeVisualizer !== next.ui.activeVisualizer;
+  const visualizerToggled = action.type === "TOGGLE_VISUALIZER" && previous.settings.visualizer !== next.settings.visualizer;
 
   const lastActionTrace: GameState["ui"]["diagnostics"]["lastAction"] = {
     sequence: previousLastAction.sequence + 1,
@@ -244,15 +245,16 @@ const allocatorFieldToAxis = (field: "width" | "height" | "range" | "speed" | "s
 };
 
 const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): GameState => {
-  const activeVisualizer = state.ui.activeVisualizer === visualizer ? "total" : visualizer;
-  if (state.ui.activeVisualizer === activeVisualizer) {
+  const nextSettings = applySettingsSelection(state, { family: "visualizer", option: visualizer });
+  if (nextSettings === state.settings) {
     return state;
   }
   return {
     ...state,
+    settings: nextSettings,
     ui: {
       ...state.ui,
-      activeVisualizer,
+      activeVisualizer: nextSettings.visualizer,
     },
   };
 };

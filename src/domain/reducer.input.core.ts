@@ -37,7 +37,6 @@ import { isKeyUsableForInput } from "./keyUnlocks.js";
 import { clearOperationEntry, createInitialStepProgressState, createResetCalculatorState } from "./reducer.stateBuilders.js";
 import {
   BINARY_ADD_RESULT_ONE_SEEN_ID,
-  BINARY_MODE_FLAG,
   BINARY_MUL_RESULT_ZERO_SEEN_ID,
   C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID,
   CHECKLIST_UNLOCK_ID,
@@ -109,7 +108,7 @@ const isNaturalDivisorOperator = (operator: Key): boolean => isNaturalDivisorOpe
 const toExpressionConstant = (constantKey: ConstantKeyId): "pi" | "e" =>
   constantKey === KEY_ID.const_e ? "e" : "pi";
 const getDisplayRadix = (state: GameState): 2 | 10 =>
-  state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
+  state.settings.base === "base2" ? 2 : 10;
 
 const getMagnitudeText = (total: GameState["calculator"]["total"]): string => {
   if (!isRationalCalculatorValue(total) || !isInteger(total.value)) {
@@ -989,10 +988,10 @@ const finalizeTerminalExecution = (
   if (evaluation.nextTotal.kind === "nan") {
     withMarkers = markCompletedUnlockId(withMarkers, NAN_RESULT_SEEN_ID);
   }
-  if (evaluation.errorKind === "overflow" && finalized.ui.buttonFlags[BINARY_MODE_FLAG]) {
+  if (evaluation.errorKind === "overflow" && finalized.settings.base === "base2") {
     withMarkers = markCompletedUnlockId(withMarkers, OVERFLOW_ERROR_IN_BINARY_MODE_SEEN_ID);
   }
-  if (finalized.ui.buttonFlags[BINARY_MODE_FLAG] && evaluation.nextTotal.kind === "rational" && evaluation.nextTotal.value.den === 1n) {
+  if (finalized.settings.base === "base2" && evaluation.nextTotal.kind === "rational" && evaluation.nextTotal.value.den === 1n) {
     const hasAdd = finalized.calculator.operationSlots.some((slot) => slot.kind !== "unary" && slot.operator === KEY_ID.op_add);
     const hasMul = finalized.calculator.operationSlots.some((slot) => slot.kind !== "unary" && slot.operator === KEY_ID.op_mul);
     if (hasAdd && evaluation.nextTotal.value.num === 1n) {
@@ -1368,7 +1367,7 @@ export const applyUndo = (state: GameState): GameState => {
       singleDigitInitialTotalEntry: nextRollEntries.length === 0,
     },
   };
-  const withUndoContextMarker = withClearedStep.ui.activeVisualizer === "feed"
+  const withUndoContextMarker = withClearedStep.settings.visualizer === "feed"
     ? markCompletedUnlockId(withPoppedRoll, UNDO_WHILE_FEED_VISIBLE_SEEN_ID)
     : withPoppedRoll;
   return withRollDiagnosticsApplied(withUndoContextMarker, withUndoContextMarker.calculator.operationSlots);

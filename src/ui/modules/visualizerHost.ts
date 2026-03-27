@@ -305,7 +305,7 @@ const runDevFitDiagnostics = (root: Element, panel: VisualizerHostPanel): void =
 };
 
 export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPanel => {
-  const active = state.ui.activeVisualizer;
+  const active = state.settings.visualizer;
   if (active === "total") {
     return "total";
   }

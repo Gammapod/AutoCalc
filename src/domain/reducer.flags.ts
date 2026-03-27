@@ -1,8 +1,5 @@
 import type { GameState } from "./types.js";
 import {
-  BINARY_MODE_FLAG,
-  DELTA_RANGE_CLAMP_FLAG,
-  MOD_ZERO_TO_DELTA_FLAG,
   OVERFLOW_ERROR_SEEN_ID,
 } from "./state.js";
 import {
@@ -15,29 +12,10 @@ import {
 } from "./calculatorValue.js";
 import { appendSeedIfMissing, appendStepRow, createRollEntry } from "./rollEntries.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
-
-// Toggle UI-level boolean flags used by toggle-style buttons.
-const EXCLUSIVE_FLAG_GROUPS: readonly (readonly string[])[] = [
-  [DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG],
-];
-
-const clearExclusivePeers = (flags: Record<string, boolean>, flag: string): Record<string, boolean> => {
-  const nextFlags = { ...flags };
-  for (const group of EXCLUSIVE_FLAG_GROUPS) {
-    if (!group.includes(flag)) {
-      continue;
-    }
-    for (const candidate of group) {
-      if (candidate !== flag) {
-        delete nextFlags[candidate];
-      }
-    }
-  }
-  return nextFlags;
-};
+import { applySettingsSelection, resolveSettingSelectionForFlag } from "./settings.js";
 
 const applyBinaryModeOverflowIfNeeded = (previous: GameState, next: GameState): GameState => {
-  if (!next.ui.buttonFlags[BINARY_MODE_FLAG] || previous.ui.buttonFlags[BINARY_MODE_FLAG]) {
+  if (next.settings.base !== "base2" || previous.settings.base === "base2") {
     return next;
   }
   if (!isRationalCalculatorValue(next.calculator.total)) {
@@ -86,6 +64,22 @@ export const applyToggleFlag = (state: GameState, flag: string): GameState => {
   if (trimmed.length === 0) {
     return state;
   }
+  const settingSelection = resolveSettingSelectionForFlag(trimmed);
+  if (settingSelection) {
+    const nextSettings = applySettingsSelection(state, settingSelection);
+    if (nextSettings === state.settings) {
+      return state;
+    }
+    const nextState: GameState = {
+      ...state,
+      settings: nextSettings,
+      ui: {
+        ...state.ui,
+        activeVisualizer: nextSettings.visualizer,
+      },
+    };
+    return applyBinaryModeOverflowIfNeeded(state, nextState);
+  }
 
   const current = Boolean(state.ui.buttonFlags[trimmed]);
   if (current) {
@@ -105,10 +99,10 @@ export const applyToggleFlag = (state: GameState, flag: string): GameState => {
     ui: {
       ...state.ui,
       buttonFlags: {
-        ...clearExclusivePeers(state.ui.buttonFlags, trimmed),
+        ...state.ui.buttonFlags,
         [trimmed]: true,
       },
     },
   };
-  return applyBinaryModeOverflowIfNeeded(state, toggledOnState);
+  return toggledOnState;
 };

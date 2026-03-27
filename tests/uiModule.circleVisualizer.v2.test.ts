@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { installDomHarness } from "./helpers/domHarness.js";
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "../src/domain/state.js";
 import { initialState } from "../src/domain/state.js";
 import {
   detectResidueWheelSpec,
@@ -81,11 +80,9 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
 
   const withModZeroToDelta: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      buttonFlags: {
-        [MOD_ZERO_TO_DELTA_FLAG]: true,
-      },
+    settings: {
+      ...base.settings,
+      wrapper: "mod_zero_to_delta",
     },
   };
   const modFlagSpec = detectResidueWheelSpec(withModZeroToDelta);
@@ -97,11 +94,9 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
 
   const withDeltaRange: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      buttonFlags: {
-        [DELTA_RANGE_CLAMP_FLAG]: true,
-      },
+    settings: {
+      ...base.settings,
+      wrapper: "delta_range_clamp",
     },
   };
   const deltaFlagSpec = detectResidueWheelSpec(withDeltaRange);
@@ -228,9 +223,10 @@ export const runUiModuleCircleVisualizerV2Tests = (): void => {
       },
       ui: {
         ...base.ui,
-        buttonFlags: {
-          [MOD_ZERO_TO_DELTA_FLAG]: true,
-        },
+      },
+      settings: {
+        ...base.settings,
+        wrapper: "mod_zero_to_delta",
       },
     });
     const panel = modFlagHarness.root.querySelector<HTMLElement>("[data-v2-circle-panel]");

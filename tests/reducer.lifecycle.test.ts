@@ -110,6 +110,13 @@ export const runReducerLifecycleTests = (): void => {
     },
     ui: {
       ...base.ui,
+      keyLayout: [
+        { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
+        { kind: "key", key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } },
+        { kind: "key", key: KEY_ID.toggle_step_expansion, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } },
+      ],
+      keypadColumns: 3,
+      keypadRows: 1,
       buttonFlags: {
         [EXECUTION_PAUSE_FLAG]: true,
         [EXECUTION_PAUSE_EQUALS_FLAG]: true,
@@ -118,12 +125,11 @@ export const runReducerLifecycleTests = (): void => {
   };
 
   const deltaOn = reducer(settingsToggleBase, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
-  assert.equal(deltaOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range settings toggle turns on");
+  assert.equal(deltaOn.settings.wrapper, "delta_range_clamp", "delta-range settings toggle turns on");
   assert.equal(Boolean(deltaOn.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "delta-range settings toggle interrupts and clears play/pause execution toggle");
   assert.equal(Boolean(deltaOn.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "delta-range settings toggle interrupts and clears equals execution toggle");
   const modOn = reducer(deltaOn, { type: "TOGGLE_FLAG", flag: MOD_ZERO_TO_DELTA_FLAG });
-  assert.equal(Boolean(modOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]), false, "mod-range toggle clears delta-range toggle");
-  assert.equal(modOn.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG], true, "mod-range settings toggle turns on");
+  assert.equal(modOn.settings.wrapper, "mod_zero_to_delta", "mod-range settings toggle turns on");
   const modInterruptSource: GameState = {
     ...settingsToggleBase,
     ui: {
@@ -135,18 +141,16 @@ export const runReducerLifecycleTests = (): void => {
   };
   const modOnFromExecution = reducer(modInterruptSource, { type: "TOGGLE_FLAG", flag: MOD_ZERO_TO_DELTA_FLAG });
   assert.equal(Boolean(modOnFromExecution.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "mod-range settings toggle interrupts and clears play/pause execution toggle");
-  assert.equal(modOnFromExecution.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG], true, "mod-range settings toggle still applies after execution interrupt");
+  assert.equal(modOnFromExecution.settings.wrapper, "mod_zero_to_delta", "mod-range settings toggle still applies after execution interrupt");
   const deltaBackOn = reducer(modOn, { type: "TOGGLE_FLAG", flag: DELTA_RANGE_CLAMP_FLAG });
-  assert.equal(deltaBackOn.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "delta-range toggle can be re-enabled");
-  assert.equal(Boolean(deltaBackOn.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]), false, "delta-range toggle clears mod-range toggle");
+  assert.equal(deltaBackOn.settings.wrapper, "delta_range_clamp", "delta-range toggle can be re-enabled");
   const stepExpansionToggled = reducer(deltaBackOn, { type: "TOGGLE_FLAG", flag: STEP_EXPANSION_FLAG });
   assert.equal(
-    Boolean(stepExpansionToggled.ui.buttonFlags[STEP_EXPANSION_FLAG]),
-    !Boolean(deltaBackOn.ui.buttonFlags[STEP_EXPANSION_FLAG]),
+    stepExpansionToggled.settings.stepExpansion,
+    deltaBackOn.settings.stepExpansion === "on" ? "off" : "on",
     "step expansion toggle still flips independently",
   );
-  assert.equal(stepExpansionToggled.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG], true, "step expansion no longer clears delta-range toggle");
-  assert.equal(Boolean(stepExpansionToggled.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]), false, "delta-range/mod-range exclusivity remains unchanged");
+  assert.equal(stepExpansionToggled.settings.wrapper, "delta_range_clamp", "step expansion no longer clears delta-range toggle");
 
   const binaryOverflowSource: GameState = {
     ...base,
@@ -165,11 +169,14 @@ export const runReducerLifecycleTests = (): void => {
     },
     ui: {
       ...base.ui,
+      keyLayout: [{ kind: "key", key: KEY_ID.toggle_binary_mode, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } }],
+      keypadColumns: 1,
+      keypadRows: 1,
       buttonFlags: {},
     },
   };
   const binaryOverflowed = reducer(binaryOverflowSource, { type: "TOGGLE_FLAG", flag: BINARY_MODE_FLAG });
-  assert.equal(binaryOverflowed.ui.buttonFlags[BINARY_MODE_FLAG], true, "binary mode toggle turns on");
+  assert.equal(binaryOverflowed.settings.base, "base2", "binary mode toggle turns on");
   assert.deepEqual(
     binaryOverflowed.calculator.total,
     { kind: "rational", value: { num: 3n, den: 1n } },
@@ -192,20 +199,43 @@ export const runReducerLifecycleTests = (): void => {
     "binary overflow marks overflow unlock marker",
   );
 
-  const graphOn = reducer(base, { type: "TOGGLE_VISUALIZER", visualizer: "graph" });
-  assert.equal(graphOn.ui.activeVisualizer, "graph", "GRAPH visualizer toggles on");
+  const visualizerToggleBase: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      keyLayout: [
+        { kind: "key", key: KEY_ID.viz_graph },
+        { kind: "key", key: KEY_ID.viz_feed },
+        { kind: "key", key: KEY_ID.viz_eigen_allocator },
+      ],
+      keypadColumns: 3,
+      keypadRows: 1,
+    },
+    unlocks: {
+      ...base.unlocks,
+      visualizers: {
+        ...base.unlocks.visualizers,
+        [KEY_ID.viz_graph]: true,
+        [KEY_ID.viz_feed]: true,
+        [KEY_ID.viz_eigen_allocator]: true,
+      },
+    },
+  };
+
+  const graphOn = reducer(visualizerToggleBase, { type: "TOGGLE_VISUALIZER", visualizer: "graph" });
+  assert.equal(graphOn.settings.visualizer, "graph", "GRAPH visualizer toggles on");
 
   const feedOn = reducer(graphOn, { type: "TOGGLE_VISUALIZER", visualizer: "feed" });
-  assert.equal(feedOn.ui.activeVisualizer, "feed", "FEED visualizer toggles on and replaces graph");
+  assert.equal(feedOn.settings.visualizer, "feed", "FEED visualizer toggles on and replaces graph");
 
   const feedOff = reducer(feedOn, { type: "TOGGLE_VISUALIZER", visualizer: "feed" });
-  assert.equal(feedOff.ui.activeVisualizer, "total", "pressing active visualizer toggles off to total");
+  assert.equal(feedOff.settings.visualizer, "total", "pressing active visualizer toggles off to total");
 
   const eigenOn = reducer(feedOff, { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" });
-  assert.equal(eigenOn.ui.activeVisualizer, "eigen_allocator", "\u03BB visualizer toggles on");
+  assert.equal(eigenOn.settings.visualizer, "eigen_allocator", "\u03BB visualizer toggles on");
 
   const eigenOff = reducer(eigenOn, { type: "TOGGLE_VISUALIZER", visualizer: "eigen_allocator" });
-  assert.equal(eigenOff.ui.activeVisualizer, "total", "pressing active \u03BB visualizer toggles off to total");
+  assert.equal(eigenOff.settings.visualizer, "total", "pressing active \u03BB visualizer toggles off to total");
 
   const lockedSettingsInstalled: GameState = {
     ...base,
@@ -217,9 +247,10 @@ export const runReducerLifecycleTests = (): void => {
       ],
       keypadColumns: 2,
       keypadRows: 1,
-      buttonFlags: {
-        [MOD_ZERO_TO_DELTA_FLAG]: true,
-      },
+    },
+    settings: {
+      ...base.settings,
+      wrapper: "mod_zero_to_delta",
     },
     unlocks: {
       ...base.unlocks,
@@ -232,14 +263,9 @@ export const runReducerLifecycleTests = (): void => {
   };
   const forcedLockedSettings = reducer(lockedSettingsInstalled, { type: "TOGGLE_FLAG", flag: MOD_ZERO_TO_DELTA_FLAG });
   assert.equal(
-    forcedLockedSettings.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG],
-    true,
+    forcedLockedSettings.settings.wrapper,
+    "delta_range_clamp",
     "with multiple locked settings toggles installed, first keypad-order toggle is forced ON",
-  );
-  assert.equal(
-    Boolean(forcedLockedSettings.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]),
-    false,
-    "locked settings forcing clears later settings toggles in the exclusive group",
   );
 
   const lockedPlayPauseInstalled: GameState = {
@@ -276,7 +302,10 @@ export const runReducerLifecycleTests = (): void => {
       ],
       keypadColumns: 2,
       keypadRows: 1,
-      activeVisualizer: "graph",
+    },
+    settings: {
+      ...base.settings,
+      visualizer: "graph",
     },
     unlocks: {
       ...base.unlocks,
@@ -289,7 +318,7 @@ export const runReducerLifecycleTests = (): void => {
   };
   const visualizerForcedByKeypadOrder = reducer(lockedVisualizersInstalled, { type: "TOGGLE_VISUALIZER", visualizer: "graph" });
   assert.equal(
-    visualizerForcedByKeypadOrder.ui.activeVisualizer,
+    visualizerForcedByKeypadOrder.settings.visualizer,
     "feed",
     "locked installed visualizers force a single active visualizer by keypad scan order",
   );

@@ -1,14 +1,13 @@
 import { getButtonDefinition } from "./buttonRegistry.js";
 import { KEY_ID } from "./keyPresentation.js";
 import {
-  DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
   EXECUTION_PAUSE_FLAG,
-  MOD_ZERO_TO_DELTA_FLAG,
 } from "./state.js";
 import { isMultiCalculatorSession, resolveActiveCalculatorId, toCalculatorSurface } from "./multiCalculator.js";
 import { shouldRejectRollInverseExecution } from "./rollInverseExecution.js";
 import type { Action, GameState, Key, KeyCell } from "./types.js";
+import { resolveSettingSelectionForFlag } from "./settings.js";
 
 const isKeyCell = (cell: GameState["ui"]["keyLayout"][number] | GameState["ui"]["storageLayout"][number]): cell is KeyCell =>
   Boolean(cell && cell.kind === "key");
@@ -77,11 +76,6 @@ const getExecutionToggleFlags = (ui: GameState["ui"]): Set<string> => {
   }
   return flags;
 };
-
-const EXECUTION_INTERRUPTIBLE_SETTINGS_FLAGS = new Set<string>([
-  DELTA_RANGE_CLAMP_FLAG,
-  MOD_ZERO_TO_DELTA_FLAG,
-]);
 
 export const listExecutionToggleFlags = (state: GameState): Set<string> => getExecutionToggleFlags(state.ui);
 
@@ -273,7 +267,7 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
         interrupt: { type: "clear_all_except_flag", flag: action.flag },
       };
     }
-    if (isExecutionModeActive(state) && EXECUTION_INTERRUPTIBLE_SETTINGS_FLAGS.has(action.flag)) {
+    if (isExecutionModeActive(state) && resolveSettingSelectionForFlag(action.flag)) {
       return {
         decision: "interrupt_and_run",
         interrupt: { type: "clear_all" },

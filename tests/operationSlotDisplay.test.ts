@@ -270,10 +270,10 @@ export const runOperationSlotDisplayTests = (): void => {
     ui: {
       ...base.ui,
       keyLayout: [{ kind: "key", key: k("exec_step_through") }],
-      buttonFlags: {
-        ...base.ui.buttonFlags,
-        "settings.step_expansion": true,
-      },
+    },
+    settings: {
+      ...base.settings,
+      stepExpansion: "on",
     },
     calculator: {
       ...base.calculator,
@@ -303,10 +303,10 @@ export const runOperationSlotDisplayTests = (): void => {
     ui: {
       ...base.ui,
       keyLayout: [{ kind: "key", key: k("exec_step_through") }],
-      buttonFlags: {
-        ...base.ui.buttonFlags,
-        "settings.step_expansion": true,
-      },
+    },
+    settings: {
+      ...base.settings,
+      stepExpansion: "on",
     },
     calculator: {
       ...base.calculator,

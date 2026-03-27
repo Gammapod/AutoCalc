@@ -2,7 +2,6 @@ import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js"
 import { expressionToDisplayString, slotOperandToExpression } from "../../domain/expression.js";
 import { getSeedRow } from "../../domain/rollEntries.js";
 import { KEY_ID } from "../../domain/keyPresentation.js";
-import { STEP_EXPANSION_FLAG } from "../../domain/state.js";
 import type {
   BinarySlot,
   CalculatorValue,
@@ -47,7 +46,7 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   const stepThroughOnKeypad = state.ui.keyLayout.some(
     (cell) => cell.kind === "key" && cell.key === KEY_ID.exec_step_through,
   );
-  const expansionEnabled = Boolean(state.ui.buttonFlags[STEP_EXPANSION_FLAG]);
+  const expansionEnabled = state.settings.stepExpansion === "on";
   const stepProgress = state.calculator.stepProgress;
   const stepTargetIndex =
     (stepThroughOnKeypad || expansionEnabled) && state.calculator.operationSlots.length > 0

@@ -189,18 +189,18 @@ export const runRollDisplayTests = (): void => {
 
   const withFeedOn: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      activeVisualizer: "feed",
+    settings: {
+      ...base.settings,
+      visualizer: "feed",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withFeedOn), "feed", "FEED on activates feed panel");
 
   const withFeedAndGraphOn: GameState = {
     ...withFeedOn,
-    ui: {
-      ...withFeedOn.ui,
-      activeVisualizer: "graph",
+    settings: {
+      ...withFeedOn.settings,
+      visualizer: "graph",
     },
   };
   assert.equal(

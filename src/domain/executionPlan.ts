@@ -1,4 +1,3 @@
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "./state.js";
 import type { GameState, Slot } from "./types.js";
 
 export type WrapStageMode = "delta_range_clamp" | "mod_zero_to_delta";
@@ -7,13 +6,11 @@ export type ExecutionStage =
   | { kind: "slot"; slot: Slot }
   | { kind: "wrap"; mode: WrapStageMode };
 
-export const resolveWrapStageMode = (state: Pick<GameState, "ui">): WrapStageMode | null => {
-  const deltaRangeWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
-  const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
-  if (modZeroToDeltaEnabled) {
+export const resolveWrapStageMode = (state: Pick<GameState, "settings">): WrapStageMode | null => {
+  if (state.settings.wrapper === "mod_zero_to_delta") {
     return "mod_zero_to_delta";
   }
-  if (deltaRangeWrapEnabled) {
+  if (state.settings.wrapper === "delta_range_clamp") {
     return "delta_range_clamp";
   }
   return null;
@@ -21,7 +18,7 @@ export const resolveWrapStageMode = (state: Pick<GameState, "ui">): WrapStageMod
 
 export const buildExecutionStagePlan = (
   operationSlots: Slot[],
-  state: Pick<GameState, "ui">,
+  state: Pick<GameState, "settings">,
 ): ExecutionStage[] => {
   const stages: ExecutionStage[] = operationSlots.map((slot) => ({ kind: "slot", slot }));
   const wrapStage = resolveWrapStageMode(state);
@@ -33,5 +30,5 @@ export const buildExecutionStagePlan = (
 
 export const getExecutionStageCount = (
   operationSlots: Slot[],
-  state: Pick<GameState, "ui">,
+  state: Pick<GameState, "settings">,
 ): number => buildExecutionStagePlan(operationSlots, state).length;

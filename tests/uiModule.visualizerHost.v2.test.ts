@@ -79,18 +79,18 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
 
   const withGraphOn: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      activeVisualizer: "graph",
+    settings: {
+      ...base.settings,
+      visualizer: "graph",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withGraphOn), "graph", "graph flag activates graph panel");
 
   const withFeedOnEmptyRoll: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      activeVisualizer: "feed",
+    settings: {
+      ...base.settings,
+      visualizer: "feed",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withFeedOnEmptyRoll), "feed", "feed stays visible while FEED is toggled");
@@ -106,43 +106,43 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
 
   const withGraphAndFeed: GameState = {
     ...withFeedOnRoll,
-    ui: {
-      ...withFeedOnRoll.ui,
-      activeVisualizer: "graph",
+    settings: {
+      ...withFeedOnRoll.settings,
+      visualizer: "graph",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withGraphAndFeed), "graph", "graph panel is active when selected");
 
   const withCircleSelected: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      activeVisualizer: "circle",
+    settings: {
+      ...base.settings,
+      visualizer: "circle",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "circle", "circle visualizer resolves to circle panel");
   const withTitleSelected: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      activeVisualizer: "title",
+    settings: {
+      ...base.settings,
+      visualizer: "title",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withTitleSelected), "title", "title visualizer resolves to title panel");
   const withReleaseNotesSelected: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      activeVisualizer: "release_notes",
+    settings: {
+      ...base.settings,
+      visualizer: "release_notes",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withReleaseNotesSelected), "release_notes", "release notes visualizer resolves to release notes panel");
 
   const withEigenSelected: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      activeVisualizer: "eigen_allocator",
+    settings: {
+      ...base.settings,
+      visualizer: "eigen_allocator",
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withEigenSelected), "eigen_allocator", "lambda visualizer resolves to eigen allocator panel");
@@ -254,9 +254,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   );
   const withFeedOn: GameState = {
     ...withGraphOn,
-    ui: {
-      ...withGraphOn.ui,
-      activeVisualizer: "feed",
+    settings: {
+      ...withGraphOn.settings,
+      visualizer: "feed",
     },
   };
   renderVisualizerHost(renderRoot as unknown as Element, withFeedOn);

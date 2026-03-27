@@ -5,6 +5,7 @@ import { buildAllocatorSnapshot, createDefaultLambdaControl, getLambdaDerivedVal
 import { KEY_ID } from "./keyPresentation.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 import { applyCalculatorSeedPlacements } from "./calculatorSeedManifest.js";
+import { createDefaultCalculatorSettings } from "./settings.js";
 
 export const createInitialUiDiagnosticsLastAction = (): GameState["ui"]["diagnostics"]["lastAction"] => ({
   sequence: 0,
@@ -12,7 +13,7 @@ export const createInitialUiDiagnosticsLastAction = (): GameState["ui"]["diagnos
 });
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 20;
+export const SAVE_SCHEMA_VERSION = 21;
 export const CHECKLIST_UNLOCK_ID = "unlock_checklist_on_first_c_press";
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
@@ -205,6 +206,7 @@ export const initialState = (): GameState => {
   const valueCompose = buildUnlockRecord("valueCompose");
   const fProfile = controlProfiles.f;
   const lambdaControl = createDefaultLambdaControl(fProfile);
+  const settings = createDefaultCalculatorSettings();
   const lambdaDerived = getLambdaDerivedValues(lambdaControl, fProfile);
   const initialColumns = lambdaDerived.effectiveFields.alpha;
   const initialRows = lambdaDerived.effectiveFields.beta;
@@ -235,6 +237,7 @@ export const initialState = (): GameState => {
         executedSlotResults: [],
       },
     },
+    settings,
     lambdaControl,
     allocator: buildAllocatorSnapshot(lambdaControl, fProfile),
     ui: {
@@ -243,7 +246,7 @@ export const initialState = (): GameState => {
       storageLayout: defaultStorageLayout(seededKeyIds),
       keypadColumns: initialColumns,
       keypadRows: initialRows,
-      activeVisualizer: "total",
+      activeVisualizer: settings.visualizer,
       memoryVariable: "α",
       buttonFlags: {},
       diagnostics: {
@@ -279,6 +282,7 @@ export const initialState = (): GameState => {
         id: "f",
         symbol: "f",
         calculator: { ...base.calculator },
+        settings: { ...base.settings },
         lambdaControl: base.lambdaControl,
         allocator: base.allocator,
         ui: base.ui,

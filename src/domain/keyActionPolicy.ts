@@ -2,6 +2,7 @@ import { keyToVisualizerId } from "./buttonRegistry.js";
 import { KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import type { Action, GameState, KeyButtonBehavior, KeyCell, VisualizerId } from "./types.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG } from "./state.js";
+import { resolveSettingSelectionForKey } from "./settings.js";
 
 const PRESS_KEY_BEHAVIOR: KeyButtonBehavior = { type: "press_key" };
 
@@ -16,7 +17,11 @@ export const getKeyButtonBehavior = (cell: KeyCell): KeyButtonBehavior => cell.b
 export const isToggleFlagActive = (state: GameState, cell: KeyCell): boolean => {
   const visualizer = resolveVisualizerForKey(cell.key);
   if (visualizer) {
-    return state.ui.activeVisualizer === visualizer;
+    return state.settings.visualizer === visualizer;
+  }
+  const settingSelection = resolveSettingSelectionForKey(cell.key);
+  if (settingSelection) {
+    return state.settings[settingSelection.family] === settingSelection.option;
   }
   if (cell.key === KEY_ID.exec_equals) {
     return getButtonFlag(state, EXECUTION_PAUSE_EQUALS_FLAG);

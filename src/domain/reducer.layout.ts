@@ -16,9 +16,7 @@ import {
 import {
   evaluateLayoutDrop,
 } from "./layoutRules.js";
-import { keyToVisualizerId } from "./buttonRegistry.js";
-import { resolveKeyId } from "./keyPresentation.js";
-import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface, VisualizerId } from "./types.js";
+import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface } from "./types.js";
 import { isMultiCalculatorSession } from "./multiCalculator.js";
 
 export { isStorageLayoutValid } from "./layoutRules.js";
@@ -360,13 +358,9 @@ export const resizeKeyLayout = (
   return toKeyLayoutArray(resizeAnchored(sourceCells, toColumns, toRows), toColumns, toRows);
 };
 
-const visualizerFromKey = (key: KeyCell["key"]): VisualizerId | null => {
-  return keyToVisualizerId(resolveKeyId(key));
-};
-
 const clearToggleFlagWhenLeavingKeypad = (
   state: GameState,
-  keyCell: KeyCell,
+  _keyCell: KeyCell,
   fromSurface: LayoutSurface,
   toSurface: LayoutSurface,
 ): GameState => {
@@ -379,36 +373,7 @@ const clearToggleFlagWhenLeavingKeypad = (
   if (!leftSourceCalculator) {
     return state;
   }
-  const fromUi = getSurfaceUi(state, fromSurface);
-  if (!fromUi) {
-    return state;
-  }
-  const visualizer = visualizerFromKey(keyCell.key);
-  let nextState = state;
-  if (visualizer && fromUi.activeVisualizer === visualizer) {
-    nextState = setSurfaceUi(nextState, fromSurface, {
-      ...fromUi,
-      activeVisualizer: "total",
-    });
-  }
-
-  if (keyCell.behavior?.type !== "toggle_flag") {
-    return nextState;
-  }
-  const latestFromUi = getSurfaceUi(nextState, fromSurface);
-  if (!latestFromUi) {
-    return nextState;
-  }
-  const trimmed = keyCell.behavior.flag.trim();
-  if (trimmed.length === 0 || !latestFromUi.buttonFlags[trimmed]) {
-    return nextState;
-  }
-  const nextFlags = { ...latestFromUi.buttonFlags };
-  delete nextFlags[trimmed];
-  return setSurfaceUi(nextState, fromSurface, {
-    ...latestFromUi,
-    buttonFlags: nextFlags,
-  });
+  return state;
 };
 
 export const applyMoveKeySlot = (state: GameState, fromIndex: number, toIndex: number): GameState => {

@@ -21,13 +21,16 @@ export const runReducerWrapTailExecutionTests = (): void => {
     sessionControlProfiles: undefined,
     ui: {
       ...fullyUnlocked.ui,
-      keyLayout: [{ kind: "key", key: k("exec_step_through") }],
-      keypadColumns: 1,
+      keyLayout: [
+        { kind: "key", key: k("exec_step_through") },
+        { kind: "key", key: k("toggle_delta_range_clamp"), behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
+      ],
+      keypadColumns: 2,
       keypadRows: 1,
-      buttonFlags: {
-        ...fullyUnlocked.ui.buttonFlags,
-        [DELTA_RANGE_CLAMP_FLAG]: true,
-      },
+    },
+    settings: {
+      ...fullyUnlocked.settings,
+      wrapper: "delta_range_clamp",
     },
     unlocks: {
       ...fullyUnlocked.unlocks,
@@ -64,14 +67,20 @@ export const runReducerWrapTailExecutionTests = (): void => {
     sessionControlProfiles: undefined,
     ui: {
       ...fullyUnlocked.ui,
-      keyLayout: [{ kind: "key", key: k("exec_equals") }],
-      keypadColumns: 1,
+      keyLayout: [
+        { kind: "key", key: k("exec_equals") },
+        { kind: "key", key: k("toggle_delta_range_clamp"), behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
+      ],
+      keypadColumns: 2,
       keypadRows: 1,
       buttonFlags: {
         ...fullyUnlocked.ui.buttonFlags,
         [EXECUTION_PAUSE_FLAG]: true,
-        [DELTA_RANGE_CLAMP_FLAG]: true,
       },
+    },
+    settings: {
+      ...fullyUnlocked.settings,
+      wrapper: "delta_range_clamp",
     },
     unlocks: {
       ...fullyUnlocked.unlocks,

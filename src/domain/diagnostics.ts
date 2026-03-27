@@ -11,7 +11,6 @@ import {
   isBinaryOperatorKeyId,
   isUnaryOperatorId,
 } from "./keyPresentation.js";
-import { BINARY_MODE_FLAG, DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG } from "./state.js";
 import type { BinarySlot, GameState, PrimeFactorTerm, RationalPrimeFactorization, RationalValue, RollEntry, Slot, UnarySlot } from "./types.js";
 import type { ContentProvider } from "../contracts/contentProvider.js";
 import { getAppServices } from "../contracts/appServices.js";
@@ -116,7 +115,7 @@ const resolveCalcSymbol = (state: GameState): string => (state.activeCalculatorI
 
 const resolveCommonTokens = (state: GameState): TokenMap => ({
   calcSymbol: resolveCalcSymbol(state),
-  activeVisualizer: state.ui.activeVisualizer,
+  activeVisualizer: state.settings.visualizer,
 });
 
 const resolveCurrentTotalToken = (state: GameState): string => calculatorValueToDisplayString(state.calculator.total);
@@ -549,7 +548,7 @@ const isCycleLikelyHeuristic = (state: GameState, stepRows: RollEntry[]): boolea
   if (stepRows.length < HEURISTIC_MIN_SAMPLES) {
     return false;
   }
-  const displayRadix = state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
+  const displayRadix = state.settings.base === "base2" ? 2 : 10;
   const boundary = computeOverflowBoundary(state.unlocks.maxTotalDigits, displayRadix);
   const seen = new Set<string>();
   let hasRepeat = false;
@@ -597,9 +596,9 @@ const toFiniteEntryValue = (entry: RollEntry): number | null => {
 };
 
 const buildCircleSemantics = (state: GameState): CircleSemanticSnapshot => {
-  const deltaRangeWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
-  const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
-  const displayRadix = state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
+  const deltaRangeWrapEnabled = state.settings.wrapper === "delta_range_clamp";
+  const modZeroToDeltaEnabled = state.settings.wrapper === "mod_zero_to_delta";
+  const displayRadix = state.settings.base === "base2" ? 2 : 10;
 
   if (deltaRangeWrapEnabled || modZeroToDeltaEnabled) {
     const boundary = Number(computeOverflowBoundary(state.unlocks.maxTotalDigits, displayRadix));

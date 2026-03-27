@@ -30,6 +30,15 @@ export type StepKey = never;
 export type VisualizerKey = VisualizerKeyId;
 export type VisualizerId = ButtonVisualizerId;
 export type ActiveVisualizer = "total" | VisualizerId;
+export type WrapperSetting = "none" | "delta_range_clamp" | "mod_zero_to_delta";
+export type BaseSetting = "decimal" | "base2";
+export type StepExpansionSetting = "off" | "on";
+export type CalculatorSettings = {
+  visualizer: ActiveVisualizer;
+  wrapper: WrapperSetting;
+  base: BaseSetting;
+  stepExpansion: StepExpansionSetting;
+};
 export type MemoryVariable = "\u03B1" | "\u03B2" | "\u03B3";
 export type CalculatorId = "g" | "f" | "menu";
 export type ExecKey = ExecKeyId;
@@ -646,6 +655,7 @@ export type UiDiagnosticsLastAction = {
 
 export type GameState = {
   calculator: CalculatorState;
+  settings: CalculatorSettings;
   lambdaControl: LambdaControl;
   // Legacy projection snapshot kept for compatibility while remaining consumers migrate.
   allocator: AllocatorState;
@@ -678,6 +688,7 @@ export type CalculatorInstanceState = {
   id: CalculatorId;
   symbol: CalculatorId;
   calculator: CalculatorState;
+  settings: CalculatorSettings;
   lambdaControl: LambdaControl;
   allocator: AllocatorState;
   ui: GameState["ui"];

@@ -1,5 +1,4 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
-import { DELTA_RANGE_CLAMP_FLAG, MOD_ZERO_TO_DELTA_FLAG, STEP_EXPANSION_FLAG } from "../../../domain/state.js";
 import { getExecutionStageCount, resolveWrapStageMode } from "../../../domain/executionPlan.js";
 import type { CalculatorValue, CalculatorState, GameState, RollEntry } from "../../../domain/types.js";
 import {
@@ -187,7 +186,7 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
   const operationSlotCount = state.calculator.operationSlots.length;
   const executionStageCount = getExecutionStageCount(state.calculator.operationSlots, state);
   const hasWrapStage = resolveWrapStageMode(state) !== null;
-  const stepExpansionEnabled = Boolean(state.ui.buttonFlags[STEP_EXPANSION_FLAG]);
+  const stepExpansionEnabled = state.settings.stepExpansion === "on";
   const stepThroughOnKeypad = state.ui.keyLayout.some(
     (cell) => cell.kind === "key" && cell.key === "exec_step_through",
   );
@@ -209,8 +208,8 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
       : hasWrapStage
         ? operationSlotCount
         : null;
-  const deltaWrapEnabled = Boolean(state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]);
-  const modZeroToDeltaEnabled = Boolean(state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]);
+  const deltaWrapEnabled = state.settings.wrapper === "delta_range_clamp";
+  const modZeroToDeltaEnabled = state.settings.wrapper === "mod_zero_to_delta";
   const hasNoCommittedOrDraftedSlots = operationSlotCount === 0 && state.calculator.draftingSlot === null;
   if (modZeroToDeltaEnabled) {
     if (hasNoCommittedOrDraftedSlots) {

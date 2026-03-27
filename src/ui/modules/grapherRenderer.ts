@@ -1,5 +1,4 @@
 import type { GameState } from "../../domain/types.js";
-import { BINARY_MODE_FLAG } from "../../domain/state.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
 import { toStepCount } from "../../domain/rollEntries.js";
 import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
@@ -195,7 +194,7 @@ export const clearGrapherV2Module = (root?: Element): void => {
 
 export const renderGrapherV2Module = (root: Element, state: GameState): void => {
   const runtime = getGrapherRuntime(root);
-  const graphVisible = state.ui.activeVisualizer === "graph";
+  const graphVisible = state.settings.visualizer === "graph";
   if (!graphVisible) {
     clearGrapherV2Module(root);
     return;
@@ -222,7 +221,7 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
 
   const points = buildGraphPoints(state.calculator.rollEntries);
   const hasPoints = isGraphRenderable(state.calculator.rollEntries);
-  const displayRadix = state.ui.buttonFlags[BINARY_MODE_FLAG] ? 2 : 10;
+  const displayRadix = state.settings.base === "base2" ? 2 : 10;
   const options = buildGraphOptions(hasPoints, toStepCount(state.calculator.rollEntries), state.unlocks.maxTotalDigits, displayRadix);
   const pointBackgroundColor = points.map((point) => {
     if (point.kind === "remainder") {

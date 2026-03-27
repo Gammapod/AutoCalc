@@ -1,6 +1,6 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { BINARY_MODE_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import type { Action, GameState, RollEntry } from "../src/domain/types.js";
 import { reducer } from "../src/domain/reducer.js";
 import { createShellRenderer } from "../src/ui/renderAdapter.js";
@@ -60,23 +60,23 @@ export const runUiIntegrationMobileShellTests = (): void => {
     const host = harness.root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
     const withGraph = withCalculatorProjection(withStorage, "f", (projected) => ({
       ...projected,
-      ui: {
-        ...projected.ui,
-        activeVisualizer: "graph",
+      settings: {
+        ...projected.settings,
+        visualizer: "graph",
       },
     }));
     const withFeed = withCalculatorProjection(withStorage, "f", (projected) => ({
       ...projected,
-      ui: {
-        ...projected.ui,
-        activeVisualizer: "feed",
+      settings: {
+        ...projected.settings,
+        visualizer: "feed",
       },
     }));
     const withTotal = withCalculatorProjection(withStorage, "f", (projected) => ({
       ...projected,
-      ui: {
-        ...projected.ui,
-        activeVisualizer: "total",
+      settings: {
+        ...projected.settings,
+        visualizer: "total",
       },
     }));
     renderer.render(withGraph, dispatch, {
@@ -208,12 +208,9 @@ export const runUiIntegrationMobileShellTests = (): void => {
         ...projected.calculator,
         total: r(5n),
       },
-      ui: {
-        ...projected.ui,
-        buttonFlags: {
-          ...projected.ui.buttonFlags,
-          [BINARY_MODE_FLAG]: true,
-        },
+      settings: {
+        ...projected.settings,
+        base: "base2",
       },
     }));
     renderer.render(withBinaryBadge, dispatch, {

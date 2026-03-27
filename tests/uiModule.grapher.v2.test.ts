@@ -19,9 +19,9 @@ export const runUiModuleGrapherV2Tests = (): void => {
 
   const withGraphVisible: GameState = {
     ...initialState(),
-    ui: {
-      ...initialState().ui,
-      activeVisualizer: "graph",
+    settings: {
+      ...initialState().settings,
+      visualizer: "graph",
     },
   };
   assert.doesNotThrow(

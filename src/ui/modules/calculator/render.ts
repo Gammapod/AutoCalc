@@ -42,7 +42,7 @@ const UNLOCK_ANIMATION_NAME = "key-unlock-pulse";
 const KEYPAD_SLOT_ENTER_ANIMATION_NAME = "keypad-slot-enter";
 const STEP_BODY_HIGHLIGHT_CLASS = "keypad-step-body-highlight";
 
-const isFeedRollVisible = (state: GameState): boolean => state.ui.activeVisualizer === "feed";
+const isFeedRollVisible = (state: GameState): boolean => state.settings.visualizer === "feed";
 
 const appendSlotTrackBase = (
   parent: HTMLElement,

@@ -1,7 +1,6 @@
 import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { projectControlFromState } from "../../../domain/controlProjection.js";
-import { BINARY_MODE_FLAG } from "../../../domain/state.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 import {
@@ -157,7 +156,7 @@ const renderSevenSegmentValue = (
 };
 
 export const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
-  const binaryModeEnabled = Boolean(state.ui.buttonFlags[BINARY_MODE_FLAG]);
+  const binaryModeEnabled = state.settings.base === "base2";
   const displayRadix = binaryModeEnabled ? 2 : 10;
   const projection = projectControlFromState(state);
   const buildMemoryStatusRow = (): HTMLElement => {

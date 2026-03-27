@@ -219,12 +219,9 @@ export const runReducerInputTests = (): void => {
 
   const wrapSource: GameState = {
     ...overflowSource,
-    ui: {
-      ...overflowSource.ui,
-      buttonFlags: {
-        ...overflowSource.ui.buttonFlags,
-        [DELTA_RANGE_CLAMP_FLAG]: true,
-      },
+    settings: {
+      ...overflowSource.settings,
+      wrapper: "delta_range_clamp",
     },
   };
   const afterWrap = applyKeyAction(wrapSource, "exec_equals");
@@ -244,12 +241,9 @@ export const runReducerInputTests = (): void => {
 
   const modWrapSource: GameState = {
     ...overflowSource,
-    ui: {
-      ...overflowSource.ui,
-      buttonFlags: {
-        ...overflowSource.ui.buttonFlags,
-        [MOD_ZERO_TO_DELTA_FLAG]: true,
-      },
+    settings: {
+      ...overflowSource.settings,
+      wrapper: "mod_zero_to_delta",
     },
   };
   const afterModWrap = applyKeyAction(modWrapSource, "exec_equals");
