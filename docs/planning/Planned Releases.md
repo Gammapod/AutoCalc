@@ -1,31 +1,5 @@
 Truth 2: Releases
 
-# Release v0.9.7: Unified Settings State Model
-
-### User Story
-As a player, all settings-style keys behave consistently: I can immediately tell whether a setting is locked/unlocked and toggled/untoggled, and every settings key follows the same interaction rules.
-
-### Pre-work
-Inventory and unify settings behavior currently split across lock semantics, toggle flags, read-model projections, and key visual affordances.
-
-### Pre-work Exit Criteria
-- Canonical definitions are documented for locked, unlocked, toggled, and untoggled in settings context.
-- A single settings-state mapping is defined from domain flags and unlock state to UI presentation state.
-- Existing exceptions (for example, play/pause lock behavior) are explicitly captured as named, testable rules.
-
-### User Story Exit Criteria
-- Settings keys and visualizer keys share one unified state vocabulary and rendering behavior across keypad and storage.
-- Locked settings-toggle keys obey deterministic forced-on semantics until unlocked (per functional-spec behavior).
-- Untoggled/toggled state is represented consistently (including LED stripe semantics) on all settings-family keys.
-- Behavior and projection contracts cover lock/toggle transitions, forced states, and cross-surface parity.
-
-### Release Notes
-- Release Note ID: `release_v0_9_7`
-- Player-facing summary: Unifies settings behavior so lock state and toggle state are consistent across keypad and storage.
-- Highlights:
-- Settings and visualizer controls now follow one shared interaction model.
-- Lock state and toggle state now resolve through a single consistent runtime mapping.
-
 # Release v0.9.8: Storage Drawer Replacement
 
 ### User Story

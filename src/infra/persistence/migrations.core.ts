@@ -313,7 +313,7 @@ const resolveLegacyActiveVisualizerFromFlags = (flags: Record<string, boolean>):
   return "total";
 };
 
-const normalizeActiveVisualizer = (value: unknown, flags: Record<string, boolean>): ActiveVisualizer => {
+const normalizeActiveVisualizer = (value: unknown): ActiveVisualizer | null => {
   if (value === "none") {
     return "total";
   }
@@ -331,7 +331,7 @@ const normalizeActiveVisualizer = (value: unknown, flags: Record<string, boolean
   ) {
     return value;
   }
-  return resolveLegacyActiveVisualizerFromFlags(flags);
+  return null;
 };
 
 const normalizeMemoryVariable = (value: unknown): MemoryVariable =>
@@ -954,7 +954,7 @@ export const migrateV10ToV11 = (input: SerializableStateV10): SerializableStateV
     ui: {
       ...input.ui,
       buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
-      activeVisualizer: normalizeActiveVisualizer(undefined, buttonFlags),
+      activeVisualizer: resolveLegacyActiveVisualizerFromFlags(buttonFlags),
       memoryVariable: normalizeMemoryVariable(input.ui.memoryVariable),
     },
   };
@@ -964,7 +964,7 @@ export const migrateV11ToV12 = (input: SerializableStateV11): SerializableStateV
   ...input,
   ui: {
     ...input.ui,
-    activeVisualizer: normalizeActiveVisualizer(input.ui.activeVisualizer, input.ui.buttonFlags),
+    activeVisualizer: normalizeActiveVisualizer(input.ui.activeVisualizer) ?? "total",
     memoryVariable: normalizeMemoryVariable(input.ui.memoryVariable),
   },
 });
@@ -1462,7 +1462,7 @@ export const validateSerializableStateV11 = (state: unknown): state is Serializa
   }
   const ui = (state as SerializableStateV11).ui;
   return ui.activeVisualizer !== undefined
-    && normalizeActiveVisualizer(ui.activeVisualizer, {}) === ui.activeVisualizer
+    && normalizeActiveVisualizer(ui.activeVisualizer) === ui.activeVisualizer
     && (ui.memoryVariable === undefined || isMemoryVariable(ui.memoryVariable));
 };
 
@@ -1556,7 +1556,7 @@ const normalizeLegacyUiWithVisualizer = <T extends { activeVisualizer?: unknown;
   return {
     ...normalizedBase,
     buttonFlags: stripLegacyVisualizerFlags(buttonFlags),
-    activeVisualizer: normalizeActiveVisualizer(ui?.activeVisualizer, buttonFlags),
+    activeVisualizer: normalizeActiveVisualizer(ui?.activeVisualizer) ?? "total",
     memoryVariable: normalizeMemoryVariable(ui?.memoryVariable),
   } as T & {
     keyLayout: LayoutCell[];

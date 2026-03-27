@@ -1,4 +1,36 @@
 Truth 2: Releases
+# Release v0.9.7: Unified Settings State Model (Shipped 2026-03-26)
+
+Goal: make calculator settings canonical and typed, with settings-key visuals derived from calculator state instead of settings button flags.
+
+### Deliverables
+
+- Calculator-centric settings model:
+  - Added typed per-calculator settings families for `visualizer`, `wrapper`, `base`, and `stepExpansion`.
+  - Settings family state no longer depends on settings-related `buttonFlags` entries.
+- Family behavior + defaults:
+  - Introduced central key-to-settings family mapping and default option constants.
+  - Added `base` family support for `decimal` and `base2`.
+- Forced-default semantics:
+  - Locked+installed settings keys now define effective family default per calculator.
+  - Precedence resolves deterministically by keypad order.
+  - Pressing active setting key toggles back to effective default when applicable.
+- Runtime/layout/persistence cutover:
+  - Runtime invariants normalize settings and remove obsolete settings flags from `buttonFlags` paths.
+  - Layout changes normalize selected setting to effective default when selected key leaves keypad.
+  - Save schema bumped; legacy save migration resets settings families to typed defaults and preserves non-settings data.
+- Startup + first paint stabilization:
+  - Boot path normalizes state before store creation.
+  - Key-label fit scheduling hardened to avoid first-load squished labels and stale visualizer projection on main menu.
+
+### Exit Criteria Snapshot
+
+- Canonical settings state is typed per calculator and drives behavior/rendering.
+- Mutually exclusive settings-family behavior is intrinsic via single-option family state (not flag group coupling).
+- Locked+installed forced defaults are deterministic and keyed by keypad order.
+- Settings-family `buttonFlags` are no longer canonical state sources.
+- Full suite passed at release cut: `113/113` test groups.
+
 # Release v0.8.1 (Shipped 2026-03-14)
 
 ## Milestone: Independent Display + Keying Changes
