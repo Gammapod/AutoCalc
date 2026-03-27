@@ -149,8 +149,8 @@ jobs:
           $version = "${{ github.ref_name }}".Substring(1)
           npm version $version --no-git-tag-version --allow-same-version
 
-      - name: Build and test
-        run: npm run ci:verify:release
+      - name: Build preflight (verify job is canonical test gate)
+        run: npm run build:web:full
 
       - name: Build portable executable
         env:
