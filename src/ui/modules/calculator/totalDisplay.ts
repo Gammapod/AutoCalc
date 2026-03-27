@@ -10,6 +10,7 @@ import {
   type SegmentName,
   type TotalSlotModel,
 } from "./viewModel.js";
+import { normalizeSelectedControlField } from "../../../domain/controlSelection.js";
 
 const SEGMENT_NAMES: readonly SegmentName[] = ["a", "b", "c", "d", "e", "f", "g"];
 const MAX_TOTAL_DISPLAY_SLOTS = 12;
@@ -159,6 +160,11 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   const binaryModeEnabled = state.settings.base === "base2";
   const displayRadix = binaryModeEnabled ? 2 : 10;
   const projection = projectControlFromState(state);
+  const selectedControlField = normalizeSelectedControlField(
+    projection.profile,
+    state.ui.selectedControlField,
+    state.ui.memoryVariable,
+  );
   const buildMemoryStatusRow = (): HTMLElement => {
     const row = document.createElement("div");
     row.className = "total-memory-row";
@@ -180,9 +186,13 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     for (const entry of variableValues) {
       const token = document.createElement("span");
       token.className = "total-memory-var";
-      const isSelected = entry.symbol === "\u03B1" || entry.symbol === "\u03B2" || entry.symbol === "\u03B3"
-        ? state.ui.memoryVariable === entry.symbol
-        : false;
+      const isSelected = (
+        (entry.symbol === "\u03B1" && selectedControlField === "alpha")
+        || (entry.symbol === "\u03B2" && selectedControlField === "beta")
+        || (entry.symbol === "\u03B3" && selectedControlField === "gamma")
+        || (entry.symbol === "\u03B4" && selectedControlField === "delta")
+        || (entry.symbol === "\u03F5" && selectedControlField === "epsilon")
+      );
       const leftBracket = document.createElement("span");
       leftBracket.className = isSelected
         ? "total-memory-bracket total-memory-bracket--visible"

@@ -3,6 +3,17 @@ import type { ReleaseNotesCatalog } from "../contracts/releaseNotes.js";
 export const releaseNotes: ReleaseNotesCatalog = {
   entries: [
     {
+      id: "release_v0_9_10",
+      releaseVersion: "v0.9.10",
+      channel: "planned",
+      title: "Per-Calculator Memory & Matrix Isolation",
+      summary: "Each calculator now keeps isolated settable-variable selection and memory-key targeting.",
+      bullets: [
+        "Memory cycle/adjust/recall operate only on the active calculator's normalized settable selection.",
+        "Selected variable highlight in footer and allocator visualizer stays in sync with memory-key behavior.",
+      ],
+    },
+    {
       id: "release_v0_9_9",
       releaseVersion: "v0.9.9",
       channel: "planned",

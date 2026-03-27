@@ -106,9 +106,16 @@ export const runMultiCalculatorContractTests = (): void => {
   const afterFProjection = projectCalculatorToLegacy(afterTargetedGInput, "f");
   const afterGProjection = projectCalculatorToLegacy(afterTargetedGInput, "g");
   assert.deepEqual(
-    afterFProjection.ui,
-    beforeFProjection.ui,
-    "targeted g layout action keeps f calculator-local ui/runtime state unchanged",
+    afterFProjection.ui.keyLayout,
+    beforeFProjection.ui.keyLayout,
+    "targeted g layout action keeps f calculator-local key layout unchanged",
+  );
+  assert.equal(afterFProjection.ui.keypadColumns, beforeFProjection.ui.keypadColumns, "targeted g layout action keeps f keypad columns unchanged");
+  assert.equal(afterFProjection.ui.keypadRows, beforeFProjection.ui.keypadRows, "targeted g layout action keeps f keypad rows unchanged");
+  assert.equal(
+    afterFProjection.ui.selectedControlField,
+    beforeFProjection.ui.selectedControlField,
+    "targeted g layout action keeps f selected control field unchanged",
   );
   assert.equal(
     afterGProjection.ui.keypadColumns,
@@ -116,6 +123,7 @@ export const runMultiCalculatorContractTests = (): void => {
     "targeted g layout action mutates g calculator-local ui/runtime state",
   );
   assert.equal(afterGProjection.ui.keypadRows, 2, "targeted g layout action updates g rows");
+  assert.equal(afterTargetedGInput.activeCalculatorId, "f", "targeted g actions do not implicitly switch active calculator");
   assert.equal(
     afterTargetedGInput.allocatorReturnPressCount,
     dualWithActiveF.allocatorReturnPressCount,
@@ -139,7 +147,101 @@ export const runMultiCalculatorContractTests = (): void => {
     "targeted f layout action mutates f calculator-local state while g is active",
   );
   assert.equal(afterFFromActiveG.ui.keypadRows, 3, "targeted f layout action updates f rows");
-  assert.deepEqual(afterGFromActiveG.ui, beforeGFromActiveG.ui, "targeted f layout action keeps g state unchanged");
+  assert.deepEqual(afterGFromActiveG.ui.keyLayout, beforeGFromActiveG.ui.keyLayout, "targeted f layout action keeps g key layout unchanged");
+  assert.equal(afterGFromActiveG.ui.keypadColumns, beforeGFromActiveG.ui.keypadColumns, "targeted f layout action keeps g keypad columns unchanged");
+  assert.equal(afterGFromActiveG.ui.keypadRows, beforeGFromActiveG.ui.keypadRows, "targeted f layout action keeps g keypad rows unchanged");
+  assert.equal(
+    afterGFromActiveG.ui.selectedControlField,
+    beforeGFromActiveG.ui.selectedControlField,
+    "targeted f layout action keeps g selected control field unchanged",
+  );
+  assert.equal(afterTargetedFInput.activeCalculatorId, "g", "targeted f actions do not implicitly switch active calculator");
+
+  const memoryReadyBase: GameState = {
+    ...dualWithActiveF,
+    unlocks: {
+      ...dualWithActiveF.unlocks,
+      memory: {
+        ...dualWithActiveF.unlocks.memory,
+        [KEY_ID.memory_cycle_variable]: true,
+        [KEY_ID.memory_adjust_plus]: true,
+        [KEY_ID.memory_adjust_minus]: true,
+        [KEY_ID.memory_recall]: true,
+      },
+    },
+    calculators: {
+      ...dualWithActiveF.calculators,
+      g: dualWithActiveF.calculators?.g
+        ? {
+            ...dualWithActiveF.calculators.g,
+            lambdaControl: {
+              ...dualWithActiveF.calculators.g.lambdaControl,
+              maxPoints: 8,
+            },
+            allocator: {
+              ...dualWithActiveF.calculators.g.allocator,
+              maxPoints: 8,
+            },
+            ui: {
+              ...dualWithActiveF.calculators.g.ui,
+              selectedControlField: "gamma",
+            },
+          }
+        : dualWithActiveF.calculators?.g,
+    },
+    ui: {
+      ...dualWithActiveF.ui,
+      selectedControlField: "alpha",
+    },
+  };
+  const memoryCycleOnG = reducer(memoryReadyBase, { type: "PRESS_KEY", key: KEY_ID.memory_cycle_variable, calculatorId: "g" });
+  const cycleProjectedF = projectCalculatorToLegacy(memoryCycleOnG, "f");
+  const cycleProjectedG = projectCalculatorToLegacy(memoryCycleOnG, "g");
+  assert.equal(cycleProjectedG.ui.selectedControlField, "gamma", "g cycle remains on gamma when gamma is its only settable field");
+  assert.equal(cycleProjectedF.ui.selectedControlField, "alpha", "g memory cycle does not mutate f selected control field");
+
+  const beforeAdjustF = projectCalculatorToLegacy(memoryReadyBase, "f");
+  const beforeAdjustG = projectCalculatorToLegacy(memoryReadyBase, "g");
+  const adjustedG = reducer(memoryReadyBase, { type: "PRESS_KEY", key: KEY_ID.memory_adjust_plus, calculatorId: "g" });
+  const afterAdjustF = projectCalculatorToLegacy(adjustedG, "f");
+  const afterAdjustG = projectCalculatorToLegacy(adjustedG, "g");
+  assert.equal(afterAdjustG.lambdaControl.gamma, beforeAdjustG.lambdaControl.gamma + 1, "g memory-adjust+ mutates only g gamma");
+  assert.equal(afterAdjustF.lambdaControl.gamma, beforeAdjustF.lambdaControl.gamma, "g memory-adjust+ does not mutate f gamma");
+
+  const menuSession = materializeCalculatorMenu(initialState());
+  const menuMemoryReady: GameState = {
+    ...menuSession,
+    unlocks: {
+      ...menuSession.unlocks,
+      memory: {
+        ...menuSession.unlocks.memory,
+        [KEY_ID.memory_cycle_variable]: true,
+        [KEY_ID.memory_adjust_plus]: true,
+        [KEY_ID.memory_adjust_minus]: true,
+        [KEY_ID.memory_recall]: true,
+      },
+    },
+    calculators: {
+      ...menuSession.calculators,
+      menu: menuSession.calculators?.menu
+        ? {
+            ...menuSession.calculators.menu,
+            ui: {
+              ...menuSession.calculators.menu.ui,
+              selectedControlField: null,
+            },
+          }
+        : menuSession.calculators?.menu,
+    },
+    activeCalculatorId: "menu",
+  };
+  const menuProjectedBefore = projectCalculatorToLegacy(menuMemoryReady, "menu");
+  const menuAfterCycle = reducer(menuMemoryReady, { type: "PRESS_KEY", key: KEY_ID.memory_cycle_variable, calculatorId: "menu" });
+  const menuAfterAdjust = reducer(menuMemoryReady, { type: "PRESS_KEY", key: KEY_ID.memory_adjust_plus, calculatorId: "menu" });
+  const menuAfterRecall = reducer(menuMemoryReady, { type: "PRESS_KEY", key: KEY_ID.memory_recall, calculatorId: "menu" });
+  assert.equal(projectCalculatorToLegacy(menuAfterCycle, "menu").ui.selectedControlField, null, "menu memory cycle is explicit no-op with no settable fields");
+  assert.deepEqual(projectCalculatorToLegacy(menuAfterAdjust, "menu").lambdaControl, menuProjectedBefore.lambdaControl, "menu memory-adjust+ is explicit no-op with no settable fields");
+  assert.deepEqual(projectCalculatorToLegacy(menuAfterRecall, "menu").calculator, menuProjectedBefore.calculator, "menu memory-recall is explicit no-op with no settable fields");
 
   const menuAndFOnly = materializeCalculatorMenu(initialState());
   assert.equal(Boolean(menuAndFOnly.calculators?.menu), true, "menu materialization produces menu instance");

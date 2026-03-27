@@ -594,7 +594,18 @@ const reduceWithProjectionScope = (state: GameState, action: Action, options: Re
 
   const projected = projectCalculatorToLegacy(state, targetCalculatorId);
   const reduced = reduceLegacy(projected, action, options);
-  return commitLegacyProjection(state, reduced, targetCalculatorId);
+  const committed = commitLegacyProjection(state, reduced, targetCalculatorId);
+  if ("calculatorId" in action && action.calculatorId) {
+    const preservedActiveCalculatorId = state.activeCalculatorId ?? resolveActiveCalculatorId(committed);
+    return projectCalculatorToLegacy(
+      {
+        ...committed,
+        activeCalculatorId: preservedActiveCalculatorId,
+      },
+      preservedActiveCalculatorId,
+    );
+  }
+  return committed;
 };
 
 export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {

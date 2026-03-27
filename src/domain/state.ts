@@ -247,6 +247,7 @@ export const initialState = (): GameState => {
       keypadColumns: initialColumns,
       keypadRows: initialRows,
       activeVisualizer: settings.visualizer,
+      selectedControlField: "alpha",
       memoryVariable: "α",
       buttonFlags: {},
       diagnostics: {

@@ -666,7 +666,9 @@ export type GameState = {
     keypadColumns: number;
     keypadRows: number;
     activeVisualizer: ActiveVisualizer;
-    memoryVariable: MemoryVariable;
+    selectedControlField?: ControlField | null;
+    // Legacy compatibility field; not authoritative after v0.9.10 selection migration.
+    memoryVariable?: MemoryVariable;
     buttonFlags: Record<string, boolean>;
     diagnostics: {
       lastAction: UiDiagnosticsLastAction;

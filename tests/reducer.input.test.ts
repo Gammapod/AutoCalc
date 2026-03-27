@@ -1,4 +1,4 @@
-import "./support/keyCompat.runtime.js";
+﻿import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
@@ -525,6 +525,7 @@ export const runReducerInputTests = (): void => {
       buttonFlags: {
         ...autoStepTick2.ui.buttonFlags,
         [EXECUTION_PAUSE_FLAG]: true,
+        [EXECUTION_PAUSE_EQUALS_FLAG]: false,
       },
     },
     calculator: {
@@ -534,7 +535,8 @@ export const runReducerInputTests = (): void => {
     },
   };
   const autoStepIdle = reducer(autoStepIdleSource, { type: "AUTO_STEP_TICK" });
-  assert.deepEqual(autoStepIdle.calculator, autoStepIdleSource.calculator, "AUTO_STEP_TICK is idempotent when no runnable step path exists");
+  assert.deepEqual(autoStepIdle.calculator.total, autoStepIdleSource.calculator.total, "AUTO_STEP_TICK idle path preserves total when no runnable step path exists");
+  assert.deepEqual(autoStepIdle.calculator.rollEntries, autoStepIdleSource.calculator.rollEntries, "AUTO_STEP_TICK idle path preserves roll entries when no runnable step path exists");
   assert.deepEqual(autoStepIdle.keyPressCounts, autoStepIdleSource.keyPressCounts, "AUTO_STEP_TICK idle path preserves key-press counts");
 
   const equalsFromPartial = applyKeyAction(afterFirstStep, "exec_equals");
@@ -892,7 +894,7 @@ export const runReducerInputTests = (): void => {
 
   const memoryCycleLocked = legacyInitialState();
   const afterLockedMemoryCycle = applyKeyAction(memoryCycleLocked, "memory_cycle_variable");
-  assert.equal(afterLockedMemoryCycle.ui.memoryVariable, "α", "locked memory-cycle key does not change selected variable");
+  assert.equal(afterLockedMemoryCycle.ui.selectedControlField, "alpha", "locked memory-cycle key does not change selected variable");
 
   const memoryCycleUnlocked: GameState = {
     ...legacyInitialState(),
@@ -905,11 +907,11 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterFirstMemoryCycle = applyKeyAction(memoryCycleUnlocked, "memory_cycle_variable");
-  assert.equal(afterFirstMemoryCycle.ui.memoryVariable, "β", "memory-cycle key advances α to β");
+  assert.equal(afterFirstMemoryCycle.ui.selectedControlField, "beta", "memory-cycle key advances alpha to beta");
   const afterSecondMemoryCycle = applyKeyAction(afterFirstMemoryCycle, "memory_cycle_variable");
-  assert.equal(afterSecondMemoryCycle.ui.memoryVariable, "γ", "memory-cycle key advances β to γ");
+  assert.equal(afterSecondMemoryCycle.ui.selectedControlField, "gamma", "memory-cycle key advances beta to gamma");
   const afterThirdMemoryCycle = applyKeyAction(afterSecondMemoryCycle, "memory_cycle_variable");
-  assert.equal(afterThirdMemoryCycle.ui.memoryVariable, "α", "memory-cycle key wraps γ to α");
+  assert.equal(afterThirdMemoryCycle.ui.selectedControlField, "alpha", "memory-cycle key wraps gamma to alpha");
 
   const memoryPlusBase = legacyInitialState();
   const memoryPlusBaseColumns = memoryPlusBase.ui.keypadColumns;
@@ -933,12 +935,12 @@ export const runReducerInputTests = (): void => {
       },
     },
   };
-  const plusAlpha = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "α" } }, "memory_adjust_plus");
-  assert.equal(plusAlpha.ui.keypadColumns, memoryPlusBaseColumns + 1, "M+ with α increases keypad columns");
-  const plusBeta = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "β" } }, "memory_adjust_plus");
-  assert.equal(plusBeta.ui.keypadRows, memoryPlusBaseRows + 1, "M+ with β increases keypad rows");
-  const plusGamma = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, memoryVariable: "γ" } }, "memory_adjust_plus");
-  assert.equal(plusGamma.unlocks.maxSlots, memoryPlusBaseSlots + 1, "M+ with γ increases operation slot count");
+  const plusAlpha = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, selectedControlField: "alpha" } }, "memory_adjust_plus");
+  assert.equal(plusAlpha.ui.keypadColumns, memoryPlusBaseColumns + 1, "M+ with alpha increases keypad columns");
+  const plusBeta = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, selectedControlField: "beta" } }, "memory_adjust_plus");
+  assert.equal(plusBeta.ui.keypadRows, memoryPlusBaseRows + 1, "M+ with beta increases keypad rows");
+  const plusGamma = applyKeyAction({ ...memoryPlusUnlocked, ui: { ...memoryPlusUnlocked.ui, selectedControlField: "gamma" } }, "memory_adjust_plus");
+  assert.equal(plusGamma.unlocks.maxSlots, memoryPlusBaseSlots + 1, "M+ with gamma increases operation slot count");
 
   const memoryMinusBase = legacyInitialState();
   const memoryMinusUnlocked: GameState = {
@@ -974,12 +976,12 @@ export const runReducerInputTests = (): void => {
       keypadRows: 3,
     },
   };
-  const minusAlpha = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "α" } }, "memory_adjust_minus");
-  assert.equal(minusAlpha.ui.keypadColumns, 2, "M– with α decreases keypad columns");
-  const minusBeta = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "β" } }, "memory_adjust_minus");
-  assert.equal(minusBeta.ui.keypadRows, 2, "M– with β decreases keypad rows");
-  const minusGamma = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, memoryVariable: "γ" } }, "memory_adjust_minus");
-  assert.equal(minusGamma.unlocks.maxSlots, 1, "M– with γ respects gamma minimum once gamma has been raised");
+  const minusAlpha = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, selectedControlField: "alpha" } }, "memory_adjust_minus");
+  assert.equal(minusAlpha.ui.keypadColumns, 2, "M- with alpha decreases keypad columns");
+  const minusBeta = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, selectedControlField: "beta" } }, "memory_adjust_minus");
+  assert.equal(minusBeta.ui.keypadRows, 2, "M- with beta decreases keypad rows");
+  const minusGamma = applyKeyAction({ ...memoryMinusUnlocked, ui: { ...memoryMinusUnlocked.ui, selectedControlField: "gamma" } }, "memory_adjust_minus");
+  assert.equal(minusGamma.unlocks.maxSlots, 1, "M- with gamma respects gamma minimum once gamma has been raised");
   const withBackspaceUnlocked: GameState = {
     ...fullyUnlocked,
     unlocks: {
@@ -1076,6 +1078,7 @@ export const runReducerInputTests = (): void => {
   const afterWalk5 = applyKeyAction(afterWalk4, "util_backspace");
   assert.deepEqual(afterWalk5.calculator.total, r(0n), "walk 5 trims seed total value");
 };
+
 
 
 

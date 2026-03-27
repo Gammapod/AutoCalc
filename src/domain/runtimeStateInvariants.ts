@@ -15,6 +15,8 @@ import type { CalculatorId, GameState, Key, KeyCell, LayoutCell } from "./types.
 import { isMultiCalculatorSession } from "./multiCalculator.js";
 import { createInitialUiDiagnosticsLastAction } from "./state.js";
 import { createDefaultCalculatorSettings, normalizeSettingsFlagsFromButtonFlags, normalizeSettingsState } from "./settings.js";
+import { getEffectiveControlProfile } from "./controlProfileRuntime.js";
+import { normalizeSelectedControlField, toLegacyMemoryVariable } from "./controlSelection.js";
 
 const EMPTY_PLACEHOLDER: LayoutCell = { kind: "placeholder", area: "empty" };
 
@@ -166,17 +168,30 @@ const withNormalizedDiagnostics = (ui: GameState["ui"]): GameState["ui"] => {
 
 const normalizeSettingsAndUi = (
   state: Pick<GameState, "ui" | "settings" | "unlocks">,
+  calculatorId: CalculatorId,
+  baseState: GameState,
 ): { ui: GameState["ui"]; settings: GameState["settings"] } => {
+  const profile = getEffectiveControlProfile(baseState, calculatorId);
+  const normalizedSelectedControlField = normalizeSelectedControlField(
+    profile,
+    state.ui.selectedControlField,
+    state.ui.memoryVariable,
+  );
   const settings = normalizeSettingsState(state);
   const buttonFlags = normalizeSettingsFlagsFromButtonFlags(state.ui.buttonFlags);
+  const normalizedMemoryVariable = toLegacyMemoryVariable(normalizedSelectedControlField);
   const ui = (
     settings.visualizer === state.ui.activeVisualizer
     && buttonFlags === state.ui.buttonFlags
+    && state.ui.selectedControlField === normalizedSelectedControlField
+    && state.ui.memoryVariable === normalizedMemoryVariable
   )
     ? state.ui
     : {
         ...state.ui,
         activeVisualizer: settings.visualizer,
+        selectedControlField: normalizedSelectedControlField,
+        memoryVariable: normalizedMemoryVariable,
         buttonFlags,
       };
   return { ui, settings };
@@ -202,11 +217,12 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
     const layoutUi = (keyLayout === stateWithUi.ui.keyLayout && storageLayout === stateWithUi.ui.storageLayout)
       ? stateWithUi.ui
       : withLayout(stateWithUi.ui, keyLayout, storageLayout);
+    const singleCalculatorId = stateWithUi.activeCalculatorId ?? "f";
     const normalized = normalizeSettingsAndUi({
       ui: layoutUi,
       settings: stateWithUi.settings,
       unlocks: stateWithUi.unlocks,
-    });
+    }, singleCalculatorId, stateWithUi);
     if (normalized.ui === stateWithUi.ui && normalized.settings === stateWithUi.settings) {
       return stateWithUi;
     }
@@ -223,6 +239,7 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
   if (orderedCalculatorIds.length === 0) {
     return stateWithUi;
   }
+  const activeProjectedCalculatorId = stateWithUi.activeCalculatorId ?? orderedCalculatorIds[0] ?? "f";
 
   const normalizedUiByCalculatorId: Partial<Record<CalculatorId, GameState["ui"]>> = {};
   const normalizedSettingsByCalculatorId: Partial<Record<CalculatorId, GameState["settings"]>> = {};
@@ -232,8 +249,12 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
     if (!instance) {
       continue;
     }
-    const normalizedInstanceUi = withNormalizedDiagnostics(instance.ui);
-    const normalizedInstanceSettings = instance.settings ?? createDefaultCalculatorSettings();
+    const sourceUi = calculatorId === activeProjectedCalculatorId ? stateWithUi.ui : instance.ui;
+    const sourceSettings = calculatorId === activeProjectedCalculatorId
+      ? stateWithUi.settings
+      : (instance.settings ?? createDefaultCalculatorSettings());
+    const normalizedInstanceUi = withNormalizedDiagnostics(sourceUi);
+    const normalizedInstanceSettings = sourceSettings ?? createDefaultCalculatorSettings();
     normalizedUiByCalculatorId[calculatorId] = normalizedInstanceUi;
     normalizedSettingsByCalculatorId[calculatorId] = normalizedInstanceSettings;
     dedupedLayoutByCalculatorId[calculatorId] = dedupeKeyLayout(normalizedInstanceUi.keyLayout, seen);
@@ -263,7 +284,7 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
       ui: layoutUi,
       settings: normalizedInstanceSettings,
       unlocks: stateWithUi.unlocks,
-    });
+    }, calculatorId, stateWithUi);
     uiByCalculatorId[calculatorId] = normalized.ui;
     settingsByCalculatorId[calculatorId] = normalized.settings;
     if (

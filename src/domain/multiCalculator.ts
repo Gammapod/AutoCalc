@@ -1,4 +1,4 @@
-import { buildAllocatorSnapshot, sanitizeLambdaControl } from "./lambdaControl.js";
+﻿import { buildAllocatorSnapshot, sanitizeLambdaControl } from "./lambdaControl.js";
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
@@ -62,6 +62,7 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
     keypadColumns,
     keypadRows,
     activeVisualizer,
+    selectedControlField: "gamma",
     memoryVariable: "α",
     buttonFlags: {},
     diagnostics: {
@@ -119,6 +120,7 @@ const createDefaultMenuCalculator = (): CalculatorInstanceState => {
     keypadColumns,
     keypadRows,
     activeVisualizer,
+    selectedControlField: null,
     memoryVariable: "α",
     buttonFlags: {},
     diagnostics: {
@@ -327,4 +329,5 @@ export const fromCalculatorSurface = (surface: "keypad_f" | "keypad_g" | "keypad
 
 export const normalizeLegacyForMissingInstances = (state: GameState): GameState =>
   ensureCalculatorInstances(state);
+
 

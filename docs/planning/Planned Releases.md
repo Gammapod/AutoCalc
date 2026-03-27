@@ -1,5 +1,42 @@
 Truth 2: Releases
 
+# Release v0.9.10: Per-Calculator Memory & Matrix Isolation
+
+### User Story
+As a player, each installed calculator keeps its own matrix-variable settings and memory-variable selection, so memory keys only affect the calculator I am actively using and the highlighted/Bracketed variable always matches what is actually changed.
+
+### Dependencies
+- Must be completed before additional UX work on memory/visualizer surfaces so UI work is built on stable calculator-local state contracts.
+- Builds on v0.9.7 calculator-centric settings-state model and keeps `calculatorId`-scoped reducer routing as the source of targeting.
+
+### Pre-work
+Replace mixed global/per-calculator memory-selection behavior with a single calculator-local contract: settable variables and selected variable are derived per calculator profile, normalized through one invariant path, and consumed directly by memory handlers and display projections.
+
+### Pre-work Exit Criteria
+- Canonical runtime invariant exists for per-calculator memory selection validity using deterministic order `alpha -> beta -> gamma -> delta -> epsilon`.
+- Calculator instances own matrix/lambda-related mutable values; no global fallback path mutates another calculator.
+- Memory handlers (`cycle`, `adjust+/-`, `recall`) consume normalized selection only and do not perform hidden remapping/cross-axis fallback.
+- Display projection reads the same normalized selected variable used by handlers (single source of truth).
+- Reducer tests include explicit cross-calculator isolation guards for matrix, operation-slot, and max-digit related state.
+
+### User Story Exit Criteria
+- Each calculator can have a different settable-variable set and an independent current memory selection.
+- If a calculator has no settable variables, it has no selection and no highlight; memory keys are explicit no-ops for that calculator.
+- `memory_cycle_variable` advances only the installed calculator's selection within that calculator's settable variables.
+- `memory_adjust_plus/minus` change only the installed calculator's currently selected variable.
+- `memory_recall` reads only the installed calculator's currently selected variable.
+- Actions on calculator `g` never mutate calculator `f` matrix values, operation slot counts, or digit limits (and vice versa).
+- Highlight/bracketed selected variable in total/footer/visualizer always matches the variable actually read or adjusted by memory keys.
+- Single-calculator behavior remains consistent with current expectations for `f` (`alpha/beta/gamma` cycle and adjust).
+
+### Release Notes
+- Release Note ID: `release_v0_9_10`
+- Player-facing summary: Each calculator now keeps an isolated settable-variable selection and memory-key targeting.
+- Highlights:
+- Memory cycle/adjust/recall operate only on the active calculator's normalized settable selection.
+- Selected variable highlight in footer/visualizer is synchronized with memory-key behavior.
+
+
 # Release v0.9.8: Storage Drawer Replacement
 
 ### User Story

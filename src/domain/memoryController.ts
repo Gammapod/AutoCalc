@@ -1,45 +1,75 @@
-import type { Digit, GameState, Key, MemoryVariable } from "./types.js";
+import type { ControlField, Digit, GameState, Key } from "./types.js";
 import { adjustAxis } from "./lambdaControl.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { isMemoryKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import { projectControlFromState } from "./controlProjection.js";
+import { getSettableControlFields } from "./controlSelection.js";
 
-const MEMORY_VARIABLE_CYCLE: readonly MemoryVariable[] = ["\u03B1", "\u03B2", "\u03B3"];
+const controlFieldToAdjustableAxis = (controlField: ControlField): "alpha" | "beta" | "gamma" | null => {
+  if (controlField === "alpha" || controlField === "beta" || controlField === "gamma") {
+    return controlField;
+  }
+  return null;
+};
 
-const memoryVariableToAxis = (memoryVariable: MemoryVariable): "alpha" | "beta" | "gamma" => {
-  if (memoryVariable === "\u03B1") {
-    return "alpha";
+const resolveSelectedControlField = (state: GameState): ControlField | null => {
+  const projection = projectControlFromState(state);
+  const settableFields = getSettableControlFields(projection.profile);
+  if (settableFields.length === 0) {
+    return null;
   }
-  if (memoryVariable === "\u03B2") {
-    return "beta";
+  const selected = state.ui.selectedControlField;
+  if (selected && settableFields.includes(selected)) {
+    return selected;
   }
-  return "gamma";
+  return settableFields[0];
 };
 
 const readSelectedMemoryValue = (state: GameState): number => {
-  const axis = memoryVariableToAxis(state.ui.memoryVariable);
-  return projectControlFromState(state).fields[axis];
+  const selectedControlField = resolveSelectedControlField(state);
+  if (!selectedControlField) {
+    return 0;
+  }
+  return projectControlFromState(state).fields[selectedControlField];
 };
 
 export const isMemoryKey = (key: Key): boolean => isMemoryKeyId(key);
 
 export const cycleMemoryVariable = (state: GameState): GameState => {
-  const currentIndex = MEMORY_VARIABLE_CYCLE.indexOf(state.ui.memoryVariable);
-  const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % MEMORY_VARIABLE_CYCLE.length : 0;
-  const nextVariable = MEMORY_VARIABLE_CYCLE[nextIndex];
-  if (nextVariable === state.ui.memoryVariable) {
+  const projection = projectControlFromState(state);
+  const settableFields = getSettableControlFields(projection.profile);
+  if (settableFields.length === 0) {
+    if (state.ui.selectedControlField === null) {
+      return state;
+    }
+    return {
+      ...state,
+      ui: {
+        ...state.ui,
+        selectedControlField: null,
+      },
+    };
+  }
+  const selected = resolveSelectedControlField(state);
+  const currentIndex = selected ? settableFields.indexOf(selected) : -1;
+  const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % settableFields.length : 0;
+  const nextField = settableFields[nextIndex] ?? null;
+  if (nextField === state.ui.selectedControlField) {
     return state;
   }
   return {
     ...state,
     ui: {
       ...state.ui,
-      memoryVariable: nextVariable,
+      selectedControlField: nextField,
     },
   };
 };
 
-export const resolveMemoryRecallDigit = (state: GameState): Digit => {
+export const resolveMemoryRecallDigit = (state: GameState): Digit | null => {
+  if (!resolveSelectedControlField(state)) {
+    return null;
+  }
   const memoryValue = readSelectedMemoryValue(state);
   const digitValue = Math.max(0, Math.min(9, Math.trunc(memoryValue)));
   return digitValue.toString() as Digit;
@@ -47,7 +77,14 @@ export const resolveMemoryRecallDigit = (state: GameState): Digit => {
 
 export const applyMemoryAdjust = (state: GameState, delta: 1 | -1): GameState => {
   const projection = projectControlFromState(state);
-  const axis = memoryVariableToAxis(state.ui.memoryVariable);
+  const selectedField = resolveSelectedControlField(state);
+  if (!selectedField) {
+    return state;
+  }
+  const axis = controlFieldToAdjustableAxis(selectedField);
+  if (!axis) {
+    return state;
+  }
   const nextControl = adjustAxis(projection.control, projection.profile, axis, delta);
   if (nextControl === projection.control) {
     return state;

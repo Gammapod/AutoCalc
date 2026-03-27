@@ -1400,7 +1400,8 @@ export const applyMemoryKeyAction = (state: GameState, key: Key): GameState => {
     return cycleMemoryVariable(state);
   }
   if (isMemoryRecallKey(key)) {
-    return applyDigitValue(state, resolveMemoryRecallDigit(state));
+    const recallDigit = resolveMemoryRecallDigit(state);
+    return recallDigit ? applyDigitValue(state, recallDigit) : state;
   }
   if (isMemoryPlusKey(key)) {
     return applyMemoryAdjust(state, 1);
