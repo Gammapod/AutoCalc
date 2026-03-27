@@ -162,15 +162,18 @@ export const normalizeSettingsState = (
   const families: SettingsFamily[] = ["visualizer", "wrapper", "base", "stepExpansion"];
   for (const family of families) {
     const current = next[family];
-    const isDefault = current === DEFAULT_CALCULATOR_SETTINGS[family];
-    if (isDefault) {
+    const effectiveDefault = resolveEffectiveDefaultForFamily(state, family);
+    if (current === effectiveDefault) {
+      continue;
+    }
+    if (current === DEFAULT_CALCULATOR_SETTINGS[family]) {
+      next = {
+        ...next,
+        [family]: effectiveDefault,
+      };
       continue;
     }
     if (isInstalledSettingOption(state, family, current as never)) {
-      continue;
-    }
-    const effectiveDefault = resolveEffectiveDefaultForFamily(state, family);
-    if (effectiveDefault === current) {
       continue;
     }
     next = {

@@ -56,4 +56,21 @@ export const ensureKeyLabelResizeListener = (root: Element): void => {
   window.addEventListener("resize", () => {
     refitAllVisibleKeyLabels(root);
   });
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      refitAllVisibleKeyLabels(root);
+    });
+  });
+  const fontSet = (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts;
+  if (fontSet?.ready) {
+    fontSet.ready.then(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          refitAllVisibleKeyLabels(root);
+        });
+      });
+    }).catch(() => {
+      // Ignore font-ready failures; labels are still refit on resize and render.
+    });
+  }
 };

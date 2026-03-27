@@ -24,6 +24,7 @@ import { defaultContentProvider } from "../content/defaultContentProvider.js";
 import type { AppMode } from "../contracts/appMode.js";
 import { resolveModeManifest } from "../domain/modeManifest.js";
 import { APP_VERSION } from "../generated/appVersion.js";
+import { normalizeRuntimeStateInvariants } from "../domain/runtimeStateInvariants.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -83,7 +84,7 @@ const bootStateBase = runtimeLoaded ?? modeManifest.createBootState({
   createSandboxState,
   createMainMenuState,
 });
-const bootState: GameState = {
+const bootStateUnnormalized: GameState = {
   ...bootStateBase,
   ui: {
     ...bootStateBase.ui,
@@ -93,6 +94,7 @@ const bootState: GameState = {
     },
   },
 };
+const bootState = normalizeRuntimeStateInvariants(bootStateUnnormalized);
 const store = createStore(bootState, services);
 const interactionRuntime = createInteractionRuntime();
 
