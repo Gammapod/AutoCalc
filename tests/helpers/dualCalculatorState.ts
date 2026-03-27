@@ -8,7 +8,21 @@ export const withCalculatorProjection = (
 ): GameState => {
   const projected = projectCalculatorToLegacy(state, calculatorId);
   const nextProjected = mutate(projected);
-  return commitLegacyProjection(state, nextProjected, calculatorId);
+  const preserveRootCaps = {
+    maxSlots: nextProjected.unlocks.maxSlots === projected.unlocks.maxSlots
+      ? state.unlocks.maxSlots
+      : nextProjected.unlocks.maxSlots,
+    maxTotalDigits: nextProjected.unlocks.maxTotalDigits === projected.unlocks.maxTotalDigits
+      ? state.unlocks.maxTotalDigits
+      : nextProjected.unlocks.maxTotalDigits,
+  };
+  return commitLegacyProjection(state, {
+    ...nextProjected,
+    unlocks: {
+      ...nextProjected.unlocks,
+      ...preserveRootCaps,
+    },
+  }, calculatorId);
 };
 
 

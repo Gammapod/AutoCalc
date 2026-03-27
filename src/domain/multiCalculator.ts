@@ -1,4 +1,4 @@
-import { buildAllocatorSnapshot, getLambdaDerivedValues, sanitizeLambdaControl } from "./lambdaControl.js";
+﻿import { buildAllocatorSnapshot, getLambdaDerivedValues, sanitizeLambdaControl } from "./lambdaControl.js";
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
@@ -336,6 +336,7 @@ export const fromCalculatorSurface = (surface: "keypad_f" | "keypad_g" | "keypad
 
 export const normalizeLegacyForMissingInstances = (state: GameState): GameState =>
   ensureCalculatorInstances(state);
+
 
 
 

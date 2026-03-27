@@ -14,6 +14,7 @@ export const runReducerWrapTailExecutionTests = (): void => {
 
   const stepThroughWrapSource: GameState = {
     ...fullyUnlocked,
+    completedUnlockIds: [],
     calculators: undefined,
     calculatorOrder: undefined,
     activeCalculatorId: undefined,
@@ -60,6 +61,7 @@ export const runReducerWrapTailExecutionTests = (): void => {
 
   const autoStepWrapSeed: GameState = {
     ...fullyUnlocked,
+    completedUnlockIds: [],
     calculators: undefined,
     calculatorOrder: undefined,
     activeCalculatorId: undefined,
