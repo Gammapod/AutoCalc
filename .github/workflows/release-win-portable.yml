@@ -1,4 +1,4 @@
-name: Release Windows Portable
+name: Release Windows + Itch
 
 on:
   push:
@@ -46,6 +46,71 @@ jobs:
 
       - name: Verify build and tests
         run: npm run ci:verify:release
+
+  prepare-butler:
+    runs-on: windows-latest
+
+    steps:
+      - name: Resolve butler download source
+        id: butler_meta
+        shell: pwsh
+        run: |
+          $channel = "windows-amd64"
+          $versionUri = "https://broth.itch.zone/butler/$channel/LATEST/version"
+          try {
+            $version = (Invoke-WebRequest -Uri $versionUri -UseBasicParsing).Content.Trim()
+          } catch {
+            Write-Warning "Failed to resolve butler version from ${versionUri}: $($_.Exception.Message)"
+            $version = "latest"
+          }
+          if (-not $version) {
+            $version = "latest"
+          }
+          "channel=$channel" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "Resolved butler source: channel=$channel version=$version"
+
+      - name: Install butler
+        shell: pwsh
+        run: |
+          $butlerZip = Join-Path $env:RUNNER_TEMP "butler.zip"
+          $butlerDir = Join-Path $env:RUNNER_TEMP "butler"
+          $candidateUris = @(
+            "https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default",
+            "https://broth.itch.zone/butler/windows-amd64-head/LATEST/archive/default"
+          )
+          $downloaded = $false
+          foreach ($uri in $candidateUris) {
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+              try {
+                Invoke-WebRequest -Uri $uri -OutFile $butlerZip
+                $downloaded = $true
+                Write-Host "Downloaded butler from $uri (attempt $attempt)"
+                break
+              } catch {
+                Write-Warning "Butler download failed from $uri (attempt $attempt): $($_.Exception.Message)"
+                Start-Sleep -Seconds (2 * $attempt)
+              }
+            }
+            if ($downloaded) {
+              break
+            }
+          }
+          if (-not $downloaded) {
+            throw "Failed to download butler from all candidate sources."
+          }
+          Expand-Archive -Path $butlerZip -DestinationPath $butlerDir -Force
+          if (-not (Test-Path (Join-Path $butlerDir "butler.exe"))) {
+            throw "butler.exe not found at expected install location: $butlerDir"
+          }
+          & (Join-Path $butlerDir "butler.exe") --version
+
+      - name: Upload butler artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: butler-windows-amd64
+          path: ${{ runner.temp }}/butler
+          if-no-files-found: error
 
   release-win-portable:
     runs-on: windows-latest
@@ -126,6 +191,15 @@ jobs:
           "$($hash.Hash.ToLowerInvariant()) *$($exe[0].Name)" | Set-Content -Path $checksumPath -NoNewline
           Write-Host "RELEASE_SHA256_PATH $checksumPath"
 
+      - name: Upload Windows artifact for downstream jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable-exe
+          path: |
+            release/*.exe
+            release/*.exe.sha256
+          if-no-files-found: error
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -136,3 +210,104 @@ jobs:
             release/*.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-itch:
+    runs-on: windows-latest
+    needs:
+      - verify
+      - prepare-butler
+      - release-win-portable
+    environment: release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Preflight checks
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+            throw "Tag must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-prerelease. Got: $tag"
+          }
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Align package version to tag
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".Substring(1)
+          npm version $version --no-git-tag-version --allow-same-version
+
+      - name: Build Itch web zip
+        run: npm run build:web:full && npm run build:itch:zip
+
+      - name: Download Windows executable artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-portable-exe
+          path: release
+
+      - name: Download prepared butler binary
+        uses: actions/download-artifact@v4
+        with:
+          name: butler-windows-amd64
+          path: ${{ runner.temp }}/butler
+
+      - name: Assert Itch artifacts
+        id: artifacts
+        shell: pwsh
+        run: |
+          $exe = @(Get-ChildItem -Path release -File -Filter *.exe)
+          if ($exe.Count -ne 1) {
+            throw "Expected exactly one .exe in release/, found $($exe.Count)."
+          }
+
+          $zip = @(Get-ChildItem -Path release -File -Filter AutoCalc_itch_v*.zip)
+          if ($zip.Count -ne 1) {
+            throw "Expected exactly one Itch zip in release/, found $($zip.Count)."
+          }
+
+          "windows_exe=$($exe[0].FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "web_zip=$($zip[0].FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "Windows artifact: $($exe[0].FullName)"
+          Write-Host "Web artifact: $($zip[0].FullName)"
+
+      - name: Add butler to PATH
+        shell: pwsh
+        run: |
+          $butlerDir = Join-Path $env:RUNNER_TEMP "butler"
+          if (-not (Test-Path (Join-Path $butlerDir "butler.exe"))) {
+            throw "butler.exe not found at expected artifact location: $butlerDir"
+          }
+          "$butlerDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & (Join-Path $butlerDir "butler.exe") --version
+
+      - name: Push artifacts to Itch channels
+        shell: pwsh
+        env:
+          BUTLER_API_KEY: ${{ secrets.ITCH_BUTLER_API_KEY }}
+          ITCH_TARGET: ${{ secrets.ITCH_TARGET }}
+          ITCH_CHANNEL_WEB: ${{ vars.ITCH_CHANNEL_WEB != '' && vars.ITCH_CHANNEL_WEB || 'html5' }}
+          ITCH_CHANNEL_WINDOWS: ${{ vars.ITCH_CHANNEL_WINDOWS != '' && vars.ITCH_CHANNEL_WINDOWS || 'windows' }}
+        run: |
+          if (-not $env:BUTLER_API_KEY) {
+            throw "Missing required secret: ITCH_BUTLER_API_KEY"
+          }
+          if (-not $env:ITCH_TARGET) {
+            throw "Missing required secret: ITCH_TARGET (example: username/game-name)"
+          }
+
+          $version = "${{ github.ref_name }}".Substring(1)
+          $webZip = "${{ steps.artifacts.outputs.web_zip }}"
+          $windowsExe = "${{ steps.artifacts.outputs.windows_exe }}"
+
+          butler push "$webZip" "$($env:ITCH_TARGET):$($env:ITCH_CHANNEL_WEB)" --userversion "$version"
+          butler push "$windowsExe" "$($env:ITCH_TARGET):$($env:ITCH_CHANNEL_WINDOWS)" --userversion "$version"

@@ -7,16 +7,16 @@ This is the canonical source of truth for AutoCalc GitHub Actions release pipeli
 
 | Workflow | File | Triggers | Runner | Environment gate | Primary outputs | Publication target |
 | --- | --- | --- | --- | --- | --- | --- |
-| Release Windows Portable | `.github/workflows/release-win-portable.yml` | `push` tags `v*` | `windows-latest` | `release` (release job only) | `release/*.exe`, `release/*.exe.sha256` | GitHub Releases |
-| Release To Itch | `.github/workflows/release-itch.yml` | `push` tags `v*`, `workflow_dispatch` | `windows-latest` | `release` | `release/AutoCalc_itch_v*.zip`, `release/*.exe` | Itch channels via Butler |
+| Release Windows + Itch | `.github/workflows/release-win-portable.yml` | `push` tags `v*` | `windows-latest` | `release` | `release/*.exe`, `release/*.exe.sha256`, `release/AutoCalc_itch_v*.zip` | GitHub Releases + Itch channels via Butler |
 | Release Android APK | `.github/workflows/release-android-apk.yml` | `push` tags `v*`, `workflow_dispatch` | `ubuntu-latest` | `release` | `app-release.apk`, `app-release.apk.sha256` | GitHub Actions artifacts |
 
 ## Cross-workflow invariants
 
 - Tags intended for release should be `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-prerelease`.
 - All release jobs are gated by GitHub Environment `release` and may require manual approval based on environment rules.
-- Only `Release Windows Portable` publishes a GitHub Release entry and assets.
+- `Release Windows + Itch` publishes GitHub Release assets and pushes Itch channels in the same workflow run.
 - `Release Android APK` does not publish a GitHub Release; it uploads artifacts to the workflow run.
+- Android release job execution is feature-gated via variable `ENABLE_ANDROID_RELEASE`.
 - Release workflows align package versioning from tag/version metadata before packaging.
 
 ## Standard release flow
@@ -54,8 +54,8 @@ git push <remote> vX.Y.Z
 
 ### Manual dispatch is not uniform
 
-- `Release To Itch` and `Release Android APK` support `workflow_dispatch`.
-- `Release Windows Portable` currently does not.
+- `Release Android APK` supports `workflow_dispatch`.
+- `Release Windows + Itch` currently does not.
 
 ## Drift guard for PRs
 

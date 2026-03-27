@@ -35,7 +35,7 @@ git tag vX.Y.Z
 git push <remote> vX.Y.Z
 ```
 
-3. Open GitHub Actions and confirm workflow `Release Windows Portable` starts.
+3. Open GitHub Actions and confirm workflow `Release Windows + Itch` starts.
 4. Approve the `release` environment when prompted.
 5. Verify the workflow completes and publishes:
    - `AutoCalc-<version>-win-x64-portable.exe`

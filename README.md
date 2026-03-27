@@ -171,7 +171,10 @@ Type-checking modes:
 Tag-driven GitHub release pipeline:
 
 - Push a tag in strict semver format: `vX.Y.Z` or `vX.Y.Z-prerelease` (example `v0.1.1` or `v0.1.1-rc.1`)
-- Workflow `release-win-portable.yml` runs preflight validation, tests, signing, packaging, artifact assertions, and release publishing
+- Workflow `release-win-portable.yml` (`Release Windows + Itch`) runs:
+  - shared verification
+  - Windows signing/packaging + GitHub Release publish
+  - Itch publish (web zip + the same Windows `.exe` artifact produced by the Windows release job)
 - Canonical outputs:
   - `release/AutoCalc-<version>-win-x64-portable.exe`
   - `release/AutoCalc-<version>-win-x64-portable.exe.sha256`
@@ -194,13 +197,13 @@ See `docs/release-windows.md` for full operational runbook and troubleshooting.
 
 ## Itch Auto-Publish (Web + Download)
 
-Tag-driven Itch pipeline:
+Tag-driven Itch publishing is handled by the same workflow as Windows release:
 
 - Push a tag in strict semver format: `vX.Y.Z` or `vX.Y.Z-prerelease`
-- Workflow `release-itch.yml` runs verification, builds:
-  - web-playable Itch zip (`release/AutoCalc_itch_v<major>_<minor>_<patch>.zip`)
-  - downloadable Windows portable exe (`release/AutoCalc-<version>-win-x64-portable.exe`)
-- Workflow installs Butler and pushes both artifacts to Itch channels
+- Workflow `release-win-portable.yml` runs a dedicated Itch publish job that:
+  - builds web-playable Itch zip (`release/AutoCalc_itch_v<major>_<minor>_<patch>.zip`)
+  - reuses the already-built downloadable Windows portable exe (`release/AutoCalc-<version>-win-x64-portable.exe`)
+  - installs Butler in a parallel prep job and pushes both artifacts to Itch channels
 - Execution is gated by GitHub `release` Environment approval policy
 
 Required `release` Environment secrets:
@@ -230,5 +233,5 @@ npm run build:mobile:webassets
 npm run mobile:android:sync
 ```
 
-CI workflow: `.github/workflows/release-android-apk.yml`  
+CI workflow: `.github/workflows/release-android-apk.yml` (gated by repo/env var `ENABLE_ANDROID_RELEASE=true`)
 Runbook: `docs/release-android.md`

@@ -35,6 +35,8 @@ Run workflow `Release Android APK` via:
 1. Manual dispatch, or
 2. Tag push matching `v*`
 
+Execution is feature-gated. The job only runs when repository/environment variable `ENABLE_ANDROID_RELEASE` is set to `true`.
+
 The workflow will:
 
 1. Install Node dependencies

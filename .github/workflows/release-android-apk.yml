@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   build-android-apk:
+    if: ${{ vars.ENABLE_ANDROID_RELEASE == 'true' }}
     runs-on: ubuntu-latest
     environment: release
 

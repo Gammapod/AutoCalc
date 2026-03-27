@@ -9,7 +9,7 @@ For shared pipeline rules (triggers, tag semantics, approvals, and drift policy)
 - Artifact type (web): Itch-compatible zip (`AutoCalc_itch_v*.zip`)
 - Artifact type (downloadable): Windows portable `.exe`
 - Distribution channel: Itch via Butler
-- Workflow: `.github/workflows/release-itch.yml`
+- Workflow: `.github/workflows/release-win-portable.yml` (job: `release-itch`)
 
 ## One-time setup (Itch-specific)
 
@@ -47,15 +47,10 @@ git push <remote> vX.Y.Z
 3. Approve the `release` environment when prompted.
 4. Workflow builds and pushes:
    - `release/AutoCalc_itch_v<major>_<minor>_<patch>.zip` to `$ITCH_TARGET:$ITCH_CHANNEL_WEB`
-   - `release/AutoCalc-<version>-win-x64-portable.exe` to `$ITCH_TARGET:$ITCH_CHANNEL_WINDOWS`
-
-## Manual run option
-
-Use `workflow_dispatch` for `.github/workflows/release-itch.yml` to target a specific ref.  
-Optional input `version` overrides Butler `--userversion`.
+   - `release/AutoCalc-<version>-win-x64-portable.exe` to `$ITCH_TARGET:$ITCH_CHANNEL_WINDOWS` (reused from the Windows release job artifact)
 
 ## Notes
 
-- The workflow runs `npm run ci:verify` before artifact build/upload.
-- `package.json` version is aligned in-workflow to the resolved release version.
-- If tags include prerelease labels, Butler `--userversion` preserves that label.
+- Butler setup is prepared in a parallel job (`prepare-butler`) and consumed by the Itch publish job.
+- The Itch job does not rebuild the Windows executable; it consumes the artifact produced by `release-win-portable`.
+- `package.json` version is aligned to tag version in-workflow.
