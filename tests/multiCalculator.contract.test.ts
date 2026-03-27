@@ -207,6 +207,11 @@ export const runMultiCalculatorContractTests = (): void => {
   const afterAdjustG = projectCalculatorToLegacy(adjustedG, "g");
   assert.equal(afterAdjustG.lambdaControl.gamma, beforeAdjustG.lambdaControl.gamma + 1, "g memory-adjust+ mutates only g gamma");
   assert.equal(afterAdjustF.lambdaControl.gamma, beforeAdjustF.lambdaControl.gamma, "g memory-adjust+ does not mutate f gamma");
+  assert.equal(afterAdjustG.unlocks.maxSlots, afterAdjustG.lambdaControl.gamma, "g projection derives max slots from g control");
+  assert.equal(afterAdjustF.unlocks.maxSlots, afterAdjustF.lambdaControl.gamma, "f projection derives max slots from f control");
+  assert.equal(afterAdjustG.unlocks.maxSlots, beforeAdjustG.unlocks.maxSlots + 1, "g max slots increase is calculator-local");
+  assert.equal(afterAdjustF.unlocks.maxSlots, beforeAdjustF.unlocks.maxSlots, "g max slots increase does not leak to f");
+  assert.equal(afterAdjustF.unlocks.maxTotalDigits, beforeAdjustF.unlocks.maxTotalDigits, "g control changes do not force f digit capacity");
 
   const menuSession = materializeCalculatorMenu(initialState());
   const menuMemoryReady: GameState = {

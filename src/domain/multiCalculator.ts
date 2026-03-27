@@ -1,4 +1,4 @@
-﻿import { buildAllocatorSnapshot, sanitizeLambdaControl } from "./lambdaControl.js";
+import { buildAllocatorSnapshot, getLambdaDerivedValues, sanitizeLambdaControl } from "./lambdaControl.js";
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
@@ -274,13 +274,20 @@ export const projectCalculatorToLegacy = (state: GameState, calculatorId: Calcul
   if (!instance) {
     return withInstances;
   }
+  const projectedControl = sanitizeLambdaControl(instance.lambdaControl, controlProfiles[calculatorId]);
+  const derivedControl = getLambdaDerivedValues(projectedControl, controlProfiles[calculatorId]);
   return {
     ...withInstances,
     activeCalculatorId: calculatorId,
     calculator: cloneCalculator(instance.calculator),
     settings: cloneSettings(instance.settings),
-    lambdaControl: sanitizeLambdaControl(instance.lambdaControl, controlProfiles[calculatorId]),
+    lambdaControl: projectedControl,
     allocator: instance.allocator,
+    unlocks: {
+      ...withInstances.unlocks,
+      maxSlots: derivedControl.effectiveFields.gamma,
+      maxTotalDigits: derivedControl.effectiveFields.delta,
+    },
     ui: cloneUi({
       ...instance.ui,
       storageLayout: withInstances.ui.storageLayout,
@@ -329,5 +336,6 @@ export const fromCalculatorSurface = (surface: "keypad_f" | "keypad_g" | "keypad
 
 export const normalizeLegacyForMissingInstances = (state: GameState): GameState =>
   ensureCalculatorInstances(state);
+
 
 
