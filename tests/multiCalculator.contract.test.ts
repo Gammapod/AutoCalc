@@ -12,6 +12,7 @@ import {
   projectCalculatorToLegacy,
   toCalculatorSurface,
 } from "../src/domain/multiCalculator.js";
+import { fromKeyLayoutArray } from "../src/domain/keypadLayoutModel.js";
 import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import type { Action, GameState } from "../src/domain/types.js";
 
@@ -25,6 +26,7 @@ const toSingleCalculatorState = (state: GameState): GameState => ({
 });
 
 export const runMultiCalculatorContractTests = (): void => {
+  const rational = (num: bigint) => ({ kind: "rational" as const, value: { num, den: 1n } });
   const base = initialState();
   assert.ok(base.calculators?.f, "session initializes with f calculator");
   assert.equal(Boolean(base.calculators?.g), false, "session does not initialize g by default");
@@ -136,6 +138,129 @@ export const runMultiCalculatorContractTests = (): void => {
   const afterCrossF = projectCalculatorToLegacy(movedAcrossCalculators, "f");
   assert.notDeepEqual(afterCrossMenu.ui.keyLayout, beforeCrossMenuProjection.ui.keyLayout, "explicit cross-calculator move updates menu keypad");
   assert.notDeepEqual(afterCrossF.ui.keyLayout, beforeCrossFProjection.ui.keyLayout, "explicit cross-calculator move updates f keypad");
+
+  const menuResetSeed: GameState = {
+    ...crossMoveReady,
+    calculators: {
+      ...crossMoveReady.calculators,
+      menu: {
+        ...crossMoveReady.calculators!.menu!,
+        calculator: {
+          ...crossMoveReady.calculators!.menu!.calculator,
+          total: rational(19n),
+          rollEntries: [{ y: rational(19n) }],
+        },
+      },
+    },
+  };
+  const menuResetResult = reducer(menuResetSeed, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad_menu",
+    fromIndex: menuSourceIndex,
+    toSurface: "keypad_f",
+    toIndex: fDestinationIndex,
+  });
+  const menuResetProjected = projectCalculatorToLegacy(menuResetResult, "menu");
+  assert.deepEqual(menuResetProjected.calculator.total, rational(0n), "menu key loss resets menu total");
+  assert.equal(menuResetProjected.calculator.rollEntries.length, 0, "menu key loss clears menu roll");
+
+  let fGResetSeed = materializeCalculatorMenu(materializeCalculatorG(initialState()));
+  fGResetSeed = reducer(fGResetSeed, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "menu" });
+  if (!fGResetSeed.calculators?.f || !fGResetSeed.calculators.g) {
+    throw new Error("Expected f/g calculators for cross-reset coverage.");
+  }
+  const fLayout = [
+    { kind: "key" as const, key: KEY_ID.exec_equals },
+    { kind: "placeholder" as const, area: "empty" as const },
+  ];
+  const gLayout = [
+    { kind: "key" as const, key: KEY_ID.exec_step_through },
+    { kind: "placeholder" as const, area: "empty" as const },
+  ];
+  fGResetSeed = {
+    ...fGResetSeed,
+    unlocks: {
+      ...fGResetSeed.unlocks,
+      execution: {
+        ...fGResetSeed.unlocks.execution,
+        [KEY_ID.exec_equals]: true,
+        [KEY_ID.exec_step_through]: true,
+      },
+    },
+    calculators: {
+      ...fGResetSeed.calculators,
+      f: {
+        ...fGResetSeed.calculators.f,
+        calculator: {
+          ...fGResetSeed.calculators.f.calculator,
+          total: rational(9n),
+          rollEntries: [{ y: rational(9n) }],
+        },
+        ui: {
+          ...fGResetSeed.calculators.f.ui,
+          keyLayout: fLayout,
+          keypadColumns: 2,
+          keypadRows: 1,
+          keypadCells: fromKeyLayoutArray(fLayout, 2, 1),
+        },
+      },
+      g: {
+        ...fGResetSeed.calculators.g,
+        calculator: {
+          ...fGResetSeed.calculators.g.calculator,
+          total: rational(13n),
+          rollEntries: [{ y: rational(13n) }],
+        },
+        ui: {
+          ...fGResetSeed.calculators.g.ui,
+          keyLayout: gLayout,
+          keypadColumns: 2,
+          keypadRows: 1,
+          keypadCells: fromKeyLayoutArray(gLayout, 2, 1),
+        },
+      },
+    },
+  };
+
+  const fToG = reducer(fGResetSeed, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad_f",
+    fromIndex: 0,
+    toSurface: "keypad_g",
+    toIndex: 1,
+  });
+  const fToGProjectedF = projectCalculatorToLegacy(fToG, "f");
+  const fToGProjectedG = projectCalculatorToLegacy(fToG, "g");
+  assert.deepEqual(fToGProjectedF.calculator.total, rational(0n), "f->g move resets losing f total");
+  assert.equal(fToGProjectedF.calculator.rollEntries.length, 0, "f->g move clears f roll");
+  assert.deepEqual(fToGProjectedG.calculator.total, rational(13n), "f->g move preserves gaining g total");
+
+  const gToF = reducer(fGResetSeed, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad_g",
+    fromIndex: 0,
+    toSurface: "keypad_f",
+    toIndex: 1,
+  });
+  const gToFProjectedF = projectCalculatorToLegacy(gToF, "f");
+  const gToFProjectedG = projectCalculatorToLegacy(gToF, "g");
+  assert.deepEqual(gToFProjectedG.calculator.total, rational(0n), "g->f move resets losing g total");
+  assert.equal(gToFProjectedG.calculator.rollEntries.length, 0, "g->f move clears g roll");
+  assert.deepEqual(gToFProjectedF.calculator.total, rational(9n), "g->f move preserves gaining f total");
+
+  const swappedFG = reducer(fGResetSeed, {
+    type: "SWAP_LAYOUT_CELLS",
+    fromSurface: "keypad_f",
+    fromIndex: 0,
+    toSurface: "keypad_g",
+    toIndex: 0,
+  });
+  const swappedProjectedF = projectCalculatorToLegacy(swappedFG, "f");
+  const swappedProjectedG = projectCalculatorToLegacy(swappedFG, "g");
+  assert.deepEqual(swappedProjectedF.calculator.total, rational(0n), "f<->g swap resets f total");
+  assert.deepEqual(swappedProjectedG.calculator.total, rational(0n), "f<->g swap resets g total");
+  assert.equal(swappedProjectedF.calculator.rollEntries.length, 0, "f<->g swap clears f roll");
+  assert.equal(swappedProjectedG.calculator.rollEntries.length, 0, "f<->g swap clears g roll");
 
   const fullOrderState = materializeCalculatorG(materializeCalculatorMenu(initialState()));
   const calculatorOrder = fullOrderState.calculatorOrder ?? [];

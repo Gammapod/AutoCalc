@@ -13,7 +13,7 @@ import {
 } from "./reducer.layout.js";
 import { applyLifecycleAction } from "./reducer.lifecycle.js";
 import { applyToggleFlag } from "./reducer.flags.js";
-import { clearOperationEntry, withStepProgressCleared } from "./reducer.stateBuilders.js";
+import { resetRunState, withStepProgressCleared } from "./reducer.stateBuilders.js";
 import { applyUnlocks } from "./unlocks.js";
 import { KEY_ID } from "./keyPresentation.js";
 import { isBinaryOperatorKeyId, isUnaryOperatorId } from "./keyPresentation.js";
@@ -46,6 +46,7 @@ import type {
   CalculatorId,
   GameState,
   Key,
+  LayoutSurface,
   SlotOperator,
   UiDiagnosticsLastActionKind,
   VisualizerId,
@@ -268,6 +269,71 @@ type ResolvedExecutionPolicy = {
   calculatorId: CalculatorId;
 };
 
+const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" =>
+  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g" || surface === "keypad_menu";
+
+const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
+  if (surface === "keypad") {
+    return resolveActiveCalculatorId(state);
+  }
+  if (surface === "keypad_f") {
+    return "f";
+  }
+  if (surface === "keypad_g") {
+    return "g";
+  }
+  if (surface === "keypad_menu") {
+    return "menu";
+  }
+  return null;
+};
+
+const resolveMoveResetTargets = (state: GameState, fromSurface: LayoutSurface, toSurface: LayoutSurface): CalculatorId[] => {
+  const fromOwner = resolveSurfaceCalculatorId(state, fromSurface);
+  const toOwner = resolveSurfaceCalculatorId(state, toSurface);
+  if (!fromOwner || fromOwner === toOwner) {
+    return [];
+  }
+  return [fromOwner];
+};
+
+const resolveSwapResetTargets = (state: GameState, fromSurface: LayoutSurface, toSurface: LayoutSurface): CalculatorId[] => {
+  const fromOwner = resolveSurfaceCalculatorId(state, fromSurface);
+  const toOwner = resolveSurfaceCalculatorId(state, toSurface);
+  const targets = new Set<CalculatorId>();
+  if (fromOwner && fromOwner !== toOwner) {
+    targets.add(fromOwner);
+  }
+  if (toOwner && toOwner !== fromOwner) {
+    targets.add(toOwner);
+  }
+  return [...targets];
+};
+
+const applyFullResetToCalculator = (state: GameState, calculatorId: CalculatorId): GameState => {
+  if (!isMultiCalculatorSession(state)) {
+    return resetRunState(state);
+  }
+  if (!state.calculators?.[calculatorId]) {
+    return state;
+  }
+  const projected = projectCalculatorToLegacy(state, calculatorId);
+  return commitLegacyProjection(state, resetRunState(projected), calculatorId);
+};
+
+const applyLossResets = (state: GameState, calculatorIds: readonly CalculatorId[]): GameState => {
+  let next = state;
+  for (const calculatorId of calculatorIds) {
+    next = applyFullResetToCalculator(next, calculatorId);
+  }
+  return next;
+};
+
+const countInstalledKeypadKeys = (state: GameState, calculatorId: CalculatorId): number => {
+  const keyLayout = state.calculators?.[calculatorId]?.ui.keyLayout ?? state.ui.keyLayout;
+  return keyLayout.reduce((count, cell) => (cell.kind === "key" ? count + 1 : count), 0);
+};
+
 const normalizeLegacyEqualsPress = (action: Action): Action => {
   if (action.type !== "PRESS_KEY" || action.key !== KEY_ID.exec_equals) {
     return action;
@@ -342,10 +408,13 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
       normalizedAction.toIndex,
     );
     if (moved !== state) {
-      if (normalizedAction.fromSurface !== normalizedAction.toSurface) {
-        return clearOperationEntry(moved);
+      const resetTargets = resolveMoveResetTargets(state, normalizedAction.fromSurface, normalizedAction.toSurface);
+      if (resetTargets.length > 0) {
+        return applyLossResets(moved, resetTargets);
       }
-      return withStepProgressCleared(moved);
+      if (normalizedAction.fromSurface === normalizedAction.toSurface && isKeypadSurface(normalizedAction.fromSurface)) {
+        return withStepProgressCleared(moved);
+      }
     }
     return moved;
   }
@@ -358,16 +427,28 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
       normalizedAction.toIndex,
     );
     if (swapped !== state) {
-      if (normalizedAction.fromSurface !== normalizedAction.toSurface) {
-        return clearOperationEntry(swapped);
+      const resetTargets = resolveSwapResetTargets(state, normalizedAction.fromSurface, normalizedAction.toSurface);
+      if (resetTargets.length > 0) {
+        return applyLossResets(swapped, resetTargets);
       }
-      return withStepProgressCleared(swapped);
+      if (normalizedAction.fromSurface === normalizedAction.toSurface && isKeypadSurface(normalizedAction.fromSurface)) {
+        return withStepProgressCleared(swapped);
+      }
     }
     return swapped;
   }
   if (normalizedAction.type === "SET_KEYPAD_DIMENSIONS") {
+    const targetCalculatorId = resolveActiveCalculatorId(state);
+    const installedBefore = countInstalledKeypadKeys(state, targetCalculatorId);
     const resized = applySetKeypadDimensions(state, normalizedAction.columns, normalizedAction.rows);
-    return resized !== state ? withStepProgressCleared(resized) : resized;
+    if (resized === state) {
+      return resized;
+    }
+    const installedAfter = countInstalledKeypadKeys(resized, targetCalculatorId);
+    if (installedAfter < installedBefore) {
+      return applyLossResets(resized, [targetCalculatorId]);
+    }
+    return withStepProgressCleared(resized);
   }
   if (normalizedAction.type === "UPGRADE_KEYPAD_ROW") {
     const upgraded = applyUpgradeKeypadRow(state);

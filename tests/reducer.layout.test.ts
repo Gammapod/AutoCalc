@@ -172,7 +172,7 @@ export const runReducerLayoutTests = (): void => {
     "single-calculator mode accepts keypad_f alias for swap destination",
   );
 
-  const entryClearState: GameState = {
+  const seededCalculatorState: GameState = {
     ...baselineWithSpace,
     calculator: {
       ...baselineWithSpace.calculator,
@@ -189,7 +189,7 @@ export const runReducerLayoutTests = (): void => {
       },
     },
   };
-  const sameSurfaceMoveNoEntryClear = reducer(entryClearState, {
+  const sameSurfaceMoveNoEntryClear = reducer(seededCalculatorState, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "keypad",
     fromIndex: baselineWithSpace.ui.keyLayout.findIndex((cell) => cell.kind === "key" && cell.key === k("unary_inc")),
@@ -198,8 +198,8 @@ export const runReducerLayoutTests = (): void => {
   });
   assert.deepEqual(
     sameSurfaceMoveNoEntryClear.calculator.total,
-    entryClearState.calculator.total,
-    "keypad-only move does not trigger entry-clear reset",
+    seededCalculatorState.calculator.total,
+    "keypad-only move does not trigger full reset",
   );
   assert.equal(
     sameSurfaceMoveNoEntryClear.calculator.stepProgress.active,
@@ -208,7 +208,7 @@ export const runReducerLayoutTests = (): void => {
   );
   assert.equal(sameSurfaceMoveNoEntryClear.calculator.rollEntries.length, 1, "keypad-only move preserves roll");
 
-  const acrossSurfaceMoveTriggersEntryClear = reducer(entryClearState, {
+  const installMovePreservesCalculator = reducer(seededCalculatorState, {
     type: "MOVE_LAYOUT_CELL",
     fromSurface: "storage",
     fromIndex: baselineCStorageIndex,
@@ -216,29 +216,24 @@ export const runReducerLayoutTests = (): void => {
     toIndex: emptyKeypadIndex,
   });
   assert.deepEqual(
-    acrossSurfaceMoveTriggersEntryClear.calculator.total,
+    installMovePreservesCalculator.calculator.total,
     r(7n),
-    "cross-surface move triggers entry-clear reset and preserves total",
+    "install move from storage to keypad preserves total",
   );
   assert.equal(
-    acrossSurfaceMoveTriggersEntryClear.calculator.rollEntries.length <= entryClearState.calculator.rollEntries.length,
-    true,
-    "cross-surface move does not increase roll length",
+    installMovePreservesCalculator.calculator.rollEntries.length,
+    1,
+    "install move from storage to keypad preserves roll",
   );
   assert.equal(
-    acrossSurfaceMoveTriggersEntryClear.calculator.rollEntries.length,
-    0,
-    "cross-surface move clears euclid remainders via entry-clear reset",
+    installMovePreservesCalculator.calculator.operationSlots.length,
+    1,
+    "install move from storage to keypad preserves operation slots",
   );
   assert.equal(
-    acrossSurfaceMoveTriggersEntryClear.calculator.operationSlots.length,
-    0,
-    "cross-surface move clears operation slots via entry-clear reset",
-  );
-  assert.equal(
-    acrossSurfaceMoveTriggersEntryClear.calculator.draftingSlot,
-    null,
-    "cross-surface move clears drafting slot via entry-clear reset",
+    installMovePreservesCalculator.calculator.draftingSlot?.operator ?? null,
+    op("op_sub"),
+    "install move from storage to keypad preserves drafting slot",
   );
 
   const graphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === visualizer("viz_graph"));
@@ -381,6 +376,20 @@ export const runReducerLayoutTests = (): void => {
     "unlocked execution-key move writes destination storage slot",
   );
 
+  const uninstallMoveTriggersFullReset = reducer(seededCalculatorState, {
+    type: "MOVE_LAYOUT_CELL",
+    fromSurface: "keypad",
+    fromIndex: executionKeypadIndex,
+    toSurface: "storage",
+    toIndex: firstStorageEmptyIndex,
+  });
+  assert.deepEqual(
+    uninstallMoveTriggersFullReset.calculator.total,
+    r(0n),
+    "uninstall move from keypad to storage triggers full reset total",
+  );
+  assert.equal(uninstallMoveTriggersFullReset.calculator.rollEntries.length, 0, "uninstall move clears roll");
+
   assert.equal(firstEmptyKeypadIndex >= 0, true, "baseline keypad includes an empty slot for movement tests");
 
   const allowedNonExecutionSwapIntoExecutionSlot = reducer(baselineWithSpace, {
@@ -401,35 +410,19 @@ export const runReducerLayoutTests = (): void => {
     "allowed swap places execution key into storage destination",
   );
 
-  if (firstStorageExecutionIndex >= 0) {
-    const acrossSurfaceSwapTriggersEntryClear = reducer(entryClearState, {
-      type: "SWAP_LAYOUT_CELLS",
-      fromSurface: "keypad",
-      fromIndex: executionKeypadIndex,
-      toSurface: "storage",
-      toIndex: firstStorageExecutionIndex,
-    });
-    assert.deepEqual(
-      acrossSurfaceSwapTriggersEntryClear.calculator.total,
-      r(7n),
-      "cross-surface swap triggers entry-clear reset and preserves total",
-    );
-    assert.equal(
-      acrossSurfaceSwapTriggersEntryClear.calculator.rollEntries.length <= entryClearState.calculator.rollEntries.length,
-      true,
-      "cross-surface swap does not increase roll length",
-    );
-    assert.equal(
-      acrossSurfaceSwapTriggersEntryClear.calculator.operationSlots.length,
-      0,
-      "cross-surface swap clears operation slots via entry-clear reset",
-    );
-    assert.equal(
-      acrossSurfaceSwapTriggersEntryClear.calculator.draftingSlot,
-      null,
-      "cross-surface swap clears drafting slot via entry-clear reset",
-    );
-  }
+  const uninstallSwapTriggersFullReset = reducer(seededCalculatorState, {
+    type: "SWAP_LAYOUT_CELLS",
+    fromSurface: "keypad",
+    fromIndex: executionKeypadIndex,
+    toSurface: "storage",
+    toIndex: firstStorageNonExecutionIndex,
+  });
+  assert.deepEqual(
+    uninstallSwapTriggersFullReset.calculator.total,
+    r(0n),
+    "cross-surface swap that uninstalls keypad key triggers full reset total",
+  );
+  assert.equal(uninstallSwapTriggersFullReset.calculator.rollEntries.length, 0, "cross-surface uninstall swap clears roll");
 
   const swapGraphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === visualizer("viz_graph"));
   assert.ok(swapGraphStorageIndex >= 0, "baseline storage includes GRAPH key for swap test");
@@ -668,6 +661,18 @@ export const runReducerLayoutTests = (): void => {
     shrinkEvacuated.ui.storageLayout.some((cell) => cell?.key === utility("util_clear_all")),
     "key from removed slot is moved into storage",
   );
+
+  const shrinkResetSeedState: GameState = {
+    ...shrinkRemovedSlotOccupied,
+    calculator: {
+      ...shrinkRemovedSlotOccupied.calculator,
+      total: r(9n),
+      rollEntries: [{ y: r(9n) }],
+    },
+  };
+  const shrinkEvictionTriggersFullReset = reducer(shrinkResetSeedState, { type: "SET_KEYPAD_DIMENSIONS", columns: 3, rows: 1 });
+  assert.deepEqual(shrinkEvictionTriggersFullReset.calculator.total, r(0n), "keypad shrink eviction triggers full reset total");
+  assert.equal(shrinkEvictionTriggersFullReset.calculator.rollEntries.length, 0, "keypad shrink eviction clears roll");
 
   const fullStorageBeforeShrink: GameState = {
     ...shrinkRemovedSlotOccupied,
