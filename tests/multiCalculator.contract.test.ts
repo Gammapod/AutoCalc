@@ -47,6 +47,30 @@ export const runMultiCalculatorContractTests = (): void => {
 
   const dualUnlocked = materializeCalculatorG(initialState());
   assert.equal(Boolean(dualUnlocked.calculators?.g), true, "unlock-all materializes g calculator");
+  const duplicateStorageSeed: GameState = {
+    ...dualUnlocked,
+    ui: {
+      ...dualUnlocked.ui,
+      storageLayout: [
+        { kind: "key", key: KEY_ID.exec_equals },
+        { kind: "key", key: KEY_ID.unary_inc },
+        { kind: "key", key: KEY_ID.system_save_quit_main_menu },
+        ...dualUnlocked.ui.storageLayout,
+      ],
+    },
+  };
+  const normalizedDuplicateStorage = reducer(duplicateStorageSeed, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" });
+  const normalizedDuplicateF = projectCalculatorToLegacy(normalizedDuplicateStorage, "f");
+  assert.equal(
+    normalizedDuplicateF.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === KEY_ID.exec_equals),
+    true,
+    "multi-calculator normalization keeps f keypad ownership when storage contains duplicate unlocked keys",
+  );
+  assert.equal(
+    normalizedDuplicateStorage.ui.storageLayout.some((cell) => cell?.kind === "key" && cell.key === KEY_ID.exec_equals),
+    false,
+    "multi-calculator normalization removes duplicate unlocked keys from storage when key exists on keypad",
+  );
   const dualWithActiveF = reducer(dualUnlocked, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" });
   const beforeFProjection = projectCalculatorToLegacy(dualWithActiveF, "f");
   const beforeGProjection = projectCalculatorToLegacy(dualWithActiveF, "g");

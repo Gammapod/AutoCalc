@@ -223,6 +223,23 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
   if (orderedCalculatorIds.length === 0) {
     return stateWithUi;
   }
+
+  const normalizedUiByCalculatorId: Partial<Record<CalculatorId, GameState["ui"]>> = {};
+  const normalizedSettingsByCalculatorId: Partial<Record<CalculatorId, GameState["settings"]>> = {};
+  const dedupedLayoutByCalculatorId: Partial<Record<CalculatorId, LayoutCell[]>> = {};
+  for (const calculatorId of orderedCalculatorIds) {
+    const instance = calculators[calculatorId];
+    if (!instance) {
+      continue;
+    }
+    const normalizedInstanceUi = withNormalizedDiagnostics(instance.ui);
+    const normalizedInstanceSettings = instance.settings ?? createDefaultCalculatorSettings();
+    normalizedUiByCalculatorId[calculatorId] = normalizedInstanceUi;
+    normalizedSettingsByCalculatorId[calculatorId] = normalizedInstanceSettings;
+    dedupedLayoutByCalculatorId[calculatorId] = dedupeKeyLayout(normalizedInstanceUi.keyLayout, seen);
+  }
+
+  // In multi-calculator sessions, preserve keypad ownership before collapsing storage duplicates.
   const filteredStorage = dedupeAndFilterStorage(stateWithUi.ui.storageLayout, seen, unlocked);
   const storageLayout = ensureUnlockedKeysPresent(filteredStorage, seen, unlocked);
 
@@ -236,9 +253,9 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
     if (!instance) {
       continue;
     }
-    const normalizedInstanceUi = withNormalizedDiagnostics(instance.ui);
-    const normalizedInstanceSettings = instance.settings ?? createDefaultCalculatorSettings();
-    const dedupedLayout = dedupeKeyLayout(normalizedInstanceUi.keyLayout, seen);
+    const normalizedInstanceUi = normalizedUiByCalculatorId[calculatorId] ?? withNormalizedDiagnostics(instance.ui);
+    const normalizedInstanceSettings = normalizedSettingsByCalculatorId[calculatorId] ?? instance.settings ?? createDefaultCalculatorSettings();
+    const dedupedLayout = dedupedLayoutByCalculatorId[calculatorId] ?? dedupeKeyLayout(normalizedInstanceUi.keyLayout, seen);
     const layoutUi = (dedupedLayout === normalizedInstanceUi.keyLayout && storageLayout === normalizedInstanceUi.storageLayout)
       ? normalizedInstanceUi
       : withLayout(normalizedInstanceUi, dedupedLayout, storageLayout);
