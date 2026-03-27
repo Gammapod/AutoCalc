@@ -229,6 +229,28 @@ export const runReducerUnlockTests = (): void => {
     "g unlock completion is recorded",
   );
 
+  const completedButMissingG: GameState = {
+    ...fOnly,
+    completedUnlockIds: [...new Set([...fOnly.completedUnlockIds, "unlock_calculator_g_on_tail_powers_of_two_run_7"])],
+    calculators: {
+      ...(fOnly.calculators ?? {}),
+      g: undefined,
+    },
+    calculatorOrder: ["f"],
+    activeCalculatorId: "f",
+  };
+  const repairedGFromCompletion = applyUnlocks(completedButMissingG, unlockCatalog);
+  assert.equal(
+    Boolean(repairedGFromCompletion.calculators?.g),
+    true,
+    "completed g unlock id re-materializes missing g calculator instance",
+  );
+  assert.deepEqual(
+    repairedGFromCompletion.calculatorOrder,
+    ["f", "g"],
+    "re-materialized g is restored to calculator order",
+  );
+
   const duplicateAndLockedStorage: GameState = {
     ...base,
     unlocks: {

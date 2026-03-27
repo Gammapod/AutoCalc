@@ -580,7 +580,9 @@ const reduceWithProjectionScope = (state: GameState, action: Action, options: Re
   if (!isMultiCalculatorSession(state)) {
     const reduced = reduceLegacy(state, action, options);
     if (state.calculators?.f) {
-      return commitLegacyProjection(state, reduced, "f");
+      // Use the reduced state as commit base so newly materialized calculators
+      // (for example unlock-calculator effects) are not dropped.
+      return commitLegacyProjection(reduced, reduced, "f");
     }
     return reduced;
   }

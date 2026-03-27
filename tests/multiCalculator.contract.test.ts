@@ -45,6 +45,34 @@ export const runMultiCalculatorContractTests = (): void => {
   const projectedF = projectCalculatorToLegacy(unlockedViaG, "f");
   assert.equal(projectedF.allocatorReturnPressCount, 1, "shared counter state is visible on f projection");
 
+  const reducerUnlockReady: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries: [
+        { y: rational(1n) },
+        { y: rational(2n) },
+        { y: rational(4n) },
+        { y: rational(8n) },
+        { y: rational(16n) },
+        { y: rational(32n) },
+        { y: rational(64n) },
+      ],
+    },
+  };
+  const reducerUnlockedG = reducer(reducerUnlockReady, { type: "ALLOCATOR_RETURN_PRESSED" });
+  assert.equal(
+    reducerUnlockedG.completedUnlockIds.includes("unlock_calculator_g_on_tail_powers_of_two_run_7"),
+    true,
+    "reducer path records calculator-g unlock completion when predicate is met",
+  );
+  assert.equal(Boolean(reducerUnlockedG.calculators?.g), true, "reducer path preserves newly materialized g calculator");
+  assert.deepEqual(
+    reducerUnlockedG.calculatorOrder,
+    ["f", "g"],
+    "reducer path preserves expanded calculator order after g unlock",
+  );
+
   const dualUnlocked = materializeCalculatorG(initialState());
   assert.equal(Boolean(dualUnlocked.calculators?.g), true, "unlock-all materializes g calculator");
   const duplicateStorageSeed: GameState = {

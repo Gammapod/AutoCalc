@@ -278,6 +278,10 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
       : nextState.completedUnlockIds.includes(unlock.id);
 
     if (unlock.once && isAlreadyCompleted) {
+      // Repair legacy/migrated saves where completion was recorded but calculator instance is absent.
+      if (unlock.effect.type === "unlock_calculator" && !nextState.calculators?.[unlock.effect.calculatorId]) {
+        nextState = applyEffect(unlock.effect, nextState);
+      }
       continue;
     }
 
