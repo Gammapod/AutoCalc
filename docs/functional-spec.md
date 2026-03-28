@@ -132,8 +132,8 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: these are calculator-local runtime semantics.
 - `FS-CS-02` (MUST): Control matrix semantics are calculator-local capabilities.
   Rationale: control behavior must remain cohesive with calculator runtime.
-- `FS-CS-03` (MUST): Visualizers are projections of canonical calculator state and cannot become alternate sources of truth.
-  Rationale: read-model/UI cannot override domain truth.
+- `FS-CS-03` (MUST): Visualizers are read-model projections of canonical calculator state. Visualizer rendering logic MUST NOT directly mutate domain state; any state change MUST occur only through explicit domain actions and the canonical action/event/reducer flow.
+  Rationale: read-model/UI cannot override domain truth or bypass canonical state-transition pathways.
 - `FS-CS-04` (MUST): Roll/history represents executed outcomes, not transient drafting intent.
   Rationale: history is an auditable execution trail.
 - `FS-CS-05` (MUST): Error and remainder channels are canonical parts of execution outcome semantics when present.
@@ -184,7 +184,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 |---|---|---|---|---|
 | FS-CS-01 | Calculator owns keypad/roll/display/control matrix runtime semantics | `ui/runtime-registry`, `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: interface ownership is inferred |
 | FS-CS-02 | Control matrix is calculator-local capability | `domain/sandbox-preset`, `app/analysis-report` | unit | gap: no explicit control-matrix locality contract suite |
-| FS-CS-03 | Visualizers are projections, not truth source | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
+| FS-CS-03 | Visualizers are read-model projections only; rendering cannot mutate domain state; state changes flow through explicit domain actions and canonical action/event/reducer pathways | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
 | FS-CS-04 | Roll is executed outcomes, not drafting state | `reducer/input`, `ui/roll-display`, `contracts/slot-input-parity` | unit + integration + contract | none |
 | FS-CS-05 | Error/remainder channels are canonical outcomes | `reducer/input`, `ui/total-display`, `ui/roll-display`, `persistence` | unit + integration | none |
 | FS-CS-06 | Modulo/cycle/congruence share one semantic visual family | `ui/graph-display`, `ui-module/grapher-v2` | integration | gap: no explicit semantic-family contract assertion |
