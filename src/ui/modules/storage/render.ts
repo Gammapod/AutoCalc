@@ -23,6 +23,7 @@ import { bindDraggableCell } from "../input/dragDrop.js";
 import { getStorageModuleState } from "./runtime.js";
 
 const STORAGE_MIN_VISUAL_COLUMNS = 1;
+const STORAGE_MAX_VISUAL_COLUMNS = 10;
 const STORAGE_MIN_KEY_WIDTH_PX = 56;
 const STORAGE_FALLBACK_GAP_PX = 8;
 
@@ -93,18 +94,19 @@ const parsePixelValue = (value: string | null | undefined, fallback: number): nu
 
 const getStorageVisualColumns = (storageEl: HTMLElement): number => {
   if (typeof window === "undefined") {
-    return STORAGE_COLUMNS;
+    return STORAGE_MAX_VISUAL_COLUMNS;
   }
+  const slotCount = Number.parseInt(storageEl.dataset.storageSlotCount ?? "0", 10);
   const computed = window.getComputedStyle(storageEl);
   const gap = parsePixelValue(computed.columnGap || computed.gap, STORAGE_FALLBACK_GAP_PX);
   const paddingLeft = parsePixelValue(computed.paddingLeft, 0);
   const paddingRight = parsePixelValue(computed.paddingRight, 0);
   const contentWidth = Math.max(0, storageEl.clientWidth - paddingLeft - paddingRight);
-  if (contentWidth <= 0) {
-    return STORAGE_COLUMNS;
-  }
-  const columns = Math.floor((contentWidth + gap) / (STORAGE_MIN_KEY_WIDTH_PX + gap));
-  return Math.max(STORAGE_MIN_VISUAL_COLUMNS, Math.min(STORAGE_COLUMNS, columns));
+  const measuredColumns = contentWidth > 0
+    ? Math.floor((contentWidth + gap) / (STORAGE_MIN_KEY_WIDTH_PX + gap))
+    : STORAGE_MAX_VISUAL_COLUMNS;
+  const maxColumns = Math.min(STORAGE_MAX_VISUAL_COLUMNS, Math.max(1, slotCount || 1));
+  return Math.max(STORAGE_MIN_VISUAL_COLUMNS, Math.min(maxColumns, measuredColumns));
 };
 
 const syncStorageGridMetrics = (storageEl: HTMLElement): number => {

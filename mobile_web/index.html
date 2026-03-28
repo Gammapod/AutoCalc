@@ -133,6 +133,7 @@
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
         color: #0f1218;
+        overflow-x: hidden;
       }
 
       .app-shell {
@@ -1106,11 +1107,18 @@
       }
 
       .storage {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 120;
         justify-self: stretch;
-        width: 100%;
-        border-radius: 14px;
+        width: 100vw;
+        max-width: 100vw;
+        border-radius: 14px 14px 0 0;
         border: 1px solid var(--drawer-stroke);
-        padding: 10px;
+        border-bottom: none;
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
         background: linear-gradient(180deg, var(--drawer-wood-top), var(--drawer-wood-bottom));
         box-shadow:
           inset 0 1px 0 rgba(255, 255, 255, 0.3),
@@ -1228,16 +1236,22 @@
 
       [data-storage-keys] {
         --storage-columns: 8;
+        --storage-max-columns: 10;
         min-height: 48px;
         display: grid;
         grid-template-columns: repeat(var(--storage-columns), minmax(0, 1fr));
         grid-auto-rows: minmax(48px, 1fr);
+        width: min(100%, calc((var(--storage-max-columns) * 136px) + ((var(--storage-max-columns) - 1) * var(--gap)) + 20px));
+        max-height: calc(48px + 20px);
+        margin-inline: auto;
         gap: var(--gap);
         border: 1px solid rgba(91, 62, 33, 0.6);
         border-radius: 10px;
         padding: 10px;
         background: linear-gradient(180deg, var(--drawer-lining-top), var(--drawer-lining-bottom));
         box-shadow: inset 0 2px 6px rgba(70, 45, 20, 0.26);
+        overflow-x: hidden;
+        overflow-y: auto;
       }
 
       .key {
@@ -2641,7 +2655,7 @@
       }
 
       body[data-ui-shell="mobile"] [data-storage-keys] {
-        max-height: min(52vh, 420px);
+        overflow-x: hidden;
         overflow-y: auto;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
@@ -2790,8 +2804,9 @@
 
         .storage,
         .checklist-shell {
-          width: min(92vw, 360px);
-          justify-self: center;
+          width: 100vw;
+          max-width: 100vw;
+          justify-self: stretch;
         }
 
         body[data-ui-shell="mobile"] .v2-bottom-drawer-panel .checklist-shell {
