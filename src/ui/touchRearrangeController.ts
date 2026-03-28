@@ -2,7 +2,7 @@ import { classifyDropAction } from "../domain/layoutDragDrop.js";
 import type { Action, GameState, Key, LayoutSurface } from "../domain/types.js";
 
 export type TouchRearrangeMode = "idle" | "pressing" | "carrying";
-export type TouchRearrangeResult = "moved" | "swapped" | "canceled" | "noop";
+export type TouchRearrangeResult = "moved" | "swapped" | "installed" | "uninstalled" | "canceled" | "noop";
 
 export type TouchRearrangeSource = {
   surface: LayoutSurface;
@@ -15,7 +15,7 @@ export type TouchRearrangeTarget = {
   index: number;
 };
 
-type DropAction = "move" | "swap";
+type DropAction = "move" | "swap" | "install" | "uninstall";
 
 type TimerHandle = ReturnType<typeof setTimeout>;
 
@@ -57,6 +57,9 @@ type TouchRearrangeOptions = {
 const defaultNow = (): number => Date.now();
 const defaultSchedule: Scheduler = (fn, delayMs) => setTimeout(fn, delayMs);
 const defaultCancelScheduled: Canceler = (handle) => clearTimeout(handle);
+
+const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" =>
+  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g" || surface === "keypad_menu";
 
 const clearHoverDecorations = (runtime: Runtime): void => {
   runtime.hoverElement?.classList.remove("drop-target-valid", "drop-target-invalid");
@@ -212,7 +215,7 @@ export const createTouchRearrangeController = (options: TouchRearrangeOptions = 
       return;
     }
 
-    const action = classifyDropAction(runtime.lastKnownState, runtime.source, target);
+    const action = classifyDropAction(runtime.lastKnownState, runtime.source, target, runtime.source.key);
     runtime.hoverTarget = target;
     runtime.hoverAction = action;
     runtime.hoverElement = targetElement;
@@ -237,9 +240,42 @@ export const createTouchRearrangeController = (options: TouchRearrangeOptions = 
     const target = runtime.hoverTarget;
     const action = runtime.hoverAction;
     if (!target || !action) {
+      if (isKeypadSurface(runtime.source.surface)) {
+        runtime.dispatch({
+          type: "UNINSTALL_LAYOUT_KEY",
+          fromSurface: runtime.source.surface,
+          fromIndex: runtime.source.index,
+        });
+        runtime.suppressClicksUntilMs = now() + clickSuppressMs;
+        resetToIdle();
+        return "uninstalled";
+      }
       runtime.suppressClicksUntilMs = now() + clickSuppressMs;
       resetToIdle();
       return "canceled";
+    }
+
+    if (action === "uninstall") {
+      runtime.dispatch({
+        type: "UNINSTALL_LAYOUT_KEY",
+        fromSurface: runtime.source.surface,
+        fromIndex: runtime.source.index,
+      });
+      runtime.suppressClicksUntilMs = now() + clickSuppressMs;
+      resetToIdle();
+      return "uninstalled";
+    }
+
+    if (action === "install") {
+      runtime.dispatch({
+        type: "INSTALL_KEY_FROM_STORAGE",
+        key: runtime.source.key,
+        toSurface: target.surface,
+        toIndex: target.index,
+      });
+      runtime.suppressClicksUntilMs = now() + clickSuppressMs;
+      resetToIdle();
+      return "installed";
     }
 
     if (action === "move") {

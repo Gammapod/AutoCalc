@@ -1,6 +1,12 @@
 import type { Action, GameState, KeyCell } from "../../../domain/types.js";
 import { STORAGE_COLUMNS } from "../../../domain/state.js";
-import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
+import {
+  BINARY_MODE_FLAG,
+  DELTA_RANGE_CLAMP_FLAG,
+  EXECUTION_PAUSE_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+  STEP_EXPANSION_FLAG,
+} from "../../../domain/state.js";
 import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
 import { resolveKeyId } from "../../../domain/keyPresentation.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
@@ -12,7 +18,7 @@ import {
   getActiveStorageSortGroup,
   getStorageRowCount,
 } from "./viewModel.js";
-import { bindDraggableCell, bindDropTargetCell } from "../input/dragDrop.js";
+import { bindDraggableCell } from "../input/dragDrop.js";
 import { getStorageModuleState } from "./runtime.js";
 
 const STORAGE_MIN_VISUAL_COLUMNS = 1;
@@ -71,8 +77,8 @@ const fitKeyLabelsInContainer = (container: ParentNode): void => {
   buttons.forEach((button) => fitKeyButtonLabel(button));
 };
 
-const buildStorageSlotLabels = (layout: GameState["ui"]["storageLayout"], columns: number): string[] =>
-  layout.map((_cell, index) => {
+const buildStorageSlotLabels = (count: number, columns: number): string[] =>
+  Array.from({ length: count }, (_unused, index) => {
     const row = Math.floor(index / columns) + 1;
     const column = (index % columns) + 1;
     return `S${row}C${column} #${index}`;
@@ -136,6 +142,25 @@ const ensureStorageGridObserver = (root: Element, storageEl: HTMLElement): void 
   }
   state.observedStorageGrid = storageEl;
   state.storageGridResizeObserver.observe(storageEl);
+};
+
+const toStorageCell = (key: KeyCell["key"]): KeyCell => {
+  if (key === "toggle_delta_range_clamp") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } };
+  }
+  if (key === "toggle_mod_zero_to_delta") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } };
+  }
+  if (key === "toggle_step_expansion") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } };
+  }
+  if (key === "toggle_binary_mode") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } };
+  }
+  if (key === "exec_play_pause") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } };
+  }
+  return { kind: "key", key };
 };
 
 const renderStorageButton = (
@@ -260,32 +285,15 @@ export const renderStorageV2Module = (
     }
   }
 
-  storageEl.dataset.storageSlotCount = state.ui.storageLayout.length.toString();
+  const storageRenderOrder = buildStorageRenderOrder(state);
+  storageEl.dataset.storageSlotCount = storageRenderOrder.length.toString();
   ensureStorageGridObserver(root, storageEl);
   const storageColumns = syncStorageGridMetrics(storageEl);
-  const storageLabels = buildStorageSlotLabels(state.ui.storageLayout, storageColumns);
-  const storageRenderOrder = buildStorageRenderOrder(state);
-  for (const index of storageRenderOrder) {
-    const cell = state.ui.storageLayout[index];
+  const storageLabels = buildStorageSlotLabels(storageRenderOrder.length, storageColumns);
+  for (let index = 0; index < storageRenderOrder.length; index += 1) {
+    const key = storageRenderOrder[index];
+    const cell = toStorageCell(key);
     const slotLabel = storageLabels[index] ?? `S#${index}`;
-    if (!cell) {
-      const empty = document.createElement("div");
-      empty.className = "placeholder placeholder--drop-slot placeholder--storage-empty";
-      empty.setAttribute("aria-hidden", "true");
-      bindDropTargetCell(empty, "storage", index);
-      empty.dataset.layoutOccupied = "empty";
-      appendDebugSlotLabel(empty, slotLabel);
-      storageEl.appendChild(empty);
-      continue;
-    }
-    if (!isKeyUnlocked(state, cell.key)) {
-      const hidden = document.createElement("div");
-      hidden.className = "placeholder placeholder--drop-slot placeholder--storage-empty placeholder--locked-hidden";
-      hidden.setAttribute("aria-hidden", "true");
-      appendDebugSlotLabel(hidden, slotLabel);
-      storageEl.appendChild(hidden);
-      continue;
-    }
     renderStorageButton(
       root,
       storageEl,

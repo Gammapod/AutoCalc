@@ -19,17 +19,6 @@ export const runStorageDisplayTests = (): void => {
   const base = initialState();
   const orderedState: GameState = {
     ...base,
-    ui: {
-      ...base.ui,
-      storageLayout: [
-        { kind: "key", key: k("op_add") },
-        { kind: "key", key: k("digit_1") },
-        null,
-        { kind: "key", key: k("digit_3") },
-        { kind: "key", key: k("util_undo") },
-        ...base.ui.storageLayout.slice(5),
-      ],
-    },
     unlocks: {
       ...base.unlocks,
       uiUnlocks: {
@@ -41,16 +30,16 @@ export const runStorageDisplayTests = (): void => {
         [k("digit_1")]: true,
         [k("digit_3")]: true,
       },
+      execution: {
+        ...base.unlocks.execution,
+        [k("exec_equals")]: true,
+      },
     },
   };
   const order = buildStorageRenderOrder(orderedState);
-  const position = (index: number): number => order.indexOf(index);
-  assert.ok(position(1) >= 0 && position(3) >= 0, "unlocked keys are present in render order");
-  assert.ok(position(0) >= 0 && position(4) >= 0, "locked keys are present in render order");
-  assert.ok(position(2) >= 0, "empty slots are present in render order");
-  assert.ok(position(1) < position(0), "first unlocked key is rendered before locked key");
-  assert.ok(position(3) < position(4), "later unlocked key is rendered before later locked key");
-  assert.ok(position(2) < position(0), "empty slots render before locked keys");
+  const position = (key: string): number => order.indexOf(key as never);
+  assert.ok(position(k("digit_1")) >= 0 && position(k("digit_3")) >= 0, "unlocked keys are present in render order");
+  assert.equal(position(k("op_add")), -1, "locked keys are not rendered in palette order");
 
   const sortedByExecution: GameState = {
     ...orderedState,
@@ -63,14 +52,6 @@ export const runStorageDisplayTests = (): void => {
     },
     ui: {
       ...orderedState.ui,
-      storageLayout: [
-        { kind: "key", key: k("digit_1") },
-        { kind: "key", key: k("exec_equals") },
-        null,
-        { kind: "key", key: k("op_add") },
-        { kind: "key", key: k("util_undo") },
-        ...orderedState.ui.storageLayout.slice(5),
-      ],
       buttonFlags: {
         ...orderedState.ui.buttonFlags,
         "storage.sort.execution": true,
@@ -78,16 +59,12 @@ export const runStorageDisplayTests = (): void => {
     },
   };
   const sortedOrder = buildStorageRenderOrder(sortedByExecution);
-  const sortedPosition = (index: number): number => sortedOrder.indexOf(index);
+  const sortedPosition = (key: string): number => sortedOrder.indexOf(key as never);
   assert.ok(
-    sortedPosition(1) < sortedPosition(0),
+    sortedPosition(k("exec_equals")) < sortedPosition(k("digit_1")),
     "selected type unlocked keys are prioritized ahead of other unlocked keys",
   );
-  assert.ok(
-    sortedPosition(0) < sortedPosition(2),
-    "other unlocked keys still render ahead of empty slots after selected type keys",
-  );
-  assert.ok(sortedPosition(2) < sortedPosition(3), "empty slots still render before locked keys");
+  assert.equal(sortedPosition(k("op_add")), -1, "locked keys remain absent under grouped sort");
 
   assert.equal(getActiveStorageSortGroup(sortedByExecution), "execution", "active storage sort group is resolved");
 

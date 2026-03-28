@@ -69,11 +69,11 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     targetElement: fakeTargetElement(),
   }));
   const moveResult = moveController.end(1);
-  assert.equal(moveResult, "moved", "drop on empty slot resolves to move");
+  assert.equal(moveResult, "installed", "drop on empty slot resolves to install");
   assert.deepEqual(
     moveActions[0],
-    { type: "MOVE_LAYOUT_CELL", fromSurface: "storage", fromIndex: 0, toSurface: "keypad_f", toIndex: 0 },
-    "move dispatch uses existing reducer action",
+    { type: "INSTALL_KEY_FROM_STORAGE", key: k("util_clear_all"), toSurface: "keypad_f", toIndex: 0 },
+    "install dispatch uses storage install action",
   );
 
   const swapState: GameState = withCalculatorProjection(buildRearrangeState(), "f", (projected) => ({
@@ -101,11 +101,11 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     targetElement: fakeTargetElement(),
   }));
   const swapResult = swapController.end(2);
-  assert.equal(swapResult, "swapped", "drop on occupied slot resolves to swap");
+  assert.equal(swapResult, "installed", "drop on occupied slot resolves to install");
   assert.deepEqual(
     swapActions[0],
-    { type: "SWAP_LAYOUT_CELLS", fromSurface: "storage", fromIndex: 0, toSurface: "keypad_f", toIndex: 0 },
-    "swap dispatch uses existing reducer action",
+    { type: "INSTALL_KEY_FROM_STORAGE", key: k("util_clear_all"), toSurface: "keypad_f", toIndex: 0 },
+    "install on occupied target uses storage install action",
   );
 
   const crossActions: Action[] = [];
@@ -140,6 +140,46 @@ export const runUiShellTouchRearrangeDropResolutionTests = (): void => {
     crossActions[0],
     { type: "MOVE_LAYOUT_CELL", fromSurface: "keypad_f", fromIndex: 3, toSurface: "keypad_g", toIndex: 2 },
     "cross-calculator move dispatch targets keypad_f -> keypad_g surfaces",
+  );
+
+  const uninstallActions: Action[] = [];
+  const uninstallController = createTouchRearrangeController();
+  uninstallController.syncContext(moveState, (action) => {
+    uninstallActions.push(action);
+    return action;
+  });
+  uninstallController.startPress(4, 30, 40, { surface: "keypad_f", index: 3, key: k("exec_equals") }, null);
+  uninstallController.forceActivateCarryForTests();
+  uninstallController.move(4, 60, 70, () => ({
+    target: { surface: "storage", index: 0 },
+    targetElement: fakeTargetElement(),
+  }));
+  const uninstallResult = uninstallController.end(4);
+  assert.equal(uninstallResult, "uninstalled", "drop on storage resolves to uninstall");
+  assert.deepEqual(
+    uninstallActions[0],
+    { type: "UNINSTALL_LAYOUT_KEY", fromSurface: "keypad_f", fromIndex: 3 },
+    "storage drop from keypad dispatches uninstall action",
+  );
+
+  const offSurfaceActions: Action[] = [];
+  const offSurfaceController = createTouchRearrangeController();
+  offSurfaceController.syncContext(moveState, (action) => {
+    offSurfaceActions.push(action);
+    return action;
+  });
+  offSurfaceController.startPress(5, 30, 40, { surface: "keypad_f", index: 3, key: k("exec_equals") }, null);
+  offSurfaceController.forceActivateCarryForTests();
+  offSurfaceController.move(5, 60, 70, () => ({
+    target: null,
+    targetElement: null,
+  }));
+  const offSurfaceResult = offSurfaceController.end(5);
+  assert.equal(offSurfaceResult, "uninstalled", "off-calculator drop resolves to uninstall");
+  assert.deepEqual(
+    offSurfaceActions[0],
+    { type: "UNINSTALL_LAYOUT_KEY", fromSurface: "keypad_f", fromIndex: 3 },
+    "off-calculator drop from keypad dispatches uninstall action",
   );
 };
 

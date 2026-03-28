@@ -1,5 +1,5 @@
 import type { Action, GameState, Key, LayoutSurface } from "../../../domain/types.js";
-import { evaluateLayoutDrop } from "../../../domain/layoutRules.js";
+import { classifyDropAction as classifyDomainDropAction } from "../../../domain/layoutDragDrop.js";
 import { getInputModuleState, type DragTarget, type DropAction } from "./runtime.js";
 
 const DRAG_START_THRESHOLD_PX = 6;
@@ -7,10 +7,38 @@ const DRAG_CLICK_SUPPRESS_MS = 220;
 
 export const buildLayoutDropDispatchAction = (
   source: { surface: LayoutSurface; index: number },
-  target: { surface: LayoutSurface; index: number },
+  sourceKey: Key,
+  target: { surface: LayoutSurface; index: number } | null,
   action: DropAction,
-): Action =>
-  action === "move"
+): Action => {
+  if (action === "uninstall") {
+    return {
+      type: "UNINSTALL_LAYOUT_KEY",
+      fromSurface: source.surface,
+      fromIndex: source.index,
+    };
+  }
+  if (action === "install") {
+    if (
+      !target
+      || (target.surface !== "keypad"
+        && target.surface !== "keypad_f"
+        && target.surface !== "keypad_g"
+        && target.surface !== "keypad_menu")
+    ) {
+      throw new Error("Install action requires keypad destination target.");
+    }
+    return {
+      type: "INSTALL_KEY_FROM_STORAGE",
+      key: sourceKey,
+      toSurface: target.surface,
+      toIndex: target.index,
+    };
+  }
+  if (!target) {
+    throw new Error("Move/swap action requires destination target.");
+  }
+  return action === "move"
     ? {
         type: "MOVE_LAYOUT_CELL",
         fromSurface: source.surface,
@@ -25,6 +53,7 @@ export const buildLayoutDropDispatchAction = (
         toSurface: target.surface,
         toIndex: target.index,
       };
+};
 
 export const shouldStartDragFromDelta = (
   deltaX: number,
@@ -34,11 +63,10 @@ export const shouldStartDragFromDelta = (
 
 export const classifyDropAction = (
   state: GameState,
-  source: DragTarget,
-  destination: DragTarget,
+  source: DragTarget & { key?: Key },
+  destination: DragTarget | null,
 ): DropAction | null => {
-  const decision = evaluateLayoutDrop(state, source, destination);
-  return decision.allowed ? decision.action : null;
+  return classifyDomainDropAction(state, source, destination, source.key ?? null);
 };
 
 const parseDragTarget = (value: unknown): DragTarget | null => {
@@ -133,7 +161,7 @@ const onDragMove = (root: Element, event: MouseEvent): void => {
     return;
   }
 
-  const action = classifyDropAction(dragSession.state, dragSession.source, parsed);
+  const action = classifyDropAction(dragSession.state, { ...dragSession.source, key: dragSession.key }, parsed);
   dragSession.target = parsed;
   dragSession.targetAction = action;
   dragSession.targetElement = targetNode;
@@ -147,7 +175,16 @@ const onDragUp = (root: Element): void => {
   }
   const dragSession = state.dragSession;
   if (dragSession.active && dragSession.target && dragSession.targetAction) {
-    dragSession.dispatch(buildLayoutDropDispatchAction(dragSession.source, dragSession.target, dragSession.targetAction));
+    dragSession.dispatch(buildLayoutDropDispatchAction(dragSession.source, dragSession.key, dragSession.target, dragSession.targetAction));
+  } else if (
+    dragSession.active
+    && !dragSession.target
+    && (dragSession.source.surface === "keypad"
+      || dragSession.source.surface === "keypad_f"
+      || dragSession.source.surface === "keypad_g"
+      || dragSession.source.surface === "keypad_menu")
+  ) {
+    dragSession.dispatch(buildLayoutDropDispatchAction(dragSession.source, dragSession.key, null, "uninstall"));
   }
   clearDragSession(root);
 };

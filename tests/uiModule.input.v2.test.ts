@@ -50,10 +50,10 @@ export const runUiModuleInputV2Tests = (): void => {
   };
   const action = classifyDropAction(
     withStorageKey,
-    { surface: "storage", index: 0 },
+    { surface: "storage", index: 0, key: k("digit_1") },
     { surface: "keypad", index: 3 },
   );
-  assert.equal(action === "move" || action === null, true, "input drag-drop adapter delegates to layout rules");
+  assert.equal(action === "install" || action === null, true, "input drag-drop adapter supports install classification");
 
   const now = Date.now();
   setSuppressClicksUntilForTests(now + 200);

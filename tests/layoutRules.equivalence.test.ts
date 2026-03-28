@@ -69,11 +69,28 @@ const assertClassifierParity = (state: GameState, source: DragTarget, destinatio
 export const runLayoutRulesEquivalenceTests = (): void => {
   const state = createScenarioState();
 
-  assertClassifierParity(state, { surface: "storage", index: 0 }, { surface: "keypad", index: 0 });
-  assertClassifierParity(state, { surface: "storage", index: 0 }, { surface: "keypad", index: 1 });
-  assertClassifierParity(state, { surface: "storage", index: 2 }, { surface: "keypad", index: 4 });
-  assertClassifierParity(state, { surface: "storage", index: 2 }, { surface: "keypad", index: 3 });
-  assertClassifierParity(state, { surface: "storage", index: 0 }, { surface: "storage", index: 99 });
+  assertClassifierParity(state, { surface: "keypad", index: 1 }, { surface: "keypad", index: 0 });
+
+  assert.equal(
+    classifyDomainDropAction(state, { surface: "storage", index: 0 }, { surface: "keypad", index: 0 }),
+    "install",
+    "storage-to-keypad classification uses install semantics",
+  );
+  assert.equal(
+    classifyDomainDropAction(state, { surface: "storage", index: 1 }, { surface: "keypad", index: 3 }),
+    null,
+    "storage install rejects duplicate key already present on destination keypad",
+  );
+  assert.equal(
+    classifyDomainDropAction(state, { surface: "keypad", index: 1 }, { surface: "storage", index: 0 }),
+    "uninstall",
+    "keypad-to-storage classification uses uninstall semantics",
+  );
+  assert.equal(
+    classifyDomainDropAction(state, { surface: "keypad", index: 1 }, null),
+    "uninstall",
+    "keypad off-calculator drop classification uses uninstall semantics",
+  );
 
   const lockedKeypadDestination: GameState = {
     ...state,
@@ -91,7 +108,7 @@ export const runLayoutRulesEquivalenceTests = (): void => {
   };
   assertClassifierParity(
     lockedKeypadDestination,
-    { surface: "storage", index: 0 },
+    { surface: "keypad", index: 0 },
     { surface: "keypad", index: 1 },
   );
 

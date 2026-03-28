@@ -2,6 +2,7 @@ import { canStartTouchRearrange, shouldCloseMenuFromSwipe } from "../shellGestur
 import { createShellController } from "../shellController.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "../touchRearrangeController.js";
 import type { Action, GameState, Key, LayoutSurface } from "../../domain/types.js";
+import { buildStorageRenderOrder } from "../modules/storage/viewModel.js";
 import type { DrawerDragTarget, ShellRefs } from "./types.js";
 import type { ShellRenderRuntimeState } from "./runtimeState.js";
 import { createMenuPointerSession, createViewportPointerSession, updatePointerSessionTrail } from "./pointerSession.js";
@@ -64,8 +65,8 @@ const readKeyAtSurfaceIndex = (state: GameState, surface: LayoutSurface, index: 
     }
     return cell.key;
   }
-  const cell = state.ui.storageLayout[index];
-  return cell?.key ?? null;
+  const key = buildStorageRenderOrder(state)[index];
+  return key ?? null;
 };
 
 const resolveTouchSourceFromEvent = (

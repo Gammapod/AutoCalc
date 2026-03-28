@@ -152,6 +152,22 @@ export const runExecutionModePolicyTests = (): void => {
     "swap touching active keypad surface is rejected during execution mode",
   );
   assert.deepEqual(
+    classifyExecutionPolicyAction(
+      active,
+      { type: "INSTALL_KEY_FROM_STORAGE", key: k("digit_1"), toSurface: "keypad", toIndex: 0 },
+    ),
+    { decision: "reject" },
+    "install touching active keypad surface is rejected during execution mode",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(
+      active,
+      { type: "UNINSTALL_LAYOUT_KEY", fromSurface: "keypad", fromIndex: 0 },
+    ),
+    { decision: "reject" },
+    "uninstall touching active keypad surface is rejected during execution mode",
+  );
+  assert.deepEqual(
     classifyExecutionPolicyAction(active, { type: "UPGRADE_KEYPAD_ROW" }),
     { decision: "reject" },
     "keypad row upgrade is rejected during execution mode",
@@ -193,6 +209,22 @@ export const runExecutionModePolicyTests = (): void => {
     ),
     { decision: "reject" },
     "dual-calculator layout mutation on active keypad is rejected during execution mode",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(
+      dualActive,
+      { type: "INSTALL_KEY_FROM_STORAGE", key: k("digit_1"), toSurface: "keypad_g", toIndex: 0 },
+    ),
+    { decision: "allow" },
+    "dual-calculator install on non-active keypad is allowed during execution mode",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(
+      dualActive,
+      { type: "UNINSTALL_LAYOUT_KEY", fromSurface: "keypad_g", fromIndex: 0 },
+    ),
+    { decision: "allow" },
+    "dual-calculator uninstall on non-active keypad is allowed during execution mode",
   );
 };
 

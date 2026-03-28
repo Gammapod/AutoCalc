@@ -43,7 +43,7 @@ export const runDragDropBehaviorTests = (): void => {
     { surface: "storage", index: 0 },
     { surface: "keypad", index: 3 },
   );
-  assert.equal(moveAction, "move", "dragging key onto empty keypad placeholder is a move");
+  assert.equal(moveAction, "install", "dragging storage key onto empty keypad placeholder installs");
 
   const withKeypadKey: GameState = {
     ...withStorageKey,
@@ -66,7 +66,7 @@ export const runDragDropBehaviorTests = (): void => {
     { surface: "storage", index: 0 },
     { surface: "keypad", index: 3 },
   );
-  assert.equal(swapAction, "swap", "dragging key onto occupied key slot is a swap");
+  assert.equal(swapAction, "install", "dragging storage key onto occupied keypad slot installs");
 
   const allowedFormerBottomRightMove = classifyDropAction(
     withStorageKey,
@@ -75,8 +75,8 @@ export const runDragDropBehaviorTests = (): void => {
   );
   assert.equal(
     allowedFormerBottomRightMove,
-    "move",
-    "dragging non-execution key into any empty keypad slot is allowed",
+    "install",
+    "dragging non-execution storage key into empty keypad slot is allowed",
   );
 
   const withExecutionStorageKey: GameState = {
@@ -100,8 +100,8 @@ export const runDragDropBehaviorTests = (): void => {
   );
   assert.equal(
     allowedAdditionalExecutionMove,
-    "move",
-    "dragging an execution key onto keypad is allowed even when keypad already has one execution key",
+    null,
+    "dragging duplicate execution key onto keypad is rejected",
   );
 
   const withExecutionMovedOffKeypad: GameState = {
@@ -127,8 +127,8 @@ export const runDragDropBehaviorTests = (): void => {
   );
   assert.equal(
     allowedFirstExecutionMove,
-    "move",
-    "dragging an execution key onto keypad is allowed when keypad currently has zero execution keys",
+    "install",
+    "dragging execution key onto keypad is allowed when keypad currently has zero instances",
   );
 
   const emptyStorageIndex = withExecutionMovedOffKeypad.ui.storageLayout.findIndex((cell) => cell === null);
@@ -153,6 +153,20 @@ export const runDragDropBehaviorTests = (): void => {
     null,
     "locked keypad keys cannot be moved into storage",
   );
+
+  const uninstallToStorage = classifyDropAction(
+    withStorageKey,
+    { surface: "keypad", index: 0 },
+    { surface: "storage", index: 0 },
+  );
+  assert.equal(uninstallToStorage, "uninstall", "dragging keypad key to storage uninstalls");
+
+  const uninstallOffCalculator = classifyDropAction(
+    withStorageKey,
+    { surface: "keypad", index: 0 },
+    null,
+  );
+  assert.equal(uninstallOffCalculator, "uninstall", "dragging keypad key off-calculator uninstalls");
 
   const invalid = classifyDropAction(
     withStorageKey,

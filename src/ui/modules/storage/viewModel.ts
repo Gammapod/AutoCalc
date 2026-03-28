@@ -1,5 +1,6 @@
 import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
-import type { Action, GameState } from "../../../domain/types.js";
+import { buttonRegistry } from "../../../domain/buttonRegistry.js";
+import type { Action, GameState, Key } from "../../../domain/types.js";
 import { STORAGE_COLUMNS } from "../../../domain/state.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
 
@@ -66,29 +67,21 @@ export const buildStorageSortToggleSequence = (
   return actions;
 };
 
-export const buildStorageRenderOrder = (state: GameState): number[] => {
-  const selectedTypeUnlocked: number[] = [];
-  const otherUnlocked: number[] = [];
-  const empty: number[] = [];
-  const locked: number[] = [];
+export const buildStorageRenderOrder = (state: GameState): Key[] => {
+  const selectedTypeUnlocked: Key[] = [];
+  const otherUnlocked: Key[] = [];
   const activeSortGroup = getActiveStorageSortGroup(state);
 
-  for (let index = 0; index < state.ui.storageLayout.length; index += 1) {
-    const cell = state.ui.storageLayout[index];
-    if (!cell) {
-      empty.push(index);
+  for (const entry of buttonRegistry) {
+    if (!isKeyUnlocked(state, entry.key)) {
       continue;
     }
-    if (isKeyUnlocked(state, cell.key)) {
-      if (activeSortGroup && getKeyVisualGroup(cell.key) === activeSortGroup) {
-        selectedTypeUnlocked.push(index);
-      } else {
-        otherUnlocked.push(index);
-      }
-      continue;
+    if (activeSortGroup && getKeyVisualGroup(entry.key) === activeSortGroup) {
+      selectedTypeUnlocked.push(entry.key);
+    } else {
+      otherUnlocked.push(entry.key);
     }
-    locked.push(index);
   }
 
-  return [...selectedTypeUnlocked, ...otherUnlocked, ...empty, ...locked];
+  return [...selectedTypeUnlocked, ...otherUnlocked];
 };

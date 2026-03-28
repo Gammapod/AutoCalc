@@ -252,6 +252,12 @@ export const isExecutionGatedMutationAction = (state: GameState, action: Action)
   if (action.type === "MOVE_LAYOUT_CELL" || action.type === "SWAP_LAYOUT_CELLS") {
     return touchesActiveCalculatorSurface(state, action.fromSurface, action.toSurface);
   }
+  if (action.type === "INSTALL_KEY_FROM_STORAGE") {
+    return touchesActiveCalculatorSurface(state, "storage", action.toSurface);
+  }
+  if (action.type === "UNINSTALL_LAYOUT_KEY") {
+    return touchesActiveCalculatorSurface(state, action.fromSurface, "storage");
+  }
   return (
     action.type === "SET_KEYPAD_DIMENSIONS"
     || action.type === "UPGRADE_KEYPAD_ROW"

@@ -7,7 +7,7 @@ export type DragTarget = {
   index: number;
 };
 
-export type DropAction = "move" | "swap";
+export type DropAction = "move" | "swap" | "install" | "uninstall";
 
 export type DragSession = {
   state: GameState;

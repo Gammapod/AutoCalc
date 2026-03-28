@@ -46,6 +46,7 @@ export const runContractsUiActionEmissionTests = (): void => {
 
   const moveAction = buildLayoutDropDispatchAction(
     { surface: "keypad", index: 1 },
+    k("digit_1"),
     { surface: "storage", index: 2 },
     "move",
   );
@@ -57,13 +58,26 @@ export const runContractsUiActionEmissionTests = (): void => {
 
   const swapAction = buildLayoutDropDispatchAction(
     { surface: "storage", index: 2 },
+    k("digit_1"),
     { surface: "keypad", index: 1 },
-    "swap",
+    "install",
   );
   assert.deepEqual(
     swapAction,
-    { type: "SWAP_LAYOUT_CELLS", fromSurface: "storage", fromIndex: 2, toSurface: "keypad", toIndex: 1 },
-    "drag swap emits SWAP_LAYOUT_CELLS action",
+    { type: "INSTALL_KEY_FROM_STORAGE", key: k("digit_1"), toSurface: "keypad", toIndex: 1 },
+    "storage drag emits INSTALL_KEY_FROM_STORAGE action",
+  );
+
+  const uninstallAction = buildLayoutDropDispatchAction(
+    { surface: "keypad", index: 2 },
+    k("digit_1"),
+    null,
+    "uninstall",
+  );
+  assert.deepEqual(
+    uninstallAction,
+    { type: "UNINSTALL_LAYOUT_KEY", fromSurface: "keypad", fromIndex: 2 },
+    "keypad drag-off emits UNINSTALL_LAYOUT_KEY action",
   );
 
   assert.equal(
