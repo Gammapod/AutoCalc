@@ -1,141 +1,134 @@
 Truth 2: Releases
 
-# Release vα.0.0: Content Backlog
+## Release v1.0.0: Content Completion Pass
 
-Purpose: track implementable, self-contained features that do not require Planned Release framing.
+### User Story
+As a player, I want all currently planned-but-not-yet-implemented keys to exist in-game with complete behavior and display metadata so progression and experimentation are not blocked by placeholder content.
 
-## Operators
-When implementing, every operator key MUST have all of the following defined:
-- functionality
-- key face
-- operator slot face
-- expanded form
+### User Story Exit Criteria
+- Every planned backlog key has full implementation in runtime/content catalogs.
+- Every implemented key defines:
+- Functionality/behavior
+- Key face label
+- Operator slot face label (if applicable)
+- Expanded form text (if applicable)
+- Missing placeholder fields in key metadata are removed from this release scope.
+- Unlock/content provider boundaries still pass contract tests after key additions.
 
-### Unary Operators
-All unary operators are applied to the previous step's result.
+### Release Notes
+Release Note ID: `release_v1_0_0`
 
-- `Distinct prime factors`: 
-    - functionality: return the number of distinct prime factors of operand.
-    - key face: `ω`
-    - operator slot face: `[ ω ]`
-    - expanded form: ``
-- `Floor`:
-    - functionality: return greatest integer less than or equal to `n`.
-    - key face: `⌊n⌋`
-    - operator slot face: `[ ⌊n⌋ ]`
-    - expanded form: ``
-- `Ceiling`:
-    - functionality: return least integer greater than or equal to `n`.
-    - key face: `⌈n⌉`
-    - operator slot face: `[ ⌈n⌉ ]`
-    - expanded form: ``
-- `Not`:
-    - functionality: returns 1 if operand is == 0, else 0.
-    - key face: `¬`
-    - operator slot face: `[ ¬ ]`
-    - expanded form: `[ 0 ? 1 : 0 ]`
+Planned player-facing summary:
+- Planned key content is now fully represented in gameplay.
+- Newly added keys include complete labels and behavior definitions.
+- Content catalogs are aligned so unlocks and key availability are consistent.
 
-The following require integer inputs, and return NaN otherwise:
-- `Collatz`:
-    - functionality: `n -> n / 2` when `n` is even; `n -> 3n + 1` when `n` is odd.
-    - key face: `Ctz`
-    - operator slot face: `[ Ctz ]`
-    - expanded form: `[ n◇2¬ ? 3n+1 : n÷2 ]`
-- `Sort asc`:
-    - functionality: reorder decimal digits of `n` in ascending order.
-    - key face: `⇡d`
-    - operator slot face: `[ ⇡ ]`
-    - expanded form: `[ sort_asc() ]`
-- `Digit count (digit)`:
-    - functionality: return the count of decimal digits in `n`.
-    - key face: ``
-    - operator slot face: `[  ]`
-    - expanded form: `[  ]`
-- `Digit sum`:
-    - functionality: return the sum of decimal digits in `n`.
-    - key face: ``
-    - operator slot face: `[  ]`
-    - expanded form: `[ d#1 + d#2 + {as many digits in number} ]`
-- `Digit^2 sum (∑d^2)`:
-    - functionality: return the sum of squared decimal digits in `n`.
-    - key face: ``
-    - operator slot face: `[  ]`
-    - expanded form: `[ (d#1^2) + (d#2^2) + {as many digits in number} ]`
-- `Mirror digits (⇋d)`:
-    - functionality: reverse decimal digit order of `n`.
-    - key face: ``
-    - operator slot face: `[ ⇋ ]`
-    - expanded form: `[ abc -> cba ]`
+### Scope Inventory (Planned Keys to Include)
 
-### Binary Operators
+Unary operators:
+- Distinct prime factors
+- Floor
+- Ceiling
+- Not
+- Collatz (integer-only)
+- Sort asc (integer-only)
+- Digit count (integer-only)
+- Digit sum (integer-only)
+- Digit^2 sum (integer-only)
+- Mirror digits (integer-only)
 
-- `Max (╧)`:
-    - functionality: return the larger of two operands.
-    - key face: ``
-    - operator slot face: `[ ╧ _ ]`
-    - expanded form: `[ a > b ] [ × a ] + [ a > b ] [ × b ] [ ¬ ]`
-- `Min (╤)`:
-    - functionality: return the smaller of two operands.
-    - key face: ``
-    - operator slot face: `[ ╤ _ ]`
-    - expanded form: `[ a > b ] [ × b ] + [ a > b ] [ × a ] [ ¬ ]`
-- `Greater (>)`:
-    - functionality: returns 1 if first operand is larger than the second, else 0.
-    - key face: ``
-    - operator slot face: `[ > _ ]`
-    - expanded form: `[  ]`
+Binary operators:
+- Max
+- Min
+- Greater
+- Digit number (integer-only)
+- Keep leftmost n digits (integer-only)
+- Previous roll item f(x-k) (integer-only)
 
-The following require integer inputs, and return NaN otherwise:
-- `Digit number (d#)`:
-    - functionality: return the nth digit of the operand.
-    - key face: ``
-    - operator slot face: `[ d#_ ]`
-    - expanded form: `[   ]`
-- `Keep leftmost n (⪻d)`:
-    - functionality: keep only the leftmost `n` digits; discard the rest.
-    - key face: ``
-    - operator slot face: `[  ]`
-    - expanded form: `[  ]`
-- `Previous roll item (f(x-k))`:
-    - functionality: for current roll index `x`, return item value at relative offset `x-k`.
-    - key face: ``
-    - operator slot face: `[  ]`
-    - expanded form: `[  ]`
+Settings keys:
+- Base-2 display behavior key
 
-## Settings Keys
+Digits/values:
+- Previous result f(x-1)
+- Roll index X
 
-- `Base-2 display`: Changes to binary notation. Please note - binary notation should also influence the behavior with respect to maxDigits and digit-specific operations. If maxDigits is set to 4, then the highest number possible is "1111", or 15 on the roll.
+Visualizer/content:
+- Function display expanded-form rendering improvements
 
-## Digits/Values
+## Release v1.0.1: Function Builder Bar Standardization
 
-- `Previous result (f_x-1)`: for current roll index `x`, return the previous item value `f_x-1`.
-- `Roll index (X)`: returns the index of the previous roll result +1.
+### Pre-work
+Audit all function-builder bar render paths and interaction handlers to remove duplicated styling and layout rules.
 
-## Visualizer changes
+### Pre-work Exit Criteria
+- Single source of truth exists for builder bar spacing, slot framing, text sizing, and interaction states.
+- Existing tests that cover builder bar behavior still pass after consolidation.
 
-- `Function display`: Prime factorization visualizer should display the user-defined function expanded - if the user's function is `5 [ - 4 ] [ Ω ] [ × 8 ] [ ^ 2 ] [ ++ ]`, the visualizer should show `f_0 = 5, f_x = ++(( Ω(f_x-1 - 4) × 8) ^ 2)`. Binary operations are added to the right and unary operators are added to the left, parentheses as needed.
+### User Story
+As a player, I want the function builder bar to look and behave consistently across states so editing functions feels predictable.
 
-# Post-vα.0.0: full version backlog
+### User Story Exit Criteria
+- Builder bar visuals are consistent across calculator shells and interaction modes.
+- Slot states (empty, filled, selected, invalid target) use standardized styling language.
+- Drag/drop and tap insertion feedback is consistent in builder bar contexts.
+- Regressions are covered by targeted UI module tests.
 
-## Unary Operators
+### Release Notes
+Release Note ID: `release_v1_0_1`
 
-- `Nth Prime (ℙ)`:
-    - functionality: return the nth prime number. NaN if n is not a natural number.
-    - key face: ``
-    - operator slot face: `[ ℙ ]`
-    - expanded form: `[ ℙ(n) ]`
-- `Index of prime (ℙ⁻¹)`:
-    - functionality: return the index of prime p. NaN if p is not a prime.
-    - key face: ``
-    - operator slot face: `[ ℙ⁻¹ ]`
-    - expanded form: `[  ]`
-    
-## Settings Keys
+Planned player-facing summary:
+- The function builder bar now uses a standardized visual and interaction pattern.
+- Function editing states are clearer and more consistent across the UI.
 
-- `Base-Prime (ℙ(ℙ⁻¹(f)))`: Allows arithmetic on the prime index. When toggled, the seed f_0=s becomes f_0=ℙ(s) and the function f_n=g°f_-n becomes ℙ(g°ℙ⁻¹(f_-n)).
+## Release v1.0.2: Replace Goal/Reward Text with Signal Bars
 
-## Visualizer changes
+### Pre-work
+Define progress/signal bar component contract and map existing goal/reward text states to visual states.
 
-- `Prime domain`: In addition to natural numbers, integers, rationals, etc, I'd like to also label prime numbers as being in the prime domain, `ℙ`. It is a subdomain of the naturals.
+### Pre-work Exit Criteria
+- Visual bar state model is documented (locked, partial, near, complete, blocked).
+- Existing text-driven progression states are mapped to bar semantics one-to-one.
 
+### User Story
+As a player, I want progression and reward status to be shown visually so I can scan my status faster than reading verbose text blocks.
+
+### User Story Exit Criteria
+- Goal/reward text blocks are replaced by visual progress/signal bars in primary progression surfaces.
+- Bars are legible on desktop and mobile form factors.
+- Visual states remain non-spoiler and preserve current hint fidelity.
+- Accessibility baseline is preserved (contrast and non-color cue support).
+
+### Release Notes
+Release Note ID: `release_v1_0_2`
+
+Planned player-facing summary:
+- Progression status now appears as visual signal bars instead of text-heavy goal/reward blocks.
+- Unlock progress is faster to read at a glance while keeping spoiler-safe guidance.
+
+## Release v1.1.0: UX Feedback Standardization
+
+### Pre-work
+Create a centralized UX feedback contract for rejection cues and transition cues, then inventory all input/state transition flows against it.
+
+### Pre-work Exit Criteria
+- Rejection feedback contract is defined and reusable across modules.
+- Transition feedback contract is defined for major state changes.
+- Missing-coverage inventory is complete before implementation starts.
+
+### User Story
+As a player, I want every rejected input and every state transition to provide clear feedback so I always understand what happened and why.
+
+### User Story Exit Criteria
+- Every rejected input path provides explicit, user-visible feedback.
+- Every state transition path provides explicit transition feedback.
+- Feedback is consistent in wording, motion timing, and visual treatment.
+- Critical paths are covered by tests (input rejection and transition feedback contracts).
+
+### Release Notes
+Release Note ID: `release_v1_1_0`
+
+Planned player-facing summary:
+- Rejected actions now always explain themselves clearly.
+- State changes now consistently surface transition feedback.
+- Interaction clarity is standardized across the app.
 
