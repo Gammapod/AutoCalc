@@ -463,6 +463,63 @@ export const runMultiCalculatorContractTests = (): void => {
   assert.equal(swappedProjectedF.calculator.rollEntries.length, 0, "f<->g swap clears f roll");
   assert.equal(swappedProjectedG.calculator.rollEntries.length, 0, "f<->g swap clears g roll");
 
+  const installSeed: GameState = {
+    ...fGResetSeed,
+    unlocks: {
+      ...fGResetSeed.unlocks,
+      utilities: {
+        ...fGResetSeed.unlocks.utilities,
+        [KEY_ID.util_clear_all]: true,
+      },
+    },
+  };
+  const installIntoG = reducer(installSeed, {
+    type: "INSTALL_KEY_FROM_STORAGE",
+    key: KEY_ID.util_clear_all,
+    toSurface: "keypad_g",
+    toIndex: 1,
+  });
+  const installIntoGProjectedF = projectCalculatorToLegacy(installIntoG, "f");
+  const installIntoGProjectedG = projectCalculatorToLegacy(installIntoG, "g");
+  assert.equal(
+    installIntoGProjectedG.ui.keyLayout[1]?.kind === "key" ? installIntoGProjectedG.ui.keyLayout[1].key : null,
+    KEY_ID.util_clear_all,
+    "targeted install mutates only g keypad",
+  );
+  assert.deepEqual(
+    installIntoGProjectedF.calculator.total,
+    rational(9n),
+    "install into g keeps f calculator runtime unchanged",
+  );
+  assert.deepEqual(
+    installIntoGProjectedG.calculator.total,
+    rational(13n),
+    "install into empty g slot does not reset g runtime",
+  );
+
+  const replaceInG = reducer(installSeed, {
+    type: "INSTALL_KEY_FROM_STORAGE",
+    key: KEY_ID.util_clear_all,
+    toSurface: "keypad_g",
+    toIndex: 0,
+  });
+  const replaceInGProjectedF = projectCalculatorToLegacy(replaceInG, "f");
+  const replaceInGProjectedG = projectCalculatorToLegacy(replaceInG, "g");
+  assert.deepEqual(replaceInGProjectedG.calculator.total, rational(0n), "replace install in g resets g total");
+  assert.equal(replaceInGProjectedG.calculator.rollEntries.length, 0, "replace install in g clears g roll");
+  assert.deepEqual(replaceInGProjectedF.calculator.total, rational(9n), "replace install in g keeps f total");
+
+  const uninstallFromG = reducer(installSeed, {
+    type: "UNINSTALL_LAYOUT_KEY",
+    fromSurface: "keypad_g",
+    fromIndex: 0,
+  });
+  const uninstallFromGProjectedF = projectCalculatorToLegacy(uninstallFromG, "f");
+  const uninstallFromGProjectedG = projectCalculatorToLegacy(uninstallFromG, "g");
+  assert.deepEqual(uninstallFromGProjectedG.calculator.total, rational(0n), "uninstall from g resets g total");
+  assert.equal(uninstallFromGProjectedG.calculator.rollEntries.length, 0, "uninstall from g clears g roll");
+  assert.deepEqual(uninstallFromGProjectedF.calculator.total, rational(9n), "uninstall from g keeps f total");
+
   const fullOrderState = materializeCalculatorG(materializeCalculatorMenu(initialState()));
   const calculatorOrder = fullOrderState.calculatorOrder ?? [];
   for (const calculatorId of calculatorOrder) {

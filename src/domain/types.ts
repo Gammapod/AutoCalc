@@ -738,6 +738,21 @@ export type MoveLayoutCellAction = {
   calculatorId?: CalculatorId;
 };
 
+export type InstallKeyFromStorageAction = {
+  type: "INSTALL_KEY_FROM_STORAGE";
+  key: Key;
+  toSurface: LayoutSurface;
+  toIndex: number;
+  calculatorId?: CalculatorId;
+};
+
+export type UninstallLayoutKeyAction = {
+  type: "UNINSTALL_LAYOUT_KEY";
+  fromSurface: LayoutSurface;
+  fromIndex: number;
+  calculatorId?: CalculatorId;
+};
+
 export type SwapLayoutCellsAction = {
   type: "SWAP_LAYOUT_CELLS";
   fromSurface: LayoutSurface;
@@ -840,6 +855,8 @@ export type Action =
   | MoveKeySlotAction
   | SwapKeySlotsAction
   | MoveLayoutCellAction
+  | InstallKeyFromStorageAction
+  | UninstallLayoutKeyAction
   | SwapLayoutCellsAction
   | SetKeypadDimensionsAction
   | UpgradeKeypadRowAction

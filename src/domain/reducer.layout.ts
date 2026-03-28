@@ -18,6 +18,7 @@ import {
 } from "./layoutRules.js";
 import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface } from "./types.js";
 import { isMultiCalculatorSession } from "./multiCalculator.js";
+import { isKeyUnlocked } from "./keyUnlocks.js";
 
 export { isStorageLayoutValid } from "./layoutRules.js";
 
@@ -255,6 +256,29 @@ const writeSurfaceCell = (
   };
 };
 
+const cloneKeyCell = (cell: KeyCell): KeyCell => ({ ...cell });
+
+const resolveCanonicalKeyCell = (state: GameState, key: KeyCell["key"]): KeyCell => {
+  for (const cell of state.ui.storageLayout) {
+    if (cell?.kind === "key" && cell.key === key) {
+      return cloneKeyCell(cell);
+    }
+  }
+  const surfaces: LayoutSurface[] = isMultiCalculatorSession(state)
+    ? ["keypad_f", "keypad_g", "keypad_menu"]
+    : ["keypad"];
+  for (const surface of surfaces) {
+    const length = getSurfaceLength(state, surface);
+    for (let index = 0; index < length; index += 1) {
+      const cell = readSurfaceCell(state, surface, index);
+      if (cell?.kind === "key" && cell.key === key) {
+        return cloneKeyCell(cell);
+      }
+    }
+  }
+  return { kind: "key", key };
+};
+
 const sourceClearedCell = (surface: LayoutSurface): LayoutCell | null =>
   isKeypadSurface(surface) ? emptyCell() : null;
 
@@ -477,6 +501,64 @@ export const applyMoveLayoutCell = (
     { surface: toSurface, index: toIndex },
   ];
   if (!hasOnlyExpectedKeyChanges(state, nextState, allowed)) {
+    return state;
+  }
+  return nextState;
+};
+
+export const applyInstallKeyFromStorage = (
+  state: GameState,
+  key: KeyCell["key"],
+  toSurface: LayoutSurface,
+  toIndex: number,
+): GameState => {
+  if (!isKeypadSurface(toSurface) || !hasValidSurfaceIndex(state, toSurface, toIndex)) {
+    return state;
+  }
+  if (!isKeyUnlocked(state, key)) {
+    return state;
+  }
+  const destinationUi = getSurfaceUi(state, toSurface);
+  if (!destinationUi) {
+    return state;
+  }
+  const destinationLayout = toKeyLayoutArray(
+    getCurrentKeypadCells(destinationUi),
+    destinationUi.keypadColumns || KEYPAD_DEFAULT_COLUMNS,
+    destinationUi.keypadRows || KEYPAD_DEFAULT_ROWS,
+  );
+  if (destinationLayout.some((cell) => cell.kind === "key" && cell.key === key)) {
+    return state;
+  }
+  const destinationCell = readSurfaceCell(state, toSurface, toIndex);
+  if (!destinationCell) {
+    return state;
+  }
+  if (!isKeypadEmptyCell(destinationCell) && !isKeyCell(destinationCell)) {
+    return state;
+  }
+  const installCell = resolveCanonicalKeyCell(state, key);
+  const nextState = writeSurfaceCell(state, toSurface, toIndex, installCell);
+  if (!hasOnlyExpectedKeyChanges(state, nextState, [{ surface: toSurface, index: toIndex }])) {
+    return state;
+  }
+  return nextState;
+};
+
+export const applyUninstallLayoutKey = (
+  state: GameState,
+  fromSurface: LayoutSurface,
+  fromIndex: number,
+): GameState => {
+  if (!isKeypadSurface(fromSurface) || !hasValidSurfaceIndex(state, fromSurface, fromIndex)) {
+    return state;
+  }
+  const sourceCell = readSurfaceCell(state, fromSurface, fromIndex);
+  if (!isKeyCell(sourceCell)) {
+    return state;
+  }
+  const nextState = writeSurfaceCell(state, fromSurface, fromIndex, emptyCell());
+  if (!hasOnlyExpectedKeyChanges(state, nextState, [{ surface: fromSurface, index: fromIndex }])) {
     return state;
   }
   return nextState;

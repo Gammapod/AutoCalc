@@ -30,6 +30,19 @@ export type DomainEvent =
       toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
       toIndex: number;
     }
+  | {
+      type: "StorageKeyInstalled";
+      key: KeyInput;
+      toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      toIndex: number;
+      calculatorId?: CalculatorId;
+    }
+  | {
+      type: "LayoutKeyUninstalled";
+      fromSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      fromIndex: number;
+      calculatorId?: CalculatorId;
+    }
   | { type: "KeypadDimensionsSet"; columns: number; rows: number }
   | { type: "KeypadRowUpgraded" }
   | { type: "KeypadColumnUpgraded" }
@@ -85,6 +98,23 @@ export const eventFromAction = (action: Action): DomainEvent => {
       fromIndex: action.fromIndex,
       toSurface: action.toSurface,
       toIndex: action.toIndex,
+    };
+  }
+  if (action.type === "INSTALL_KEY_FROM_STORAGE") {
+    return {
+      type: "StorageKeyInstalled",
+      key: action.key,
+      toSurface: action.toSurface,
+      toIndex: action.toIndex,
+      ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}),
+    };
+  }
+  if (action.type === "UNINSTALL_LAYOUT_KEY") {
+    return {
+      type: "LayoutKeyUninstalled",
+      fromSurface: action.fromSurface,
+      fromIndex: action.fromIndex,
+      ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}),
     };
   }
   if (action.type === "SET_KEYPAD_DIMENSIONS") {
@@ -174,6 +204,23 @@ export const actionFromEvent = (event: DomainEvent): Action => {
       fromIndex: event.fromIndex,
       toSurface: event.toSurface,
       toIndex: event.toIndex,
+    };
+  }
+  if (event.type === "StorageKeyInstalled") {
+    return {
+      type: "INSTALL_KEY_FROM_STORAGE",
+      key: event.key,
+      toSurface: event.toSurface,
+      toIndex: event.toIndex,
+      ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}),
+    };
+  }
+  if (event.type === "LayoutKeyUninstalled") {
+    return {
+      type: "UNINSTALL_LAYOUT_KEY",
+      fromSurface: event.fromSurface,
+      fromIndex: event.fromIndex,
+      ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}),
     };
   }
   if (event.type === "KeypadDimensionsSet") {

@@ -4,6 +4,7 @@ import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
 import { reducer } from "../src/domain/reducer.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
+import { applyInstallKeyFromStorage } from "../src/domain/reducer.layout.js";
 import { initialState } from "../src/domain/state.js";
 import { calculatorSeedManifest } from "../src/domain/calculatorSeedManifest.js";
 import { legacyInitialState } from "./support/legacyState.js";
@@ -236,6 +237,44 @@ export const runReducerLayoutTests = (): void => {
     "install move from storage to keypad preserves drafting slot",
   );
 
+  const installFromStorageToEmpty = reducer(baselineWithSpace, {
+    type: "INSTALL_KEY_FROM_STORAGE",
+    key: utility("util_clear_all"),
+    toSurface: "keypad",
+    toIndex: emptyKeypadIndex,
+  });
+  assert.equal(
+    installFromStorageToEmpty.ui.keyLayout[emptyKeypadIndex]?.kind === "key"
+      ? installFromStorageToEmpty.ui.keyLayout[emptyKeypadIndex].key
+      : null,
+    utility("util_clear_all"),
+    "install action writes storage key into empty keypad slot",
+  );
+
+  const layoutOnlyInstall = applyInstallKeyFromStorage(
+    baselineWithSpace,
+    utility("util_clear_all"),
+    "keypad",
+    emptyKeypadIndex,
+  );
+  assert.equal(
+    layoutOnlyInstall.ui.storageLayout[baselineCStorageIndex]?.key ?? null,
+    utility("util_clear_all"),
+    "layout install handler does not mutate storage layout",
+  );
+
+  const duplicateInstallRejected = reducer(baselineWithSpace, {
+    type: "INSTALL_KEY_FROM_STORAGE",
+    key: k("unary_inc"),
+    toSurface: "keypad",
+    toIndex: emptyKeypadIndex,
+  });
+  assert.deepEqual(
+    duplicateInstallRejected,
+    baselineWithSpace,
+    "install action rejects duplicate key-id installs on the same calculator",
+  );
+
   const graphStorageIndex = baselineWithSpace.ui.storageLayout.findIndex((cell) => cell?.key === visualizer("viz_graph"));
   assert.ok(graphStorageIndex >= 0, "baseline storage includes GRAPH key");
   const graphMovedToKeypad = reducer(baselineWithSpace, {
@@ -313,6 +352,52 @@ export const runReducerLayoutTests = (): void => {
   assert.ok(firstStorageNonExecutionIndex >= 0, "baseline storage includes a non-execution key");
   assert.ok(firstEmptyKeypadIndex >= 0, "baseline keypad includes an empty slot");
 
+  const installReplaceOccupiedKey = reducer(baselineWithSpace, {
+    type: "INSTALL_KEY_FROM_STORAGE",
+    key: utility("util_clear_all"),
+    toSurface: "keypad",
+    toIndex: executionKeypadIndex,
+  });
+  assert.equal(
+    installReplaceOccupiedKey.ui.keyLayout[executionKeypadIndex]?.kind === "key"
+      ? installReplaceOccupiedKey.ui.keyLayout[executionKeypadIndex].key
+      : null,
+    utility("util_clear_all"),
+    "install action can replace an occupied keypad destination",
+  );
+  assert.equal(
+    installReplaceOccupiedKey.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key === k("exec_equals")),
+    false,
+    "replace install uninstalls the displaced keypad key",
+  );
+
+  const uninstallExecutionKey = reducer(baselineWithSpace, {
+    type: "UNINSTALL_LAYOUT_KEY",
+    fromSurface: "keypad",
+    fromIndex: executionKeypadIndex,
+  });
+  assert.equal(
+    uninstallExecutionKey.ui.keyLayout[executionKeypadIndex]?.kind,
+    "placeholder",
+    "uninstall action can remove execution keys from keypad",
+  );
+
+  const installInvalidIndexNoOp = reducer(baselineWithSpace, {
+    type: "INSTALL_KEY_FROM_STORAGE",
+    key: utility("util_clear_all"),
+    toSurface: "keypad",
+    toIndex: 999,
+  });
+  assert.deepEqual(installInvalidIndexNoOp, baselineWithSpace, "install action rejects invalid destination indices");
+
+  const installLockedKeyNoOp = reducer(baselineWithSpace, {
+    type: "INSTALL_KEY_FROM_STORAGE",
+    key: utility("util_backspace"),
+    toSurface: "keypad",
+    toIndex: emptyKeypadIndex,
+  });
+  assert.deepEqual(installLockedKeyNoOp, baselineWithSpace, "install action rejects locked keys");
+
   const lockedExecutionOnKeypad: GameState = {
     ...baselineWithSpace,
     unlocks: {
@@ -389,6 +474,31 @@ export const runReducerLayoutTests = (): void => {
     "uninstall move from keypad to storage triggers full reset total",
   );
   assert.equal(uninstallMoveTriggersFullReset.calculator.rollEntries.length, 0, "uninstall move clears roll");
+
+  const uninstallActionTriggersFullReset = reducer(seededCalculatorState, {
+    type: "UNINSTALL_LAYOUT_KEY",
+    fromSurface: "keypad",
+    fromIndex: executionKeypadIndex,
+  });
+  assert.deepEqual(
+    uninstallActionTriggersFullReset.calculator.total,
+    r(0n),
+    "uninstall action triggers full reset total",
+  );
+  assert.equal(uninstallActionTriggersFullReset.calculator.rollEntries.length, 0, "uninstall action clears roll");
+
+  const replaceInstallTriggersFullReset = reducer(seededCalculatorState, {
+    type: "INSTALL_KEY_FROM_STORAGE",
+    key: utility("util_clear_all"),
+    toSurface: "keypad",
+    toIndex: executionKeypadIndex,
+  });
+  assert.deepEqual(
+    replaceInstallTriggersFullReset.calculator.total,
+    r(0n),
+    "replace-install action triggers full reset when displacing keypad key",
+  );
+  assert.equal(replaceInstallTriggersFullReset.calculator.rollEntries.length, 0, "replace-install action clears roll");
 
   assert.equal(firstEmptyKeypadIndex >= 0, true, "baseline keypad includes an empty slot for movement tests");
 

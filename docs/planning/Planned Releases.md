@@ -1,6 +1,6 @@
 Truth 2: Releases
 
-# Release v0.9.8: Storage Drawer Replacement
+# Release v0.9.28: Storage Drawer Replacement
 
 ### User Story
 As a player, I can quickly find and deploy unlocked keys from storage without searching or deep menu traversal.
@@ -20,14 +20,19 @@ Finalize drawer information architecture, including family grouping, filter stra
 - Players can locate a desired key within two interactions (tabs/filters/deploy) without search.
 - Family-based browsing makes nearby relevant keys discoverable without exact key-name recall.
 - Drawer avoids scrolling in normal gameplay inventory sizes.
-- Storage interactions preserve lock/unlock correctness (`storage contains unlocked keys only`) and move/swap domain constraints.
+- Storage interactions preserve lock/unlock correctness (`storage shows all-and-only unlocked keys`) with storage membership derived from unlock state.
+- Dragging to/from storage does not change storage membership.
+- Install policy is per-calculator key-ID uniqueness (duplicate install rejected on the same calculator).
+- Dropping a storage key on an occupied keypad slot replaces the destination key.
+- Keys can be uninstalled by dragging them off the calculator surface.
+- Uninstall can remove any key (including `exec_equals`).
 
 ### Release Notes
-- Release Note ID: `release_v0_9_8`
+- Release Note ID: `release_v0_9_28`
 - Player-facing summary: Replaces storage browsing with a faster drawer flow for finding and deploying unlocked keys.
 - Highlights:
 - Key discovery emphasizes families and quick retrieval.
-- Storage interactions target low-click, no-scroll access patterns.
+- Storage interactions target low-click, no-scroll access patterns with palette-style unlocked-key browsing.
 
 # Release vα.0.0: Content Backlog
 

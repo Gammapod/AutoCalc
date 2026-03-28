@@ -1,7 +1,7 @@
 Truth 1: Invariants
 # AutoCalc Functional Specification
 
-Last updated: 2026-03-25
+Last updated: 2026-03-28
 Status: Draft v2 (design-truth restructure)
 Purpose: Define player-facing functional truth, independent of implementation structure.
 
@@ -46,14 +46,14 @@ The Global State Interface governs session continuity, progression capability st
 
 #### 3.1.2 Storage Model
 
-- `FS-GS-03` (MUST): Storage is global progression-governed inventory/surface, not an execution engine.
-  Rationale: storage controls access/placement, not math outcomes.
+- `FS-GS-03` (MUST): Storage is a global progression-governed unlocked-key palette/surface, not an execution engine.
+  Rationale: storage is a capability browser/install source, not part of math execution.
 - `FS-GS-04` (MUST): Storage interactions may change action availability ergonomics, but not action meaning.
   Rationale: relocation cannot redefine key semantics.
-- `FS-GS-05` (MUST): Each key identity has at most one live instance across all calculators and storage; once a key is unlocked, exactly one live instance must exist either on a calculator keypad or in storage.
-  Rationale: progression and layout semantics require deterministic one-key/one-instance inventory truth.
-- `FS-GS-06` (MUST): Storage contains only unlocked key instances.
-  Rationale: locked capability state must not be represented as hidden storage inventory.
+- `FS-GS-05` (MUST): Installed keypad key identity is unique per calculator by key ID. A calculator cannot install duplicate copies of the same key ID.
+  Rationale: deterministic per-calculator layout policy prevents redundant installs while preserving clear install intent.
+- `FS-GS-06` (MUST): Storage shows every unlocked key and only unlocked keys; storage membership is derived from unlock state and does not mutate through drag/install/uninstall interactions.
+  Rationale: unlocked capability browsing must be complete and deterministic, and locked capability state must not be represented as hidden storage inventory.
 
 #### 3.1.3 Unlock/Progression (Gameplay Spine)
 
@@ -88,10 +88,10 @@ The Global State Interface governs session continuity, progression capability st
 |---|---|---|---|---|
 | FS-GS-01 | Save/load preserves gameplay-equivalent global state | `persistence`, `v2/persistence-parity` | unit + contract | none |
 | FS-GS-02 | Malformed/incompatible saves fail safe | `persistence` | unit | none |
-| FS-GS-03 | Storage is global inventory/surface, not execution engine | `ui/storage-display`, `ui/drag-drop-behavior` | integration | partial: semantic clause, no dedicated contract ID suite |
+| FS-GS-03 | Storage is global unlocked-key palette/surface, not execution engine | `ui/storage-display`, `ui/drag-drop-behavior` | integration | partial: dedicated palette-source contract rollout pending |
 | FS-GS-04 | Storage changes do not alter key meaning | `contracts/ui-action-emission`, `domain/key-identity-adapters` | contract + unit | partial: no direct end-to-end assertion |
-| FS-GS-05 | Key identity is single-instance; unlocked keys always exist in keypad/storage inventory | `reducer/unlocks`, `reducer/layout`, `contracts/multi-calculator-invariants` | unit + contract | partial: no dedicated global one-instance property suite |
-| FS-GS-06 | Storage contains only unlocked key instances | `ui-module/storage-v2`, `ui/storage-display` | integration | partial: no explicit unlocked-only storage contract yet |
+| FS-GS-05 | Installed keypad key identity is unique per calculator by key ID | `reducer/layout`, `contracts/multi-calculator-invariants` | unit + contract | partial: dedicated install-rejection contract rollout pending |
+| FS-GS-06 | Storage displays all-and-only unlocked keys from unlock state (non-mutable membership) | `ui-module/storage-v2`, `ui/storage-display`, `contracts/storage-palette` | integration + contract | partial: runtime migration/parity coverage rollout pending |
 | FS-UP-01 | Unlock runtime state progression-owned | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership is indirectly asserted |
 | FS-UP-02 | Predicate evaluation uses canonical state/history | `domain/unlock-engine` | unit | none |
 | FS-UP-03 | Unlock completion monotonic by default | `content-drill/unlock-extension`, `domain/unlock-engine` | workflow + unit | gap: no generic monotonicity property test |
@@ -279,7 +279,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 
 1. `FS-UP-01` and `FS-BND-02` ownership rules are inferred through contract wiring/boundary tests, not directly behavior-specified.
 2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
-3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but not yet as explicit contract clauses.
+3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but dedicated palette/install contract suites are rolling out.
 4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
 5. `FS-CS-10` and `FS-CS-11` now pin ownership and executable mapping for key visual affordance invariants; coverage is policy/selector driven and intentionally does not require pixel-snapshot baselines.
 6. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.

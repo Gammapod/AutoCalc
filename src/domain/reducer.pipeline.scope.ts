@@ -1,8 +1,10 @@
 import { applyKeyAction } from "./reducer.input.js";
 import {
+  applyInstallKeyFromStorage,
   applyMoveKeySlot,
   applyMoveLayoutCell,
   applySetKeypadDimensions,
+  applyUninstallLayoutKey,
   applyUpgradeKeypadColumn,
   applyUpgradeKeypadRow,
   applySwapKeySlots,
@@ -214,6 +216,56 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
       }
     }
     return moved;
+  }
+  if (normalizedAction.type === "INSTALL_KEY_FROM_STORAGE") {
+    const destinationBefore = isKeypadSurface(normalizedAction.toSurface)
+      ? (() => {
+        const ui = normalizedAction.toSurface === "keypad"
+          ? (state.activeCalculatorId && state.calculators?.[state.activeCalculatorId]?.ui
+            ? state.calculators[state.activeCalculatorId]!.ui
+            : state.ui)
+          : normalizedAction.toSurface === "keypad_f"
+            ? (state.calculators?.f?.ui ?? state.ui)
+            : normalizedAction.toSurface === "keypad_g"
+              ? (state.calculators?.g?.ui ?? null)
+              : (state.calculators?.menu?.ui ?? null);
+        if (!ui) {
+          return null;
+        }
+        return ui.keyLayout[normalizedAction.toIndex] ?? null;
+      })()
+      : null;
+    const installed = applyInstallKeyFromStorage(
+      state,
+      normalizedAction.key,
+      normalizedAction.toSurface,
+      normalizedAction.toIndex,
+    );
+    if (installed !== state) {
+      if (destinationBefore?.kind === "key") {
+        const resetTarget = resolveSurfaceCalculatorId(state, normalizedAction.toSurface);
+        if (resetTarget) {
+          return applyLossResets(installed, [resetTarget]);
+        }
+      }
+      return withStepProgressCleared(installed);
+    }
+    return installed;
+  }
+  if (normalizedAction.type === "UNINSTALL_LAYOUT_KEY") {
+    const uninstalled = applyUninstallLayoutKey(
+      state,
+      normalizedAction.fromSurface,
+      normalizedAction.fromIndex,
+    );
+    if (uninstalled !== state) {
+      const resetTarget = resolveSurfaceCalculatorId(state, normalizedAction.fromSurface);
+      if (resetTarget) {
+        return applyLossResets(uninstalled, [resetTarget]);
+      }
+      return withStepProgressCleared(uninstalled);
+    }
+    return uninstalled;
   }
   if (normalizedAction.type === "SWAP_LAYOUT_CELLS") {
     const swapped = applySwapLayoutCells(

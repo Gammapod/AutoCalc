@@ -104,6 +104,7 @@ import { runModeManifestTests } from "./modeManifest.test.js";
 import { runCalculatorSeedManifestTests } from "./calculatorSeedManifest.test.js";
 import { runContentProviderWiringContractTests } from "./contentProviderWiring.contract.test.js";
 import { runCapabilitySemanticsParityContractTests } from "./capabilitySemanticsParity.contract.test.js";
+import { runStoragePaletteContractTests } from "./storagePalette.contract.test.js";
 import { runShimInventoryTests } from "./shimInventory.test.js";
 import { runBootstrapImportOrderTests } from "./bootstrapImportOrder.test.js";
 import { runKeyUniverseContractGuardTests } from "./keyUniverseContract.guard.test.js";
@@ -220,6 +221,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/mode-manifest", runModeManifestTests],
   ["domain/calculator-seed-manifest", runCalculatorSeedManifestTests],
   ["contracts/content-provider-wiring", runContentProviderWiringContractTests],
+  ["contracts/storage-palette", runStoragePaletteContractTests],
   ["contracts/diagnostics-catalog-coverage", runDiagnosticsCatalogCoverageTests],
   ["contracts/capability-semantics-parity", runCapabilitySemanticsParityContractTests],
   ["contracts/key-universe-guard", runKeyUniverseContractGuardTests],
