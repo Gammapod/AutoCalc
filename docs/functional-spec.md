@@ -125,6 +125,8 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: multi-calculator rollout must preserve baseline play and existing progress compatibility.
 - `FS-MC-09` (MUST): Multi-calculator semantics are enabled when `calculatorOrder` contains more than one calculator id; behavior MUST NOT depend on specific calculator id pairs.
   Rationale: id-agnostic routing prevents regressions when new calculators are introduced.
+- `FS-MC-10` (MUST): Calculator identity is the composition of (a) its control profile/matrix relationship, (b) deterministic initialization policy (default settings/loadout at materialization), and (c) action-driven runtime evolution. Control matrix/profile resemblance alone MUST NOT be treated as identity equivalence.
+  Rationale: prevents false equivalence assumptions that collapse distinct calculators based only on control matrix similarity.
 
 #### 3.2.1 Core Calculator Surfaces
 
@@ -214,6 +216,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-MC-07 | Persistence preserves all instances and active selection | `persistence`, `v2/persistence-parity` | unit + contract | gap: multi-instance migration fixtures not defined |
 | FS-MC-08 | One-calculator mode preserves baseline semantics | `v2/parity`, `contracts/parity-long-traces`, `contracts/multi-calculator-invariants` | parity + contract | partial: baseline-compat fixture pair exists for core sequences; broader long-trace coverage expansion pending |
 | FS-MC-09 | Multi-calculator enablement and routing are driven by `calculatorOrder` cardinality/coherence, not specific id pairs | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `domain/execution-mode-policy` | contract + unit | partial: property-style coverage for larger calculator sets pending |
+| FS-MC-10 | Calculator identity composes control profile/matrix relationship + deterministic initialization loadout + action-driven runtime evolution; control-matrix similarity alone is non-equivalence | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `v2/parity` | contract + unit + parity | partial: dedicated non-equivalence fixture matrix (same control profile, different initialization/evolution) pending |
 
 ## 4. Cross-Interface Boundary Clauses
 
