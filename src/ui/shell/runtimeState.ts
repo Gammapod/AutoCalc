@@ -1,7 +1,7 @@
 import type { Action, GameState } from "../../domain/types.js";
 import type { DrawerDragTarget, PointerSession } from "./types.js";
 
-export type ShellRuntimeState = {
+export type ShellRenderRuntimeState = {
   dragDeltaY: number;
   dragActive: boolean;
   drawerDragDeltaX: number;

@@ -6,7 +6,7 @@ subgraph Numbers ["Numbers"]
 
     subgraph Digits ["Digit Manipulation"]
     %% Currently a dead-end; could lead to more complex cycles
-        Rdig["a⪼b"]
+        Ddig["a⪼b"]
         %% Primitive, takes last b digits of a (respects base setting)
         %% Expanded form `[ a◇(10^b) ]`
         Ddigitn["a#b"]
@@ -20,34 +20,13 @@ subgraph Numbers ["Numbers"]
         Dcount["d##n"]
         Dmirror["d⇋n"]
 
-        Rdig -->|Generalize| Ddigitn
+        Ddig -->|Generalize| Ddigitn
         Ddigitn --> Dcount
         Dcount --> Ddigsum
         Dcount --> Ddigsq
         Dsort --> Drotate
         Dsort --> Dmirror
     end
-
-    subgraph ComplexAlgebra ["ℂ×ℚ = {q + c × √-1 | a,b ∈ ℚ"]
-        Ri["n×i"]
-        %% Primitive
-        %% Expanded form `[ × √-1 ]`
-        Rradian["n×2π"]
-        Rimag["Im(n)"]
-        %% Returns the imaginary component (`b` from `a + b×i`) from part of n, 0 possible
-        Rreal["Re(n)"]
-        %% Returns the non-imaginary component (`a` from `a + b×i`) from part of n, 0 possible
-        Rmodulus["|n|"]
-        %% Expanded form `[ √(Im^2 + Re^2) ]`
-        Rdiv["a÷b"]
-        Rradical["b√a"]
-        %% Might need a better notation format
-
-        Ri --> Rimag --> Rmodulus
-        Ri --> Rreal --> Rmodulus
-        Ri --> Rradian --> Trig
-    end
-
 
     subgraph Logic ["Logical Predicates"]
         Lnot["¬n"]
@@ -60,17 +39,16 @@ subgraph Numbers ["Numbers"]
         %% Expanded form `[ ¬(a◇b) ]
         Leq["a≡b"]
         %% Expanded form `[ ¬((a<b) + (b<a)) ]
-        Umax["╧"]
+        Lmax["╧"]
         %% Expanded form `[ ((a<b)×b) + ¬((a≤b)×a) ]`
-        Umin["╤"]  
+        Lmin["╤"]  
         %% Expanded form `[ ((a<b)×a) + ¬((a≤b)×b) ]`
 
         Lnot --> Llte --> Llt
         Lnot --> Ldiv
         Llt --> Leq
-        Llt --> Umin
-        Llt --> Umax
-        Llte --> Dsort
+        Llt --> Lmin
+        Llt --> Lmax
     end
 
     subgraph Arithmetic ["ℕ (1) | ℤ (-1)"]
@@ -83,30 +61,74 @@ subgraph Numbers ["Numbers"]
         Aneg["n±"]
         Aeudiv["a⫽b"]
         %% Primitive
+        Apadic["n∥p"]
+        %% Primitive
         Amod["a◇b"]
-        %% Expanded form `[ (a÷b) - (a⫽b) ]`
+        %% Expanded form `[ a - (b×(a⫽b)) ]`
+        Ares["a⟐b"]
+        %% Expanded form `[ a ÷ b^(a∥b) ]` <--- I am not sure if I am pointing at anything coherent
+        %% Expanded form `[ 10 ÷ 2^(10∥2) ]`
+        %% Expanded form `[ 10 ÷ 2^(1) ]`
+        %% Expanded form `[ 10⟐2 = 5 ]` 
+        %% Expanded form `[ 15⟐2 = 15 ]` 
+        %% Expanded form `[ 15⟐4 = 15 ]` 
+        %% Expanded form `[ 20⟐4 = 5 ]` 
         Afloor["⌊n⌋"]
         %% Expanded form `[ a-a◇1 ]`
         Aceil["⌈n⌉"]
         %% Expanded form `[ ⌊n⌋++ ]`
 
-        Ainc -->|Iterate| Aplus
-        Aplus -->|Iterate| Amul
-        Amul -->|Iterate| Apow
+        Afloor --> Aceil
+        Amod --> Afloor
 
+        Ainc -->|Iterate| Aplus -->|Iterate| Amul -->|Iterate| Apow
 
         Aplus -->|Invert| Aminus
+        Amul -->|Invert| Aeudiv --> Amod
+        Apow -->|Invert| Apadic --> Ares
 
         Aminus --> Aneg
-        Afloor --> Aceil
-        Aeudiv --> Amod
-        Amod --> Afloor
+
+        subgraph Reduction ["ℚ&𝔸"]
+
+            Rdiv["a÷b"]
+            %% Expanded form `[ a × (1/b) ]
+            Rper["%"]
+            %% Expanded form `[ (a÷100) × b ]
+            Rradical["b√a"]
+            %% Might need a better operator glyph
+            %% Expanded form `[ a ^ (1/b)]
+
+            Rdiv --> Rper
+
+            subgraph ComplexAlgebra ["ℂ×ℚ = {q + c × √-1 | a,b ∈ ℚ}"]
+                Ciunit["n×i"]
+                %% Primitive
+                %% Expanded form `[ × √-1 ]`
+                Cradian["n×2π"]
+                Cimag["Im(n)"]
+                %% Returns the imaginary component (`b` from `a + b×i`) from part of n, 0 possible
+                Creal["Re(n)"]
+                %% Returns the non-imaginary component (`a` from `a + b×i`) from part of n, 0 possible
+                Cmodulus["|n|"]
+                %% Expanded form `[ √(Im^2 + Re^2) ]`
+
+                Ciunit --> Cimag --> Cmodulus
+                Ciunit --> Creal --> Cmodulus
+                Ciunit --> Cradian --> Trig
+            end
+            Rradical --> Ciunit
+        end
+        Amul -->|Invert| Rdiv
+        Apow -->|Invert| Rradical
+        Aneg --> Ciunit
+        Amod -->|a◇inf| Cradian
+        %% It's conceptual, just go with it for now
     end
 
     subgraph Theory ["ℙ (2)"]
     %% Has a lot of functions designed, but the way the user will interact with these is not planned yet
-        Tpadic["n∥p"]
-        %% Primitive
+
         Tntop["ℙ(n)"]
         %% Primitive
         %% Returns nth prime. ℙ(3) = 5
@@ -124,9 +146,6 @@ subgraph Numbers ["Numbers"]
         %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
         Tlcm["⋁"]
         %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`
-        Tres["n⟐p"]
-        %% %% Expanded form `n⟐p -> n/(p^(n∥p))`
-        %% %% Expanded form `60⟐2=15 -> 60/(2^2)=15`
 
         Tntop --> Ttotient
 
@@ -135,27 +154,18 @@ subgraph Numbers ["Numbers"]
         Tpton --> Tprime_expansion
         Texponent --> Tgcd
         Tntop --> Tgcd
-        Umax --> Tgcd
 
         Tntop --> Tlcm
-        Umin --> Tlcm
         Texponent --> Tlcm
-        Tntop --> Tpadic --> Texponent
-        Tpadic --> Tres
+        Tntop --> Texponent
     end
+Lmin --> Tlcm
+Lmax --> Tgcd
+Amod --> Ldiv
+Llte --> Digits
 Amod --> Digits
 Aminus --> Logic
 Amul --> Logic
 Aplus --> Logic
-Ldiv --> Theory
-Apow --> Theory
-Amod --> ComplexAlgebra
-Aneg --> Ri
-Rdiv --> Ri
-Rradical --> Ri
-Amul -->|Invert| ComplexAlgebra
-Apow -->|Invert| ComplexAlgebra
-Amod -->|a◇inf| ComplexAlgebra
-%% It's conceptual, just go with it for now
 end
 

@@ -48,6 +48,7 @@ import { runUiModuleChecklistV2Tests } from "./uiModule.checklist.v2.test.js";
 import { runUiModuleGrapherV2Tests } from "./uiModule.grapher.v2.test.js";
 import { runUiModuleVisualizerHostV2Tests } from "./uiModule.visualizerHost.v2.test.js";
 import { runUiModuleCircleVisualizerV2Tests } from "./uiModule.circleVisualizer.v2.test.js";
+import { runUiModuleEigenAllocatorRendererV2Tests } from "./uiModule.eigenAllocatorRenderer.v2.test.js";
 import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
 import { runUiModuleStorageV2Tests } from "./uiModule.storage.v2.test.js";
 import { runUiModuleInputV2Tests } from "./uiModule.input.v2.test.js";
@@ -114,6 +115,8 @@ import { runDiagnosticsCatalogCoverageTests } from "./diagnosticsCatalogCoverage
 import { runDiagnosticsResolverTests } from "./diagnosticsResolver.test.js";
 import { runDiagnosticsTraceTests } from "./diagnosticsTrace.test.js";
 import { runRollDiagnosticsSnapshotTests } from "./rollDiagnosticsSnapshot.test.js";
+import { runRuntimeStateInvariantsPipelineEquivalenceTests } from "./runtimeStateInvariants.pipelineEquivalence.test.js";
+import { runReducerPipelineEquivalenceTests } from "./reducer.pipelineEquivalence.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -172,6 +175,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/release-notes-renderer-v2", runUiModuleReleaseNotesRendererV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/circle-visualizer-v2", runUiModuleCircleVisualizerV2Tests],
+  ["ui-module/eigen-allocator-renderer-v2", runUiModuleEigenAllocatorRendererV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
   ["ui/layout-engine", runUiLayoutEngineTests],
   ["ui/motion-coordinator", runUiMotionCoordinatorTests],
@@ -227,6 +231,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/diagnostics-resolver", runDiagnosticsResolverTests],
   ["domain/diagnostics-trace", runDiagnosticsTraceTests],
   ["domain/roll-diagnostics-snapshot", runRollDiagnosticsSnapshotTests],
+  ["domain/runtime-state-invariants-pipeline-equivalence", runRuntimeStateInvariantsPipelineEquivalenceTests],
+  ["domain/reducer-pipeline-equivalence", runReducerPipelineEquivalenceTests],
   ["contracts/multi-calculator-invariants", runMultiCalculatorContractTests],
   ["app/bootstrap-import-order", runBootstrapImportOrderTests],
 ];

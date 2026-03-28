@@ -5,6 +5,7 @@ import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } 
 import { MAX_ROLL_ENTRIES } from "../src/domain/rollEntries.js";
 import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
+import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
@@ -912,6 +913,33 @@ export const runReducerInputTests = (): void => {
   assert.equal(afterSecondMemoryCycle.ui.selectedControlField, "gamma", "memory-cycle key advances beta to gamma");
   const afterThirdMemoryCycle = applyKeyAction(afterSecondMemoryCycle, "memory_cycle_variable");
   assert.equal(afterThirdMemoryCycle.ui.selectedControlField, "alpha", "memory-cycle key wraps gamma to alpha");
+
+  const precedenceUsesLegacyFallback = normalizeRuntimeStateInvariants({
+    ...legacyInitialState(),
+    ui: {
+      ...legacyInitialState().ui,
+      selectedControlField: "epsilon",
+      memoryVariable: "β",
+    },
+  });
+  assert.equal(
+    precedenceUsesLegacyFallback.ui.selectedControlField,
+    "beta",
+    "selected-control normalization falls back to legacy memory variable when selected field is invalid",
+  );
+  const precedenceKeepsValidSelected = normalizeRuntimeStateInvariants({
+    ...legacyInitialState(),
+    ui: {
+      ...legacyInitialState().ui,
+      selectedControlField: "gamma",
+      memoryVariable: "β",
+    },
+  });
+  assert.equal(
+    precedenceKeepsValidSelected.ui.selectedControlField,
+    "gamma",
+    "selected-control normalization keeps valid selected field even when legacy memory variable differs",
+  );
 
   const memoryPlusBase = legacyInitialState();
   const memoryPlusBaseColumns = memoryPlusBase.ui.keypadColumns;

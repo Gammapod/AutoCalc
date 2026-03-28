@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
 import { initialState } from "../src/domain/state.js";
+import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import {
   isMultiCalculatorSession,
@@ -247,6 +248,47 @@ export const runMultiCalculatorContractTests = (): void => {
   assert.equal(projectCalculatorToLegacy(menuAfterCycle, "menu").ui.selectedControlField, null, "menu memory cycle is explicit no-op with no settable fields");
   assert.deepEqual(projectCalculatorToLegacy(menuAfterAdjust, "menu").lambdaControl, menuProjectedBefore.lambdaControl, "menu memory-adjust+ is explicit no-op with no settable fields");
   assert.deepEqual(projectCalculatorToLegacy(menuAfterRecall, "menu").calculator, menuProjectedBefore.calculator, "menu memory-recall is explicit no-op with no settable fields");
+
+  const inconsistentSelectionSeed: GameState = {
+    ...memoryReadyBase,
+    activeCalculatorId: "g",
+    ui: {
+      ...memoryReadyBase.ui,
+      selectedControlField: "delta",
+      memoryVariable: "β",
+    },
+    calculators: {
+      ...memoryReadyBase.calculators,
+      g: memoryReadyBase.calculators?.g
+        ? {
+            ...memoryReadyBase.calculators.g,
+            ui: {
+              ...memoryReadyBase.calculators.g.ui,
+              selectedControlField: "delta",
+              memoryVariable: "γ",
+            },
+          }
+        : memoryReadyBase.calculators?.g,
+    },
+  };
+  const normalizedSelection = normalizeRuntimeStateInvariants(inconsistentSelectionSeed);
+  const normalizedProjectedG = projectCalculatorToLegacy(normalizedSelection, "g");
+  assert.equal(
+    normalizedProjectedG.ui.selectedControlField,
+    "gamma",
+    "selected-control normalization in g falls back to legacy memoryVariable before canonical first-settable fallback",
+  );
+  assert.equal(
+    normalizedSelection.ui.selectedControlField,
+    normalizedProjectedG.ui.selectedControlField,
+    "active root ui selected field stays consistent with projected active calculator after normalization",
+  );
+  const normalizedProjectedF = projectCalculatorToLegacy(normalizedSelection, "f");
+  assert.equal(
+    normalizedProjectedF.ui.selectedControlField,
+    "alpha",
+    "normalizing active g selection does not leak selected-field mutation into f projection",
+  );
 
   const menuAndFOnly = materializeCalculatorMenu(initialState());
   assert.equal(Boolean(menuAndFOnly.calculators?.menu), true, "menu materialization produces menu instance");

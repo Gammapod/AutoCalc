@@ -1,7 +1,7 @@
 import { projectControlFromState } from "../../../domain/controlProjection.js";
 import type { ControlField, GameState, MemoryVariable } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
-import { normalizeSelectedControlField } from "../../../domain/controlSelection.js";
+import { buildSelectionRenderModel } from "../../shared/readModel.selection.js";
 
 type KatexRenderOptions = {
   displayMode?: boolean;
@@ -36,14 +36,10 @@ const selectedVectorEntry = (selectedVariable: MemoryVariable): string => {
 
 const buildEigenAllocatorLatex = (state: GameState): string => {
   const projection = projectControlFromState(state);
-  const selectedControlField = normalizeSelectedControlField(
-    projection.profile,
-    state.ui.selectedControlField,
-    state.ui.memoryVariable,
-  );
-  const alphaEntry = selectedControlField === "alpha" ? selectedVectorEntry("\u03B1") : String.raw`\alpha`;
-  const betaEntry = selectedControlField === "beta" ? selectedVectorEntry("\u03B2") : String.raw`\beta`;
-  const gammaEntry = selectedControlField === "gamma" ? selectedVectorEntry("\u03B3") : String.raw`\gamma`;
+  const selectionVm = buildSelectionRenderModel(state);
+  const alphaEntry = selectionVm.highlightByField.alpha ? selectedVectorEntry("\u03B1") : String.raw`\alpha`;
+  const betaEntry = selectionVm.highlightByField.beta ? selectedVectorEntry("\u03B2") : String.raw`\beta`;
+  const gammaEntry = selectionVm.highlightByField.gamma ? selectedVectorEntry("\u03B3") : String.raw`\gamma`;
   const matrixRows = CONTROL_FIELDS.map((target) => {
     const eq = projection.profile.equations[target];
     return CONTROL_FIELDS.map((source) => formatMatrixNumber(eq.coefficients[source])).join("&");

@@ -1,10 +1,10 @@
 Truth 1: Invariants
 
-TODO (finished): Compare information in all existing docs against existing functional-spec. Discard or archive any information that directly contradicts invariants; ramaining information will be further processed.
+Completed: Compared existing docs against functional spec and archived/discarded contradictions.
 
-TODO (finished): Consolidate remaining information into categories; propose consolidations that will take the form of invariant files ux-spec and calc-spec, containing UX invariants and Calculator balancing details, respectively. Flag any contradictions for review before final versions. Any information not related to UX or content/feature balancing will be further processed.
+Completed: Consolidated remaining information into invariant-focused categories (`ux-spec`, `calculator-spec`, and related refs).
 
-TODO (finished): Consolidate remaining information into Planned Releases (see that doc for more detailed TODO). Any information not related to release plans will be further processed.
+Completed: Moved release planning content into `docs/planning/Planned Releases.md` and archive records.
 
 TODO: Review any information not processed by the above rules; flag as potentially deletable.
 

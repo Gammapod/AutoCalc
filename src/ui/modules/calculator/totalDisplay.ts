@@ -3,6 +3,7 @@ import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { projectControlFromState } from "../../../domain/controlProjection.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
+import { buildSelectionRenderModel } from "../../shared/readModel.selection.js";
 import {
   buildClearedTotalSlotModel,
   buildTotalSlotModel,
@@ -10,7 +11,6 @@ import {
   type SegmentName,
   type TotalSlotModel,
 } from "./viewModel.js";
-import { normalizeSelectedControlField } from "../../../domain/controlSelection.js";
 
 const SEGMENT_NAMES: readonly SegmentName[] = ["a", "b", "c", "d", "e", "f", "g"];
 const MAX_TOTAL_DISPLAY_SLOTS = 12;
@@ -160,11 +160,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   const binaryModeEnabled = state.settings.base === "base2";
   const displayRadix = binaryModeEnabled ? 2 : 10;
   const projection = projectControlFromState(state);
-  const selectedControlField = normalizeSelectedControlField(
-    projection.profile,
-    state.ui.selectedControlField,
-    state.ui.memoryVariable,
-  );
+  const selectionVm = buildSelectionRenderModel(state);
   const buildMemoryStatusRow = (): HTMLElement => {
     const row = document.createElement("div");
     row.className = "total-memory-row";
@@ -187,11 +183,11 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
       const token = document.createElement("span");
       token.className = "total-memory-var";
       const isSelected = (
-        (entry.symbol === "\u03B1" && selectedControlField === "alpha")
-        || (entry.symbol === "\u03B2" && selectedControlField === "beta")
-        || (entry.symbol === "\u03B3" && selectedControlField === "gamma")
-        || (entry.symbol === "\u03B4" && selectedControlField === "delta")
-        || (entry.symbol === "\u03F5" && selectedControlField === "epsilon")
+        (entry.symbol === "\u03B1" && selectionVm.highlightByField.alpha)
+        || (entry.symbol === "\u03B2" && selectionVm.highlightByField.beta)
+        || (entry.symbol === "\u03B3" && selectionVm.highlightByField.gamma)
+        || (entry.symbol === "\u03B4" && selectionVm.highlightByField.delta)
+        || (entry.symbol === "\u03F5" && selectionVm.highlightByField.epsilon)
       );
       const leftBracket = document.createElement("span");
       leftBracket.className = isSelected

@@ -3,7 +3,7 @@ import { adjustAxis } from "./lambdaControl.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { isMemoryKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import { projectControlFromState } from "./controlProjection.js";
-import { getSettableControlFields } from "./controlSelection.js";
+import { getSettableControlFields, resolveSelectedControlFieldFromUi } from "./controlSelection.js";
 
 const controlFieldToAdjustableAxis = (controlField: ControlField): "alpha" | "beta" | "gamma" | null => {
   if (controlField === "alpha" || controlField === "beta" || controlField === "gamma") {
@@ -14,15 +14,7 @@ const controlFieldToAdjustableAxis = (controlField: ControlField): "alpha" | "be
 
 const resolveSelectedControlField = (state: GameState): ControlField | null => {
   const projection = projectControlFromState(state);
-  const settableFields = getSettableControlFields(projection.profile);
-  if (settableFields.length === 0) {
-    return null;
-  }
-  const selected = state.ui.selectedControlField;
-  if (selected && settableFields.includes(selected)) {
-    return selected;
-  }
-  return settableFields[0];
+  return resolveSelectedControlFieldFromUi(projection.profile, state.ui);
 };
 
 const readSelectedMemoryValue = (state: GameState): number => {

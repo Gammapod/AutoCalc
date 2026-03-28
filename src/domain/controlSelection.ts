@@ -31,13 +31,38 @@ export const normalizeSelectedControlField = (
   return settableFields[0];
 };
 
+export type SelectedControlContext = {
+  selectedControlField: ControlField | null;
+  settableFields: ControlField[];
+  effectiveLegacyMemoryVariable: MemoryVariable;
+};
+
+export const resolveSelectedControlFieldFromUi = (
+  profile: ControlProfile,
+  ui: Pick<GameState["ui"], "selectedControlField" | "memoryVariable">,
+): ControlField | null =>
+  normalizeSelectedControlField(profile, ui.selectedControlField, ui.memoryVariable);
+
+export const resolveSelectedControlContextFromUi = (
+  profile: ControlProfile,
+  ui: Pick<GameState["ui"], "selectedControlField" | "memoryVariable">,
+): SelectedControlContext => {
+  const settableFields = getSettableControlFields(profile);
+  const selectedControlField = normalizeSelectedControlField(profile, ui.selectedControlField, ui.memoryVariable);
+  return {
+    selectedControlField,
+    settableFields,
+    effectiveLegacyMemoryVariable: toLegacyMemoryVariable(selectedControlField),
+  };
+};
+
 export const getNormalizedSelectedControlField = (
   state: GameState,
 ): { selectedControlField: ControlField | null; settableFields: ControlField[] } => {
   const profile = getEffectiveControlProfile(state, resolveStateCalculatorId(state));
-  const settableFields = getSettableControlFields(profile);
+  const context = resolveSelectedControlContextFromUi(profile, state.ui);
   return {
-    selectedControlField: normalizeSelectedControlField(profile, state.ui.selectedControlField, state.ui.memoryVariable),
-    settableFields,
+    selectedControlField: context.selectedControlField,
+    settableFields: context.settableFields,
   };
 };

@@ -211,6 +211,32 @@ export const runContractsExecutionGateParityTests = (): void => {
     { type: "PRESS_KEY", key: k("util_backspace") },
   );
 
+  const pausedStateWithMemoryCycle: GameState = {
+    ...pausedState,
+    unlocks: {
+      ...pausedState.unlocks,
+      memory: {
+        ...pausedState.unlocks.memory,
+        [KEY_ID.memory_cycle_variable]: true,
+      },
+    },
+    ui: {
+      ...pausedState.ui,
+      keyLayout: [
+        { kind: "key", key: KEY_ID.exec_play_pause, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } },
+        { kind: "key", key: KEY_ID.memory_cycle_variable },
+        { kind: "key", key: k("digit_1") },
+      ],
+      keypadColumns: 3,
+      keypadRows: 1,
+    },
+  };
+  runParityAcceptedCase(
+    "execution-pause memory-key interrupt",
+    pausedStateWithMemoryCycle,
+    { type: "PRESS_KEY", key: KEY_ID.memory_cycle_variable },
+  );
+
   runParityAcceptedCase(
     "execution-pause equals-toggle interrupt",
     pausedState,

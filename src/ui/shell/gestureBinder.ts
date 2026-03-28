@@ -3,7 +3,7 @@ import { createShellController } from "../shellController.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "../touchRearrangeController.js";
 import type { Action, GameState, Key, LayoutSurface } from "../../domain/types.js";
 import type { DrawerDragTarget, ShellRefs } from "./types.js";
-import type { ShellRuntimeState } from "./runtimeState.js";
+import type { ShellRenderRuntimeState } from "./runtimeState.js";
 import { createMenuPointerSession, createViewportPointerSession, updatePointerSessionTrail } from "./pointerSession.js";
 
 const isSurfaceValue = (value: string | undefined): value is LayoutSurface =>
@@ -119,7 +119,7 @@ export const bindShellGestures = (args: {
   refs: ShellRefs;
   controller: ReturnType<typeof createShellController>;
   touchRearrange: ReturnType<typeof createTouchRearrangeController>;
-  runtime: ShellRuntimeState;
+  runtime: ShellRenderRuntimeState;
   closeMenu: (focusReturn?: boolean) => void;
   snapUp: () => void;
   snapDown: () => void;
