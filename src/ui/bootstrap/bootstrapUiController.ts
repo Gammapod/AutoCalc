@@ -6,6 +6,7 @@ import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
 import { serializeRollEntriesForDebug } from "../../infra/debug/rollStateSerializer.js";
 import { getEffectiveControlProfile } from "../../domain/controlProfileRuntime.js";
 import { getLambdaDerivedValues } from "../../domain/lambdaControl.js";
+import { deriveCatalogPartialProgressPredicateTypes, deriveCatalogProgressCoverage } from "../../domain/unlockHintProgress.js";
 
 type UiShellMode = "mobile" | "desktop";
 
@@ -214,10 +215,17 @@ export const createBootstrapUiController = ({
     renderMatrixEditor(refs.debugMatrixEditor, selectedProfile.equations);
 
     const serializedRollState = serializeRollEntriesForDebug(state);
+    const hintCoverage = deriveCatalogProgressCoverage(services.contentProvider.unlockCatalog);
+    const partialProgressPredicateTypes = deriveCatalogPartialProgressPredicateTypes(services.contentProvider.unlockCatalog);
     refs.debugRollStateEl.textContent = JSON.stringify(
       {
         rollEntries: serializedRollState,
         rollAnalysis: state.calculator.rollAnalysis,
+        unlockHintProgress: {
+          partialProgressPredicateTypes,
+          missingPredicateTypes: hintCoverage.missingPredicateTypes,
+          missingHintUnlockIds: hintCoverage.missingHintUnlockIds,
+        },
       },
       null,
       2,

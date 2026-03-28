@@ -117,6 +117,7 @@ import { runDiagnosticsTraceTests } from "./diagnosticsTrace.test.js";
 import { runRollDiagnosticsSnapshotTests } from "./rollDiagnosticsSnapshot.test.js";
 import { runRuntimeStateInvariantsPipelineEquivalenceTests } from "./runtimeStateInvariants.pipelineEquivalence.test.js";
 import { runReducerPipelineEquivalenceTests } from "./reducer.pipelineEquivalence.test.js";
+import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -231,6 +232,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/diagnostics-resolver", runDiagnosticsResolverTests],
   ["domain/diagnostics-trace", runDiagnosticsTraceTests],
   ["domain/roll-diagnostics-snapshot", runRollDiagnosticsSnapshotTests],
+  ["domain/unlock-hint-progress", runUnlockHintProgressTests],
   ["domain/runtime-state-invariants-pipeline-equivalence", runRuntimeStateInvariantsPipelineEquivalenceTests],
   ["domain/reducer-pipeline-equivalence", runReducerPipelineEquivalenceTests],
   ["contracts/multi-calculator-invariants", runMultiCalculatorContractTests],

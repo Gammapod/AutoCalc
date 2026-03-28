@@ -833,6 +833,38 @@
         visibility: hidden;
       }
 
+      .total-hint-strip {
+        position: absolute;
+        right: 0;
+        top: -50px;
+        display: grid;
+        grid-template-columns: 1fr;
+        row-gap: 2px;
+        justify-items: end;
+        pointer-events: none;
+      }
+
+      .total-hint-row {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(9px, 1.2vw, 11px);
+        line-height: 1;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
+
+      .total-hint-label {
+        color: #f6d66b;
+        text-shadow: 0 0 5px rgba(246, 214, 107, 0.4);
+      }
+
+      .total-hint-value {
+        color: #9ec9ff;
+        text-shadow: 0 0 5px rgba(126, 184, 255, 0.42);
+      }
+
       .total-domain-indicator {
         font-family: "Consolas", "Courier New", monospace;
         font-size: clamp(18px, 2.8vw, 24px);

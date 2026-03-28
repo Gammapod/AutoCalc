@@ -79,9 +79,12 @@ As a player, I get progression guidance directly in visualizer surfaces so I can
 Extend unlock evaluation to emit hint-friendly progress signals per predicate type while preserving unlock truth semantics.
 
 ### Pre-work Exit Criteria
-- Unlock engine emits normalized partial-progress data for multi-row and threshold predicates.
-- Predicate-to-hint mapping exists for current unlock catalog with explicit non-spoiler redaction rules.
-- Hint prioritization policy is defined (for example, strongest near-match and actionable next step).
+- Unlock domain exposes a canonical hint-progress projection contract separate from boolean unlock truth evaluation.
+- Every predicate type currently used in `src/content/unlocks.catalog.ts` is classified as either `partial` progress or explicit `binary` progress.
+- Cycle-family predicates (`roll_cycle_period_at_least`, `roll_cycle_transient_at_least`, `roll_cycle_diameter_at_least`, `roll_cycle_is_opposite_pair`) are binary-only and exempt from partial-progress near-match requirements.
+- Every `partial`-classified predicate instance in the current unlock catalog emits deterministic normalized progress (`0..1`) plus stable `current` and `target` fields.
+- Every current unlock id has a mapped non-spoiler redacted hint template; no checklist-condition string leakage.
+- Pre-work output includes hint eligibility + redacted progress payloads only; hint prioritization/ranking remains deferred to user-story implementation.
 
 ### User Story Exit Criteria
 - Standalone checklist panel is removed from the primary progression UX path.

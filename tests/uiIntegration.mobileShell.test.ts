@@ -191,6 +191,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     assert.ok(totalPanel, "total panel is mounted");
     const hiddenDomainOnCleared = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
     const hiddenBinOnDecimal = totalPanel?.querySelector<HTMLElement>(".total-base-indicator");
+    const hintRows = Array.from(totalPanel?.querySelectorAll<HTMLElement>(".total-hint-row") ?? []);
     assert.equal(
       hiddenDomainOnCleared?.getAttribute("aria-hidden"),
       "true",
@@ -200,6 +201,12 @@ export const runUiIntegrationMobileShellTests = (): void => {
       hiddenBinOnDecimal?.getAttribute("aria-hidden"),
       "true",
       "binary badge is hidden in decimal mode",
+    );
+    assert.equal(hintRows.length, 3, "default total visualizer renders three closest-progress hint rows");
+    assert.equal(
+      hintRows.every((row) => (row.textContent ?? "").includes("/")),
+      true,
+      "closest-progress hint rows show numeric progress fractions",
     );
 
     const withBinaryBadge = withCalculatorProjection(withTotal, "f", (projected) => ({
