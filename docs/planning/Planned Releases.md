@@ -1,42 +1,5 @@
 Truth 2: Releases
 
-# Release v0.9.10: Per-Calculator Memory & Matrix Isolation
-
-### User Story
-As a player, each installed calculator keeps its own matrix-variable settings and memory-variable selection, so memory keys only affect the calculator I am actively using and the highlighted/Bracketed variable always matches what is actually changed.
-
-### Dependencies
-- Must be completed before additional UX work on memory/visualizer surfaces so UI work is built on stable calculator-local state contracts.
-- Builds on v0.9.7 calculator-centric settings-state model and keeps `calculatorId`-scoped reducer routing as the source of targeting.
-
-### Pre-work
-Replace mixed global/per-calculator memory-selection behavior with a single calculator-local contract: settable variables and selected variable are derived per calculator profile, normalized through one invariant path, and consumed directly by memory handlers and display projections.
-
-### Pre-work Exit Criteria
-- Canonical runtime invariant exists for per-calculator memory selection validity using deterministic order `alpha -> beta -> gamma -> delta -> epsilon`.
-- Calculator instances own matrix/lambda-related mutable values; no global fallback path mutates another calculator.
-- Memory handlers (`cycle`, `adjust+/-`, `recall`) consume normalized selection only and do not perform hidden remapping/cross-axis fallback.
-- Display projection reads the same normalized selected variable used by handlers (single source of truth).
-- Reducer tests include explicit cross-calculator isolation guards for matrix, operation-slot, and max-digit related state.
-
-### User Story Exit Criteria
-- Each calculator can have a different settable-variable set and an independent current memory selection.
-- If a calculator has no settable variables, it has no selection and no highlight; memory keys are explicit no-ops for that calculator.
-- `memory_cycle_variable` advances only the installed calculator's selection within that calculator's settable variables.
-- `memory_adjust_plus/minus` change only the installed calculator's currently selected variable.
-- `memory_recall` reads only the installed calculator's currently selected variable.
-- Actions on calculator `g` never mutate calculator `f` matrix values, operation slot counts, or digit limits (and vice versa).
-- Highlight/bracketed selected variable in total/footer/visualizer always matches the variable actually read or adjusted by memory keys.
-- Single-calculator behavior remains consistent with current expectations for `f` (`alpha/beta/gamma` cycle and adjust).
-
-### Release Notes
-- Release Note ID: `release_v0_9_10`
-- Player-facing summary: Each calculator now keeps an isolated settable-variable selection and memory-key targeting.
-- Highlights:
-- Memory cycle/adjust/recall operate only on the active calculator's normalized settable selection.
-- Selected variable highlight in footer/visualizer is synchronized with memory-key behavior.
-
-
 # Release v0.9.8: Storage Drawer Replacement
 
 ### User Story
@@ -65,39 +28,6 @@ Finalize drawer information architecture, including family grouping, filter stra
 - Highlights:
 - Key discovery emphasizes families and quick retrieval.
 - Storage interactions target low-click, no-scroll access patterns.
-
-# Release v0.9.9: Checklist to Visualizer Hints
-
-### User Story
-As a player, I get progression guidance directly in visualizer surfaces so I can pursue unlocks without opening a separate checklist panel.
-
-### Dependencies
-- Requires v0.9.7 unified settings/lock-toggle definitions so hint eligibility and key state messaging use one vocabulary.
-- Integrates after v0.9.8 drawer IA decisions to keep hint actions and key-retrieval flows consistent.
-
-### Pre-work
-Extend unlock evaluation to emit hint-friendly progress signals per predicate type while preserving unlock truth semantics.
-
-### Pre-work Exit Criteria
-- Unlock domain exposes a canonical hint-progress projection contract separate from boolean unlock truth evaluation.
-- Every predicate type currently used in `src/content/unlocks.catalog.ts` is classified as either `partial` progress or explicit `binary` progress.
-- Cycle-family predicates (`roll_cycle_period_at_least`, `roll_cycle_transient_at_least`, `roll_cycle_diameter_at_least`, `roll_cycle_is_opposite_pair`) are binary-only and exempt from partial-progress near-match requirements.
-- Every `partial`-classified predicate instance in the current unlock catalog emits deterministic normalized progress (`0..1`) plus stable `current` and `target` fields.
-- Every current unlock id has a mapped non-spoiler redacted hint template; no checklist-condition string leakage.
-- Pre-work output includes hint eligibility + redacted progress payloads only; hint prioritization/ranking remains deferred to user-story implementation.
-
-### User Story Exit Criteria
-- Standalone checklist panel is removed from the primary progression UX path.
-- Default visualizer shows near-unlock hints that communicate progress without exposing full unlock condition text.
-- Hint rendering supports multiple predicate families (press counts, roll patterns, total thresholds, error-observation conditions).
-- UI and behavior tests cover hint selection, redaction rules, and checklist-surface retirement.
-
-### Release Notes
-- Release Note ID: `release_v0_9_9`
-- Player-facing summary: Replaces checklist-first progression with contextual visualizer hints that show progress without spoilers.
-- Highlights:
-- Visualizer hints surface actionable near-unlock guidance in-context.
-- Predicate-aware progress cues replace checklist scanning as the default progression loop.
 
 # Release vα.0.0: Content Backlog
 
@@ -236,4 +166,5 @@ The following require integer inputs, and return NaN otherwise:
 ## Visualizer changes
 
 - `Prime domain`: In addition to natural numbers, integers, rationals, etc, I'd like to also label prime numbers as being in the prime domain, `ℙ`. It is a subdomain of the naturals.
+
 

@@ -1,4 +1,63 @@
 Truth 2: Releases
+
+# Release v0.9.10: Per-Calculator Memory & Matrix Isolation (Shipped 2026-03-26)
+
+### User Story
+As a player, each installed calculator keeps its own matrix-variable settings and memory-variable selection, so memory keys only affect the calculator I am actively using and the highlighted/Bracketed variable always matches what is actually changed.
+
+### Dependencies
+- Must be completed before additional UX work on memory/visualizer surfaces so UI work is built on stable calculator-local state contracts.
+- Builds on v0.9.7 calculator-centric settings-state model and keeps `calculatorId`-scoped reducer routing as the source of targeting.
+
+### Pre-work
+Replace mixed global/per-calculator memory-selection behavior with a single calculator-local contract: settable variables and selected variable are derived per calculator profile, normalized through one invariant path, and consumed directly by memory handlers and display projections.
+
+### Pre-work Exit Criteria
+- Canonical runtime invariant exists for per-calculator memory selection validity using deterministic order `alpha -> beta -> gamma -> delta -> epsilon`.
+- Calculator instances own matrix/lambda-related mutable values; no global fallback path mutates another calculator.
+- Memory handlers (`cycle`, `adjust+/-`, `recall`) consume normalized selection only and do not perform hidden remapping/cross-axis fallback.
+- Display projection reads the same normalized selected variable used by handlers (single source of truth).
+- Reducer tests include explicit cross-calculator isolation guards for matrix, operation-slot, and max-digit related state.
+
+### User Story Exit Criteria
+- Each calculator can have a different settable-variable set and an independent current memory selection.
+- If a calculator has no settable variables, it has no selection and no highlight; memory keys are explicit no-ops for that calculator.
+- `memory_cycle_variable` advances only the installed calculator's selection within that calculator's settable variables.
+- `memory_adjust_plus/minus` change only the installed calculator's currently selected variable.
+- `memory_recall` reads only the installed calculator's currently selected variable.
+- Actions on calculator `g` never mutate calculator `f` matrix values, operation slot counts, or digit limits (and vice versa).
+- Highlight/bracketed selected variable in total/footer/visualizer always matches the variable actually read or adjusted by memory keys.
+- Single-calculator behavior remains consistent with current expectations for `f` (`alpha/beta/gamma` cycle and adjust).
+
+### Release Notes
+- Release Note ID: `release_v0_9_10`
+- Player-facing summary: Each calculator now keeps an isolated settable-variable selection and memory-key targeting.
+- Highlights:
+- Memory cycle/adjust/recall operate only on the active calculator's normalized settable selection.
+- Selected variable highlight in footer/visualizer is synchronized with memory-key behavior.
+
+# Release v0.9.9: Unlock Hints in Visualizer (Shipped 2026-03-27)
+
+Goal: replace checklist-first progression with contextual in-visualizer unlock guidance backed by deterministic, redacted progress projection contracts.
+
+### Deliverables
+
+- Canonical unlock hint-progress projection contract added and kept separate from boolean unlock truth evaluation.
+- Predicate progress classification finalized for all predicate types used in the unlock catalog:
+  - `partial` for progress-capable predicates
+  - `binary` for explicit cycle-family exemptions.
+- Cycle-family predicates set to binary-only (`roll_cycle_period_at_least`, `roll_cycle_transient_at_least`, `roll_cycle_diameter_at_least`, `roll_cycle_is_opposite_pair`).
+- Deterministic normalized partial progress (`0..1`) with stable `current`/`target` fields for all catalog partial predicates.
+- Full redacted hint-template mapping for current unlock catalog with spoiler-safe payload boundaries.
+- Checklist UX surface retired; default visualizer now hosts numerical near-unlock hint slots for operator key, non-operator key, lambda point, and calculator unlock progress.
+
+### Exit Criteria Snapshot
+
+- Unlock outcomes unchanged by projection layer changes (parity preserved).
+- Catalog predicate coverage complete with fail-fast regression protection for unclassified future predicate types.
+- Hint output scope limited to eligibility + redacted progress payloads (no ranking policy in pre-work).
+- Full suite passed at release cut: `115/115` test groups.
+
 # Release v0.9.7: Unified Settings State Model (Shipped 2026-03-26)
 
 Goal: make calculator settings canonical and typed, with settings-key visuals derived from calculator state instead of settings button flags.
@@ -294,3 +353,4 @@ Goal: improve key-role readability through unified settings family styling and e
   - `ui-module/storage-v2`
   - `ui/visualizer-fit-contract`
   - `contracts/ui-action-emission`
+

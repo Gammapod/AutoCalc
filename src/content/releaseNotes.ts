@@ -16,7 +16,7 @@ export const releaseNotes: ReleaseNotesCatalog = {
     {
       id: "release_v0_9_9",
       releaseVersion: "v0.9.9",
-      channel: "planned",
+      channel: "released",
       title: "Unlock Hints in Visualizer",
       summary: "Replaces progression browsing with contextual visualizer hints that show progress without spoilers.",
       bullets: [
