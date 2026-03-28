@@ -1,16 +1,16 @@
 import type { ReleaseNotesCatalog } from "../contracts/releaseNotes.js";
 
 export const releaseNotes: ReleaseNotesCatalog = {
-  entries: [
+  entries: [    
     {
-      id: "release_v0_9_10",
-      releaseVersion: "v0.9.10",
-      channel: "planned",
-      title: "Per-Calculator Memory & Matrix Isolation",
-      summary: "Each calculator now keeps isolated settable-variable selection and memory-key targeting.",
+      id: "release_v0_9_28",
+      releaseVersion: "v0.9.28",
+      channel: "released",
+      title: "Storage Drawer Replacement",
+      summary: "Storage is now a palette-style drawer.",
       bullets: [
-        "Memory cycle/adjust/recall operate only on the active calculator's normalized settable selection.",
-        "Selected variable highlight in footer and allocator visualizer stays in sync with memory-key behavior.",
+        "You can filter by key type and expand to show more of the palette.",
+        "It is ugly and unpleasant, but functional.",
       ],
     },
     {
@@ -25,14 +25,14 @@ export const releaseNotes: ReleaseNotesCatalog = {
       ],
     },
     {
-      id: "release_v0_9_8",
-      releaseVersion: "v0.9.8",
+      id: "release_v0_9_10",
+      releaseVersion: "v0.9.10",
       channel: "planned",
-      title: "Storage Drawer Replacement",
-      summary: "Replaces storage browsing with a faster drawer flow for finding and deploying unlocked keys.",
+      title: "Per-Calculator Memory & Matrix Isolation",
+      summary: "Each calculator now keeps isolated settable-variable selection and memory-key targeting.",
       bullets: [
-        "Key discovery emphasizes families and quick retrieval.",
-        "Storage interactions target low-click, no-scroll access patterns.",
+        "Memory cycle/adjust/recall operate only on the active calculator's normalized settable selection.",
+        "Selected variable highlight in footer and allocator visualizer stays in sync with memory-key behavior.",
       ],
     },
     {

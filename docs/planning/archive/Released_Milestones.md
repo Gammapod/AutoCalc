@@ -22,6 +22,35 @@ Goal: replace checklist-first progression with contextual in-visualizer unlock g
 - Hint output scope limited to eligibility + redacted progress payloads (no ranking policy in pre-work).
 - Full suite passed at release cut: `115/115` test groups.
 
+# Release v0.9.28: Storage Drawer Replacement (Shipped 2026-03-28)
+
+### User Story
+As a player, I can quickly find and deploy unlocked keys from storage without searching or deep menu traversal.
+
+### Delivered Behavior
+- Storage drawer now renders as a derived unlocked-key palette (all-and-only unlocked keys).
+- Storage membership is non-mutable by drag: dragging to/from storage does not add/remove storage entries.
+- Install semantics from storage use per-calculator key-ID uniqueness (duplicate installs are rejected on the same calculator).
+- Dropping a storage key on an occupied keypad slot installs and replaces the destination key.
+- Keys can be uninstalled by dragging off calculator surfaces, including executor keys such as `exec_equals`.
+- Drawer filtering shipped with family controls and an explicit all-filter option.
+- Drawer supports two modes:
+  - `standard`: compact one-row viewport with calculator workspace kept clear above the drawer.
+  - `browse`: expanded four-row viewport where drawer overlap with calculators is allowed.
+
+### Exit Criteria Snapshot
+- Palette lock/unlock correctness preserved with unlock-derived membership.
+- Install/uninstall drag interactions are deterministic across desktop drag and touch rearrange flows.
+- Full suite passed at release cut: `116/116` test groups.
+
+### Release Notes
+- Release Note ID: `release_v0_9_28`
+- Player-facing summary: Storage is now a palette-style drawer for unlocked keys with fast filter browsing and direct install/uninstall drag actions.
+- Highlights:
+- Storage shows unlocked keys as a derived palette; drag operations do not mutate storage membership.
+- Install is unique per calculator key ID, and occupied-slot installs replace the destination key.
+- Standard and browse drawer modes support compact play and expanded scanning workflows.
+
 # Release v0.9.10: Per-Calculator Memory & Matrix Isolation (Shipped 2026-03-26)
 
 ### User Story

@@ -1,39 +1,5 @@
 Truth 2: Releases
 
-# Release v0.9.28: Storage Drawer Replacement
-
-### User Story
-As a player, I can quickly find and deploy unlocked keys from storage without searching or deep menu traversal.
-
-### Dependencies
-- Requires v0.9.7 unified settings-state contract to classify and render settings/visualizer key states consistently inside the drawer.
-
-### Pre-work
-Finalize drawer information architecture, including family grouping, filter strategy, and one-step deployment interactions for unlocked keys.
-
-### Pre-work Exit Criteria
-- Drawer taxonomy is defined using existing key categories (including unified settings family behavior from v0.9.7).
-- Navigation flow is specified with deterministic interaction behavior for keyboard/pointer/touch.
-- Performance and layout constraints are set for no-scroll operation in normal gameplay key counts.
-
-### User Story Exit Criteria
-- Players can locate a desired key within two interactions (tabs/filters/deploy) without search.
-- Family-based browsing makes nearby relevant keys discoverable without exact key-name recall.
-- Drawer avoids scrolling in normal gameplay inventory sizes.
-- Storage interactions preserve lock/unlock correctness (`storage shows all-and-only unlocked keys`) with storage membership derived from unlock state.
-- Dragging to/from storage does not change storage membership.
-- Install policy is per-calculator key-ID uniqueness (duplicate install rejected on the same calculator).
-- Dropping a storage key on an occupied keypad slot replaces the destination key.
-- Keys can be uninstalled by dragging them off the calculator surface.
-- Uninstall can remove any key (including `exec_equals`).
-
-### Release Notes
-- Release Note ID: `release_v0_9_28`
-- Player-facing summary: Replaces storage browsing with a faster drawer flow for finding and deploying unlocked keys.
-- Highlights:
-- Key discovery emphasizes families and quick retrieval.
-- Storage interactions target low-click, no-scroll access patterns with palette-style unlocked-key browsing.
-
 # Release vα.0.0: Content Backlog
 
 Purpose: track implementable, self-contained features that do not require Planned Release framing.
