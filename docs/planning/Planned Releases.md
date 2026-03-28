@@ -7,6 +7,58 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Now
 
+### Slice `slice_architecture_orphan_cleanup`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a developer, I want architecture boundary checks to pass cleanly so the codebase stays maintainable and layering regressions are caught early.
+- Exit Criteria:
+- `node scripts/check-boundaries.mjs` exits successfully.
+- `dist/reports/orphan-modules.json` reports no actionable orphans.
+- `src/domain/memorySelection.ts` is either removed as dead code or intentionally integrated with clear ownership.
+
+### Slice `slice_planning_invariant_id_consistency`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a developer, I want invariant IDs to remain internally consistent so planning, traceability, and implementation review use the same contract vocabulary.
+- Exit Criteria:
+- `docs/functional-spec.md` gap report references `FS-BND-05` consistently where boundary lifecycle explicitness is discussed.
+- No stale `FS-BND-06` reference remains unless a real clause with that ID exists.
+
+### Slice `slice_control_selection_model_unification`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a developer, I want control selection normalization to use one canonical model so future control-profile expansion does not break settings semantics.
+- Exit Criteria:
+- Canonical selection logic is based on `ControlField` (`alpha..epsilon`) without hidden narrowing to legacy subsets.
+- Legacy memory-variable mapping remains adapter-only at compatibility boundaries.
+- Coverage includes fixtures that prove valid non-`alpha` selections are preserved when settable by profile policy.
+
+### Slice `slice_boundary_direct_mutation_contract`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a developer, I want direct mutation-bypass behavior tests so cross-interface boundary violations are detected even if import boundaries still pass.
+- Exit Criteria:
+- Dedicated executable contract tests assert `FS-BND-01` behavior: global/progression state cannot directly mutate calculator-owned runtime/execution state outside explicit domain action flow.
+- Traceability references are updated to include the new direct boundary mutation suite.
+
+### Slice `slice_control_matrix_locality_contracts`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a developer, I want explicit control-matrix locality contracts so calculator capability envelopes are validated as local and deterministic.
+- Exit Criteria:
+- Dedicated contracts assert `FS-CS-02` envelope behavior (keypad dimensions, slot count, range, cadence semantics) under per-calculator settable/derived policies.
+- Tests assert no cross-calculator leakage when control variables mutate on a targeted calculator.
+- Traceability gaps for `FS-CS-02` are updated based on resulting coverage.
+
+### Slice `slice_app_ui_motion_bridge_decoupling`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a developer, I want app-level cue workflows decoupled from concrete UI motion modules so subsystem seams remain replaceable and easier to reason about.
+- Exit Criteria:
+- Cue coordinators in `src/app` consume a contract/service boundary for motion settlement instead of importing concrete `src/ui` motion modules directly.
+- Existing cue behavior parity is preserved through tests.
+- Import/dependency boundaries remain green after refactor.
+
 ## Next
 
 ### Slice `slice_function_builder_bar_standardization`
@@ -71,5 +123,4 @@ Record shipped trains here using this format:
 - Player-facing highlights:
 - Short summary bullet 1.
 - Short summary bullet 2.
-
 
