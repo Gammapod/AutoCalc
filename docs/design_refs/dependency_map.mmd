@@ -76,7 +76,7 @@ subgraph Numbers ["Numbers"]
         Afloor["⌊n⌋"]
         %% Expanded form `[ a-a◇1 ]`
         Aceil["⌈n⌉"]
-        %% Expanded form `[ ⌊n⌋++ ]`
+        %% Expanded form `[ a+(1-(a◇1)) ]`
 
         Afloor --> Aceil
         Amod --> Afloor
