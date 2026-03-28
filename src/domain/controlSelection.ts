@@ -2,12 +2,23 @@ import type { ControlField, ControlProfile, GameState, MemoryVariable } from "./
 import { getEffectiveControlProfile, resolveStateCalculatorId } from "./controlProfileRuntime.js";
 
 const CONTROL_SELECTION_ORDER: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
+const LEGACY_MEMORY_VARIABLE_ALPHA = "\u03B1";
+const LEGACY_MEMORY_VARIABLE_BETA = "\u03B2";
+const LEGACY_MEMORY_VARIABLE_GAMMA = "\u03B3";
 
 export const toLegacyMemoryVariable = (field: ControlField | null): MemoryVariable =>
-  field === "beta" ? "β" : field === "gamma" ? "γ" : "α";
+  field === "beta"
+    ? LEGACY_MEMORY_VARIABLE_BETA
+    : field === "gamma"
+      ? LEGACY_MEMORY_VARIABLE_GAMMA
+      : LEGACY_MEMORY_VARIABLE_ALPHA;
 
 export const memoryVariableToControlField = (memoryVariable: MemoryVariable | null | undefined): ControlField =>
-  memoryVariable === "β" ? "beta" : memoryVariable === "γ" ? "gamma" : "alpha";
+  memoryVariable === LEGACY_MEMORY_VARIABLE_BETA
+    ? "beta"
+    : memoryVariable === LEGACY_MEMORY_VARIABLE_GAMMA
+      ? "gamma"
+      : "alpha";
 
 export const getSettableControlFields = (profile: ControlProfile): ControlField[] =>
   CONTROL_SELECTION_ORDER.filter((field) => profile.settable[field]);

@@ -5,7 +5,7 @@ Status: Active runbook
 Scope: Adding or changing calculator ids and lifecycle behavior.
 
 Authoritative references:
-1. `docs/functional-spec.md` (`FS-MC-*`, `FS-BND-06`)
+1. `docs/functional-spec.md` (`FS-MC-*`, `FS-BND-05`)
 2. `docs/contracts/ui-domain-contract.md`
 
 ## Policy

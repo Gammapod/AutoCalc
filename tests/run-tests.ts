@@ -29,6 +29,7 @@ import { runNumberDomainAnalysisTests } from "./numberDomainAnalysis.test.js";
 import { runCurrentTotalDomainTests } from "./currentTotalDomain.test.js";
 import { runRollDerivedTests } from "./rollDerived.test.js";
 import { runControlProjectionTests } from "./controlProjection.test.js";
+import { runDomainControlSelectionTests } from "./domain.controlSelection.test.js";
 import { runPredicateCapabilitySpecTests } from "./predicateCapabilitySpec.test.js";
 import { runUnlockGraphTests } from "./unlockGraph.test.js";
 import { runKeyBehaviorContractTests } from "./keyBehavior.contract.test.js";
@@ -72,6 +73,8 @@ import { runContractsActionEventRoundTripTests } from "./contracts.actionEventRo
 import { runContractsExecutionGateParityTests } from "./contracts.executionGateParity.test.js";
 import { runContractsSlotInputParityTests } from "./contracts.slotInputParity.test.js";
 import { runContractsSlotInputTargetSpecTests } from "./contracts.slotInputTargetSpec.test.js";
+import { runControlMatrixLocalityContractTests } from "./controlMatrixLocality.contract.test.js";
+import { runBoundaryDirectMutationContractTests } from "./boundaryDirectMutation.contract.test.js";
 import { runV2RulesAdaptersTests } from "./v2Rules.adapters.test.js";
 import { runUiIntegrationMobileShellTests } from "./uiIntegration.mobileShell.test.js";
 import { runUiIntegrationDesktopShellTests } from "./uiIntegration.desktopShell.test.js";
@@ -141,6 +144,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/current-total-domain", runCurrentTotalDomainTests],
   ["domain/roll-derived", runRollDerivedTests],
   ["domain/control-projection", runControlProjectionTests],
+  ["domain/control-selection", runDomainControlSelectionTests],
   ["domain/predicate-capability-spec", runPredicateCapabilitySpecTests],
   ["domain/unlock-graph", runUnlockGraphTests],
   ["domain/key-behavior-contract", runKeyBehaviorContractTests],
@@ -192,6 +196,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/execution-gate-parity", runContractsExecutionGateParityTests],
   ["contracts/slot-input-parity", runContractsSlotInputParityTests],
   ["contracts/slot-input-target-spec", runContractsSlotInputTargetSpecTests],
+  ["contracts/control-matrix-locality", runControlMatrixLocalityContractTests],
+  ["contracts/boundary-direct-mutation", runBoundaryDirectMutationContractTests],
   ["v2/rules-adapters", runV2RulesAdaptersTests],
   ["domain/button-registry-contract", runButtonRegistryContractTests],
   ["domain/key-action-handlers-contract", runKeyActionHandlersContractTests],

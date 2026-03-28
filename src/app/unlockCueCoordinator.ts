@@ -1,6 +1,6 @@
 import type { GameState, Key, UiEffect } from "../domain/types.js";
 import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
-import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
+import type { MotionSettlementService } from "../contracts/motionSettlement.js";
 
 const UNLOCK_REVEAL_SETTLE_TIMEOUT_MS = 1300;
 
@@ -71,6 +71,7 @@ type CueCoordinator = ReturnType<typeof createCueLifecycleCoordinator>;
 
 type UnlockRevealCoordinatorDeps = {
   cueCoordinator: CueCoordinator;
+  motionSettlement: MotionSettlementService;
   playShellCue: (target: "calculator" | "storage") => Promise<void>;
   setInputBlocked: (blocked: boolean) => void;
   redraw: () => void;
@@ -80,6 +81,7 @@ type UnlockRevealCoordinatorDeps = {
 
 export const createUnlockRevealCoordinator = ({
   cueCoordinator,
+  motionSettlement,
   playShellCue,
   setInputBlocked,
   redraw,
@@ -94,7 +96,7 @@ export const createUnlockRevealCoordinator = ({
       },
       {
         playShellCue,
-        awaitMotionSettled,
+        awaitMotionSettled: motionSettlement.awaitMotionSettled,
         setInputBlocked,
         redraw,
         applyStateMutation: () => {

@@ -1,5 +1,29 @@
 Truth 2: Releases
 
+# Release v0.9.30: Boundary Contracts and Cue Decoupling (Shipped 2026-03-28)
+
+### User Story
+As a developer, I want architecture seams to be explicit and test-enforced so multi-calculator behavior stays deterministic while app/UI boundaries remain replaceable.
+
+### Delivered Behavior
+- Added explicit contract coverage for `FS-CS-02` control matrix locality (`contracts/control-matrix-locality`).
+- Added explicit contract coverage for `FS-BND-01` direct mutation-bypass prevention (`contracts/boundary-direct-mutation`).
+- Added domain coverage for canonical control-selection normalization and legacy adapter fallback behavior (`domain/control-selection`).
+- Decoupled app cue workflows from direct UI motion imports by injecting a `MotionSettlementService` contract into cue coordinators.
+- Removed dead orphan module `src/domain/memorySelection.ts`.
+- Updated traceability docs and runbook references to align with completed invariant coverage.
+
+### Exit Criteria Snapshot
+- Full suite passed at release cut: `119/119` test groups.
+- Full build passed at release cut: `npm run build:web:full`.
+
+### Release Notes
+- Release Note ID: `release_v0_9_30`
+- Player-facing summary: Architecture seams are now explicit and contract-tested, with cue-motion behavior wired through replaceable service boundaries.
+- Highlights:
+- Added dedicated control-locality and direct-mutation boundary contract suites.
+- App cue coordinators now depend on an injected motion-settlement contract instead of concrete UI module imports.
+
 # Release v0.9.19: Unlock Hints in Visualizer (Shipped 2026-03-27)
 
 Goal: replace checklist-first progression with contextual in-visualizer unlock guidance backed by deterministic, redacted progress projection contracts.

@@ -1,7 +1,20 @@
 import type { ReleaseNotesCatalog } from "../contracts/releaseNotes.js";
 
 export const releaseNotes: ReleaseNotesCatalog = {
-  entries: [    
+  entries: [
+    {
+      id: "release_v0_9_30",
+      releaseVersion: "v0.9.30",
+      channel: "released",
+      title: "Boundary Contracts and Cue Decoupling",
+      summary:
+        "Hardens architecture seams with explicit control-locality and mutation-boundary contracts, plus cue-motion service decoupling.",
+      bullets: [
+        "Added explicit contract suites for control matrix locality and direct mutation-bypass boundaries.",
+        "Cue coordinators now consume an injected motion-settlement service contract instead of direct UI bridge imports.",
+        "Control selection coverage now includes canonical non-legacy field normalization guards.",
+      ],
+    },
     {
       id: "release_v0_9_28",
       releaseVersion: "v0.9.28",
@@ -29,7 +42,7 @@ export const releaseNotes: ReleaseNotesCatalog = {
     {
       id: "release_v0_9_10",
       releaseVersion: "v0.9.10",
-      channel: "planned",
+      channel: "released",
       title: "Per-Calculator Memory & Matrix Isolation",
       summary: "Each calculator now keeps isolated settable-variable selection and memory-key targeting.",
       bullets: [

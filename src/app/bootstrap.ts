@@ -25,6 +25,7 @@ import type { AppMode } from "../contracts/appMode.js";
 import { resolveModeManifest } from "../domain/modeManifest.js";
 import { APP_VERSION } from "../generated/appVersion.js";
 import { normalizeRuntimeStateInvariants } from "../domain/runtimeStateInvariants.js";
+import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -165,6 +166,9 @@ const getAppModeUrl = (location: Location, mode: AppMode): string => {
 const cueCoordinator = createCueLifecycleCoordinator();
 const unlockRevealCoordinator = createUnlockRevealCoordinator({
   cueCoordinator,
+  motionSettlement: {
+    awaitMotionSettled,
+  },
   playShellCue: async (target) => {
     await shellRenderer.playTransitionCue(target);
   },
@@ -184,6 +188,9 @@ const unlockRevealCoordinator = createUnlockRevealCoordinator({
 const allocatorCueCoordinator = createAllocatorCueCoordinator({
   services,
   cueCoordinator,
+  motionSettlement: {
+    awaitMotionSettled,
+  },
   playShellCue: async (target) => {
     await shellRenderer.playTransitionCue(target);
   },

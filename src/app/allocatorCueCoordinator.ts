@@ -1,7 +1,7 @@
 import type { GameState } from "../domain/types.js";
 import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
-import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
 import { getAppServices, type AppServices } from "../contracts/appServices.js";
+import type { MotionSettlementService } from "../contracts/motionSettlement.js";
 
 const ALLOCATOR_CUE_SETTLE_TIMEOUT_MS = 1100;
 
@@ -40,6 +40,7 @@ type CueCoordinator = ReturnType<typeof createCueLifecycleCoordinator>;
 type AllocatorCueCoordinatorDeps = {
   services?: AppServices;
   cueCoordinator: CueCoordinator;
+  motionSettlement: MotionSettlementService;
   playShellCue: (target: "calculator" | "storage") => Promise<void>;
   setInputBlocked: (blocked: boolean) => void;
   redraw: () => void;
@@ -49,6 +50,7 @@ type AllocatorCueCoordinatorDeps = {
 export const createAllocatorCueCoordinator = ({
   services = getAppServices(),
   cueCoordinator,
+  motionSettlement,
   playShellCue,
   setInputBlocked,
   redraw,
@@ -63,7 +65,7 @@ export const createAllocatorCueCoordinator = ({
       },
       {
         playShellCue,
-        awaitMotionSettled,
+        awaitMotionSettled: motionSettlement.awaitMotionSettled,
         setInputBlocked,
         redraw,
         setShellFocusView: () => {

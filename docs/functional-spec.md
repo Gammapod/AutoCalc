@@ -185,7 +185,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
 | FS-CS-01 | Calculator owns keypad/roll/display/control matrix runtime semantics | `ui/runtime-registry`, `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: interface ownership is inferred |
-| FS-CS-02 | Control matrix relationships are calculator-local; per-calculator settable/derived variable policy constrains reachable states and capability envelope (keypad dimensions, slot count, range, evaluation cadence semantics) | `domain/sandbox-preset`, `app/analysis-report` | unit | gap: no explicit control-matrix locality contract suite |
+| FS-CS-02 | Control matrix relationships are calculator-local; per-calculator settable/derived variable policy constrains reachable states and capability envelope (keypad dimensions, slot count, range, evaluation cadence semantics) | `contracts/control-matrix-locality`, `domain/sandbox-preset`, `app/analysis-report` | contract + unit | none |
 | FS-CS-03 | Visualizers are projections, not truth source | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
 | FS-CS-04 | Roll is executed outcomes, not drafting state | `reducer/input`, `ui/roll-display`, `contracts/slot-input-parity` | unit + integration + contract | none |
 | FS-CS-05 | Error/remainder channels are canonical outcomes | `reducer/input`, `ui/total-display`, `ui/roll-display`, `persistence` | unit + integration | none |
@@ -235,7 +235,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
-| FS-BND-01 | Global state owns progression/capability state; no direct mutation of calculator-owned runtime/execution state | `v2/import-boundary`, `app/bootstrap-boundary` | contract + boundary | gap: no direct cross-interface mutation-bypass test |
+| FS-BND-01 | Global state owns progression/capability state; no direct mutation of calculator-owned runtime/execution state | `contracts/boundary-direct-mutation`, `v2/import-boundary`, `app/bootstrap-boundary` | contract + boundary | none |
 | FS-BND-02 | Calculator does not own unlock predicate/effect definitions | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership tested indirectly |
 | FS-BND-03 | Shell divergence allowed; emitted intent and outcomes equivalent (dispatch-path specifics centralized in boundary contract) | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity`, `contracts/ui-action-emission`, `contracts/execution-gate-parity`, `contracts/action-event-reducer-boundary` | integration + parity + contract | none |
 | FS-BND-04 | Contracts remain implementation-independent | `app/bootstrap-boundary`, `contracts/shim-inventory`, `browser/import-safety` | boundary + contract | partial: semantic independence asserted via import boundaries |
@@ -276,12 +276,11 @@ These are stable documentation interfaces for test/contract alignment, not code 
 
 **Priority: seam-critical pre-alpha architecture-hardening gaps**
 
-1. `FS-CS-02` control matrix locality has no explicit dedicated contract/assertion suite.
-2. `FS-BND-01` action-bypass mutation prevention is not directly asserted as a behavior test.
+None currently.
 
 **Lower priority: non-seam or later-phase expansion**
 
-3. `FS-BND-06` lifecycle explicitness now has baseline contract coverage; lifecycle-event matrix expansion remains pending.
+3. `FS-BND-05` lifecycle explicitness now has baseline contract coverage; lifecycle-event matrix expansion remains pending.
 
 ### 7.2 Invariants with only partial or indirect coverage
 
