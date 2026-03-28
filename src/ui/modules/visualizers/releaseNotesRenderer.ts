@@ -21,10 +21,67 @@ const normalizeVersion = (version: string): string =>
     .replace(/^v/, "")
     .split(/[+-]/, 1)[0] ?? "";
 
-const resolveCurrentReleaseNote = (): ReleaseNoteEntry | null => {
+const parseVersionParts = (version: string): number[] => {
+  const normalized = normalizeVersion(version);
+  if (!normalized) {
+    return [];
+  }
+  return normalized.split(".").map((part) => {
+    const parsed = Number.parseInt(part, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  });
+};
+
+const compareVersionParts = (left: readonly number[], right: readonly number[]): number => {
+  const limit = Math.max(left.length, right.length);
+  for (let index = 0; index < limit; index += 1) {
+    const leftValue = left[index] ?? 0;
+    const rightValue = right[index] ?? 0;
+    if (leftValue !== rightValue) {
+      return leftValue - rightValue;
+    }
+  }
+  return 0;
+};
+
+type ResolvedReleaseNote = {
+  note: ReleaseNoteEntry | null;
+  sourceVersion: string | null;
+  usedFallback: boolean;
+};
+
+const resolveCurrentReleaseNote = (): ResolvedReleaseNote => {
   const notes = getAppServices().contentProvider.releaseNotes.entries;
-  const currentVersion = normalizeVersion(resolveAppVersion());
-  return notes.find((entry) => normalizeVersion(entry.releaseVersion) === currentVersion) ?? null;
+  const appVersion = resolveAppVersion();
+  const currentVersion = normalizeVersion(appVersion);
+  const currentParts = parseVersionParts(appVersion);
+
+  const exact = notes.find((entry) => normalizeVersion(entry.releaseVersion) === currentVersion) ?? null;
+  if (exact) {
+    return { note: exact, sourceVersion: exact.releaseVersion, usedFallback: false };
+  }
+
+  let fallback: ReleaseNoteEntry | null = null;
+  let fallbackParts: number[] = [];
+  for (const entry of notes) {
+    const entryParts = parseVersionParts(entry.releaseVersion);
+    if (entryParts.length === 0) {
+      continue;
+    }
+    if (compareVersionParts(entryParts, currentParts) >= 0) {
+      continue;
+    }
+    if (!fallback || compareVersionParts(entryParts, fallbackParts) > 0) {
+      fallback = entry;
+      fallbackParts = entryParts;
+    }
+  }
+
+  return {
+    note: fallback,
+    sourceVersion: fallback ? fallback.releaseVersion : null,
+    usedFallback: Boolean(fallback),
+  };
 };
 
 export const clearReleaseNotesVisualizerPanel = (root: Element): void => {
@@ -45,7 +102,14 @@ export const renderReleaseNotesVisualizerPanel = (root: Element, _state: GameSta
   panel.setAttribute("aria-hidden", "false");
 
   const appVersion = resolveAppVersion();
-  const note = resolveCurrentReleaseNote();
+  const resolved = resolveCurrentReleaseNote();
+  const note = resolved.note;
+
+  if (resolved.usedFallback && resolved.sourceVersion) {
+    console.warn(
+      `[release-notes] Missing release notes for ${appVersion}; showing ${resolved.sourceVersion} instead.`,
+    );
+  }
 
   if (typeof document === "undefined") {
     if (!note) {
@@ -58,7 +122,9 @@ export const renderReleaseNotesVisualizerPanel = (root: Element, _state: GameSta
 
   const version = document.createElement("div");
   version.className = "v2-title-version";
-  version.textContent = appVersion;
+  version.textContent = resolved.usedFallback && resolved.sourceVersion
+    ? `${appVersion} (showing ${resolved.sourceVersion})`
+    : appVersion;
 
   const body = document.createElement("div");
   body.className = "v2-release-notes-body";

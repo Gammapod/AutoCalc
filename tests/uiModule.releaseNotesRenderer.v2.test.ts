@@ -24,9 +24,26 @@ export const runUiModuleReleaseNotesRendererV2Tests = (): void => {
     renderReleaseNotesVisualizerPanel(harness.root, initialState());
     assert.equal(panel.getAttribute("aria-hidden"), "false", "release notes panel is visible after render");
     const expectedVersionToken = `v${APP_VERSION}`;
-    const expectedReleaseNote = defaultContentProvider.releaseNotes.entries.find((entry) =>
-      normalizeVersion(entry.releaseVersion) === normalizeVersion(expectedVersionToken));
-    assert.ok(expectedReleaseNote, `release note entry exists for ${expectedVersionToken}`);
+    const currentVersionParts = normalizeVersion(expectedVersionToken).split(".").map((part) => Number.parseInt(part, 10));
+    const compareParts = (left: readonly number[], right: readonly number[]): number => {
+      const limit = Math.max(left.length, right.length);
+      for (let index = 0; index < limit; index += 1) {
+        const leftValue = left[index] ?? 0;
+        const rightValue = right[index] ?? 0;
+        if (leftValue !== rightValue) {
+          return leftValue - rightValue;
+        }
+      }
+      return 0;
+    };
+    const expectedReleaseNote = defaultContentProvider.releaseNotes.entries
+      .map((entry) => ({
+        entry,
+        parts: normalizeVersion(entry.releaseVersion).split(".").map((part) => Number.parseInt(part, 10)),
+      }))
+      .filter(({ parts }) => compareParts(parts, currentVersionParts) <= 0)
+      .sort((left, right) => compareParts(right.parts, left.parts))[0]?.entry;
+    assert.ok(expectedReleaseNote, `release note entry exists at or before ${expectedVersionToken}`);
     assert.match(
       panel.textContent ?? "",
       new RegExp(expectedVersionToken.replace(".", "\\."), "u"),
@@ -40,7 +57,7 @@ export const runUiModuleReleaseNotesRendererV2Tests = (): void => {
     assert.equal(
       (panel.textContent ?? "").includes(expectedReleaseNote.summary),
       true,
-      "release notes panel includes current version note summary",
+      "release notes panel includes resolved version note summary",
     );
   } finally {
     harness.teardown();
