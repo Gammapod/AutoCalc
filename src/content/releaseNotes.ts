@@ -7,10 +7,12 @@ export const releaseNotes: ReleaseNotesCatalog = {
       releaseVersion: "v0.9.28",
       channel: "released",
       title: "Storage Drawer Replacement",
-      summary: "Storage is now a palette-style drawer.",
+      summary: "Storage is now a palette-style drawer for unlocked keys with filter browsing and direct install/uninstall drag actions.",
       bullets: [
-        "You can filter by key type and expand to show more of the palette.",
-        "It is ugly and unpleasant, but functional.",
+        "Storage membership is unlock-derived; dragging to/from storage does not mutate storage contents.",
+        "Install is unique per calculator key ID, and occupied-slot installs replace the destination key.",
+        "Keys can be uninstalled by dragging off calculator surfaces, including executor keys.",
+        "Standard and browse drawer modes support compact play and expanded scanning workflows.",
       ],
     },
     {

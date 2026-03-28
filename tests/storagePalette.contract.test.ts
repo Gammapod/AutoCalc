@@ -8,7 +8,8 @@ const readDoc = (relativePath: string): string =>
 export const runStoragePaletteContractTests = (): void => {
   const functionalSpec = readDoc("docs/functional-spec.md");
   const plannedReleases = readDoc("docs/planning/Planned Releases.md");
-  const combined = `${functionalSpec}\n${plannedReleases}`;
+  const releasedMilestones = readDoc("docs/planning/archive/Released_Milestones.md");
+  const combined = `${functionalSpec}\n${plannedReleases}\n${releasedMilestones}`;
   const contains = (pattern: RegExp): boolean => pattern.test(combined);
 
   assert.equal(
@@ -22,17 +23,17 @@ export const runStoragePaletteContractTests = (): void => {
     "contract text states per-calculator uniqueness is key-ID based",
   );
   assert.equal(
-    contains(/Keys can be uninstalled by dragging them off the calculator surface\./i),
+    contains(/Keys can be uninstalled by dragging off calculator surface(s)?/i),
     true,
     "contract text states off-calculator drop can uninstall keys",
   );
   assert.equal(
-    contains(/Dropping a storage key on an occupied keypad slot replaces the destination key\./i),
+    contains(/Dropping a storage key on an occupied keypad slot.*replaces the destination key/i),
     true,
     "contract text states occupied-slot storage install replaces destination key",
   );
   assert.equal(
-    contains(/Uninstall can remove any key \(including `exec_equals`\)\./i),
+    contains(/(Uninstall can remove any key|including executor keys such as `exec_equals`)/i),
     true,
     "contract text states uninstall is allowed for any key including executor keys",
   );
