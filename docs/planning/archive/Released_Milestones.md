@@ -1,5 +1,27 @@
 Truth 2: Releases
 
+# Release v0.9.19: Unlock Hints in Visualizer (Shipped 2026-03-27)
+
+Goal: replace checklist-first progression with contextual in-visualizer unlock guidance backed by deterministic, redacted progress projection contracts.
+
+### Deliverables
+
+- Canonical unlock hint-progress projection contract added and kept separate from boolean unlock truth evaluation.
+- Predicate progress classification finalized for all predicate types used in the unlock catalog:
+  - `partial` for progress-capable predicates
+  - `binary` for explicit cycle-family exemptions.
+- Cycle-family predicates set to binary-only (`roll_cycle_period_at_least`, `roll_cycle_transient_at_least`, `roll_cycle_diameter_at_least`, `roll_cycle_is_opposite_pair`).
+- Deterministic normalized partial progress (`0..1`) with stable `current`/`target` fields for all catalog partial predicates.
+- Full redacted hint-template mapping for current unlock catalog with spoiler-safe payload boundaries.
+- Checklist UX surface retired; default visualizer now hosts numerical near-unlock hint slots for operator key, non-operator key, lambda point, and calculator unlock progress.
+
+### Exit Criteria Snapshot
+
+- Unlock outcomes unchanged by projection layer changes (parity preserved).
+- Catalog predicate coverage complete with fail-fast regression protection for unclassified future predicate types.
+- Hint output scope limited to eligibility + redacted progress payloads (no ranking policy in pre-work).
+- Full suite passed at release cut: `115/115` test groups.
+
 # Release v0.9.10: Per-Calculator Memory & Matrix Isolation (Shipped 2026-03-26)
 
 ### User Story
@@ -35,28 +57,6 @@ Replace mixed global/per-calculator memory-selection behavior with a single calc
 - Highlights:
 - Memory cycle/adjust/recall operate only on the active calculator's normalized settable selection.
 - Selected variable highlight in footer/visualizer is synchronized with memory-key behavior.
-
-# Release v0.9.9: Unlock Hints in Visualizer (Shipped 2026-03-27)
-
-Goal: replace checklist-first progression with contextual in-visualizer unlock guidance backed by deterministic, redacted progress projection contracts.
-
-### Deliverables
-
-- Canonical unlock hint-progress projection contract added and kept separate from boolean unlock truth evaluation.
-- Predicate progress classification finalized for all predicate types used in the unlock catalog:
-  - `partial` for progress-capable predicates
-  - `binary` for explicit cycle-family exemptions.
-- Cycle-family predicates set to binary-only (`roll_cycle_period_at_least`, `roll_cycle_transient_at_least`, `roll_cycle_diameter_at_least`, `roll_cycle_is_opposite_pair`).
-- Deterministic normalized partial progress (`0..1`) with stable `current`/`target` fields for all catalog partial predicates.
-- Full redacted hint-template mapping for current unlock catalog with spoiler-safe payload boundaries.
-- Checklist UX surface retired; default visualizer now hosts numerical near-unlock hint slots for operator key, non-operator key, lambda point, and calculator unlock progress.
-
-### Exit Criteria Snapshot
-
-- Unlock outcomes unchanged by projection layer changes (parity preserved).
-- Catalog predicate coverage complete with fail-fast regression protection for unclassified future predicate types.
-- Hint output scope limited to eligibility + redacted progress payloads (no ranking policy in pre-work).
-- Full suite passed at release cut: `115/115` test groups.
 
 # Release v0.9.7: Unified Settings State Model (Shipped 2026-03-26)
 
