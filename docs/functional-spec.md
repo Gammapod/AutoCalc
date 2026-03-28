@@ -274,21 +274,31 @@ These are stable documentation interfaces for test/contract alignment, not code 
 
 ### 7.1 Invariants with no direct executable assertion
 
+**Priority: seam-critical pre-alpha architecture-hardening gaps**
+
 1. `FS-CS-02` control matrix locality has no explicit dedicated contract/assertion suite.
 2. `FS-BND-01` action-bypass mutation prevention is not directly asserted as a behavior test.
-3. `FS-BND-05` lifecycle explicitness now has baseline contract coverage; lifecycle-event matrix expansion remains pending.
+
+**Lower priority: non-seam or later-phase expansion**
+
+3. `FS-BND-06` lifecycle explicitness now has baseline contract coverage; lifecycle-event matrix expansion remains pending.
 
 ### 7.2 Invariants with only partial or indirect coverage
+
+**Priority: seam-critical pre-alpha architecture-hardening gaps**
 
 1. `FS-UP-01` and `FS-BND-02` ownership rules are inferred through contract wiring/boundary tests, not directly behavior-specified.
 2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
 3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but dedicated palette/install contract suites are rolling out.
-4. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
-5. `FS-CS-10` and `FS-CS-11` now pin ownership and executable mapping for key visual affordance invariants; coverage is policy/selector driven and intentionally does not require pixel-snapshot baselines.
-6. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.
-7. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
-8. `FS-FB-09` and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress and exception-bearing progression fixtures are pending.
-9. `FS-UP-09`, `FS-UP-10`, `FS-UP-11`, and `FS-UP-12` are intentionally partial at introduction time; dedicated key-only schema, partition-matrix, canonical tie-break, and unresolved-classification fixtures/contracts are pending.
+4. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
+5. `FS-FB-09` and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress and exception-bearing progression fixtures are pending.
+6. `FS-UP-09`, `FS-UP-10`, `FS-UP-11`, and `FS-UP-12` are intentionally partial at introduction time; dedicated key-only schema, partition-matrix, canonical tie-break, and unresolved-classification fixtures/contracts are pending.
+
+**Lower priority: non-seam or later-phase expansion**
+
+7. `FS-CS-06`, `FS-CS-07`, and `FS-CS-09` semantic-family rules are defined but not yet enforced by dedicated contract-level UI semantic tests.
+8. `FS-CS-10` and `FS-CS-11` now pin ownership and executable mapping for key visual affordance invariants; coverage is policy/selector driven and intentionally does not require pixel-snapshot baselines.
+9. `FS-MC-07` still lacks dedicated multi-instance migration fixture coverage.
 
 ### 7.3 Fixture-only parity/fuzz coverage flags
 
