@@ -117,8 +117,8 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: multi-calculator play requires local execution truth per instance.
 - `FS-MC-03` (MUST): Progression-owned unlock state remains global and shared across calculators unless explicitly defined otherwise.
   Rationale: progression ownership and auditability remain singular under global state.
-- `FS-MC-05` (MUST): Creating or unlocking an additional calculator (including configured bootstrap materialization) creates a deterministic initial calculator runtime state.
-  Rationale: newly integrated calculators must be predictable and parity-testable regardless of lifecycle entrypoint.
+- `FS-MC-05` (MUST): Creating or unlocking an additional calculator (including configured bootstrap materialization) deterministically initializes control profile selection, initial keypad/loadout projection, initial calculator settings/defaults, and initial execution state.
+  Rationale: newly integrated calculators must enter play with explicit, parity-testable initialization semantics regardless of lifecycle entrypoint.
 - `FS-MC-07` (MUST): Save/load round-trip preserves all calculator instances and active-calculator selection.
   Rationale: session continuity must hold for multi-instance progression.
 - `FS-MC-08` (MUST): With only one unlocked calculator, behavior remains equivalent to single-calculator gameplay semantics.
@@ -130,10 +130,10 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 - `FS-CS-01` (MUST): Calculator state owns keypad, roll/history, display/visualizer projection, and control matrix state.
   Rationale: these are calculator-local runtime semantics.
-- `FS-CS-02` (MUST): Control matrix semantics are calculator-local capabilities.
-  Rationale: control behavior must remain cohesive with calculator runtime.
-- `FS-CS-03` (MUST): Visualizers are read-model projections of canonical calculator state. Visualizer rendering logic MUST NOT directly mutate domain state; any state change MUST occur only through explicit domain actions and the canonical action/event/reducer flow.
-  Rationale: read-model/UI cannot override domain truth or bypass canonical state-transition pathways.
+- `FS-CS-02` (MUST): Control matrix relationships are calculator-local, and each calculator's settable/derived variable policy constrains reachable states and the reachable capability envelope (keypad dimensions, slot count, range, and evaluation cadence semantics).
+  Rationale: control behavior must remain calculator-cohesive with explicit local-state and envelope boundaries.
+- `FS-CS-03` (MUST): Visualizers are projections of canonical calculator state and cannot become alternate sources of truth.
+  Rationale: read-model/UI cannot override domain truth.
 - `FS-CS-04` (MUST): Roll/history represents executed outcomes, not transient drafting intent.
   Rationale: history is an auditable execution trail.
 - `FS-CS-05` (MUST): Error and remainder channels are canonical parts of execution outcome semantics when present.
@@ -183,8 +183,8 @@ The Calculator State Interface governs calculator runtime models for one or more
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
 | FS-CS-01 | Calculator owns keypad/roll/display/control matrix runtime semantics | `ui/runtime-registry`, `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: interface ownership is inferred |
-| FS-CS-02 | Control matrix is calculator-local capability | `domain/sandbox-preset`, `app/analysis-report` | unit | gap: no explicit control-matrix locality contract suite |
-| FS-CS-03 | Visualizers are read-model projections only; rendering cannot mutate domain state; state changes flow through explicit domain actions and canonical action/event/reducer pathways | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
+| FS-CS-02 | Control matrix relationships are calculator-local; per-calculator settable/derived variable policy constrains reachable states and capability envelope (keypad dimensions, slot count, range, evaluation cadence semantics) | `domain/sandbox-preset`, `app/analysis-report` | unit | gap: no explicit control-matrix locality contract suite |
+| FS-CS-03 | Visualizers are projections, not truth source | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
 | FS-CS-04 | Roll is executed outcomes, not drafting state | `reducer/input`, `ui/roll-display`, `contracts/slot-input-parity` | unit + integration + contract | none |
 | FS-CS-05 | Error/remainder channels are canonical outcomes | `reducer/input`, `ui/total-display`, `ui/roll-display`, `persistence` | unit + integration | none |
 | FS-CS-06 | Modulo/cycle/congruence share one semantic visual family | `ui/graph-display`, `ui-module/grapher-v2` | integration | gap: no explicit semantic-family contract assertion |
@@ -210,7 +210,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-MC-01 | One-or-more calculators with exactly one active selection and coherent order/instance representation | `reducer/lifecycle`, `v2/parity`, `contracts/multi-calculator-invariants` | unit + parity + contract | partial: baseline coherence + guard coverage exists; broader malformed-state fixtures pending |
 | FS-MC-02 | Calculator execution-local state is isolated per instance | `reducer/input`, `contracts/slot-input-parity`, `contracts/multi-calculator-invariants` | unit + contract | partial: core targeted isolation covered; broader randomized isolation matrix pending |
 | FS-MC-03 | Unlock ownership remains global/shared | `domain/unlock-engine`, `contracts/content-provider-wiring`, `contracts/multi-calculator-invariants` | unit + contract | partial: global unlock scope covered; reversible/exception scope policies not yet modeled |
-| FS-MC-05 | Additional calculator initialization is deterministic across unlock/bootstrap lifecycle entrypoints | `reducer/lifecycle`, `persistence`, `contracts/multi-calculator-invariants` | unit + contract | partial: deterministic initialization covered; migration-triggered initialization fixtures pending |
+| FS-MC-05 | Additional calculator initialization deterministically sets control profile selection, initial keypad/loadout projection, calculator settings/defaults, and execution state across unlock/bootstrap entrypoints | `reducer/lifecycle`, `persistence`, `contracts/multi-calculator-invariants` | unit + contract | partial: deterministic initialization covered; migration-triggered initialization fixtures pending |
 | FS-MC-07 | Persistence preserves all instances and active selection | `persistence`, `v2/persistence-parity` | unit + contract | gap: multi-instance migration fixtures not defined |
 | FS-MC-08 | One-calculator mode preserves baseline semantics | `v2/parity`, `contracts/parity-long-traces`, `contracts/multi-calculator-invariants` | parity + contract | partial: baseline-compat fixture pair exists for core sequences; broader long-trace coverage expansion pending |
 | FS-MC-09 | Multi-calculator enablement and routing are driven by `calculatorOrder` cardinality/coherence, not specific id pairs | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `domain/execution-mode-policy` | contract + unit | partial: property-style coverage for larger calculator sets pending |
