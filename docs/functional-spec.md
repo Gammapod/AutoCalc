@@ -130,8 +130,8 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 - `FS-CS-01` (MUST): Calculator state owns keypad, roll/history, display/visualizer projection, and control matrix state.
   Rationale: these are calculator-local runtime semantics.
-- `FS-CS-02` (MUST): Control matrix semantics are calculator-local capabilities.
-  Rationale: control behavior must remain cohesive with calculator runtime.
+- `FS-CS-02` (MUST): Control matrix relationships are calculator-local, and each calculator's settable/derived variable policy constrains reachable states and the reachable capability envelope (keypad dimensions, slot count, range, and evaluation cadence semantics).
+  Rationale: control behavior must remain calculator-cohesive with explicit local-state and envelope boundaries.
 - `FS-CS-03` (MUST): Visualizers are projections of canonical calculator state and cannot become alternate sources of truth.
   Rationale: read-model/UI cannot override domain truth.
 - `FS-CS-04` (MUST): Roll/history represents executed outcomes, not transient drafting intent.
@@ -183,7 +183,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
 | FS-CS-01 | Calculator owns keypad/roll/display/control matrix runtime semantics | `ui/runtime-registry`, `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: interface ownership is inferred |
-| FS-CS-02 | Control matrix is calculator-local capability | `domain/sandbox-preset`, `app/analysis-report` | unit | gap: no explicit control-matrix locality contract suite |
+| FS-CS-02 | Control matrix relationships are calculator-local; per-calculator settable/derived variable policy constrains reachable states and capability envelope (keypad dimensions, slot count, range, evaluation cadence semantics) | `domain/sandbox-preset`, `app/analysis-report` | unit | gap: no explicit control-matrix locality contract suite |
 | FS-CS-03 | Visualizers are projections, not truth source | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
 | FS-CS-04 | Roll is executed outcomes, not drafting state | `reducer/input`, `ui/roll-display`, `contracts/slot-input-parity` | unit + integration + contract | none |
 | FS-CS-05 | Error/remainder channels are canonical outcomes | `reducer/input`, `ui/total-display`, `ui/roll-display`, `persistence` | unit + integration | none |
