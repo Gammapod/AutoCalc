@@ -13,13 +13,17 @@ export const runUiModuleStorageV2Tests = (): void => {
   const harness = installDomHarness("http://localhost:4173/index.html");
   try {
     const state = initialState();
+    const dispatched: Array<{ type: string; [key: string]: unknown }> = [];
     renderStorageV2Module(harness.root, state, noopDispatch, {
             inputBlocked: false,
     });
     const storage = harness.root.querySelector<HTMLElement>("[data-storage-keys]");
     const sortControls = harness.root.querySelector<HTMLElement>("[data-storage-sort-controls]");
+    const modeButton = harness.root.querySelector<HTMLButtonElement>("[data-storage-mode-toggle]");
     assert.ok(storage, "storage module renders storage mount");
     assert.ok(sortControls, "storage module renders sort controls mount");
+    assert.ok(modeButton, "storage module renders mode toggle button");
+    assert.equal(modeButton?.textContent, "Browse", "standard mode offers browse toggle");
     assert.equal(
       sortControls?.querySelectorAll(".storage-sort-button").length,
       6,
@@ -30,6 +34,19 @@ export const runUiModuleStorageV2Tests = (): void => {
       Boolean(storage?.querySelector(".placeholder--storage-empty, .key--storage")),
       true,
       "storage module renders storage slots",
+    );
+    modeButton?.click();
+    renderStorageV2Module(harness.root, state, (action) => {
+      dispatched.push(action as { type: string; [key: string]: unknown });
+      return action;
+    }, {
+      inputBlocked: false,
+    });
+    modeButton?.click();
+    assert.deepEqual(
+      dispatched[0],
+      { type: "TOGGLE_FLAG", flag: "mode.storage_browse" },
+      "mode toggle dispatches browse flag toggle action",
     );
 
     const mainMenuState = {

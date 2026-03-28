@@ -4,12 +4,16 @@ import type { StorageRuntime } from "../../runtime/types.js";
 export type StorageModuleState = {
   storageGridResizeObserver: ResizeObserver | null;
   observedStorageGrid: HTMLElement | null;
+  storageShellResizeObserver: ResizeObserver | null;
+  observedStorageShell: HTMLElement | null;
   previousUnlockSnapshot: Record<string, boolean> | null;
 };
 
 const createStorageModuleState = (): StorageModuleState => ({
   storageGridResizeObserver: null,
   observedStorageGrid: null,
+  storageShellResizeObserver: null,
+  observedStorageShell: null,
   previousUnlockSnapshot: null,
 });
 
@@ -27,8 +31,13 @@ export const getStorageModuleState = (root: Element): StorageModuleState => {
     if (created.storageGridResizeObserver && created.observedStorageGrid) {
       created.storageGridResizeObserver.unobserve(created.observedStorageGrid);
     }
+    if (created.storageShellResizeObserver && created.observedStorageShell) {
+      created.storageShellResizeObserver.unobserve(created.observedStorageShell);
+    }
     created.storageGridResizeObserver = null;
     created.observedStorageGrid = null;
+    created.storageShellResizeObserver = null;
+    created.observedStorageShell = null;
     created.previousUnlockSnapshot = null;
     runtime.moduleState = createStorageModuleState();
   };
@@ -36,8 +45,13 @@ export const getStorageModuleState = (root: Element): StorageModuleState => {
     if (created.storageGridResizeObserver && created.observedStorageGrid) {
       created.storageGridResizeObserver.unobserve(created.observedStorageGrid);
     }
+    if (created.storageShellResizeObserver && created.observedStorageShell) {
+      created.storageShellResizeObserver.unobserve(created.observedStorageShell);
+    }
     created.storageGridResizeObserver = null;
     created.observedStorageGrid = null;
+    created.storageShellResizeObserver = null;
+    created.observedStorageShell = null;
     created.previousUnlockSnapshot = null;
   };
   return created;

@@ -153,6 +153,7 @@
         display: grid;
         gap: 12px;
         align-items: start;
+        padding-bottom: var(--storage-drawer-height, 0px);
       }
 
       body[data-ui-shell="desktop"] {
@@ -1107,6 +1108,7 @@
       }
 
       .storage {
+        --storage-visible-rows: 1;
         position: fixed;
         left: 0;
         right: 0;
@@ -1124,6 +1126,10 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.3),
           inset 0 -6px 10px rgba(0, 0, 0, 0.2),
           0 10px 16px rgba(0, 0, 0, 0.22);
+      }
+
+      .storage[data-storage-mode="browse"] {
+        --storage-visible-rows: 4;
       }
 
       .storage-title {
@@ -1144,6 +1150,36 @@
         justify-content: space-between;
         gap: 10px;
         margin: 0 0 8px;
+      }
+
+      .storage-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .storage-mode-button {
+        border: 1px solid rgba(91, 62, 33, 0.65);
+        border-radius: 10px;
+        min-height: 30px;
+        padding: 0 10px;
+        background: linear-gradient(180deg, #dec7a5, #c2a074);
+        color: #362312;
+        font-size: 0.74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+      }
+
+      .storage-mode-button[aria-pressed="true"] {
+        background: linear-gradient(180deg, #c2a074, #ab8559);
+      }
+
+      .storage-mode-button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
       }
 
       [data-storage-sort-controls] {
@@ -1229,6 +1265,12 @@
           gap: 6px;
         }
 
+        .storage-controls {
+          width: 100%;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
         [data-storage-sort-controls] {
           flex-basis: min(220px, 100%);
         }
@@ -1242,7 +1284,7 @@
         grid-template-columns: repeat(var(--storage-columns), minmax(0, 1fr));
         grid-auto-rows: minmax(48px, 1fr);
         width: min(100%, calc((var(--storage-max-columns) * 136px) + ((var(--storage-max-columns) - 1) * var(--gap)) + 20px));
-        max-height: calc(48px + 20px);
+        max-height: calc((var(--storage-visible-rows) * 48px) + ((var(--storage-visible-rows) - 1) * var(--gap)) + 20px);
         margin-inline: auto;
         gap: var(--gap);
         border: 1px solid rgba(91, 62, 33, 0.6);
@@ -2905,7 +2947,10 @@
           <section class="storage" aria-label="Button storage">
             <div class="storage-header">
               <h2 class="storage-title">Storage Drawer</h2>
-              <div data-storage-sort-controls role="group" aria-label="Storage sort by key type"></div>
+              <div class="storage-controls">
+                <button type="button" class="storage-mode-button" data-storage-mode-toggle>Browse</button>
+                <div data-storage-sort-controls role="group" aria-label="Storage sort by key type"></div>
+              </div>
             </div>
             <div data-storage-keys></div>
           </section>

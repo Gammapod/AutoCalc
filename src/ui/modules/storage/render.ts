@@ -26,6 +26,7 @@ const STORAGE_MIN_VISUAL_COLUMNS = 1;
 const STORAGE_MAX_VISUAL_COLUMNS = 10;
 const STORAGE_MIN_KEY_WIDTH_PX = 56;
 const STORAGE_FALLBACK_GAP_PX = 8;
+const STORAGE_WORKSPACE_GAP_PX = 8;
 
 const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: StorageFilterSelection; ariaLabel: string }> = [
   { label: "\u22c3", group: "all", ariaLabel: "All keys" },
@@ -145,6 +146,58 @@ const ensureStorageGridObserver = (root: Element, storageEl: HTMLElement): void 
   state.storageGridResizeObserver.observe(storageEl);
 };
 
+const resolveStorageWorkspaceHost = (root: Element): HTMLElement | null => {
+  if (root instanceof HTMLElement && root.id === "app") {
+    return root;
+  }
+  return root.querySelector<HTMLElement>("#app");
+};
+
+const syncStorageWorkspaceInset = (root: Element, storageShell: HTMLElement | null): void => {
+  const host = resolveStorageWorkspaceHost(root);
+  if (!host) {
+    return;
+  }
+  if (!storageShell || storageShell.hidden) {
+    host.style.setProperty("--storage-drawer-height", "0px");
+    return;
+  }
+  if (storageShell.dataset.storageMode === "browse") {
+    host.style.setProperty("--storage-drawer-height", "0px");
+    return;
+  }
+  const height = Math.ceil(storageShell.getBoundingClientRect().height + STORAGE_WORKSPACE_GAP_PX);
+  host.style.setProperty("--storage-drawer-height", `${Math.max(0, height).toString()}px`);
+};
+
+const ensureStorageShellObserver = (root: Element, storageShell: HTMLElement | null): void => {
+  const state = getStorageModuleState(root);
+  if (!storageShell || typeof ResizeObserver === "undefined") {
+    syncStorageWorkspaceInset(root, storageShell);
+    return;
+  }
+  if (!state.storageShellResizeObserver) {
+    state.storageShellResizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const target = entry.target;
+        if (target instanceof HTMLElement) {
+          syncStorageWorkspaceInset(root, target);
+        }
+      }
+    });
+  }
+  if (state.observedStorageShell === storageShell) {
+    syncStorageWorkspaceInset(root, storageShell);
+    return;
+  }
+  if (state.observedStorageShell) {
+    state.storageShellResizeObserver.unobserve(state.observedStorageShell);
+  }
+  state.observedStorageShell = storageShell;
+  state.storageShellResizeObserver.observe(storageShell);
+  syncStorageWorkspaceInset(root, storageShell);
+};
+
 const toStorageCell = (key: KeyCell["key"]): KeyCell => {
   if (key === "toggle_delta_range_clamp") {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } };
@@ -216,7 +269,14 @@ export const renderStorageV2Module = (
   if (!storageEl) {
     throw new Error("Storage UI mount point is missing.");
   }
+  const storageShell = root.querySelector<HTMLElement>(".storage");
+  const storageBrowseMode = Boolean(state.ui.buttonFlags["mode.storage_browse"]);
+  if (storageShell) {
+    storageShell.dataset.storageMode = storageBrowseMode ? "browse" : "standard";
+  }
+  ensureStorageShellObserver(root, storageShell);
   const storageSortControlsEl = root.querySelector<HTMLElement>("[data-storage-sort-controls]");
+  const storageModeToggleButton = root.querySelector<HTMLButtonElement>("[data-storage-mode-toggle]");
   const isMainMenuMode = Boolean(state.ui.buttonFlags["mode.main_menu"]);
   const storageContentVisible = state.ui.buttonFlags["mode.storage_content_visible"] ?? !isMainMenuMode;
   if (!storageContentVisible) {
@@ -227,6 +287,13 @@ export const renderStorageV2Module = (
     if (storageSortControlsEl) {
       storageSortControlsEl.innerHTML = "";
     }
+    if (storageModeToggleButton) {
+      storageModeToggleButton.textContent = "Browse";
+      storageModeToggleButton.disabled = true;
+      storageModeToggleButton.setAttribute("aria-pressed", "false");
+      storageModeToggleButton.onclick = null;
+    }
+    syncStorageWorkspaceInset(root, storageShell);
     return;
   }
   const storageLocked = options.inputBlocked;
@@ -257,6 +324,17 @@ export const renderStorageV2Module = (
   storageEl.innerHTML = "";
   storageEl.setAttribute("aria-hidden", "false");
   storageEl.setAttribute("data-storage-visible", "true");
+  if (storageModeToggleButton) {
+    storageModeToggleButton.textContent = storageBrowseMode ? "Standard" : "Browse";
+    storageModeToggleButton.disabled = options.inputBlocked;
+    storageModeToggleButton.setAttribute("aria-pressed", storageBrowseMode ? "true" : "false");
+    storageModeToggleButton.onclick = () => {
+      if (options.inputBlocked) {
+        return;
+      }
+      dispatch({ type: "TOGGLE_FLAG", flag: "mode.storage_browse" });
+    };
+  }
 
   if (storageSortControlsEl) {
     const activeStorageSortGroup = getActiveStorageSortGroup(state);
@@ -308,6 +386,7 @@ export const renderStorageV2Module = (
     );
   }
   fitKeyLabelsInContainer(storageEl);
+  syncStorageWorkspaceInset(root, storageShell);
 };
 
 
