@@ -9,19 +9,19 @@ export const runAnalysisReportTests = (): void => {
 
   const withoutState = formatNumberDomainReport(report);
   assert.equal(
-    withoutState.includes("Checklist Visibility Scope Compare:"),
+    withoutState.includes("Visibility Scope Compare:"),
     false,
     "formatNumberDomainReport omits scope comparison when state is not provided",
   );
   assert.equal(
-    withoutState.includes("checklistVisibleByPolicy="),
+    withoutState.includes("visibleByPolicy="),
     true,
-    "formatNumberDomainReport includes checklist policy visibility count",
+    "formatNumberDomainReport includes policy visibility count",
   );
 
   const withState = formatNumberDomainReport(report, state);
   assert.equal(
-    withState.includes("Checklist Visibility Scope Compare:"),
+    withState.includes("Visibility Scope Compare:"),
     true,
     "formatNumberDomainReport includes scope comparison when state is provided",
   );

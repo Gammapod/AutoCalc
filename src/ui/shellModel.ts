@@ -1,7 +1,7 @@
 import type { GameState } from "../domain/types.js";
 
 export type SnapId = "middle" | "bottom";
-export type MenuModuleId = "checklist";
+export type MenuModuleId = "hints";
 
 export type ShellViewModel = {
   availableSnaps: SnapId[];
@@ -25,7 +25,7 @@ export const buildShellViewModel = (state: GameState): ShellViewModel => {
   return {
     availableSnaps,
     defaultSnap: "middle",
-    menuModules: ["checklist"],
+    menuModules: [],
   };
 };
 

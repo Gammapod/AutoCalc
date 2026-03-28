@@ -24,7 +24,7 @@ const countByStatus = (rows: UnlockSpecAnalysisRow[]): UnlockSpecStatusCounts =>
     return acc;
   }, createStatusCounts());
 
-const countVisibleByChecklistPolicy = (rows: UnlockSpecAnalysisRow[]): number =>
+const countVisibleByPolicy = (rows: UnlockSpecAnalysisRow[]): number =>
   rows.reduce((count, row) => {
     if (row.status === "blocked") {
       return count;
@@ -35,7 +35,7 @@ const countVisibleByChecklistPolicy = (rows: UnlockSpecAnalysisRow[]): number =>
 export const formatNumberDomainReport = (report: NumberDomainReport, state?: GameState): string => {
   const text = getAppServices().contentProvider.uiText.analysis;
   const counts = countByStatus(report.unlockSpecAnalysis);
-  const visibleInActiveScope = countVisibleByChecklistPolicy(report.unlockSpecAnalysis);
+  const visibleInActiveScope = countVisibleByPolicy(report.unlockSpecAnalysis);
 
   const lines = [
     text.title,
@@ -49,7 +49,7 @@ export const formatNumberDomainReport = (report: NumberDomainReport, state?: Gam
     "",
     text.unlockSpec,
     `- satisfied=${counts.satisfied} possible=${counts.possible} blocked=${counts.blocked} unknown=${counts.unknown} todo=${counts.todo}`,
-    `- checklistVisibleByPolicy=${visibleInActiveScope}/${report.unlockSpecAnalysis.length}`,
+    `- visibleByPolicy=${visibleInActiveScope}/${report.unlockSpecAnalysis.length}`,
     ...report.unlockSpecAnalysis.map(
       (row) =>
         `- ${row.unlockId} [${row.predicateType}] => ${row.status} (predicateNow=${row.predicateSatisfiedNow ? "true" : "false"}) :: ${row.detail}`,
@@ -61,8 +61,8 @@ export const formatNumberDomainReport = (report: NumberDomainReport, state?: Gam
     const allUnlockedRows = analyzeUnlockSpecRows(state, { capabilityScope: "all_unlocked" });
     const keypadOnlyCounts = countByStatus(keypadOnlyRows);
     const allUnlockedCounts = countByStatus(allUnlockedRows);
-    const keypadOnlyVisible = countVisibleByChecklistPolicy(keypadOnlyRows);
-    const allUnlockedVisible = countVisibleByChecklistPolicy(allUnlockedRows);
+    const keypadOnlyVisible = countVisibleByPolicy(keypadOnlyRows);
+    const allUnlockedVisible = countVisibleByPolicy(allUnlockedRows);
 
     lines.push(
       "",

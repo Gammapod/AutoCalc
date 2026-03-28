@@ -21,7 +21,6 @@ export {
   getAdjacentSnap,
 } from "./shellController.js";
 export { createTouchRearrangeController } from "./touchRearrangeController.js";
-export { renderChecklistV2Module } from "./modules/checklistRenderer.js";
 export { renderGrapherV2Module } from "./modules/grapherRenderer.js";
 export { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
 export { renderCalculatorV2Module } from "./modules/calculator/render.js";

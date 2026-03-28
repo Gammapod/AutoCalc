@@ -6,8 +6,6 @@ import {
 export {
   buildOperationSlotDisplay,
   buildRollViewModel,
-  buildVisibleChecklistRows,
-  buildUnlockRows,
   formatKeyLabel,
   formatOperatorForDisplay,
   getKeyVisualGroup,

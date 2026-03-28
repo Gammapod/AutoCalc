@@ -23,7 +23,7 @@ export type KeyEdgeExpectationKind =
   | "digit_replaces_full_operand_digit"
   | "operator_replaces_empty_drafting_operator"
   | "unary_operator_clears_active_roll_then_inserts_pair"
-  | "c_checklist_recorded_once"
+  | "c_does_not_duplicate_completion_markers"
   | "backspace_noop_when_nothing_to_delete"
   | "undo_noop_when_roll_empty"
   | "graph_does_not_mutate_calculator_state"
@@ -107,7 +107,7 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     lockModel: "unlockable",
     unlockPathPolicy: "catalog",
     primaryExpectation: "c_resets_calculator",
-    edgeCaseExpectation: "c_checklist_recorded_once",
+    edgeCaseExpectation: "c_does_not_duplicate_completion_markers",
   },
   {
     key: KEY_ID.util_backspace,

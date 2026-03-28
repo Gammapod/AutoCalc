@@ -11,7 +11,6 @@ import { runPersistenceTests } from "./persistence.test.js";
 import { runOperationSlotDisplayTests } from "./operationSlotDisplay.test.js";
 import { runRollDisplayTests } from "./rollDisplay.test.js";
 import { runTotalDisplayTests } from "./totalDisplay.test.js";
-import { runUnlocksDisplayTests } from "./unlocksDisplay.test.js";
 import { runGraphDisplayTests } from "./graphDisplay.test.js";
 import { runLegacyGraphRenderModelTests } from "./legacyGraphRenderModel.test.js";
 import { runKeyLabelDisplayTests } from "./keyLabelDisplay.test.js";
@@ -44,7 +43,6 @@ import { runUiShellTouchRearrangeDropResolutionTests } from "./uiShell.touchRear
 import { runUiShellTouchRearrangeCancelTests } from "./uiShell.touchRearrange.cancel.test.js";
 import { runUiShellTouchRearrangeGestureLockTests } from "./uiShell.touchRearrange.gestureLock.test.js";
 import { runUiShellTouchRearrangeBottomSnapGateTests } from "./uiShell.touchRearrange.bottomSnapGate.test.js";
-import { runUiModuleChecklistV2Tests } from "./uiModule.checklist.v2.test.js";
 import { runUiModuleGrapherV2Tests } from "./uiModule.grapher.v2.test.js";
 import { runUiModuleVisualizerHostV2Tests } from "./uiModule.visualizerHost.v2.test.js";
 import { runUiModuleCircleVisualizerV2Tests } from "./uiModule.circleVisualizer.v2.test.js";
@@ -150,7 +148,6 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/layout-rules-equivalence", runLayoutRulesEquivalenceTests],
   ["ui/key-label-display", runKeyLabelDisplayTests],
   ["ui/total-display", runTotalDisplayTests],
-  ["ui/unlocks-display", runUnlocksDisplayTests],
   ["domain/unlock-engine", runUnlockEngineTests],
   ["v2/parity", runV2ParityTests],
   ["v2/persistence-parity", runV2PersistenceParityTests],
@@ -166,7 +163,6 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-shell/touch-rearrange-cancel", runUiShellTouchRearrangeCancelTests],
   ["ui-shell/touch-rearrange-gesture-lock", runUiShellTouchRearrangeGestureLockTests],
   ["ui-shell/touch-rearrange-bottom-snap-gate", runUiShellTouchRearrangeBottomSnapGateTests],
-  ["ui-module/checklist-v2", runUiModuleChecklistV2Tests],
   ["ui-module/calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
   ["ui-module/storage-v2", runUiModuleStorageV2Tests],
   ["ui-module/input-v2", runUiModuleInputV2Tests],

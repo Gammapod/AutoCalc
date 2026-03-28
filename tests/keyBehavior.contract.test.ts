@@ -6,7 +6,7 @@ import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/c
 import { reducer } from "../src/domain/reducer.js";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { executeCommand } from "../src/domain/commands.js";
-import { CHECKLIST_UNLOCK_ID, EXECUTION_PAUSE_EQUALS_FLAG } from "../src/domain/state.js";
+import { C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID, EXECUTION_PAUSE_EQUALS_FLAG } from "../src/domain/state.js";
 import { getButtonFace, isDigitKeyId, KEY_ID, resolveKeyId } from "../src/domain/keyPresentation.js";
 import { resolveMemoryRecallDigit } from "../src/domain/memoryController.js";
 import type { GameState, Key, KeyInput, RollEntry } from "../src/domain/types.js";
@@ -490,12 +490,21 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "c_checklist_recorded_once") {
-    const state = unlockKey(legacyInitialState(), "util_clear_all");
+  if (kind === "c_does_not_duplicate_completion_markers") {
+    const state = unlockKey(
+      {
+        ...legacyInitialState(),
+        calculator: {
+          ...legacyInitialState().calculator,
+          operationSlots: [{ operator: op("op_add"), operand: 1n }, { operator: op("op_mul"), operand: 2n }],
+        },
+      },
+      "util_clear_all",
+    );
     const once = applyKeyAction(state, "util_clear_all");
     const twice = applyKeyAction(once, "util_clear_all");
-    const count = twice.completedUnlockIds.filter((id) => id === CHECKLIST_UNLOCK_ID).length;
-    assert.equal(count, 1, "C should only record checklist unlock once");
+    const count = twice.completedUnlockIds.filter((id) => id === C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID).length;
+    assert.equal(count, 1, "C should not duplicate completion marker entries");
     return;
   }
 
@@ -529,7 +538,11 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     );
     const next = applyKeyAction(state, "util_undo");
     assert.deepEqual(next.calculator, state.calculator, "UNDO should be a no-op when roll is empty");
-    assert.equal(next.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID), false, "UNDO should not perform C-style checklist unlock when roll is empty");
+    assert.equal(
+      next.completedUnlockIds.includes(C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID),
+      false,
+      "UNDO should not perform C-style completion marker writes when roll is empty",
+    );
     return;
   }
 

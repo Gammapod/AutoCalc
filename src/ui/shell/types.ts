@@ -8,17 +8,13 @@ export type ShellRefs = {
   middleDrawerViewport: HTMLElement;
   middleDrawerTrack: HTMLElement;
   middleDrawerPanelCalculator: HTMLElement;
-  middleDrawerPanelChecklist: HTMLElement;
   bottomDrawerViewport: HTMLElement;
   bottomDrawerTrack: HTMLElement;
   bottomDrawerPanelStorage: HTMLElement;
-  bottomDrawerPanelChecklist: HTMLElement;
   controlsUp: HTMLButtonElement;
   controlsDown: HTMLButtonElement;
   controlsMenu: HTMLButtonElement;
   menu: HTMLElement;
-  menuNavChecklist: HTMLButtonElement;
-  menuPanelChecklist: HTMLElement;
   calcDevice: HTMLElement;
   keys: HTMLElement;
   storageKeys: HTMLElement;
@@ -36,7 +32,6 @@ export type PointerSession = {
   axisLock: "none" | "x" | "y";
   startedInRightEdgeZone: boolean;
   startedInStorage: boolean;
-  startedInChecklist: boolean;
   preferredDrawerTarget: DrawerDragTarget;
   startedInMenu: boolean;
 };

@@ -4,7 +4,6 @@ import { createShellController } from "./shellController.js";
 import type { ShellViewModel, SnapId } from "./shellModel.js";
 import { createTouchRearrangeController } from "./touchRearrangeController.js";
 import { getMenuA11yState } from "./shellGesturePolicy.js";
-import { renderChecklistV2Module } from "./modules/checklistRenderer.js";
 import { renderCalculatorStorageV2Module } from "./modules/calculatorStorageRenderer.js";
 import { clearVisualizerHost, renderVisualizerHost } from "./modules/visualizerHost.js";
 import { awaitMotionSettled, beginMotionCycle, completeMotionCycle } from "./layout/motionLifecycleBridge.js";
@@ -23,7 +22,7 @@ export type ShellRenderer = {
   forceActiveView: (options: {
     snapId?: SnapId;
     middlePanelId?: "calculator";
-    bottomPanelId?: "storage" | "checklist";
+    bottomPanelId?: "storage";
     includeTransition?: boolean;
   }) => void;
   playTransitionCue: (target: "calculator" | "storage") => Promise<void>;
@@ -140,15 +139,11 @@ export const createShellRenderer = (root: Element, rendererOptions: { services?:
       "aria-hidden",
       controller.runtime.activeMiddlePanelId === "calculator" ? "false" : "true",
     );
-    refs.middleDrawerPanelChecklist.setAttribute("aria-hidden", "true");
   };
 
   const getBottomDrawerOffset = (refs: ShellRefs): number =>
     (() => {
-      const activePanel =
-        controller.runtime.activeBottomPanelId === "checklist"
-          ? refs.bottomDrawerPanelChecklist
-          : refs.bottomDrawerPanelStorage;
+      const activePanel = refs.bottomDrawerPanelStorage;
       const activeRect = activePanel.getBoundingClientRect();
       const baseRect = refs.bottomDrawerPanelStorage.getBoundingClientRect();
       const inset = getDrawerLeadInset(refs.bottomDrawerViewport, refs.bottomDrawerPanelStorage);
@@ -166,18 +161,10 @@ export const createShellRenderer = (root: Element, rendererOptions: { services?:
       "aria-hidden",
       controller.runtime.activeBottomPanelId === "storage" ? "false" : "true",
     );
-    refs.bottomDrawerPanelChecklist.setAttribute(
-      "aria-hidden",
-      controller.runtime.activeBottomPanelId === "checklist" ? "false" : "true",
-    );
   };
 
   const setMenuModuleClass = (refs: ShellRefs, model: ShellViewModel): void => {
-    const checklistVisible = model.menuModules.includes("checklist");
-    const active = controller.runtime.menuActiveModule;
-    refs.menuNavChecklist.hidden = !checklistVisible;
-    refs.menuNavChecklist.setAttribute("aria-pressed", checklistVisible && active === "checklist" ? "true" : "false");
-    refs.menuPanelChecklist.hidden = !checklistVisible || active !== "checklist";
+    refs.menu.hidden = model.menuModules.length === 0 || !controller.runtime.menuOpen;
   };
 
   const applyMenuA11yState = (refs: ShellRefs): void => {
@@ -310,7 +297,6 @@ export const createShellRenderer = (root: Element, rendererOptions: { services?:
       uiEffects: options.uiEffects ?? [],
     });
     renderVisualizerHost(root, state);
-    renderChecklistV2Module(root, state, { services: rendererOptions.services });
     syncSnapAndUi(refs, state, false);
   };
 
@@ -360,7 +346,7 @@ export const createShellRenderer = (root: Element, rendererOptions: { services?:
   const resetForTests = (): void => {
     controller.runtime.activeSnapId = "middle";
     controller.runtime.menuOpen = false;
-    controller.runtime.menuActiveModule = "checklist";
+    controller.runtime.menuActiveModule = "hints";
     controller.runtime.activeMiddlePanelId = "calculator";
     controller.runtime.activeBottomPanelId = "storage";
     touchRearrange.cancel();

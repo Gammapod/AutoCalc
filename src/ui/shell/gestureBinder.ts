@@ -198,7 +198,6 @@ export const bindShellGestures = (args: {
       clientY: pointerEvent.clientY,
       startedInRightEdgeZone,
       startedInStorage: !!target?.closest("[data-storage-keys]"),
-      startedInChecklist: !!target?.closest("[data-v2-drawer-panel='checklist']"),
       preferredDrawerTarget,
     });
     refs.viewport.setPointerCapture(pointerEvent.pointerId);
@@ -455,20 +454,8 @@ export const bindShellGestures = (args: {
       args.syncSnapAndUi(refs, state, true);
       return;
     }
-    const next =
-      controller.runtime.activeBottomPanelId === "storage"
-        ? "checklist"
-        : "storage";
-    controller.setBottomPanel(next);
+    controller.setBottomPanel("storage");
     args.syncSnapAndUi(refs, state, true);
-  });
-
-  listen(refs.menuNavChecklist, "click", () => {
-    controller.setMenuModule("checklist");
-    const state = runtime.latestState;
-    if (state) {
-      args.syncSnapAndUi(refs, state, false);
-    }
   });
 
   listen(window, "keydown", (event) => {

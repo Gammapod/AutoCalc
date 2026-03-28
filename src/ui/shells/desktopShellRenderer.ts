@@ -1,6 +1,5 @@
 import type { Action, GameState } from "../../domain/types.js";
 import { clearVisualizerHost, renderVisualizerHost } from "../modules/visualizerHost.js";
-import { renderChecklistV2Module } from "../modules/checklistRenderer.js";
 import { renderCalculatorStorageV2Module } from "../modules/calculatorStorageRenderer.js";
 import type { ShellRenderOptions, ShellRenderer } from "../shellRender.js";
 import { awaitMotionSettled, beginMotionCycle, completeMotionCycle } from "../layout/motionLifecycleBridge.js";
@@ -17,7 +16,6 @@ const findCueTarget = (root: Element, target: "calculator" | "storage"): HTMLEle
 
 const applyDesktopA11yMarkers = (root: Element): void => {
   const playArea = root.querySelector<HTMLElement>(".play-area");
-  const checklist = root.querySelector<HTMLElement>(".checklist-shell");
   const storage = root.querySelector<HTMLElement>(".storage");
   const calc = root.querySelector<HTMLElement>("[data-calc-device]");
   const mode = "calculator";
@@ -25,10 +23,6 @@ const applyDesktopA11yMarkers = (root: Element): void => {
   if (playArea) {
     playArea.setAttribute("data-desktop-shell", "true");
     playArea.setAttribute("data-desktop-mode", mode);
-  }
-  if (checklist) {
-    checklist.setAttribute("aria-label", "Unlock checklist panel");
-    checklist.setAttribute("data-desktop-panel", "checklist");
   }
   if (storage) {
     storage.setAttribute("data-desktop-panel", "storage");
@@ -94,7 +88,6 @@ export const createDesktopShellRenderer = (root: Element, rendererOptions: { ser
       uiEffects: options.uiEffects ?? [],
     });
     renderVisualizerHost(root, state);
-    renderChecklistV2Module(root, state, { services: rendererOptions.services });
   };
 
   const forceActiveView: ShellRenderer["forceActiveView"] = () => {

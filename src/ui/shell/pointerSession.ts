@@ -6,7 +6,6 @@ export const createViewportPointerSession = (args: {
   clientY: number;
   startedInRightEdgeZone: boolean;
   startedInStorage: boolean;
-  startedInChecklist: boolean;
   preferredDrawerTarget: DrawerDragTarget;
 }): PointerSession => ({
   pointerId: args.pointerId,
@@ -18,7 +17,6 @@ export const createViewportPointerSession = (args: {
   axisLock: "none",
   startedInRightEdgeZone: args.startedInRightEdgeZone,
   startedInStorage: args.startedInStorage,
-  startedInChecklist: args.startedInChecklist,
   preferredDrawerTarget: args.preferredDrawerTarget,
   startedInMenu: false,
 });
@@ -37,7 +35,6 @@ export const createMenuPointerSession = (args: {
   axisLock: "none",
   startedInRightEdgeZone: false,
   startedInStorage: false,
-  startedInChecklist: false,
   preferredDrawerTarget: "middle",
   startedInMenu: true,
 });

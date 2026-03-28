@@ -2,7 +2,7 @@ import { buildShellViewModel, isSnapAvailable, snapOrder, type MenuModuleId, typ
 import type { GameState } from "../domain/types.js";
 
 type AxisLock = "none" | "x" | "y";
-export type BottomDrawerPanelId = "storage" | "checklist";
+export type BottomDrawerPanelId = "storage";
 export type MiddleDrawerPanelId = "calculator";
 
 export type GestureSession = {
@@ -88,26 +88,9 @@ export const resolveSnapFromDrag = (
 
 export const resolveBottomPanelFromDrag = (
   activePanelId: BottomDrawerPanelId,
-  dragDeltaX: number,
-  velocityX: number,
+  _dragDeltaX: number,
+  _velocityX: number,
 ): BottomDrawerPanelId => {
-  const PANEL_DISTANCE_THRESHOLD_PX = 72;
-  const PANEL_VELOCITY_THRESHOLD_PX_PER_MS = 0.55;
-  const shouldMoveLeft =
-    dragDeltaX <= -PANEL_DISTANCE_THRESHOLD_PX || velocityX <= -PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
-  const shouldMoveRight =
-    dragDeltaX >= PANEL_DISTANCE_THRESHOLD_PX || velocityX >= PANEL_VELOCITY_THRESHOLD_PX_PER_MS;
-
-  if (shouldMoveLeft) {
-    if (activePanelId === "storage") {
-      return "checklist";
-    }
-  }
-  if (shouldMoveRight) {
-    if (activePanelId === "checklist") {
-      return "storage";
-    }
-  }
   return activePanelId;
 };
 
@@ -122,7 +105,7 @@ export const resolveMiddlePanelFromDrag = (
 export const createInitialShellRuntimeState = (): ShellRuntimeState => ({
   activeSnapId: "middle",
   menuOpen: false,
-  menuActiveModule: "checklist",
+  menuActiveModule: "hints",
   activeMiddlePanelId: "calculator",
   activeBottomPanelId: "storage",
   gesture: {
@@ -143,7 +126,7 @@ export const createShellController = (initial: ShellRuntimeState = createInitial
     const model = buildShellViewModel(state);
     runtime.activeSnapId = clampSnapToAvailable(runtime.activeSnapId, model);
     if (!model.menuModules.includes(runtime.menuActiveModule)) {
-      runtime.menuActiveModule = model.menuModules[0] ?? "checklist";
+      runtime.menuActiveModule = model.menuModules[0] ?? "hints";
     }
     return model;
   };

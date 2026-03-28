@@ -39,7 +39,6 @@ import {
   BINARY_ADD_RESULT_ONE_SEEN_ID,
   BINARY_MUL_RESULT_ZERO_SEEN_ID,
   C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID,
-  CHECKLIST_UNLOCK_ID,
   NAN_RESULT_SEEN_ID,
   OVERFLOW_ERROR_SEEN_ID,
   OVERFLOW_ERROR_IN_BINARY_MODE_SEEN_ID,
@@ -1185,16 +1184,7 @@ export const applyC = (state: GameState): GameState => {
   const withMarker = shouldMarkFunctionCleared
     ? markCompletedUnlockId(state, C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID)
     : state;
-  const resetState: GameState = { ...withMarker, calculator: createResetCalculatorState() };
-
-  if (resetState.completedUnlockIds.includes(CHECKLIST_UNLOCK_ID)) {
-    return resetState;
-  }
-
-  return {
-    ...resetState,
-    completedUnlockIds: [...resetState.completedUnlockIds, CHECKLIST_UNLOCK_ID],
-  };
+  return { ...withMarker, calculator: createResetCalculatorState() };
 };
 
 export const isValueAtomConstant = (key: Key): key is ConstantKeyId => isConstantKeyId(key);

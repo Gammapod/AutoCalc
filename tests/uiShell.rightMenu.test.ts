@@ -16,8 +16,8 @@ export const runUiShellRightMenuTests = (): void => {
 
   controller.setMenuOpen(true);
   assert.equal(controller.runtime.menuOpen, true, "menu can be explicitly opened");
-  assert.equal(controller.runtime.menuActiveModule, "checklist", "checklist is the sole active menu module");
-  assert.ok(model.menuModules.includes(controller.runtime.menuActiveModule), "active module remains one of view-model modules");
+  assert.equal(controller.runtime.menuActiveModule, "hints", "menu active module defaults to placeholder");
+  assert.equal(model.menuModules.length, 0, "no menu modules are exposed");
 
   assert.deepEqual(
     getMenuA11yState(false),

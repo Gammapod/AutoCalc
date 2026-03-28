@@ -21,16 +21,12 @@ const getAttr = (element: MockEl, name: string): string | null => element.__attr
 
 export const runUiShellDesktopAllocatorRevealTests = async (): Promise<void> => {
   const playArea = createMockElement();
-  const checklist = createMockElement();
   const storage = createMockElement();
   const calc = createMockElement();
   const root = {
     querySelector: (selector: string) => {
       if (selector === ".play-area") {
         return playArea;
-      }
-      if (selector === ".checklist-shell") {
-        return checklist;
       }
       if (selector === ".storage") {
         return storage;

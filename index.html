@@ -199,10 +199,7 @@
       }
 
       body[data-app-mode="sandbox"] .storage,
-      body[data-app-mode="sandbox"] .checklist-shell,
       body[data-app-mode="sandbox"] [data-v2-section="storage"],
-      body[data-app-mode="sandbox"] [data-v2-middle-panel="checklist"],
-      body[data-app-mode="sandbox"] [data-v2-drawer-panel="checklist"],
       body[data-app-mode="sandbox"] .v2-shell-controls,
       body[data-app-mode="sandbox"] .v2-menu {
         display: none !important;
@@ -677,10 +674,6 @@
 
       @media (prefers-reduced-motion: reduce) {
         .roll {
-          transition: none;
-        }
-
-        .checklist {
           transition: none;
         }
 
@@ -1804,121 +1797,6 @@
         opacity: 1;
       }
 
-      .checklist-shell {
-        position: relative;
-        min-height: 100%;
-        border-radius: 12px;
-        border: 1px solid #6b4c2f;
-        padding: 14px 12px 12px;
-        background: linear-gradient(180deg, #8b6b4b, #6b5038);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.22),
-          inset 0 -6px 10px rgba(0, 0, 0, 0.2),
-          0 10px 16px rgba(0, 0, 0, 0.2);
-      }
-
-      .checklist-shell::before {
-        content: "";
-        position: absolute;
-        top: -8px;
-        left: 50%;
-        width: 110px;
-        height: 18px;
-        transform: translateX(-50%);
-        border-radius: 10px;
-        border: 1px solid #5a6068;
-        background: linear-gradient(180deg, #b8bec7, #8f97a3);
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
-      }
-
-      .checklist {
-        min-height: 100%;
-        max-height: min(56vh, 560px);
-        border-radius: 9px;
-        border: 1px solid #b9b9ad;
-        padding: 10px;
-        background:
-          repeating-linear-gradient(180deg, rgba(124, 126, 138, 0.12) 0px, rgba(124, 126, 138, 0.12) 1px, transparent 1px, transparent 24px),
-          repeating-linear-gradient(90deg, rgba(124, 126, 138, 0.09) 0px, rgba(124, 126, 138, 0.09) 1px, transparent 1px, transparent 72px),
-          linear-gradient(180deg, #f5f3ec, #ebe7dc);
-        color: #25292f;
-        font-family: "Consolas", "Menlo", "Courier New", monospace;
-        font-size: 0.72rem;
-        overflow-y: auto;
-        overflow-x: hidden;
-        opacity: 0.68;
-        transition: opacity 180ms ease-out;
-      }
-
-      .checklist[data-checklist-state="open"] {
-        opacity: 1;
-      }
-
-      .checklist[data-checklist-animate="true"] {
-        animation: checklist-open 220ms ease-out;
-      }
-
-      @keyframes checklist-open {
-        from {
-          transform: translateY(4px);
-          opacity: 0.45;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      .unlock-title {
-        margin-bottom: 8px;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-      }
-
-      .unlock-header,
-      .unlock-row {
-        display: grid;
-        grid-template-columns: 1fr minmax(56px, 84px);
-        column-gap: 6px;
-        align-items: center;
-        min-height: 24px;
-        padding: 2px 4px;
-        border-bottom: 1px solid rgba(74, 80, 88, 0.25);
-      }
-
-      .unlock-header {
-        font-weight: 700;
-        background: rgba(186, 190, 198, 0.35);
-        border-top: 1px solid rgba(74, 80, 88, 0.25);
-      }
-
-      .unlock-row {
-        background: rgba(255, 255, 255, 0.28);
-      }
-
-      .unlock-row:nth-of-type(even) {
-        background: rgba(218, 222, 230, 0.35);
-      }
-
-      .unlock-row--completed {
-        opacity: 0.72;
-      }
-
-      .unlock-hint {
-        line-height: 1.25;
-      }
-
-      .unlock-difficulty {
-        color: #c62828;
-        font-weight: 700;
-      }
-
-      .unlock-empty-state {
-        padding: 10px 6px 8px;
-        font-style: italic;
-        opacity: 0.78;
-      }
-
       .debug-shell {
         position: fixed;
         top: 12px;
@@ -2139,8 +2017,7 @@
         min-width: 0;
       }
 
-      body[data-ui-shell="mobile"] #app > .play-area,
-      body[data-ui-shell="mobile"] #app > .checklist-shell {
+      body[data-ui-shell="mobile"] #app > .play-area {
         display: none;
       }
 
@@ -2235,20 +2112,10 @@
       }
 
       .v2-middle-drawer-panel .device,
-      .v2-middle-drawer-panel .checklist-shell,
       .v2-bottom-drawer-panel .storage,
-      .v2-bottom-drawer-panel .device,
-      .v2-bottom-drawer-panel .checklist-shell {
+      .v2-bottom-drawer-panel .device {
         width: 100%;
         max-width: none;
-      }
-
-      .v2-middle-drawer-panel .checklist-shell {
-        margin: 0;
-      }
-
-      .v2-bottom-drawer-panel .checklist-shell {
-        margin: 0;
       }
 
       body[data-ui-shell="mobile"] .device--calc {
@@ -3193,13 +3060,8 @@
         padding: 8px;
       }
 
-      .v2-menu-panel .device,
-      .v2-menu-panel .checklist-shell {
+      .v2-menu-panel .device {
         width: 100%;
-      }
-
-      .v2-menu-panel .checklist-shell {
-        min-height: 100%;
       }
 
       @media (max-width: 639px) {
@@ -3215,15 +3077,9 @@
           grid-template-columns: 1fr;
         }
 
-        .storage,
-        .checklist-shell {
+        .storage {
           width: min(92vw, 360px);
           justify-self: center;
-        }
-
-        body[data-ui-shell="mobile"] .v2-bottom-drawer-panel .checklist-shell {
-          width: 100%;
-          justify-self: stretch;
         }
 
         .app-shell {
@@ -3416,9 +3272,6 @@
             <div data-storage-keys></div>
           </section>
         </section>
-        <aside class="checklist-shell" aria-label="Unlock checklist clipboard">
-          <div class="checklist" data-unlocks></div>
-        </aside>
       </main>
     </div>
     <script src="./node_modules/katex/dist/katex.min.js"></script>

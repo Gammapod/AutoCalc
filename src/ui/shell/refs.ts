@@ -1,13 +1,5 @@
 import type { ShellRefs } from "./types.js";
 
-const createMenuModuleButton = (label: string): HTMLButtonElement => {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "v2-menu-nav-button";
-  button.textContent = label;
-  return button;
-};
-
 export const buildRefsFromExistingShell = (root: Element): ShellRefs | null => {
   const shell = root.querySelector<HTMLElement>("[data-v2-shell-root='true']");
   if (!shell) {
@@ -21,17 +13,13 @@ export const buildRefsFromExistingShell = (root: Element): ShellRefs | null => {
   const middleDrawerViewport = shell.querySelector<HTMLElement>("[data-v2-middle-drawer-viewport='true']");
   const middleDrawerTrack = shell.querySelector<HTMLElement>("[data-v2-middle-drawer-track='true']");
   const middleDrawerPanelCalculator = shell.querySelector<HTMLElement>("[data-v2-middle-panel='calculator']");
-  const middleDrawerPanelChecklist = shell.querySelector<HTMLElement>("[data-v2-middle-panel='checklist']");
   const bottomDrawerViewport = shell.querySelector<HTMLElement>("[data-v2-bottom-drawer-viewport='true']");
   const bottomDrawerTrack = shell.querySelector<HTMLElement>("[data-v2-bottom-drawer-track='true']");
   const bottomDrawerPanelStorage = shell.querySelector<HTMLElement>("[data-v2-drawer-panel='storage']");
-  const bottomDrawerPanelChecklist = shell.querySelector<HTMLElement>("[data-v2-drawer-panel='checklist']");
   const controlsUp = shell.querySelector<HTMLButtonElement>("[data-v2-control='up']");
   const controlsDown = shell.querySelector<HTMLButtonElement>("[data-v2-control='down']");
   const controlsMenu = shell.querySelector<HTMLButtonElement>("[data-v2-control='menu']");
   const menu = shell.querySelector<HTMLElement>("[data-v2-menu='true']");
-  const menuNavChecklist = shell.querySelector<HTMLButtonElement>("[data-v2-menu-button='checklist']");
-  const menuPanelChecklist = shell.querySelector<HTMLElement>("[data-v2-menu-panel='checklist']");
   const calcDevice = root.querySelector<HTMLElement>("[data-calc-device]");
   const keys = root.querySelector<HTMLElement>("[data-keys]");
   const storageKeys = root.querySelector<HTMLElement>("[data-storage-keys]");
@@ -44,17 +32,13 @@ export const buildRefsFromExistingShell = (root: Element): ShellRefs | null => {
     !middleDrawerViewport ||
     !middleDrawerTrack ||
     !middleDrawerPanelCalculator ||
-    !middleDrawerPanelChecklist ||
     !bottomDrawerViewport ||
     !bottomDrawerTrack ||
     !bottomDrawerPanelStorage ||
-    !bottomDrawerPanelChecklist ||
     !controlsUp ||
     !controlsDown ||
     !controlsMenu ||
     !menu ||
-    !menuNavChecklist ||
-    !menuPanelChecklist ||
     !calcDevice ||
     !keys ||
     !storageKeys
@@ -71,17 +55,13 @@ export const buildRefsFromExistingShell = (root: Element): ShellRefs | null => {
     middleDrawerViewport,
     middleDrawerTrack,
     middleDrawerPanelCalculator,
-    middleDrawerPanelChecklist,
     bottomDrawerViewport,
     bottomDrawerTrack,
     bottomDrawerPanelStorage,
-    bottomDrawerPanelChecklist,
     controlsUp,
     controlsDown,
     controlsMenu,
     menu,
-    menuNavChecklist,
-    menuPanelChecklist,
     calcDevice,
     keys,
     storageKeys,
@@ -91,10 +71,9 @@ export const buildRefsFromExistingShell = (root: Element): ShellRefs | null => {
 export const createShellDom = (root: Element): ShellRefs => {
   const calcDevice = root.querySelector<HTMLElement>("[data-calc-device]");
   const storageSection = root.querySelector<HTMLElement>(".storage");
-  const checklistShell = root.querySelector<HTMLElement>(".checklist-shell");
   const keys = root.querySelector<HTMLElement>("[data-keys]");
   const storageKeys = root.querySelector<HTMLElement>("[data-storage-keys]");
-  if (!calcDevice || !storageSection || !checklistShell || !keys || !storageKeys) {
+  if (!calcDevice || !storageSection || !keys || !storageKeys) {
     throw new Error("V2 shell could not find required modules.");
   }
 
@@ -126,9 +105,6 @@ export const createShellDom = (root: Element): ShellRefs => {
   const middleDrawerPanelCalculator = document.createElement("section");
   middleDrawerPanelCalculator.className = "v2-middle-drawer-panel";
   middleDrawerPanelCalculator.dataset.v2MiddlePanel = "calculator";
-  const middleDrawerPanelChecklist = document.createElement("section");
-  middleDrawerPanelChecklist.className = "v2-middle-drawer-panel";
-  middleDrawerPanelChecklist.dataset.v2MiddlePanel = "checklist";
 
   const sectionStorage = document.createElement("section");
   sectionStorage.className = "v2-stack-section v2-stack-section--storage";
@@ -142,17 +118,13 @@ export const createShellDom = (root: Element): ShellRefs => {
   const bottomDrawerPanelStorage = document.createElement("section");
   bottomDrawerPanelStorage.className = "v2-bottom-drawer-panel";
   bottomDrawerPanelStorage.dataset.v2DrawerPanel = "storage";
-  const bottomDrawerPanelChecklist = document.createElement("section");
-  bottomDrawerPanelChecklist.className = "v2-bottom-drawer-panel";
-  bottomDrawerPanelChecklist.dataset.v2DrawerPanel = "checklist";
 
   middleDrawerPanelCalculator.appendChild(calcDevice);
-  middleDrawerTrack.append(middleDrawerPanelCalculator, middleDrawerPanelChecklist);
+  middleDrawerTrack.append(middleDrawerPanelCalculator);
   middleDrawerViewport.appendChild(middleDrawerTrack);
   sectionCalc.appendChild(middleDrawerViewport);
   bottomDrawerPanelStorage.appendChild(storageSection);
-  bottomDrawerPanelChecklist.appendChild(checklistShell);
-  bottomDrawerTrack.append(bottomDrawerPanelStorage, bottomDrawerPanelChecklist);
+  bottomDrawerTrack.append(bottomDrawerPanelStorage);
   bottomDrawerViewport.appendChild(bottomDrawerTrack);
   sectionStorage.appendChild(bottomDrawerViewport);
 
@@ -178,7 +150,7 @@ export const createShellDom = (root: Element): ShellRefs => {
   controlsMenu.type = "button";
   controlsMenu.className = "v2-shell-control";
   controlsMenu.dataset.v2Control = "menu";
-  controlsMenu.textContent = "Swap";
+  controlsMenu.textContent = "Menu";
 
   controls.append(controlsUp, controlsDown, controlsMenu);
   main.append(viewport, controls);
@@ -187,24 +159,6 @@ export const createShellDom = (root: Element): ShellRefs => {
   menu.className = "v2-menu";
   menu.dataset.v2Menu = "true";
   menu.setAttribute("aria-label", "Module menu");
-
-  const menuNav = document.createElement("div");
-  menuNav.className = "v2-menu-nav";
-
-  const menuNavChecklist = createMenuModuleButton("Checklist");
-  menuNavChecklist.dataset.v2MenuButton = "checklist";
-
-  menuNav.append(menuNavChecklist);
-
-  const menuPanels = document.createElement("div");
-  menuPanels.className = "v2-menu-panels";
-
-  const menuPanelChecklist = document.createElement("section");
-  menuPanelChecklist.className = "v2-menu-panel";
-  menuPanelChecklist.dataset.v2MenuPanel = "checklist";
-
-  menuPanels.append(menuPanelChecklist);
-  menu.append(menuNav, menuPanels);
 
   shell.append(main, menu);
   root.appendChild(shell);
@@ -219,17 +173,13 @@ export const createShellDom = (root: Element): ShellRefs => {
     middleDrawerViewport,
     middleDrawerTrack,
     middleDrawerPanelCalculator,
-    middleDrawerPanelChecklist,
     bottomDrawerViewport,
     bottomDrawerTrack,
     bottomDrawerPanelStorage,
-    bottomDrawerPanelChecklist,
     controlsUp,
     controlsDown,
     controlsMenu,
     menu,
-    menuNavChecklist,
-    menuPanelChecklist,
     calcDevice,
     keys,
     storageKeys,

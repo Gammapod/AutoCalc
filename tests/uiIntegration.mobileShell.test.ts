@@ -44,14 +44,14 @@ export const runUiIntegrationMobileShellTests = (): void => {
 
     renderer.forceActiveView({
       snapId: "bottom",
-      bottomPanelId: "checklist",
+      bottomPanelId: "storage",
       includeTransition: false,
     });
-    const allocatorPanel = shellRoot?.querySelector<HTMLElement>("[data-v2-drawer-panel='checklist']");
+    const storagePanel = shellRoot?.querySelector<HTMLElement>("[data-v2-drawer-panel='storage']");
     assert.equal(
-      allocatorPanel?.getAttribute("aria-hidden"),
+      storagePanel?.getAttribute("aria-hidden"),
       "false",
-      "forceActiveView can orchestrate bottom checklist panel",
+      "forceActiveView can orchestrate bottom storage panel",
     );
 
     renderer.render(withStorage, dispatch, {
@@ -202,7 +202,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "true",
       "binary badge is hidden in decimal mode",
     );
-    assert.equal(hintRows.length, 3, "default total visualizer renders three closest-progress hint rows");
+    assert.equal(hintRows.length, 4, "default total visualizer renders four closest-progress hint rows");
     assert.equal(
       hintRows.every((row) => (row.textContent ?? "").includes("/")),
       true,

@@ -13,7 +13,6 @@ export type ModeManifest = {
   activeCalculatorId: "menu" | "f" | "g";
   initialLockPolicy: "default_unlocks" | "all_keys_locked";
   storageContentVisible: boolean;
-  checklistContentVisible: boolean;
   modeButtonFlags: Readonly<Record<string, boolean>>;
   createBootState: (context: ModeBootContext) => GameState;
 };
@@ -25,11 +24,9 @@ export const modeManifestById = {
     activeCalculatorId: "f",
     initialLockPolicy: "default_unlocks",
     storageContentVisible: true,
-    checklistContentVisible: true,
     modeButtonFlags: {
       "mode.main_menu": false,
       "mode.storage_content_visible": true,
-      "mode.checklist_content_visible": true,
     },
     createBootState: (context: ModeBootContext) => context.createFreshGameState(),
   },
@@ -39,11 +36,9 @@ export const modeManifestById = {
     activeCalculatorId: "f",
     initialLockPolicy: "default_unlocks",
     storageContentVisible: false,
-    checklistContentVisible: false,
     modeButtonFlags: {
       "mode.main_menu": false,
       "mode.storage_content_visible": false,
-      "mode.checklist_content_visible": false,
     },
     createBootState: (context: ModeBootContext) => context.createSandboxState(),
   },
@@ -53,11 +48,9 @@ export const modeManifestById = {
     activeCalculatorId: "menu",
     initialLockPolicy: "all_keys_locked",
     storageContentVisible: false,
-    checklistContentVisible: false,
     modeButtonFlags: {
       "mode.main_menu": true,
       "mode.storage_content_visible": false,
-      "mode.checklist_content_visible": false,
     },
     createBootState: (context: ModeBootContext) => context.createMainMenuState(),
   },

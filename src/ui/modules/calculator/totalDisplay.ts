@@ -105,7 +105,7 @@ const buildLiteralSegmentSlotModel = (value: string): TotalSlotModel[] =>
     activeSegments: TOKEN_SEGMENTS[glyph] ?? [],
   }));
 
-type ClosestHintCategory = "operator" | "non_operator" | "lambda_point";
+type ClosestHintCategory = "operator" | "non_operator" | "lambda_point" | "calculator";
 
 const isOperatorUnlockEffect = (effect: UnlockEffect): boolean =>
   effect.type === "unlock_slot_operator";
@@ -120,6 +120,9 @@ const isNonOperatorKeyUnlockEffect = (effect: UnlockEffect): boolean =>
 const isLambdaPointUnlockEffect = (effect: UnlockEffect): boolean =>
   effect.type === "increase_allocator_max_points"
   || effect.type === "increase_allocator_max_points_for_calculator";
+
+const isCalculatorUnlockEffect = (effect: UnlockEffect): boolean =>
+  effect.type === "unlock_calculator";
 
 const getRowScore = (row: UnlockHintProgressRow): number =>
   row.progress.mode === "partial"
@@ -154,6 +157,9 @@ const buildClosestHintRows = (state: GameState): Array<{ label: string; value: s
       if (category === "non_operator") {
         return isNonOperatorKeyUnlockEffect(unlock.effect);
       }
+      if (category === "calculator") {
+        return isCalculatorUnlockEffect(unlock.effect);
+      }
       return isLambdaPointUnlockEffect(unlock.effect);
     });
     if (filtered.length === 0) {
@@ -180,6 +186,7 @@ const buildClosestHintRows = (state: GameState): Array<{ label: string; value: s
   const categories: Array<{ key: ClosestHintCategory; label: string }> = [
     { key: "operator", label: "OP" },
     { key: "non_operator", label: "KEY" },
+    { key: "calculator", label: "CALC" },
     { key: "lambda_point", label: "LAMBDA" },
   ];
 
