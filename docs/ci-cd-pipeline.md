@@ -21,8 +21,8 @@ This is the canonical source of truth for AutoCalc GitHub Actions release pipeli
 
 ## Standard release flow
 
-1. Confirm target commit on `main` is release-ready.
-2. Create and push a semver tag:
+1. Confirm enough `Now` slices are complete and target commit on `main` is release-ready.
+2. Cut a ready train by creating and pushing a semver tag:
 
 ```bash
 git tag vX.Y.Z

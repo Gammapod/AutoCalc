@@ -27,8 +27,8 @@ Add these secrets to Environment `release`:
 
 ## Release flow
 
-1. Ensure target commit is release-ready.
-2. Push a semver tag for the target commit:
+1. Ensure enough `Now` slices are complete and target commit is release-ready.
+2. Cut a ready train by pushing a semver tag for the target commit:
 
 ```bash
 git tag vX.Y.Z
@@ -105,7 +105,7 @@ git tag -d vX.Y.Z
 ### Artifact/version mismatch
 
 - Symptom: assert step fails with version mismatch.
-- Fix: use semver tag matching intended release version and rerun from corrected tag.
+- Fix: use semver tag matching intended train version and rerun from corrected tag.
 
 ### Multiple executables in `release/`
 

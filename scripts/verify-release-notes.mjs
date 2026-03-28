@@ -8,48 +8,76 @@ const plannedReleasesText = readFileSync(plannedReleasesPath, "utf8");
 const releaseNotesCatalogText = readFileSync(releaseNotesCatalogPath, "utf8");
 
 const lines = plannedReleasesText.split(/\r?\n/);
-const headingIndexes = lines
-  .map((line, index) => (line.startsWith("# Release ") ? index : -1))
+
+const findSectionRange = (heading) => {
+  const start = lines.findIndex((line) => line.trim() === heading);
+  if (start < 0) {
+    return null;
+  }
+  const end = lines.findIndex((line, index) => index > start && /^##\s+/.test(line));
+  return { start, end: end >= 0 ? end : lines.length };
+};
+
+const shippedRange = findSectionRange("## Shipped Trains");
+if (!shippedRange) {
+  console.error("Release notes policy check failed.");
+  console.error("- Missing required section: ## Shipped Trains");
+  process.exit(1);
+}
+
+const shippedLines = lines.slice(shippedRange.start + 1, shippedRange.end);
+
+const trainIndexes = shippedLines
+  .map((line, index) => (/^###\s+Train\s+/.test(line.trim()) ? index : -1))
   .filter((index) => index >= 0);
 
-const releaseBlocks = headingIndexes.map((startIndex, blockIndex) => {
-  const endIndex = blockIndex + 1 < headingIndexes.length ? headingIndexes[blockIndex + 1] : lines.length;
-  const heading = lines[startIndex];
-  const body = lines.slice(startIndex, endIndex).join("\n");
-  return { heading, body };
+const trainBlocks = trainIndexes.map((start, blockIndex) => {
+  const end = blockIndex + 1 < trainIndexes.length ? trainIndexes[blockIndex + 1] : shippedLines.length;
+  const heading = shippedLines[start].trim();
+  const bodyLines = shippedLines.slice(start + 1, end);
+  return { heading, bodyLines };
 });
 
-const plannedBlocks = releaseBlocks.filter(({ heading }) => !heading.includes("Content Backlog"));
-
-const missingReleaseNotesSection = [];
-const missingReleaseNoteId = [];
-const plannedReleaseNoteIds = [];
-
-for (const block of plannedBlocks) {
-  if (!/^### Release Notes$/m.test(block.body)) {
-    missingReleaseNotesSection.push(block.heading);
-  }
-
-  const noteIdMatch = block.body.match(/Release Note ID:\s*`([^`]+)`/i);
-  if (!noteIdMatch) {
-    missingReleaseNoteId.push(block.heading);
-    continue;
-  }
-  plannedReleaseNoteIds.push(noteIdMatch[1]);
-}
-
 const catalogIds = Array.from(releaseNotesCatalogText.matchAll(/id:\s*"([^"]+)"/g)).map((match) => match[1]);
-const missingCatalogIds = plannedReleaseNoteIds.filter((id) => !catalogIds.includes(id));
 
 const failures = [];
-if (missingReleaseNotesSection.length > 0) {
-  failures.push(`Missing '### Release Notes' section for: ${missingReleaseNotesSection.join(", ")}`);
+const shippedReleaseNoteIds = [];
+
+for (const block of trainBlocks) {
+  const releaseNoteHeaderIndex = block.bodyLines.findIndex((line) => /^\s*-\s*Release Note IDs:\s*$/.test(line));
+  if (releaseNoteHeaderIndex < 0) {
+    failures.push(`${block.heading}: missing '- Release Note IDs:'`);
+    continue;
+  }
+
+  const releaseNoteIds = [];
+  for (let index = releaseNoteHeaderIndex + 1; index < block.bodyLines.length; index += 1) {
+    const line = block.bodyLines[index];
+    if (/^\s*-\s*Player-facing highlights:\s*$/.test(line)) {
+      break;
+    }
+    if (/^\s*-\s*(Included Slice IDs|Release Note IDs):\s*$/.test(line)) {
+      break;
+    }
+    const idMatch = line.match(/`([^`]+)`/);
+    if (idMatch) {
+      releaseNoteIds.push(idMatch[1]);
+    }
+  }
+
+  if (releaseNoteIds.length === 0) {
+    failures.push(`${block.heading}: Release Note IDs list is empty`);
+    continue;
+  }
+
+  shippedReleaseNoteIds.push(...releaseNoteIds);
 }
-if (missingReleaseNoteId.length > 0) {
-  failures.push(`Missing 'Release Note ID' line for: ${missingReleaseNoteId.join(", ")}`);
-}
+
+const missingCatalogIds = shippedReleaseNoteIds.filter((id) => !catalogIds.includes(id));
 if (missingCatalogIds.length > 0) {
-  failures.push(`Release Note IDs not found in src/content/releaseNotes.ts: ${missingCatalogIds.join(", ")}`);
+  failures.push(
+    `Release Note IDs not found in src/content/releaseNotes.ts: ${missingCatalogIds.join(", ")}`,
+  );
 }
 
 if (failures.length > 0) {
@@ -60,4 +88,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Release notes policy check passed (${plannedBlocks.length} planned release block(s) validated).`);
+console.log(
+  `Release notes policy check passed (${trainBlocks.length} shipped train block(s), ${shippedReleaseNoteIds.length} Release Note ID(s) validated).`,
+);

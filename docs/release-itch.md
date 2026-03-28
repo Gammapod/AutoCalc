@@ -36,8 +36,8 @@ Set these repository/environment vars only if you want non-default channels:
 
 ## Release flow
 
-1. Ensure target commit is ready.
-2. Push a semver tag:
+1. Ensure enough `Now` slices are complete and target commit is ready.
+2. Cut a ready train by pushing a semver tag:
 
 ```bash
 git tag vX.Y.Z

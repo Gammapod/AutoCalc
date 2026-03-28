@@ -97,7 +97,7 @@ Code health scorecard (0-100) with CI enforcement:
 npm run ci:health
 ```
 
-Release-notes policy check (required for planned releases and in-game notes linkage):
+Release-notes policy check (required for shipped train records and in-game notes linkage):
 
 ```bash
 npm run ci:verify:release-notes
@@ -168,9 +168,9 @@ Type-checking modes:
 - Full compile (includes tests): `npm run build:web:full`
 - Fast incremental app rebuild (no clean): `npm run build:web:incremental`
 
-Tag-driven GitHub release pipeline:
+Tag-driven GitHub release pipeline (used to cut ready trains):
 
-- Push a tag in strict semver format: `vX.Y.Z` or `vX.Y.Z-prerelease` (example `v0.1.1` or `v0.1.1-rc.1`)
+- Push a tag in strict semver format to cut a ready train: `vX.Y.Z` or `vX.Y.Z-prerelease` (example `v0.1.1` or `v0.1.1-rc.1`)
 - Workflow `release-win-portable.yml` (`Release Windows + Itch`) runs:
   - shared verification
   - Windows signing/packaging + GitHub Release publish
@@ -197,9 +197,9 @@ See `docs/release-windows.md` for full operational runbook and troubleshooting.
 
 ## Itch Auto-Publish (Web + Download)
 
-Tag-driven Itch publishing is handled by the same workflow as Windows release:
+Tag-driven Itch publishing is handled by the same workflow as Windows release trains:
 
-- Push a tag in strict semver format: `vX.Y.Z` or `vX.Y.Z-prerelease`
+- Push a ready-train semver tag: `vX.Y.Z` or `vX.Y.Z-prerelease`
 - Workflow `release-win-portable.yml` runs a dedicated Itch publish job that:
   - builds web-playable Itch zip (`release/AutoCalc_itch_v<major>_<minor>_<patch>.zip`)
   - reuses the already-built downloadable Windows portable exe (`release/AutoCalc-<version>-win-x64-portable.exe`)
