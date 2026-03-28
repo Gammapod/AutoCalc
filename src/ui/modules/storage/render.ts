@@ -17,6 +17,7 @@ import {
   buildStorageSortToggleSequence,
   getActiveStorageSortGroup,
   getStorageRowCount,
+  type StorageFilterSelection,
 } from "./viewModel.js";
 import { bindDraggableCell } from "../input/dragDrop.js";
 import { getStorageModuleState } from "./runtime.js";
@@ -25,15 +26,13 @@ const STORAGE_MIN_VISUAL_COLUMNS = 1;
 const STORAGE_MIN_KEY_WIDTH_PX = 56;
 const STORAGE_FALLBACK_GAP_PX = 8;
 
-const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: ReturnType<typeof getKeyVisualGroup>; ariaLabel: string }> = [
+const STORAGE_SORT_SEGMENTS: Array<{ label: string; group: StorageFilterSelection; ariaLabel: string }> = [
+  { label: "\u22c3", group: "all", ariaLabel: "All keys" },
+  { label: "\u00d7", group: "slot_operator", ariaLabel: "Operator keys" },
+  { label: "#", group: "value_expression", ariaLabel: "Digit keys" },
   { label: "=", group: "execution", ariaLabel: "Execution keys" },
-  { label: "\u{1D45B}", group: "value_expression", ariaLabel: "Value expression keys" },
-  { label: "\u2A02", group: "slot_operator", ariaLabel: "Operator keys" },
-  { label: "\u23CF", group: "utility", ariaLabel: "Utility keys" },
   { label: "\u2699", group: "settings", ariaLabel: "Settings and visualizer keys" },
-  { label: "SYS", group: "global_system", ariaLabel: "Global system keys" },
-  { label: "M", group: "memory", ariaLabel: "Memory keys" },
-  { label: "\u25B6", group: "step", ariaLabel: "Step keys" },
+  { label: "C", group: "utility_bundle", ariaLabel: "Utility, memory, and system keys" },
 ];
 
 const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => {
@@ -264,7 +263,7 @@ export const renderStorageV2Module = (
       const button = document.createElement("button");
       button.type = "button";
       button.className = "storage-sort-button";
-      const isActive = activeStorageSortGroup === segment.group;
+      const isActive = segment.group === "all" ? activeStorageSortGroup === null : activeStorageSortGroup === segment.group;
       button.textContent = segment.label;
       button.dataset.storageSortGroup = segment.group;
       button.setAttribute("aria-label", segment.ariaLabel);

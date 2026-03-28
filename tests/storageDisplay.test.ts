@@ -61,10 +61,11 @@ export const runStorageDisplayTests = (): void => {
   const sortedOrder = buildStorageRenderOrder(sortedByExecution);
   const sortedPosition = (key: string): number => sortedOrder.indexOf(key as never);
   assert.ok(
-    sortedPosition(k("exec_equals")) < sortedPosition(k("digit_1")),
-    "selected type unlocked keys are prioritized ahead of other unlocked keys",
+    sortedPosition(k("exec_equals")) >= 0,
+    "active filter keeps matching execution keys",
   );
-  assert.equal(sortedPosition(k("op_add")), -1, "locked keys remain absent under grouped sort");
+  assert.equal(sortedPosition(k("digit_1")), -1, "active filter hides non-matching keys");
+  assert.equal(sortedPosition(k("op_add")), -1, "locked keys remain absent under active filter");
 
   assert.equal(getActiveStorageSortGroup(sortedByExecution), "execution", "active storage sort group is resolved");
 
@@ -80,23 +81,30 @@ export const runStorageDisplayTests = (): void => {
   };
   assert.equal(
     getActiveStorageSortGroup(multiFlagState),
-    "execution",
-    "segment priority determines active group when multiple flags are set",
+    "value_expression",
+    "filter priority determines active group when multiple flags are set",
   );
   const sequence = buildStorageSortToggleSequence(multiFlagState, "execution");
   assert.deepEqual(
     sequence,
     [{ type: "TOGGLE_FLAG", flag: "storage.sort.value_expression" }],
-    "selecting already-active segment clears conflicting flags and does not toggle active segment off",
+    "selecting active filter clears conflicting filter flags and does not toggle active filter off",
   );
-  const switchSequence = buildStorageSortToggleSequence(sortedByExecution, "utility");
+  const switchSequence = buildStorageSortToggleSequence(sortedByExecution, "utility_bundle");
   assert.deepEqual(
     switchSequence,
     [
       { type: "TOGGLE_FLAG", flag: "storage.sort.utility" },
       { type: "TOGGLE_FLAG", flag: "storage.sort.execution" },
     ],
-    "switching segments toggles target on and prior segment off",
+    "switching filters toggles target on and prior filter off",
+  );
+
+  const clearSequence = buildStorageSortToggleSequence(sortedByExecution, "all");
+  assert.deepEqual(
+    clearSequence,
+    [{ type: "TOGGLE_FLAG", flag: "storage.sort.execution" }],
+    "all filter clears active filter flags",
   );
 };
 

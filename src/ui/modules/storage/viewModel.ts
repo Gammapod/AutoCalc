@@ -5,30 +5,26 @@ import { STORAGE_COLUMNS } from "../../../domain/state.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
 
 type KeyVisualGroup = ReturnType<typeof getKeyVisualGroup>;
+export type StorageFilterGroup = "slot_operator" | "value_expression" | "execution" | "settings" | "utility_bundle";
+export type StorageFilterSelection = StorageFilterGroup | "all";
 
-const STORAGE_SORT_FLAG_BY_GROUP: Record<KeyVisualGroup, string> = {
-  execution: "storage.sort.execution",
-  value_expression: "storage.sort.value_expression",
+const STORAGE_FILTER_FLAG_BY_GROUP: Record<StorageFilterGroup, string> = {
   slot_operator: "storage.sort.slot_operator",
-  utility: "storage.sort.utility",
+  value_expression: "storage.sort.value_expression",
+  execution: "storage.sort.execution",
   settings: "storage.sort.settings",
-  global_system: "storage.sort.global_system",
-  memory: "storage.sort.memory",
-  step: "storage.sort.step",
+  utility_bundle: "storage.sort.utility",
 };
 
-const STORAGE_SORT_SEGMENTS: KeyVisualGroup[] = [
-  "execution",
-  "value_expression",
+const STORAGE_FILTER_SEGMENTS: StorageFilterGroup[] = [
   "slot_operator",
-  "utility",
+  "value_expression",
+  "execution",
   "settings",
-  "global_system",
-  "memory",
-  "step",
+  "utility_bundle",
 ];
 
-const getStorageSortFlag = (group: KeyVisualGroup): string => STORAGE_SORT_FLAG_BY_GROUP[group];
+const getStorageFilterFlag = (group: StorageFilterGroup): string => STORAGE_FILTER_FLAG_BY_GROUP[group];
 
 export const getStorageRowCount = (buttonCount: number, columns: number = STORAGE_COLUMNS): number => {
   if (columns <= 0) {
@@ -37,9 +33,9 @@ export const getStorageRowCount = (buttonCount: number, columns: number = STORAG
   return Math.max(1, Math.ceil(buttonCount / columns));
 };
 
-export const getActiveStorageSortGroup = (state: GameState): KeyVisualGroup | null => {
-  for (const group of STORAGE_SORT_SEGMENTS) {
-    if (Boolean(state.ui.buttonFlags[getStorageSortFlag(group)])) {
+export const getActiveStorageSortGroup = (state: GameState): StorageFilterGroup | null => {
+  for (const group of STORAGE_FILTER_SEGMENTS) {
+    if (Boolean(state.ui.buttonFlags[getStorageFilterFlag(group)])) {
       return group;
     }
   }
@@ -48,16 +44,18 @@ export const getActiveStorageSortGroup = (state: GameState): KeyVisualGroup | nu
 
 export const buildStorageSortToggleSequence = (
   state: GameState,
-  targetGroup: KeyVisualGroup,
+  targetGroup: StorageFilterSelection,
 ): Action[] => {
-  const targetFlag = getStorageSortFlag(targetGroup);
   const actions: Action[] = [];
-  if (!Boolean(state.ui.buttonFlags[targetFlag])) {
-    actions.push({ type: "TOGGLE_FLAG", flag: targetFlag });
+  if (targetGroup !== "all") {
+    const targetFlag = getStorageFilterFlag(targetGroup);
+    if (!Boolean(state.ui.buttonFlags[targetFlag])) {
+      actions.push({ type: "TOGGLE_FLAG", flag: targetFlag });
+    }
   }
-  for (const group of STORAGE_SORT_SEGMENTS) {
-    const flag = getStorageSortFlag(group);
-    if (flag === targetFlag) {
+  for (const group of STORAGE_FILTER_SEGMENTS) {
+    const flag = getStorageFilterFlag(group);
+    if (targetGroup !== "all" && flag === getStorageFilterFlag(targetGroup)) {
       continue;
     }
     if (Boolean(state.ui.buttonFlags[flag])) {
@@ -67,21 +65,27 @@ export const buildStorageSortToggleSequence = (
   return actions;
 };
 
+const isKeyInFilterGroup = (keyGroup: KeyVisualGroup, filterGroup: StorageFilterGroup): boolean => {
+  if (filterGroup === "utility_bundle") {
+    return keyGroup === "utility" || keyGroup === "memory" || keyGroup === "global_system";
+  }
+  return keyGroup === filterGroup;
+};
+
 export const buildStorageRenderOrder = (state: GameState): Key[] => {
-  const selectedTypeUnlocked: Key[] = [];
-  const otherUnlocked: Key[] = [];
+  const filteredUnlocked: Key[] = [];
   const activeSortGroup = getActiveStorageSortGroup(state);
 
   for (const entry of buttonRegistry) {
     if (!isKeyUnlocked(state, entry.key)) {
       continue;
     }
-    if (activeSortGroup && getKeyVisualGroup(entry.key) === activeSortGroup) {
-      selectedTypeUnlocked.push(entry.key);
-    } else {
-      otherUnlocked.push(entry.key);
+    const keyGroup = getKeyVisualGroup(entry.key);
+    if (activeSortGroup && !isKeyInFilterGroup(keyGroup, activeSortGroup)) {
+      continue;
     }
+    filteredUnlocked.push(entry.key);
   }
 
-  return [...selectedTypeUnlocked, ...otherUnlocked];
+  return filteredUnlocked;
 };

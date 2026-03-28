@@ -1330,8 +1330,13 @@
         color: #f4fff8;
       }
 
+      .storage-sort-button[data-storage-sort-group="all"] {
+        background: linear-gradient(180deg, var(--key-global-system-top), var(--key-global-system-bottom));
+        color: #fff8ed;
+      }
+
       .storage-sort-button[data-storage-sort-group="value_expression"] {
-        background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+        background: linear-gradient(180deg, var(--key-value-modifier-top), var(--key-value-modifier-bottom));
         color: #1b2027;
       }
 
@@ -1340,7 +1345,7 @@
         color: #f4f8ff;
       }
 
-      .storage-sort-button[data-storage-sort-group="utility"] {
+      .storage-sort-button[data-storage-sort-group="utility_bundle"] {
         background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
         color: #fff7f7;
       }
@@ -1348,11 +1353,6 @@
       .storage-sort-button[data-storage-sort-group="settings"] {
         background: linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
         color: #fffaf0;
-      }
-
-      .storage-sort-button[data-storage-sort-group="step"] {
-        background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
-        color: #ffffff;
       }
 
       .storage-sort-button:hover:not(:disabled) {
