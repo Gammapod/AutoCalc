@@ -7,16 +7,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Now
 
-### Slice `slice_function_builder_bar_standardization`
-- Owner: `TBD`
-- Status: `ready`
-- User Story: As a player, I want the function builder bar to look and behave consistently across states so editing functions feels predictable.
-- Exit Criteria:
-- Builder bar visuals are consistent across calculator shells and interaction modes.
-- Slot states (empty, filled, selected, invalid target) use standardized styling language.
-- Drag/drop and tap insertion feedback is consistent in builder bar contexts.
-- Targeted builder-bar regressions are covered by UI module tests.
-
 ## Next
 
 ### Slice `slice_ux_feedback_standardization`
@@ -28,6 +18,16 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Every state transition path provides explicit transition feedback.
 - Feedback is consistent in wording, motion timing, and visual treatment.
 - Critical paths are covered by tests for rejection and transition feedback contracts.
+
+### Slice `slice_function_builder_bar_standardization`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want the function builder bar to look and behave consistently across states so editing functions feels predictable.
+- Exit Criteria:
+- Builder bar visuals are consistent across calculator shells and interaction modes.
+- Slot states (empty, filled, selected, invalid target) use standardized styling language.
+- Drag/drop and tap insertion feedback is consistent in builder bar contexts.
+- Targeted builder-bar regressions are covered by UI module tests.
 
 ## Later
 
