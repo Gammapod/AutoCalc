@@ -1,7 +1,19 @@
-import type { CalculatorValue, PrimeFactorTerm, RationalPrimeFactorization, RationalValue, RollEntry } from "./types.js";
+import type { CalculatorValue, PrimeFactorTerm, RationalPrimeFactorization, RationalValue, RollEntry, ScalarValue } from "./types.js";
 import { expressionToAlgebriteString } from "./expression.js";
 
-export type RollValueDomain = "\u2205" | "\u2119" | "\u2115" | "\u2124" | "\u211A";
+export type RollValueDomain =
+  | "\u2205"
+  | "\u2119"
+  | "\u2115"
+  | "\u2124"
+  | "\u211A"
+  | "\u{1D538}"
+  | "\u{1D540}(\u2115)"
+  | "\u{1D540}(\u2124)"
+  | "\u{1D540}(\u2119)"
+  | "\u{1D540}(\u211A)"
+  | "\u{1D540}(\u{1D538})"
+  | "\u2102";
 
 export type RollEntryDerived = {
   x: number;
@@ -76,19 +88,60 @@ const factorPositiveInteger = (value: bigint): PrimeFactorTerm[] => {
 };
 
 export const getRollYAlgebriteString = (value: CalculatorValue): string =>
-  value.kind === "nan" ? "NaN" : value.kind === "rational" ? toAlgebriteRationalString(value.value) : expressionToAlgebriteString(value.value);
+  value.kind === "nan"
+    ? "NaN"
+    : value.kind === "rational"
+      ? toAlgebriteRationalString(value.value)
+      : value.kind === "expr"
+        ? expressionToAlgebriteString(value.value)
+        : `(${value.value.re.kind === "rational" ? toAlgebriteRationalString(value.value.re.value) : expressionToAlgebriteString(value.value.re.value)})+(${value.value.im.kind === "rational" ? toAlgebriteRationalString(value.value.im.value) : expressionToAlgebriteString(value.value.im.value)})*i`;
 
 export const getRollYDomain = (value: CalculatorValue): RollValueDomain => {
-  if (value.kind === "nan" || value.kind === "expr") {
+  const getScalarDomain = (scalar: ScalarValue): RollValueDomain => {
+    if (scalar.kind === "expr") {
+      return "\u{1D538}";
+    }
+    if (scalar.value.den === 1n) {
+      if (isPrimeInteger(scalar.value.num)) {
+        return "\u2119";
+      }
+      return scalar.value.num >= 0n ? "\u2115" : "\u2124";
+    }
+    return "\u211A";
+  };
+
+  if (value.kind === "complex") {
+    const real = value.value.re;
+    const imaginary = value.value.im;
+    const pureImaginary = real.kind === "rational" && real.value.num === 0n;
+    if (!pureImaginary) {
+      return "\u2102";
+    }
+    const imagDomain = getScalarDomain(imaginary);
+    if (imagDomain === "\u2119") {
+      return "\u{1D540}(\u2119)";
+    }
+    if (imagDomain === "\u2115") {
+      return "\u{1D540}(\u2115)";
+    }
+    if (imagDomain === "\u2124") {
+      return "\u{1D540}(\u2124)";
+    }
+    if (imagDomain === "\u211A") {
+      return "\u{1D540}(\u211A)";
+    }
+    if (imagDomain === "\u{1D538}") {
+      return "\u{1D540}(\u{1D538})";
+    }
+    return "\u2102";
+  }
+  if (value.kind === "nan") {
     return "\u2205";
   }
-  if (value.value.den === 1n) {
-    if (isPrimeInteger(value.value.num)) {
-      return "\u2119";
-    }
-    return value.value.num >= 0n ? "\u2115" : "\u2124";
+  if (value.kind === "expr") {
+    return "\u{1D538}";
   }
-  return "\u211A";
+  return getScalarDomain({ kind: "rational", value: value.value });
 };
 
 export const getRationalPrimeFactorization = (value: RationalValue): RationalPrimeFactorization | undefined => {

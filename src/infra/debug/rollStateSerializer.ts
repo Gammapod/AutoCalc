@@ -8,12 +8,25 @@ const serializeRationalForDebug = (value: { num: bigint; den: bigint }): { num: 
 const serializeCalculatorValueForDebug = (value: GameState["calculator"]["total"]):
   | { kind: "nan" }
   | { kind: "rational"; value: { num: string; den: string } }
-  | { kind: "expr"; value: string } =>
+  | { kind: "expr"; value: string }
+  | { kind: "complex"; value: { re: { kind: "rational" | "expr"; value: unknown }; im: { kind: "rational" | "expr"; value: unknown } } } =>
   value.kind === "nan"
     ? { kind: "nan" }
     : value.kind === "rational"
       ? { kind: "rational", value: serializeRationalForDebug(value.value) }
-      : { kind: "expr", value: JSON.stringify(value.value) };
+      : value.kind === "expr"
+        ? { kind: "expr", value: JSON.stringify(value.value) }
+        : {
+            kind: "complex",
+            value: {
+              re: value.value.re.kind === "rational"
+                ? { kind: "rational", value: serializeRationalForDebug(value.value.re.value) }
+                : { kind: "expr", value: JSON.stringify(value.value.re.value) },
+              im: value.value.im.kind === "rational"
+                ? { kind: "rational", value: serializeRationalForDebug(value.value.im.value) }
+                : { kind: "expr", value: JSON.stringify(value.value.im.value) },
+            },
+          };
 
 export const serializeRollEntriesForDebug = (state: GameState): unknown[] =>
   state.calculator.rollEntries.map((entry, index) => ({

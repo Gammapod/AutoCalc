@@ -1,6 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { executeSlots } from "../src/domain/engine.js";
+import { executeSlots, executeSlotsValue } from "../src/domain/engine.js";
+import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import type { RationalValue } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): RationalValue => ({ num, den });
@@ -141,6 +142,43 @@ export const runEngineTests = (): void => {
 
   const notNanInput = executeSlots(r(3n, 2n), [{ kind: "unary", operator: uop("unary_not") }]);
   assert.deepEqual(notNanInput, { ok: false, reason: "nan_input" }, "not rejects non-integer totals");
+
+  const unaryI = executeSlotsValue(
+    toRationalCalculatorValue({ num: 34n, den: 1n }),
+    [{ kind: "unary", operator: uop("unary_i") }],
+  );
+  assert.equal(unaryI.ok, true, "unary-i executes on rational totals");
+  assert.deepEqual(
+    unaryI.ok ? unaryI.total : null,
+    {
+      kind: "complex",
+      value: {
+        re: { kind: "rational", value: { num: 0n, den: 1n } },
+        im: { kind: "rational", value: { num: 34n, den: 1n } },
+      },
+    },
+    "unary-i converts real totals to pure imaginary complex totals",
+  );
+
+  const unaryITwice = executeSlotsValue(
+    toRationalCalculatorValue({ num: 34n, den: 1n }),
+    [{ kind: "unary", operator: uop("unary_i") }, { kind: "unary", operator: uop("unary_i") }],
+  );
+  assert.deepEqual(
+    unaryITwice,
+    { ok: true, total: toRationalCalculatorValue({ num: -34n, den: 1n }) },
+    "unary-i applied twice collapses back to pure real negative total",
+  );
+
+  const unsupportedComplexUnary = executeSlotsValue(
+    toRationalCalculatorValue({ num: 34n, den: 1n }),
+    [{ kind: "unary", operator: uop("unary_i") }, { kind: "unary", operator: uop("unary_not") }],
+  );
+  assert.deepEqual(
+    unsupportedComplexUnary,
+    { ok: false, reason: "unsupported_symbolic" },
+    "unsupported unary operations on complex totals fail explicitly",
+  );
 };
 
 

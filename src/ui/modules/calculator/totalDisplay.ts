@@ -1,4 +1,4 @@
-import { calculatorValueToDisplayString, isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
+import { calculatorValueToDisplayString, isComplexCalculatorValue, isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { projectControlFromState } from "../../../domain/controlProjection.js";
 import { projectEligibleUnlockHintProgressRows, type UnlockHintProgressRow } from "../../../domain/unlockHintProgress.js";
@@ -23,6 +23,9 @@ const getNanToken = (unlockedDigits: number): string =>
 const getFractionToken = (unlockedDigits: number): string =>
   unlockedDigits >= 4 ? "FrAC" : unlockedDigits === 3 ? "FrC" : unlockedDigits === 2 ? "Fr" : "F";
 
+const getComplexToken = (unlockedDigits: number): string =>
+  unlockedDigits >= 4 ? "CIRC" : unlockedDigits === 3 ? "CIR" : unlockedDigits === 2 ? "CI" : "C";
+
 const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "0": ["a", "b", "c", "d", "e", "f"],
   "1": ["b", "c"],
@@ -41,6 +44,8 @@ const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
   F: ["a", "e", "f", "g"],
   A: ["a", "b", "c", "e", "f", "g"],
   C: ["a", "d", "e", "f"],
+  I: ["b", "c"],
+  R: ["e", "g"],
 };
 
 const clampUnlockedDigits = (value: number): number =>
@@ -215,6 +220,7 @@ const renderSevenSegmentValue = (
   const fractionAsToken = options.fractionAsToken ?? true;
   const rationalValue = isRationalCalculatorValue(value) ? value.value : null;
   const isNaNValue = value.kind === "nan";
+  const isComplexValue = isComplexCalculatorValue(value);
   const hasRationalValue = rationalValue !== null;
   const hasIntegerValue = hasRationalValue && rationalValue.den === 1n;
   const isNegative =
@@ -222,6 +228,10 @@ const renderSevenSegmentValue = (
 
   if (isNaNValue) {
     appendSevenSegmentFrame(target, buildTokenSlotModel(getNanToken(unlockedDigits), unlockedDigits));
+    return;
+  }
+  if (isComplexValue) {
+    appendSevenSegmentFrame(target, buildTokenSlotModel(getComplexToken(unlockedDigits), unlockedDigits));
     return;
   }
   if (!hasRationalValue) {
@@ -397,6 +407,9 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   const defaultDisplayLabel = (() => {
     if (shouldDisplayAlgLabel) {
       return "ALG";
+    }
+    if (isComplexCalculatorValue(state.calculator.total)) {
+      return "complex";
     }
     if (binaryModeEnabled && state.calculator.total.kind === "rational" && state.calculator.total.value.den === 1n) {
       return state.calculator.total.value.num.toString(2);

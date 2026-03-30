@@ -3,6 +3,20 @@ import type { ReleaseNotesCatalog } from "../contracts/releaseNotes.js";
 export const releaseNotes: ReleaseNotesCatalog = {
   entries: [
     {
+      id: "release_v0_9_31",
+      releaseVersion: "v0.9.31",
+      channel: "released",
+      title: "Complex Unary Vertical Slice (\u2A1D)",
+      summary:
+        "Adds the first complex-number runtime slice with unary \u2A1D (\u00D7i), pure-imaginary domain projection, and save compatibility.",
+      bullets: [
+        "Introduced structured complex runtime values (`a + bi`) with pure-real collapse behavior when `im = 0`.",
+        "Added unary \u2A1D key flow end-to-end: key face, slot rendering, expanded form, and execution semantics.",
+        "Default total display now shows a complex placeholder token (`CIRC`) and domain indicators include pure-imaginary families.",
+        "Complex values now round-trip through persistence while legacy saves continue to load unchanged.",
+      ],
+    },
+    {
       id: "release_v0_9_30",
       releaseVersion: "v0.9.30",
       channel: "released",

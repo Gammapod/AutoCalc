@@ -127,6 +127,9 @@ export const resolveStepExpansionText = (
     if (slot.operator === KEY_ID.unary_mirror_digits) {
       return "mirror";
     }
+    if (slot.operator === KEY_ID.unary_i) {
+      return "\u00D7 i";
+    }
     return `${formatUnarySlotOperator(slot.operator)}(${current})`;
   }
   if (slot.operator === KEY_ID.op_add && typeof slot.operand === "bigint") {

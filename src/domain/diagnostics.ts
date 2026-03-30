@@ -2,7 +2,7 @@ import { calculatorValueToDisplayString, computeOverflowBoundary, isRationalCalc
 import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
 import { getCurrentTotalDomainSymbol } from "./currentTotalDomain.js";
 import { classifyLocalGrowthOrder as classifyLocalGrowthOrderShared, type LocalGrowthOrder } from "./rollGrowthOrder.js";
-import { getRollYPrimeFactorization } from "./rollDerived.js";
+import { getRollYDomain, getRollYPrimeFactorization } from "./rollDerived.js";
 import { buildAnalysisRollProjection, getSeedRow } from "./rollEntries.js";
 import {
   getButtonFace,
@@ -84,7 +84,7 @@ export type RollDiagnosticsSnapshot = {
   domain: {
     text: string;
     symbol: ReturnType<typeof getCurrentTotalDomainSymbol>;
-    category: "empty" | "prime" | "natural" | "integer" | "rational" | "symbolic_or_nan";
+    category: "empty" | "prime" | "natural" | "integer" | "rational" | "complex" | "symbolic_or_nan";
   };
   factorization: {
     seedLabel: string;
@@ -332,6 +332,9 @@ const buildDomainText = (state: GameState): string => {
   if (total.kind === "nan") {
     return "Current total domain: unresolved (NaN).";
   }
+  if (total.kind === "complex") {
+    return `Current total domain: complex family (${getRollYDomain(total)}).`;
+  }
   if (!isRationalCalculatorValue(total)) {
     return "Current total domain: symbolic expression (numeric domain copy pending).";
   }
@@ -363,6 +366,12 @@ const resolveDomainCategory = (state: GameState, symbol: ReturnType<typeof getCu
   }
   if (symbol === "\u2124") {
     return "integer";
+  }
+  if (symbol === "\u2102") {
+    return "complex";
+  }
+  if (symbol.startsWith("\u{1D540}(")) {
+    return "complex";
   }
   return "rational";
 };

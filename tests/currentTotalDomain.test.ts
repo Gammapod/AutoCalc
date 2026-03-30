@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { getCurrentTotalDomainSymbol } from "../src/domain/currentTotalDomain.js";
-import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { toComplexCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import { initialState } from "../src/domain/state.js";
 import type { RollEntry } from "../src/domain/types.js";
 
@@ -59,5 +59,37 @@ export const runCurrentTotalDomainTests = (): void => {
     },
   };
   assert.equal(getCurrentTotalDomainSymbol(nan), "\u2205", "NaN total maps to null set");
+
+  const complex = {
+    ...initialState(),
+    calculator: {
+      ...initialState().calculator,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 4n, den: 1n }),
+      ),
+      rollEntries: re(toComplexCalculatorValue(
+        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 4n, den: 1n }),
+      )),
+    },
+  };
+  assert.equal(getCurrentTotalDomainSymbol(complex), "\u2102", "complex totals map to complex domain");
+
+  const pureImaginaryPrime = {
+    ...initialState(),
+    calculator: {
+      ...initialState().calculator,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 0n, den: 1n }),
+        toRationalScalarValue({ num: 3n, den: 1n }),
+      ),
+      rollEntries: re(toComplexCalculatorValue(
+        toRationalScalarValue({ num: 0n, den: 1n }),
+        toRationalScalarValue({ num: 3n, den: 1n }),
+      )),
+    },
+  };
+  assert.equal(getCurrentTotalDomainSymbol(pureImaginaryPrime), "\u{1D540}(\u2119)", "pure-imaginary primes map to I(P)");
 };
 

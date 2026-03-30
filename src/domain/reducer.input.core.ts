@@ -884,6 +884,12 @@ const evaluateExecutionOutcomeForSlots = (
   }
 
   if (!isRationalCalculatorValue(execution.total)) {
+    if (execution.total.kind === "complex") {
+      return {
+        nextTotal: execution.total,
+        ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
+      };
+    }
     if (execution.total.kind !== "expr") {
       return {
         nextTotal: toNanCalculatorValue(),

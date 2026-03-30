@@ -1,8 +1,15 @@
 ﻿import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
-import { OVERFLOW_ERROR_CODE, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import {
+  OVERFLOW_ERROR_CODE,
+  toComplexCalculatorValue,
+  toNanCalculatorValue,
+  toRationalCalculatorValue,
+  toRationalScalarValue,
+} from "../src/domain/calculatorValue.js";
 import { MAX_ROLL_ENTRIES } from "../src/domain/rollEntries.js";
+import { getRollYDomain } from "../src/domain/rollDerived.js";
 import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
@@ -271,6 +278,38 @@ export const runReducerInputTests = (): void => {
   assert.equal(afterEquals.calculator.rollEntries[1]?.factorization, undefined, "zero roll result omits factorization payload");
   const afterSecondEquals = applyKeyAction(afterEquals, "exec_equals");
   assert.deepEqual(afterSecondEquals.calculator.rollEntries[0]?.y, r(0n), "subsequent equals preserve seed at index 0");
+
+  const unaryIExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(3n),
+      operationSlots: [{ kind: "unary", operator: uop("unary_i") }],
+    },
+  };
+  const afterUnaryI = applyKeyAction(unaryIExecutionSource, "exec_equals");
+  assert.deepEqual(
+    afterUnaryI.calculator.total,
+    toComplexCalculatorValue(
+      toRationalScalarValue({ num: 0n, den: 1n }),
+      toRationalScalarValue({ num: 3n, den: 1n }),
+    ),
+    "equals with unary-i maps real input to pure-imaginary complex result",
+  );
+  assert.equal(afterUnaryI.calculator.rollEntries.at(-1)?.error, undefined, "unary-i execution does not emit error");
+  assert.equal(
+    getRollYDomain(afterUnaryI.calculator.rollEntries.at(-1)?.y ?? toNanCalculatorValue()),
+    "\u{1D540}(\u2119)",
+    "pure-imaginary prime result projects to I(P)",
+  );
+
+  const afterUnaryITwice = applyKeyAction(afterUnaryI, "exec_equals");
+  assert.deepEqual(afterUnaryITwice.calculator.total, r(-3n), "applying unary-i twice rotates back to negative real");
+  assert.equal(
+    getRollYDomain(afterUnaryITwice.calculator.rollEntries.at(-1)?.y ?? toNanCalculatorValue()),
+    "\u2124",
+    "second unary-i result projects to integer domain",
+  );
 
   const rollInverseRejectEmpty: GameState = {
     ...fullyUnlocked,

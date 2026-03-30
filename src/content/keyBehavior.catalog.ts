@@ -102,6 +102,7 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   unary(KEY_ID.unary_floor),
   unary(KEY_ID.unary_ceil),
   unary(KEY_ID.unary_mirror_digits),
+  unary(KEY_ID.unary_i),
   {
     key: KEY_ID.util_clear_all,
     lockModel: "unlockable",

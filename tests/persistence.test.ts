@@ -1,6 +1,11 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import {
+  toComplexCalculatorValue,
+  toNanCalculatorValue,
+  toRationalCalculatorValue,
+  toRationalScalarValue,
+} from "../src/domain/calculatorValue.js";
 import {
   SAVE_KEY,
   SAVE_SCHEMA_VERSION,
@@ -180,5 +185,30 @@ export const runPersistenceTests = (): void => {
   assert.ok(loadedNan, "NaN payload hydrates");
   assert.deepEqual(loadedNan?.calculator.total, toNanCalculatorValue(), "NaN total round-trips");
   assert.equal(loadedNan?.calculator.rollEntries[1]?.y.kind, "nan", "NaN roll entries round-trip");
+
+  const complexRoundTrip = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 0n, den: 1n }),
+        toRationalScalarValue({ num: 34n, den: 1n }),
+      ),
+      rollEntries: [{
+        y: toComplexCalculatorValue(
+          toRationalScalarValue({ num: 0n, den: 1n }),
+          toRationalScalarValue({ num: 34n, den: 1n }),
+        ),
+      }],
+    },
+  };
+  repo.save(complexRoundTrip);
+  const loadedComplex = repo.load();
+  assert.ok(loadedComplex, "complex payload hydrates");
+  assert.deepEqual(
+    loadedComplex?.calculator.total,
+    complexRoundTrip.calculator.total,
+    "complex total round-trips",
+  );
 };
 

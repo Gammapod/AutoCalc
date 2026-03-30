@@ -149,5 +149,12 @@ export const calculatorValueEquals = (left: CalculatorValue, right: CalculatorVa
   if (left.kind === "expr" && right.kind === "expr") {
     return JSON.stringify(left.value) === JSON.stringify(right.value);
   }
+  if (left.kind === "complex" && right.kind === "complex") {
+    const lRe = left.value.re.kind === "rational" ? normalizeRational(left.value.re.value) : left.value.re.value;
+    const rRe = right.value.re.kind === "rational" ? normalizeRational(right.value.re.value) : right.value.re.value;
+    const lIm = left.value.im.kind === "rational" ? normalizeRational(left.value.im.value) : left.value.im.value;
+    const rIm = right.value.im.kind === "rational" ? normalizeRational(right.value.im.value) : right.value.im.value;
+    return JSON.stringify(lRe) === JSON.stringify(rRe) && JSON.stringify(lIm) === JSON.stringify(rIm);
+  }
   return false;
 };

@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import {
+  toComplexCalculatorValue,
+  toNanCalculatorValue,
+  toRationalCalculatorValue,
+  toRationalScalarValue,
+} from "../src/domain/calculatorValue.js";
 import {
   getDerivedRollEntries,
   getDerivedRollEntry,
@@ -24,6 +29,26 @@ export const runRollDerivedTests = (): void => {
   assert.equal(getRollYDomain(r(-2n)), "\u2124", "negative integers map to integers");
   assert.equal(getRollYDomain(r(7n, 3n)), "\u211A", "fractions map to rationals");
   assert.equal(getRollYDomain(toNanCalculatorValue()), "\u2205", "nan maps to null set domain marker");
+  assert.equal(
+    getRollYDomain(
+      toComplexCalculatorValue(
+        toRationalScalarValue({ num: 0n, den: 1n }),
+        toRationalScalarValue({ num: 3n, den: 1n }),
+      ),
+    ),
+    "\u{1D540}(\u2119)",
+    "pure imaginary prime values map to I(P)",
+  );
+  assert.equal(
+    getRollYDomain(
+      toComplexCalculatorValue(
+        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 2n, den: 1n }),
+      ),
+    ),
+    "\u2102",
+    "complex values map to complex domain marker",
+  );
 
   assert.deepEqual(
     getRationalPrimeFactorization({ num: -12n, den: 35n }),

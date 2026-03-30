@@ -151,6 +151,16 @@ export type ExpressionValue =
 
 export type SlotOperand = bigint | ExpressionValue;
 
+export type ScalarValue =
+  | {
+      kind: "rational";
+      value: RationalValue;
+    }
+  | {
+      kind: "expr";
+      value: ExpressionValue;
+    };
+
 export type CalculatorValue =
   | {
       kind: "rational";
@@ -159,6 +169,13 @@ export type CalculatorValue =
   | {
       kind: "expr";
       value: ExpressionValue;
+    }
+  | {
+      kind: "complex";
+      value: {
+        re: ScalarValue;
+        im: ScalarValue;
+      };
     }
   | {
       kind: "nan";
