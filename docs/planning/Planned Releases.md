@@ -7,6 +7,36 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Now
 
+### Slice `slice_complex_roll_value_model`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want roll values to support `a + i × b` so real-only behavior remains stable while complex behavior can be introduced incrementally.
+- Exit Criteria:
+- Canonical value model for roll storage is defined and documented, including `re` and `im` components.
+- Constraint contract is explicit: `b = 0` preserves existing pure-real behavior.
+- Constraint contract is explicit: `a` and `b` support rational and radical/expression forms.
+- Persistence compatibility strategy is defined (legacy saves remain loadable).
+
+### Slice `slice_unary_i_operator_vertical`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want a unary key `⦝` that multiplies by `i` so I can generate pure imaginary roll results.
+- Exit Criteria:
+- New unary key exists with button face `⦝`, slot face `⦝`, and expanded form `[ × i ]`.
+- Execution behavior is implemented for the vertical test path (`34 [ ⦝ ] -> 0 + 34i`).
+- Roll entry persistence and rendering include the resulting complex value.
+- Targeted domain/reducer/UI tests pass for the new unary behavior.
+
+### Slice `slice_complex_domain_visualizer_bootstrap`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want the default visualizer to show the active number domain so I can tell when a result is real, imaginary, or combined.
+- Exit Criteria:
+- Domain classifier emits the complex-domain symbol set for the current total/result path.
+- Default visualizer displays domain symbol for complex-related outcomes.
+- Total display remains integer-only for this slice and does not regress existing integer behavior.
+- Domain text/symbol behavior is covered by tests.
+
 ## Next
 
 ### Slice `slice_ux_feedback_standardization`
