@@ -1,3 +1,4 @@
+import { calculatorValuesEquivalent } from "./calculatorValue.js";
 import type { CalculatorValue, RationalValue, RollEntry } from "./types.js";
 
 export const MAX_ROLL_ENTRIES = 5000;
@@ -135,26 +136,5 @@ export const addIntToRational = (value: RationalValue, intValue: bigint): Ration
   });
 
 export const calculatorValueEquals = (left: CalculatorValue, right: CalculatorValue): boolean => {
-  if (left.kind !== right.kind) {
-    return false;
-  }
-  if (left.kind === "nan" && right.kind === "nan") {
-    return true;
-  }
-  if (left.kind === "rational" && right.kind === "rational") {
-    const l = normalizeRational(left.value);
-    const r = normalizeRational(right.value);
-    return l.num === r.num && l.den === r.den;
-  }
-  if (left.kind === "expr" && right.kind === "expr") {
-    return JSON.stringify(left.value) === JSON.stringify(right.value);
-  }
-  if (left.kind === "complex" && right.kind === "complex") {
-    const lRe = left.value.re.kind === "rational" ? normalizeRational(left.value.re.value) : left.value.re.value;
-    const rRe = right.value.re.kind === "rational" ? normalizeRational(right.value.re.value) : right.value.re.value;
-    const lIm = left.value.im.kind === "rational" ? normalizeRational(left.value.im.value) : left.value.im.value;
-    const rIm = right.value.im.kind === "rational" ? normalizeRational(right.value.im.value) : right.value.im.value;
-    return JSON.stringify(lRe) === JSON.stringify(rRe) && JSON.stringify(lIm) === JSON.stringify(rIm);
-  }
-  return false;
+  return calculatorValuesEquivalent(left, right);
 };

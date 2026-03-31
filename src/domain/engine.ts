@@ -5,6 +5,7 @@ import {
   calculatorValueToExpression,
   isComplexCalculatorValue,
   isRationalCalculatorValue,
+  toExplicitComplexCalculatorValue,
   toComplexCalculatorValue,
   toExpressionCalculatorValue,
   toExpressionScalarValue,
@@ -12,7 +13,7 @@ import {
   toRationalScalarValue,
   toScalarValue,
 } from "./calculatorValue.js";
-import { expressionToDisplayString, intExpr, normalizeExpression, slotOperandToExpression } from "./expression.js";
+import { expressionToDisplayString, expressionToRational, intExpr, normalizeExpression, slotOperandToExpression } from "./expression.js";
 import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, ScalarValue, Slot } from "./types.js";
 import { isUnsupportedSymbolicOperatorKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 
@@ -526,14 +527,119 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
     return { ok: true, total };
   }
 
-  const hasUnaryI = slots.some((slot) => slot.kind === "unary" && resolveKeyId(slot.operator) === KEY_ID.unary_i);
-  const canUsePureRationalPath =
-    !hasUnaryI
-    && !isComplexCalculatorValue(total)
-    && isRationalCalculatorValue(total)
-    && slots.every((slot) => slot.kind === "unary" || typeof slot.operand === "bigint");
-  if (canUsePureRationalPath) {
-    const executed = executeSlots(total.value, slots);
+  type RuntimeValue = Exclude<CalculatorValue, { kind: "nan" }>;
+  type ComplexRuntime = { re: ScalarValue; im: ScalarValue };
+  const ZERO_RATIONAL = { num: 0n, den: 1n };
+  const ONE_RATIONAL = { num: 1n, den: 1n };
+
+  const scalarToExpression = (value: ScalarValue): ExpressionValue =>
+    value.kind === "rational"
+      ? (value.value.den === 1n ? intExpr(value.value.num) : { type: "rational_literal", value: value.value })
+      : value.value;
+
+  const scalarFromExpression = (value: ExpressionValue): ScalarValue =>
+    toExpressionScalarValue(normalizeExpression(value));
+
+  const scalarZero = (): ScalarValue => toRationalScalarValue(ZERO_RATIONAL);
+  const scalarOne = (): ScalarValue => toRationalScalarValue(ONE_RATIONAL);
+  const isScalarZero = (value: ScalarValue): boolean => {
+    if (value.kind === "rational") {
+      return value.value.num === 0n;
+    }
+    const resolved = expressionToRational(value.value);
+    return Boolean(resolved && resolved.num === 0n);
+  };
+
+  const negateScalar = (value: ScalarValue): ScalarValue =>
+    value.kind === "rational"
+      ? toRationalScalarValue({ num: -value.value.num, den: value.value.den })
+      : scalarFromExpression({ type: "unary", op: "neg", arg: value.value });
+
+  const addScalar = (left: ScalarValue, right: ScalarValue): ScalarValue => {
+    if (left.kind === "rational" && right.kind === "rational") {
+      return toRationalScalarValue(normalizeRational({
+        num: left.value.num * right.value.den + right.value.num * left.value.den,
+        den: left.value.den * right.value.den,
+      }));
+    }
+    return scalarFromExpression(normalizeExpression({
+      type: "binary",
+      op: "add",
+      left: scalarToExpression(left),
+      right: scalarToExpression(right),
+    }));
+  };
+
+  const subScalar = (left: ScalarValue, right: ScalarValue): ScalarValue => addScalar(left, negateScalar(right));
+
+  const mulScalar = (left: ScalarValue, right: ScalarValue): ScalarValue => {
+    if (left.kind === "rational" && right.kind === "rational") {
+      return toRationalScalarValue(normalizeRational({
+        num: left.value.num * right.value.num,
+        den: left.value.den * right.value.den,
+      }));
+    }
+    return scalarFromExpression(normalizeExpression({
+      type: "binary",
+      op: "mul",
+      left: scalarToExpression(left),
+      right: scalarToExpression(right),
+    }));
+  };
+
+  const divScalar = (left: ScalarValue, right: ScalarValue): ScalarValue | null => {
+    if (right.kind === "rational" && right.value.num === 0n) {
+      return null;
+    }
+    if (left.kind === "rational" && right.kind === "rational") {
+      return toRationalScalarValue(normalizeRational({
+        num: left.value.num * right.value.den,
+        den: left.value.den * right.value.num,
+      }));
+    }
+    return scalarFromExpression(normalizeExpression({
+      type: "binary",
+      op: "div",
+      left: scalarToExpression(left),
+      right: scalarToExpression(right),
+    }));
+  };
+
+  const toComplexRuntime = (value: RuntimeValue): ComplexRuntime =>
+    isComplexCalculatorValue(value)
+      ? value.value
+      : { re: toScalarValue(value), im: scalarZero() };
+
+  const fromComplexRuntime = (value: ComplexRuntime): RuntimeValue =>
+    toComplexCalculatorValue(value.re, value.im);
+
+  const asPureRealRational = (value: RuntimeValue): RationalValue | null => {
+    if (value.kind === "rational") {
+      return value.value;
+    }
+    if (value.kind !== "complex") {
+      return null;
+    }
+    if (!isScalarZero(value.value.im) || value.value.re.kind !== "rational") {
+      return null;
+    }
+    return value.value.re.value;
+  };
+
+  const binaryRightToScalar = (slot: Extract<Slot, { kind?: "binary" }>): ScalarValue =>
+    typeof slot.operand === "bigint"
+      ? toRationalScalarValue({ num: slot.operand, den: 1n })
+      : scalarFromExpression(slotOperandToExpression(slot.operand));
+
+  const applyRationalOnlySlot = (current: RuntimeValue, slot: Slot): ExecuteSlotsValueResult => {
+    const pureReal = asPureRealRational(current);
+    if (!pureReal) {
+      return { ok: false, reason: "nan_input" };
+    }
+    if (!("operand" in slot) && resolveKeyId(slot.operator) === KEY_ID.unary_i) {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
+    const executed = executeSlots(pureReal, [slot]);
     if (!executed.ok) {
       return { ok: false, reason: executed.reason };
     }
@@ -542,91 +648,166 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
       total: toRationalCalculatorValue(executed.total),
       ...(executed.euclidRemainder ? { euclidRemainder: executed.euclidRemainder } : {}),
     };
-  }
-
-  const negateScalar = (value: ScalarValue): ScalarValue =>
-    value.kind === "rational"
-      ? toRationalScalarValue({ num: -value.value.num, den: value.value.den })
-      : toExpressionScalarValue({ type: "unary", op: "neg", arg: value.value });
-
-  type RuntimeValue = Exclude<CalculatorValue, { kind: "nan" }>;
-
-  const multiplyByI = (value: RuntimeValue): RuntimeValue => {
-    if (isComplexCalculatorValue(value)) {
-      return toComplexCalculatorValue(negateScalar(value.value.im), value.value.re);
-    }
-    const scalar = toScalarValue(value);
-    if (!scalar) {
-      throw new Error("Unsupported multiply-by-i input.");
-    }
-    return toComplexCalculatorValue(toRationalScalarValue({ num: 0n, den: 1n }), scalar);
   };
 
-  if (hasUnaryI || isComplexCalculatorValue(total)) {
-    let current: RuntimeValue = total;
-    for (const slot of slots) {
-      if (isComplexCalculatorValue(current)) {
-        if (slot.kind === "unary" && resolveKeyId(slot.operator) === KEY_ID.unary_i) {
-          current = multiplyByI(current);
-          continue;
-        }
-        return { ok: false, reason: "unsupported_symbolic" };
-      }
+  const complexMultiply = (left: ComplexRuntime, right: ComplexRuntime): ComplexRuntime => ({
+    re: subScalar(mulScalar(left.re, right.re), mulScalar(left.im, right.im)),
+    im: addScalar(mulScalar(left.re, right.im), mulScalar(left.im, right.re)),
+  });
 
-      if (slot.kind === "unary" && resolveKeyId(slot.operator) === KEY_ID.unary_i) {
-        current = multiplyByI(current);
+  const complexInverse = (value: ComplexRuntime): ComplexRuntime | null => {
+    const denominator = addScalar(mulScalar(value.re, value.re), mulScalar(value.im, value.im));
+    if (isScalarZero(denominator)) {
+      return null;
+    }
+    const re = divScalar(value.re, denominator);
+    const im = divScalar(negateScalar(value.im), denominator);
+    if (!re || !im) {
+      return null;
+    }
+    return { re, im };
+  };
+
+  const complexPowInt = (base: ComplexRuntime, exponent: bigint): ComplexRuntime | null => {
+    if (exponent === 0n) {
+      return { re: scalarOne(), im: scalarZero() };
+    }
+    if (exponent < 0n) {
+      const inverse = complexInverse(base);
+      if (!inverse) {
+        return null;
+      }
+      return complexPowInt(inverse, -exponent);
+    }
+    let result: ComplexRuntime = { re: scalarOne(), im: scalarZero() };
+    let factor: ComplexRuntime = base;
+    let power = exponent;
+    while (power > 0n) {
+      if ((power & 1n) === 1n) {
+        result = complexMultiply(result, factor);
+      }
+      power >>= 1n;
+      if (power > 0n) {
+        factor = complexMultiply(factor, factor);
+      }
+    }
+    return result;
+  };
+
+  let current: RuntimeValue = total;
+  let lastEuclidRemainder: RationalValue | undefined;
+  for (const slot of slots) {
+    if (slot.kind === "unary") {
+      const unaryKey = resolveKeyId(slot.operator);
+      if (unaryKey === KEY_ID.unary_i) {
+        const currentComplex = toComplexRuntime(current);
+        current = toExplicitComplexCalculatorValue(negateScalar(currentComplex.im), currentComplex.re);
         continue;
       }
-
-      if (isRationalCalculatorValue(current) && (slot.kind === "unary" || typeof slot.operand === "bigint")) {
-        const executed = executeSlots(current.value, [slot]);
-        if (!executed.ok) {
-          return { ok: false, reason: executed.reason };
-        }
-        current = toRationalCalculatorValue(executed.total);
+      if (unaryKey === KEY_ID.unary_inc || unaryKey === KEY_ID.unary_dec || unaryKey === KEY_ID.unary_neg) {
+        const currentComplex = toComplexRuntime(current);
+        const delta = unaryKey === KEY_ID.unary_inc
+          ? toRationalScalarValue({ num: 1n, den: 1n })
+          : toRationalScalarValue({ num: -1n, den: 1n });
+        current = unaryKey === KEY_ID.unary_neg
+          ? fromComplexRuntime({
+            re: negateScalar(currentComplex.re),
+            im: negateScalar(currentComplex.im),
+          })
+          : fromComplexRuntime({
+            re: addScalar(currentComplex.re, delta),
+            im: currentComplex.im,
+          });
         continue;
       }
-
-      if (!("operand" in slot)) {
-        return { ok: false, reason: "unsupported_symbolic" };
+      const delegated = applyRationalOnlySlot(current, slot);
+      if (!delegated.ok) {
+        return delegated;
       }
-      if (isUnsupportedSymbolicOperatorKeyId(slot.operator)) {
-        return { ok: false, reason: "unsupported_symbolic" };
-      }
-      const currentExpression = calculatorValueToExpression(current);
-      if (!currentExpression) {
+      if (delegated.total.kind === "nan") {
         return { ok: false, reason: "nan_input" };
       }
-      const right = typeof slot.operand === "bigint" ? intExpr(slot.operand) : slotOperandToExpression(slot.operand);
-      const applied = applyBinaryExpression(currentExpression, slot.operator, right);
-      if (!applied) {
+      current = delegated.total;
+      lastEuclidRemainder = delegated.euclidRemainder;
+      continue;
+    }
+
+    const operatorKey = resolveKeyId(slot.operator);
+    const supportsComplexArithmetic =
+      operatorKey === KEY_ID.op_add
+      || operatorKey === KEY_ID.op_sub
+      || operatorKey === KEY_ID.op_mul
+      || operatorKey === KEY_ID.op_div
+      || operatorKey === KEY_ID.op_pow;
+
+    if (!supportsComplexArithmetic) {
+      const delegated = applyRationalOnlySlot(current, slot);
+      if (!delegated.ok) {
+        return delegated;
+      }
+      if (delegated.total.kind === "nan") {
+        return { ok: false, reason: "nan_input" };
+      }
+      current = delegated.total;
+      lastEuclidRemainder = delegated.euclidRemainder;
+      continue;
+    }
+
+    if (operatorKey === KEY_ID.op_pow && typeof slot.operand !== "bigint") {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
+    if (operatorKey !== KEY_ID.op_pow && isUnsupportedSymbolicOperatorKeyId(slot.operator)) {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
+
+    const left = toComplexRuntime(current);
+    const rightScalar = binaryRightToScalar(slot);
+    const right: ComplexRuntime = { re: rightScalar, im: scalarZero() };
+    if (operatorKey === KEY_ID.op_add) {
+      current = fromComplexRuntime({
+        re: addScalar(left.re, right.re),
+        im: addScalar(left.im, right.im),
+      });
+      continue;
+    }
+    if (operatorKey === KEY_ID.op_sub) {
+      current = fromComplexRuntime({
+        re: subScalar(left.re, right.re),
+        im: subScalar(left.im, right.im),
+      });
+      continue;
+    }
+    if (operatorKey === KEY_ID.op_mul) {
+      current = fromComplexRuntime(complexMultiply(left, right));
+      continue;
+    }
+    if (operatorKey === KEY_ID.op_div) {
+      const inverse = complexInverse(right);
+      if (!inverse) {
+        return { ok: false, reason: "division_by_zero" };
+      }
+      current = fromComplexRuntime(complexMultiply(left, inverse));
+      continue;
+    }
+    if (operatorKey === KEY_ID.op_pow) {
+      const powOperand = slot.operand;
+      if (typeof powOperand !== "bigint") {
         return { ok: false, reason: "unsupported_symbolic" };
       }
-      current = toExpressionCalculatorValue(applied);
+      const powered = complexPowInt(left, powOperand);
+      if (!powered) {
+        return { ok: false, reason: "division_by_zero" };
+      }
+      current = fromComplexRuntime(powered);
+      continue;
     }
-    return { ok: true, total: current };
+    return { ok: false, reason: "unsupported_symbolic" };
   }
 
-  let currentExpression = calculatorValueToExpression(total);
-  if (!currentExpression) {
-    return { ok: false, reason: "nan_input" };
-  }
-
-  for (const slot of slots) {
-    if (!("operand" in slot)) {
-      return { ok: false, reason: "unsupported_symbolic" };
-    }
-    if (isUnsupportedSymbolicOperatorKeyId(slot.operator)) {
-      return { ok: false, reason: "unsupported_symbolic" };
-    }
-    const right = typeof slot.operand === "bigint" ? intExpr(slot.operand) : slotOperandToExpression(slot.operand);
-    const applied = applyBinaryExpression(currentExpression, slot.operator, right);
-    if (!applied) {
-      return { ok: false, reason: "unsupported_symbolic" };
-    }
-    currentExpression = applied;
-  }
-
-  return { ok: true, total: toExpressionCalculatorValue(currentExpression) };
+  return {
+    ok: true,
+    total: current,
+    ...(lastEuclidRemainder ? { euclidRemainder: lastEuclidRemainder } : {}),
+  };
 };
 

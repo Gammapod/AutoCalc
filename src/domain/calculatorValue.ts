@@ -44,7 +44,9 @@ export const scalarValueToCalculatorValue = (value: ScalarValue): NonNanCalculat
   value.kind === "rational" ? toRationalCalculatorValue(value.value) : toExpressionCalculatorValue(value.value);
 
 export const isScalarValueZero = (value: ScalarValue): boolean =>
-  value.kind === "rational" && value.value.num === 0n;
+  value.kind === "rational"
+    ? value.value.num === 0n
+    : Boolean(expressionToRational(value.value)?.num === 0n);
 
 export const toComplexCalculatorValue = (re: ScalarValue, im: ScalarValue): NonNanCalculatorValue => {
   if (isScalarValueZero(im)) {
@@ -58,6 +60,14 @@ export const toComplexCalculatorValue = (re: ScalarValue, im: ScalarValue): NonN
     },
   };
 };
+
+export const toExplicitComplexCalculatorValue = (re: ScalarValue, im: ScalarValue): NonNanCalculatorValue => ({
+  kind: "complex",
+  value: {
+    re: re.kind === "rational" ? toRationalScalarValue(re.value) : toExpressionScalarValue(re.value),
+    im: im.kind === "rational" ? toRationalScalarValue(im.value) : toExpressionScalarValue(im.value),
+  },
+});
 
 export const toNanCalculatorValue = (): CalculatorValue => ({ kind: "nan" });
 
@@ -101,6 +111,98 @@ export const calculatorValueToExpression = (value: CalculatorValue): ExpressionV
     return rationalExpr(value.value);
   }
   return value.value;
+};
+
+const normalizeRationalValue = (value: RationalValue): RationalValue => {
+  if (value.den === 0n) {
+    throw new Error("Invalid rational denominator.");
+  }
+  if (value.num === 0n) {
+    return { num: 0n, den: 1n };
+  }
+  const abs = (n: bigint): bigint => (n < 0n ? -n : n);
+  const sign = value.den < 0n ? -1n : 1n;
+  let num = value.num * sign;
+  let den = value.den * sign;
+  let a = abs(num);
+  let b = abs(den);
+  while (b !== 0n) {
+    const t = a % b;
+    a = b;
+    b = t;
+  }
+  num /= a;
+  den /= a;
+  return { num, den };
+};
+
+const isNormalizedRationalZero = (value: RationalValue): boolean => {
+  const normalized = normalizeRationalValue(value);
+  return normalized.num === 0n;
+};
+
+const scalarValueEquals = (left: ScalarValue, right: ScalarValue): boolean => {
+  if (left.kind === "rational" && right.kind === "rational") {
+    const l = normalizeRationalValue(left.value);
+    const r = normalizeRationalValue(right.value);
+    return l.num === r.num && l.den === r.den;
+  }
+  if (left.kind === "expr" && right.kind === "expr") {
+    return JSON.stringify(left.value) === JSON.stringify(right.value);
+  }
+  if (left.kind === "expr" && right.kind === "rational") {
+    const resolved = expressionToRational(left.value);
+    if (!resolved) {
+      return false;
+    }
+    const l = normalizeRationalValue(resolved);
+    const r = normalizeRationalValue(right.value);
+    return l.num === r.num && l.den === r.den;
+  }
+  if (left.kind === "rational" && right.kind === "expr") {
+    const resolved = expressionToRational(right.value);
+    if (!resolved) {
+      return false;
+    }
+    const l = normalizeRationalValue(left.value);
+    const r = normalizeRationalValue(resolved);
+    return l.num === r.num && l.den === r.den;
+  }
+  return false;
+};
+
+const asEquivalentComplexPair = (
+  value: Exclude<CalculatorValue, { kind: "nan" }>,
+): { re: ScalarValue; im: ScalarValue } => {
+  if (value.kind === "complex") {
+    return value.value;
+  }
+  return {
+    re: toScalarValue(value),
+    im: toRationalScalarValue({ num: 0n, den: 1n }),
+  };
+};
+
+export const isRealEquivalentCalculatorValue = (value: CalculatorValue): boolean => {
+  if (value.kind === "nan") {
+    return false;
+  }
+  if (value.kind === "complex") {
+    if (value.value.im.kind !== "rational") {
+      return false;
+    }
+    return isNormalizedRationalZero(value.value.im.value);
+  }
+  return true;
+};
+
+export const calculatorValuesEquivalent = (left: CalculatorValue, right: CalculatorValue): boolean => {
+  if (left.kind === "nan" || right.kind === "nan") {
+    return left.kind === "nan" && right.kind === "nan";
+  }
+  const l = asEquivalentComplexPair(left);
+  const r = asEquivalentComplexPair(right);
+  return scalarValueEquals(l.re, r.re) && scalarValueEquals(l.im, r.im);
 };
 
 export const calculatorValueToRational = (value: CalculatorValue): RationalValue | null => {

@@ -2,7 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { keyBehaviorCatalog } from "../src/content/keyBehavior.catalog.js";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
-import { toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { calculatorValuesEquivalent, toNanCalculatorValue, toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import { executeCommand } from "../src/domain/commands.js";
@@ -17,6 +17,16 @@ import { legacyInitialState } from "./support/legacyState.js";
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
+const assertValueEquivalent = (actual: RollEntry["y"] | null | undefined, expected: RollEntry["y"], message: string): void => {
+  assert.equal(Boolean(actual), true, `${message} (actual exists)`);
+  assert.equal(calculatorValuesEquivalent(actual ?? toNanCalculatorValue(), expected), true, message);
+};
+const assertValueSequenceEquivalent = (actual: RollEntry["y"][], expected: RollEntry["y"][], message: string): void => {
+  assert.equal(actual.length, expected.length, `${message} (length)`);
+  for (let index = 0; index < expected.length; index += 1) {
+    assert.equal(calculatorValuesEquivalent(actual[index] ?? toNanCalculatorValue(), expected[index]), true, `${message} (index ${index})`);
+  }
+};
 
 const runEqualsToggleToCompletion = (state: GameState): GameState => {
   let next = reducer(state, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
@@ -247,7 +257,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       "util_clear_all",
     );
     const next = applyKeyAction(state, "util_clear_all");
-    assert.deepEqual(next.calculator.total, r(0n), "C should reset total");
+    assertValueEquivalent(next.calculator.total, r(0n), "C should reset total");
     assert.equal(next.calculator.rollEntries.length, 0, "C should clear roll");
     assert.equal(next.calculator.operationSlots.length, 0, "C should clear slots");
     assert.equal(next.calculator.draftingSlot, null, "C should clear drafting slot");
@@ -283,12 +293,12 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       "util_undo",
     );
     const next = applyKeyAction(state, "util_undo");
-    assert.deepEqual(
+    assertValueSequenceEquivalent(
       next.calculator.rollEntries.map((entry) => entry.y),
       [r(3n), r(5n)],
       "UNDO should pop one roll entry",
     );
-    assert.deepEqual(next.calculator.total, r(5n), "UNDO should set total to previous roll entry");
+    assertValueEquivalent(next.calculator.total, r(5n), "UNDO should set total to previous roll entry");
     return;
   }
 
@@ -307,7 +317,7 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     state = applyKeyAction(state, "op_add");
     state = applyKeyAction(state, "digit_1");
     const next = runEqualsToggleToCompletion(state);
-    assert.deepEqual(next.calculator.total, r(1n), "= should execute drafted operation sequence");
+    assertValueEquivalent(next.calculator.total, r(1n), "= should execute drafted operation sequence");
     assert.equal(Boolean(next.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "= toggle clears after terminal commit");
     return;
   }
@@ -325,8 +335,8 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       KEY_ID.exec_roll_inverse,
     );
     const next = applyKeyAction(state, KEY_ID.exec_roll_inverse);
-    assert.deepEqual(next.calculator.total, r(2n), "[ _ _ ]^-1 should set total to predecessor of first matching current value");
-    assert.deepEqual(next.calculator.rollEntries.at(-1)?.y, r(2n), "[ _ _ ]^-1 should append predecessor row value");
+    assertValueEquivalent(next.calculator.total, r(2n), "[ _ _ ]^-1 should set total to predecessor of first matching current value");
+    assertValueEquivalent(next.calculator.rollEntries.at(-1)?.y, r(2n), "[ _ _ ]^-1 should append predecessor row value");
     return;
   }
 

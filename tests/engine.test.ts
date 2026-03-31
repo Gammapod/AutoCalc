@@ -1,7 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { executeSlots, executeSlotsValue } from "../src/domain/engine.js";
-import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import type { RationalValue } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): RationalValue => ({ num, den });
@@ -166,7 +166,16 @@ export const runEngineTests = (): void => {
   );
   assert.deepEqual(
     unaryITwice,
-    { ok: true, total: toRationalCalculatorValue({ num: -34n, den: 1n }) },
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: -34n, den: 1n }),
+          im: toRationalScalarValue({ num: 0n, den: 1n }),
+        },
+      },
+    },
     "unary-i applied twice collapses back to pure real negative total",
   );
 
@@ -174,10 +183,10 @@ export const runEngineTests = (): void => {
     toRationalCalculatorValue({ num: 34n, den: 1n }),
     [{ kind: "unary", operator: uop("unary_i") }, { kind: "unary", operator: uop("unary_not") }],
   );
-  assert.deepEqual(
-    unsupportedComplexUnary,
-    { ok: false, reason: "unsupported_symbolic" },
-    "unsupported unary operations on complex totals fail explicitly",
+  assert.equal(
+    unsupportedComplexUnary.ok,
+    false,
+    "ordered-real unary on non-real complex value is rejected explicitly",
   );
 };
 

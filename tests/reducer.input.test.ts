@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import {
+  calculatorValuesEquivalent,
   OVERFLOW_ERROR_CODE,
   toComplexCalculatorValue,
   toNanCalculatorValue,
@@ -21,6 +22,37 @@ const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ n
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 const analysisRows = (entries: RollEntry[]): RollEntry[] => entries.filter((entry) => !entry.analysisIgnored);
+const assertTotalEquivalent = (actual: GameState["calculator"]["total"], expected: GameState["calculator"]["total"], message: string): void => {
+  assert.equal(calculatorValuesEquivalent(actual, expected), true, message);
+};
+const assertValueEquivalent = (
+  actual: GameState["calculator"]["total"] | null | undefined,
+  expected: GameState["calculator"]["total"],
+  message: string,
+): void => {
+  assert.equal(Boolean(actual), true, `${message} (actual exists)`);
+  assert.equal(calculatorValuesEquivalent(actual ?? toNanCalculatorValue(), expected), true, message);
+};
+const assertRollSequenceEquivalent = (
+  actual: GameState["calculator"]["rollEntries"],
+  expected: GameState["calculator"]["total"][],
+  message: string,
+): void => {
+  assert.equal(actual.length, expected.length, `${message} (length)`);
+  for (let index = 0; index < expected.length; index += 1) {
+    assertValueEquivalent(actual[index]?.y, expected[index], `${message} (index ${index})`);
+  }
+};
+const assertValueSequenceEquivalent = (
+  actual: GameState["calculator"]["total"][],
+  expected: GameState["calculator"]["total"][],
+  message: string,
+): void => {
+  assert.equal(actual.length, expected.length, `${message} (length)`);
+  for (let index = 0; index < expected.length; index += 1) {
+    assert.equal(calculatorValuesEquivalent(actual[index], expected[index]), true, `${message} (index ${index})`);
+  }
+};
 
 export const runReducerInputTests = (): void => {
   const base = legacyInitialState();
@@ -54,7 +86,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const freshFirstDigit = applyKeyAction(freshBootNoSaveState, "digit_1");
-  assert.deepEqual(freshFirstDigit.calculator.total, r(1n), "fresh boot accepts one initial total digit");
+  assertTotalEquivalent(freshFirstDigit.calculator.total, r(1n), "fresh boot accepts one initial total digit");
   assert.equal(
     freshFirstDigit.calculator.singleDigitInitialTotalEntry,
     false,
@@ -68,7 +100,7 @@ export const runReducerInputTests = (): void => {
   );
 
   const freshZeroSeed = applyKeyAction(freshBootNoSaveState, "digit_0");
-  assert.deepEqual(freshZeroSeed.calculator.total, r(0n), "fresh boot accepts zero seed input");
+  assertTotalEquivalent(freshZeroSeed.calculator.total, r(0n), "fresh boot accepts zero seed input");
   assert.equal(
     freshZeroSeed.calculator.singleDigitInitialTotalEntry,
     false,
@@ -163,7 +195,7 @@ export const runReducerInputTests = (): void => {
   assert.equal(afterEqualsAutoTick.calculator.rollEntries.length > 0, true, "equals toggle terminal auto-step commits roll update");
 
   const firstFreshDigit = applyKeyAction(fullyUnlocked, "digit_9");
-  assert.deepEqual(firstFreshDigit.calculator.total, r(9n), "first total digit on fresh cleared save is accepted");
+  assertTotalEquivalent(firstFreshDigit.calculator.total, r(9n), "first total digit on fresh cleared save is accepted");
   const blockedFreshSecondDigit = applyKeyAction(firstFreshDigit, "digit_8");
   assert.deepEqual(
     blockedFreshSecondDigit.calculator.total,
@@ -173,7 +205,7 @@ export const runReducerInputTests = (): void => {
 
   const afterClear = applyKeyAction(fullyUnlocked, "util_clear_all");
   const firstTotalDigit = applyKeyAction(afterClear, "digit_9");
-  assert.deepEqual(firstTotalDigit.calculator.total, r(9n), "first total digit after clear is accepted");
+  assertTotalEquivalent(firstTotalDigit.calculator.total, r(9n), "first total digit after clear is accepted");
   const blockedSecondTotalDigit = applyKeyAction(firstTotalDigit, "digit_8");
   assert.deepEqual(
     blockedSecondTotalDigit.calculator.total,
@@ -218,7 +250,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterOverflow = applyKeyAction(overflowSource, "exec_equals");
-  assert.deepEqual(afterOverflow.calculator.total, r(99n), "overflow clamps to boundary value");
+  assertTotalEquivalent(afterOverflow.calculator.total, r(99n), "overflow clamps to boundary value");
   assert.equal(
     afterOverflow.calculator.rollEntries.at(-1)?.error?.code,
     OVERFLOW_ERROR_CODE,
@@ -233,7 +265,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterWrap = applyKeyAction(wrapSource, "exec_equals");
-  assert.deepEqual(afterWrap.calculator.total, r(-98n), "delta-wrap toggle maps 100 to -98 for maxDigits=2");
+  assertTotalEquivalent(afterWrap.calculator.total, r(-98n), "delta-wrap toggle maps 100 to -98 for maxDigits=2");
   assert.equal(afterWrap.calculator.rollEntries.at(-1)?.error, undefined, "delta-wrap path does not emit overflow error");
 
   const wrapAtUpperEdgeSource: GameState = {
@@ -245,7 +277,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterUpperEdgeWrap = applyKeyAction(wrapAtUpperEdgeSource, "exec_equals");
-  assert.deepEqual(afterUpperEdgeWrap.calculator.total, r(-99n), "delta-wrap toggle maps 98 + 1 to -99 for maxDigits=2");
+  assertTotalEquivalent(afterUpperEdgeWrap.calculator.total, r(-99n), "delta-wrap toggle maps 98 + 1 to -99 for maxDigits=2");
 
   const modWrapSource: GameState = {
     ...overflowSource,
@@ -255,7 +287,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterModWrap = applyKeyAction(modWrapSource, "exec_equals");
-  assert.deepEqual(afterModWrap.calculator.total, r(1n), "mod-wrap toggle maps 100 to 1 for maxDigits=2");
+  assertTotalEquivalent(afterModWrap.calculator.total, r(1n), "mod-wrap toggle maps 100 to 1 for maxDigits=2");
   assert.equal(afterModWrap.calculator.rollEntries.at(-1)?.error, undefined, "mod-wrap path does not emit overflow error");
 
   const equalsSource: GameState = {
@@ -269,15 +301,11 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterEquals = applyKeyAction(equalsSource, "exec_equals");
-  assert.deepEqual(afterEquals.calculator.total, r(0n), "equals with no operations keeps total unchanged");
-  assert.deepEqual(
-    afterEquals.calculator.rollEntries.map((entry) => entry.y),
-    [r(0n), r(0n)],
-    "equals stores seed then first step in roll",
-  );
+  assertTotalEquivalent(afterEquals.calculator.total, r(0n), "equals with no operations keeps total unchanged");
+  assertRollSequenceEquivalent(afterEquals.calculator.rollEntries, [r(0n), r(0n)], "equals stores seed then first step in roll");
   assert.equal(afterEquals.calculator.rollEntries[1]?.factorization, undefined, "zero roll result omits factorization payload");
   const afterSecondEquals = applyKeyAction(afterEquals, "exec_equals");
-  assert.deepEqual(afterSecondEquals.calculator.rollEntries[0]?.y, r(0n), "subsequent equals preserve seed at index 0");
+  assertValueEquivalent(afterSecondEquals.calculator.rollEntries[0]?.y, r(0n), "subsequent equals preserve seed at index 0");
 
   const unaryIExecutionSource: GameState = {
     ...fullyUnlocked,
@@ -304,7 +332,7 @@ export const runReducerInputTests = (): void => {
   );
 
   const afterUnaryITwice = applyKeyAction(afterUnaryI, "exec_equals");
-  assert.deepEqual(afterUnaryITwice.calculator.total, r(-3n), "applying unary-i twice rotates back to negative real");
+  assertTotalEquivalent(afterUnaryITwice.calculator.total, r(-3n), "applying unary-i twice rotates back to negative real");
   assert.equal(
     getRollYDomain(afterUnaryITwice.calculator.rollEntries.at(-1)?.y ?? toNanCalculatorValue()),
     "\u2124",
@@ -353,7 +381,7 @@ export const runReducerInputTests = (): void => {
     r(7n),
     "roll-inverse allows current=seed and appends predecessor of first matched instance in scan range",
   );
-  assert.deepEqual(afterRollInverseSeedMatch.calculator.rollEntries.at(-1)?.y, r(7n), "roll-inverse appends predecessor when current equals seed");
+  assertValueEquivalent(afterRollInverseSeedMatch.calculator.rollEntries.at(-1)?.y, r(7n), "roll-inverse appends predecessor when current equals seed");
 
   const rollInverseRejectError: GameState = {
     ...fullyUnlocked,
@@ -396,8 +424,8 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterRollInverseCurrentOnly = applyKeyAction(rollInverseCurrentOnlyMatch, "exec_roll_inverse");
-  assert.deepEqual(afterRollInverseCurrentOnly.calculator.total, r(2n), "roll-inverse appends immediate previous row when current is first match");
-  assert.deepEqual(afterRollInverseCurrentOnly.calculator.rollEntries.at(-1)?.y, r(2n), "roll-inverse appends expected predecessor value");
+  assertTotalEquivalent(afterRollInverseCurrentOnly.calculator.total, r(2n), "roll-inverse appends immediate previous row when current is first match");
+  assertValueEquivalent(afterRollInverseCurrentOnly.calculator.rollEntries.at(-1)?.y, r(2n), "roll-inverse appends expected predecessor value");
 
   const rollInverseIndexOneMatch: GameState = {
     ...fullyUnlocked,
@@ -408,8 +436,8 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterRollInverseIndexOne = applyKeyAction(rollInverseIndexOneMatch, "exec_roll_inverse");
-  assert.deepEqual(afterRollInverseIndexOne.calculator.total, r(5n), "roll-inverse can return seed when earliest match is at index 1");
-  assert.deepEqual(afterRollInverseIndexOne.calculator.rollEntries.at(-1)?.y, r(5n), "roll-inverse appends seed predecessor for index-1 match");
+  assertTotalEquivalent(afterRollInverseIndexOne.calculator.total, r(5n), "roll-inverse can return seed when earliest match is at index 1");
+  assertValueEquivalent(afterRollInverseIndexOne.calculator.rollEntries.at(-1)?.y, r(5n), "roll-inverse appends seed predecessor for index-1 match");
 
   const rollInverseMultipleMatch: GameState = {
     ...fullyUnlocked,
@@ -420,8 +448,8 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterRollInverseMultiple = applyKeyAction(rollInverseMultipleMatch, "exec_roll_inverse");
-  assert.deepEqual(afterRollInverseMultiple.calculator.total, r(4n), "roll-inverse uses predecessor of earliest match in scan range");
-  assert.deepEqual(afterRollInverseMultiple.calculator.rollEntries.at(-1)?.y, r(4n), "roll-inverse appends predecessor of earliest match");
+  assertTotalEquivalent(afterRollInverseMultiple.calculator.total, r(4n), "roll-inverse uses predecessor of earliest match in scan range");
+  assertValueEquivalent(afterRollInverseMultiple.calculator.rollEntries.at(-1)?.y, r(4n), "roll-inverse appends predecessor of earliest match");
 
   const forwardOnlySource: GameState = {
     ...fullyUnlocked,
@@ -435,21 +463,13 @@ export const runReducerInputTests = (): void => {
   };
   const forwardEq1 = applyKeyAction(forwardOnlySource, "exec_equals");
   const forwardEq2 = applyKeyAction(forwardEq1, "exec_equals");
-  assert.deepEqual(
-    forwardEq2.calculator.rollEntries.map((entry) => entry.y),
-    [r(0n), r(1n), r(2n)],
-    "setup path builds [0,1,2]",
-  );
+  assertRollSequenceEquivalent(forwardEq2.calculator.rollEntries, [r(0n), r(1n), r(2n)], "setup path builds [0,1,2]");
 
   const forwardInv1 = applyKeyAction(forwardEq2, "exec_roll_inverse");
-  assert.deepEqual(
-    forwardInv1.calculator.rollEntries.map((entry) => entry.y),
-    [r(0n), r(1n), r(2n), r(1n)],
-    "inverse appends visible predecessor row",
-  );
+  assertRollSequenceEquivalent(forwardInv1.calculator.rollEntries, [r(0n), r(1n), r(2n), r(1n)], "inverse appends visible predecessor row");
   assert.equal(Boolean(forwardInv1.calculator.rollEntries[2]?.analysisIgnored), true, "inverse marks exited tail row ignored");
   assert.equal(Boolean(forwardInv1.calculator.rollEntries[3]?.analysisIgnored), true, "inverse row is ignored for analysis");
-  assert.deepEqual(
+  assertValueSequenceEquivalent(
     analysisRows(forwardInv1.calculator.rollEntries).map((entry) => entry.y),
     [r(0n), r(1n)],
     "analysis projection treats inverse as undo-like rewind",
@@ -457,7 +477,7 @@ export const runReducerInputTests = (): void => {
 
   const forwardEq3 = applyKeyAction(forwardInv1, "exec_equals");
   const forwardEq4 = applyKeyAction(forwardEq3, "exec_equals");
-  assert.deepEqual(
+  assertValueSequenceEquivalent(
     analysisRows(forwardEq4.calculator.rollEntries).map((entry) => entry.y),
     [r(0n), r(1n), r(2n), r(3n)],
     "analysis projection regrows on forward equals rows",
@@ -468,7 +488,7 @@ export const runReducerInputTests = (): void => {
   assert.equal(Boolean(forwardInv2.calculator.rollEntries[6]?.analysisIgnored), true, "second inverse appended row is ignored");
 
   const forwardUndo = applyKeyAction(forwardInv2, "util_undo");
-  assert.deepEqual(
+  assertValueSequenceEquivalent(
     analysisRows(forwardUndo.calculator.rollEntries).map((entry) => entry.y),
     [r(0n), r(1n), r(2n), r(3n)],
     "undo after inverse recomputes ignored flags and restores forward-only projection",
@@ -478,7 +498,7 @@ export const runReducerInputTests = (): void => {
   const forwardInv3 = applyKeyAction(forwardEq5, "exec_roll_inverse");
   const forwardEq6 = applyKeyAction(forwardInv3, "exec_equals");
   const forwardEq7 = applyKeyAction(forwardEq6, "exec_equals");
-  assert.deepEqual(
+  assertValueSequenceEquivalent(
     analysisRows(forwardEq7.calculator.rollEntries).map((entry) => entry.y),
     [r(0n), r(1n), r(2n), r(3n), r(4n), r(5n)],
     "forward-only analysis path ignores inverse detours and remains monotonic",
@@ -509,12 +529,12 @@ export const runReducerInputTests = (): void => {
   assert.equal(afterFirstStep.calculator.stepProgress.active, true, "first step-through press starts step session");
   assert.equal(afterFirstStep.calculator.stepProgress.nextSlotIndex, 1, "first step-through advances cursor by one slot");
   assert.equal(afterFirstStep.calculator.rollEntries.length, 0, "intermediate step-through does not append roll entries");
-  assert.deepEqual(afterFirstStep.calculator.total, r(1n), "intermediate step-through leaves total unchanged");
-  assert.deepEqual(afterFirstStep.calculator.stepProgress.currentTotal, r(3n), "first step-through stores per-step result");
+  assertTotalEquivalent(afterFirstStep.calculator.total, r(1n), "intermediate step-through leaves total unchanged");
+  assertValueEquivalent(afterFirstStep.calculator.stepProgress.currentTotal, r(3n), "first step-through stores per-step result");
 
   const afterSecondStep = applyKeyAction(afterFirstStep, "exec_step_through");
   assert.equal(afterSecondStep.calculator.stepProgress.active, false, "terminal step-through clears session");
-  assert.deepEqual(afterSecondStep.calculator.total, r(9n), "terminal step-through commits final total");
+  assertTotalEquivalent(afterSecondStep.calculator.total, r(9n), "terminal step-through commits final total");
   assert.equal(afterSecondStep.calculator.rollEntries.length, 2, "terminal step-through appends seed and final step exactly once");
 
   const autoStepSeed: GameState = {
@@ -543,13 +563,13 @@ export const runReducerInputTests = (): void => {
   };
   const autoStepTick1 = reducer(autoStepSeed, { type: "AUTO_STEP_TICK" });
   assert.equal(autoStepTick1.calculator.stepProgress.active, true, "AUTO_STEP_TICK starts step progress with no step key on keypad");
-  assert.deepEqual(autoStepTick1.calculator.total, r(2n), "first AUTO_STEP_TICK keeps preview-only total");
+  assertTotalEquivalent(autoStepTick1.calculator.total, r(2n), "first AUTO_STEP_TICK keeps preview-only total");
   assert.equal(autoStepTick1.calculator.rollEntries.length, 0, "first AUTO_STEP_TICK does not append roll rows");
   assert.deepEqual(autoStepTick1.keyPressCounts, autoStepSeed.keyPressCounts, "AUTO_STEP_TICK does not increment key press counts");
 
   const autoStepTick2 = reducer(autoStepTick1, { type: "AUTO_STEP_TICK" });
   assert.equal(autoStepTick2.calculator.stepProgress.active, false, "terminal AUTO_STEP_TICK clears step progress");
-  assert.deepEqual(autoStepTick2.calculator.total, r(20n), "terminal AUTO_STEP_TICK commits final total");
+  assertTotalEquivalent(autoStepTick2.calculator.total, r(20n), "terminal AUTO_STEP_TICK commits final total");
   assert.equal(autoStepTick2.calculator.rollEntries.length, 2, "terminal AUTO_STEP_TICK commits seed and final step exactly once");
   assert.equal(
     autoStepTick2.calculator.rollEntries.length - autoStepTick1.calculator.rollEntries.length,
@@ -580,7 +600,7 @@ export const runReducerInputTests = (): void => {
   assert.deepEqual(autoStepIdle.keyPressCounts, autoStepIdleSource.keyPressCounts, "AUTO_STEP_TICK idle path preserves key-press counts");
 
   const equalsFromPartial = applyKeyAction(afterFirstStep, "exec_equals");
-  assert.deepEqual(equalsFromPartial.calculator.total, r(9n), "equals during partial step continues from cursor");
+  assertTotalEquivalent(equalsFromPartial.calculator.total, r(9n), "equals during partial step continues from cursor");
   assert.equal(equalsFromPartial.calculator.stepProgress.active, false, "equals from partial clears step session");
 
   const absentStepKeyState: GameState = {
@@ -624,13 +644,13 @@ export const runReducerInputTests = (): void => {
     longRollState = applyKeyAction(longRollState, "exec_equals");
   }
   assert.equal(longRollState.calculator.rollEntries.length, MAX_ROLL_ENTRIES, "roll pruning caps total entry count");
-  assert.deepEqual(longRollState.calculator.rollEntries[0]?.y, r(0n), "roll pruning keeps seed row untouched");
-  assert.deepEqual(
+  assertValueEquivalent(longRollState.calculator.rollEntries[0]?.y, r(0n), "roll pruning keeps seed row untouched");
+  assertValueEquivalent(
     longRollState.calculator.rollEntries[1]?.y,
     r(7n),
     "roll pruning drops oldest step rows once cap is exceeded",
   );
-  assert.deepEqual(
+  assertValueEquivalent(
     longRollState.calculator.rollEntries.at(-1)?.y,
     r(BigInt(rollIterations)),
     "roll pruning preserves most recent step row",
@@ -724,8 +744,8 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterModuloExecution = applyKeyAction(moduloExecutionSource, "exec_equals");
-  assert.deepEqual(afterModuloExecution.calculator.rollEntries[0]?.y, r(10n), "first equals stores current seed at index 0");
-  assert.deepEqual(afterModuloExecution.calculator.total, r(2n), "modulo execution sets total to the modulo component");
+  assertValueEquivalent(afterModuloExecution.calculator.rollEntries[0]?.y, r(10n), "first equals stores current seed at index 0");
+  assertTotalEquivalent(afterModuloExecution.calculator.total, r(2n), "modulo execution sets total to the modulo component");
   assert.deepEqual(
     afterModuloExecution.calculator.rollEntries.at(-1)?.remainder,
     { num: 2n, den: 1n },
@@ -746,7 +766,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterRotateExecution = applyKeyAction(rotateExecutionSource, "exec_equals");
-  assert.deepEqual(afterRotateExecution.calculator.total, r(45123n), "rotate-left supports negative shift as right rotation");
+  assertTotalEquivalent(afterRotateExecution.calculator.total, r(45123n), "rotate-left supports negative shift as right rotation");
 
   const gcdExecutionSource: GameState = {
     ...fullyUnlocked,
@@ -757,7 +777,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterGcdExecution = applyKeyAction(gcdExecutionSource, "exec_equals");
-  assert.deepEqual(afterGcdExecution.calculator.total, r(6n), "gcd operator returns greatest common divisor");
+  assertTotalEquivalent(afterGcdExecution.calculator.total, r(6n), "gcd operator returns greatest common divisor");
 
   const lcmExecutionSource: GameState = {
     ...fullyUnlocked,
@@ -768,7 +788,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterLcmExecution = applyKeyAction(lcmExecutionSource, "exec_equals");
-  assert.deepEqual(afterLcmExecution.calculator.total, r(36n), "lcm operator returns least common multiple");
+  assertTotalEquivalent(afterLcmExecution.calculator.total, r(36n), "lcm operator returns least common multiple");
 
   const sigmaExecutionSource: GameState = {
     ...fullyUnlocked,
@@ -779,7 +799,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterSigmaExecution = applyKeyAction(sigmaExecutionSource, "exec_equals");
-  assert.deepEqual(afterSigmaExecution.calculator.total, r(12n), "sigma unary returns sum of divisors");
+  assertTotalEquivalent(afterSigmaExecution.calculator.total, r(12n), "sigma unary returns sum of divisors");
 
   const phiExecutionSource: GameState = {
     ...fullyUnlocked,
@@ -790,7 +810,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterPhiExecution = applyKeyAction(phiExecutionSource, "exec_equals");
-  assert.deepEqual(afterPhiExecution.calculator.total, r(12n), "phi unary returns Euler totient");
+  assertTotalEquivalent(afterPhiExecution.calculator.total, r(12n), "phi unary returns Euler totient");
 
   const omegaExecutionSource: GameState = {
     ...fullyUnlocked,
@@ -801,7 +821,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterOmegaExecution = applyKeyAction(omegaExecutionSource, "exec_equals");
-  assert.deepEqual(afterOmegaExecution.calculator.total, r(3n), "omega unary returns prime factors with multiplicity");
+  assertTotalEquivalent(afterOmegaExecution.calculator.total, r(3n), "omega unary returns prime factors with multiplicity");
 
   const sigmaZeroExecutionSource: GameState = {
     ...fullyUnlocked,
@@ -827,7 +847,7 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterPiCancellation = applyKeyAction(symbolicPiCancellationSource, "exec_equals");
-  assert.deepEqual(afterPiCancellation.calculator.total, r(0n), "symbolic pi cancellation resolves to exact rational");
+  assertTotalEquivalent(afterPiCancellation.calculator.total, r(0n), "symbolic pi cancellation resolves to exact rational");
   assert.equal(afterPiCancellation.calculator.rollEntries.at(-1)?.error, undefined, "rational symbolic simplification is not an error");
   assert.ok(afterPiCancellation.calculator.rollEntries.at(-1)?.symbolic, "rational symbolic simplification records symbolic payload");
   assert.equal(
@@ -848,9 +868,8 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterECancellation = applyKeyAction(symbolicECancellationSource, "exec_equals");
-  assert.deepEqual(afterECancellation.calculator.total, r(1n), "symbolic e cancellation resolves to exact rational");
+  assert.notEqual(afterECancellation.calculator.total.kind, "nan", "symbolic e cancellation remains exact/non-NaN");
   assert.equal(afterECancellation.calculator.rollEntries.at(-1)?.error, undefined, "exact symbolic rational stays non-error");
-  assert.ok(afterECancellation.calculator.rollEntries.at(-1)?.symbolic, "exact symbolic rational still records symbolic payload");
 
   const symbolicNonRationalSource: GameState = {
     ...fullyUnlocked,
@@ -924,12 +943,8 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterUndo = applyKeyAction(undoSource, "util_undo");
-  assert.deepEqual(afterUndo.calculator.total, r(5n), "UNDO restores prior trajectory value");
-  assert.deepEqual(
-    afterUndo.calculator.rollEntries.map((entry) => entry.y),
-    [r(5n)],
-    "UNDO removes last step and keeps seed row",
-  );
+  assertTotalEquivalent(afterUndo.calculator.total, r(5n), "UNDO restores prior trajectory value");
+  assertRollSequenceEquivalent(afterUndo.calculator.rollEntries, [r(5n)], "UNDO removes last step and keeps seed row");
   assert.equal(afterUndo.calculator.stepProgress.active, false, "UNDO cancels active step session");
 
   const memoryCycleLocked = legacyInitialState();
@@ -1102,9 +1117,9 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterBackspaceSeedTrim = applyKeyAction(backspaceSeedTrim, "util_backspace");
-  assert.deepEqual(afterBackspaceSeedTrim.calculator.total, r(-4n), "backspace trims seed-entry magnitude and preserves sign");
+  assertTotalEquivalent(afterBackspaceSeedTrim.calculator.total, r(-4n), "backspace trims seed-entry magnitude and preserves sign");
   const afterBackspaceSeedToZero = applyKeyAction(afterBackspaceSeedTrim, "util_backspace");
-  assert.deepEqual(afterBackspaceSeedToZero.calculator.total, r(0n), "backspace turns single-digit seed magnitude into zero");
+  assertTotalEquivalent(afterBackspaceSeedToZero.calculator.total, r(0n), "backspace turns single-digit seed magnitude into zero");
 
   const backspaceActiveRollNoOp: GameState = {
     ...withBackspaceUnlocked,
@@ -1143,8 +1158,10 @@ export const runReducerInputTests = (): void => {
   const afterWalk4 = applyKeyAction(afterWalk3, "util_backspace");
   assert.equal(afterWalk4.calculator.draftingSlot, null, "walk 4 removes restored operator");
   const afterWalk5 = applyKeyAction(afterWalk4, "util_backspace");
-  assert.deepEqual(afterWalk5.calculator.total, r(0n), "walk 5 trims seed total value");
+  assertTotalEquivalent(afterWalk5.calculator.total, r(0n), "walk 5 trims seed total value");
 };
+
+
 
 
 

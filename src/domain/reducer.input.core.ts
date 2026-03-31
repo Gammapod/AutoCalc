@@ -8,9 +8,11 @@ import {
   isRationalCalculatorValue,
   NAN_INPUT_ERROR_CODE,
   OVERFLOW_ERROR_CODE,
+  toExplicitComplexCalculatorValue,
   toExpressionCalculatorValue,
   toNanCalculatorValue,
   toRationalCalculatorValue,
+  toScalarValue,
 } from "./calculatorValue.js";
 import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
 import { buildSymbolicExpression, evaluateSymbolicExpression, executeSlotsValue } from "./engine.js";
@@ -75,7 +77,6 @@ import {
   isBinaryOperatorKeyId,
   isConstantKeyId,
   isDigitKeyId,
-  isNaturalDivisorOperatorKeyId,
   isUnaryOperatorId,
   KEY_ID,
   resolveKeyId,
@@ -103,9 +104,6 @@ const withDigit = (source: string, digit: Digit): string => {
   }
   return `${source}${digit}`;
 };
-const isNaturalDivisorOperator = (operator: Key): boolean => isNaturalDivisorOperatorKeyId(operator);
-const toExpressionConstant = (constantKey: ConstantKeyId): "pi" | "e" =>
-  constantKey === KEY_ID.const_e ? "e" : "pi";
 const getDisplayRadix = (state: GameState): 2 | 10 =>
   state.settings.base === "base2" ? 2 : 10;
 
@@ -210,57 +208,9 @@ export const applyDigit = (state: GameState, key: Key): GameState => {
 };
 
 export const applyConstantValue = (state: GameState, constant: ConstantKeyId): GameState => {
-  if (!isKeyUsableForInput(state, constant)) {
-    return state;
-  }
-  if (state.calculator.rollEntries.length > 0) {
-    return state;
-  }
-
-  const builder = fromCalculator(state.calculator);
-  if (builder.draftingSlot) {
-    if (isNaturalDivisorOperator(builder.draftingSlot.operator)) {
-      return state;
-    }
-    return applyUnlocks(withBuilderPatchApplied(state, {
-      operationSlots: builder.operationSlots,
-      draftingSlot: {
-        ...builder.draftingSlot,
-        operandInput: constant,
-      },
-    }), getUnlockCatalog());
-  }
-
-  if (builder.operationSlots.length > 0) {
-    const operationSlots = [...builder.operationSlots];
-    const slotIndex = operationSlots.length - 1;
-    const target = operationSlots[slotIndex];
-    if (target.kind !== "binary" || isNaturalDivisorOperator(target.operator)) {
-      return state;
-    }
-    operationSlots[slotIndex] = {
-      ...target,
-      operand: { type: "constant", value: toExpressionConstant(constant) },
-    };
-    return applyUnlocks(withBuilderPatchApplied(state, { operationSlots, draftingSlot: null }), getUnlockCatalog());
-  }
-
-  if (!isSeedEntryContext(state)) {
-    return state;
-  }
-
-  return applyUnlocks(
-    {
-      ...state,
-      calculator: {
-        ...state.calculator,
-        total: toExpressionCalculatorValue({ type: "constant", value: toExpressionConstant(constant) }),
-        pendingNegativeTotal: false,
-        singleDigitInitialTotalEntry: false,
-      },
-    },
-    getUnlockCatalog(),
-  );
+  // Player input path: constants are not directly enterable as seed or right operand.
+  void constant;
+  return state;
 };
 
 const applyDigitValue = (state: GameState, digit: Digit): GameState => {
@@ -357,6 +307,19 @@ const toSymbolicExecution = (exprText: string, renderText: string = exprText): E
   symbolic: toSymbolicPayload(exprText, renderText),
 });
 
+const toRecordedComplexResult = (value: GameState["calculator"]["total"]): GameState["calculator"]["total"] => {
+  if (value.kind === "nan") {
+    return value;
+  }
+  if (value.kind === "complex") {
+    return toExplicitComplexCalculatorValue(value.value.re, value.value.im);
+  }
+  return toExplicitComplexCalculatorValue(
+    toScalarValue(value),
+    { kind: "rational", value: { num: 0n, den: 1n } },
+  );
+};
+
 const buildBuilderExpressionSignature = (slots: GameState["calculator"]["operationSlots"]): string => {
   let signature = "f_n(x)";
   for (const slot of slots) {
@@ -448,22 +411,40 @@ const toRollEntryWithPatch = (
   ...patch,
 });
 
-const isDiagnosticRationalValue = (
+const toDiagnosticRationalValue = (
   value: GameState["calculator"]["total"],
-): value is Extract<GameState["calculator"]["total"], { kind: "rational" }> => value.kind === "rational";
+): Extract<GameState["calculator"]["total"], { kind: "rational" }> | null => {
+  if (value.kind === "rational") {
+    return value;
+  }
+  if (
+    value.kind === "complex"
+    && value.value.re.kind === "rational"
+    && value.value.im.kind === "rational"
+    && value.value.im.value.num === 0n
+  ) {
+    return { kind: "rational", value: value.value.re.value };
+  }
+  return null;
+};
 
 const computePeerStepValue = (
   previousPeer: GameState["calculator"]["total"],
   operationSlots: GameState["calculator"]["operationSlots"],
 ): GameState["calculator"]["total"] | null => {
-  if (previousPeer.kind !== "rational") {
+  const peerRational = toDiagnosticRationalValue(previousPeer);
+  if (!peerRational) {
     return null;
   }
-  const executed = executeSlotsValue(previousPeer, operationSlots);
-  if (!executed.ok || executed.total.kind !== "rational") {
+  const executed = executeSlotsValue(peerRational, operationSlots);
+  if (!executed.ok) {
     return null;
   }
-  return executed.total;
+  const nextRational = toDiagnosticRationalValue(executed.total);
+  if (!nextRational) {
+    return null;
+  }
+  return nextRational;
 };
 
 const withInvalidRollAnalysis = (base: GameState): GameState => ({
@@ -517,16 +498,16 @@ const resolveRollDiagnosticContext = (base: GameState): RollDiagnosticContext | 
     return null;
   }
 
-  const currentX = getXk(rollEntries, nextIndex);
-  const previousX = getXk(rollEntries, nextIndex - 1);
-  const seed = getXk(rollEntries, 0);
+  const currentXRaw = getXk(rollEntries, nextIndex);
+  const previousXRaw = getXk(rollEntries, nextIndex - 1);
+  const seedRaw = getXk(rollEntries, 0);
+  const currentX = currentXRaw ? toDiagnosticRationalValue(currentXRaw) : null;
+  const previousX = previousXRaw ? toDiagnosticRationalValue(previousXRaw) : null;
+  const seed = seedRaw ? toDiagnosticRationalValue(seedRaw) : null;
   if (
     !currentX
     || !previousX
     || !seed
-    || !isDiagnosticRationalValue(currentX)
-    || !isDiagnosticRationalValue(previousX)
-    || !isDiagnosticRationalValue(seed)
     || current.error
   ) {
     return {
@@ -686,7 +667,8 @@ const withRollDiagnosticsApplied = (
   }
 
   const seed = projection[0]?.entry.y;
-  if (!seed || !isDiagnosticRationalValue(seed)) {
+  const seedRational = seed ? toDiagnosticRationalValue(seed) : null;
+  if (!seedRational) {
     return {
       ...baseRollState,
       calculator: {
@@ -708,15 +690,13 @@ const withRollDiagnosticsApplied = (
 
     const current = rollEntries[currentProjection.rawIndex];
     const previous = rollEntries[previousProjection.rawIndex];
-    const currentX = current?.y;
-    const previousX = previous?.y;
+    const currentX = current?.y ? toDiagnosticRationalValue(current.y) : null;
+    const previousX = previous?.y ? toDiagnosticRationalValue(previous.y) : null;
     if (
       !current
       || !previous
       || !currentX
       || !previousX
-      || !isDiagnosticRationalValue(currentX)
-      || !isDiagnosticRationalValue(previousX)
       || current.error
     ) {
       return {
@@ -791,11 +771,11 @@ const withRollDiagnosticsApplied = (
     const r1 = divRational(currentX.value, previousX.value);
     const previousPeerMinus =
       analysisIndex === 1
-        ? toRationalCalculatorValue(addIntToRational(seed.value, -1n))
+        ? toRationalCalculatorValue(addIntToRational(seedRational.value, -1n))
         : (previous.seedMinus1Y ?? null);
     const previousPeerPlus =
       analysisIndex === 1
-        ? toRationalCalculatorValue(addIntToRational(seed.value, 1n))
+        ? toRationalCalculatorValue(addIntToRational(seedRational.value, 1n))
         : (previous.seedPlus1Y ?? null);
     if (!previousPeerMinus || !previousPeerPlus) {
       return {
@@ -886,7 +866,7 @@ const evaluateExecutionOutcomeForSlots = (
   if (!isRationalCalculatorValue(execution.total)) {
     if (execution.total.kind === "complex") {
       return {
-        nextTotal: execution.total,
+        nextTotal: toRecordedComplexResult(execution.total),
         ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
       };
     }
@@ -916,6 +896,7 @@ const evaluateExecutionOutcomeForSlots = (
       : applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, getDisplayRadix(state));
     return {
       ...overflowChecked,
+      nextTotal: options.deferOverflowToWrapStage ? overflowChecked.nextTotal : toRecordedComplexResult(overflowChecked.nextTotal),
       symbolic: toSymbolicPayload(expressionKey, symbolicText),
       ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
     };
@@ -926,6 +907,7 @@ const evaluateExecutionOutcomeForSlots = (
     : applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, getDisplayRadix(state));
   return {
     ...overflowChecked,
+    nextTotal: options.deferOverflowToWrapStage ? overflowChecked.nextTotal : toRecordedComplexResult(overflowChecked.nextTotal),
     euclidRemainder: execution.euclidRemainder,
   };
 };
@@ -962,6 +944,7 @@ const evaluateExecutionPlan = (
   const wrapped = applyWrapStage(evaluation.nextTotal, wrapStage.mode, state.unlocks.maxTotalDigits, getDisplayRadix(state));
   return {
     ...wrapped,
+    nextTotal: toRecordedComplexResult(wrapped.nextTotal),
     ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
   };
 };

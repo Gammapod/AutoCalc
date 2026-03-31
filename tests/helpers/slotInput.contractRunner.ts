@@ -15,6 +15,18 @@ export type SlotInputScenarioResult = {
   projection: SlotInputStateProjection;
 };
 
+const toLegacyProjectionValue = (value: GameState["calculator"]["total"]): GameState["calculator"]["total"] => {
+  if (
+    value.kind === "complex"
+    && value.value.re.kind === "rational"
+    && value.value.im.kind === "rational"
+    && value.value.im.value.num === 0n
+  ) {
+    return { kind: "rational", value: value.value.re.value };
+  }
+  return value;
+};
+
 const projectState = (state: GameState): SlotInputStateProjection => ({
   // Contract projections preserve legacy "roll means post-seed trajectory" semantics.
   // Runtime stores seed at index 0.
@@ -25,12 +37,12 @@ const projectState = (state: GameState): SlotInputStateProjection => ({
       ? state.calculator.rollEntries
       : state.calculator.rollEntries.slice(1);
     return {
-      roll: projectedRows.map((entry) => entry.y),
+      roll: projectedRows.map((entry) => toLegacyProjectionValue(entry.y)),
       rollErrors: projectedRows.flatMap((entry, rollIndex) =>
         entry.error ? [{ rollIndex, code: entry.error.code, kind: entry.error.kind }] : []),
     };
   })(),
-  total: state.calculator.total,
+  total: toLegacyProjectionValue(state.calculator.total),
   operationSlots: state.calculator.operationSlots,
   draftingSlot: state.calculator.draftingSlot,
   keyPressCounts: state.keyPressCounts,

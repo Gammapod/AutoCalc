@@ -113,6 +113,9 @@ export const getRollYDomain = (value: CalculatorValue): RollValueDomain => {
   if (value.kind === "complex") {
     const real = value.value.re;
     const imaginary = value.value.im;
+    if (imaginary.kind === "rational" && imaginary.value.num === 0n) {
+      return getScalarDomain(real);
+    }
     const pureImaginary = real.kind === "rational" && real.value.num === 0n;
     if (!pureImaginary) {
       return "\u2102";
@@ -158,7 +161,14 @@ export const getRationalPrimeFactorization = (value: RationalValue): RationalPri
 };
 
 export const getRollYPrimeFactorization = (value: CalculatorValue): RationalPrimeFactorization | undefined =>
-  value.kind === "rational" ? getRationalPrimeFactorization(value.value) : undefined;
+  value.kind === "rational"
+    ? getRationalPrimeFactorization(value.value)
+    : value.kind === "complex"
+      && value.value.re.kind === "rational"
+      && value.value.im.kind === "rational"
+      && value.value.im.value.num === 0n
+      ? getRationalPrimeFactorization(value.value.re.value)
+      : undefined;
 
 export const getDerivedRollEntry = (entry: RollEntry, x: number): RollEntryDerived => {
   const primeFactorization = entry.factorization ?? getRollYPrimeFactorization(entry.y);
