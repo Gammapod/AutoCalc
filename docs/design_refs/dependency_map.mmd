@@ -14,153 +14,189 @@
 %% Expanded form `5 [ ! ]` -> `[ Πℕ{1..5} ]` (would resolve to 120)
 
 flowchart TD
-    subgraph Step_Horizontal_Vertical_Ops ["nz"]
-        Sinc["[ n ++ ]"]
-        %% Primitive
-        %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
-        %% Completes ℕ on its own
 
-        Sdec["[ n -- ]"]
-        %% Expanded form `[ 4 –– ]` -> `[ 4 ℤ{..3◌⃔4 5..} ]`
-        %% Expanded form `[ 4 –– ]` -> `[ 4 ++⮌ ]`
-        %% Completes ℤ with ++
+    subgraph Step_Identities ["n"]
+        Sinc
+        Sdec
 
-        Sminus["a [ − b ]"]
-        %% Expanded form `[ 4 - 3 ]` -> `[ 4 –– –– –– ]`
-        %% Expanded form `[ 4 - 3 ]` -> `[ 4 +⮌ 3 ]`
+        Sc_tuple
+        Simag
+        Sreal
 
-        Splus["a [ \+b ]"]
-        %% Expanded form `[ 4 + 3 ]` -> `[ 4 ++ ++ ++ ]`  
-
-        %% Sfloor["⌊n⌋"]
-        %% %% Expanded form `[ ⌊(4/3)⌋ ]` -> `[ (4/3) - ((4/3) ◇ 1) ]`
-        %% Sceil["⌈n⌉"]
-        %% %% %% Expanded form `[ ⌈(4/3)⌉ ]` -> `[ (4/3) + (1 - ((4/3) ◇ 1)) ]`
-
-        %% Mc_tuple("Re(z) + Im(z)")
-        %% %% Primitives
-        %% Mc_tuple --> Mimag["[ Im(z) ]"]
-        %% %% Expanded form `[ Im(z) ]` -> `[ n - a ↶ 12 ] ]`
-        %% %% Returns the imaginary component (`b` from `a + b×i`) from part of n, 0 possible
-        %% Mc_tuple --> Mreal["[ Re(z) ]"]
-        %% %% Returns the non-imaginary component (`a` from `a + b×i`) from part of n, 0 possible
-
-
-        subgraph Magnitude_Ops
-            Mmul["a [ × b ]"]
-            %% Expanded form `[ 4 × 3 ]` -> `[ 4 +4 +4 ]`
-
-            Mneg["n [ ± ]"]
-            %% Expanded form `[ 4 ± ]` -> `[ 4 × -1 ] ]`
-            %% Expanded form `4 [ ± ]` -> `4 [ ↶ 12 ] ]`
-
-            Mmodulus["z [ |z| ]"]
-            %% Expanded form `[ |4| ]` -> `[ √(Re(4)² + Im(4)²) ]
-            %% Expanded form `[ |4| ]` -> `[ ¬(4) × ±(4) ] + [ ¬¬(4) × (4)  ]`
-
-            subgraph RaQios
-
-                Qdiv["a [ ÷ b ]"]
-                %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 × (⅓) ]`
-                %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 ×⮌ 3 ]`    
-
-                Qrecip["a [ ⨸ b]"]
-                %% Expanded form `[ 4 ⨸ 3 ]` -> `[ 3 ÷ 4 ]` 
-
-                Qdivtuple("⫽ + ◇")
-                Qdivtuple --> Meudiv["a⫽b"]
-                %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(4 – (3 × ℕ)) ]`
-                Qdivtuple --> Mmod["a◇b"]
-                %% Expanded form `[ 4 ◇ 3 ]` -> `[ 3 – (4 × (4 ⫽ 3)) ]`
-                Qper["％"]
-                %% Expanded form `[ (a÷100) × b ]` <-- should 100 change based on base setting? 
-            end 
-            Mmul -->|Invert| Qdiv
-            Qdiv --> Qdivtuple
-            Qdiv --> Qper
-            Qdiv -->|Invert| Qrecip
-            
-            subgraph Dimension_Ops    
-                Epow["a [ ^ b ]"]
-                %% Expanded form `[ 4 ^ 3 ]` -> `[ 4 ×4 ×4 ]`
-
-                Eradical["[ ᵇ√a ]"]
-                %% Expanded form `[ ³√(4) ]` -> `[ 4 ^ (1/3) ]`
-
-                euradtuple("∥ × ⟐")
-                euradtuple --> Eeurad["n [ ∥ p ]"]
-                %% Expanded form `[ 4 ∥ 3 ]` -> `Σ[ ¬(4 ◇ (3 ^ ℕ)) ]`
-
-                euradtuple --> Eresid["a [ ⟐ b ]"]
-                %% Expanded form `[ 4 ⟐ 3 ]` -> `[ 4 ÷ (3 ^ (4 ∥ 3)) ]`
-
-                subgraph Rotation_Ops ["× 𝕀"]
-                    %% VITAL UX: make it abundantly clear that each rotation "unit" is 1/24 of a circle, or pi/12 radians. The math behind the scenes will be (n × e^(i*2pi*(n/24)))
-                    Rtwentyfourth["[ n ⦨ ]"]
-                    %% Primitive
-                    %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ/12)]`
-                    Rrotate["a [ ↶ b ]"]
-                    %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{i×2π×(3/24) ]`
-                    %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
-                    Rquarter["[ n ⦜ ]"]
-                    %% Primitive?
-                    %% Expanded form `[ 4 ⦜ ]` -> `[ 4 ↶ 6 ]`
-                    %% Expanded form `[ 4 ⦜ ]` -> `[ 4 × √(-1) ]`
-                    Rc_tuple("|z| + θ")
-                    Rc_tuple --> Rtheta["z [ θ ]"]
-                    %% Expanded form `[ z θ ]` -> `[ ln(z{6+7i}/|{6+7i}|)/√(-1)]`
-                    Rtrig("trig")
-                end
-                
-                Rtwentyfourth -->|Iterate| Rrotate
-                Rrotate --> Rquarter
-                Eradical --> Rquarter["[ n ⦜ ]"]
-                Rrotate --> Rc_tuple("|z| + θ")
-                Rrotate --> Rtrig("trig")
-            end
-            Epow -->|Invert| Eradical["[ ᵇ√a ]"]
-            Mmul -->|Iterate| Epow["a [ ^ b ]"]
-            Eradical --> euradtuple
-
-            subgraph Logic ["Logical Predicates"]
-                Lnot["¬n"]
-                %% Primitive
-                %% Expanded form `[ 0 ≤ n ]
-                Llte["a≤b"]
-                %% Expanded form `[ ¬(a-b) ]
-                Llt["a\< b"]
-                %% Expanded form `[ (a≤b) × ¬(¬(a-b))]
-                Leq["a≡b"]
-                %% Expanded form `[ ¬((a<b) + (b<a)) ]
-                Lmax["╧"]
-                %% Expanded form `[ ((a<b)×b) + ¬((a≤b)×a) ]`
-                Lmin["╤"]  
-                %% Expanded form `[ ((a<b)×a) + ¬((a≤b)×b) ]`
-
-            end
-            Mmul --> Lnot
-            Lnot --> Llte
-            Llte --> Llt
-            Llt --> Leq
-            Llt --> Lmin
-            Llt --> Lmax
-            Sminus --> Llte
-
-        end
-        Mmul --> Mneg
-        Splus -->|Iterate| Mmul["a [ × b ]"]
-        %% Mimag --> Mmodulus
-        %% Mreal --> Mmodulus
-        %% Rrotate -->|Iterate| Mneg["n±"]
-        Mneg --> Mmodulus
-        Lnot --> Mmodulus
+        Sp_tuple
+        Snthprime
+        Sindexofp
+        Srecip
+        
+    subgraph Boolean_Identities ["1/0"]
+        Bnotp
+        Bnotgt
+        Bless
+        Beq
+        Bmax
+        Bminim
     end
+
+    subgraph Linear_Ops
+        Lplus
+        Lminus
+
+        Lfloor
+        Lceil
+    end
+
+    subgraph Magnitude_Ops
+        Mmul
+        Mneg
+        Mmodulus
+        Mdivtuple
+        Meudiv
+        Mmod
+        Mdiv
+        Mper
+    end
+
+    subgraph Dimension_Ops    
+        Epow
+
+        Eradical
+
+        E_tuple
+        Eeurad
+        Eresid           
+    end
+
+    subgraph Rotation_Ops ["× 𝕀"]
+        Rtwentyfourth
+        Rrotate
+        Rquarter
+        Rc_tuple
+        Rtheta
+        Rtrig("trig")
+    end     
+    end
+
+
+%% Step
+    Sinc["[ n ++ ]"]
+    %% Primitive
+    %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
+    %% Completes ℕ on its own
     Sinc -->|Invert| Sdec["[ n -- ]"]
-    Splus -->|Invert| Sminus["a [ − b ]"]
-    Sdec -->|Iterate| Sminus["a [ − b ]"]
-    Sinc -->|Iterate| Splus["a [ \+b ]"]
-    %% Mmod --> Sfloor
-    %% Sfloor --> Sceil
+    %% Expanded form `[ 4 –– ]` -> `[ 4 ℤ{..3◌⃔4 5..} ]`
+    %% Expanded form `[ 4 –– ]` -> `[ 4 ++⮌ ]`
+    %% Completes ℤ with ++
+    Sc_tuple("a + bi")
+    %% %% Primitives
+    Sc_tuple --> Simag["[ Im(z) ]"]
+    %% %% Expanded form `[ Im(z) ]` -> `[ n - a ↶ 12 ] ]`
+    %% %% Returns the imaginary component (`b` from `a + b×i`) from part of n, 0 possible
+    Sc_tuple --> Sreal["[ Re(z) ]"]
+    %% %% Returns the non-imaginary component (`a` from `a + b×i`) from part of n, 0 possible
+
+    Mdiv -->|Invert| Srecip["[ 1⁄n ]"]
+    %% Expanded form `(4/3) [ 1⁄n ]` -> `[ 3 ÷ 4 ]` 
+
+    Sp_tuple("ℙ{ℕ}")
+    Snthprime["ℙ(n)"]
+    %% Primitive
+    %% Returns nth prime. ℙ(3) = 5
+    Sindexofp["ℕ(p)"]
+    %% Returns index of prime p. ℙ^-1(5) = 3
+%% 
+%% Linear
+    Lplus -->|Invert| Lminus["a [ − b ]"]
+    %% Expanded form `[ 4 - 3 ]` -> `[ 4 +⮌ 3 ]`
+    Sdec -->|Iterate| Lminus["a [ − b ]"]
+    %% Expanded form `[ 4 - 3 ]` -> `[ 4 –– –– –– ]`
+    Sinc -->|Iterate| Lplus["a [ \+b ]"]
+    %% Expanded form `[ 4 + 3 ]` -> `[ 4 ++ ++ ++ ]`  
+    Mmod --> Lfloor["⌊n⌋"]
+    %% Expanded form `[ ⌊(4/3)⌋ ]` -> `[ (4/3) - ((4/3) ◇ 1) ]`
+    Lfloor --> Lceil["⌈n⌉"]
+    %% Expanded form `[ ⌈(4/3)⌉ ]` -> `[ (4/3) + (1 - ((4/3) ◇ 1)) ]`
+%% 
+%% Magnitude
+    Mmul --> Mneg["n [ ± ]"]
+    %% Expanded form `[ 4 ± ]` -> `[ 4 × -1 ] ]`
+    %% Expanded form `4 [ ± ]` -> `4 [ ↶ 12 ] ]`
+    
+    Lplus -->|Iterate| Mmul["a [ × b ]"]
+    %% Expanded form `[ 4 × 3 ]` -> `[ 4 +4 +4 ]`
+    %% Simag --> Mmodulus
+    %% Sreal --> Mmodulus
+    %% Rrotate -->|Iterate| Mneg["n±"]
+    
+    Mneg --> Mmodulus["z [ |z| ]"]
+    
+    Bnotp --> Mmodulus["z [ |z| ]"]
+    %% Expanded form `[ |4| ]` -> `[ √(Re(4)² + Im(4)²) ]
+    %% Expanded form `[ |4| ]` -> `[ ¬(4) × ±(4) ] + [ ¬¬(4) × (4)  ]`
+
+    Mmul -->|Invert| Mdivtuple("⫽ + ◇")
+
+    Mdivtuple -->|Count| Meudiv["a⫽b"]
+    %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(4 – (3 × ℕ)) ]`
+
+    Mdivtuple -->|Remainder| Mmod["a◇b"]
+    %% Expanded form `[ 4 ◇ 3 ]` -> `[ 3 – (4 × (4 ⫽ 3)) ]`
+
+    Mdivtuple -->|Generalization| Mdiv["a [ ÷ b ]"]
+    %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 × (⅓) ]`
+    %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 ×⮌ 3 ]`    
+
+    Mdiv --> Mper["％"]
+    %% Expanded form `[ (a÷100) × b ]` <-- should 100 change based on base setting? 
+    
+%% 
+%% Dimension
+    Mmul -->|Iterate| Epow["a [ ^ b ]"]
+    %% Expanded form `[ 4 ^ 3 ]` -> `[ 4 ×4 ×4 ]`
+
+    Epow -->|Invert| E_tuple("∥ × ⟐")
+
+    E_tuple -->|Count| Eeurad["n [ ∥ p ]"]
+    %% Expanded form `[ 4 ∥ 3 ]` -> `Σ[ ¬(4 ◇ (3 ^ ℕ)) ]`
+
+    E_tuple -->|Remainder| Eresid["a [ ⟐ b ]"]
+    %% Expanded form `[ 4 ⟐ 3 ]` -> `[ 4 ÷ (3 ^ (4 ∥ 3)) ]`
+        
+    E_tuple -->|Generalization| Eradical["[ ᵇ√a ]"]
+    %% Expanded form `[ ³√(4) ]` -> `[ 4 ^ (1/3) ]`
+%%  
+%% Rotation
+    %% VITAL UX: make it abundantly clear that each rotation "unit" is 1/24 of a circle, or pi/12 radians. The math behind the scenes will be (n × e^(i*2pi*(n/24)))
+    Rtwentyfourth["[ n ⦨ ]"]
+    %% Primitive
+    %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ/12)]`
+    Rtwentyfourth -->|Iterate| Rrotate["a [ ↶ b ]"]
+    %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{i×2π×(3/24) ]`
+    %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
+    Rrotate --> Rquarter["[ n ⦜ ]"]
+    %% Expanded form `[ 4 ⦜ ]` -> `[ 4 ↶ 6 ]`
+    Eradical --> Rquarter["[ n ⦜ ]"]
+    %% Expanded form `[ 4 ⦜ ]` -> `[ 4 × √(-1) ]`
+    Rrotate --> Rc_tuple("|z| + θ")
+
+    Rc_tuple --> Rtheta["z [ θ ]"]
+    %% Expanded form `[ z θ ]` -> `[ ln(z{6+7i}/|{6+7i}|)/√(-1)]`
+%% 
+%% Logic
+    Mmul --> Bnotp["¬n"]
+    %% Primitive
+    %% Expanded form `[ 0 ≤ n ]
+    Bnotp --> Bnotgt["a≤b"]
+    %% Expanded form `[ ¬(a-b) ]
+    Bnotgt --> Bless["a\< b"]
+    %% Expanded form `[ (a≤b) × ¬(¬(a-b))]
+    Bless --> Beq["a≡b"]
+    %% Expanded form `[ ¬((a<b) + (b<a)) ]
+    Bless --> Bmax["╧"]
+    %% Expanded form `[ ((a<b)×b) + ¬((a≤b)×a) ]`
+    Bless --> Bminim["╤"]  
+    %% Expanded form `[ ((a<b)×a) + ¬((a≤b)×b) ]`
+    Lminus --> Bnotgt
+%% 
 
 %%     subgraph Digits ["Digit Manipulation"]
 %%     %% Currently a dead-end; could lead to more complex cycles
@@ -184,37 +220,32 @@ flowchart TD
 %%     Dcount --> Ddigsq
 %%     Dsort --> Drotate
 %%     Dsort --> Dmirror
-%%     Llte --> Digits
+%%     Bnotgt --> Digits
 %%     Mmod --> Ddig
 
 %% subgraph P_Theory ["Returns ℙ (2)"]
 %% %% Still conceptual - has a lot of functions designed, but the way the user will interact with these is not planned yet
-%%     Pntop["ℙ(n)"]
-%%     %% Primitive
-%%     %% Returns nth prime. ℙ(3) = 5
-%%     Ppton["ℙ^-1(p)"]
-%%     %% Returns index of prime p. ℙ^-1(5) = 3
-%%     Pexponent["e"]
-%%     Pprime_expansion["∏ ℙ^e"]
-%%     Pomega["Ω"]
-%%     %% Expanded form `[ Σe_p ]`
-%%     Ptotient["φ"]
-%%     %% Expanded form `[ n × ∏(1-p^-1) ]`
-%%     Pdivisor_sum["σ"]
-%%     %% Expanded form `[ Σ( (d|n) × d) ]`
-%%     Pgcd["⋀"]
-%%     %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
-%%     Plcm["⋁"]
-%%     %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`    
+    %% Pexponent["e"]
+    %% Pprime_expansion["∏ ℙ^e"]
+    %% Pomega["Ω"]
+    %% %% Expanded form `[ Σe_p ]`
+    %% Ptotient["φ"]
+    %% %% Expanded form `[ n × ∏(1-p^-1) ]`
+    %% Pdivisor_sum["σ"]
+    %% %% Expanded form `[ Σ( (d|n) × d) ]`
+    %% Pgcd["⋀"]
+    %% %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
+    %% Plcm["⋁"]
+    %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`    
 %% end
-%% Pntop --> Ptotient
-%% Pntop --> Ppton
+%% Snthprime --> Ptotient
+%% Snthprime --> Sindexofp
 %% Pprime_expansion --> Pomega
-%% Ppton --> Pprime_expansion
-%% Pntop --> Pgcd
+%% Sindexofp --> Pprime_expansion
+%% Snthprime --> Pgcd
 %% Pexponent --> Pgcd
 %% Pexponent --> Plcm
-%% Pntop --> Plcm
-%% Pntop --> Pexponent
-%% Lmin --> Plcm
-%% Lmax --> Pgcd
+%% Snthprime --> Plcm
+%% Snthprime --> Pexponent
+%% Bminim --> Plcm
+%% Bmax --> Pgcd

@@ -7,35 +7,50 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Now
 
-### Slice `slice_complex_roll_value_model`
+### Slice `slice_complex_invariant_lock`
 - Owner: `TBD`
 - Status: `ready`
-- User Story: As a player, I want roll values to support `a + i × b` so real-only behavior remains stable while complex behavior can be introduced incrementally.
+- User Story: As a player, I want complex-number behavior to be explicit and stable so runtime math and planning docs match.
 - Exit Criteria:
-- Canonical value model for roll storage is defined and documented, including `re` and `im` components.
-- Constraint contract is explicit: `b = 0` preserves existing pure-real behavior.
-- Constraint contract is explicit: `a` and `b` support rational and radical/expression forms.
-- Persistence compatibility strategy is defined (legacy saves remain loadable).
+- `docs/math-spec.md` and planning docs align on complex-result recording with explicit `im=0`.
+- Player input constraints are explicit: initial seed/right operand are digit-only.
+- Scope guard is explicit: dormant legacy paths are retained unless needed for invariant enforcement.
 
-### Slice `slice_unary_i_operator_vertical`
+### Slice `slice_player_input_gate_real_digit_only`
 - Owner: `TBD`
 - Status: `ready`
-- User Story: As a player, I want a unary key `⦝` that multiplies by `i` so I can generate pure imaginary roll results.
+- User Story: As a player, I want seed and right-operand entry to be strictly digit-based so input behavior is predictable.
 - Exit Criteria:
-- New unary key exists with button face `⦝`, slot face `⦝`, and expanded form `[ × i ]`.
-- Execution behavior is implemented for the vertical test path (`34 [ ⦝ ] -> 0 + 34i`).
-- Roll entry persistence and rendering include the resulting complex value.
-- Targeted domain/reducer/UI tests pass for the new unary behavior.
+- Initial seed entry accepts only `0..9`.
+- Binary right operand entry accepts only `0..9`.
+- `const_pi` and `const_e` are blocked from direct player seed/right-operand entry.
 
-### Slice `slice_complex_domain_visualizer_bootstrap`
+### Slice `slice_complex_result_representation`
 - Owner: `TBD`
 - Status: `ready`
-- User Story: As a player, I want the default visualizer to show the active number domain so I can tell when a result is real, imaginary, or combined.
+- User Story: As a player, I want roll results to preserve exact complex form so seeded follow-up execution is consistent.
 - Exit Criteria:
-- Domain classifier emits the complex-domain symbol set for the current total/result path.
-- Default visualizer displays domain symbol for complex-related outcomes.
-- Total display remains integer-only for this slice and does not regress existing integer behavior.
-- Domain text/symbol behavior is covered by tests.
+- Successful roll rows record exact complex values with explicit `re/im`, including `im=0`.
+- Runtime total remains type-consistent with recorded result.
+- Equality helpers treat real and zero-imaginary-complex values as equivalent where required.
+
+### Slice `slice_all_operator_complex_left_operand`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want unary/binary execution to work when the running total is complex so roll continuation does not break.
+- Exit Criteria:
+- Unary operators accept complex operands with exact behavior or policy-consistent rejection.
+- Binary operators accept complex left operands with digit-derived right operands.
+- No floating-point fallback is introduced.
+
+### Slice `slice_roll_diagnostics_persistence_parity`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want save/load and diagnostics to remain coherent after complex rollout.
+- Exit Criteria:
+- Persistence round-trips explicit complex roll rows and totals.
+- Roll-analysis invalidation behavior remains stable for non-rational diagnostics paths.
+- Read-model/display parity tests cover explicit `im=0` handling without losing complex storage fidelity.
 
 ## Next
 
@@ -116,4 +131,3 @@ Record shipped trains here using this format:
 - Player-facing highlights:
 - Short summary bullet 1.
 - Short summary bullet 2.
-
