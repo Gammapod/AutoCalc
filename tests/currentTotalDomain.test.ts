@@ -65,11 +65,11 @@ export const runCurrentTotalDomainTests = (): void => {
     calculator: {
       ...initialState().calculator,
       total: toComplexCalculatorValue(
-        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 1n, den: 2n }),
         toRationalScalarValue({ num: 4n, den: 1n }),
       ),
       rollEntries: re(toComplexCalculatorValue(
-        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 1n, den: 2n }),
         toRationalScalarValue({ num: 4n, den: 1n }),
       )),
     },
@@ -90,6 +90,21 @@ export const runCurrentTotalDomainTests = (): void => {
       )),
     },
   };
-  assert.equal(getCurrentTotalDomainSymbol(pureImaginaryPrime), "\u{1D540}(\u2119)", "pure-imaginary primes map to I(P)");
+  assert.equal(getCurrentTotalDomainSymbol(pureImaginaryPrime), "\u2124(\u{1D540})", "pure-imaginary gaussian totals map to Z(I)");
+  const gaussian = {
+    ...initialState(),
+    calculator: {
+      ...initialState().calculator,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 4n, den: 1n }),
+      ),
+      rollEntries: re(toComplexCalculatorValue(
+        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 4n, den: 1n }),
+      )),
+    },
+  };
+  assert.equal(getCurrentTotalDomainSymbol(gaussian), "\u2124(\u{1D540})", "gaussian complex totals map to Z(I)");
 };
 

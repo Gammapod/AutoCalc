@@ -327,8 +327,8 @@ export const runReducerInputTests = (): void => {
   assert.equal(afterUnaryI.calculator.rollEntries.at(-1)?.error, undefined, "unary-i execution does not emit error");
   assert.equal(
     getRollYDomain(afterUnaryI.calculator.rollEntries.at(-1)?.y ?? toNanCalculatorValue()),
-    "\u{1D540}(\u2119)",
-    "pure-imaginary prime result projects to I(P)",
+    "\u2124(\u{1D540})",
+    "pure-imaginary gaussian result projects to Z(I)",
   );
 
   const afterUnaryITwice = applyKeyAction(afterUnaryI, "exec_equals");

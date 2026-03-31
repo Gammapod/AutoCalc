@@ -179,15 +179,100 @@ export const runEngineTests = (): void => {
     "unary-i applied twice collapses back to pure real negative total",
   );
 
-  const unsupportedComplexUnary = executeSlotsValue(
+  const complexUnaryNot = executeSlotsValue(
     toRationalCalculatorValue({ num: 34n, den: 1n }),
     [{ kind: "unary", operator: uop("unary_i") }, { kind: "unary", operator: uop("unary_not") }],
   );
-  assert.equal(
-    unsupportedComplexUnary.ok,
-    false,
-    "ordered-real unary on non-real complex value is rejected explicitly",
+  assert.deepEqual(complexUnaryNot, { ok: true, total: toRationalCalculatorValue({ num: 0n, den: 1n }) }, "unary-not supports complex totals");
+
+  const gaussianInput = {
+    kind: "complex" as const,
+    value: {
+      re: toRationalScalarValue({ num: 3n, den: 1n }),
+      im: toRationalScalarValue({ num: 4n, den: 1n }),
+    },
+  };
+  const euclidOnGaussian = executeSlotsValue(gaussianInput, [{ operator: op("op_euclid_div"), operand: 4n }]);
+  assert.deepEqual(
+    euclidOnGaussian,
+    { ok: true, total: toRationalCalculatorValue({ num: 6n, den: 1n }), euclidRemainder: { num: 1n, den: 1n } },
+    "euclid-div on gaussian complex uses norm",
   );
+
+  const modOnGaussian = executeSlotsValue(gaussianInput, [{ operator: op("op_mod"), operand: 4n }]);
+  assert.deepEqual(
+    modOnGaussian,
+    { ok: true, total: toRationalCalculatorValue({ num: 1n, den: 1n }), euclidRemainder: { num: 1n, den: 1n } },
+    "mod on gaussian complex uses norm",
+  );
+
+  const gcdOnGaussian = executeSlotsValue(gaussianInput, [{ operator: op("op_gcd"), operand: 15n }]);
+  assert.deepEqual(gcdOnGaussian, { ok: true, total: toRationalCalculatorValue({ num: 5n, den: 1n }) }, "gcd on gaussian complex uses norm");
+
+  const lcmOnGaussian = executeSlotsValue(gaussianInput, [{ operator: op("op_lcm"), operand: 6n }]);
+  assert.deepEqual(lcmOnGaussian, { ok: true, total: toRationalCalculatorValue({ num: 150n, den: 1n }) }, "lcm on gaussian complex uses norm");
+
+  const sigmaOnGaussian = executeSlotsValue(gaussianInput, [{ kind: "unary", operator: uop("unary_sigma") }]);
+  assert.deepEqual(sigmaOnGaussian, { ok: true, total: toRationalCalculatorValue({ num: 31n, den: 1n }) }, "sigma on gaussian complex uses norm");
+
+  const collatzOnGaussian = executeSlotsValue(gaussianInput, [{ kind: "unary", operator: uop("unary_collatz") }]);
+  assert.deepEqual(
+    collatzOnGaussian,
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: 10n, den: 1n }),
+          im: toRationalScalarValue({ num: 2n, den: 1n }),
+        },
+      },
+    },
+    "collatz on gaussian complex is componentwise",
+  );
+
+  const floorOnComplex = executeSlotsValue(
+    {
+      kind: "complex",
+      value: {
+        re: toRationalScalarValue({ num: 9n, den: 2n }),
+        im: toRationalScalarValue({ num: 43n, den: 5n }),
+      },
+    },
+    [{ kind: "unary", operator: uop("unary_floor") }],
+  );
+  assert.deepEqual(
+    floorOnComplex,
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: 4n, den: 1n }),
+          im: toRationalScalarValue({ num: 8n, den: 1n }),
+        },
+      },
+    },
+    "floor on complex is componentwise",
+  );
+
+  const maxOnComplex = executeSlotsValue(gaussianInput, [{ operator: op("op_max"), operand: 6n }]);
+  assert.deepEqual(maxOnComplex, { ok: true, total: toRationalCalculatorValue({ num: 6n, den: 1n }) }, "max compares by magnitude");
+
+  const minOnComplex = executeSlotsValue(gaussianInput, [{ operator: op("op_min"), operand: 6n }]);
+  assert.deepEqual(minOnComplex, { ok: true, total: gaussianInput }, "min compares by magnitude");
+
+  const maxTieKeepsLeft = executeSlotsValue(
+    {
+      kind: "complex",
+      value: {
+        re: toRationalScalarValue({ num: 3n, den: 1n }),
+        im: toRationalScalarValue({ num: 4n, den: 1n }),
+      },
+    },
+    [{ operator: op("op_max"), operand: 5n }],
+  );
+  assert.deepEqual(maxTieKeepsLeft, { ok: true, total: gaussianInput }, "max tie keeps left operand");
 };
 
 

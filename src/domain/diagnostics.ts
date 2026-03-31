@@ -370,6 +370,9 @@ const resolveDomainCategory = (state: GameState, symbol: ReturnType<typeof getCu
   if (symbol === "\u2102") {
     return "complex";
   }
+  if (symbol === "\u2124(\u{1D540})") {
+    return "complex";
+  }
   if (symbol.startsWith("\u{1D540}(")) {
     return "complex";
   }

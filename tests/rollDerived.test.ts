@@ -36,8 +36,8 @@ export const runRollDerivedTests = (): void => {
         toRationalScalarValue({ num: 3n, den: 1n }),
       ),
     ),
-    "\u{1D540}(\u2119)",
-    "pure imaginary prime values map to I(P)",
+    "\u2124(\u{1D540})",
+    "pure imaginary gaussian integers map to Z(I)",
   );
   assert.equal(
     getRollYDomain(
@@ -46,8 +46,28 @@ export const runRollDerivedTests = (): void => {
         toRationalScalarValue({ num: 2n, den: 1n }),
       ),
     ),
+    "\u2124(\u{1D540})",
+    "mixed gaussian integers map to Z(I)",
+  );
+  assert.equal(
+    getRollYDomain(
+      toComplexCalculatorValue(
+        toRationalScalarValue({ num: 1n, den: 2n }),
+        toRationalScalarValue({ num: 2n, den: 1n }),
+      ),
+    ),
     "\u2102",
-    "complex values map to complex domain marker",
+    "non-gaussian mixed complex values map to C",
+  );
+  assert.equal(
+    getRollYDomain(
+      toComplexCalculatorValue(
+        toRationalScalarValue({ num: 0n, den: 1n }),
+        toRationalScalarValue({ num: 3n, den: 2n }),
+      ),
+    ),
+    "\u{1D540}(\u211A)",
+    "non-gaussian pure-imaginary rationals keep I(Q)",
   );
 
   assert.deepEqual(

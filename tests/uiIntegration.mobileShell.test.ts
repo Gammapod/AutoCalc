@@ -1,6 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
+import { calculatorValuesEquivalent, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import type { Action, GameState, RollEntry } from "../src/domain/types.js";
 import { reducer } from "../src/domain/reducer.js";
 import { createShellRenderer } from "../src/ui/renderAdapter.js";
@@ -13,6 +14,14 @@ export const runUiIntegrationMobileShellTests = (): void => {
     kind: "rational",
     value: { num, den },
   });
+  const c = (reNum: bigint, imNum: bigint): RollEntry["y"] => ({
+    kind: "complex",
+    value: {
+      re: toRationalScalarValue({ num: reNum, den: 1n }),
+      im: toRationalScalarValue({ num: imNum, den: 1n }),
+    },
+  });
+  const rv = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
   const harness = installDomHarness("http://localhost:4173/index.html?ui=mobile");
   const dispatched: Action[] = [];
   const dispatch = (action: Action): Action => {
@@ -226,6 +235,31 @@ export const runUiIntegrationMobileShellTests = (): void => {
     const binaryBadge = totalPanel?.querySelector<HTMLElement>(".total-base-indicator");
     assert.equal(binaryBadge?.getAttribute("aria-hidden"), "false", "binary badge is visible in binary mode");
     assert.equal(binaryBadge?.textContent, "| BIN |", "binary badge renders framed token");
+
+    const withComplexRealLine = withCalculatorProjection(withTotal, "f", (projected) => ({
+      ...projected,
+      calculator: {
+        ...projected.calculator,
+        total: c(7n, 0n),
+      },
+    }));
+    renderer.render(withComplexRealLine, dispatch, {
+            inputBlocked: false,
+    });
+    assert.equal(totalPanel?.getAttribute("aria-label"), "Total 7", "zero-imaginary complex totals render as real-line display label");
+
+    const withComplexImaginary = withCalculatorProjection(withTotal, "f", (projected) => ({
+      ...projected,
+      calculator: {
+        ...projected.calculator,
+        total: c(0n, 3n),
+      },
+    }));
+    renderer.render(withComplexImaginary, dispatch, {
+            inputBlocked: false,
+    });
+    assert.equal(totalPanel?.getAttribute("aria-label"), "Total complex", "non-zero imaginary totals keep complex display label");
+
     const withErrorTotal = withCalculatorProjection(withTotal, "f", (projected) => ({
       ...projected,
       calculator: {
@@ -418,9 +452,9 @@ export const runUiIntegrationMobileShellTests = (): void => {
     const withEqualsAutoOn = reducer(steppedOnce, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
     const afterAutoTick = reducer(withEqualsAutoOn, { type: "AUTO_STEP_TICK" });
     const steppedThenEquals = reducer(afterAutoTick, { type: "AUTO_STEP_TICK" });
-    assert.deepEqual(
-      steppedThenEquals.calculator.total,
-      r(9n),
+    assert.equal(
+      calculatorValuesEquivalent(steppedThenEquals.calculator.total, rv(9n)),
+      true,
       "mixed step-through then equals-toggle auto-step continues remaining slots from partial cursor",
     );
 

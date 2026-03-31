@@ -1,5 +1,5 @@
 import type { CalculatorValue, PrimeFactorTerm, RationalPrimeFactorization, RationalValue, RollEntry, ScalarValue } from "./types.js";
-import { expressionToAlgebriteString } from "./expression.js";
+import { expressionToAlgebriteString, expressionToRational } from "./expression.js";
 
 export type RollValueDomain =
   | "\u2205"
@@ -7,6 +7,7 @@ export type RollValueDomain =
   | "\u2115"
   | "\u2124"
   | "\u211A"
+  | "\u2124(\u{1D540})"
   | "\u{1D538}"
   | "\u{1D540}(\u2115)"
   | "\u{1D540}(\u2124)"
@@ -115,6 +116,17 @@ export const getRollYDomain = (value: CalculatorValue): RollValueDomain => {
     const imaginary = value.value.im;
     if (imaginary.kind === "rational" && imaginary.value.num === 0n) {
       return getScalarDomain(real);
+    }
+    const realRational = real.kind === "rational" ? real.value : expressionToRational(real.value);
+    const imaginaryRational = imaginary.kind === "rational" ? imaginary.value : expressionToRational(imaginary.value);
+    if (
+      realRational
+      && imaginaryRational
+      && realRational.den === 1n
+      && imaginaryRational.den === 1n
+      && imaginaryRational.num !== 0n
+    ) {
+      return "\u2124(\u{1D540})";
     }
     const pureImaginary = real.kind === "rational" && real.value.num === 0n;
     if (!pureImaginary) {

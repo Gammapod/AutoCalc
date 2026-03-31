@@ -39,6 +39,13 @@ Release sequencing for implementation is maintained in `docs/planning/Planned Re
 - Domain-invalid input returns `nan_input` and emits `NaN` roll error.
 - Unsupported symbolic/complex operator paths return `unsupported_symbolic`; no float fallback is allowed.
 
+6. Approximation is branch-only and deterministic.
+- Stored/returned operator values remain exact (`rational` / `expr` / `complex`); no approximate roll values are persisted.
+- Ordered comparisons use exact-first evaluation; numeric approximation is only fallback for branch decisions.
+- Approximate tie-band is `epsilon = 1e-12`.
+- `unary_not` boundary/tie resolves as on-line (`1`).
+- `op_max` / `op_min` ties resolve to the left operand.
+
 ## Gameplay and operations invariants
 
 1. Active-roll input gating is stable.
@@ -50,7 +57,7 @@ Release sequencing for implementation is maintained in `docs/planning/Planned Re
 - Any non-rational/non-scalar result path (including complex) marks roll analysis invalid for that step path.
 
 3. Domain projection is display contract, not execution authorization.
-- Complex outputs must map to `I(*)` for pure-imaginary and `C` for mixed complex.
+- Complex outputs map to `ℤ(𝕀)` when Gaussian (`im != 0` and integer `re/im`), else `I(*)` for pure-imaginary and `C` for mixed complex.
 - Domain display does not imply operator acceptance; operator policy table below is authoritative.
 
 4. Complex left-operand execution is first-class.
@@ -74,26 +81,26 @@ Policy classes:
 | `op_mul` | Rejects complex running total | `complex_total` | Implement complex multiplication `(ac-bd) + (ad+bc)i`. |
 | `op_div` | Rejects complex running total | `complex_total` | Implement complex division with explicit zero-denominator guard on complex denominator norm. |
 | `op_pow` | Rational-only fast path with bigint exponent; symbolic path currently unsupported | `pending_policy` | Split policy: integer exponent support for complex base vs. explicit reject for non-integer exponent until branch-cut policy is frozen. |
-| `op_euclid_div` | Exact Euclidean quotient/remainder on rational totals | `integer_only` | Keep reject on complex; add explicit policy-coded reject reason test cases. |
-| `op_mod` | Exact Euclidean remainder on rational totals | `integer_only` | Keep reject on complex; add explicit policy-coded reject reason test cases. |
-| `op_rotate_left` | Decimal digit rotation on integer totals | `digit_only` | Keep reject on complex; no complex-plane rotation in this operator. |
-| `op_gcd` | Integer-only gcd | `integer_only` | Keep reject on complex; add coverage matrix entries. |
-| `op_lcm` | Integer-only lcm | `integer_only` | Keep reject on complex; add coverage matrix entries. |
-| `op_max` | Real-rational compare | `ordered_real_only` | Keep reject on complex; enforce ordered-domain guard coverage. |
-| `op_min` | Real-rational compare | `ordered_real_only` | Keep reject on complex; enforce ordered-domain guard coverage. |
+| `op_euclid_div` | Rational euclidean division; complex-left uses Gaussian norm when applicable | `complex_total` | If Gaussian complex-left, run on `N(a+bi)`; non-Gaussian complex keeps non-integer reject parity. |
+| `op_mod` | Rational euclidean remainder; complex-left uses Gaussian norm when applicable | `complex_total` | If Gaussian complex-left, run on `N(a+bi)`; non-Gaussian complex keeps non-integer reject parity. |
+| `op_rotate_left` | Decimal digit rotation on integer totals | `complex_total` | For Gaussian complex-left, rotate `re` and `im` componentwise; non-Gaussian keeps non-integer reject parity. |
+| `op_gcd` | Integer gcd / Gaussian norm gcd | `complex_total` | For Gaussian complex-left, apply gcd on `N(a+bi)`; non-Gaussian keeps non-integer reject parity. |
+| `op_lcm` | Integer lcm / Gaussian norm lcm | `complex_total` | For Gaussian complex-left, apply lcm on `N(a+bi)`; non-Gaussian keeps non-integer reject parity. |
+| `op_max` | Magnitude compare (`|left|` vs `|right|`) | `complex_total` | Accept all complex-left values; exact-first compare with approx fallback, ties choose left. |
+| `op_min` | Magnitude compare (`|left|` vs `|right|`) | `complex_total` | Accept all complex-left values; exact-first compare with approx fallback, ties choose left. |
 | `unary_inc` | Integer-only (`den === 1`) | `complex_total` | Generalize to exact `+1` on scalar and complex values (complex adds to real component). |
 | `unary_dec` | Integer-only (`den === 1`) | `complex_total` | Generalize to exact `-1` on scalar and complex values (complex subtracts from real component). |
 | `unary_neg` | Integer-only (`den === 1`) | `complex_total` | Generalize to exact multiply by `-1` for scalar and complex values. |
 | `unary_i` | Supported on scalar and complex totals | `complex_total` | Keep behavior; add matrix coverage across rational/expr/complex quadrants. |
-| `unary_sigma` | Integer-only, zero invalid | `integer_only` | Keep reject on complex; add policy-consistent reject reasons. |
-| `unary_phi` | Integer-only, zero invalid | `integer_only` | Keep reject on complex; add policy-consistent reject reasons. |
-| `unary_omega` | Integer-only, zero invalid | `integer_only` | Keep reject on complex; add policy-consistent reject reasons. |
-| `unary_not` | Integer-only (`<=0 -> 1 else 0`) | `integer_only` | Keep reject on complex; assert non-orderable domain reject behavior. |
-| `unary_collatz` | Integer-only | `integer_only` | Keep reject on complex; add matrix coverage. |
-| `unary_sort_asc` | Integer digit transform | `digit_only` | Keep reject on complex; add matrix coverage. |
-| `unary_mirror_digits` | Integer digit transform | `digit_only` | Keep reject on complex; add matrix coverage. |
-| `unary_floor` | Real-rational floor | `ordered_real_only` | Freeze policy as ordered-real-only; keep reject on complex. |
-| `unary_ceil` | Real-rational ceil | `ordered_real_only` | Freeze policy as ordered-real-only; keep reject on complex. |
+| `unary_sigma` | Integer divisor-sum; Gaussian uses norm | `complex_total` | For Gaussian complex-left, apply on `N(a+bi)`; non-Gaussian complex keeps non-integer reject parity. |
+| `unary_phi` | Integer totient; Gaussian uses norm | `complex_total` | For Gaussian complex-left, apply on `N(a+bi)`; non-Gaussian complex keeps non-integer reject parity. |
+| `unary_omega` | Integer prime-factor count; Gaussian uses norm | `complex_total` | For Gaussian complex-left, apply on `N(a+bi)`; non-Gaussian complex keeps non-integer reject parity. |
+| `unary_not` | `re + im <= 0 ? 1 : 0` | `complex_total` | Accept all complex-left values; exact-first compare with approx fallback and tie-as-on-line (`1`). |
+| `unary_collatz` | Integer-only transform | `complex_total` | For Gaussian complex-left, apply componentwise; non-Gaussian complex keeps non-integer reject parity. |
+| `unary_sort_asc` | Integer digit transform | `complex_total` | For Gaussian complex-left, apply componentwise; non-Gaussian complex keeps non-integer reject parity. |
+| `unary_mirror_digits` | Integer digit transform | `complex_total` | For Gaussian complex-left, apply componentwise; non-Gaussian complex keeps non-integer reject parity. |
+| `unary_floor` | Componentwise floor | `complex_total` | Accept all complex-left values and floor `re`/`im` separately. |
+| `unary_ceil` | Componentwise ceil | `complex_total` | Accept all complex-left values and ceil `re`/`im` separately. |
 
 ## Coverage invariants for rollout
 

@@ -1,4 +1,10 @@
-import { calculatorValueToDisplayString, isComplexCalculatorValue, isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
+import {
+  calculatorValueToDisplayString,
+  isComplexCalculatorValue,
+  isRationalCalculatorValue,
+  isRealEquivalentCalculatorValue,
+  scalarValueToCalculatorValue,
+} from "../../../domain/calculatorValue.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { projectControlFromState } from "../../../domain/controlProjection.js";
 import { projectEligibleUnlockHintProgressRows, type UnlockHintProgressRow } from "../../../domain/unlockHintProgress.js";
@@ -217,10 +223,15 @@ const renderSevenSegmentValue = (
     fractionAsToken?: boolean;
   } = {},
 ): void => {
+  const displayValue = (
+    value.kind === "complex" && isRealEquivalentCalculatorValue(value)
+      ? scalarValueToCalculatorValue(value.value.re)
+      : value
+  );
   const fractionAsToken = options.fractionAsToken ?? true;
-  const rationalValue = isRationalCalculatorValue(value) ? value.value : null;
-  const isNaNValue = value.kind === "nan";
-  const isComplexValue = isComplexCalculatorValue(value);
+  const rationalValue = isRationalCalculatorValue(displayValue) ? displayValue.value : null;
+  const isNaNValue = displayValue.kind === "nan";
+  const isComplexValue = isComplexCalculatorValue(displayValue);
   const hasRationalValue = rationalValue !== null;
   const hasIntegerValue = hasRationalValue && rationalValue.den === 1n;
   const isNegative =
@@ -237,7 +248,7 @@ const renderSevenSegmentValue = (
   if (!hasRationalValue) {
     const symbolic = document.createElement("div");
     symbolic.className = "seg-fraction";
-    symbolic.textContent = calculatorValueToDisplayString(value);
+    symbolic.textContent = calculatorValueToDisplayString(displayValue);
     target.appendChild(symbolic);
     return;
   }
@@ -254,7 +265,7 @@ const renderSevenSegmentValue = (
     return;
   }
 
-  const slotModels = buildTotalSlotModel(value, unlockedDigits, radix);
+  const slotModels = buildTotalSlotModel(displayValue, unlockedDigits, radix);
 
   const firstActiveIndex = slotModels.findIndex((slot) => slot.state === "active");
   const signSlotIndex = isNegative && firstActiveIndex > 0 ? firstActiveIndex - 1 : -1;
@@ -405,16 +416,21 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     return;
   }
   const defaultDisplayLabel = (() => {
+    const displayValue = (
+      state.calculator.total.kind === "complex" && isRealEquivalentCalculatorValue(state.calculator.total)
+        ? scalarValueToCalculatorValue(state.calculator.total.value.re)
+        : state.calculator.total
+    );
     if (shouldDisplayAlgLabel) {
       return "ALG";
     }
-    if (isComplexCalculatorValue(state.calculator.total)) {
+    if (isComplexCalculatorValue(displayValue)) {
       return "complex";
     }
-    if (binaryModeEnabled && state.calculator.total.kind === "rational" && state.calculator.total.value.den === 1n) {
-      return state.calculator.total.value.num.toString(2);
+    if (binaryModeEnabled && displayValue.kind === "rational" && displayValue.value.den === 1n) {
+      return displayValue.value.num.toString(2);
     }
-    return calculatorValueToDisplayString(state.calculator.total);
+    return calculatorValueToDisplayString(displayValue);
   })();
   totalEl.setAttribute("aria-label", `Total ${defaultDisplayLabel}`);
   renderSevenSegmentValue(
