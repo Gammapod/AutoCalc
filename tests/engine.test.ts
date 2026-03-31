@@ -195,16 +195,38 @@ export const runEngineTests = (): void => {
   const euclidOnGaussian = executeSlotsValue(gaussianInput, [{ operator: op("op_euclid_div"), operand: 4n }]);
   assert.deepEqual(
     euclidOnGaussian,
-    { ok: true, total: toRationalCalculatorValue({ num: 6n, den: 1n }), euclidRemainder: { num: 1n, den: 1n } },
-    "euclid-div on gaussian complex uses norm",
+    { ok: true, total: toRationalCalculatorValue({ num: 1n, den: 1n }), euclidRemainder: { num: 1n, den: 1n } },
+    "euclid-div on gaussian complex uses magnitude",
   );
 
   const modOnGaussian = executeSlotsValue(gaussianInput, [{ operator: op("op_mod"), operand: 4n }]);
   assert.deepEqual(
     modOnGaussian,
     { ok: true, total: toRationalCalculatorValue({ num: 1n, den: 1n }), euclidRemainder: { num: 1n, den: 1n } },
-    "mod on gaussian complex uses norm",
+    "mod on gaussian complex uses magnitude",
   );
+
+  const irrationalMagnitudeInput = {
+    kind: "complex" as const,
+    value: {
+      re: toRationalScalarValue({ num: 3n, den: 1n }),
+      im: toRationalScalarValue({ num: 3n, den: 1n }),
+    },
+  };
+  const euclidOnIrrationalMagnitude = executeSlotsValue(irrationalMagnitudeInput, [{ operator: op("op_euclid_div"), operand: 2n }]);
+  assert.deepEqual(
+    euclidOnIrrationalMagnitude,
+    { ok: true, total: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+    "euclid-div on irrational gaussian magnitude returns floor quotient from |z|",
+  );
+
+  const modOnIrrationalMagnitude = executeSlotsValue(irrationalMagnitudeInput, [{ operator: op("op_mod"), operand: 2n }]);
+  assert.equal(modOnIrrationalMagnitude.ok, true, "mod on irrational gaussian magnitude succeeds");
+  if (!modOnIrrationalMagnitude.ok) {
+    throw new Error("Expected irrational magnitude mod to succeed.");
+  }
+  assert.equal(modOnIrrationalMagnitude.total.kind, "expr", "irrational gaussian mod stores exact symbolic remainder");
+  assert.equal("euclidRemainder" in modOnIrrationalMagnitude, false, "non-rational remainder is not stored in rational remainder metadata");
 
   const gcdOnGaussian = executeSlotsValue(gaussianInput, [{ operator: op("op_gcd"), operand: 15n }]);
   assert.deepEqual(gcdOnGaussian, { ok: true, total: toRationalCalculatorValue({ num: 5n, den: 1n }) }, "gcd on gaussian complex uses norm");

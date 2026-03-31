@@ -67,7 +67,7 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Status: `ready`
 - User Story: As a player, I want remaining deferred operators to work with complex totals under consistent Gaussian and comparison rules.
 - Exit Criteria:
-- Gaussian norm policy implemented for `op_euclid_div`, `op_mod`, `op_gcd`, `op_lcm`, `unary_sigma`, `unary_phi`, `unary_omega`.
+- Gaussian magnitude policy implemented for `op_euclid_div` and `op_mod`; Gaussian norm policy implemented for `op_gcd`, `op_lcm`, `unary_sigma`, `unary_phi`, `unary_omega`.
 - Componentwise policy implemented for Gaussian paths of `op_rotate_left`, `unary_collatz`, `unary_sort_asc`, `unary_mirror_digits`.
 - `unary_floor` and `unary_ceil` execute componentwise for all complex totals.
 - `op_max` / `op_min` use modulus compare for all complex totals with deterministic tie-left behavior.
