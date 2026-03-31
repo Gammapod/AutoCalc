@@ -667,13 +667,40 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
 
   const gaussianNorm = (value: { re: bigint; im: bigint }): bigint => (value.re * value.re) + (value.im * value.im);
 
-  const gaussianMagnitudeScalar = (value: { re: bigint; im: bigint }): ScalarValue => {
-    const norm = gaussianNorm(value);
-    const root = integerSqrtFloor(norm);
-    if (root * root === norm) {
-      return toRationalScalarValue({ num: root, den: 1n });
+  const roundDivNearestInt = (num: bigint, den: bigint): bigint => {
+    if (den === 0n) {
+      throw new Error("Invalid nearest rounding with zero denominator.");
     }
-    return toExpressionScalarValue({ type: "unary", op: "sqrt", arg: intExpr(norm) });
+    let numerator = num;
+    let denominator = den;
+    if (denominator < 0n) {
+      numerator = -numerator;
+      denominator = -denominator;
+    }
+    const absNumerator = numerator < 0n ? -numerator : numerator;
+    const quotient = absNumerator / denominator;
+    const remainder = absNumerator % denominator;
+    const compare = remainder * 2n;
+    const roundedMagnitude = compare < denominator ? quotient : quotient + 1n;
+    return numerator < 0n ? -roundedMagnitude : roundedMagnitude;
+  };
+
+  const gaussianDivideByInteger = (
+    value: { re: bigint; im: bigint },
+    divisor: bigint,
+  ): { quotient: { re: bigint; im: bigint }; remainder: { re: bigint; im: bigint } } => {
+    if (divisor === 0n) {
+      throw new Error("Invalid gaussian division by zero.");
+    }
+    const quotient = {
+      re: roundDivNearestInt(value.re, divisor),
+      im: roundDivNearestInt(value.im, divisor),
+    };
+    const remainder = {
+      re: value.re - (divisor * quotient.re),
+      im: value.im - (divisor * quotient.im),
+    };
+    return { quotient, remainder };
   };
 
   const asPureRealRational = (value: RuntimeValue): RationalValue | null => {
@@ -1031,43 +1058,33 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
       if (typeof slot.operand !== "bigint") {
         return { ok: false, reason: "unsupported_symbolic" };
       }
-      const norm = { num: gaussianNorm(gaussian), den: 1n };
+      const norm = gaussianNorm(gaussian);
       if (operatorKey === KEY_ID.op_euclid_div || operatorKey === KEY_ID.op_mod) {
-        const magnitude = gaussianMagnitudeScalar(gaussian);
-        if (magnitude.kind === "rational") {
-          const euclidean = euclideanDivide(magnitude.value, slot.operand);
-          if (!euclidean.ok) {
-            return euclidean;
-          }
-          current = toRationalCalculatorValue(
-            operatorKey === KEY_ID.op_euclid_div ? euclidean.quotient : euclidean.remainder,
-          );
-          lastEuclidRemainder = euclidean.remainder;
-          continue;
-        }
         if (slot.operand === 0n) {
           return { ok: false, reason: "division_by_zero" };
         }
-        if (slot.operand < 0n) {
-          return { ok: false, reason: "unsupported_symbolic" };
-        }
-        const floorMagnitude = integerSqrtFloor(norm.num);
-        const quotient = floorMagnitude / slot.operand;
-        const remainder = subScalar(magnitude, toRationalScalarValue({ num: slot.operand * quotient, den: 1n }));
+        const divided = gaussianDivideByInteger(gaussian, slot.operand);
+        const quotient = toComplexCalculatorValue(
+          toRationalScalarValue({ num: divided.quotient.re, den: 1n }),
+          toRationalScalarValue({ num: divided.quotient.im, den: 1n }),
+        );
+        const remainder = toComplexCalculatorValue(
+          toRationalScalarValue({ num: divided.remainder.re, den: 1n }),
+          toRationalScalarValue({ num: divided.remainder.im, den: 1n }),
+        );
         current = operatorKey === KEY_ID.op_euclid_div
-          ? toRationalCalculatorValue({ num: quotient, den: 1n })
-          : scalarValueToCalculatorValue(remainder);
-        const remainderRational = scalarToRational(remainder);
-        lastEuclidRemainder = remainderRational ?? undefined;
+          ? quotient
+          : remainder;
+        lastEuclidRemainder = undefined;
         continue;
       }
       if (operatorKey === KEY_ID.op_gcd) {
-        current = toRationalCalculatorValue({ num: gcdBigInt(norm.num, slot.operand), den: 1n });
+        current = toRationalCalculatorValue({ num: gcdBigInt(norm, slot.operand), den: 1n });
         lastEuclidRemainder = undefined;
         continue;
       }
       if (operatorKey === KEY_ID.op_lcm) {
-        current = toRationalCalculatorValue({ num: lcmBigInt(norm.num, slot.operand), den: 1n });
+        current = toRationalCalculatorValue({ num: lcmBigInt(norm, slot.operand), den: 1n });
         lastEuclidRemainder = undefined;
         continue;
       }

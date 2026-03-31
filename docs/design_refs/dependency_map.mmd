@@ -135,8 +135,9 @@ flowchart TD
 
     Mmul -->|Invert| Mdivtuple("⫽ + ◇")
 
+    Mmodulus --> Meudiv
     Mdivtuple -->|Count| Meudiv["a⫽b"]
-    %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(4 – (3 × ℕ)) ]`
+    %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(|4| – (3 × ℕ)) ]`
 
     Mdivtuple -->|Remainder| Mmod["a◇b"]
     %% Expanded form `[ 4 ◇ 3 ]` -> `[ 3 – (4 × (4 ⫽ 3)) ]`

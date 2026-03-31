@@ -81,8 +81,8 @@ Policy classes:
 | `op_mul` | Rejects complex running total | `complex_total` | Implement complex multiplication `(ac-bd) + (ad+bc)i`. |
 | `op_div` | Rejects complex running total | `complex_total` | Implement complex division with explicit zero-denominator guard on complex denominator norm. |
 | `op_pow` | Rational-only fast path with bigint exponent; symbolic path currently unsupported | `pending_policy` | Split policy: integer exponent support for complex base vs. explicit reject for non-integer exponent until branch-cut policy is frozen. |
-| `op_euclid_div` | Euclidean quotient on magnitude | `complex_total` | If Gaussian complex-left, run euclidean quotient on `|a+bi|`; non-Gaussian complex keeps non-integer reject parity. |
-| `op_mod` | Euclidean remainder on magnitude | `complex_total` | If Gaussian complex-left, run euclidean remainder on `|a+bi|`; non-Gaussian complex keeps non-integer reject parity. |
+| `op_euclid_div` | Gaussian integer quotient for complex-left with integer divisor (`q = round((a+bi)/n)` componentwise); non-Gaussian rejects by rational-only fallback policy | `complex_total` | Full Gaussian divisor input (`w in Z[i]`) is deferred; current path supports integer divisors only. |
+| `op_mod` | Gaussian integer remainder for complex-left with integer divisor (`r = (a+bi) - n*q`) | `complex_total` | Full Gaussian divisor input (`w in Z[i]`) is deferred; current path supports integer divisors only. |
 | `op_rotate_left` | Decimal digit rotation on integer totals | `complex_total` | For Gaussian complex-left, rotate `re` and `im` componentwise; non-Gaussian keeps non-integer reject parity. |
 | `op_gcd` | Integer gcd / Gaussian norm gcd | `complex_total` | For Gaussian complex-left, apply gcd on `N(a+bi)`; non-Gaussian keeps non-integer reject parity. |
 | `op_lcm` | Integer lcm / Gaussian norm lcm | `complex_total` | For Gaussian complex-left, apply lcm on `N(a+bi)`; non-Gaussian keeps non-integer reject parity. |
