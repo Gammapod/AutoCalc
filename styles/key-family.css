@@ -1,0 +1,149 @@
+:root {
+  --key-top: #eef2f5;
+  --key-bottom: #d4dae0;
+  --key-stroke: #5d6773;
+  --key-value-modifier-top: #c2c9d2;
+  --key-value-modifier-bottom: #9fa9b6;
+  --key-value-modifier-stroke: #44515f;
+  --key-slot-operator-top: #6a7380;
+  --key-slot-operator-bottom: #4a5360;
+  --key-slot-operator-stroke: #2f3742;
+  --key-utility-top: #d55f5f;
+  --key-utility-bottom: #a84040;
+  --key-utility-stroke: #6e2424;
+  --key-settings-top: #3a6da8;
+  --key-settings-bottom: #274f82;
+  --key-settings-stroke: #1d3e66;
+  --settings-subgroup-visualizers-stripe-on: #79c3ff;
+  --settings-subgroup-visualizers-text-on: #79c3ff;
+  --settings-subgroup-visualizers-stripe-off: #436b8c;
+  --settings-subgroup-visualizers-text-off: #436b8c;
+  --settings-subgroup-visualizers-stripe: var(--settings-subgroup-visualizers-stripe-on);
+  --settings-subgroup-visualizers-text: var(--settings-subgroup-visualizers-text-on);
+  --settings-subgroup-mod-wrap-stripe-on: #f2c14e;
+  --settings-subgroup-mod-wrap-text-on: #f2c14e;
+  --settings-subgroup-mod-wrap-stripe-off: #856a2b;
+  --settings-subgroup-mod-wrap-text-off: #856a2b;
+  --settings-subgroup-mod-wrap-stripe: var(--settings-subgroup-mod-wrap-stripe-on);
+  --settings-subgroup-mod-wrap-text: var(--settings-subgroup-mod-wrap-text-on);
+  --settings-subgroup-step-expansion-stripe-on: #63c26b;
+  --settings-subgroup-step-expansion-text-on: #63c26b;
+  --settings-subgroup-step-expansion-stripe-off: #366b3b;
+  --settings-subgroup-step-expansion-text-off: #366b3b;
+  --settings-subgroup-step-expansion-stripe: var(--settings-subgroup-step-expansion-stripe-on);
+  --settings-subgroup-step-expansion-text: var(--settings-subgroup-step-expansion-text-on);
+  --settings-subgroup-base2-stripe-on: #ff9f43;
+  --settings-subgroup-base2-text-on: #ff9f43;
+  --settings-subgroup-base2-stripe-off: #8c5725;
+  --settings-subgroup-base2-text-off: #8c5725;
+  --settings-subgroup-base2-stripe: var(--settings-subgroup-base2-stripe-on);
+  --settings-subgroup-base2-text: var(--settings-subgroup-base2-text-on);
+  --key-global-system-top: #9f7c43;
+  --key-global-system-bottom: #77572d;
+  --key-global-system-stroke: #4f381b;
+  --key-memory-top: #8f66b7;
+  --key-memory-bottom: #6f4897;
+  --key-memory-stroke: #472c63;
+  --key-step-top: #e0a93e;
+  --key-step-bottom: #b87619;
+  --key-step-stroke: #6f420b;
+  --key-visualizers-top: #5d8fdf;
+  --key-visualizers-bottom: #3f67ad;
+  --key-visualizers-stroke: #264272;
+  --key-execution-top: #4f8f67;
+  --key-execution-bottom: #2f6c4a;
+  --key-execution-stroke: #1f4a33;
+  --key-press-depth: 2px;
+  --key-latch-depth: 2px;
+  --key-overpress-depth: 3px;
+  --key-release-depth: 1px;
+  --key-press-in-duration: 0ms;
+  --key-release-duration: 95ms;
+  --key-release-delay: 40ms;
+}
+
+.key--value-modifier {
+  border-color: var(--key-value-modifier-stroke);
+  background: linear-gradient(180deg, var(--key-value-modifier-top), var(--key-value-modifier-bottom));
+  color: #0f1218;
+}
+
+.key--group-slot_operator,
+.key.key--unary-operator {
+  border-color: var(--key-slot-operator-stroke);
+  background: linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
+  color: #ffffff;
+}
+
+.key--group-utility {
+  border-color: var(--key-utility-stroke);
+  background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
+  color: #ffffff;
+}
+
+.key--group-memory {
+  border-color: var(--key-memory-stroke);
+  background: linear-gradient(180deg, var(--key-memory-top), var(--key-memory-bottom));
+  color: #ffffff;
+}
+
+.key--group-settings {
+  border-color: var(--key-settings-stroke);
+  background: linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
+  color: #ffffff;
+}
+
+.key--group-global_system {
+  border-color: var(--key-global-system-stroke);
+  background: linear-gradient(180deg, var(--key-global-system-top), var(--key-global-system-bottom));
+  color: #ffffff;
+}
+
+.key--group-step {
+  border-color: var(--key-step-stroke);
+  background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
+  color: #ffffff;
+}
+
+.key--group-execution {
+  border-color: var(--key-execution-stroke);
+  background: linear-gradient(180deg, var(--key-execution-top), var(--key-execution-bottom));
+  color: #ffffff;
+}
+
+.key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-settings):not(.key--group-global_system):not(.key--group-step):not(.key--group-execution):not(:disabled) {
+  background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
+}
+
+.key.key--toggle-active.key--value-modifier:not(:disabled) {
+  background: linear-gradient(180deg, var(--key-value-modifier-bottom), var(--key-value-modifier-top));
+}
+
+.key.key--toggle-active.key--group-slot_operator:not(:disabled),
+.key.key--toggle-active.key--unary-operator:not(:disabled) {
+  background: linear-gradient(180deg, var(--key-slot-operator-bottom), var(--key-slot-operator-top));
+}
+
+.key.key--toggle-active.key--group-utility:not(:disabled) {
+  background: linear-gradient(180deg, var(--key-utility-bottom), var(--key-utility-top));
+}
+
+.key.key--toggle-active.key--group-memory:not(:disabled) {
+  background: linear-gradient(180deg, var(--key-memory-bottom), var(--key-memory-top));
+}
+
+.key.key--toggle-active.key--group-settings:not(:disabled) {
+  background: linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
+}
+
+.key.key--toggle-active.key--group-global_system:not(:disabled) {
+  background: linear-gradient(180deg, var(--key-global-system-bottom), var(--key-global-system-top));
+}
+
+.key.key--toggle-active.key--group-step:not(:disabled) {
+  background: linear-gradient(180deg, var(--key-step-bottom), var(--key-step-top));
+}
+
+.key.key--toggle-active.key--group-execution:not(:disabled) {
+  background: linear-gradient(180deg, var(--key-execution-bottom), var(--key-execution-top));
+}
