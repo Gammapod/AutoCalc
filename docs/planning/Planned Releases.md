@@ -84,6 +84,49 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Next
 
+### Slice `slice_error_state_regularization_for_visualizers`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want overflow and NaN/error states to be canonical and mutually exclusive so visualizer behavior is deterministic.
+- Exit Criteria:
+- Canonical visualizer-facing error taxonomy is documented in one source of truth (`overflow`, `nan_or_error`, and non-error).
+- Overflow and NaN/error are explicitly defined as mutually exclusive runtime states; impossible combinations are prevented or normalized at projection boundaries.
+- Existing error signals used by visualizers are audited; ambiguous or duplicate flags are removed or mapped to canonical states.
+- A precondition contract exists for visualizers: each render pass receives exactly one error-state classification.
+
+### Slice `slice_visualizer_cartesian_v1_real_axis`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want a Cartesian visualizer that always shows a horizontal number line and the current-value vector from origin so value position is immediately readable.
+- Exit Criteria:
+- New visualizer id/key/panel wiring exists for `cartesian` with standard host behavior (single active panel, inactive-panel clear).
+- Horizontal axis is always rendered with 19 ticks total (`-9..9`), with end ticks treated as unlabeled semantic bounds.
+- Center tick is visually emphasized (same thickness as axis stroke), with no numeric labels on ticks.
+- Real-mode vector renders from origin to current real position and is unlabeled.
+- Horizontal axis remains within normal visualizer window bounds in host layouts.
+
+### Slice `slice_visualizer_cartesian_v1_complex_grid`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want complex totals to render on a Cartesian plane so both real and imaginary components are visible in one view.
+- Exit Criteria:
+- Complex plane mode is triggered only when current value is complex with `im != 0`; values with `im = 0` render as real-only mode.
+- In complex mode, a vertical axis of equal length/subdivision to horizontal is shown and axis ticks project to a full grid.
+- Complex vector renders from origin to `(Re, Im)` coordinates and is unlabeled.
+- Vertical axis tips and grid are allowed to clip in v1; clipping behavior is explicit and accepted by contract.
+- The Cartesian viewport is square in complex mode, even when the square exceeds current host fit window.
+
+### Slice `slice_visualizer_cartesian_v1_range_and_error_semantics`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want Cartesian scaling and error cues to match existing graph semantics so behavior is consistent across visualizers.
+- Exit Criteria:
+- Cartesian max magnitude uses the same computation as graph visualizer window policy (`radix^digits - 1` semantics).
+- End ticks represent semantic bounds only; no endpoint labels are shown.
+- On overflow state, rendered vector switches to explicit red treatment.
+- On NaN/error state, a prominent red null-set symbol (`∅`) is centered at origin and visually overlays axis content.
+- Symbolic-result handling is not expanded in this slice; symbolic cleanup remains scoped to a separate dedicated slice.
+
 ### Slice `slice_ux_feedback_standardization`
 - Owner: `TBD`
 - Status: `ready`
