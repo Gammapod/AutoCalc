@@ -1,6 +1,8 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { executeCommand } from "../src/domain/commands.js";
+import { executePlanIR, executePlanIRLegacyPath } from "../src/domain/engine.js";
+import { buildExecutionPlanIR } from "../src/domain/executionPlanIR.js";
 import { reducer } from "../src/domain/reducer.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
@@ -243,6 +245,65 @@ export const runContractsExecutionGateParityTests = (): void => {
     { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
   );
 
+  const captureCalculatorAndProgression = (state: GameState) => ({
+    calculator: state.calculator,
+    unlocks: state.unlocks,
+    keyPressCounts: state.keyPressCounts,
+    completedUnlockIds: state.completedUnlockIds,
+    perCalculatorCompletedUnlockIds: state.perCalculatorCompletedUnlockIds,
+    allocatorAllocatePressCount: state.allocatorAllocatePressCount,
+    allocatorReturnPressCount: state.allocatorReturnPressCount,
+  });
+
+  const pausedActionMatrix: Array<{
+    label: string;
+    state: GameState;
+    action: Action;
+    expected: "reject" | "interrupt";
+  }> = [
+    { label: "matrix: paused digit rejected", state: pausedState, action: { type: "PRESS_KEY", key: k("digit_1") }, expected: "reject" },
+    { label: "matrix: paused operator rejected", state: pausedState, action: { type: "PRESS_KEY", key: op("op_add") }, expected: "reject" },
+    { label: "matrix: paused keypad-dimensions rejected", state: pausedState, action: { type: "SET_KEYPAD_DIMENSIONS", columns: 4, rows: 2 }, expected: "reject" },
+    { label: "matrix: paused row upgrade rejected", state: pausedState, action: { type: "UPGRADE_KEYPAD_ROW" }, expected: "reject" },
+    { label: "matrix: paused col upgrade rejected", state: pausedState, action: { type: "UPGRADE_KEYPAD_COLUMN" }, expected: "reject" },
+    { label: "matrix: paused backspace interrupts", state: pausedState, action: { type: "PRESS_KEY", key: k("util_backspace") }, expected: "interrupt" },
+    {
+      label: "matrix: paused memory-cycle interrupts",
+      state: pausedStateWithMemoryCycle,
+      action: { type: "PRESS_KEY", key: KEY_ID.memory_cycle_variable },
+      expected: "interrupt",
+    },
+    { label: "matrix: paused equals-toggle interrupts", state: pausedState, action: { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG }, expected: "interrupt" },
+  ];
+
+  for (const row of pausedActionMatrix) {
+    const reduced = reducer(row.state, row.action);
+    const commandResult = executeCommand(row.state, { type: "DispatchAction", action: row.action });
+    const commandReduced = commandResult.state;
+    const parity = compareParity(reduced, commandReduced);
+    assert.equal(parity.ok, true, `${row.label}: reducer and command outcomes stay parity-equivalent (${JSON.stringify(parity.mismatches)})`);
+    if (row.expected === "reject") {
+      assert.deepEqual(
+        captureCalculatorAndProgression(reduced),
+        captureCalculatorAndProgression(row.state),
+        `${row.label}: reducer path keeps calculator/progression non-mutating`,
+      );
+      assert.deepEqual(
+        captureCalculatorAndProgression(commandReduced),
+        captureCalculatorAndProgression(row.state),
+        `${row.label}: command path keeps calculator/progression non-mutating`,
+      );
+      assert.equal(Boolean(reduced.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), true, `${row.label}: pause flag remains set on reducer rejection`);
+      assert.equal(Boolean(commandReduced.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), true, `${row.label}: pause flag remains set on command rejection`);
+    } else {
+      assert.notDeepEqual(reduced, row.state, `${row.label}: reducer path mutates when interrupting`);
+      assert.notDeepEqual(commandReduced, row.state, `${row.label}: command path mutates when interrupting`);
+      assert.equal(Boolean(reduced.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, `${row.label}: interrupt clears reducer pause flag`);
+      assert.equal(Boolean(commandReduced.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, `${row.label}: interrupt clears command pause flag`);
+      assert.equal(commandResult.uiEffects.length, 0, `${row.label}: command interrupt emits no reject UI effect`);
+    }
+  }
+
   const rollInverseAcceptedSeed: GameState = {
     ...pausedState,
     unlocks: {
@@ -305,6 +366,15 @@ export const runContractsExecutionGateParityTests = (): void => {
     autoStepParity.ok,
     true,
     `auto-step tick parity remains equivalent (${JSON.stringify(autoStepParity.mismatches)})`,
+  );
+
+  const policyParityTotal = { kind: "rational" as const, value: { num: 5n, den: 1n } };
+  const policyParitySlots = [{ operator: op("op_div"), operand: 0n }];
+  const built = buildExecutionPlanIR(policyParityTotal, policyParitySlots);
+  assert.deepEqual(
+    executePlanIR(built.plan),
+    executePlanIRLegacyPath(built.plan),
+    "execution-gate suite: execution policy routing remains parity-equivalent for error payloads",
   );
 };
 

@@ -1,5 +1,37 @@
 Truth 2: Releases
 
+# Release v0.9.32: IR-First Execution Consolidation (Shipped 2026-03-31)
+
+### User Story
+As a player, I want execution behavior to remain deterministic while the runtime architecture is consolidated, so cleanup/refactor work does not change outcomes.
+
+### Delivered Behavior
+- Consolidated reducer execution progression onto typed execution IR helpers across:
+  - equals terminal execution
+  - step-through progression
+  - equals-toggle auto-step progression
+  - wrap-tail terminal handling.
+- Kept engine runtime IR-first and reduced legacy surface to a single internal parity comparator path.
+- Unified plan-model ownership so wrap-stage semantics resolve from IR authority and compatibility adapters.
+- Expanded deterministic parity harness coverage for:
+  - IR builder/execution equivalence
+  - reducer execution routing behavior
+  - targeted multi-calculator execution isolation traces.
+
+### Exit Criteria Snapshot
+- Focused IR/parity and guard suites passed.
+- Full release checkpoints passed at cut:
+  - `npm run build:web:full`
+  - `npm test` (`124/124` test groups)
+  - `npm run ci:verify:boundaries`
+
+### Release Notes
+- Release Note ID: `release_v0_9_32`
+- Player-facing summary: Execution architecture is now IR-first with parity-locked behavior and expanded regression harness coverage.
+- Highlights:
+- IR-first reducer/engine execution paths now provide a unified, deterministic evaluation flow.
+- Cleanup-wave hardening gates are fully green and documentation is synchronized.
+
 # Release v0.9.30: Boundary Contracts and Cue Decoupling (Shipped 2026-03-28)
 
 ### User Story

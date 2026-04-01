@@ -101,6 +101,110 @@ export const runMultiCalculatorContractTests = (): void => {
     "multi-calculator normalization removes duplicate unlocked keys from storage when key exists on keypad",
   );
   const dualWithActiveF = reducer(dualUnlocked, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" });
+  const captureExecutionLocalShape = (state: GameState, calculatorId: "f" | "g") => {
+    const projected = projectCalculatorToLegacy(state, calculatorId);
+    return {
+      total: projected.calculator.total,
+      rollEntries: projected.calculator.rollEntries,
+      draftingSlot: projected.calculator.draftingSlot,
+      operationSlots: projected.calculator.operationSlots,
+      stepProgress: projected.calculator.stepProgress,
+      selectedControlField: projected.ui.selectedControlField,
+    };
+  };
+
+  const executionIsolationSeed: GameState = {
+    ...dualWithActiveF,
+    unlocks: {
+      ...dualWithActiveF.unlocks,
+      utilities: {
+        ...dualWithActiveF.unlocks.utilities,
+        [KEY_ID.util_clear_all]: true,
+      },
+    },
+    calculators: {
+      ...dualWithActiveF.calculators,
+      f: dualWithActiveF.calculators?.f
+        ? {
+            ...dualWithActiveF.calculators.f,
+            ui: {
+              ...dualWithActiveF.calculators.f.ui,
+              selectedControlField: "alpha",
+            },
+            calculator: {
+              ...dualWithActiveF.calculators.f.calculator,
+              total: rational(17n),
+              rollEntries: [{ y: rational(17n) }],
+              draftingSlot: { operator: KEY_ID.op_add, operandInput: "5", isNegative: false },
+              operationSlots: [{ operator: KEY_ID.op_add, operand: 2n }],
+              stepProgress: {
+                active: false,
+                seedTotal: null,
+                currentTotal: null,
+                nextSlotIndex: 0,
+                executedSlotResults: [],
+              },
+            },
+          }
+        : dualWithActiveF.calculators?.f,
+      g: dualWithActiveF.calculators?.g
+        ? {
+            ...dualWithActiveF.calculators.g,
+            ui: {
+              ...dualWithActiveF.calculators.g.ui,
+              selectedControlField: "gamma",
+            },
+            calculator: {
+              ...dualWithActiveF.calculators.g.calculator,
+              total: rational(3n),
+              rollEntries: [{ y: rational(3n) }, { y: rational(7n) }],
+              draftingSlot: { operator: KEY_ID.op_add, operandInput: "9", isNegative: false },
+              operationSlots: [{ operator: KEY_ID.op_add, operand: 4n }],
+              stepProgress: {
+                active: true,
+                seedTotal: rational(3n),
+                currentTotal: rational(7n),
+                nextSlotIndex: 1,
+                executedSlotResults: [rational(7n)],
+              },
+            },
+          }
+        : dualWithActiveF.calculators?.g,
+    },
+  };
+  const fLocalBeforeTargetedExec = captureExecutionLocalShape(executionIsolationSeed, "f");
+  const afterTargetedExecEqualsG = reducer(executionIsolationSeed, {
+    type: "PRESS_KEY",
+    key: KEY_ID.util_clear_all,
+    calculatorId: "g",
+  });
+  const fLocalAfterTargetedExec = captureExecutionLocalShape(afterTargetedExecEqualsG, "f");
+  const gLocalAfterTargetedExec = captureExecutionLocalShape(afterTargetedExecEqualsG, "g");
+  assert.deepEqual(fLocalAfterTargetedExec, fLocalBeforeTargetedExec, "targeted g execution keeps f local execution state unchanged");
+  assert.notDeepEqual(gLocalAfterTargetedExec, captureExecutionLocalShape(executionIsolationSeed, "g"), "targeted g execution mutates g-local execution state");
+  assert.equal(afterTargetedExecEqualsG.activeCalculatorId, "f", "targeted g execution does not switch active calculator");
+  assert.equal(
+    afterTargetedExecEqualsG.allocatorReturnPressCount,
+    executionIsolationSeed.allocatorReturnPressCount,
+    "targeted g execution does not mutate shared allocator counters",
+  );
+
+  const fLocalBeforeGlobalAction = captureExecutionLocalShape(afterTargetedExecEqualsG, "f");
+  const afterGlobalCounterFromG = reducer(afterTargetedExecEqualsG, {
+    type: "ALLOCATOR_RETURN_PRESSED",
+    calculatorId: "g",
+  });
+  assert.equal(
+    afterGlobalCounterFromG.allocatorReturnPressCount,
+    (afterTargetedExecEqualsG.allocatorReturnPressCount ?? 0) + 1,
+    "global action family may mutate shared progression counters even when calculatorId targets g",
+  );
+  assert.deepEqual(
+    captureExecutionLocalShape(afterGlobalCounterFromG, "f"),
+    fLocalBeforeGlobalAction,
+    "global counter mutation still keeps f-local execution state unchanged",
+  );
+
   const beforeFProjection = projectCalculatorToLegacy(dualWithActiveF, "f");
   const beforeGProjection = projectCalculatorToLegacy(dualWithActiveF, "g");
   const afterTargetedGInput = reducer(dualWithActiveF, { type: "SET_KEYPAD_DIMENSIONS", calculatorId: "g", columns: 3, rows: 2 });

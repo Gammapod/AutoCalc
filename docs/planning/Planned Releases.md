@@ -136,6 +136,20 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 Record shipped trains here using this format:
 
+### Train v0.9.32 (2026-03-31)
+- Included Slice IDs:
+- `slice_cleanup_layer1_step1_harness_hardening`
+- `slice_operator_execution_policy_registry`
+- `slice_execution_cluster_stabilization_pre_ir`
+- `slice_runtime_invariants_strict_v1_relock`
+- `slice_typed_execution_ir_strangler`
+- `slice_ir_first_reducer_consolidation`
+- Release Note IDs:
+- `release_v0_9_32`
+- Player-facing highlights:
+- Execution flow is now IR-first across reducer and engine runtime paths, with behavior parity preserved.
+- Auto-step/step-through/wrap-tail and multi-calculator execution-isolation contracts were expanded and stabilized.
+
 ### Shipped train record
 - Train: `v0.9.30` (`2026-03-28`)
 - Included Slice IDs:

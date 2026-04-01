@@ -83,7 +83,14 @@ import {
   type ConstantKeyId,
 } from "./keyPresentation.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
-import { buildExecutionStagePlan, type ExecutionStage, type WrapStageMode } from "./executionPlan.js";
+import { type WrapStageMode } from "./executionPlanIR.js";
+import {
+  buildExecutionPlanIRForState,
+  getExecutionPlanIRStageAt,
+  getExecutionPlanIRStageCount,
+  materializeSlotsFromExecutionPlanIR,
+  type ExecutionPlanBuildResult,
+} from "./executionPlanIR.js";
 import { resolveRollInverseNextTotal, shouldRejectRollInverseExecution } from "./rollInverseExecution.js";
 import { getAppServices } from "../contracts/appServices.js";
 
@@ -896,7 +903,7 @@ const evaluateExecutionOutcomeForSlots = (
       : applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, getDisplayRadix(state));
     return {
       ...overflowChecked,
-      nextTotal: options.deferOverflowToWrapStage ? overflowChecked.nextTotal : toRecordedComplexResult(overflowChecked.nextTotal),
+      nextTotal: overflowChecked.nextTotal,
       symbolic: toSymbolicPayload(expressionKey, symbolicText),
       ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
     };
@@ -907,46 +914,78 @@ const evaluateExecutionOutcomeForSlots = (
     : applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, getDisplayRadix(state));
   return {
     ...overflowChecked,
-    nextTotal: options.deferOverflowToWrapStage ? overflowChecked.nextTotal : toRecordedComplexResult(overflowChecked.nextTotal),
+    nextTotal: overflowChecked.nextTotal,
     euclidRemainder: execution.euclidRemainder,
   };
 };
 
-const evaluateExecutionPlan = (
+const buildReducerExecutionPlan = (
   state: GameState,
   seedTotal: GameState["calculator"]["total"],
-  stages: ExecutionStage[],
+): ExecutionPlanBuildResult =>
+  buildExecutionPlanIRForState(seedTotal, state.calculator.operationSlots, state);
+
+const evaluateExecutionPlanRange = (
+  state: GameState,
+  seedTotal: GameState["calculator"]["total"],
+  built: ExecutionPlanBuildResult,
+  startStageIndex: number = 0,
 ): EvaluatedExecution => {
-  if (stages.length === 0) {
-    return evaluateExecutionOutcomeForSlots(state, seedTotal, []);
-  }
+  const slotList = materializeSlotsFromExecutionPlanIR(built.plan);
+  const startSlotIndex = Math.max(0, Math.min(startStageIndex, slotList.length));
+  const pendingSlots = slotList.slice(startSlotIndex);
+  const hasPendingWrap = Boolean(built.wrapStageMode) && startStageIndex <= slotList.length;
 
-  const maybeLastStage = stages.at(-1);
-  const wrapStage: Extract<ExecutionStage, { kind: "wrap" }> | null =
-    maybeLastStage && maybeLastStage.kind === "wrap" ? maybeLastStage : null;
-  const slotStages = wrapStage ? stages.slice(0, -1) : stages;
-  const slotList = slotStages
-    .filter((stage): stage is Extract<ExecutionStage, { kind: "slot" }> => stage.kind === "slot")
-    .map((stage) => stage.slot);
-
-  let evaluation = slotList.length > 0
-    ? evaluateExecutionOutcomeForSlots(state, seedTotal, slotList, {
-      deferOverflowToWrapStage: Boolean(wrapStage),
+  let evaluation = pendingSlots.length > 0
+    ? evaluateExecutionOutcomeForSlots(state, seedTotal, pendingSlots, {
+      deferOverflowToWrapStage: hasPendingWrap,
     })
-    : wrapStage
+    : hasPendingWrap
       ? { nextTotal: seedTotal }
       : evaluateExecutionOutcomeForSlots(state, seedTotal, []);
 
-  if (!wrapStage || evaluation.errorKind) {
+  if (!hasPendingWrap || !built.wrapStageMode || evaluation.errorKind) {
     return evaluation;
   }
 
-  const wrapped = applyWrapStage(evaluation.nextTotal, wrapStage.mode, state.unlocks.maxTotalDigits, getDisplayRadix(state));
+  const wrapped = applyWrapStage(
+    evaluation.nextTotal,
+    built.wrapStageMode,
+    state.unlocks.maxTotalDigits,
+    getDisplayRadix(state),
+  );
   return {
     ...wrapped,
-    nextTotal: toRecordedComplexResult(wrapped.nextTotal),
+    nextTotal: wrapped.nextTotal,
     ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
   };
+};
+
+const evaluateExecutionPlanStageAt = (
+  state: GameState,
+  currentTotal: GameState["calculator"]["total"],
+  built: ExecutionPlanBuildResult,
+  stageIndex: number,
+): EvaluatedExecution | null => {
+  const stage = getExecutionPlanIRStageAt(built.plan, stageIndex);
+  if (!stage) {
+    return null;
+  }
+  if (stage.kind === "wrap") {
+    return applyWrapStage(
+      currentTotal,
+      stage.mode,
+      state.unlocks.maxTotalDigits,
+      getDisplayRadix(state),
+    );
+  }
+  const nextStage = getExecutionPlanIRStageAt(built.plan, stageIndex + 1);
+  return evaluateExecutionOutcomeForSlots(
+    state,
+    currentTotal,
+    [stage.slot],
+    { deferOverflowToWrapStage: nextStage?.kind === "wrap" },
+  );
 };
 
 const finalizeTerminalExecution = (
@@ -999,8 +1038,8 @@ export const applyEquals = (state: GameState): GameState => {
   }
 
   const finalized = withClearedStepProgress(finalizeDraftingSlot(state));
-  const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
-  const evaluation = evaluateExecutionPlan(finalized, finalized.calculator.total, executionPlan);
+  const built = buildReducerExecutionPlan(finalized, finalized.calculator.total);
+  const evaluation = evaluateExecutionPlanRange(finalized, finalized.calculator.total, built, 0);
   return finalizeTerminalExecution(finalized, evaluation);
 };
 
@@ -1016,13 +1055,18 @@ export const applyEqualsFromStepProgress = (state: GameState): GameState => {
     return applyEquals(finalized);
   }
 
-  const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
-  const remainingStages = executionPlan.slice(stepProgress.nextSlotIndex);
-  if (remainingStages.length === 0) {
+  const built = buildReducerExecutionPlan(finalized, stepProgress.currentTotal);
+  const stageCount = getExecutionPlanIRStageCount(built.plan);
+  if (stepProgress.nextSlotIndex >= stageCount) {
     return withClearedStepProgress(finalized);
   }
 
-  const evaluation = evaluateExecutionPlan(finalized, stepProgress.currentTotal, remainingStages);
+  const evaluation = evaluateExecutionPlanRange(
+    finalized,
+    stepProgress.currentTotal,
+    built,
+    stepProgress.nextSlotIndex,
+  );
   return finalizeTerminalExecution(finalized, evaluation, { clearStepProgress: true });
 };
 
@@ -1083,8 +1127,9 @@ const applyStepThroughInternal = (
   }
 
   const finalized = finalizeDraftingSlot(state);
-  const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
-  if (executionPlan.length === 0) {
+  const built = buildReducerExecutionPlan(finalized, finalized.calculator.total);
+  const stageCount = getExecutionPlanIRStageCount(built.plan);
+  if (stageCount === 0) {
     return withClearedStepProgress(finalized);
   }
 
@@ -1100,28 +1145,21 @@ const applyStepThroughInternal = (
           executedSlotResults: [],
         };
 
-  if (!stepProgress.currentTotal || stepProgress.nextSlotIndex >= executionPlan.length) {
+  if (!stepProgress.currentTotal || stepProgress.nextSlotIndex >= stageCount) {
     return withClearedStepProgress(finalized);
   }
 
-  const stage = executionPlan[stepProgress.nextSlotIndex];
-  const nextStage = executionPlan[stepProgress.nextSlotIndex + 1];
-  const deferOverflowToWrapStage = nextStage?.kind === "wrap";
-  const evaluation = stage.kind === "slot"
-    ? evaluateExecutionOutcomeForSlots(
-      finalized,
-      stepProgress.currentTotal,
-      [stage.slot],
-      { deferOverflowToWrapStage },
-    )
-    : applyWrapStage(
-      stepProgress.currentTotal,
-      stage.mode,
-      finalized.unlocks.maxTotalDigits,
-      getDisplayRadix(finalized),
-    );
+  const evaluation = evaluateExecutionPlanStageAt(
+    finalized,
+    stepProgress.currentTotal,
+    built,
+    stepProgress.nextSlotIndex,
+  );
+  if (!evaluation) {
+    return withClearedStepProgress(finalized);
+  }
   const nextResults = [...stepProgress.executedSlotResults, evaluation.nextTotal];
-  const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + 1 >= executionPlan.length;
+  const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + 1 >= stageCount;
 
   if (!isTerminal) {
     return applyUnlocks(
@@ -1147,15 +1185,16 @@ const applyStepThroughInternal = (
 
 export const canAutoStepProgress = (state: GameState): boolean => {
   const finalized = finalizeDraftingSlot(state);
-  const executionPlan = buildExecutionStagePlan(finalized.calculator.operationSlots, finalized);
-  if (executionPlan.length === 0) {
+  const built = buildReducerExecutionPlan(finalized, finalized.calculator.total);
+  const stageCount = getExecutionPlanIRStageCount(built.plan);
+  if (stageCount === 0) {
     return false;
   }
   const progress = finalized.calculator.stepProgress;
   if (!progress.active) {
     return true;
   }
-  return Boolean(progress.currentTotal) && progress.nextSlotIndex < executionPlan.length;
+  return Boolean(progress.currentTotal) && progress.nextSlotIndex < stageCount;
 };
 
 export const applyAutoStepTick = (state: GameState): GameState => {

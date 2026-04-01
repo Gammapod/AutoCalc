@@ -87,14 +87,15 @@ export const runRuntimeStateInvariantsPipelineEquivalenceTests = (): void => {
     "runtime invariant stages run in deterministic canonical order",
   );
 
-  const expected = ROUTINE_MAINTENANCE_GOLDEN.runtimeInvariantHashesV1;
+  const expectedV1 = ROUTINE_MAINTENANCE_GOLDEN.runtimeInvariantHashesV1;
   for (const fixture of fixtureStates()) {
     const normalized = normalizeRuntimeStateInvariants(fixture.state);
     const actualHash = signatureHash(normalized);
     assert.equal(
       actualHash,
-      expected[fixture.id],
+      expectedV1[fixture.id],
       `runtime invariants golden hash mismatch fixture=${fixture.id}`,
     );
   }
 };
+

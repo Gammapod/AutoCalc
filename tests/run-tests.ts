@@ -2,7 +2,11 @@ import "./support/contentProviderSetup.js";
 import Algebrite from "algebrite";
 import * as keyCompat from "./support/keyCompat.js";
 import { runEngineTests } from "./engine.test.js";
+import { runEngineExecutionPolicyParityTests } from "./engine.executionPolicyParity.test.js";
+import { runExecutionPlanIRBuilderParityTests } from "./executionPlanIR.builderParity.test.js";
+import { runExecutionPlanIRExecutionParityTests } from "./executionPlanIR.executionParity.test.js";
 import { runReducerInputTests } from "./reducer.input.test.js";
+import { runReducerExecutionIRRoutingParityTests } from "./reducer.executionIRRoutingParity.test.js";
 import { runExecutionModePolicyTests } from "./executionModePolicy.test.js";
 import { runReducerLayoutTests } from "./reducer.layout.test.js";
 import { runReducerLifecycleTests } from "./reducer.lifecycle.test.js";
@@ -120,10 +124,15 @@ import { runRollDiagnosticsSnapshotTests } from "./rollDiagnosticsSnapshot.test.
 import { runRuntimeStateInvariantsPipelineEquivalenceTests } from "./runtimeStateInvariants.pipelineEquivalence.test.js";
 import { runReducerPipelineEquivalenceTests } from "./reducer.pipelineEquivalence.test.js";
 import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
+import { runOperatorExecutionPolicyRegistryContractTests } from "./operatorExecutionPolicyRegistry.contract.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
+  ["domain/engine-execution-policy-parity", runEngineExecutionPolicyParityTests],
+  ["domain/execution-plan-ir-builder-parity", runExecutionPlanIRBuilderParityTests],
+  ["domain/execution-plan-ir-execution-parity", runExecutionPlanIRExecutionParityTests],
   ["reducer/input", runReducerInputTests],
+  ["domain/reducer-execution-ir-routing-parity", runReducerExecutionIRRoutingParityTests],
   ["domain/execution-mode-policy", runExecutionModePolicyTests],
   ["reducer/layout", runReducerLayoutTests],
   ["reducer/allocator-device", runReducerAllocatorDeviceTests],
@@ -237,6 +246,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/diagnostics-trace", runDiagnosticsTraceTests],
   ["domain/roll-diagnostics-snapshot", runRollDiagnosticsSnapshotTests],
   ["domain/unlock-hint-progress", runUnlockHintProgressTests],
+  ["contracts/operator-execution-policy-registry", runOperatorExecutionPolicyRegistryContractTests],
   ["domain/runtime-state-invariants-pipeline-equivalence", runRuntimeStateInvariantsPipelineEquivalenceTests],
   ["domain/reducer-pipeline-equivalence", runReducerPipelineEquivalenceTests],
   ["contracts/multi-calculator-invariants", runMultiCalculatorContractTests],

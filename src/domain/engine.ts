@@ -24,6 +24,12 @@ import {
 } from "./expression.js";
 import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, ScalarValue, Slot } from "./types.js";
 import { isUnsupportedSymbolicOperatorKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
+import { resolveOperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
+import {
+  buildExecutionPlanIR,
+  materializeSlotsFromExecutionPlanIR,
+  type ExecutionPlanIR,
+} from "./executionPlanIR.js";
 
 export type ExecuteSlotsResult =
   | { ok: true; total: RationalValue; euclidRemainder?: RationalValue }
@@ -543,7 +549,13 @@ export const evaluateSymbolicExpression = (expression: ExpressionValue): Evaluat
   };
 };
 
-export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): ExecuteSlotsValueResult => {
+type ExecutionPolicyRouting = "registry" | "legacy";
+
+const executeSlotsValueInternal = (
+  total: CalculatorValue,
+  slots: Slot[],
+  routing: ExecutionPolicyRouting,
+): ExecuteSlotsValueResult => {
   if (total.kind === "nan") {
     return { ok: false, reason: "nan_input" };
   }
@@ -999,21 +1011,30 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
       continue;
     }
 
-    const operatorKey = resolveKeyId(slot.operator);
-    const supportsComplexArithmetic =
-      operatorKey === KEY_ID.op_add
-      || operatorKey === KEY_ID.op_sub
-      || operatorKey === KEY_ID.op_mul
-      || operatorKey === KEY_ID.op_div
-      || operatorKey === KEY_ID.op_pow;
-    const supportsDeferredComplexPolicy =
-      operatorKey === KEY_ID.op_euclid_div
-      || operatorKey === KEY_ID.op_mod
-      || operatorKey === KEY_ID.op_rotate_left
-      || operatorKey === KEY_ID.op_gcd
-      || operatorKey === KEY_ID.op_lcm
-      || operatorKey === KEY_ID.op_max
-      || operatorKey === KEY_ID.op_min;
+    const operatorKey = slot.operator;
+    const policy = routing === "registry"
+      ? resolveOperatorExecutionPolicy(operatorKey)
+      : null;
+    const supportsComplexArithmetic = policy
+      ? policy.complexMode === "complex_arithmetic"
+      : (
+        operatorKey === KEY_ID.op_add
+        || operatorKey === KEY_ID.op_sub
+        || operatorKey === KEY_ID.op_mul
+        || operatorKey === KEY_ID.op_div
+        || operatorKey === KEY_ID.op_pow
+      );
+    const supportsDeferredComplexPolicy = policy
+      ? policy.complexMode === "deferred_complex_policy"
+      : (
+        operatorKey === KEY_ID.op_euclid_div
+        || operatorKey === KEY_ID.op_mod
+        || operatorKey === KEY_ID.op_rotate_left
+        || operatorKey === KEY_ID.op_gcd
+        || operatorKey === KEY_ID.op_lcm
+        || operatorKey === KEY_ID.op_max
+        || operatorKey === KEY_ID.op_min
+      );
 
     if (!supportsComplexArithmetic && !supportsDeferredComplexPolicy) {
       const delegated = applyRationalOnlySlot(current, slot);
@@ -1102,7 +1123,10 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
     if (operatorKey === KEY_ID.op_pow && typeof slot.operand !== "bigint") {
       return { ok: false, reason: "unsupported_symbolic" };
     }
-    if (operatorKey !== KEY_ID.op_pow && isUnsupportedSymbolicOperatorKeyId(slot.operator)) {
+    const rejectsSymbolicOperand = policy
+      ? policy.rejectPolicy.unsupportedSymbolicOnSymbolicOperand
+      : isUnsupportedSymbolicOperatorKeyId(slot.operator);
+    if (operatorKey !== KEY_ID.op_pow && rejectsSymbolicOperand) {
       return { ok: false, reason: "unsupported_symbolic" };
     }
 
@@ -1160,5 +1184,18 @@ export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): Execut
     total: current,
     ...(lastEuclidRemainder ? { euclidRemainder: lastEuclidRemainder } : {}),
   };
+};
+
+export const executePlanIR = (
+  plan: ExecutionPlanIR,
+): ExecuteSlotsValueResult => executeSlotsValueInternal(plan.seed, materializeSlotsFromExecutionPlanIR(plan), "registry");
+
+export const executePlanIRLegacyPath = (
+  plan: ExecutionPlanIR,
+): ExecuteSlotsValueResult => executeSlotsValueInternal(plan.seed, materializeSlotsFromExecutionPlanIR(plan), "legacy");
+
+export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): ExecuteSlotsValueResult => {
+  const built = buildExecutionPlanIR(total, slots);
+  return executePlanIR(built.plan);
 };
 

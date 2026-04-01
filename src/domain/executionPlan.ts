@@ -1,19 +1,14 @@
 import type { GameState, Slot } from "./types.js";
+import {
+  resolveExecutionPlanIRWrapStageMode,
+  type ExecutionPlanStage,
+  type WrapStageMode,
+} from "./executionPlanIR.js";
 
-export type WrapStageMode = "delta_range_clamp" | "mod_zero_to_delta";
-
-export type ExecutionStage =
-  | { kind: "slot"; slot: Slot }
-  | { kind: "wrap"; mode: WrapStageMode };
+export type ExecutionStage = ExecutionPlanStage;
 
 export const resolveWrapStageMode = (state: Pick<GameState, "settings">): WrapStageMode | null => {
-  if (state.settings.wrapper === "mod_zero_to_delta") {
-    return "mod_zero_to_delta";
-  }
-  if (state.settings.wrapper === "delta_range_clamp") {
-    return "delta_range_clamp";
-  }
-  return null;
+  return resolveExecutionPlanIRWrapStageMode(state);
 };
 
 export const buildExecutionStagePlan = (

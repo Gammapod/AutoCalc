@@ -102,6 +102,14 @@ Policy classes:
 | `unary_floor` | Componentwise floor | `complex_total` | Accept all complex-left values and floor `re`/`im` separately. |
 | `unary_ceil` | Componentwise ceil | `complex_total` | Accept all complex-left values and ceil `re`/`im` separately. |
 
+### Registry sync rule
+- Runtime execution policy is canonicalized in `src/domain/operatorExecutionPolicy.ts`.
+- Runtime execution-plan modeling is canonicalized in `src/domain/executionPlanIR.ts`.
+- The table above and runtime registry must stay synchronized one-to-one for executable unary/binary operators.
+- Typed IR routing does not change arithmetic semantics in this milestone; it centralizes plan representation only.
+- Reducer and engine runtime execution flows are IR-first; legacy execution routing is retained only as an internal parity comparator path.
+- Registry status `deferred` entries document intentionally frozen policy gaps and must not silently change runtime behavior.
+
 ## Coverage invariants for rollout
 
 1. Every operator must have explicit expected disposition (`accept` or `reject`) for scenario set `S01..S11`.

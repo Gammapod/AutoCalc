@@ -11,6 +11,9 @@ import {
 } from "../src/domain/calculatorValue.js";
 import { MAX_ROLL_ENTRIES } from "../src/domain/rollEntries.js";
 import { getRollYDomain } from "../src/domain/rollDerived.js";
+import { executePlanIR } from "../src/domain/engine.js";
+import { executePlanIRLegacyPath } from "../src/domain/engine.js";
+import { buildExecutionPlanIR } from "../src/domain/executionPlanIR.js";
 import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, MOD_ZERO_TO_DELTA_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
@@ -339,6 +342,32 @@ export const runReducerInputTests = (): void => {
     "second unary-i result projects to integer domain",
   );
 
+  const executionPolicyParityCases = [
+    {
+      id: "reducer-input/rational",
+      total: r(2n),
+      slots: [{ operator: op("op_add"), operand: 3n }],
+    },
+    {
+      id: "reducer-input/unsupported-symbolic",
+      total: r(7n),
+      slots: [{ operator: op("op_mod"), operand: { type: "constant" as const, value: "pi" as const } }],
+    },
+    {
+      id: "reducer-input/complex",
+      total: toComplexCalculatorValue(toRationalScalarValue({ num: 1n, den: 1n }), toRationalScalarValue({ num: 2n, den: 1n })),
+      slots: [{ operator: op("op_add"), operand: 5n }],
+    },
+  ];
+  for (const parityCase of executionPolicyParityCases) {
+    const built = buildExecutionPlanIR(parityCase.total, parityCase.slots);
+    assert.deepEqual(
+      executePlanIR(built.plan),
+      executePlanIRLegacyPath(built.plan),
+      `execution policy routing remains parity-equivalent (${parityCase.id})`,
+    );
+  }
+
   const rollInverseRejectEmpty: GameState = {
     ...fullyUnlocked,
     calculator: {
@@ -537,6 +566,43 @@ export const runReducerInputTests = (): void => {
   assertTotalEquivalent(afterSecondStep.calculator.total, r(9n), "terminal step-through commits final total");
   assert.equal(afterSecondStep.calculator.rollEntries.length, 2, "terminal step-through appends seed and final step exactly once");
 
+  const stepThroughStressSource: GameState = {
+    ...fullyUnlocked,
+    calculators: undefined,
+    calculatorOrder: undefined,
+    activeCalculatorId: undefined,
+    perCalculatorCompletedUnlockIds: undefined,
+    sessionControlProfiles: undefined,
+    ui: {
+      ...fullyUnlocked.ui,
+      keyLayout: [{ kind: "key", key: k("exec_step_through") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(2n),
+      rollEntries: [],
+      operationSlots: [
+        { operator: op("op_add"), operand: 3n },
+        { operator: op("op_mul"), operand: 5n },
+        { operator: op("op_sub"), operand: 4n },
+      ],
+    },
+  };
+  const stepStress1 = applyKeyAction(stepThroughStressSource, "exec_step_through");
+  assert.equal(stepStress1.calculator.stepProgress.active, true, "step stress: first preview step activates step session");
+  assertTotalEquivalent(stepStress1.calculator.total, r(2n), "step stress: first preview keeps total unchanged");
+  assert.equal(stepStress1.calculator.rollEntries.length, 0, "step stress: first preview appends no roll rows");
+  const stepStress2 = applyKeyAction(stepStress1, "exec_step_through");
+  assert.equal(stepStress2.calculator.stepProgress.active, true, "step stress: second preview keeps session active");
+  assertTotalEquivalent(stepStress2.calculator.total, r(2n), "step stress: second preview keeps total unchanged");
+  assert.equal(stepStress2.calculator.rollEntries.length, 0, "step stress: second preview appends no roll rows");
+  const stepStress3 = applyKeyAction(stepStress2, "exec_step_through");
+  assert.equal(stepStress3.calculator.stepProgress.active, false, "step stress: terminal third step clears session");
+  assertTotalEquivalent(stepStress3.calculator.total, r(21n), "step stress: terminal third step commits final total exactly once");
+  assertRollSequenceEquivalent(stepStress3.calculator.rollEntries, [r(2n), r(21n)], "step stress: terminal step appends one seed/result pair");
+
   const autoStepSeed: GameState = {
     ...fullyUnlocked,
     calculators: undefined,
@@ -577,6 +643,128 @@ export const runReducerInputTests = (): void => {
     "terminal AUTO_STEP_TICK appends exactly one completion pair (seed + terminal result)",
   );
   assert.deepEqual(autoStepTick2.keyPressCounts, autoStepSeed.keyPressCounts, "AUTO_STEP_TICK terminal commit still does not increment key press counts");
+  const autoStepPostTerminalTick = reducer(autoStepTick2, { type: "AUTO_STEP_TICK" });
+  assert.equal(autoStepPostTerminalTick.calculator.stepProgress.active, true, "AUTO_STEP_TICK after terminal commit starts next preview cycle when pause remains armed");
+  assert.equal(
+    autoStepPostTerminalTick.calculator.rollEntries.length,
+    autoStepTick2.calculator.rollEntries.length,
+    "AUTO_STEP_TICK after terminal commit does not append an immediate duplicate terminal roll pair",
+  );
+
+  const autoStepStressSeed: GameState = {
+    ...fullyUnlocked,
+    calculators: undefined,
+    calculatorOrder: undefined,
+    activeCalculatorId: undefined,
+    perCalculatorCompletedUnlockIds: undefined,
+    sessionControlProfiles: undefined,
+    ui: {
+      ...fullyUnlocked.ui,
+      keyLayout: [{ kind: "key", key: k("exec_equals") }],
+      keypadColumns: 1,
+      keypadRows: 1,
+      buttonFlags: {
+        ...fullyUnlocked.ui.buttonFlags,
+        [EXECUTION_PAUSE_FLAG]: true,
+      },
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(2n),
+      rollEntries: [],
+      operationSlots: [
+        { operator: op("op_add"), operand: 3n },
+        { operator: op("op_mul"), operand: 5n },
+        { operator: op("op_sub"), operand: 4n },
+      ],
+    },
+  };
+  const autoStress1 = reducer(autoStepStressSeed, { type: "AUTO_STEP_TICK" });
+  assert.equal(autoStress1.calculator.stepProgress.active, true, "auto-step stress: first tick enters preview state");
+  assertTotalEquivalent(autoStress1.calculator.total, r(2n), "auto-step stress: first tick keeps total preview-only");
+  assert.equal(autoStress1.calculator.rollEntries.length, 0, "auto-step stress: first tick appends no roll rows");
+  const autoStress2 = reducer(autoStress1, { type: "AUTO_STEP_TICK" });
+  assert.equal(autoStress2.calculator.stepProgress.active, true, "auto-step stress: second tick remains preview-only");
+  assertTotalEquivalent(autoStress2.calculator.total, r(2n), "auto-step stress: second tick keeps total preview-only");
+  assert.equal(autoStress2.calculator.rollEntries.length, 0, "auto-step stress: second tick appends no roll rows");
+  const autoStress3 = reducer(autoStress2, { type: "AUTO_STEP_TICK" });
+  assert.equal(autoStress3.calculator.stepProgress.active, false, "auto-step stress: terminal tick clears step progress");
+  assertRollSequenceEquivalent(autoStress3.calculator.rollEntries, [r(2n), r(21n)], "auto-step stress: terminal tick appends one seed/result pair");
+  const autoStressPostTerminalTick = reducer(autoStress3, { type: "AUTO_STEP_TICK" });
+  assert.equal(autoStressPostTerminalTick.calculator.stepProgress.active, true, "auto-step stress: post-terminal tick starts next preview cycle");
+  assert.equal(
+    autoStressPostTerminalTick.calculator.rollEntries.length,
+    autoStress3.calculator.rollEntries.length,
+    "auto-step stress: post-terminal tick appends no immediate duplicate terminal rows",
+  );
+
+  const equalsToggleStressSource: GameState = {
+    ...withEqualsPauseOn,
+    ui: {
+      ...withEqualsPauseOn.ui,
+      buttonFlags: {
+        ...withEqualsPauseOn.ui.buttonFlags,
+        [EXECUTION_PAUSE_EQUALS_FLAG]: true,
+      },
+    },
+    calculator: {
+      ...withEqualsPauseOn.calculator,
+      total: r(2n),
+      draftingSlot: null,
+      rollEntries: [],
+      operationSlots: [
+        { operator: op("op_add"), operand: 3n },
+        { operator: op("op_mul"), operand: 5n },
+        { operator: op("op_sub"), operand: 4n },
+      ],
+    },
+  };
+  const equalsToggleTick1 = reducer(equalsToggleStressSource, { type: "AUTO_STEP_TICK" });
+  assert.equal(Boolean(equalsToggleTick1.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), true, "equals-toggle stress: preview tick keeps equals auto-step armed");
+  assert.equal(equalsToggleTick1.calculator.rollEntries.length, 0, "equals-toggle stress: preview tick appends no roll rows");
+  const equalsToggleTick2 = reducer(equalsToggleTick1, { type: "AUTO_STEP_TICK" });
+  assert.equal(Boolean(equalsToggleTick2.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), true, "equals-toggle stress: second preview keeps equals auto-step armed");
+  assert.equal(equalsToggleTick2.calculator.rollEntries.length, 0, "equals-toggle stress: second preview appends no roll rows");
+  const equalsToggleTick3 = reducer(equalsToggleTick2, { type: "AUTO_STEP_TICK" });
+  assert.equal(Boolean(equalsToggleTick3.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "equals-toggle stress: terminal tick clears equals auto-step flag");
+  assertRollSequenceEquivalent(equalsToggleTick3.calculator.rollEntries, [r(2n), r(21n)], "equals-toggle stress: terminal tick appends one seed/result pair");
+  const equalsToggleTerminalReplay = reducer(equalsToggleTick3, { type: "AUTO_STEP_TICK" });
+  assert.deepEqual(equalsToggleTerminalReplay, equalsToggleTick3, "equals-toggle stress: post-terminal tick is idempotent");
+
+  const equalsToggleWrapTailSource: GameState = {
+    ...equalsToggleStressSource,
+    settings: {
+      ...equalsToggleStressSource.settings,
+      wrapper: "delta_range_clamp",
+    },
+    unlocks: {
+      ...equalsToggleStressSource.unlocks,
+      maxTotalDigits: 2,
+    },
+    calculator: {
+      ...equalsToggleStressSource.calculator,
+      total: r(99n),
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
+      rollEntries: [],
+    },
+  };
+  const equalsToggleWrapTick1 = reducer(equalsToggleWrapTailSource, { type: "AUTO_STEP_TICK" });
+  assert.equal(equalsToggleWrapTick1.calculator.stepProgress.active, true, "equals-toggle wrap stress: first tick keeps synthetic wrap stage pending");
+  assertTotalEquivalent(equalsToggleWrapTick1.calculator.total, r(99n), "equals-toggle wrap stress: first tick remains preview-only");
+  assert.equal(equalsToggleWrapTick1.calculator.rollEntries.length, 0, "equals-toggle wrap stress: first tick appends no roll rows");
+  const equalsToggleWrapTick2 = reducer(equalsToggleWrapTick1, { type: "AUTO_STEP_TICK" });
+  const equalsToggleWrapTerminal = Boolean(equalsToggleWrapTick2.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG])
+    ? reducer(equalsToggleWrapTick2, { type: "AUTO_STEP_TICK" })
+    : equalsToggleWrapTick2;
+  assert.equal(Boolean(equalsToggleWrapTerminal.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "equals-toggle wrap stress: terminal wrap tick clears equals auto-step flag");
+  assert.equal(equalsToggleWrapTerminal.calculator.rollEntries.length, 2, "equals-toggle wrap stress: terminal wrap tick appends one seed/result pair");
+  assertValueEquivalent(
+    equalsToggleWrapTerminal.calculator.rollEntries[0]?.y,
+    r(99n),
+    "equals-toggle wrap stress: terminal wrap tick preserves seed row",
+  );
+  const equalsToggleWrapTerminalReplay = reducer(equalsToggleWrapTerminal, { type: "AUTO_STEP_TICK" });
+  assert.deepEqual(equalsToggleWrapTerminalReplay, equalsToggleWrapTerminal, "equals-toggle wrap stress: post-terminal tick is idempotent");
 
   const autoStepIdleSource: GameState = {
     ...autoStepTick2,

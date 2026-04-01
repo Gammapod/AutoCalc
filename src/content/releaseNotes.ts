@@ -3,6 +3,20 @@ import type { ReleaseNotesCatalog } from "../contracts/releaseNotes.js";
 export const releaseNotes: ReleaseNotesCatalog = {
   entries: [
     {
+      id: "release_v0_9_32",
+      releaseVersion: "v0.9.32",
+      channel: "released",
+      title: "IR-First Execution Consolidation",
+      summary:
+        "Completes cleanup-wave execution hardening by consolidating reducer/engine flows onto typed execution IR with parity-locked contracts.",
+      bullets: [
+        "Reducer execution progression (equals, step-through, auto-step, wrap-tail paths) now runs through shared IR-first evaluation helpers.",
+        "Engine execution keeps an IR-first runtime path with a single legacy comparator retained for deterministic parity harnesses.",
+        "Execution parity coverage expanded with deterministic IR builder/executor suites and targeted multi-calculator isolation traces.",
+        "Cleanup wave exits with full checkpoint gates green and release docs synchronized to Milestones 2A/2B/2C.",
+      ],
+    },
+    {
       id: "release_v0_9_31",
       releaseVersion: "v0.9.31",
       channel: "released",
