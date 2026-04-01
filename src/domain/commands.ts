@@ -6,6 +6,7 @@ import { resolveExecutionPolicyForAction } from "./reducer.js";
 import type { UiEffect } from "./types.js";
 import { resolveSystemKeyIntent, mapSystemKeyIntentToUiEffect } from "./systemKeyIntentRegistry.js";
 import { isKeyUsableForInput } from "./keyUnlocks.js";
+import { resolveDomainDispatchInputFeedback } from "./inputFeedback.js";
 
 export type DomainCommand = {
   type: "DispatchAction";
@@ -43,5 +44,8 @@ export const executeCommand = (
   }
   const event = eventFromAction(command.action);
   const nextState = applyEvent(state, event, { services: options.services });
+  if (currentState && command.type === "DispatchAction" && command.action.type !== "AUTO_STEP_TICK") {
+    uiEffects.push(resolveDomainDispatchInputFeedback(currentState, nextState, command.action, uiEffects));
+  }
   return { state: nextState, events: [event], uiEffects };
 };

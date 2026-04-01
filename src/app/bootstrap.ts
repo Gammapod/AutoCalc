@@ -26,6 +26,7 @@ import { resolveModeManifest } from "../domain/modeManifest.js";
 import { APP_VERSION } from "../generated/appVersion.js";
 import { normalizeRuntimeStateInvariants } from "../domain/runtimeStateInvariants.js";
 import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
+import { buildPreDispatchBlockedInputFeedback } from "../domain/inputFeedback.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -107,6 +108,8 @@ const ENABLE_CUE_TELEMETRY_DEBUG = false;
 
 const dispatchWithRuntimeGate = (action: Action, options: DispatchOptions = {}): Action => {
   if (!options.internal && interactionRuntime.shouldBlockAction(action)) {
+    const blockedFeedback = buildPreDispatchBlockedInputFeedback(store.getState(), action);
+    store.enqueueUiEffects([blockedFeedback]);
     return action;
   }
   return store.dispatch(action);

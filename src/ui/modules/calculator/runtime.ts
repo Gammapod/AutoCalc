@@ -147,6 +147,30 @@ export const triggerExecutionGateRejectBlink = (root: Element, rejectCount: numb
   displayWindow.classList.add("display--slot-reject-blink");
 };
 
+export const triggerCalculatorInputOutcomeLed = (
+  root: Element,
+  outcome: "accepted" | "rejected",
+  triggerCount: number | null | undefined,
+): void => {
+  const normalizedTriggerCount = Math.max(0, Math.trunc(triggerCount ?? 0));
+  if (normalizedTriggerCount <= 0) {
+    return;
+  }
+  const target = root.querySelector<HTMLElement>(
+    outcome === "accepted"
+      ? "[data-calc-led='accepted']"
+      : "[data-calc-led='rejected']",
+  );
+  if (!target) {
+    return;
+  }
+  const pulseClass = outcome === "accepted" ? "calc-led--pulse-green" : "calc-led--pulse-red";
+  target.classList.remove(pulseClass);
+  // Force reflow so repeated outcomes retrigger the LED pulse.
+  void target.offsetWidth;
+  target.classList.add(pulseClass);
+};
+
 const SLOT_MARQUEE_EDGE_PAUSE_TICKS = 5;
 const SLOT_MARQUEE_TICK_MS = 200;
 

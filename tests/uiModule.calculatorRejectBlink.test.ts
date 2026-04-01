@@ -12,8 +12,15 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
   const harness = installDomHarness();
   try {
     const displayWindow = harness.root.querySelector<HTMLElement>("[data-display-window]");
+    const rejectLed = harness.root.querySelector<HTMLElement>("[data-calc-led='rejected']");
+    const acceptLed = harness.root.querySelector<HTMLElement>("[data-calc-led='accepted']");
     assert.ok(displayWindow, "expected display window mount");
+    assert.ok(rejectLed, "expected reject led mount");
+    assert.ok(acceptLed, "expected accept led mount");
     if (!displayWindow) {
+      return;
+    }
+    if (!rejectLed || !acceptLed) {
       return;
     }
 
@@ -23,18 +30,36 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       false,
       "baseline render has no reject blink class",
     );
+    assert.equal(
+      rejectLed.classList.contains("calc-led--pulse-red"),
+      false,
+      "baseline render has no reject led pulse",
+    );
+    assert.equal(
+      acceptLed.classList.contains("calc-led--pulse-green"),
+      false,
+      "baseline render has no accept led pulse",
+    );
 
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
       inputBlocked: false,
       executionGateRejectCount: 1,
+      rejectedInputCount: 1,
     });
     assert.equal(
       displayWindow.classList.contains("display--slot-reject-blink"),
       true,
       "nonce increase applies reject blink class",
     );
+    assert.equal(
+      rejectLed.classList.contains("calc-led--pulse-red"),
+      true,
+      "reject input count applies red led pulse class",
+    );
 
     displayWindow.classList.remove("display--slot-reject-blink");
+    rejectLed.classList.remove("calc-led--pulse-red");
+    acceptLed.classList.remove("calc-led--pulse-green");
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
       inputBlocked: false,
       executionGateRejectCount: 0,
@@ -43,6 +68,26 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       displayWindow.classList.contains("display--slot-reject-blink"),
       false,
       "unchanged nonce does not retrigger reject blink",
+    );
+    assert.equal(
+      rejectLed.classList.contains("calc-led--pulse-red"),
+      false,
+      "zero rejected input count does not pulse red led",
+    );
+    assert.equal(
+      acceptLed.classList.contains("calc-led--pulse-green"),
+      false,
+      "zero accepted input count does not pulse green led",
+    );
+
+    renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
+      inputBlocked: false,
+      acceptedInputCount: 1,
+    });
+    assert.equal(
+      acceptLed.classList.contains("calc-led--pulse-green"),
+      true,
+      "accepted input count applies green led pulse class",
     );
 
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {

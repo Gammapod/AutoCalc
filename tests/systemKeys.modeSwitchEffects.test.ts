@@ -45,6 +45,15 @@ export const runSystemKeysModeSwitchEffectsTests = (): void => {
       type: "DispatchAction",
       action: { type: "PRESS_KEY", key: testCase.key },
     });
-    assert.deepEqual(result.uiEffects, [testCase.expected], `${testCase.key} emits canonical system intent effect`);
+    assert.ok(
+      result.uiEffects.some((effect) => JSON.stringify(effect) === JSON.stringify(testCase.expected)),
+      `${testCase.key} emits canonical system intent effect`,
+    );
+    assert.ok(
+      result.uiEffects.some(
+        (effect) => effect.type === "input_feedback" && effect.outcome === "accepted",
+      ),
+      `${testCase.key} emits accepted input feedback`,
+    );
   }
 };

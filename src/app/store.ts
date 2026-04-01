@@ -18,6 +18,15 @@ export const createStore = (initialState: GameState, services?: AppServices): St
       }
       return action;
     },
+    enqueueUiEffects: (effects: UiEffect[]) => {
+      if (effects.length === 0) {
+        return;
+      }
+      pendingUiEffects = [...pendingUiEffects, ...effects];
+      for (const subscriber of subscribers) {
+        subscriber(state);
+      }
+    },
     subscribe: (subscriber: (state: GameState) => void) => {
       subscribers.add(subscriber);
       return () => subscribers.delete(subscriber);

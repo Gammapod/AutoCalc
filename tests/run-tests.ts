@@ -125,6 +125,7 @@ import { runRuntimeStateInvariantsPipelineEquivalenceTests } from "./runtimeStat
 import { runReducerPipelineEquivalenceTests } from "./reducer.pipelineEquivalence.test.js";
 import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
 import { runOperatorExecutionPolicyRegistryContractTests } from "./operatorExecutionPolicyRegistry.contract.test.js";
+import { runInputFeedbackOutcomeTests } from "./inputFeedback.outcome.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -247,6 +248,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/roll-diagnostics-snapshot", runRollDiagnosticsSnapshotTests],
   ["domain/unlock-hint-progress", runUnlockHintProgressTests],
   ["contracts/operator-execution-policy-registry", runOperatorExecutionPolicyRegistryContractTests],
+  ["contracts/input-feedback-outcome", runInputFeedbackOutcomeTests],
   ["domain/runtime-state-invariants-pipeline-equivalence", runRuntimeStateInvariantsPipelineEquivalenceTests],
   ["domain/reducer-pipeline-equivalence", runReducerPipelineEquivalenceTests],
   ["contracts/multi-calculator-invariants", runMultiCalculatorContractTests],

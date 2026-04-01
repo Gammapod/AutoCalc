@@ -18,6 +18,7 @@ import {
   bindOrUpdateSlotMarquee,
   clearToggleAnimations,
   getCalculatorLayoutRuntimeState,
+  triggerCalculatorInputOutcomeLed,
   triggerExecutionGateRejectBlink,
 } from "./runtime.js";
 import { ensureKeyLabelResizeListener, fitKeyLabelsInContainer } from "./keyLabelFit.js";
@@ -100,6 +101,8 @@ export const renderCalculatorV2Module = (
   options: {
     inputBlocked: boolean;
     executionGateRejectCount?: number;
+    acceptedInputCount?: number;
+    rejectedInputCount?: number;
   },
 ): void => {
   const calculatorId: CalculatorId =
@@ -109,6 +112,8 @@ export const renderCalculatorV2Module = (
         ? "menu"
         : "f";
   triggerExecutionGateRejectBlink(root, options.executionGateRejectCount ?? 0);
+  triggerCalculatorInputOutcomeLed(root, "accepted", options.acceptedInputCount ?? 0);
+  triggerCalculatorInputOutcomeLed(root, "rejected", options.rejectedInputCount ?? 0);
   ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
   const slotEl = root.querySelector<HTMLElement>("[data-slot]");

@@ -897,6 +897,18 @@ export type UiEffect =
       calculatorId: CalculatorId;
     }
   | {
+      type: "input_feedback";
+      calculatorId: CalculatorId;
+      outcome: "accepted" | "rejected";
+      source: "domain_dispatch" | "pre_dispatch_block";
+      reasonCode?:
+        | "no_effect"
+        | "execution_gate_reject"
+        | "layout_invalid_or_noop"
+        | "pre_dispatch_block"
+        | "transition_intent_accept";
+    }
+  | {
       type: "request_mode_transition";
       targetMode: "game" | "sandbox" | "main_menu";
       savePolicy: "none" | "save_current" | "clear_save";
@@ -908,6 +920,7 @@ export type UiEffect =
 export type Store = {
   getState: () => GameState;
   dispatch: (action: Action) => Action;
+  enqueueUiEffects: (effects: UiEffect[]) => void;
   subscribe: (subscriber: (state: GameState) => void) => () => void;
   consumeUiEffects?: () => UiEffect[];
 };

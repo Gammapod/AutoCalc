@@ -758,6 +758,67 @@
         box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
       }
 
+      .calc-leds {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin: 0 2px 4px;
+      }
+
+      .calc-led {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.45);
+        box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.45);
+      }
+
+      .calc-led--red {
+        background: radial-gradient(circle at 30% 30%, rgba(255, 164, 164, 0.38), rgba(84, 18, 18, 0.9));
+      }
+
+      .calc-led--green {
+        background: radial-gradient(circle at 30% 30%, rgba(181, 255, 199, 0.4), rgba(17, 69, 34, 0.9));
+      }
+
+      .calc-led--pulse-red {
+        animation: calc-led-pulse-red 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-green {
+        animation: calc-led-pulse-green 260ms ease-out 1;
+      }
+
+      @keyframes calc-led-pulse-red {
+        0% {
+          box-shadow: 0 0 0 rgba(255, 86, 86, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(255, 86, 86, 0.88), 0 0 18px rgba(255, 86, 86, 0.64);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(255, 86, 86, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-green {
+        0% {
+          box-shadow: 0 0 0 rgba(108, 255, 157, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(108, 255, 157, 0.88), 0 0 18px rgba(108, 255, 157, 0.64);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(108, 255, 157, 0);
+          filter: brightness(1);
+        }
+      }
+
       .display--slot-reject-blink {
         animation: slot-reject-blink 360ms ease-in-out 1;
       }
@@ -3235,6 +3296,10 @@
                   <section class="roll" data-roll aria-label="Calculator roll"></section>
                   <section class="calc">
                     <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                    </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
                         <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
@@ -3264,6 +3329,10 @@
                   <section class="roll" data-roll aria-label="Calculator roll"></section>
                   <section class="calc">
                     <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                    </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
                         <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
@@ -3293,6 +3362,10 @@
                   <section class="roll" data-roll aria-label="Calculator roll"></section>
                   <section class="calc">
                     <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                    </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
                         <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">

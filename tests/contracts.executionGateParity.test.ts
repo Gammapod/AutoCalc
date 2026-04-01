@@ -28,13 +28,18 @@ const runParityRejectionCase = (
     assert.deepEqual(reduced, state, `${label}: reducer path is non-mutating for execution-gated rejection`);
     assert.deepEqual(commandReduced, state, `${label}: command path is non-mutating for execution-gated rejection`);
   }
+  const inputFeedback = commandResult.uiEffects.find((effect) => effect.type === "input_feedback");
+  assert.ok(inputFeedback, `${label}: command emits input feedback effect`);
   assert.equal(
-    commandResult.uiEffects.length,
-    options.expectRejectUiEffect ? 1 : 0,
-    `${label}: command emits expected reject UI effect count`,
+    inputFeedback?.outcome,
+    options.expectStateMutation ? "accepted" : "rejected",
+    `${label}: input feedback outcome matches mutation semantics`,
   );
   if (options.expectRejectUiEffect) {
-    assert.equal(commandResult.uiEffects[0]?.type, "execution_gate_rejected", `${label}: reject UI effect type is execution-gate`);
+    assert.ok(
+      commandResult.uiEffects.some((effect) => effect.type === "execution_gate_rejected"),
+      `${label}: reject UI effect type is execution-gate`,
+    );
   }
 
   const parity = compareParity(reduced, commandReduced);
@@ -98,8 +103,14 @@ export const runContractsExecutionGateParityTests = (): void => {
     const action: Action = { type: "PRESS_KEY", key: k("exec_roll_inverse") };
     const reduced = reducer(rollInverseRejectedState, action);
     const commandResult = executeCommand(rollInverseRejectedState, { type: "DispatchAction", action });
-    assert.equal(commandResult.uiEffects.length, 1, "roll-inverse semantic rejection emits exactly one reject UI effect");
-    assert.equal(commandResult.uiEffects[0]?.type, "execution_gate_rejected", "roll-inverse semantic rejection uses execution-gate reject effect");
+    assert.ok(
+      commandResult.uiEffects.some((effect) => effect.type === "execution_gate_rejected"),
+      "roll-inverse semantic rejection uses execution-gate reject effect",
+    );
+    assert.ok(
+      commandResult.uiEffects.some((effect) => effect.type === "input_feedback"),
+      "roll-inverse semantic rejection emits input feedback",
+    );
     assert.deepEqual(reduced.calculator, rollInverseRejectedState.calculator, "roll-inverse semantic rejection preserves calculator state");
     assert.deepEqual(commandResult.state.calculator, rollInverseRejectedState.calculator, "command path preserves calculator state on roll-inverse reject");
     const parity = compareParity(reduced, commandResult.state);
@@ -300,7 +311,15 @@ export const runContractsExecutionGateParityTests = (): void => {
       assert.notDeepEqual(commandReduced, row.state, `${row.label}: command path mutates when interrupting`);
       assert.equal(Boolean(reduced.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, `${row.label}: interrupt clears reducer pause flag`);
       assert.equal(Boolean(commandReduced.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, `${row.label}: interrupt clears command pause flag`);
-      assert.equal(commandResult.uiEffects.length, 0, `${row.label}: command interrupt emits no reject UI effect`);
+      assert.equal(
+        commandResult.uiEffects.some((effect) => effect.type === "execution_gate_rejected"),
+        false,
+        `${row.label}: command interrupt emits no reject UI effect`,
+      );
+      assert.ok(
+        commandResult.uiEffects.some((effect) => effect.type === "input_feedback" && effect.outcome === "accepted"),
+        `${row.label}: command interrupt emits accepted input feedback`,
+      );
     }
   }
 
@@ -335,7 +354,15 @@ export const runContractsExecutionGateParityTests = (): void => {
   const acceptedCommand = executeCommand(rollInverseAcceptedSeed, { type: "DispatchAction", action: rollInverseAcceptedAction });
   assert.notDeepEqual(acceptedReducer, rollInverseAcceptedSeed, "roll-inverse accepted path mutates reducer state");
   assert.notDeepEqual(acceptedCommand.state, rollInverseAcceptedSeed, "roll-inverse accepted path mutates command state");
-  assert.equal(acceptedCommand.uiEffects.length, 0, "roll-inverse accepted path emits no reject UI effect");
+  assert.equal(
+    acceptedCommand.uiEffects.some((effect) => effect.type === "execution_gate_rejected"),
+    false,
+    "roll-inverse accepted path emits no reject UI effect",
+  );
+  assert.ok(
+    acceptedCommand.uiEffects.some((effect) => effect.type === "input_feedback" && effect.outcome === "accepted"),
+    "roll-inverse accepted path emits accepted input feedback",
+  );
   const acceptedParity = compareParity(acceptedReducer, acceptedCommand.state);
   assert.equal(
     acceptedParity.ok,

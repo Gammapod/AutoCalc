@@ -73,6 +73,7 @@ const createMockStore = (seed: GameState): Store & { actions: Action[] } => {
       state = reducer(state, action);
       return action;
     },
+    enqueueUiEffects: () => {},
     subscribe: () => () => {},
   };
 };
