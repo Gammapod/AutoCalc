@@ -586,7 +586,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     };
     const next = runEqualsToggleToCompletion(state);
     assert.deepEqual(next.calculator.total, toNanCalculatorValue(), "division by zero should set total to NaN");
-    assert.equal(next.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero should record error code");
+    assert.equal(next.calculator.rollEntries.at(-1)?.error?.code, "op_div", "division by zero should record error code");
     assert.equal(Boolean(next.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "= toggle clears after terminal error commit");
     return;
   }
@@ -601,7 +601,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
           total: r(4n),
           rollEntries: [
             { y: r(1n) },
-            { y: toNanCalculatorValue(), error: { code: "NaN", kind: "nan_input" } },
+            { y: toNanCalculatorValue(), error: { code: "seed_nan", kind: "nan_input" } },
             { y: r(4n) },
           ],
         },

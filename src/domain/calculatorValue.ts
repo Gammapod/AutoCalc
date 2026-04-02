@@ -9,9 +9,7 @@ import {
 
 type NonNanCalculatorValue = Exclude<CalculatorValue, { kind: "nan" }>;
 
-export const OVERFLOW_ERROR_CODE: ErrorCode = "x∉[-R,R]";
-export const DIVISION_BY_ZERO_ERROR_CODE: ErrorCode = "n/0";
-export const NAN_INPUT_ERROR_CODE: ErrorCode = "NaN";
+export const OVERFLOW_ERROR_CODE: ErrorCode = "overflow";
 
 export const toRationalCalculatorValue = (value: RationalValue): NonNanCalculatorValue => ({
   kind: "rational",
@@ -230,4 +228,5 @@ export const clampRationalToBoundary = (value: RationalValue, boundary: bigint):
   num: value.num < 0n ? -boundary : boundary,
   den: 1n,
 });
+
 

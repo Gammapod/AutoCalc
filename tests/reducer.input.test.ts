@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
 import {
   calculatorValuesEquivalent,
-  OVERFLOW_ERROR_CODE,
   toComplexCalculatorValue,
   toNanCalculatorValue,
   toRationalCalculatorValue,
@@ -227,7 +226,8 @@ export const runReducerInputTests = (): void => {
   const afterDivByZero = applyKeyAction(divByZeroSource, "exec_equals");
   assert.deepEqual(afterDivByZero.calculator.total, toNanCalculatorValue(), "division by zero sets total to NaN");
   assert.equal(afterDivByZero.calculator.rollEntries.at(-1)?.y.kind, "nan", "division by zero appends NaN roll row");
-  assert.equal(afterDivByZero.calculator.rollEntries.at(-1)?.error?.code, "n/0", "division by zero records roll error code");
+  assert.equal(afterDivByZero.calculator.rollEntries.at(-1)?.error?.code, "op_div", "division by zero records operator error code");
+  assert.equal(afterDivByZero.calculator.rollEntries.at(-1)?.error?.kind, "division_by_zero", "division by zero keeps error kind");
 
   const nanInputSource: GameState = {
     ...fullyUnlocked,
@@ -238,7 +238,21 @@ export const runReducerInputTests = (): void => {
   };
   const afterNanEquals = applyKeyAction(nanInputSource, "exec_equals");
   assert.deepEqual(afterNanEquals.calculator.total, toNanCalculatorValue(), "executing on NaN keeps NaN total");
-  assert.equal(afterNanEquals.calculator.rollEntries.at(-1)?.error?.code, "NaN", "NaN execution records NaN error code");
+  assert.equal(afterNanEquals.calculator.rollEntries.at(-1)?.error?.code, "seed_nan", "NaN execution records seed_nan error code");
+  const nanStopsExecutionSource: GameState = {
+    ...divByZeroSource,
+    ui: {
+      ...divByZeroSource.ui,
+      buttonFlags: {
+        ...divByZeroSource.ui.buttonFlags,
+        [EXECUTION_PAUSE_FLAG]: true,
+        [EXECUTION_PAUSE_EQUALS_FLAG]: true,
+      },
+    },
+  };
+  const afterNanStopsExecution = applyKeyAction(nanStopsExecutionSource, "exec_equals");
+  assert.equal(Boolean(afterNanStopsExecution.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "terminal NaN clears play/pause execution flag");
+  assert.equal(Boolean(afterNanStopsExecution.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "terminal NaN clears equals execution flag");
 
   const overflowSource: GameState = {
     ...fullyUnlocked,
@@ -256,7 +270,7 @@ export const runReducerInputTests = (): void => {
   assertTotalEquivalent(afterOverflow.calculator.total, r(99n), "overflow clamps to boundary value");
   assert.equal(
     afterOverflow.calculator.rollEntries.at(-1)?.error?.code,
-    OVERFLOW_ERROR_CODE,
+    "overflow",
     "overflow records overflow error code",
   );
 
@@ -419,7 +433,7 @@ export const runReducerInputTests = (): void => {
       total: r(4n),
       rollEntries: [
         { y: r(1n) },
-        { y: toNanCalculatorValue(), error: { code: "NaN", kind: "nan_input" } },
+        { y: toNanCalculatorValue(), error: { code: "seed_nan", kind: "nan_input" } },
         { y: r(4n) },
       ],
     },
@@ -1021,7 +1035,7 @@ export const runReducerInputTests = (): void => {
   };
   const afterSigmaZeroExecution = applyKeyAction(sigmaZeroExecutionSource, "exec_equals");
   assert.deepEqual(afterSigmaZeroExecution.calculator.total, toNanCalculatorValue(), "sigma at zero returns NaN");
-  assert.equal(afterSigmaZeroExecution.calculator.rollEntries.at(-1)?.error?.code, "NaN", "sigma at zero records NaN input error");
+  assert.equal(afterSigmaZeroExecution.calculator.rollEntries.at(-1)?.error?.code, "unary_sigma", "sigma at zero records operator NaN error code");
 
   const symbolicPiCancellationSource: GameState = {
     ...fullyUnlocked,
@@ -1069,7 +1083,7 @@ export const runReducerInputTests = (): void => {
   };
   const afterNonRationalSymbolic = applyKeyAction(symbolicNonRationalSource, "exec_equals");
   assert.deepEqual(afterNonRationalSymbolic.calculator.total, toNanCalculatorValue(), "non-rational symbolic total is rejected in default visualizer");
-  assert.equal(afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.error?.code, "ALG", "non-rational symbolic result records ALG error");
+  assert.equal(afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.error?.code, "op_add", "non-rational symbolic result records operator error code");
   assert.ok(afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.symbolic, "non-rational symbolic result records symbolic payload");
   assert.equal(
     afterNonRationalSymbolic.calculator.rollEntries.at(-1)?.symbolic?.renderText.includes("."),

@@ -1282,7 +1282,7 @@ const isRollErrorEntry = (value: unknown): value is SerializableRollErrorEntry =
   isInteger(value.rollIndex) &&
   value.rollIndex >= 0 &&
   isString(value.code) &&
-  ERROR_CODE_VALUES.includes(value.code as ErrorCode) &&
+  value.code.trim().length > 0 &&
   isString(value.kind) &&
   EXECUTION_ERROR_KIND_VALUES.includes(value.kind as ExecutionErrorKind);
 

@@ -1,7 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { executeCommand } from "../src/domain/commands.js";
-import { initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import {
   buildPreDispatchBlockedInputFeedback,
@@ -336,6 +336,32 @@ export const runInputFeedbackOutcomeTests = (): void => {
       "g",
       "set active calculator feedback resolves to selected calculator",
     );
+  }
+
+  {
+    const base = baseState();
+    const state: GameState = {
+      ...base,
+      calculators: undefined,
+      calculatorOrder: undefined,
+      activeCalculatorId: undefined,
+      perCalculatorCompletedUnlockIds: undefined,
+      sessionControlProfiles: undefined,
+      calculator: {
+        ...base.calculator,
+        rollEntries: [
+          { y: { kind: "rational", value: { num: 1n, den: 1n } } },
+          { y: { kind: "nan" }, error: { code: "seed_nan", kind: "nan_input" } },
+        ],
+      },
+    };
+    const result = executeCommand(state, {
+      type: "DispatchAction",
+      action: { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
+    });
+    const feedback = findInputFeedback(result.uiEffects);
+    assert.equal(feedback?.outcome, "rejected", "NaN-lock execution toggle reject emits rejected feedback");
+    assert.equal(feedback?.reasonCode, "execution_gate_reject", "NaN-lock execution toggle reject uses execution gate reason");
   }
 
   {

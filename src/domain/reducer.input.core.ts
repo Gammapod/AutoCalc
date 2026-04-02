@@ -3,10 +3,8 @@ import {
   clampRationalToBoundary,
   calculatorValueToDisplayString,
   computeOverflowBoundary,
-  DIVISION_BY_ZERO_ERROR_CODE,
   exceedsMagnitudeBoundary,
   isRationalCalculatorValue,
-  NAN_INPUT_ERROR_CODE,
   OVERFLOW_ERROR_CODE,
   toExplicitComplexCalculatorValue,
   toExpressionCalculatorValue,
@@ -60,6 +58,7 @@ import type {
   BinarySlot,
   UnaryOperator,
   Slot,
+  SlotOperator,
 } from "./types.js";
 import { applyUnlocks } from "./unlocks.js";
 import {
@@ -92,6 +91,7 @@ import {
   type ExecutionPlanBuildResult,
 } from "./executionPlanIR.js";
 import { resolveRollInverseNextTotal, shouldRejectRollInverseExecution } from "./rollInverseExecution.js";
+import { clearExecutionModeFlags } from "./executionModePolicy.js";
 import { getAppServices } from "../contracts/appServices.js";
 
 export const getUnlockCatalog = () => getAppServices().contentProvider.unlockCatalog;
@@ -298,6 +298,23 @@ type EvaluatedExecution = {
 
 const SYMBOLIC_RENDER_CHAR_CAP = 160;
 
+const resolveNanErrorCode = (
+  operationSlots: Slot[],
+  options: {
+    fallback?: ErrorCode;
+    operatorId?: SlotOperator;
+  } = {},
+): ErrorCode => {
+  if (options.operatorId) {
+    return options.operatorId;
+  }
+  const tailOperator = operationSlots[operationSlots.length - 1]?.operator;
+  if (tailOperator) {
+    return tailOperator;
+  }
+  return options.fallback ?? "seed_nan";
+};
+
 const toSymbolicPayload = (exprText: string, renderText: string = exprText): NonNullable<RollEntry["symbolic"]> => {
   const truncated = renderText.length > SYMBOLIC_RENDER_CHAR_CAP;
   return {
@@ -307,9 +324,13 @@ const toSymbolicPayload = (exprText: string, renderText: string = exprText): Non
   };
 };
 
-const toSymbolicExecution = (exprText: string, renderText: string = exprText): EvaluatedExecution => ({
+const toSymbolicExecution = (
+  errorCode: ErrorCode,
+  exprText: string,
+  renderText: string = exprText,
+): EvaluatedExecution => ({
   nextTotal: toNanCalculatorValue(),
-  errorCode: "ALG",
+  errorCode,
   errorKind: "symbolic_result",
   symbolic: toSymbolicPayload(exprText, renderText),
 });
@@ -849,23 +870,20 @@ const evaluateExecutionOutcomeForSlots = (
   if (seedTotal.kind === "nan") {
     return {
       nextTotal: toNanCalculatorValue(),
-      errorCode: NAN_INPUT_ERROR_CODE,
+      errorCode: resolveNanErrorCode(operationSlots, { fallback: "seed_nan" }),
       errorKind: "nan_input",
     };
   }
 
   const execution = executeSlotsValue(seedTotal, operationSlots);
   if (!execution.ok) {
-    if (execution.reason === "unsupported_symbolic") {
-      return {
-        nextTotal: toNanCalculatorValue(),
-        errorCode: NAN_INPUT_ERROR_CODE,
-        errorKind: "nan_input",
-      };
-    }
+    const errorCode = resolveNanErrorCode(operationSlots, {
+      operatorId: execution.operatorId,
+      fallback: "seed_nan",
+    });
     return {
       nextTotal: toNanCalculatorValue(),
-      errorCode: execution.reason === "division_by_zero" ? DIVISION_BY_ZERO_ERROR_CODE : NAN_INPUT_ERROR_CODE,
+      errorCode,
       errorKind: execution.reason === "division_by_zero" ? "division_by_zero" : "nan_input",
     };
   }
@@ -880,7 +898,7 @@ const evaluateExecutionOutcomeForSlots = (
     if (execution.total.kind !== "expr") {
       return {
         nextTotal: toNanCalculatorValue(),
-        errorCode: NAN_INPUT_ERROR_CODE,
+        errorCode: resolveNanErrorCode(operationSlots, { fallback: "seed_nan" }),
         errorKind: "nan_input",
       };
     }
@@ -892,11 +910,11 @@ const evaluateExecutionOutcomeForSlots = (
       ? symbolicEvaluation.value.simplifiedText
       : symbolicEvaluation.simplifiedText;
     if (!symbolicEvaluation.ok) {
-      return toSymbolicExecution(expressionKey, symbolicText);
+      return toSymbolicExecution(resolveNanErrorCode(operationSlots, { fallback: "seed_nan" }), expressionKey, symbolicText);
     }
     const rationalized = symbolicEvaluation.value.rationalValue;
     if (!rationalized) {
-      return toSymbolicExecution(expressionKey, symbolicText);
+      return toSymbolicExecution(resolveNanErrorCode(operationSlots, { fallback: "seed_nan" }), expressionKey, symbolicText);
     }
     const overflowChecked = options.deferOverflowToWrapStage
       ? { nextTotal: toRationalCalculatorValue(rationalized) }
@@ -1028,7 +1046,10 @@ const finalizeTerminalExecution = (
       withMarkers = markCompletedUnlockId(withMarkers, BINARY_MUL_RESULT_ZERO_SEEN_ID);
     }
   }
-  return applyUnlocks(withMarkers, getUnlockCatalog());
+  const withExecutionStopped = evaluation.nextTotal.kind === "nan"
+    ? clearExecutionModeFlags(withMarkers)
+    : withMarkers;
+  return applyUnlocks(withExecutionStopped, getUnlockCatalog());
 };
 
 export const applyEquals = (state: GameState): GameState => {

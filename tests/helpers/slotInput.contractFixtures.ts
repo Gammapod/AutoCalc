@@ -398,7 +398,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     expectedProjection: {
       total: toNanCalculatorValue(),
       roll: [toNanCalculatorValue()],
-      rollErrors: [{ rollIndex: 0, code: "n/0", kind: "division_by_zero" }],
+      rollErrors: [{ rollIndex: 0, code: "op_div", kind: "division_by_zero" }],
       keyPressCounts: keyCounts([["exec_equals", 1]]),
     },
   },
@@ -424,7 +424,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["exec_equals"],
     expectedProjection: {
       total: r(99n),
-      rollErrors: [{ rollIndex: 0, code: "x∉[-R,R]", kind: "overflow" }],
+      rollErrors: [{ rollIndex: 0, code: "overflow", kind: "overflow" }],
       keyPressCounts: keyCounts([["exec_equals", 1]]),
     },
   },
@@ -502,6 +502,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
 
 export const getSlotInputScenariosByTag = (tag: SlotInputScenarioTag): SlotInputScenario[] =>
   slotInputScenarios.filter((scenario) => scenario.tags.includes(tag));
+
 
 
 

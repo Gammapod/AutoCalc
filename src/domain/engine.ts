@@ -22,7 +22,7 @@ import {
   normalizeExpression,
   slotOperandToExpression,
 } from "./expression.js";
-import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, ScalarValue, Slot } from "./types.js";
+import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, ScalarValue, Slot, SlotOperator } from "./types.js";
 import { isUnsupportedSymbolicOperatorKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import { resolveOperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
 import {
@@ -477,7 +477,11 @@ const applyBinaryExpressionRaw = (
 
 export type ExecuteSlotsValueResult =
   | { ok: true; total: CalculatorValue; euclidRemainder?: RationalValue }
-  | { ok: false; reason: "division_by_zero" | "nan_input" | "unsupported_symbolic" };
+  | {
+      ok: false;
+      reason: "division_by_zero" | "nan_input" | "unsupported_symbolic";
+      operatorId?: SlotOperator;
+    };
 
 export type BuildSymbolicExpressionResult =
   | { ok: true; expression: ExpressionValue }
@@ -849,14 +853,14 @@ const executeSlotsValueInternal = (
   const applyRationalOnlySlot = (current: RuntimeValue, slot: Slot): ExecuteSlotsValueResult => {
     const pureReal = asPureRealRational(current);
     if (!pureReal) {
-      return { ok: false, reason: "nan_input" };
+      return { ok: false, reason: "nan_input", operatorId: slot.operator };
     }
     if (!("operand" in slot) && resolveKeyId(slot.operator) === KEY_ID.unary_i) {
-      return { ok: false, reason: "unsupported_symbolic" };
+      return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
     const executed = executeSlots(pureReal, [slot]);
     if (!executed.ok) {
-      return { ok: false, reason: executed.reason };
+      return { ok: false, reason: executed.reason, operatorId: slot.operator };
     }
     return {
       ok: true,
@@ -941,7 +945,7 @@ const executeSlotsValueInternal = (
         const re = scalarToRational(currentComplex.re);
         const im = scalarToRational(currentComplex.im);
         if (!re || !im) {
-          return { ok: false, reason: "nan_input" };
+          return { ok: false, reason: "nan_input", operatorId: slot.operator };
         }
         current = fromComplexRuntime({
           re: toRationalScalarValue({
@@ -968,7 +972,7 @@ const executeSlotsValueInternal = (
         if (gaussian) {
           const norm = gaussianNorm(gaussian);
           if (norm === 0n) {
-            return { ok: false, reason: "nan_input" };
+            return { ok: false, reason: "nan_input", operatorId: slot.operator };
           }
           current = unaryKey === KEY_ID.unary_sigma
             ? toRationalCalculatorValue({ num: sigmaBigInt(norm), den: 1n })
@@ -1004,7 +1008,7 @@ const executeSlotsValueInternal = (
         return delegated;
       }
       if (delegated.total.kind === "nan") {
-        return { ok: false, reason: "nan_input" };
+        return { ok: false, reason: "nan_input", operatorId: slot.operator };
       }
       current = delegated.total;
       lastEuclidRemainder = delegated.euclidRemainder;
@@ -1042,7 +1046,7 @@ const executeSlotsValueInternal = (
         return delegated;
       }
       if (delegated.total.kind === "nan") {
-        return { ok: false, reason: "nan_input" };
+        return { ok: false, reason: "nan_input", operatorId: slot.operator };
       }
       current = delegated.total;
       lastEuclidRemainder = delegated.euclidRemainder;
@@ -1069,7 +1073,7 @@ const executeSlotsValueInternal = (
           return delegated;
         }
         if (delegated.total.kind === "nan") {
-          return { ok: false, reason: "nan_input" };
+          return { ok: false, reason: "nan_input", operatorId: slot.operator };
         }
         current = delegated.total;
         lastEuclidRemainder = delegated.euclidRemainder;
@@ -1077,12 +1081,12 @@ const executeSlotsValueInternal = (
       }
 
       if (typeof slot.operand !== "bigint") {
-        return { ok: false, reason: "unsupported_symbolic" };
+        return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
       }
       const norm = gaussianNorm(gaussian);
       if (operatorKey === KEY_ID.op_euclid_div || operatorKey === KEY_ID.op_mod) {
         if (slot.operand === 0n) {
-          return { ok: false, reason: "division_by_zero" };
+          return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
         }
         const divided = gaussianDivideByInteger(gaussian, slot.operand);
         const quotient = toComplexCalculatorValue(
@@ -1117,17 +1121,17 @@ const executeSlotsValueInternal = (
         lastEuclidRemainder = undefined;
         continue;
       }
-      return { ok: false, reason: "unsupported_symbolic" };
+      return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
 
     if (operatorKey === KEY_ID.op_pow && typeof slot.operand !== "bigint") {
-      return { ok: false, reason: "unsupported_symbolic" };
+      return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
     const rejectsSymbolicOperand = policy
       ? policy.rejectPolicy.unsupportedSymbolicOnSymbolicOperand
       : isUnsupportedSymbolicOperatorKeyId(slot.operator);
     if (operatorKey !== KEY_ID.op_pow && rejectsSymbolicOperand) {
-      return { ok: false, reason: "unsupported_symbolic" };
+      return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
 
     const left = toComplexRuntime(current);
@@ -1157,7 +1161,7 @@ const executeSlotsValueInternal = (
     if (operatorKey === KEY_ID.op_div) {
       const inverse = complexInverse(right);
       if (!inverse) {
-        return { ok: false, reason: "division_by_zero" };
+        return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
       }
       current = fromComplexRuntime(complexMultiply(left, inverse));
       lastEuclidRemainder = undefined;
@@ -1166,17 +1170,17 @@ const executeSlotsValueInternal = (
     if (operatorKey === KEY_ID.op_pow) {
       const powOperand = slot.operand;
       if (typeof powOperand !== "bigint") {
-        return { ok: false, reason: "unsupported_symbolic" };
+        return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
       }
       const powered = complexPowInt(left, powOperand);
       if (!powered) {
-        return { ok: false, reason: "division_by_zero" };
+        return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
       }
       current = fromComplexRuntime(powered);
       lastEuclidRemainder = undefined;
       continue;
     }
-    return { ok: false, reason: "unsupported_symbolic" };
+    return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
   }
 
   return {

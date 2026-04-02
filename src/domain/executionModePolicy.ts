@@ -266,7 +266,13 @@ export const isExecutionGatedMutationAction = (state: GameState, action: Action)
 };
 
 export const classifyExecutionPolicyAction = (state: GameState, action: Action): ExecutionPolicyResult => {
+  const latestRollEntry = state.calculator.rollEntries[state.calculator.rollEntries.length - 1];
+  const hasTerminalNanLock = latestRollEntry?.y.kind === "nan";
+
   if (action.type === "TOGGLE_FLAG") {
+    if (hasTerminalNanLock && isExecutionToggleFlag(state, action.flag)) {
+      return { decision: "reject" };
+    }
     if (isExecutionToggleFlag(state, action.flag)) {
       return {
         decision: "interrupt_and_run",
@@ -283,6 +289,9 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
   }
 
   if (action.type === "PRESS_KEY") {
+    if (hasTerminalNanLock && isExecutionCategoryKey(action.key)) {
+      return { decision: "reject" };
+    }
     if (
       action.key === KEY_ID.exec_roll_inverse
       && shouldRejectRollInverseExecution(state.calculator.rollEntries)

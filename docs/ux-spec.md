@@ -27,7 +27,7 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
   Rationale: shell divergence is presentation-level, not game-semantics divergence.
 - `UX-PAR-02` (MUST): Unlock progression outcomes must be parity-equivalent across shells for equivalent action histories.
   Rationale: progression truth is platform-invariant.
-- `UX-PAR-03` (MUST): Execution-gated rejected inputs must remain non-mutating and parity-equivalent across dispatch paths.
+- `UX-PAR-03` (MUST): Execution-gated rejected inputs, including terminal-NaN execution-key rejects, must remain non-mutating and parity-equivalent across dispatch paths.
   Rationale: rejection semantics are part of gameplay determinism.
 
 ### 2.2 Visualizer projection invariants

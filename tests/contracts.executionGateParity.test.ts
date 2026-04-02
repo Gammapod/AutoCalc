@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { executeCommand } from "../src/domain/commands.js";
 import { executePlanIR, executePlanIRLegacyPath } from "../src/domain/engine.js";
 import { buildExecutionPlanIR } from "../src/domain/executionPlanIR.js";
+import { toNanCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
@@ -120,7 +121,6 @@ export const runContractsExecutionGateParityTests = (): void => {
       `roll-inverse reject parity remains equivalent (${JSON.stringify(parity.mismatches)})`,
     );
   }
-
   const pausedStateSeed: GameState = {
     ...legacyInitialState(),
     unlocks: {
@@ -164,6 +164,17 @@ export const runContractsExecutionGateParityTests = (): void => {
     },
   };
   const pausedState = reducer(pausedStateSeed, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG });
+  const nanLockedState: GameState = {
+    ...pausedStateSeed,
+    calculator: {
+      ...pausedStateSeed.calculator,
+      total: toNanCalculatorValue(),
+      rollEntries: [
+        { y: { kind: "rational", value: { num: 1n, den: 1n } } },
+        { y: toNanCalculatorValue(), error: { code: "seed_nan", kind: "nan_input" } },
+      ],
+    },
+  };
 
   runParityRejectionCase(
     "execution-pause digit rejection",
@@ -207,6 +218,30 @@ export const runContractsExecutionGateParityTests = (): void => {
     pausedState,
     { type: "SWAP_LAYOUT_CELLS", fromSurface: "keypad", fromIndex: 0, toSurface: "storage", toIndex: 0 },
     { expectRejectUiEffect: true },
+  );
+  runParityRejectionCase(
+    "nan-lock equals-toggle rejection",
+    nanLockedState,
+    { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
+    { expectRejectUiEffect: true, expectStateMutation: true },
+  );
+  runParityRejectionCase(
+    "nan-lock play/pause rejection",
+    nanLockedState,
+    { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG },
+    { expectRejectUiEffect: true, expectStateMutation: true },
+  );
+  runParityRejectionCase(
+    "nan-lock step-through rejection",
+    nanLockedState,
+    { type: "PRESS_KEY", key: KEY_ID.exec_step_through },
+    { expectRejectUiEffect: true, expectStateMutation: true },
+  );
+  runParityRejectionCase(
+    "nan-lock roll-inverse rejection",
+    nanLockedState,
+    { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
+    { expectRejectUiEffect: true, expectStateMutation: true },
   );
 
   const runParityAcceptedCase = (label: string, state: GameState, action: Action): void => {

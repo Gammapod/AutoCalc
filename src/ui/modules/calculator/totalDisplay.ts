@@ -342,8 +342,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   };
 
   const latestRollEntry = state.calculator.rollEntries.at(-1);
-  const latestErrorCode = latestRollEntry?.error?.code;
-  const shouldDisplayAlgLabel = latestErrorCode === "ALG";
+  const shouldDisplayAlgLabel = latestRollEntry?.error?.kind === "symbolic_result";
   const domainValue = latestRollEntry?.y ?? state.calculator.total;
   const totalIsNaN = state.calculator.total.kind === "nan";
   const hasLatestRollError = Boolean(state.calculator.rollEntries.at(-1)?.error);

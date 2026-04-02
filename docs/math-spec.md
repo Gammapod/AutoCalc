@@ -38,6 +38,10 @@ Release sequencing for implementation is maintained in `docs/planning/Planned Re
 - Division-by-zero returns `division_by_zero` and emits `n/0` roll error.
 - Domain-invalid input returns `nan_input` and emits `NaN` roll error.
 - Unsupported symbolic/complex operator paths return `unsupported_symbolic`; no float fallback is allowed.
+- `NaN` is a terminal null-result outcome persisted in roll/history rows, not a value to continue computation from.
+- Runtime MUST populate roll error metadata for NaN-producing execution outcomes (reason taxonomy expansion is deferred to dedicated slices).
+- When the latest roll/history row is `NaN`, execution-category key inputs are rejected (`exec_equals`, `exec_play_pause`, `exec_step_through`, `exec_roll_inverse`) until NaN is removed from roll tail by recovery actions.
+- Overflow is non-NaN failure: overflow clamps to finite boundary output and emits overflow metadata.
 
 6. Approximation is branch-only and deterministic.
 - Stored/returned operator values remain exact (`rational` / `expr` / `complex`); no approximate roll values are persisted.

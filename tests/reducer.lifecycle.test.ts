@@ -190,7 +190,7 @@ export const runReducerLifecycleTests = (): void => {
   );
   assert.equal(
     binaryOverflowed.calculator.rollEntries.at(-1)?.error?.code,
-    "x∉[-R,R]",
+    "overflow",
     "binary overflow row records overflow code",
   );
   assert.equal(
@@ -323,6 +323,7 @@ export const runReducerLifecycleTests = (): void => {
     "locked installed visualizers force a single active visualizer by keypad scan order",
   );
 };
+
 
 
 

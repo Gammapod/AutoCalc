@@ -1,7 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { classifyExecutionPolicyAction } from "../src/domain/executionModePolicy.js";
-import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_FLAG } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { GameState } from "../src/domain/types.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
@@ -181,6 +181,36 @@ export const runExecutionModePolicyTests = (): void => {
     classifyExecutionPolicyAction(active, { type: "AUTO_STEP_TICK" }),
     { decision: "allow" },
     "AUTO_STEP_TICK passes through policy classifier",
+  );
+  const nanLocked: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      rollEntries: [
+        { y: { kind: "rational", value: { num: 1n, den: 1n } } },
+        { y: { kind: "nan" }, error: { code: "seed_nan", kind: "nan_input" } },
+      ],
+    },
+  };
+  assert.deepEqual(
+    classifyExecutionPolicyAction(nanLocked, { type: "PRESS_KEY", key: k("exec_roll_inverse") }),
+    { decision: "reject" },
+    "terminal NaN lock rejects roll-inverse input",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(nanLocked, { type: "PRESS_KEY", key: k("exec_step_through") }),
+    { decision: "reject" },
+    "terminal NaN lock rejects step-through input",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(nanLocked, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG }),
+    { decision: "reject" },
+    "terminal NaN lock rejects play/pause toggle",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(nanLocked, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG }),
+    { decision: "reject" },
+    "terminal NaN lock rejects equals toggle",
   );
 
   const dual = reducer(reducer(base, { type: "UNLOCK_ALL" }), { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" });

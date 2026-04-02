@@ -181,7 +181,9 @@ export type CalculatorValue =
       kind: "nan";
     };
 
-export type ErrorCode = "x\u2209[-R,R]" | "n/0" | "NaN" | "ALG";
+export type LegacyErrorCode = "x\u2209[-R,R]" | "n/0" | "NaN" | "ALG";
+export type CanonicalErrorCode = "overflow" | "seed_nan" | BinarySlotOperator | UnarySlotOperator;
+export type ErrorCode = CanonicalErrorCode | LegacyErrorCode;
 
 export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input" | "symbolic_result";
 

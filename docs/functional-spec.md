@@ -138,8 +138,8 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: read-model/UI cannot override domain truth.
 - `FS-CS-04` (MUST): Roll/history represents executed outcomes, not transient drafting intent.
   Rationale: history is an auditable execution trail.
-- `FS-CS-05` (MUST): Error and remainder channels are canonical parts of execution outcome semantics when present.
-  Rationale: failure modes and remainders are gameplay-relevant outputs.
+- `FS-CS-05` (MUST): Error and remainder channels are canonical parts of execution outcome semantics. `NaN` is a canonical terminal null-result outcome persisted in roll/history. Error metadata remains schema-optional, but runtime MUST populate error metadata for NaN-producing execution outcomes. Overflow MUST clamp to finite boundary output and emit overflow metadata, and MUST NOT produce `NaN`.
+  Rationale: failure modes, null-result handling, and remainders are gameplay-relevant outputs and must be deterministic.
 
 #### 3.2.1.a Semantic Visual Families (Visualizer + Function Displays)
 
@@ -175,10 +175,12 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: prevents duplicate roll/terminal writes.
 - `FS-FB-07` (MUST): If step-through capability is absent, step-specific behavior is inert.
   Rationale: unavailable capabilities cannot leak behavior.
-- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. `=` is the toggle entrypoint for this mode (`execution.pause.equals`). While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating for calculator/progression state, while UI-only feedback effects are allowed.
+- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. `=` is the toggle entrypoint for this mode (`execution.pause.equals`). While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating for calculator/progression state, while UI-only feedback effects are allowed. Terminal-NaN lock semantics (see `FS-FB-10`) take precedence over execution-interrupting exceptions for execution-category keys.
   Rationale: execution cadence and deterministic state transitions require mode-gated mutation boundaries, with explicit toggle-driven entry.
 - `FS-FB-09` (MUST): Auto-step intermediate progress is preview-only. Roll/history and terminal total commit exactly once, only on completion/finalization of the execution path.
   Rationale: prevents duplicate terminal writes and preserves roll as terminal execution history. For equals-toggle mode, the flag auto-clears on terminal roll/total commit.
+- `FS-FB-10` (MUST): Terminal-NaN computation lock is calculator-local and is triggered when the latest roll/history row has `y.kind = "nan"`. While active, all execution-category key inputs (`exec_equals`, `exec_play_pause`, `exec_step_through`, `exec_roll_inverse`) are rejected, remain non-mutating, and use standard reject feedback effects. Further computation resumes only after state changes that remove `NaN` from roll tail (for example undo/reset flows).
+  Rationale: terminal null-result outcomes must halt further execution deterministically until explicit recovery.
 
 #### 3.2.3 Traceability (Calculator State)
 
@@ -188,7 +190,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-CS-02 | Control matrix relationships are calculator-local; per-calculator settable/derived variable policy constrains reachable states and capability envelope (keypad dimensions, slot count, range, evaluation cadence semantics) | `contracts/control-matrix-locality`, `domain/sandbox-preset`, `app/analysis-report` | contract + unit | none |
 | FS-CS-03 | Visualizers are projections, not truth source | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
 | FS-CS-04 | Roll is executed outcomes, not drafting state | `reducer/input`, `ui/roll-display`, `contracts/slot-input-parity` | unit + integration + contract | none |
-| FS-CS-05 | Error/remainder channels are canonical outcomes | `reducer/input`, `ui/total-display`, `ui/roll-display`, `persistence` | unit + integration | none |
+| FS-CS-05 | Canonical error/remainder outcomes include terminal-NaN persistence semantics, required NaN metadata population, and non-NaN overflow clamping semantics | `reducer/input`, `ui/total-display`, `ui/roll-display`, `persistence` | unit + integration | partial: dedicated NaN-metadata population matrix is pending |
 | FS-CS-06 | Modulo/cycle/congruence share one semantic visual family | `ui/graph-display`, `ui-module/grapher-v2` | integration | gap: no explicit semantic-family contract assertion |
 | FS-CS-07 | Memory/control-matrix/lambda share one semantic visual family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract assertion |
 | FS-CS-08 | Errors use distinct semantic visual family | `ui/total-display`, `ui/roll-display` | integration | partial: behavior tested, family-level visual contract absent |
@@ -202,8 +204,9 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-FB-05 | Step-through terminal equivalence with full execution | `reducer/input`, `ui-integration/mobile-shell`, `ui-integration/desktop-shell` | unit + workflow/integration | none |
 | FS-FB-06 | Finalization writes one terminal outcome per completion path | `reducer/input`, `persistence` | unit | partial: no dedicated long-trace finalization stress suite |
 | FS-FB-07 | Step behavior inert when capability absent | `reducer/input`, `ui-integration/mobile-shell` | unit + integration | none |
-| FS-FB-08 | `=` toggles auto-step mode; while active, calculator mutation inputs are gated and rejected actions are non-mutating unless execution-interrupting | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
+| FS-FB-08 | `=` toggles auto-step mode; while active, calculator mutation inputs are gated and rejected actions are non-mutating unless execution-interrupting, with terminal-NaN lock precedence | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
 | FS-FB-09 | Auto-step intermediate progress is preview-only; roll/terminal commit exactly once on completion | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | partial: no dedicated auto-step completion stress suite |
+| FS-FB-10 | Latest-roll NaN enforces calculator-local terminal execution lock over all execution keys with non-mutating rejects and standard reject feedback | `reducer/input`, `domain/execution-mode-policy`, `contracts/execution-gate-parity`, `uiModule.calculatorRejectBlink` | unit + contract + integration | partial: explicit execution-key lock matrix for NaN-tail recovery paths pending |
 
 #### 3.2.4 Traceability (Multi-Calculator Session Model)
 
@@ -290,7 +293,7 @@ None currently.
 2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
 3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but dedicated palette/install contract suites are rolling out.
 4. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
-5. `FS-FB-09` and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress and exception-bearing progression fixtures are pending.
+5. `FS-FB-09`, `FS-FB-10`, and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress, terminal-NaN execution-lock matrix, and exception-bearing progression fixtures are pending.
 6. `FS-UP-09`, `FS-UP-10`, `FS-UP-11`, and `FS-UP-12` are intentionally partial at introduction time; dedicated key-only schema, partition-matrix, canonical tie-break, and unresolved-classification fixtures/contracts are pending.
 
 **Lower priority: non-seam or later-phase expansion**
