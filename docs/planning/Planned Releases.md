@@ -7,6 +7,126 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Now
 
+### Slice `slice_complex_invariant_lock`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want complex-number behavior to be explicit and stable so runtime math and planning docs match.
+- Exit Criteria:
+- `docs/math-spec.md` and planning docs align on complex-result recording with explicit `im=0`.
+- Player input constraints are explicit: initial seed/right operand are digit-only.
+- Scope guard is explicit: dormant legacy paths are retained unless needed for invariant enforcement.
+
+### Slice `slice_player_input_gate_real_digit_only`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want seed and right-operand entry to be strictly digit-based so input behavior is predictable.
+- Exit Criteria:
+- Initial seed entry accepts only `0..9`.
+- Binary right operand entry accepts only `0..9`.
+- `const_pi` and `const_e` are blocked from direct player seed/right-operand entry.
+
+### Slice `slice_complex_result_representation`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want roll results to preserve exact complex form so seeded follow-up execution is consistent.
+- Exit Criteria:
+- Successful roll rows record exact complex values with explicit `re/im`, including `im=0`.
+- Runtime total remains type-consistent with recorded result.
+- Equality helpers treat real and zero-imaginary-complex values as equivalent where required.
+
+### Slice `slice_all_operator_complex_left_operand`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want unary/binary execution to work when the running total is complex so roll continuation does not break.
+- Exit Criteria:
+- Unary operators accept complex operands with exact behavior or policy-consistent rejection.
+- Binary operators accept complex left operands with digit-derived right operands.
+- No floating-point fallback is introduced.
+
+### Slice `slice_roll_diagnostics_persistence_parity`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want save/load and diagnostics to remain coherent after complex rollout.
+- Exit Criteria:
+- Persistence round-trips explicit complex roll rows and totals.
+- Roll-analysis invalidation behavior remains stable for non-rational diagnostics paths.
+- Read-model/display parity tests cover explicit `im=0` handling without losing complex storage fidelity.
+
+### Slice `slice_complex_operator_invariant_refresh`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want deferred complex-operator policy to be canonical before implementation so runtime behavior stays deterministic.
+- Exit Criteria:
+- `docs/math-spec.md` and planning docs replace deferred complex-reject rows for remaining operators with accepted policy.
+- Comparison fallback policy is explicit: exact-first, approximation fallback only for branch decisions, `epsilon = 1e-12`.
+- Tie policy is explicit: `unary_not` boundary/tie => `1`; `op_max/op_min` ties choose left.
+- Domain projection union includes `ℤ(𝕀)` for Gaussian integers.
+
+### Slice `slice_remaining_complex_operator_rollout`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want remaining deferred operators to work with complex totals under consistent Gaussian and comparison rules.
+- Exit Criteria:
+- Gaussian magnitude policy implemented for `op_euclid_div` and `op_mod`; Gaussian norm policy implemented for `op_gcd`, `op_lcm`, `unary_sigma`, `unary_phi`, `unary_omega`.
+- Componentwise policy implemented for Gaussian paths of `op_rotate_left`, `unary_collatz`, `unary_sort_asc`, `unary_mirror_digits`.
+- `unary_floor` and `unary_ceil` execute componentwise for all complex totals.
+- `op_max` / `op_min` use modulus compare for all complex totals with deterministic tie-left behavior.
+- `unary_not` supports all complex totals via `re + im <= 0` with exact-first compare and approximation fallback.
+
+### Slice `slice_gaussian_domain_projection_and_regression`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want Gaussian complex values reflected in domain indicators without breaking roll/read-model parity.
+- Exit Criteria:
+- `getRollYDomain` returns `ℤ(𝕀)` for non-zero-imaginary complex values with integer `re/im`.
+- Diagnostics/read-model domain-category logic classifies `ℤ(𝕀)` as complex.
+- Regression matrix covers Gaussian accept paths, non-Gaussian rejection parity, and exact-result persistence.
+
+## Next
+
+### Slice `slice_error_state_regularization_for_visualizers`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want overflow and NaN/error states to be canonical and mutually exclusive so visualizer behavior is deterministic.
+- Exit Criteria:
+- Canonical visualizer-facing error taxonomy is documented in one source of truth (`overflow`, `nan_or_error`, and non-error).
+- Overflow and NaN/error are explicitly defined as mutually exclusive runtime states; impossible combinations are prevented or normalized at projection boundaries.
+- Existing error signals used by visualizers are audited; ambiguous or duplicate flags are removed or mapped to canonical states.
+- A precondition contract exists for visualizers: each render pass receives exactly one error-state classification.
+
+### Slice `slice_visualizer_cartesian_v1_real_axis`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want a Cartesian visualizer that always shows a horizontal number line and the current-value vector from origin so value position is immediately readable.
+- Exit Criteria:
+- New visualizer id/key/panel wiring exists for `cartesian` with standard host behavior (single active panel, inactive-panel clear).
+- Horizontal axis is always rendered with 19 ticks total (`-9..9`), with end ticks treated as unlabeled semantic bounds.
+- Center tick is visually emphasized (same thickness as axis stroke), with no numeric labels on ticks.
+- Real-mode vector renders from origin to current real position and is unlabeled.
+- Horizontal axis remains within normal visualizer window bounds in host layouts.
+
+### Slice `slice_visualizer_cartesian_v1_complex_grid`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want complex totals to render on a Cartesian plane so both real and imaginary components are visible in one view.
+- Exit Criteria:
+- Complex plane mode is triggered only when current value is complex with `im != 0`; values with `im = 0` render as real-only mode.
+- In complex mode, a vertical axis of equal length/subdivision to horizontal is shown and axis ticks project to a full grid.
+- Complex vector renders from origin to `(Re, Im)` coordinates and is unlabeled.
+- Vertical axis tips and grid are allowed to clip in v1; clipping behavior is explicit and accepted by contract.
+- The Cartesian viewport is square in complex mode, even when the square exceeds current host fit window.
+
+### Slice `slice_visualizer_cartesian_v1_range_and_error_semantics`
+- Owner: `TBD`
+- Status: `ready`
+- User Story: As a player, I want Cartesian scaling and error cues to match existing graph semantics so behavior is consistent across visualizers.
+- Exit Criteria:
+- Cartesian max magnitude uses the same computation as graph visualizer window policy (`radix^digits - 1` semantics).
+- End ticks represent semantic bounds only; no endpoint labels are shown.
+- On overflow state, rendered vector switches to explicit red treatment.
+- On NaN/error state, a prominent red null-set symbol (`∅`) is centered at origin and visually overlays axis content.
+- Symbolic-result handling is not expanded in this slice; symbolic cleanup remains scoped to a separate dedicated slice.
+
 ### Slice `slice_ux_feedback_standardization`
 - Owner: `TBD`
 - Status: `ready`
