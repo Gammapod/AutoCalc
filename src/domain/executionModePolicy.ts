@@ -17,6 +17,18 @@ const isExecutionCategoryKey = (key: Key): boolean => {
   return definition?.category === "execution";
 };
 
+const isTerminalNanLockBlockedKey = (key: Key): boolean => {
+  const definition = getButtonDefinition(key);
+  if (!definition) {
+    return false;
+  }
+  return (
+    definition.category === "execution"
+    || definition.category === "slot_operator"
+    || definition.category === "unary_operator"
+  );
+};
+
 const getExecutionToggleFlagsForKey = (ui: GameState["ui"], key: Key): Set<string> => {
   const flags = new Set<string>();
   if (key === KEY_ID.exec_play_pause) {
@@ -289,7 +301,7 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
   }
 
   if (action.type === "PRESS_KEY") {
-    if (hasTerminalNanLock && isExecutionCategoryKey(action.key)) {
+    if (hasTerminalNanLock && isTerminalNanLockBlockedKey(action.key)) {
       return { decision: "reject" };
     }
     if (

@@ -253,7 +253,6 @@ export const runReducerInputTests = (): void => {
   const afterNanStopsExecution = applyKeyAction(nanStopsExecutionSource, "exec_equals");
   assert.equal(Boolean(afterNanStopsExecution.ui.buttonFlags[EXECUTION_PAUSE_FLAG]), false, "terminal NaN clears play/pause execution flag");
   assert.equal(Boolean(afterNanStopsExecution.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "terminal NaN clears equals execution flag");
-
   const overflowSource: GameState = {
     ...fullyUnlocked,
     unlocks: {

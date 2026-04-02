@@ -212,6 +212,16 @@ export const runExecutionModePolicyTests = (): void => {
     { decision: "reject" },
     "terminal NaN lock rejects equals toggle",
   );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(nanLocked, { type: "PRESS_KEY", key: op("op_add") }),
+    { decision: "reject" },
+    "terminal NaN lock rejects binary operator input",
+  );
+  assert.deepEqual(
+    classifyExecutionPolicyAction(nanLocked, { type: "PRESS_KEY", key: KEY_ID.unary_sigma }),
+    { decision: "reject" },
+    "terminal NaN lock rejects unary operator input",
+  );
 
   const dual = reducer(reducer(base, { type: "UNLOCK_ALL" }), { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" });
   const dualActive: GameState = {

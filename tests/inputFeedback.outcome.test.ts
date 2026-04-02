@@ -363,6 +363,31 @@ export const runInputFeedbackOutcomeTests = (): void => {
     assert.equal(feedback?.outcome, "rejected", "NaN-lock execution toggle reject emits rejected feedback");
     assert.equal(feedback?.reasonCode, "execution_gate_reject", "NaN-lock execution toggle reject uses execution gate reason");
   }
+  {
+    const base = baseState();
+    const state: GameState = {
+      ...base,
+      calculators: undefined,
+      calculatorOrder: undefined,
+      activeCalculatorId: undefined,
+      perCalculatorCompletedUnlockIds: undefined,
+      sessionControlProfiles: undefined,
+      calculator: {
+        ...base.calculator,
+        rollEntries: [
+          { y: { kind: "rational", value: { num: 1n, den: 1n } } },
+          { y: { kind: "nan" }, error: { code: "seed_nan", kind: "nan_input" } },
+        ],
+      },
+    };
+    const result = executeCommand(state, {
+      type: "DispatchAction",
+      action: { type: "PRESS_KEY", key: KEY_ID.op_add },
+    });
+    const feedback = findInputFeedback(result.uiEffects);
+    assert.equal(feedback?.outcome, "rejected", "NaN-lock operator reject emits rejected feedback");
+    assert.equal(feedback?.reasonCode, "execution_gate_reject", "NaN-lock operator reject uses execution gate reason");
+  }
 
   {
     const store = createStore(baseState());

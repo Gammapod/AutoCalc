@@ -243,6 +243,12 @@ export const runContractsExecutionGateParityTests = (): void => {
     { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
     { expectRejectUiEffect: true, expectStateMutation: true },
   );
+  runParityRejectionCase(
+    "nan-lock binary-operator rejection",
+    nanLockedState,
+    { type: "PRESS_KEY", key: op("op_add") },
+    { expectRejectUiEffect: true, expectStateMutation: true },
+  );
 
   const runParityAcceptedCase = (label: string, state: GameState, action: Action): void => {
     const reduced = reducer(state, action);
