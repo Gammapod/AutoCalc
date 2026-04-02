@@ -62,50 +62,50 @@
   --key-release-delay: 40ms;
 }
 
-.key--value-modifier {
+.key.key--value-modifier {
   border-color: var(--key-value-modifier-stroke);
   background: linear-gradient(180deg, var(--key-value-modifier-top), var(--key-value-modifier-bottom));
   color: #0f1218;
 }
 
-.key--group-slot_operator,
+.key.key--group-slot_operator,
 .key.key--unary-operator {
   border-color: var(--key-slot-operator-stroke);
   background: linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
   color: #ffffff;
 }
 
-.key--group-utility {
+.key.key--group-utility {
   border-color: var(--key-utility-stroke);
   background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
   color: #ffffff;
 }
 
-.key--group-memory {
+.key.key--group-memory {
   border-color: var(--key-memory-stroke);
   background: linear-gradient(180deg, var(--key-memory-top), var(--key-memory-bottom));
   color: #ffffff;
 }
 
-.key--group-settings {
+.key.key--group-settings {
   border-color: var(--key-settings-stroke);
   background: linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
   color: #ffffff;
 }
 
-.key--group-global_system {
+.key.key--group-global_system {
   border-color: var(--key-global-system-stroke);
   background: linear-gradient(180deg, var(--key-global-system-top), var(--key-global-system-bottom));
   color: #ffffff;
 }
 
-.key--group-step {
+.key.key--group-step {
   border-color: var(--key-step-stroke);
   background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
   color: #ffffff;
 }
 
-.key--group-execution {
+.key.key--group-execution {
   border-color: var(--key-execution-stroke);
   background: linear-gradient(180deg, var(--key-execution-top), var(--key-execution-bottom));
   color: #ffffff;
