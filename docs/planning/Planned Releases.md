@@ -8,8 +8,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 ## Now
 
 ### Slice `slice_complex_invariant_lock`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want complex-number behavior to be explicit and stable so runtime math and planning docs match.
 - Exit Criteria:
 - `docs/math-spec.md` and planning docs align on complex-result recording with explicit `im=0`.
@@ -17,8 +15,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Scope guard is explicit: dormant legacy paths are retained unless needed for invariant enforcement.
 
 ### Slice `slice_player_input_gate_real_digit_only`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want seed and right-operand entry to be strictly digit-based so input behavior is predictable.
 - Exit Criteria:
 - Initial seed entry accepts only `0..9`.
@@ -26,8 +22,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - `const_pi` and `const_e` are blocked from direct player seed/right-operand entry.
 
 ### Slice `slice_complex_result_representation`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want roll results to preserve exact complex form so seeded follow-up execution is consistent.
 - Exit Criteria:
 - Successful roll rows record exact complex values with explicit `re/im`, including `im=0`.
@@ -35,8 +29,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Equality helpers treat real and zero-imaginary-complex values as equivalent where required.
 
 ### Slice `slice_all_operator_complex_left_operand`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want unary/binary execution to work when the running total is complex so roll continuation does not break.
 - Exit Criteria:
 - Unary operators accept complex operands with exact behavior or policy-consistent rejection.
@@ -44,8 +36,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - No floating-point fallback is introduced.
 
 ### Slice `slice_roll_diagnostics_persistence_parity`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want save/load and diagnostics to remain coherent after complex rollout.
 - Exit Criteria:
 - Persistence round-trips explicit complex roll rows and totals.
@@ -53,8 +43,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Read-model/display parity tests cover explicit `im=0` handling without losing complex storage fidelity.
 
 ### Slice `slice_complex_operator_invariant_refresh`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want deferred complex-operator policy to be canonical before implementation so runtime behavior stays deterministic.
 - Exit Criteria:
 - `docs/math-spec.md` and planning docs replace deferred complex-reject rows for remaining operators with accepted policy.
@@ -63,8 +51,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Domain projection union includes `ℤ(𝕀)` for Gaussian integers.
 
 ### Slice `slice_remaining_complex_operator_rollout`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want remaining deferred operators to work with complex totals under consistent Gaussian and comparison rules.
 - Exit Criteria:
 - Gaussian magnitude policy implemented for `op_euclid_div` and `op_mod`; Gaussian norm policy implemented for `op_gcd`, `op_lcm`, `unary_sigma`, `unary_phi`, `unary_omega`.
@@ -74,8 +60,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - `unary_not` supports all complex totals via `re + im <= 0` with exact-first compare and approximation fallback.
 
 ### Slice `slice_gaussian_domain_projection_and_regression`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want Gaussian complex values reflected in domain indicators without breaking roll/read-model parity.
 - Exit Criteria:
 - `getRollYDomain` returns `ℤ(𝕀)` for non-zero-imaginary complex values with integer `re/im`.
@@ -85,8 +69,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 ## Next
 
 ### Slice `slice_error_state_regularization_for_visualizers`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want overflow and NaN/error states to be canonical and mutually exclusive so visualizer behavior is deterministic.
 - Exit Criteria:
 - Canonical visualizer-facing error taxonomy is documented in one source of truth (`overflow`, `nan_or_error`, and non-error).
@@ -95,8 +77,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - A precondition contract exists for visualizers: each render pass receives exactly one error-state classification.
 
 ### Slice `slice_visualizer_cartesian_v1_real_axis`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want a Cartesian visualizer that always shows a horizontal number line and the current-value vector from origin so value position is immediately readable.
 - Exit Criteria:
 - New visualizer id/key/panel wiring exists for `cartesian` with standard host behavior (single active panel, inactive-panel clear).
@@ -106,8 +86,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Horizontal axis remains within normal visualizer window bounds in host layouts.
 
 ### Slice `slice_visualizer_cartesian_v1_complex_grid`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want complex totals to render on a Cartesian plane so both real and imaginary components are visible in one view.
 - Exit Criteria:
 - Complex plane mode is triggered only when current value is complex with `im != 0`; values with `im = 0` render as real-only mode.
@@ -117,8 +95,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - The Cartesian viewport is square in complex mode, even when the square exceeds current host fit window.
 
 ### Slice `slice_visualizer_cartesian_v1_range_and_error_semantics`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want Cartesian scaling and error cues to match existing graph semantics so behavior is consistent across visualizers.
 - Exit Criteria:
 - Cartesian max magnitude uses the same computation as graph visualizer window policy (`radix^digits - 1` semantics).
@@ -128,8 +104,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Symbolic-result handling is not expanded in this slice; symbolic cleanup remains scoped to a separate dedicated slice.
 
 ### Slice `slice_ux_feedback_standardization`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want every rejected input and every state transition to provide clear feedback so I always understand what happened and why.
 - Exit Criteria:
 - Every rejected input path provides explicit, user-visible feedback.
@@ -140,8 +114,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 ## Next
 
 ### Slice `slice_function_builder_bar_standardization`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want the function builder bar to look and behave consistently across states so editing functions feels predictable.
 - Exit Criteria:
 - Builder bar visuals are consistent across calculator shells and interaction modes.
@@ -152,8 +124,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 ## Later
 
 ### Slice `slice_content_completion_pass`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want all currently planned-but-not-yet-implemented keys to exist in-game with complete behavior and display metadata so progression and experimentation are not blocked by placeholder content.
 - Exit Criteria:
 - Every planned backlog key has full implementation in runtime/content catalogs.
@@ -168,8 +138,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Visualizer/content: Function display expanded-form rendering improvements.
 
 ### Slice `slice_progress_signal_bars`
-- Owner: `TBD`
-- Status: `ready`
 - User Story: As a player, I want progression and reward status to be shown visually so I can scan my status faster than reading verbose text blocks.
 - Exit Criteria:
 - Goal/reward text blocks are replaced by visual progress/signal bars in primary progression surfaces.
