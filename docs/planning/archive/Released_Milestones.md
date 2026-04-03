@@ -1,5 +1,26 @@
 Truth 2: Releases
 
+# Archived Slice (Unreleased): `slice_error_state_regularization_for_visualizers` (2026-04-02)
+
+### User Story
+As a player, I want overflow and NaN/error states to be canonical and mutually exclusive so visualizer behavior is deterministic.
+
+### Delivered Behavior
+- Canonicalized overflow error code to `overflow`.
+- Canonicalized NaN-producing error codes to producing operator id (fallback `seed_nan`).
+- Added terminal-NaN lock semantics in execution policy.
+- Extended terminal-NaN lock to reject execution and operator key inputs.
+- Preserved overflow as finite clamped output (non-NaN) with overflow metadata.
+
+### Verification Snapshot
+- Built with `npm run build:web:full`.
+- Targeted suites passed:
+  - `reducer/input`
+  - `domain/execution-mode-policy`
+  - `domain/key-behavior-contract`
+  - `contracts/execution-gate-parity`
+  - `contracts/input-feedback-outcome`
+
 # Release v0.9.32: IR-First Execution Consolidation (Shipped 2026-03-31)
 
 ### User Story

@@ -7,13 +7,16 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Now
 
-### Slice `slice_error_state_regularization_for_visualizers`
-- User Story: As a player, I want overflow and NaN/error states to be canonical and mutually exclusive so visualizer behavior is deterministic.
-- Exit Criteria:
-- Canonical visualizer-facing error taxonomy is documented in one source of truth (`overflow`, `nan_or_error`, and non-error).
-- Overflow and NaN/error are explicitly defined as mutually exclusive runtime states; impossible combinations are prevented or normalized at projection boundaries.
-- Existing error signals used by visualizers are audited; ambiguous or duplicate flags are removed or mapped to canonical states.
-- A precondition contract exists for visualizers: each render pass receives exactly one error-state classification.
+- No active slices.
+
+## Recently Archived (Unreleased)
+
+### Slice `slice_error_state_regularization_for_visualizers` (Archived 2026-04-02)
+- Status: Completed and archived from active planning.
+- Delivered scope:
+- Canonicalized error codes for overflow/NaN paths.
+- Implemented terminal-NaN lock semantics in execution policy.
+- Extended NaN lock to reject execution and operator key categories.
 
 ## Next
 
