@@ -196,7 +196,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.unary_floor, { buttonFace: "\u230An\u230B", operatorInlineFace: "\u230An\u230B", operatorSlotFace: "\u230An\u230B", operatorAlgebraicFace: "\u230An\u230B" }],
   [KEY_ID.unary_ceil, { buttonFace: "\u2308n\u2309", operatorInlineFace: "\u2308n\u2309", operatorSlotFace: "\u2308n\u2309", operatorAlgebraicFace: "\u2308n\u2309" }],
   [KEY_ID.unary_mirror_digits, { buttonFace: "\u21CBd", operatorInlineFace: "\u21CBd", operatorSlotFace: "\u21CB", operatorAlgebraicFace: "\u21CBd" }],
-  [KEY_ID.unary_i, { buttonFace: "\u299D", operatorInlineFace: "\u00D7i", operatorSlotFace: "\u299D", operatorAlgebraicFace: "\u00D7i" }],
+  [KEY_ID.unary_i, { buttonFace: "\u21B6 \u299C", operatorInlineFace: "\u00D7i", operatorSlotFace: "\u299D", operatorAlgebraicFace: "\u00D7i" }],
   [KEY_ID.util_clear_all, { buttonFace: "C" }],
   [KEY_ID.util_backspace, { buttonFace: "\u2190" }],
   [KEY_ID.util_undo, { buttonFace: "\u21A9" }],
