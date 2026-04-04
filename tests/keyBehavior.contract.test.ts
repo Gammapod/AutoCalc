@@ -43,6 +43,21 @@ const runEqualsToggleToCompletion = (state: GameState): GameState => {
   return next;
 };
 
+const runArmedAutoStepToCompletion = (state: GameState): GameState => {
+  let next = state;
+  for (let index = 0; index < 32; index += 1) {
+    if (!next.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]) {
+      break;
+    }
+    const stepped = reducer(next, { type: "AUTO_STEP_TICK" });
+    if (stepped === next) {
+      break;
+    }
+    next = stepped;
+  }
+  return next;
+};
+
 const runtimeKeysFromInitialUnlocks = (): Key[] => {
   const state = legacyInitialState();
   return [
@@ -323,21 +338,27 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "roll_inverse_executes_predecessor") {
+  if (kind === "roll_inverse_executes_inverse_plan") {
     const state = unlockKey(
       {
         ...legacyInitialState(),
+        settings: {
+          ...legacyInitialState().settings,
+          wrapper: "none",
+        },
         calculator: {
           ...legacyInitialState().calculator,
           total: r(3n),
-          rollEntries: re(r(1n), r(2n), r(3n)),
+          operationSlots: [{ operator: op("op_add"), operand: 1n }],
+          rollEntries: [],
         },
       },
       KEY_ID.exec_roll_inverse,
     );
-    const next = applyKeyAction(state, KEY_ID.exec_roll_inverse);
-    assertValueEquivalent(next.calculator.total, r(2n), "[ _ _ ]^-1 should set total to predecessor of first matching current value");
-    assertValueEquivalent(next.calculator.rollEntries.at(-1)?.y, r(2n), "[ _ _ ]^-1 should append predecessor row value");
+    const armed = applyKeyAction(state, KEY_ID.exec_roll_inverse);
+    assert.equal(Boolean(armed.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), true, "[ _ _ ]^-1 arms equals auto-step");
+    const next = runArmedAutoStepToCompletion(armed);
+    assertValueEquivalent(next.calculator.rollEntries.at(-1)?.y, r(2n), "[ _ _ ]^-1 should append inverse execution terminal value");
     return;
   }
 
@@ -592,7 +613,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
     return;
   }
 
-  if (kind === "roll_inverse_rejects_on_error") {
+  if (kind === "roll_inverse_ambiguous_produces_nan") {
     const base = legacyInitialState();
     const state = unlockKey(
       {
@@ -600,17 +621,16 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...base.calculator,
           total: r(4n),
-          rollEntries: [
-            { y: r(1n) },
-            { y: toNanCalculatorValue(), error: { code: "seed_nan", kind: "nan_input" } },
-            { y: r(4n) },
-          ],
+          operationSlots: [{ operator: op("op_mod"), operand: 2n }],
+          rollEntries: [],
         },
       },
       KEY_ID.exec_roll_inverse,
     );
-    const next = applyKeyAction(state, KEY_ID.exec_roll_inverse);
-    assert.deepEqual(next, state, "[ _ _ ]^-1 should reject when any roll row has an error");
+    const armed = applyKeyAction(state, KEY_ID.exec_roll_inverse);
+    const next = runArmedAutoStepToCompletion(armed);
+    assert.equal(next.calculator.total.kind, "nan", "[ _ _ ]^-1 ambiguous inverse should terminally produce NaN");
+    assert.equal(next.calculator.rollEntries.at(-1)?.error?.kind, "ambiguous", "[ _ _ ]^-1 ambiguous inverse should record ambiguous error kind");
     return;
   }
 

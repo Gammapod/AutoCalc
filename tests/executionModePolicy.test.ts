@@ -62,7 +62,7 @@ export const runExecutionModePolicyTests = (): void => {
     { decision: "allow" },
     "inactive execution mode allows value input",
   );
-  const rollInverseRejectState: GameState = {
+  const rollInverseAnyState: GameState = {
     ...base,
     calculator: {
       ...base.calculator,
@@ -72,9 +72,9 @@ export const runExecutionModePolicyTests = (): void => {
     },
   };
   assert.deepEqual(
-    classifyExecutionPolicyAction(rollInverseRejectState, { type: "PRESS_KEY", key: k("exec_roll_inverse") }),
-    { decision: "reject" },
-    "roll-inverse semantic rejection triggers policy reject even when execution mode is inactive",
+    classifyExecutionPolicyAction(rollInverseAnyState, { type: "PRESS_KEY", key: k("exec_roll_inverse") }),
+    { decision: "allow" },
+    "roll-inverse input is execution-allowed and resolves ambiguity in execution, not policy gating",
   );
   const rollInverseAllowedState: GameState = {
     ...base,

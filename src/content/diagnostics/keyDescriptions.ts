@@ -35,8 +35,8 @@ const overrideEntries: Partial<Record<KeyId, KeyDiagnosticEntry>> = {
   },
   exec_roll_inverse: {
     title: "Roll Inverse",
-    shortTemplate: "{keyFace}: run predecessor-style inverse execution.",
-    longTemplate: "{keyFace} appends an inverse-origin row when reversal is valid.",
+    shortTemplate: "{keyFace}: run inverse execution for the current function.",
+    longTemplate: "{keyFace} enters inverse auto-step execution; supported inverse stages include arithmetic pairs, ^ as canonical-root inversion (x^0 ambiguous), and ×i as divide-by-i, with ambiguous paths resolving to NaN.",
   },
   exec_equals: {
     title: "Equals Toggle",

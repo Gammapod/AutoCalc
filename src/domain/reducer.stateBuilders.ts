@@ -40,6 +40,7 @@ export const createResetCalculatorState = (): GameState["calculator"] => ({
 
 const isStepProgressAlreadyCleared = (state: GameState): boolean => (
   state.calculator.stepProgress.active === false
+  && (state.calculator.stepProgress.mode === undefined || state.calculator.stepProgress.mode === "forward")
   && state.calculator.stepProgress.seedTotal === null
   && state.calculator.stepProgress.currentTotal === null
   && state.calculator.stepProgress.nextSlotIndex === 0

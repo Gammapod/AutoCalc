@@ -5,7 +5,6 @@ import {
   EXECUTION_PAUSE_FLAG,
 } from "./state.js";
 import { isMultiCalculatorSession, resolveActiveCalculatorId, toCalculatorSurface } from "./multiCalculator.js";
-import { shouldRejectRollInverseExecution } from "./rollInverseExecution.js";
 import type { Action, GameState, Key, KeyCell } from "./types.js";
 import { resolveSettingSelectionForFlag } from "./settings.js";
 
@@ -302,12 +301,6 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
 
   if (action.type === "PRESS_KEY") {
     if (hasTerminalNanLock && isTerminalNanLockBlockedKey(action.key)) {
-      return { decision: "reject" };
-    }
-    if (
-      action.key === KEY_ID.exec_roll_inverse
-      && shouldRejectRollInverseExecution(state.calculator.rollEntries)
-    ) {
       return { decision: "reject" };
     }
     if (!isExecutionModeActive(state)) {

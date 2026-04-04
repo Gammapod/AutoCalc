@@ -79,7 +79,7 @@ export const runContractsExecutionGateParityTests = (): void => {
     { expectRejectUiEffect: false, expectStateMutation: true },
   );
 
-  const rollInverseRejectedState: GameState = {
+  const rollInverseArmingState: GameState = {
     ...legacyInitialState(),
     unlocks: {
       ...legacyInitialState().unlocks,
@@ -96,29 +96,31 @@ export const runContractsExecutionGateParityTests = (): void => {
     },
     calculator: {
       ...legacyInitialState().calculator,
-      total: { kind: "rational", value: { num: 1n, den: 1n } },
-      rollEntries: [{ y: { kind: "rational", value: { num: 1n, den: 1n } } }],
+      total: { kind: "rational", value: { num: 3n, den: 1n } },
+      rollEntries: [],
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
     },
   };
   {
     const action: Action = { type: "PRESS_KEY", key: k("exec_roll_inverse") };
-    const reduced = reducer(rollInverseRejectedState, action);
-    const commandResult = executeCommand(rollInverseRejectedState, { type: "DispatchAction", action });
-    assert.ok(
-      commandResult.uiEffects.some((effect) => effect.type === "execution_gate_rejected"),
-      "roll-inverse semantic rejection uses execution-gate reject effect",
-    );
+    const reduced = reducer(rollInverseArmingState, action);
+    const commandResult = executeCommand(rollInverseArmingState, { type: "DispatchAction", action });
     assert.ok(
       commandResult.uiEffects.some((effect) => effect.type === "input_feedback"),
-      "roll-inverse semantic rejection emits input feedback",
+      "roll-inverse arming emits input feedback",
     );
-    assert.deepEqual(reduced.calculator, rollInverseRejectedState.calculator, "roll-inverse semantic rejection preserves calculator state");
-    assert.deepEqual(commandResult.state.calculator, rollInverseRejectedState.calculator, "command path preserves calculator state on roll-inverse reject");
+    assert.equal(
+      commandResult.uiEffects.some((effect) => effect.type === "execution_gate_rejected"),
+      false,
+      "roll-inverse arming does not emit execution-gate rejection",
+    );
+    assert.notDeepEqual(reduced.calculator, rollInverseArmingState.calculator, "roll-inverse arming mutates calculator state");
+    assert.notDeepEqual(commandResult.state.calculator, rollInverseArmingState.calculator, "command path mutates calculator state on roll-inverse arming");
     const parity = compareParity(reduced, commandResult.state);
     assert.equal(
       parity.ok,
       true,
-      `roll-inverse reject parity remains equivalent (${JSON.stringify(parity.mismatches)})`,
+      `roll-inverse arming parity remains equivalent (${JSON.stringify(parity.mismatches)})`,
     );
   }
   const pausedStateSeed: GameState = {

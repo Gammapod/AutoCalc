@@ -2,17 +2,21 @@
 import {
   clampRationalToBoundary,
   calculatorValueToDisplayString,
+  calculatorValueToRational,
   computeOverflowBoundary,
   exceedsMagnitudeBoundary,
   isRationalCalculatorValue,
   OVERFLOW_ERROR_CODE,
+  toComplexCalculatorValue,
   toExplicitComplexCalculatorValue,
   toExpressionCalculatorValue,
+  toExpressionScalarValue,
   toNanCalculatorValue,
   toRationalCalculatorValue,
+  toRationalScalarValue,
   toScalarValue,
 } from "./calculatorValue.js";
-import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
+import { expressionToDisplayString, slotOperandToExpression, symbolicExpr } from "./expression.js";
 import { buildSymbolicExpression, evaluateSymbolicExpression, executeSlotsValue } from "./engine.js";
 import {
   applyDigitInput,
@@ -39,6 +43,7 @@ import {
   BINARY_ADD_RESULT_ONE_SEEN_ID,
   BINARY_MUL_RESULT_ZERO_SEEN_ID,
   C_CLEARED_FUNCTION_TWO_SLOTS_SEEN_ID,
+  EXECUTION_PAUSE_EQUALS_FLAG,
   NAN_RESULT_SEEN_ID,
   OVERFLOW_ERROR_SEEN_ID,
   OVERFLOW_ERROR_IN_BINARY_MODE_SEEN_ID,
@@ -90,7 +95,7 @@ import {
   materializeSlotsFromExecutionPlanIR,
   type ExecutionPlanBuildResult,
 } from "./executionPlanIR.js";
-import { resolveRollInverseNextTotal, shouldRejectRollInverseExecution } from "./rollInverseExecution.js";
+import { resolveRollInversePlan, type InverseExecutionStage } from "./rollInverseExecution.js";
 import { clearExecutionModeFlags } from "./executionModePolicy.js";
 import { getAppServices } from "../contracts/appServices.js";
 
@@ -313,6 +318,152 @@ const resolveNanErrorCode = (
     return tailOperator;
   }
   return options.fallback ?? "seed_nan";
+};
+
+const INVERSE_AMBIGUOUS_ERROR_CODE: ErrorCode = "inverse_ambiguous";
+
+const toAmbiguousExecution = (): EvaluatedExecution => ({
+  nextTotal: toNanCalculatorValue(),
+  errorCode: INVERSE_AMBIGUOUS_ERROR_CODE,
+  errorKind: "ambiguous",
+});
+
+const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);
+
+const normalizeRationalValue = (value: RationalValue): RationalValue => {
+  if (value.den === 0n) {
+    throw new Error("Invalid rational denominator.");
+  }
+  if (value.num === 0n) {
+    return { num: 0n, den: 1n };
+  }
+  const sign = value.den < 0n ? -1n : 1n;
+  let num = value.num * sign;
+  let den = value.den * sign;
+  let a = absBigInt(num);
+  let b = absBigInt(den);
+  while (b !== 0n) {
+    const t = a % b;
+    a = b;
+    b = t;
+  }
+  num /= a;
+  den /= a;
+  return { num, den };
+};
+
+const negateScalarValue = (scalar: ReturnType<typeof toScalarValue>): ReturnType<typeof toScalarValue> =>
+  scalar.kind === "rational"
+    ? toRationalScalarValue({ num: -scalar.value.num, den: scalar.value.den })
+    : toExpressionScalarValue({ type: "unary", op: "neg", arg: scalar.value });
+
+const rootSymbolicExpr = (radicandText: string, exponent: bigint): ReturnType<typeof symbolicExpr> =>
+  symbolicExpr(`((${radicandText})^(1/${exponent.toString()}))`);
+
+const powExactWithin = (base: bigint, exponent: bigint, ceiling: bigint): bigint | null => {
+  if (exponent < 0n) {
+    return null;
+  }
+  let result = 1n;
+  let factor = base;
+  let power = exponent;
+  while (power > 0n) {
+    if ((power & 1n) === 1n) {
+      result *= factor;
+      if (result > ceiling) {
+        return null;
+      }
+    }
+    power >>= 1n;
+    if (power > 0n) {
+      factor *= factor;
+      if (factor > ceiling) {
+        return null;
+      }
+    }
+  }
+  return result;
+};
+
+const exactNthRootBigInt = (value: bigint, exponent: bigint): bigint | null => {
+  if (exponent <= 0n) {
+    return null;
+  }
+  if (value === 0n) {
+    return 0n;
+  }
+  const odd = (exponent % 2n) === 1n;
+  if (value < 0n) {
+    if (!odd) {
+      return null;
+    }
+    const positive = exactNthRootBigInt(-value, exponent);
+    return positive === null ? null : -positive;
+  }
+  let lo = 0n;
+  let hi = value;
+  while (lo <= hi) {
+    const mid = (lo + hi) / 2n;
+    const powered = powExactWithin(mid, exponent, value);
+    if (powered === null || powered > value) {
+      hi = mid - 1n;
+      continue;
+    }
+    if (powered < value) {
+      lo = mid + 1n;
+      continue;
+    }
+    return mid;
+  }
+  return null;
+};
+
+const buildCanonicalRootValue = (
+  total: GameState["calculator"]["total"],
+  exponent: bigint,
+): GameState["calculator"]["total"] | null => {
+  if (exponent <= 0n) {
+    return null;
+  }
+  const rational = calculatorValueToRational(total);
+  if (rational) {
+    const normalized = normalizeRationalValue(rational);
+    const odd = (exponent % 2n) === 1n;
+    const numAbs = absBigInt(normalized.num);
+    const denAbs = absBigInt(normalized.den);
+    const rootNum = exactNthRootBigInt(numAbs, exponent);
+    const rootDen = exactNthRootBigInt(denAbs, exponent);
+    if (rootNum !== null && rootDen !== null) {
+      if (normalized.num < 0n && !odd) {
+        const imag = toRationalScalarValue({ num: rootNum, den: rootDen });
+        return toExplicitComplexCalculatorValue(toRationalScalarValue({ num: 0n, den: 1n }), imag);
+      }
+      const signedNum = normalized.num < 0n && odd ? -rootNum : rootNum;
+      return toRationalCalculatorValue({ num: signedNum, den: rootDen });
+    }
+    const absText = calculatorValueToDisplayString(toRationalCalculatorValue({ num: numAbs, den: denAbs }));
+    if (normalized.num < 0n && !odd) {
+      if (exponent === 2n) {
+        const imag = toExpressionScalarValue(rootSymbolicExpr(absText, exponent));
+        return toExplicitComplexCalculatorValue(toRationalScalarValue({ num: 0n, den: 1n }), imag);
+      }
+      const mag = rootSymbolicExpr(absText, exponent);
+      return toExplicitComplexCalculatorValue(
+        toExpressionScalarValue(symbolicExpr(`(${expressionToDisplayString(mag)}*cos(pi/${exponent.toString()}))`)),
+        toExpressionScalarValue(symbolicExpr(`(${expressionToDisplayString(mag)}*sin(pi/${exponent.toString()}))`)),
+      );
+    }
+    if (normalized.num < 0n && odd) {
+      return toExpressionCalculatorValue(symbolicExpr(`(-${expressionToDisplayString(rootSymbolicExpr(absText, exponent))})`));
+    }
+    return toExpressionCalculatorValue(rootSymbolicExpr(absText, exponent));
+  }
+
+  if (total.kind === "complex") {
+    return null;
+  }
+  const baseText = calculatorValueToDisplayString(total);
+  return toExpressionCalculatorValue(rootSymbolicExpr(baseText, exponent));
 };
 
 const toSymbolicPayload = (exprText: string, renderText: string = exprText): NonNullable<RollEntry["symbolic"]> => {
@@ -940,8 +1091,31 @@ const evaluateExecutionOutcomeForSlots = (
 const buildReducerExecutionPlan = (
   state: GameState,
   seedTotal: GameState["calculator"]["total"],
+  operationSlots: Slot[] = state.calculator.operationSlots,
 ): ExecutionPlanBuildResult =>
-  buildExecutionPlanIRForState(seedTotal, state.calculator.operationSlots, state);
+  buildExecutionPlanIRForState(seedTotal, operationSlots, state);
+
+type ExecutionRuntime =
+  | { kind: "forward"; built: ExecutionPlanBuildResult }
+  | { kind: "inverse"; stages: InverseExecutionStage[] };
+
+const resolveExecutionBuildForMode = (
+  state: GameState,
+  seedTotal: GameState["calculator"]["total"],
+  mode: GameState["calculator"]["stepProgress"]["mode"],
+): { runtime: ExecutionRuntime; initialEvaluation?: EvaluatedExecution } => {
+  if (mode !== "inverse") {
+    return { runtime: { kind: "forward", built: buildReducerExecutionPlan(state, seedTotal) } };
+  }
+  const inversePlan = resolveRollInversePlan(state.calculator.operationSlots, state.settings);
+  if (!inversePlan.ok) {
+    return {
+      runtime: { kind: "inverse", stages: [] },
+      initialEvaluation: toAmbiguousExecution(),
+    };
+  }
+  return { runtime: { kind: "inverse", stages: inversePlan.stages } };
+};
 
 const evaluateExecutionPlanRange = (
   state: GameState,
@@ -1004,6 +1178,82 @@ const evaluateExecutionPlanStageAt = (
     [stage.slot],
     { deferOverflowToWrapStage: nextStage?.kind === "wrap" },
   );
+};
+
+const evaluateInverseStageAt = (
+  state: GameState,
+  currentTotal: GameState["calculator"]["total"],
+  stages: InverseExecutionStage[],
+  stageIndex: number,
+): EvaluatedExecution | null => {
+  const stage = stages[stageIndex];
+  if (!stage) {
+    return null;
+  }
+  if (stage.kind === "slot") {
+    return evaluateExecutionOutcomeForSlots(state, currentTotal, [stage.slot]);
+  }
+  if (stage.kind === "divide_by_i") {
+    if (currentTotal.kind === "nan") {
+      return toAmbiguousExecution();
+    }
+    const re = toScalarValue(currentTotal.kind === "complex" ? currentTotal.value.re : currentTotal);
+    const im = currentTotal.kind === "complex"
+      ? currentTotal.value.im
+      : toRationalScalarValue({ num: 0n, den: 1n });
+    return {
+      nextTotal: toExplicitComplexCalculatorValue(im, negateScalarValue(re)),
+    };
+  }
+  const rootValue = buildCanonicalRootValue(currentTotal, stage.exponent);
+  if (!rootValue) {
+    return toAmbiguousExecution();
+  }
+  if (!stage.reciprocal) {
+    return { nextTotal: rootValue };
+  }
+  return evaluateExecutionOutcomeForSlots(state, rootValue, [{ kind: "binary", operator: KEY_ID.op_pow, operand: -1n }]);
+};
+
+const getExecutionRuntimeStageCount = (runtime: ExecutionRuntime): number =>
+  runtime.kind === "forward"
+    ? getExecutionPlanIRStageCount(runtime.built.plan)
+    : runtime.stages.length;
+
+const evaluateExecutionRuntimeRange = (
+  state: GameState,
+  seedTotal: GameState["calculator"]["total"],
+  runtime: ExecutionRuntime,
+  startStageIndex: number = 0,
+): EvaluatedExecution => {
+  if (runtime.kind === "forward") {
+    return evaluateExecutionPlanRange(state, seedTotal, runtime.built, startStageIndex);
+  }
+  let current = seedTotal;
+  const start = Math.max(0, Math.min(startStageIndex, runtime.stages.length));
+  for (let index = start; index < runtime.stages.length; index += 1) {
+    const stageEvaluation = evaluateInverseStageAt(state, current, runtime.stages, index);
+    if (!stageEvaluation) {
+      return toAmbiguousExecution();
+    }
+    if (stageEvaluation.errorKind) {
+      return stageEvaluation;
+    }
+    current = stageEvaluation.nextTotal;
+  }
+  return { nextTotal: current };
+};
+
+const evaluateExecutionRuntimeStageAt = (
+  state: GameState,
+  currentTotal: GameState["calculator"]["total"],
+  runtime: ExecutionRuntime,
+  stageIndex: number,
+): EvaluatedExecution | null => {
+  if (runtime.kind === "forward") {
+    return evaluateExecutionPlanStageAt(state, currentTotal, runtime.built, stageIndex);
+  }
+  return evaluateInverseStageAt(state, currentTotal, runtime.stages, stageIndex);
 };
 
 const finalizeTerminalExecution = (
@@ -1076,16 +1326,23 @@ export const applyEqualsFromStepProgress = (state: GameState): GameState => {
     return applyEquals(finalized);
   }
 
-  const built = buildReducerExecutionPlan(finalized, stepProgress.currentTotal);
-  const stageCount = getExecutionPlanIRStageCount(built.plan);
+  const execution = resolveExecutionBuildForMode(
+    finalized,
+    stepProgress.currentTotal,
+    stepProgress.mode ?? "forward",
+  );
+  if (execution.initialEvaluation) {
+    return finalizeTerminalExecution(finalized, execution.initialEvaluation, { clearStepProgress: true });
+  }
+  const stageCount = getExecutionRuntimeStageCount(execution.runtime);
   if (stepProgress.nextSlotIndex >= stageCount) {
     return withClearedStepProgress(finalized);
   }
 
-  const evaluation = evaluateExecutionPlanRange(
+  const evaluation = evaluateExecutionRuntimeRange(
     finalized,
     stepProgress.currentTotal,
-    built,
+    execution.runtime,
     stepProgress.nextSlotIndex,
   );
   return finalizeTerminalExecution(finalized, evaluation, { clearStepProgress: true });
@@ -1096,47 +1353,44 @@ export const applyRollInverse = (state: GameState): GameState => {
   if (!isKeyUsableForInput(state, rollInverseKey)) {
     return state;
   }
-  if (shouldRejectRollInverseExecution(state.calculator.rollEntries)) {
-    return state;
+  const finalized = finalizeDraftingSlot(state);
+  const hasInversePlanOrAmbiguity = finalized.calculator.operationSlots.length > 0;
+  if (!hasInversePlanOrAmbiguity) {
+    return withClearedStepProgress(finalized);
   }
-
-  const finalized = withClearedStepProgress(finalizeDraftingSlot(state));
-  const nextTotal = resolveRollInverseNextTotal(finalized.calculator.rollEntries);
-  if (!nextTotal) {
-    return state;
-  }
-  const rollEntries = [...finalized.calculator.rollEntries];
-  const tailIndex = rollEntries.length - 1;
-  const tail = tailIndex >= 0 ? rollEntries[tailIndex] : null;
-  if (tail) {
-    rollEntries[tailIndex] = {
-      ...tail,
-      analysisIgnored: true,
-    };
-  }
-  const withInverseTailIgnored: GameState = {
+  const nextFlags = {
+    ...finalized.ui.buttonFlags,
+    [EXECUTION_PAUSE_EQUALS_FLAG]: true,
+  };
+  return {
     ...finalized,
+    ui: {
+      ...finalized.ui,
+      buttonFlags: nextFlags,
+    },
     calculator: {
       ...finalized.calculator,
-      rollEntries,
+      stepProgress: {
+        active: false,
+        mode: "inverse",
+        seedTotal: null,
+        currentTotal: null,
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
     },
   };
-  return finalizeTerminalExecution(withInverseTailIgnored, { nextTotal }, {
-    rollEntryPatch: {
-      origin: "roll_inverse",
-      analysisIgnored: true,
-    },
-  });
 };
 
 export const applyStepThrough = (state: GameState): GameState => {
-  return applyStepThroughInternal(state, { requireStepThroughKeyOnKeypad: true });
+  return applyStepThroughInternal(state, { requireStepThroughKeyOnKeypad: true, mode: "forward" });
 };
 
 const applyStepThroughInternal = (
   state: GameState,
   options: {
     requireStepThroughKeyOnKeypad: boolean;
+    mode: GameState["calculator"]["stepProgress"]["mode"];
   },
 ): GameState => {
   const stepKey = KEY_ID.exec_step_through;
@@ -1148,32 +1402,37 @@ const applyStepThroughInternal = (
   }
 
   const finalized = finalizeDraftingSlot(state);
-  const built = buildReducerExecutionPlan(finalized, finalized.calculator.total);
-  const stageCount = getExecutionPlanIRStageCount(built.plan);
-  if (stageCount === 0) {
-    return withClearedStepProgress(finalized);
-  }
-
   const priorProgress = finalized.calculator.stepProgress;
+  const mode = priorProgress.active ? (priorProgress.mode ?? "forward") : options.mode;
   const stepProgress =
     priorProgress.active && priorProgress.currentTotal
       ? priorProgress
       : {
           active: true,
+          ...(mode === "inverse" ? { mode } : {}),
           seedTotal: finalized.calculator.total,
           currentTotal: finalized.calculator.total,
           nextSlotIndex: 0,
           executedSlotResults: [],
         };
 
+  const execution = resolveExecutionBuildForMode(finalized, stepProgress.currentTotal ?? finalized.calculator.total, mode);
+  if (execution.initialEvaluation) {
+    return finalizeTerminalExecution(finalized, execution.initialEvaluation, { clearStepProgress: true });
+  }
+  const stageCount = getExecutionRuntimeStageCount(execution.runtime);
+  if (stageCount === 0) {
+    return withClearedStepProgress(finalized);
+  }
+
   if (!stepProgress.currentTotal || stepProgress.nextSlotIndex >= stageCount) {
     return withClearedStepProgress(finalized);
   }
 
-  const evaluation = evaluateExecutionPlanStageAt(
+  const evaluation = evaluateExecutionRuntimeStageAt(
     finalized,
     stepProgress.currentTotal,
-    built,
+    execution.runtime,
     stepProgress.nextSlotIndex,
   );
   if (!evaluation) {
@@ -1190,6 +1449,7 @@ const applyStepThroughInternal = (
           ...finalized.calculator,
           stepProgress: {
             active: true,
+            ...(mode === "inverse" ? { mode } : {}),
             seedTotal: stepProgress.seedTotal,
             currentTotal: evaluation.nextTotal,
             nextSlotIndex: stepProgress.nextSlotIndex + 1,
@@ -1206,8 +1466,14 @@ const applyStepThroughInternal = (
 
 export const canAutoStepProgress = (state: GameState): boolean => {
   const finalized = finalizeDraftingSlot(state);
-  const built = buildReducerExecutionPlan(finalized, finalized.calculator.total);
-  const stageCount = getExecutionPlanIRStageCount(built.plan);
+  const mode = finalized.calculator.stepProgress.mode === "inverse"
+    ? "inverse"
+    : "forward";
+  const execution = resolveExecutionBuildForMode(finalized, finalized.calculator.total, mode);
+  if (execution.initialEvaluation) {
+    return true;
+  }
+  const stageCount = getExecutionRuntimeStageCount(execution.runtime);
   if (stageCount === 0) {
     return false;
   }
@@ -1222,7 +1488,10 @@ export const applyAutoStepTick = (state: GameState): GameState => {
   if (!canAutoStepProgress(state)) {
     return state;
   }
-  return applyStepThroughInternal(state, { requireStepThroughKeyOnKeypad: false });
+  const mode = state.calculator.stepProgress.mode === "inverse"
+    ? "inverse"
+    : "forward";
+  return applyStepThroughInternal(state, { requireStepThroughKeyOnKeypad: false, mode });
 };
 
 export const applyC = (state: GameState): GameState => {
@@ -1484,12 +1753,6 @@ const createKeyActionHandlers = (): Record<KeyActionHandlerId, (nextState: GameS
 export const applyKeyActionCore = (state: GameState, keyLike: KeyInput): GameState => {
   const stepAwareState = hasStepThroughOnKeypad(state) ? state : withClearedStepProgress(state);
   const key = resolveKeyId(keyLike);
-  if (
-    key === KEY_ID.exec_roll_inverse
-    && shouldRejectRollInverseExecution(stepAwareState.calculator.rollEntries)
-  ) {
-    return stepAwareState;
-  }
   // Input precedence:
   // 1) active-roll digit keys are hard no-op
   // 2) active-roll operator keys clear current operation entry before handling

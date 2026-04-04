@@ -182,10 +182,15 @@ export type CalculatorValue =
     };
 
 export type LegacyErrorCode = "x\u2209[-R,R]" | "n/0" | "NaN" | "ALG";
-export type CanonicalErrorCode = "overflow" | "seed_nan" | BinarySlotOperator | UnarySlotOperator;
+export type CanonicalErrorCode =
+  | "overflow"
+  | "seed_nan"
+  | "inverse_ambiguous"
+  | BinarySlotOperator
+  | UnarySlotOperator;
 export type ErrorCode = CanonicalErrorCode | LegacyErrorCode;
 
-export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input" | "symbolic_result";
+export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input" | "symbolic_result" | "ambiguous";
 
 export type SymbolicRollPayload = {
   // Canonical symbolic evaluation payload used by algebraic visualizer.
@@ -248,6 +253,7 @@ export type DraftingSlot = {
 
 export type StepProgressState = {
   active: boolean;
+  mode?: "forward" | "inverse";
   seedTotal: CalculatorValue | null;
   currentTotal: CalculatorValue | null;
   nextSlotIndex: number;

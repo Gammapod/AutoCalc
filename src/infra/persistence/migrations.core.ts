@@ -243,6 +243,7 @@ const EXECUTION_ERROR_KIND_VALUES: readonly ExecutionErrorKind[] = [
   "division_by_zero",
   "nan_input",
   "symbolic_result",
+  "ambiguous",
 ];
 const LEGACY_GRAPH_VISIBLE_FLAG = "graph.visible";
 const LEGACY_FEED_VISIBLE_FLAG = "feed.visible";

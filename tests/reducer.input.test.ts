@@ -23,7 +23,6 @@ import { legacyInitialState } from "./support/legacyState.js";
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue(rv(num, den));
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
-const analysisRows = (entries: RollEntry[]): RollEntry[] => entries.filter((entry) => !entry.analysisIgnored);
 const assertTotalEquivalent = (actual: GameState["calculator"]["total"], expected: GameState["calculator"]["total"], message: string): void => {
   assert.equal(calculatorValuesEquivalent(actual, expected), true, message);
 };
@@ -381,172 +380,177 @@ export const runReducerInputTests = (): void => {
     );
   }
 
-  const rollInverseRejectEmpty: GameState = {
+  const rollInverseNoSlots: GameState = {
     ...fullyUnlocked,
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(0n),
+      operationSlots: [],
       rollEntries: [],
     },
   };
-  assert.deepEqual(
-    applyKeyAction(rollInverseRejectEmpty, "exec_roll_inverse"),
-    rollInverseRejectEmpty,
-    "roll-inverse rejects when roll is empty",
-  );
+  const afterRollInverseNoSlots = applyKeyAction(rollInverseNoSlots, "exec_roll_inverse");
+  assertTotalEquivalent(afterRollInverseNoSlots.calculator.total, rollInverseNoSlots.calculator.total, "roll-inverse with no operation slots preserves total");
+  assert.deepEqual(afterRollInverseNoSlots.calculator.rollEntries, rollInverseNoSlots.calculator.rollEntries, "roll-inverse with no operation slots preserves roll");
+  assert.equal(Boolean(afterRollInverseNoSlots.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "roll-inverse with no operation slots does not arm auto-step");
 
-  const rollInverseRejectLengthOne: GameState = {
+  const inverseAutoStepSource: GameState = {
     ...fullyUnlocked,
-    calculator: {
-      ...fullyUnlocked.calculator,
-      total: r(5n),
-      rollEntries: re(r(5n)),
+    calculators: undefined,
+    calculatorOrder: undefined,
+    activeCalculatorId: undefined,
+    perCalculatorCompletedUnlockIds: undefined,
+    sessionControlProfiles: undefined,
+    settings: {
+      ...fullyUnlocked.settings,
+      wrapper: "none",
     },
-  };
-  assert.deepEqual(
-    applyKeyAction(rollInverseRejectLengthOne, "exec_roll_inverse"),
-    rollInverseRejectLengthOne,
-    "roll-inverse rejects when roll length is 1",
-  );
-
-  const rollInverseSeedMatchAllowed: GameState = {
-    ...fullyUnlocked,
     calculator: {
       ...fullyUnlocked.calculator,
-      total: r(5n),
-      rollEntries: re(r(5n), r(7n), r(5n)),
-    },
-  };
-  const afterRollInverseSeedMatch = applyKeyAction(rollInverseSeedMatchAllowed, "exec_roll_inverse");
-  assert.deepEqual(
-    afterRollInverseSeedMatch.calculator.total,
-    r(7n),
-    "roll-inverse allows current=seed and appends predecessor of first matched instance in scan range",
-  );
-  assertValueEquivalent(afterRollInverseSeedMatch.calculator.rollEntries.at(-1)?.y, r(7n), "roll-inverse appends predecessor when current equals seed");
-
-  const rollInverseRejectError: GameState = {
-    ...fullyUnlocked,
-    calculator: {
-      ...fullyUnlocked.calculator,
-      total: r(4n),
-      rollEntries: [
-        { y: r(1n) },
-        { y: toNanCalculatorValue(), error: { code: "seed_nan", kind: "nan_input" } },
-        { y: r(4n) },
-      ],
-    },
-  };
-  assert.deepEqual(
-    applyKeyAction(rollInverseRejectError, "exec_roll_inverse"),
-    rollInverseRejectError,
-    "roll-inverse rejects when any roll row has error",
-  );
-
-  const rollInverseRejectAtCap: GameState = {
-    ...fullyUnlocked,
-    calculator: {
-      ...fullyUnlocked.calculator,
-      total: r(4999n),
-      rollEntries: Array.from({ length: MAX_ROLL_ENTRIES }, (_, index) => ({ y: r(BigInt(index)) })),
-    },
-  };
-  assert.deepEqual(
-    applyKeyAction(rollInverseRejectAtCap, "exec_roll_inverse"),
-    rollInverseRejectAtCap,
-    "roll-inverse rejects when roll length has reached pruning cap",
-  );
-
-  const rollInverseCurrentOnlyMatch: GameState = {
-    ...fullyUnlocked,
-    calculator: {
-      ...fullyUnlocked.calculator,
-      total: r(3n),
-      rollEntries: re(r(1n), r(2n), r(3n)),
-    },
-  };
-  const afterRollInverseCurrentOnly = applyKeyAction(rollInverseCurrentOnlyMatch, "exec_roll_inverse");
-  assertTotalEquivalent(afterRollInverseCurrentOnly.calculator.total, r(2n), "roll-inverse appends immediate previous row when current is first match");
-  assertValueEquivalent(afterRollInverseCurrentOnly.calculator.rollEntries.at(-1)?.y, r(2n), "roll-inverse appends expected predecessor value");
-
-  const rollInverseIndexOneMatch: GameState = {
-    ...fullyUnlocked,
-    calculator: {
-      ...fullyUnlocked.calculator,
-      total: r(7n),
-      rollEntries: re(r(5n), r(7n), r(9n), r(7n)),
-    },
-  };
-  const afterRollInverseIndexOne = applyKeyAction(rollInverseIndexOneMatch, "exec_roll_inverse");
-  assertTotalEquivalent(afterRollInverseIndexOne.calculator.total, r(5n), "roll-inverse can return seed when earliest match is at index 1");
-  assertValueEquivalent(afterRollInverseIndexOne.calculator.rollEntries.at(-1)?.y, r(5n), "roll-inverse appends seed predecessor for index-1 match");
-
-  const rollInverseMultipleMatch: GameState = {
-    ...fullyUnlocked,
-    calculator: {
-      ...fullyUnlocked.calculator,
-      total: r(8n),
-      rollEntries: re(r(4n), r(8n), r(6n), r(8n), r(8n)),
-    },
-  };
-  const afterRollInverseMultiple = applyKeyAction(rollInverseMultipleMatch, "exec_roll_inverse");
-  assertTotalEquivalent(afterRollInverseMultiple.calculator.total, r(4n), "roll-inverse uses predecessor of earliest match in scan range");
-  assertValueEquivalent(afterRollInverseMultiple.calculator.rollEntries.at(-1)?.y, r(4n), "roll-inverse appends predecessor of earliest match");
-
-  const forwardOnlySource: GameState = {
-    ...fullyUnlocked,
-    calculator: {
-      ...fullyUnlocked.calculator,
-      total: r(0n),
+      total: r(2n),
+      rollEntries: [],
       operationSlots: [{ operator: op("op_add"), operand: 1n }],
-      rollEntries: [],
-      rollAnalysis: { stopReason: "none", cycle: null },
+      draftingSlot: null,
     },
   };
-  const forwardEq1 = applyKeyAction(forwardOnlySource, "exec_equals");
-  const forwardEq2 = applyKeyAction(forwardEq1, "exec_equals");
-  assertRollSequenceEquivalent(forwardEq2.calculator.rollEntries, [r(0n), r(1n), r(2n)], "setup path builds [0,1,2]");
+  const armedInverse = applyKeyAction(inverseAutoStepSource, "exec_roll_inverse");
+  assert.equal(Boolean(armedInverse.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), true, "roll-inverse arms equals auto-step execution");
+  assert.equal(armedInverse.calculator.stepProgress.active, false, "roll-inverse arming does not commit preview step immediately");
+  assert.equal(armedInverse.calculator.stepProgress.mode, "inverse", "roll-inverse arming marks inverse mode");
+  assert.equal(armedInverse.calculator.rollEntries.length, 0, "roll-inverse arming does not append roll entries");
 
-  const forwardInv1 = applyKeyAction(forwardEq2, "exec_roll_inverse");
-  assertRollSequenceEquivalent(forwardInv1.calculator.rollEntries, [r(0n), r(1n), r(2n), r(1n)], "inverse appends visible predecessor row");
-  assert.equal(Boolean(forwardInv1.calculator.rollEntries[2]?.analysisIgnored), true, "inverse marks exited tail row ignored");
-  assert.equal(Boolean(forwardInv1.calculator.rollEntries[3]?.analysisIgnored), true, "inverse row is ignored for analysis");
-  assertValueSequenceEquivalent(
-    analysisRows(forwardInv1.calculator.rollEntries).map((entry) => entry.y),
-    [r(0n), r(1n)],
-    "analysis projection treats inverse as undo-like rewind",
+  const inverseTickTerminal = reducer(armedInverse, { type: "AUTO_STEP_TICK" });
+  assert.equal(inverseTickTerminal.calculator.stepProgress.active, false, "inverse AUTO_STEP_TICK terminal clears step progress");
+  assertTotalEquivalent(inverseTickTerminal.calculator.total, r(1n), "inverse AUTO_STEP_TICK applies inverse arithmetic result");
+  assertRollSequenceEquivalent(inverseTickTerminal.calculator.rollEntries, [r(2n), r(1n)], "inverse AUTO_STEP_TICK commits seed and terminal inverse result once");
+  assert.equal(inverseTickTerminal.calculator.rollEntries.at(-1)?.origin, undefined, "inverse execution rows do not set legacy roll_inverse origin markers");
+
+  const inverseAmbiguousSource: GameState = {
+    ...fullyUnlocked,
+    calculators: undefined,
+    calculatorOrder: undefined,
+    activeCalculatorId: undefined,
+    perCalculatorCompletedUnlockIds: undefined,
+    sessionControlProfiles: undefined,
+    settings: {
+      ...fullyUnlocked.settings,
+      wrapper: "none",
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(5n),
+      rollEntries: [],
+      operationSlots: [{ operator: op("op_mod"), operand: 2n }],
+      draftingSlot: null,
+    },
+  };
+  const armedAmbiguous = applyKeyAction(inverseAmbiguousSource, "exec_roll_inverse");
+  const ambiguousTerminal = reducer(armedAmbiguous, { type: "AUTO_STEP_TICK" });
+  assert.equal(ambiguousTerminal.calculator.total.kind, "nan", "ambiguous inverse produces terminal NaN");
+  assert.equal(ambiguousTerminal.calculator.rollEntries.at(-1)?.error?.kind, "ambiguous", "ambiguous inverse records explicit ambiguous error kind");
+  assert.equal(ambiguousTerminal.calculator.rollEntries.at(-1)?.error?.code, "inverse_ambiguous", "ambiguous inverse records inverse-specific error code");
+
+  const inversePowEvenCanonicalSource: GameState = {
+    ...fullyUnlocked,
+    calculators: undefined,
+    calculatorOrder: undefined,
+    activeCalculatorId: undefined,
+    perCalculatorCompletedUnlockIds: undefined,
+    sessionControlProfiles: undefined,
+    settings: {
+      ...fullyUnlocked.settings,
+      wrapper: "none",
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(16n),
+      rollEntries: [],
+      operationSlots: [{ operator: op("op_pow"), operand: 2n }],
+      draftingSlot: null,
+    },
+  };
+  const inversePowEvenCanonical = reducer(applyKeyAction(inversePowEvenCanonicalSource, "exec_roll_inverse"), { type: "AUTO_STEP_TICK" });
+  assertTotalEquivalent(inversePowEvenCanonical.calculator.total, r(4n), "inverse pow for even exponent uses canonical positive root");
+
+  const inversePowOddNegativeSource: GameState = {
+    ...inversePowEvenCanonicalSource,
+    calculator: {
+      ...inversePowEvenCanonicalSource.calculator,
+      total: r(-27n),
+      operationSlots: [{ operator: op("op_pow"), operand: 3n }],
+    },
+  };
+  const inversePowOddNegative = reducer(applyKeyAction(inversePowOddNegativeSource, "exec_roll_inverse"), { type: "AUTO_STEP_TICK" });
+  assertTotalEquivalent(inversePowOddNegative.calculator.total, r(-3n), "inverse pow for odd exponent preserves sign for negative real inputs");
+
+  const inversePowNegativeExponentSource: GameState = {
+    ...inversePowEvenCanonicalSource,
+    calculator: {
+      ...inversePowEvenCanonicalSource.calculator,
+      total: r(1n, 4n),
+      operationSlots: [{ operator: op("op_pow"), operand: -2n }],
+    },
+  };
+  const inversePowNegativeExponent = reducer(applyKeyAction(inversePowNegativeExponentSource, "exec_roll_inverse"), { type: "AUTO_STEP_TICK" });
+  assertTotalEquivalent(inversePowNegativeExponent.calculator.total, r(2n), "inverse pow for negative exponent applies reciprocal-root semantics");
+
+  const inversePowZeroExponentSource: GameState = {
+    ...inversePowEvenCanonicalSource,
+    calculator: {
+      ...inversePowEvenCanonicalSource.calculator,
+      total: r(8n),
+      operationSlots: [{ operator: op("op_pow"), operand: 0n }],
+    },
+  };
+  const inversePowZeroExponent = reducer(applyKeyAction(inversePowZeroExponentSource, "exec_roll_inverse"), { type: "AUTO_STEP_TICK" });
+  assert.equal(inversePowZeroExponent.calculator.total.kind, "nan", "inverse pow with exponent zero is ambiguous");
+  assert.equal(inversePowZeroExponent.calculator.rollEntries.at(-1)?.error?.kind, "ambiguous", "inverse pow exponent zero records ambiguous error kind");
+  assert.equal(inversePowZeroExponent.calculator.rollEntries.at(-1)?.error?.code, "inverse_ambiguous", "inverse pow exponent zero records inverse ambiguous code");
+
+  const inversePowEvenNegativeRealSource: GameState = {
+    ...inversePowEvenCanonicalSource,
+    calculator: {
+      ...inversePowEvenCanonicalSource.calculator,
+      total: r(-4n),
+      operationSlots: [{ operator: op("op_pow"), operand: 2n }],
+    },
+  };
+  const inversePowEvenNegativeReal = reducer(applyKeyAction(inversePowEvenNegativeRealSource, "exec_roll_inverse"), { type: "AUTO_STEP_TICK" });
+  assertTotalEquivalent(
+    inversePowEvenNegativeReal.calculator.total,
+    toComplexCalculatorValue(toRationalScalarValue({ num: 0n, den: 1n }), toRationalScalarValue({ num: 2n, den: 1n })),
+    "inverse pow for even root of negative real returns principal complex root",
   );
 
-  const forwardEq3 = applyKeyAction(forwardInv1, "exec_equals");
-  const forwardEq4 = applyKeyAction(forwardEq3, "exec_equals");
-  assertValueSequenceEquivalent(
-    analysisRows(forwardEq4.calculator.rollEntries).map((entry) => entry.y),
-    [r(0n), r(1n), r(2n), r(3n)],
-    "analysis projection regrows on forward equals rows",
-  );
+  const inversePowRadicalSource: GameState = {
+    ...inversePowEvenCanonicalSource,
+    calculator: {
+      ...inversePowEvenCanonicalSource.calculator,
+      total: r(2n),
+      operationSlots: [{ operator: op("op_pow"), operand: 2n }],
+    },
+  };
+  const inversePowRadical = reducer(applyKeyAction(inversePowRadicalSource, "exec_roll_inverse"), { type: "AUTO_STEP_TICK" });
+  assert.equal(inversePowRadical.calculator.total.kind, "expr", "inverse pow preserves irrational roots as expression values");
+  assert.equal(inversePowRadical.calculator.rollEntries.at(-1)?.y.kind, "expr", "inverse pow expression root persists to roll as expr");
 
-  const forwardInv2 = applyKeyAction(forwardEq4, "exec_roll_inverse");
-  assert.equal(Boolean(forwardInv2.calculator.rollEntries[5]?.analysisIgnored), true, "second inverse marks prior forward tail ignored");
-  assert.equal(Boolean(forwardInv2.calculator.rollEntries[6]?.analysisIgnored), true, "second inverse appended row is ignored");
-
-  const forwardUndo = applyKeyAction(forwardInv2, "util_undo");
-  assertValueSequenceEquivalent(
-    analysisRows(forwardUndo.calculator.rollEntries).map((entry) => entry.y),
-    [r(0n), r(1n), r(2n), r(3n)],
-    "undo after inverse recomputes ignored flags and restores forward-only projection",
+  const inverseUnaryISource: GameState = {
+    ...inversePowEvenCanonicalSource,
+    calculator: {
+      ...inversePowEvenCanonicalSource.calculator,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 2n, den: 1n }),
+      ),
+      operationSlots: [{ kind: "unary", operator: uop("unary_i") }],
+    },
+  };
+  const inverseUnaryI = reducer(applyKeyAction(inverseUnaryISource, "exec_roll_inverse"), { type: "AUTO_STEP_TICK" });
+  assertTotalEquivalent(
+    inverseUnaryI.calculator.total,
+    toComplexCalculatorValue(toRationalScalarValue({ num: 2n, den: 1n }), toRationalScalarValue({ num: -1n, den: 1n })),
+    "inverse unary i divides by i (equivalent to multiply by -i)",
   );
-
-  const forwardEq5 = applyKeyAction(forwardUndo, "exec_equals");
-  const forwardInv3 = applyKeyAction(forwardEq5, "exec_roll_inverse");
-  const forwardEq6 = applyKeyAction(forwardInv3, "exec_equals");
-  const forwardEq7 = applyKeyAction(forwardEq6, "exec_equals");
-  assertValueSequenceEquivalent(
-    analysisRows(forwardEq7.calculator.rollEntries).map((entry) => entry.y),
-    [r(0n), r(1n), r(2n), r(3n), r(4n), r(5n)],
-    "forward-only analysis path ignores inverse detours and remains monotonic",
-  );
-  assert.equal(forwardEq7.calculator.rollAnalysis.stopReason, "none", "forward-only path does not falsely lock cycle analysis");
-  assert.equal(forwardEq7.calculator.rollAnalysis.cycle, null, "forward-only path keeps cycle metadata clear");
 
   const stepThroughSource: GameState = {
     ...fullyUnlocked,
@@ -866,7 +870,8 @@ export const runReducerInputTests = (): void => {
     },
   };
   const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "digit_1");
-  assert.deepEqual(afterActiveRollDigit, activeRollDigitNoOp, "digit key is no-op while roll is active");
+  assertTotalEquivalent(afterActiveRollDigit.calculator.total, activeRollDigitNoOp.calculator.total, "digit key while roll active preserves total");
+  assert.deepEqual(afterActiveRollDigit.calculator.rollEntries, activeRollDigitNoOp.calculator.rollEntries, "digit key while roll active preserves roll");
 
   const lockedUnaryFromKeypad = applyKeyAction(legacyInitialState(), "unary_inc");
   assert.equal(lockedUnaryFromKeypad.keyPressCounts[uop("unary_inc")] ?? 0, 1, "locked keypad-installed unary key still counts as a press");
@@ -1277,7 +1282,8 @@ export const runReducerInputTests = (): void => {
   };
 
   const backspaceLockedNoOp = applyKeyAction(legacyInitialState(), "util_backspace");
-  assert.deepEqual(backspaceLockedNoOp, legacyInitialState(), "locked backspace remains a no-op");
+  assertTotalEquivalent(backspaceLockedNoOp.calculator.total, legacyInitialState().calculator.total, "locked backspace preserves total");
+  assert.deepEqual(backspaceLockedNoOp.calculator.rollEntries, legacyInitialState().calculator.rollEntries, "locked backspace preserves roll entries");
 
   const backspaceDraftingDelete: GameState = {
     ...withBackspaceUnlocked,

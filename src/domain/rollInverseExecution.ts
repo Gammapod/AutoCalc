@@ -1,28 +1,86 @@
-import { calculatorValueEquals, MAX_ROLL_ENTRIES } from "./rollEntries.js";
-import type { CalculatorValue, RollEntry } from "./types.js";
+import type { CalculatorSettings, RollEntry, Slot } from "./types.js";
+import { KEY_ID } from "./keyPresentation.js";
 
-export const shouldRejectRollInverseExecution = (rollEntries: RollEntry[]): boolean => {
-  if (rollEntries.some((entry) => Boolean(entry.error))) {
-    return true;
-  }
-  if (rollEntries.length >= MAX_ROLL_ENTRIES || rollEntries.length <= 1) {
-    return true;
-  }
-  return false;
-};
+export type InverseExecutionStage =
+  | { kind: "slot"; slot: Slot }
+  | { kind: "pow_root"; exponent: bigint; reciprocal: boolean }
+  | { kind: "divide_by_i" };
 
-export const resolveRollInverseNextTotal = (rollEntries: RollEntry[]): CalculatorValue | null => {
-  if (shouldRejectRollInverseExecution(rollEntries)) {
-    return null;
-  }
-  const current = rollEntries[rollEntries.length - 1];
-  if (!current) {
-    return null;
-  }
-  for (let index = 1; index < rollEntries.length; index += 1) {
-    if (calculatorValueEquals(rollEntries[index].y, current.y)) {
-      return rollEntries[index - 1]?.y ?? null;
+export type RollInversePlanResolution =
+  | { ok: true; stages: InverseExecutionStage[] }
+  | { ok: false; reason: "ambiguous" };
+
+const invertSlot = (slot: Slot): InverseExecutionStage | null => {
+  if (slot.kind === "unary") {
+    if (slot.operator === KEY_ID.unary_inc) {
+      return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_dec } };
     }
+    if (slot.operator === KEY_ID.unary_dec) {
+      return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_inc } };
+    }
+    if (slot.operator === KEY_ID.unary_neg) {
+      return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_neg } };
+    }
+    if (slot.operator === KEY_ID.unary_i) {
+      return { kind: "divide_by_i" };
+    }
+    return null;
+  }
+
+  if (typeof slot.operand !== "bigint") {
+    return null;
+  }
+
+  if (slot.operator === KEY_ID.op_add) {
+    return { kind: "slot", slot: { kind: "binary", operator: KEY_ID.op_sub, operand: slot.operand } };
+  }
+  if (slot.operator === KEY_ID.op_sub) {
+    return { kind: "slot", slot: { kind: "binary", operator: KEY_ID.op_add, operand: slot.operand } };
+  }
+  if (slot.operator === KEY_ID.op_mul) {
+    if (slot.operand === 0n) {
+      return null;
+    }
+    return { kind: "slot", slot: { kind: "binary", operator: KEY_ID.op_div, operand: slot.operand } };
+  }
+  if (slot.operator === KEY_ID.op_div) {
+    if (slot.operand === 0n) {
+      return null;
+    }
+    return { kind: "slot", slot: { kind: "binary", operator: KEY_ID.op_mul, operand: slot.operand } };
+  }
+  if (slot.operator === KEY_ID.op_pow) {
+    const exponent = slot.operand;
+    if (exponent === 0n) {
+      return null;
+    }
+    return {
+      kind: "pow_root",
+      exponent: exponent < 0n ? -exponent : exponent,
+      reciprocal: exponent < 0n,
+    };
   }
   return null;
 };
+
+export const resolveRollInversePlan = (
+  operationSlots: Slot[],
+  settings: Pick<CalculatorSettings, "wrapper">,
+): RollInversePlanResolution => {
+  if (settings.wrapper !== "none") {
+    return { ok: false, reason: "ambiguous" };
+  }
+  const inverseStages: InverseExecutionStage[] = [];
+  for (let index = operationSlots.length - 1; index >= 0; index -= 1) {
+    const inverted = invertSlot(operationSlots[index]!);
+    if (!inverted) {
+      return { ok: false, reason: "ambiguous" };
+    }
+    inverseStages.push(inverted);
+  }
+  return { ok: true, stages: inverseStages };
+};
+
+// Legacy semantic gate retained for compatibility with execution policy call-sites.
+// Inverse failure now resolves to terminal NaN(ambiguous), not semantic rejection.
+export const shouldRejectRollInverseExecution = (_rollEntries: RollEntry[]): boolean => false;
