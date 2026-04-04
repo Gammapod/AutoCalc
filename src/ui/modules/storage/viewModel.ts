@@ -2,6 +2,7 @@ import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
 import { buttonRegistry } from "../../../domain/buttonRegistry.js";
 import type { Action, GameState, Key } from "../../../domain/types.js";
 import { STORAGE_COLUMNS } from "../../../domain/state.js";
+import { KEY_ID } from "../../../domain/keyPresentation.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
 
 type KeyVisualGroup = ReturnType<typeof getKeyVisualGroup>;
@@ -23,6 +24,7 @@ const STORAGE_FILTER_SEGMENTS: StorageFilterGroup[] = [
   "settings",
   "utility_bundle",
 ];
+const REMOVED_STORAGE_KEYS = new Set<Key>([KEY_ID.const_pi, KEY_ID.const_e]);
 
 const getStorageFilterFlag = (group: StorageFilterGroup): string => STORAGE_FILTER_FLAG_BY_GROUP[group];
 
@@ -77,6 +79,9 @@ export const buildStorageRenderOrder = (state: GameState): Key[] => {
   const activeSortGroup = getActiveStorageSortGroup(state);
 
   for (const entry of buttonRegistry) {
+    if (REMOVED_STORAGE_KEYS.has(entry.key)) {
+      continue;
+    }
     if (!isKeyUnlocked(state, entry.key)) {
       continue;
     }

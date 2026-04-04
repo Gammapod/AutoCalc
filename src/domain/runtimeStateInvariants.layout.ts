@@ -13,6 +13,7 @@ import {
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
 
 const EMPTY_PLACEHOLDER: LayoutCell = { kind: "placeholder", area: "empty" };
+const REMOVED_VALUE_ATOM_KEYS = new Set<Key>([KEY_ID.const_pi, KEY_ID.const_e]);
 
 const normalizeStorageLength = (storageLayout: Array<KeyCell | null>): Array<KeyCell | null> => {
   let next = storageLayout;
@@ -71,6 +72,13 @@ export const dedupeKeyLayout = (layout: LayoutCell[], seen: Set<Key>): LayoutCel
       }
       continue;
     }
+    if (REMOVED_VALUE_ATOM_KEYS.has(cell.key)) {
+      if (!next) {
+        next = [...layout];
+      }
+      next[index] = EMPTY_PLACEHOLDER;
+      continue;
+    }
     if (seen.has(cell.key)) {
       if (!next) {
         next = [...layout];
@@ -95,7 +103,12 @@ export const dedupeAndFilterStorage = (
   for (let index = 0; index < storage.length; index += 1) {
     const cell = storage[index];
     let mapped: KeyCell | null = null;
-    if (isKeyCell(cell) && unlocked.has(cell.key) && !seen.has(cell.key)) {
+    if (
+      isKeyCell(cell)
+      && !REMOVED_VALUE_ATOM_KEYS.has(cell.key)
+      && unlocked.has(cell.key)
+      && !seen.has(cell.key)
+    ) {
       seen.add(cell.key);
       mapped = cell;
     }
@@ -116,6 +129,9 @@ export const ensureUnlockedKeysPresent = (
 ): Array<KeyCell | null> => {
   let nextStorage = storage;
   for (const key of unlocked) {
+    if (REMOVED_VALUE_ATOM_KEYS.has(key)) {
+      continue;
+    }
     if (seen.has(key)) {
       continue;
     }
