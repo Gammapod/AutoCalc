@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import {
+  resolveNumberLineMode,
   NUMBER_LINE_GEOMETRY,
   calculatorValueToArgandPoint,
   resolvePlotRangeForState,
+  resolveForecastVectorSegmentForState,
+  resolveVectorLayersForState,
   resolveVectorEndpoint,
   resolveVectorSegmentForState,
 } from "../src/ui/modules/visualizers/numberLineModel.js";
@@ -12,29 +15,80 @@ import {
   toRationalScalarValue,
   toExplicitComplexCalculatorValue,
 } from "../src/domain/calculatorValue.js";
+import { HISTORY_FLAG } from "../src/domain/state.js";
 
 export const runUiModuleNumberLineModelV2Tests = (): void => {
-  const decimalRangeState = {
-    ...initialState(),
-    unlocks: {
-      ...initialState().unlocks,
-      maxTotalDigits: 2,
-    },
-  };
-  assert.equal(resolvePlotRangeForState(decimalRangeState), 99, "decimal range uses 10^maxDigits - 1");
+  const decimalBaseline = initialState();
+  assert.equal(resolvePlotRangeForState(decimalBaseline), 9, "decimal baseline uses first dynamic tier (9)");
 
   const binaryRangeState = {
-    ...decimalRangeState,
+    ...decimalBaseline,
     settings: {
-      ...decimalRangeState.settings,
+      ...decimalBaseline.settings,
       base: "base2" as const,
     },
-    unlocks: {
-      ...decimalRangeState.unlocks,
-      maxTotalDigits: 3,
+  };
+  assert.equal(resolvePlotRangeForState(binaryRangeState), 1, "binary baseline uses first dynamic tier (1)");
+
+  const withDecimal99 = {
+    ...decimalBaseline,
+    calculator: {
+      ...decimalBaseline.calculator,
+      rollEntries: [{ y: toRationalCalculatorValue({ num: 99n, den: 1n }) }],
     },
   };
-  assert.equal(resolvePlotRangeForState(binaryRangeState), 7, "binary range uses 2^maxDigits - 1");
+  assert.equal(resolvePlotRangeForState(withDecimal99), 99, "decimal tier expands to 99 when plotted values exceed 9");
+
+  const withBinaryThree = {
+    ...binaryRangeState,
+    calculator: {
+      ...binaryRangeState.calculator,
+      rollEntries: [{ y: toRationalCalculatorValue({ num: 3n, den: 1n }) }],
+    },
+  };
+  assert.equal(resolvePlotRangeForState(withBinaryThree), 3, "binary tier expands to 3 when plotted values exceed 1");
+
+  const withHistoryRange = {
+    ...decimalBaseline,
+    ui: {
+      ...decimalBaseline.ui,
+      buttonFlags: {
+        ...decimalBaseline.ui.buttonFlags,
+        [HISTORY_FLAG]: true,
+      },
+    },
+    calculator: {
+      ...decimalBaseline.calculator,
+      rollEntries: [
+        { y: toRationalCalculatorValue({ num: 120n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+      ],
+    },
+  };
+  assert.equal(resolvePlotRangeForState(withHistoryRange), 999, "history-enabled range includes previous plotted value magnitudes");
+
+  const withForecastRange = {
+    ...decimalBaseline,
+    calculator: {
+      ...decimalBaseline.calculator,
+      total: toRationalCalculatorValue({ num: 9n, den: 1n }),
+      rollEntries: [{ y: toRationalCalculatorValue({ num: 9n, den: 1n }) }],
+      operationSlots: [{ operator: "op_add" as const, operand: 1n }],
+    },
+  };
+  assert.equal(resolvePlotRangeForState(withForecastRange), 9, "forecast is hidden when history toggle is off");
+
+  const withForecastRangeHistoryOn = {
+    ...withForecastRange,
+    ui: {
+      ...withForecastRange.ui,
+      buttonFlags: {
+        ...withForecastRange.ui.buttonFlags,
+        [HISTORY_FLAG]: true,
+      },
+    },
+  };
+  assert.equal(resolvePlotRangeForState(withForecastRangeHistoryOn), 99, "forecast-plotted next value expands dynamic range tiers when history is on");
 
   assert.deepEqual(
     calculatorValueToArgandPoint(toRationalCalculatorValue({ num: 5n, den: 1n })),
@@ -64,13 +118,9 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
   assert.equal(noRollVector, null, "vector segment is omitted when no roll exists");
 
   const withRoll = {
-    ...initialState(),
-    unlocks: {
-      ...initialState().unlocks,
-      maxTotalDigits: 2,
-    },
+    ...decimalBaseline,
     calculator: {
-      ...initialState().calculator,
+      ...decimalBaseline.calculator,
       rollEntries: [{ y: toRationalCalculatorValue({ num: 99n, den: 1n }) }],
     },
   };
@@ -80,5 +130,62 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
   assert.equal(rollVector?.from.y, NUMBER_LINE_GEOMETRY.origin.y, "vector starts at origin y");
   assert.equal(rollVector?.to.x, NUMBER_LINE_GEOMETRY.plotBounds.maxX, "range-max roll value maps to rightmost bound");
   assert.equal(rollVector?.to.y, NUMBER_LINE_GEOMETRY.origin.y, "real roll value keeps zero-imaginary y");
-};
 
+  const forecastVectorOff = resolveForecastVectorSegmentForState(withForecastRange);
+  assert.equal(forecastVectorOff, null, "forecast vector is hidden when history toggle is off");
+
+  const forecastVector = resolveForecastVectorSegmentForState(withForecastRangeHistoryOn);
+  assert.ok(forecastVector, "forecast vector is present when history toggle is on and next execution can be simulated");
+  const currentVectorForForecast = resolveVectorSegmentForState(withForecastRangeHistoryOn);
+  assert.ok(currentVectorForForecast, "current vector exists for forecast baseline");
+  assert.equal(
+    forecastVector?.from.x,
+    currentVectorForForecast?.to.x,
+    "forecast vector starts at current point x",
+  );
+  assert.equal(
+    forecastVector?.from.y,
+    currentVectorForForecast?.to.y,
+    "forecast vector starts at current point y",
+  );
+  assert.equal(
+    forecastVector?.to.x > NUMBER_LINE_GEOMETRY.origin.x,
+    true,
+    "positive next execution forecast projects to the right side of the plane",
+  );
+
+  const withAllLayers = {
+    ...withForecastRangeHistoryOn,
+    calculator: {
+      ...withForecastRangeHistoryOn.calculator,
+      rollEntries: [
+        { y: toRationalCalculatorValue({ num: 8n, den: 1n }) },
+        ...withForecastRangeHistoryOn.calculator.rollEntries,
+      ],
+    },
+  };
+  const layers = resolveVectorLayersForState(withAllLayers);
+  assert.deepEqual(
+    new Set(layers.map((layer) => layer.kind)),
+    new Set(["current", "history", "forecast"]),
+    "vector layers include current, history, and forecast entries",
+  );
+  for (let index = 1; index < layers.length; index += 1) {
+    const previous = layers[index - 1];
+    const next = layers[index];
+    assert.equal(
+      previous.magnitudeSq >= next.magnitudeSq,
+      true,
+      "vector layers are sorted by descending magnitude",
+    );
+    if (previous.magnitudeSq === next.magnitudeSq) {
+      assert.equal(
+        previous.recencyOrder <= next.recencyOrder,
+        true,
+        "tied magnitudes are sorted by increasing recency order",
+      );
+    }
+  }
+
+  assert.equal(resolveNumberLineMode(initialState()), "real", "real totals use real mode");
+};

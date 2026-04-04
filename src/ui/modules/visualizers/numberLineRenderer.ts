@@ -1,9 +1,12 @@
 import type { GameState } from "../../../domain/types.js";
 import {
   NUMBER_LINE_GEOMETRY,
+  NUMBER_LINE_VECTOR_ARROW_TIP,
   resolveNumberLineMode,
-  resolveVectorSegmentForState,
+  resolvePlotRangeForState,
+  resolveVectorLayersForState,
   type NumberLineGeometry,
+  type NumberLineVectorLayer,
   type Point,
   type Segment,
 } from "./numberLineModel.js";
@@ -12,6 +15,9 @@ type AxisKey = "x" | "y";
 
 const buildAsciiNumberLine = (): string => "\u2190\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2192";
 
+const hasCurrentRollError = (state: GameState): boolean =>
+  Boolean(state.calculator.rollEntries[state.calculator.rollEntries.length - 1]?.error);
+
 const buildPolygonPoints = (points: readonly Point[]): string =>
   points.map((point) => `${point.x.toString()},${point.y.toString()}`).join(" ");
 
@@ -19,7 +25,13 @@ const appendLine = (
   documentRef: Document,
   svg: SVGElement,
   segment: Segment,
-  className: "v2-number-line-axis" | "v2-number-line-grid-mark" | "v2-number-line-center-tick" | "v2-number-line-vector",
+  className:
+    | "v2-number-line-axis"
+    | "v2-number-line-grid-mark"
+    | "v2-number-line-center-tick"
+    | "v2-number-line-vector"
+    | "v2-number-line-vector--history"
+    | "v2-number-line-vector--forecast",
 ): void => {
   const svgNs = "http://www.w3.org/2000/svg";
   const line = documentRef.createElementNS(svgNs, "line");
@@ -37,6 +49,77 @@ const appendArrow = (documentRef: Document, svg: SVGElement, points: [Point, Poi
   arrow.setAttribute("points", buildPolygonPoints(points));
   arrow.setAttribute("class", "v2-number-line-arrowhead");
   svg.appendChild(arrow);
+};
+
+const appendVectorTip = (
+  documentRef: Document,
+  svg: SVGElement,
+  point: Point,
+  className: "v2-number-line-vector-tip" | "v2-number-line-vector-tip--history" | "v2-number-line-vector-tip--forecast",
+): void => {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const tip = documentRef.createElementNS(svgNs, "circle");
+  tip.setAttribute("cx", point.x.toString());
+  tip.setAttribute("cy", point.y.toString());
+  tip.setAttribute("r", "1.05");
+  tip.setAttribute("class", className);
+  svg.appendChild(tip);
+};
+
+const appendVectorArrowTip = (
+  documentRef: Document,
+  svg: SVGElement,
+  segment: Segment,
+  className: "v2-number-line-vector-tip--history" | "v2-number-line-vector-tip--forecast",
+): void => {
+  const dx = segment.to.x - segment.from.x;
+  const dy = segment.to.y - segment.from.y;
+  const length = Math.hypot(dx, dy);
+  if (length <= NUMBER_LINE_VECTOR_ARROW_TIP.minSegmentLength) {
+    appendVectorTip(documentRef, svg, segment.to, className);
+    return;
+  }
+  const ux = dx / length;
+  const uy = dy / length;
+  const { headLength, headWidth } = NUMBER_LINE_VECTOR_ARROW_TIP;
+  const baseCenter = {
+    x: segment.to.x - (ux * headLength),
+    y: segment.to.y - (uy * headLength),
+  };
+  const left = {
+    x: baseCenter.x + (-uy * headWidth),
+    y: baseCenter.y + (ux * headWidth),
+  };
+  const right = {
+    x: baseCenter.x - (-uy * headWidth),
+    y: baseCenter.y - (ux * headWidth),
+  };
+
+  const svgNs = "http://www.w3.org/2000/svg";
+  const arrow = documentRef.createElementNS(svgNs, "polygon");
+  arrow.setAttribute(
+    "points",
+    `${segment.to.x.toString()},${segment.to.y.toString()} ${left.x.toString()},${left.y.toString()} ${right.x.toString()},${right.y.toString()}`,
+  );
+  arrow.setAttribute("class", className);
+  svg.appendChild(arrow);
+};
+
+const appendScaleLabel = (
+  documentRef: Document,
+  svg: SVGElement,
+  point: Point,
+  textValue: string,
+  textAnchor: "start" | "middle" | "end",
+): void => {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const text = documentRef.createElementNS(svgNs, "text");
+  text.setAttribute("x", point.x.toString());
+  text.setAttribute("y", point.y.toString());
+  text.setAttribute("text-anchor", textAnchor);
+  text.setAttribute("class", "v2-number-line-scale-label");
+  text.textContent = textValue;
+  svg.appendChild(text);
 };
 
 const appendSubdivisionLines = (
@@ -115,20 +198,50 @@ const renderComplexGrid = (documentRef: Document, svg: SVGElement, geometry: Num
   );
 };
 
-const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: GameState): void => {
-  const segment = resolveVectorSegmentForState(state, NUMBER_LINE_GEOMETRY);
-  if (!segment) {
-    return;
-  }
-  appendLine(documentRef, svg, segment, "v2-number-line-vector");
+const renderScaleLabels = (
+  documentRef: Document,
+  svg: SVGElement,
+  mode: ReturnType<typeof resolveNumberLineMode>,
+  range: number,
+): void => {
+  const leftLabel = `-${range.toString()}`;
+  const rightLabel = range.toString();
+  appendScaleLabel(documentRef, svg, { x: 4, y: 16.8 }, leftLabel, "start");
+  appendScaleLabel(documentRef, svg, { x: 96, y: 16.8 }, rightLabel, "end");
 
-  const svgNs = "http://www.w3.org/2000/svg";
-  const tip = documentRef.createElementNS(svgNs, "circle");
-  tip.setAttribute("cx", segment.to.x.toString());
-  tip.setAttribute("cy", segment.to.y.toString());
-  tip.setAttribute("r", "1.05");
-  tip.setAttribute("class", "v2-number-line-vector-tip");
-  svg.appendChild(tip);
+  if (mode === "complex_grid") {
+    appendScaleLabel(documentRef, svg, { x: 52.4, y: 1.6 }, rightLabel, "start");
+    appendScaleLabel(documentRef, svg, { x: 52.4, y: 23 }, leftLabel, "start");
+  }
+};
+
+const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: GameState): void => {
+  const classByKind: Record<
+    NumberLineVectorLayer["kind"],
+    {
+      line: "v2-number-line-vector" | "v2-number-line-vector--history" | "v2-number-line-vector--forecast";
+      tip: "v2-number-line-vector-tip" | "v2-number-line-vector-tip--history" | "v2-number-line-vector-tip--forecast";
+    }
+  > = {
+    current: { line: "v2-number-line-vector", tip: "v2-number-line-vector-tip" },
+    history: { line: "v2-number-line-vector--history", tip: "v2-number-line-vector-tip--history" },
+    forecast: { line: "v2-number-line-vector--forecast", tip: "v2-number-line-vector-tip--forecast" },
+  };
+
+  resolveVectorLayersForState(state, NUMBER_LINE_GEOMETRY).forEach((layer) => {
+    const classes = classByKind[layer.kind];
+    appendLine(documentRef, svg, layer.segment, classes.line);
+    if (layer.tipKind === "dot") {
+      appendVectorTip(documentRef, svg, layer.segment.to, classes.tip);
+    } else {
+      appendVectorArrowTip(
+        documentRef,
+        svg,
+        layer.segment,
+        classes.tip as "v2-number-line-vector-tip--history" | "v2-number-line-vector-tip--forecast",
+      );
+    }
+  });
 };
 
 export const clearNumberLineVisualizerPanel = (root: Element): void => {
@@ -158,20 +271,24 @@ export const renderNumberLineVisualizerPanel = (root: Element, state: GameState)
   const svgNs = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(svgNs, "svg");
   svg.setAttribute("class", "v2-number-line-plot");
+  if (hasCurrentRollError(state)) {
+    svg.classList.add("v2-number-line-plot--error");
+  }
   svg.setAttribute("viewBox", "0 0 100 24");
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label", "Horizontal number line with arrows and center tick");
 
   const mode = resolveNumberLineMode(state);
+  const range = resolvePlotRangeForState(state);
   renderBaseHorizontalAxis(document, svg, NUMBER_LINE_GEOMETRY);
   if (mode === "complex_grid") {
     renderComplexGrid(document, svg, NUMBER_LINE_GEOMETRY);
   } else {
     renderRealTicks(document, svg, NUMBER_LINE_GEOMETRY);
   }
+  renderScaleLabels(document, svg, mode, range);
   renderVectorIfAvailable(document, svg, state);
 
   panel.appendChild(svg);
 };
-

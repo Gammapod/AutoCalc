@@ -1,10 +1,21 @@
 import type { CalculatorValue, GameState, ScalarValue } from "../../../domain/types.js";
 import { isScalarValueZero } from "../../../domain/calculatorValue.js";
 import { expressionToRational } from "../../../domain/expression.js";
+import { HISTORY_FLAG } from "../../../domain/state.js";
+import { applyAutoStepTick } from "../../../domain/reducer.input.core.js";
 
 export type NumberLineMode = "real" | "complex_grid";
 export type Point = { x: number; y: number };
 export type Segment = { from: Point; to: Point };
+export type NumberLineVectorKind = "current" | "history" | "forecast";
+export type NumberLineVectorTipKind = "dot" | "arrow";
+export type NumberLineVectorLayer = {
+  kind: NumberLineVectorKind;
+  tipKind: NumberLineVectorTipKind;
+  segment: Segment;
+  magnitudeSq: number;
+  recencyOrder: number;
+};
 export type NumberLineGeometry = {
   subdivisions: {
     parts: number;
@@ -35,6 +46,12 @@ export type NumberLineGeometry = {
     maxY: number;
   };
 };
+
+export const NUMBER_LINE_VECTOR_ARROW_TIP = {
+  headLength: 1.15,
+  headWidth: 0.82,
+  minSegmentLength: 0.0001,
+} as const;
 
 const SUBDIVISION_PARTS = 18;
 
@@ -123,15 +140,82 @@ export const calculatorValueToArgandPoint = (value: CalculatorValue): { re: numb
 
 const resolveRadix = (state: GameState): number => (state.settings.base === "base2" ? 2 : 10);
 
+export const resolveForecastValueForState = (state: GameState): CalculatorValue | null => {
+  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
+  if (!historyEnabled) {
+    return null;
+  }
+  if (state.calculator.rollEntries.length < 1) {
+    return null;
+  }
+  const simulated = applyAutoStepTick(state);
+  if (simulated === state) {
+    return null;
+  }
+  const priorRollCount = state.calculator.rollEntries.length;
+  const nextRollCount = simulated.calculator.rollEntries.length;
+  if (nextRollCount > priorRollCount) {
+    return simulated.calculator.rollEntries[nextRollCount - 1]?.y ?? null;
+  }
+  if (simulated.calculator.stepProgress.currentTotal) {
+    return simulated.calculator.stepProgress.currentTotal;
+  }
+  return simulated.calculator.total;
+};
+
+const resolveSegmentMagnitudeSq = (segment: Segment): number => {
+  const dx = segment.to.x - segment.from.x;
+  const dy = segment.to.y - segment.from.y;
+  return (dx * dx) + (dy * dy);
+};
+
+const sortVectorLayers = (layers: readonly NumberLineVectorLayer[]): NumberLineVectorLayer[] =>
+  [...layers].sort((left, right) => {
+    if (left.magnitudeSq !== right.magnitudeSq) {
+      return right.magnitudeSq - left.magnitudeSq;
+    }
+    return left.recencyOrder - right.recencyOrder;
+  });
+
 export const resolvePlotRangeForState = (state: GameState): number => {
   const radix = resolveRadix(state);
-  const maxDigits = Math.max(1, state.unlocks.maxTotalDigits);
-  const boundary = (BigInt(radix) ** BigInt(maxDigits)) - 1n;
-  const asNumber = Number(boundary);
-  if (!Number.isFinite(asNumber) || asNumber <= 0) {
-    return 1;
+  const plottedValues: CalculatorValue[] = [];
+  const latestRoll = state.calculator.rollEntries[state.calculator.rollEntries.length - 1];
+  if (latestRoll?.y) {
+    plottedValues.push(latestRoll.y);
   }
-  return asNumber;
+  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
+  if (historyEnabled) {
+    const previousRoll = state.calculator.rollEntries[state.calculator.rollEntries.length - 2];
+    if (previousRoll?.y) {
+      plottedValues.push(previousRoll.y);
+    }
+  }
+  const forecastValue = resolveForecastValueForState(state);
+  if (forecastValue) {
+    plottedValues.push(forecastValue);
+  }
+
+  let maxAbsComponent = 0;
+  for (const value of plottedValues) {
+    const argand = calculatorValueToArgandPoint(value);
+    if (!argand) {
+      continue;
+    }
+    maxAbsComponent = Math.max(maxAbsComponent, Math.abs(argand.re), Math.abs(argand.im));
+  }
+  if (!Number.isFinite(maxAbsComponent) || maxAbsComponent < 0) {
+    maxAbsComponent = 0;
+  }
+
+  let range = radix - 1;
+  while (maxAbsComponent > range) {
+    range = (range * radix) + (radix - 1);
+    if (!Number.isFinite(range) || range <= 0) {
+      return radix === 2 ? 1 : 9;
+    }
+  }
+  return range;
 };
 
 export const resolveVectorEndpoint = (
@@ -168,3 +252,89 @@ export const resolveVectorSegmentForState = (
   };
 };
 
+export const resolveForecastVectorSegmentForState = (
+  state: GameState,
+  geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
+): Segment | null => {
+  const forecastValue = resolveForecastValueForState(state);
+  if (!forecastValue) {
+    return null;
+  }
+  const argand = calculatorValueToArgandPoint(forecastValue);
+  if (!argand) {
+    return null;
+  }
+  const currentSegment = resolveVectorSegmentForState(state, geometry);
+  if (!currentSegment) {
+    return null;
+  }
+  return {
+    from: currentSegment.to,
+    to: resolveVectorEndpoint(geometry, argand, resolvePlotRangeForState(state)),
+  };
+};
+
+export const resolveHistoryVectorSegmentForState = (
+  state: GameState,
+  geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
+): Segment | null => {
+  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
+  if (!historyEnabled || state.calculator.rollEntries.length < 2) {
+    return null;
+  }
+  const currentSegment = resolveVectorSegmentForState(state, geometry);
+  if (!currentSegment) {
+    return null;
+  }
+  const previousRoll = state.calculator.rollEntries[state.calculator.rollEntries.length - 2]?.y;
+  const argand = previousRoll ? calculatorValueToArgandPoint(previousRoll) : null;
+  if (!argand) {
+    return null;
+  }
+  const previousPoint = resolveVectorEndpoint(geometry, argand, resolvePlotRangeForState(state));
+  return {
+    from: previousPoint,
+    to: currentSegment.to,
+  };
+};
+
+export const resolveVectorLayersForState = (
+  state: GameState,
+  geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
+): NumberLineVectorLayer[] => {
+  const layers: NumberLineVectorLayer[] = [];
+  const currentSegment = resolveVectorSegmentForState(state, geometry);
+  if (currentSegment) {
+    layers.push({
+      kind: "current",
+      tipKind: "dot",
+      segment: currentSegment,
+      magnitudeSq: resolveSegmentMagnitudeSq(currentSegment),
+      recencyOrder: 1,
+    });
+  }
+
+  const historySegment = resolveHistoryVectorSegmentForState(state, geometry);
+  if (historySegment) {
+    layers.push({
+      kind: "history",
+      tipKind: "arrow",
+      segment: historySegment,
+      magnitudeSq: resolveSegmentMagnitudeSq(historySegment),
+      recencyOrder: 0,
+    });
+  }
+
+  const forecastSegment = resolveForecastVectorSegmentForState(state, geometry);
+  if (forecastSegment) {
+    layers.push({
+      kind: "forecast",
+      tipKind: "arrow",
+      segment: forecastSegment,
+      magnitudeSq: resolveSegmentMagnitudeSq(forecastSegment),
+      recencyOrder: 2,
+    });
+  }
+
+  return sortVectorLayers(layers);
+};

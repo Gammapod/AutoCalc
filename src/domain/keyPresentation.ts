@@ -54,6 +54,7 @@ export const KEY_ID = {
   toggle_mod_zero_to_delta: "toggle_mod_zero_to_delta",
   toggle_step_expansion: "toggle_step_expansion",
   toggle_binary_mode: "toggle_binary_mode",
+  toggle_history: "toggle_history",
   viz_graph: "viz_graph",
   viz_feed: "viz_feed",
   viz_title: "viz_title",
@@ -127,7 +128,8 @@ export type UtilityKeyId =
   | typeof KEY_ID.toggle_delta_range_clamp
   | typeof KEY_ID.toggle_mod_zero_to_delta
   | typeof KEY_ID.toggle_step_expansion
-  | typeof KEY_ID.toggle_binary_mode;
+  | typeof KEY_ID.toggle_binary_mode
+  | typeof KEY_ID.toggle_history;
 export type VisualizerKeyId =
   | typeof KEY_ID.viz_graph
   | typeof KEY_ID.viz_feed
@@ -211,6 +213,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "\u27E1[0, \u{1D6FF})" }],
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
   [KEY_ID.toggle_binary_mode, { buttonFace: "b\u2082" }],
+  [KEY_ID.toggle_history, { buttonFace: "History" }],
   [KEY_ID.viz_graph, { buttonFace: "GRAPH" }],
   [KEY_ID.viz_feed, { buttonFace: "FEED" }],
   [KEY_ID.viz_title, { buttonFace: "TITLE" }],

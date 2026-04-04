@@ -33,6 +33,7 @@ export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";
 export const MOD_ZERO_TO_DELTA_FLAG = "settings.mod_zero_to_delta";
 export const STEP_EXPANSION_FLAG = "settings.step_expansion";
 export const BINARY_MODE_FLAG = "settings.binary_mode";
+export const HISTORY_FLAG = "settings.history";
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 8;
 export const KEYPAD_DEFAULT_COLUMNS = Math.max(
@@ -146,6 +147,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } },
   { kind: "key", key: KEY_ID.toggle_step_expansion, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } },
   { kind: "key", key: KEY_ID.toggle_binary_mode, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } },
+  { kind: "key", key: KEY_ID.toggle_history, behavior: { type: "toggle_flag", flag: HISTORY_FLAG } },
   { kind: "key", key: KEY_ID.system_quit_game },
   { kind: "key", key: KEY_ID.system_mode_game },
   { kind: "key", key: KEY_ID.system_new_game },
