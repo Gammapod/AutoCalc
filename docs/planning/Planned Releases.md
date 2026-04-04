@@ -18,34 +18,33 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Implemented terminal-NaN lock semantics in execution policy.
 - Extended NaN lock to reject execution and operator key categories.
 
+### Slice `slice_visualizer_cartesian_v1_real_axis` (Archived 2026-04-03)
+- Status: Completed and archived from active planning.
+- Delivered scope:
+- Implemented visualizer id/key/panel wiring as `number_line` with standard host behavior (single active panel, inactive-panel clear).
+- Rendered horizontal axis with 19 ticks (`-9..9`) and emphasized center tick in real mode.
+- Rendered real-mode vector from origin to current real position.
+- Kept axis and vector presentation within host visualizer bounds.
+
+### Slice `slice_visualizer_cartesian_v1_complex_grid` (Archived 2026-04-03)
+- Status: Completed and archived from active planning.
+- Delivered scope:
+- Complex plane mode is activated only when current value has non-zero imaginary component.
+- Complex mode adds vertical axis and projected grid subdivisions matching horizontal subdivision count.
+- Complex vector renders from origin to `(Re, Im)` coordinates.
+- Vertical-axis/grid clipping is accepted in v1 and covered by current fit-contract behavior.
+- Viewport remains fixed to the shipped v1 `number_line` panel geometry.
+
+### Slice `slice_visualizer_cartesian_v1_range_and_error_semantics` (Archived 2026-04-03)
+- Status: Completed and archived from active planning.
+- Delivered scope:
+- Dynamic max magnitude uses graph-aligned radix tier semantics (`radix^digits - 1` progression by tier).
+- Endpoint scale labels are rendered in v1 to expose active range bounds.
+- Current-roll error state applies explicit red treatment to plane/axis/grid styling.
+- Error signaling remains style-driven in v1 (no in-panel null-set overlay in this slice).
+- Symbolic-result handling remains out of scope for this slice.
+
 ## Next
-
-### Slice `slice_visualizer_cartesian_v1_real_axis`
-- User Story: As a player, I want a Cartesian visualizer that always shows a horizontal number line and the current-value vector from origin so value position is immediately readable.
-- Exit Criteria:
-- New visualizer id/key/panel wiring exists for `cartesian` with standard host behavior (single active panel, inactive-panel clear).
-- Horizontal axis is always rendered with 19 ticks total (`-9..9`), with end ticks treated as unlabeled semantic bounds.
-- Center tick is visually emphasized (same thickness as axis stroke), with no numeric labels on ticks.
-- Real-mode vector renders from origin to current real position and is unlabeled.
-- Horizontal axis remains within normal visualizer window bounds in host layouts.
-
-### Slice `slice_visualizer_cartesian_v1_complex_grid`
-- User Story: As a player, I want complex totals to render on a Cartesian plane so both real and imaginary components are visible in one view.
-- Exit Criteria:
-- Complex plane mode is triggered only when current value is complex with `im != 0`; values with `im = 0` render as real-only mode.
-- In complex mode, a vertical axis of equal length/subdivision to horizontal is shown and axis ticks project to a full grid.
-- Complex vector renders from origin to `(Re, Im)` coordinates and is unlabeled.
-- Vertical axis tips and grid are allowed to clip in v1; clipping behavior is explicit and accepted by contract.
-- The Cartesian viewport is square in complex mode, even when the square exceeds current host fit window.
-
-### Slice `slice_visualizer_cartesian_v1_range_and_error_semantics`
-- User Story: As a player, I want Cartesian scaling and error cues to match existing graph semantics so behavior is consistent across visualizers.
-- Exit Criteria:
-- Cartesian max magnitude uses the same computation as graph visualizer window policy (`radix^digits - 1` semantics).
-- End ticks represent semantic bounds only; no endpoint labels are shown.
-- On overflow state, rendered vector switches to explicit red treatment.
-- On NaN/error state, a prominent red null-set symbol (`∅`) is centered at origin and visually overlays axis content.
-- Symbolic-result handling is not expanded in this slice; symbolic cleanup remains scoped to a separate dedicated slice.
 
 ### Slice `slice_ux_feedback_standardization`
 - User Story: As a player, I want every rejected input and every state transition to provide clear feedback so I always understand what happened and why.
@@ -54,8 +53,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Every state transition path provides explicit transition feedback.
 - Feedback is consistent in wording, motion timing, and visual treatment.
 - Critical paths are covered by tests for rejection and transition feedback contracts.
-
-## Next
 
 ### Slice `slice_function_builder_bar_standardization`
 - User Story: As a player, I want the function builder bar to look and behave consistently across states so editing functions feels predictable.
