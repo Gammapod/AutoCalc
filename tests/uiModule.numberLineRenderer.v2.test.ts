@@ -46,8 +46,49 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.ok(panel.querySelector(".v2-number-line-vector-tip"), "roll values render vector tip");
     assert.equal(panel.querySelector(".v2-number-line-vector--forecast"), null, "forecast remains hidden while history toggle is off");
     assert.equal(panel.querySelector(".v2-number-line-vector-tip--forecast"), null, "forecast tip remains hidden while history toggle is off");
+    assert.equal(panel.querySelector(".v2-number-line-vector--forecast-step"), null, "step-forecast remains hidden while [ ??? ] is off");
+    assert.equal(panel.querySelector(".v2-number-line-vector-tip--forecast-step"), null, "step-forecast tip remains hidden while [ ??? ] is off");
     assert.equal(panel.querySelector(".v2-number-line-vector--history"), null, "history vector remains hidden while history toggle is off");
     assert.equal(panel.querySelector(".v2-number-line-plot--error"), null, "non-error roll keeps default plane styling");
+
+    const withStepExpansionForecast = {
+      ...withRealRoll,
+      settings: {
+        ...withRealRoll.settings,
+        stepExpansion: "on" as const,
+      },
+      calculator: {
+        ...withRealRoll.calculator,
+        operationSlots: [
+          { kind: "unary" as const, operator: "unary_inc" as const },
+          { kind: "unary" as const, operator: "unary_inc" as const },
+          { kind: "unary" as const, operator: "unary_inc" as const },
+        ],
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, withStepExpansionForecast);
+    assert.ok(panel.querySelector(".v2-number-line-vector--forecast-step"), "step expansion shows first-step forecast before progress starts");
+    const withStepExpansionActive = {
+      ...withStepExpansionForecast,
+      calculator: {
+        ...withStepExpansionForecast.calculator,
+        stepProgress: {
+          active: true,
+          seedTotal: withStepExpansionForecast.calculator.total,
+          currentTotal: toRationalCalculatorValue({ num: 4n, den: 1n }),
+          nextSlotIndex: 1,
+          executedSlotResults: [toRationalCalculatorValue({ num: 4n, den: 1n })],
+        },
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, withStepExpansionActive);
+    assert.equal(
+      panel.querySelectorAll(".v2-number-line-vector--forecast-step").length >= 2,
+      true,
+      "active step expansion renders chained white step forecast vectors",
+    );
+    assert.ok(panel.querySelector(".v2-number-line-vector-tip--forecast-step"), "active step expansion renders white step forecast tip");
+    assert.equal(panel.querySelector(".v2-number-line-vector--forecast"), null, "history forecast remains hidden when history toggle is off");
 
     const withImaginaryTotal = {
       ...initialState(),
@@ -96,7 +137,8 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     renderNumberLineVisualizerPanel(harness.root, withHistoryEnabled);
     assert.ok(panel.querySelector(".v2-number-line-vector--history"), "history toggle renders previous-roll vector");
     assert.ok(panel.querySelector(".v2-number-line-vector-tip--history"), "history toggle renders previous-roll vector tip");
-    assert.ok(panel.querySelector(".v2-number-line-vector--forecast"), "history mode also renders forecast vector");
+    assert.ok(panel.querySelector(".v2-number-line-vector--forecast"), "history mode renders full-function forecast vector");
+    assert.equal(panel.querySelector(".v2-number-line-vector--forecast-step"), null, "history mode alone does not render step forecast");
     const historyLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector--history");
     const currentLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector");
     const forecastLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector--forecast");

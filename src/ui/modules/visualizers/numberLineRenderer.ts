@@ -31,7 +31,8 @@ const appendLine = (
     | "v2-number-line-center-tick"
     | "v2-number-line-vector"
     | "v2-number-line-vector--history"
-    | "v2-number-line-vector--forecast",
+    | "v2-number-line-vector--forecast"
+    | "v2-number-line-vector--forecast-step",
 ): void => {
   const svgNs = "http://www.w3.org/2000/svg";
   const line = documentRef.createElementNS(svgNs, "line");
@@ -55,7 +56,11 @@ const appendVectorTip = (
   documentRef: Document,
   svg: SVGElement,
   point: Point,
-  className: "v2-number-line-vector-tip" | "v2-number-line-vector-tip--history" | "v2-number-line-vector-tip--forecast",
+  className:
+    | "v2-number-line-vector-tip"
+    | "v2-number-line-vector-tip--history"
+    | "v2-number-line-vector-tip--forecast"
+    | "v2-number-line-vector-tip--forecast-step",
 ): void => {
   const svgNs = "http://www.w3.org/2000/svg";
   const tip = documentRef.createElementNS(svgNs, "circle");
@@ -70,7 +75,10 @@ const appendVectorArrowTip = (
   documentRef: Document,
   svg: SVGElement,
   segment: Segment,
-  className: "v2-number-line-vector-tip--history" | "v2-number-line-vector-tip--forecast",
+  className:
+    | "v2-number-line-vector-tip--history"
+    | "v2-number-line-vector-tip--forecast"
+    | "v2-number-line-vector-tip--forecast-step",
 ): void => {
   const dx = segment.to.x - segment.from.x;
   const dy = segment.to.y - segment.from.y;
@@ -219,13 +227,22 @@ const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: 
   const classByKind: Record<
     NumberLineVectorLayer["kind"],
     {
-      line: "v2-number-line-vector" | "v2-number-line-vector--history" | "v2-number-line-vector--forecast";
-      tip: "v2-number-line-vector-tip" | "v2-number-line-vector-tip--history" | "v2-number-line-vector-tip--forecast";
+      line:
+        | "v2-number-line-vector"
+        | "v2-number-line-vector--history"
+        | "v2-number-line-vector--forecast"
+        | "v2-number-line-vector--forecast-step";
+      tip:
+        | "v2-number-line-vector-tip"
+        | "v2-number-line-vector-tip--history"
+        | "v2-number-line-vector-tip--forecast"
+        | "v2-number-line-vector-tip--forecast-step";
     }
   > = {
     current: { line: "v2-number-line-vector", tip: "v2-number-line-vector-tip" },
     history: { line: "v2-number-line-vector--history", tip: "v2-number-line-vector-tip--history" },
-    forecast: { line: "v2-number-line-vector--forecast", tip: "v2-number-line-vector-tip--forecast" },
+    forecast_history: { line: "v2-number-line-vector--forecast", tip: "v2-number-line-vector-tip--forecast" },
+    forecast_step: { line: "v2-number-line-vector--forecast-step", tip: "v2-number-line-vector-tip--forecast-step" },
   };
 
   resolveVectorLayersForState(state, NUMBER_LINE_GEOMETRY).forEach((layer) => {
@@ -238,7 +255,10 @@ const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: 
         documentRef,
         svg,
         layer.segment,
-        classes.tip as "v2-number-line-vector-tip--history" | "v2-number-line-vector-tip--forecast",
+        classes.tip as
+          | "v2-number-line-vector-tip--history"
+          | "v2-number-line-vector-tip--forecast"
+          | "v2-number-line-vector-tip--forecast-step",
       );
     }
   });

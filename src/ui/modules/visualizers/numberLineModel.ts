@@ -3,11 +3,12 @@ import { isScalarValueZero } from "../../../domain/calculatorValue.js";
 import { expressionToRational } from "../../../domain/expression.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import { applyAutoStepTick } from "../../../domain/reducer.input.core.js";
+import { handleEqualsInput } from "../../../domain/reducer.input.handlers.execution.js";
 
 export type NumberLineMode = "real" | "complex_grid";
 export type Point = { x: number; y: number };
 export type Segment = { from: Point; to: Point };
-export type NumberLineVectorKind = "current" | "history" | "forecast";
+export type NumberLineVectorKind = "current" | "history" | "forecast_history" | "forecast_step";
 export type NumberLineVectorTipKind = "dot" | "arrow";
 export type NumberLineVectorLayer = {
   kind: NumberLineVectorKind;
@@ -141,6 +142,38 @@ export const calculatorValueToArgandPoint = (value: CalculatorValue): { re: numb
 const resolveRadix = (state: GameState): number => (state.settings.base === "base2" ? 2 : 10);
 
 export const resolveForecastValueForState = (state: GameState): CalculatorValue | null => {
+  const stepForecastValues = resolveStepForecastValuesForState(state);
+  return stepForecastValues[stepForecastValues.length - 1] ?? null;
+};
+
+export const resolveStepForecastValuesForState = (state: GameState): CalculatorValue[] => {
+  if (state.settings.stepExpansion !== "on") {
+    return [];
+  }
+  if (state.calculator.rollEntries.length < 1) {
+    return [];
+  }
+  const nextState = applyAutoStepTick(state);
+  const nextStepValue =
+    nextState !== state
+      ? (nextState.calculator.rollEntries.length > state.calculator.rollEntries.length
+        ? (nextState.calculator.rollEntries[nextState.calculator.rollEntries.length - 1]?.y ?? null)
+        : nextState.calculator.stepProgress.currentTotal)
+      : null;
+  if (state.calculator.stepProgress.active) {
+    const values = [...state.calculator.stepProgress.executedSlotResults];
+    if (nextStepValue) {
+      values.push(nextStepValue);
+    }
+    return values;
+  }
+  if (nextStepValue) {
+    return [nextStepValue];
+  }
+  return [];
+};
+
+export const resolveHistoryForecastValueForState = (state: GameState): CalculatorValue | null => {
   const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
   if (!historyEnabled) {
     return null;
@@ -148,7 +181,7 @@ export const resolveForecastValueForState = (state: GameState): CalculatorValue 
   if (state.calculator.rollEntries.length < 1) {
     return null;
   }
-  const simulated = applyAutoStepTick(state);
+  const simulated = handleEqualsInput(state);
   if (simulated === state) {
     return null;
   }
@@ -191,10 +224,11 @@ export const resolvePlotRangeForState = (state: GameState): number => {
       plottedValues.push(previousRoll.y);
     }
   }
-  const forecastValue = resolveForecastValueForState(state);
-  if (forecastValue) {
-    plottedValues.push(forecastValue);
+  const historyForecastValue = resolveHistoryForecastValueForState(state);
+  if (historyForecastValue) {
+    plottedValues.push(historyForecastValue);
   }
+  plottedValues.push(...resolveStepForecastValuesForState(state));
 
   let maxAbsComponent = 0;
   for (const value of plottedValues) {
@@ -256,7 +290,58 @@ export const resolveForecastVectorSegmentForState = (
   state: GameState,
   geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
 ): Segment | null => {
-  const forecastValue = resolveForecastValueForState(state);
+  const forecastValue = resolveStepForecastValuesForState(state)[0] ?? null;
+  if (!forecastValue) {
+    return null;
+  }
+  const argand = calculatorValueToArgandPoint(forecastValue);
+  if (!argand) {
+    return null;
+  }
+  const currentSegment = resolveVectorSegmentForState(state, geometry);
+  if (!currentSegment) {
+    return null;
+  }
+  return {
+    from: currentSegment.to,
+    to: resolveVectorEndpoint(geometry, argand, resolvePlotRangeForState(state)),
+  };
+};
+
+export const resolveStepForecastVectorSegmentsForState = (
+  state: GameState,
+  geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
+): Segment[] => {
+  const currentSegment = resolveVectorSegmentForState(state, geometry);
+  if (!currentSegment) {
+    return [];
+  }
+  const forecastValues = resolveStepForecastValuesForState(state);
+  if (forecastValues.length < 1) {
+    return [];
+  }
+  const range = resolvePlotRangeForState(state);
+  const endpoints = forecastValues
+    .map((value) => calculatorValueToArgandPoint(value))
+    .filter((value): value is { re: number; im: number } => Boolean(value))
+    .map((argand) => resolveVectorEndpoint(geometry, argand, range));
+  if (endpoints.length < 1) {
+    return [];
+  }
+  const segments: Segment[] = [];
+  let from = currentSegment.to;
+  for (const endpoint of endpoints) {
+    segments.push({ from, to: endpoint });
+    from = endpoint;
+  }
+  return segments;
+};
+
+export const resolveHistoryForecastVectorSegmentForState = (
+  state: GameState,
+  geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
+): Segment | null => {
+  const forecastValue = resolveHistoryForecastValueForState(state);
   if (!forecastValue) {
     return null;
   }
@@ -325,16 +410,27 @@ export const resolveVectorLayersForState = (
     });
   }
 
-  const forecastSegment = resolveForecastVectorSegmentForState(state, geometry);
-  if (forecastSegment) {
+  const historyForecastSegment = resolveHistoryForecastVectorSegmentForState(state, geometry);
+  if (historyForecastSegment) {
     layers.push({
-      kind: "forecast",
+      kind: "forecast_history",
       tipKind: "arrow",
-      segment: forecastSegment,
-      magnitudeSq: resolveSegmentMagnitudeSq(forecastSegment),
+      segment: historyForecastSegment,
+      magnitudeSq: resolveSegmentMagnitudeSq(historyForecastSegment),
       recencyOrder: 2,
     });
   }
+
+  const stepForecastSegments = resolveStepForecastVectorSegmentsForState(state, geometry);
+  stepForecastSegments.forEach((stepForecastSegment, index) => {
+    layers.push({
+      kind: "forecast_step",
+      tipKind: "arrow",
+      segment: stepForecastSegment,
+      magnitudeSq: resolveSegmentMagnitudeSq(stepForecastSegment),
+      recencyOrder: 3 + index,
+    });
+  });
 
   return sortVectorLayers(layers);
 };

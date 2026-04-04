@@ -4,8 +4,11 @@ import {
   resolveNumberLineMode,
   NUMBER_LINE_GEOMETRY,
   calculatorValueToArgandPoint,
+  resolveHistoryForecastVectorSegmentForState,
   resolvePlotRangeForState,
   resolveForecastVectorSegmentForState,
+  resolveStepForecastVectorSegmentsForState,
+  resolveStepForecastValuesForState,
   resolveVectorLayersForState,
   resolveVectorEndpoint,
   resolveVectorSegmentForState,
@@ -90,6 +93,40 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
   };
   assert.equal(resolvePlotRangeForState(withForecastRangeHistoryOn), 99, "forecast-plotted next value expands dynamic range tiers when history is on");
 
+  const withStepForecastOn = {
+    ...decimalBaseline,
+    settings: {
+      ...decimalBaseline.settings,
+      stepExpansion: "on" as const,
+    },
+    calculator: {
+      ...decimalBaseline.calculator,
+      total: toRationalCalculatorValue({ num: 6n, den: 1n }),
+      rollEntries: [{ y: toRationalCalculatorValue({ num: 6n, den: 1n }) }],
+      operationSlots: [
+        { operator: "op_add" as const, operand: 1n },
+        { operator: "op_add" as const, operand: 2n },
+        { operator: "op_add" as const, operand: 3n },
+      ],
+    },
+  };
+  assert.equal(resolvePlotRangeForState(withStepForecastOn), 9, "step-expansion shows first-step forecast before progress activates");
+  const withStepForecastActive = {
+    ...withStepForecastOn,
+    calculator: {
+      ...withStepForecastOn.calculator,
+      stepProgress: {
+        active: true,
+        seedTotal: withStepForecastOn.calculator.total,
+        currentTotal: toRationalCalculatorValue({ num: 7n, den: 1n }),
+        nextSlotIndex: 1,
+        executedSlotResults: [toRationalCalculatorValue({ num: 7n, den: 1n })],
+      },
+    },
+  };
+  assert.equal(resolveStepForecastValuesForState(withStepForecastActive).length, 2, "step-expansion forecast shows executed chain plus current highlighted-step forecast");
+  assert.equal(resolvePlotRangeForState(withStepForecastActive), 9, "active step-expansion forecast contributes to dynamic range");
+
   assert.deepEqual(
     calculatorValueToArgandPoint(toRationalCalculatorValue({ num: 5n, den: 1n })),
     { re: 5, im: 0 },
@@ -131,22 +168,31 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
   assert.equal(rollVector?.to.x, NUMBER_LINE_GEOMETRY.plotBounds.maxX, "range-max roll value maps to rightmost bound");
   assert.equal(rollVector?.to.y, NUMBER_LINE_GEOMETRY.origin.y, "real roll value keeps zero-imaginary y");
 
-  const forecastVectorOff = resolveForecastVectorSegmentForState(withForecastRange);
-  assert.equal(forecastVectorOff, null, "forecast vector is hidden when history toggle is off");
+  const historyForecastOff = resolveHistoryForecastVectorSegmentForState(withForecastRange);
+  assert.equal(historyForecastOff, null, "history forecast vector is hidden when history toggle is off");
 
-  const forecastVector = resolveForecastVectorSegmentForState(withForecastRangeHistoryOn);
-  assert.ok(forecastVector, "forecast vector is present when history toggle is on and next execution can be simulated");
+  const historyForecastVector = resolveHistoryForecastVectorSegmentForState(withForecastRangeHistoryOn);
+  assert.ok(historyForecastVector, "history forecast vector is present when history toggle is on");
+  const forecastVector = resolveForecastVectorSegmentForState(withStepForecastActive);
+  assert.ok(forecastVector, "step-expansion forecast vector is present when step expansion is on");
+  const stepForecastSegments = resolveStepForecastVectorSegmentsForState(withStepForecastActive);
+  assert.equal(stepForecastSegments.length >= 2, true, "multi-slot active step expansion renders chained forecast segments");
+  assert.equal(
+    stepForecastSegments[0]?.from.x,
+    resolveVectorSegmentForState(withStepForecastActive)?.to.x,
+    "first chained step segment starts at current roll point",
+  );
   const currentVectorForForecast = resolveVectorSegmentForState(withForecastRangeHistoryOn);
   assert.ok(currentVectorForForecast, "current vector exists for forecast baseline");
   assert.equal(
-    forecastVector?.from.x,
+    historyForecastVector?.from.x,
     currentVectorForForecast?.to.x,
-    "forecast vector starts at current point x",
+    "history forecast vector starts at current point x",
   );
   assert.equal(
-    forecastVector?.from.y,
+    historyForecastVector?.from.y,
     currentVectorForForecast?.to.y,
-    "forecast vector starts at current point y",
+    "history forecast vector starts at current point y",
   );
   assert.equal(
     forecastVector?.to.x > NUMBER_LINE_GEOMETRY.origin.x,
@@ -167,8 +213,8 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
   const layers = resolveVectorLayersForState(withAllLayers);
   assert.deepEqual(
     new Set(layers.map((layer) => layer.kind)),
-    new Set(["current", "history", "forecast"]),
-    "vector layers include current, history, and forecast entries",
+    new Set(["current", "history", "forecast_history"]),
+    "vector layers include current, history, and history-forecast entries",
   );
   for (let index = 1; index < layers.length; index += 1) {
     const previous = layers[index - 1];

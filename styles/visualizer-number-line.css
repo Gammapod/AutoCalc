@@ -93,6 +93,21 @@ body[data-ui-shell="desktop"] .v2-number-line-vector-tip--forecast {
   opacity: 0.72;
 }
 
+body[data-ui-shell="mobile"] .v2-number-line-vector--forecast-step,
+body[data-ui-shell="desktop"] .v2-number-line-vector--forecast-step {
+  stroke: #ffffff;
+  stroke-width: 0.65;
+  stroke-linecap: round;
+  stroke-dasharray: 1.5 1.2;
+  opacity: 0.72;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-vector-tip--forecast-step,
+body[data-ui-shell="desktop"] .v2-number-line-vector-tip--forecast-step {
+  fill: #ffffff;
+  opacity: 0.72;
+}
+
 body[data-ui-shell="mobile"] .v2-number-line-scale-label,
 body[data-ui-shell="desktop"] .v2-number-line-scale-label {
   fill: #b4f1d3;
