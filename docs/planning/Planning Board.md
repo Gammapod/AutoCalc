@@ -42,8 +42,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Now
 
-- No active slices.
-
 ### Slice `slice_perf_hidden_instance_render_elimination`
 - User Story: As a player, I want mode and runtime updates to avoid wasted hidden-instance work so interactions stay responsive.
 - Goal: Stop rendering hidden calculator instances.
