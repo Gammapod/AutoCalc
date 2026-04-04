@@ -5,10 +5,6 @@ Truth 2: Releases
 This file is the canonical active planning board.
 Active work is versionless. Semver is assigned only when a shipped train is cut.
 
-## Now
-
-- No active slices.
-
 ## Recently Archived (Unreleased)
 
 ### Slice `slice_error_state_regularization_for_visualizers` (Archived 2026-04-02)
@@ -44,6 +40,60 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Error signaling remains style-driven in v1 (no in-panel null-set overlay in this slice).
 - Symbolic-result handling remains out of scope for this slice.
 
+## Now
+
+- No active slices.
+
+### Slice `slice_perf_hidden_instance_render_elimination`
+- User Story: As a player, I want mode and runtime updates to avoid wasted hidden-instance work so interactions stay responsive.
+- Goal: Stop rendering hidden calculator instances.
+- Dependencies: none.
+- Complexity: S (0.5-1 day).
+- Expected Return: Medium-High runtime win in multi-instance DOM contexts.
+- Maps to concern: hidden instance rendering.
+- Exit Criteria:
+- Hidden calculator instances are not passed through full module render paths.
+- Active instance behavior and visual output remain unchanged.
+- Runtime tests prove hidden instances are not rendered.
+
+### Slice `slice_perf_game_state_persistence_scheduling`
+- User Story: As a player, I want game progress persistence to feel immediate but non-blocking so gameplay remains smooth.
+- Goal: Replace per-update synchronous save with debounced/coalesced persistence scheduling.
+- Dependencies: none.
+- Complexity: M (1-2 days).
+- Expected Return: High interaction smoothness; Medium-High pre-transition responsiveness.
+- Maps to concern: synchronous `localStorage` write path.
+- Planned Interface / Contract: `PersistenceSaveScheduler` with debounced save, coalescing, and explicit `save_now` for critical transitions.
+- Exit Criteria:
+- Save scheduling coalesces frequent updates while preserving durability guarantees.
+- Critical transitions can force immediate persistence via `save_now`.
+- Performance guard checks enforce bounded save frequency.
+
+### Slice `slice_perf_visualizer_lifecycle_stabilization`
+- User Story: As a player, I want visualizer switching to be smooth and stable so changing views does not hitch.
+- Goal: Keep inactive visualizers dormant without unnecessary teardown/recreate churn; preserve graph instance where safe.
+- Dependencies: none (benefits from slice 1 already landed).
+- Complexity: M (1-3 days).
+- Expected Return: Medium-High visualizer switch responsiveness.
+- Maps to concern: visualizer host clear/destroy loop.
+- Planned Interface / Contract: `VisualizerLifecyclePolicy` defining active/inactive/teardown behavior by panel type.
+- Exit Criteria:
+- Inactive visualizers are not fully destroyed unless policy requires teardown.
+- Graph visualizer avoids unnecessary destroy/recreate cycles across panel switches.
+- Visualizer-switch tests verify no avoidable graph teardown churn.
+
+### Slice `slice_perf_boot_dependency_lazy_loading`
+- User Story: As a player, I want faster app startup and mode-entry so I can get into gameplay quickly.
+- Goal: Defer heavy libraries (`katex`, `chart`, `algebrite`) behind feature usage.
+- Dependencies: none.
+- Complexity: M (1-3 days).
+- Expected Return: High cold-boot win; Medium warm-reload win.
+- Maps to concern: eager third-party boot load.
+- Exit Criteria:
+- Heavy third-party libraries are loaded on-demand by feature path.
+- Boot-path checks confirm dependency deferral in CI-friendly guard tests.
+- Feature behavior remains parity-correct after lazy loading.
+
 ## Next
 
 ### Slice `slice_ux_feedback_standardization`
@@ -63,6 +113,58 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Targeted builder-bar regressions are covered by UI module tests.
 
 ## Later
+
+### Slice `slice_mode_transition_in_app_runtime_v1`
+- User Story: As a player, I want mode switching to be immediate and seamless so context changes do not reload the app shell.
+- Goal: Replace URL-reload mode switching with an in-runtime mode transition coordinator.
+- Dependencies: requires `slice_perf_game_state_persistence_scheduling`; recommended after `slice_perf_boot_dependency_lazy_loading`.
+- Complexity: L (3-6 days).
+- Expected Return: Very High mode-switch latency and UX continuity gains.
+- Maps to concern: full page reload on mode switch.
+- Planned Interface / Contract: `ModeTransitionCoordinator` for in-app mode transitions.
+- Exit Criteria:
+- Mode transitions (`game`, `sandbox`, `main_menu`) run without full page reload.
+- Transition behavior preserves mode-specific save/clear policies.
+- Mobile/desktop shell parity remains intact across mode transitions.
+- Promotion Rule: Move this slice to `Next` after slices 1-4 are complete and stable.
+
+### Slice `slice_mode_transition_policy_contracts`
+- User Story: As a player, I want mode transitions to be reliable so save and reset outcomes are always correct.
+- Goal: Formalize mode transition save/clear/hydrate policy contracts and tests.
+- Dependencies: depends on `slice_mode_transition_in_app_runtime_v1` design; can proceed in parallel once interfaces are drafted.
+- Complexity: M (1-2 days).
+- Expected Return: Indirect High through risk and regression reduction.
+- Maps to concern: transition correctness under new architecture.
+- Exit Criteria:
+- Contract tests cover `save_current`, `clear_save`, and `none` outcomes.
+- Hydration-equivalence checks pass for all mode transition entry points.
+- Policy behavior is explicit and documented at app-domain boundary.
+
+### Slice `slice_perf_calculator_incremental_rendering`
+- User Story: As a player, I want calculator updates to remain fluid under frequent actions so sustained runtime performance stays high.
+- Goal: Replace full calculator DOM rebuild with patch-based updates for slot/roll/keypad regions.
+- Dependencies: recommended after `slice_perf_hidden_instance_render_elimination` and `slice_mode_transition_in_app_runtime_v1`.
+- Complexity: L (4-6 days).
+- Expected Return: High sustained runtime responsiveness and FPS improvements.
+- Maps to concern: full calculator rebuild every render.
+- Planned Interface / Contract: calculator render-module incremental patch invariants.
+- Exit Criteria:
+- Calculator rendering updates changed regions without full-root rebuild.
+- Behavior parity is preserved for input, animation hooks, and interaction bindings.
+- Performance guard checks show bounded render work for no-op/minor actions.
+
+### Slice `slice_perf_storage_incremental_rendering`
+- User Story: As a player, I want storage interactions and sort/filter updates to remain snappy even during frequent changes.
+- Goal: Replace full storage list/sort rebuild with keyed incremental updates.
+- Dependencies: recommended after `slice_perf_calculator_incremental_rendering` patterns are established.
+- Complexity: L (2-4 days).
+- Expected Return: Medium-High for frequent storage update/sort scenarios.
+- Maps to concern: full storage rebuild every render.
+- Planned Interface / Contract: storage render-module incremental patch invariants.
+- Exit Criteria:
+- Storage rendering updates keyed elements incrementally instead of full container rebuild.
+- Sort/filter interactions preserve correctness and visual parity.
+- Regression tests cover desktop/mobile shell behavior for storage interactions.
 
 ### Slice `slice_content_completion_pass`
 - User Story: As a player, I want all currently planned-but-not-yet-implemented keys to exist in-game with complete behavior and display metadata so progression and experimentation are not blocked by placeholder content.
