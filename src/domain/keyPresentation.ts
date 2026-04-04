@@ -61,6 +61,7 @@ export const KEY_ID = {
   viz_help: "viz_help",
   viz_factorization: "viz_factorization",
   viz_circle: "viz_circle",
+  viz_number_line: "viz_number_line",
   viz_eigen_allocator: "viz_eigen_allocator",
   viz_algebraic: "viz_algebraic",
   exec_equals: "exec_equals",
@@ -135,6 +136,7 @@ export type VisualizerKeyId =
   | typeof KEY_ID.viz_help
   | typeof KEY_ID.viz_factorization
   | typeof KEY_ID.viz_circle
+  | typeof KEY_ID.viz_number_line
   | typeof KEY_ID.viz_eigen_allocator
   | typeof KEY_ID.viz_algebraic;
 export type ExecKeyId =
@@ -216,6 +218,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.viz_help, { buttonFace: "HELP" }],
   [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],
   [KEY_ID.viz_circle, { buttonFace: "\u25EF" }],
+  [KEY_ID.viz_number_line, { buttonFace: "\u25A6" }],
   [KEY_ID.viz_eigen_allocator, { buttonFace: "\u03BB" }],
   [KEY_ID.viz_algebraic, { buttonFace: "ALG" }],
   [KEY_ID.exec_equals, { buttonFace: "=" }],

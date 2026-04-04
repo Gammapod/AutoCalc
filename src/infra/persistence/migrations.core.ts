@@ -326,6 +326,7 @@ const normalizeActiveVisualizer = (value: unknown): ActiveVisualizer | null => {
     value === "release_notes" ||
     value === "factorization" ||
     value === "circle" ||
+    value === "number_line" ||
     value === "algebraic" ||
     value === "eigen_allocator"
   ) {

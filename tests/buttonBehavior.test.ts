@@ -76,6 +76,12 @@ export const runButtonBehaviorTests = (): void => {
     { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
     "CIRCLE key dispatches visualizer toggle action",
   );
+  const numberLineToggleCell: KeyCell = keyCell("viz_number_line");
+  assert.deepEqual(
+    buildKeyButtonAction(numberLineToggleCell),
+    { type: "TOGGLE_VISUALIZER", visualizer: "number_line" },
+    "▦ key dispatches number-line visualizer toggle action",
+  );
   const eigenAllocatorToggleCell: KeyCell = keyCell("viz_eigen_allocator");
   assert.deepEqual(
     buildKeyButtonAction(eigenAllocatorToggleCell),

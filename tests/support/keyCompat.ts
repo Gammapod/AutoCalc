@@ -75,6 +75,7 @@ const visualizerSet = new Set<VisualizerKey>([
   KEY_ID.viz_help,
   KEY_ID.viz_factorization,
   KEY_ID.viz_circle,
+  KEY_ID.viz_number_line,
   KEY_ID.viz_eigen_allocator,
   KEY_ID.viz_algebraic,
 ]);

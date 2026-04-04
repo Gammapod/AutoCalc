@@ -67,8 +67,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total");
   assert.deepEqual(
     VISUALIZER_REGISTRY.map((module) => module.id),
-    ["graph", "feed", "title", "release_notes", "help", "factorization", "circle", "eigen_allocator", "algebraic"],
-    "visualizer registry preserves graph/feed/title/release-notes/help/factorization/circle order with eigen allocator and algebraic support",
+    ["graph", "feed", "title", "release_notes", "help", "factorization", "circle", "number_line", "eigen_allocator", "algebraic"],
+    "visualizer registry preserves graph/feed/title/release-notes/help/factorization/circle/number-line order with eigen allocator and algebraic support",
   );
   for (const module of VISUALIZER_REGISTRY) {
     assert.equal(module.fit.overflow, "forbid_scroll", `${module.id} visualizer forbids scroll fallback`);
@@ -129,6 +129,14 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withTitleSelected), "title", "title visualizer resolves to title panel");
+  const withNumberLineSelected: GameState = {
+    ...base,
+    settings: {
+      ...base.settings,
+      visualizer: "number_line",
+    },
+  };
+  assert.equal(resolveActiveVisualizerPanel(withNumberLineSelected), "number_line", "number-line visualizer resolves to number-line panel");
   const withReleaseNotesSelected: GameState = {
     ...base,
     settings: {
@@ -166,6 +174,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const renderHelpPanel = createFakeElement();
   const renderFactorizationPanel = createFakeElement();
   const renderCirclePanel = createFakeElement();
+  const renderNumberLinePanel = createFakeElement();
   const renderEigenAllocatorPanel = createFakeElement();
   const renderAlgebraicPanel = createFakeElement();
   const renderTotalPanel = createFakeElement();
@@ -206,6 +215,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-circle-panel]") {
         return renderCirclePanel as unknown as Element;
       }
+      if (selector === "[data-v2-number-line-panel]") {
+        return renderNumberLinePanel as unknown as Element;
+      }
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return renderEigenAllocatorPanel as unknown as Element;
       }
@@ -243,6 +255,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderFactorizationPanel.attributes["aria-hidden"], "true", "inactive factorization panel is hidden during graph render");
   assert.equal(renderCirclePanel.innerHTML, "", "inactive circle panel is cleared during graph render");
   assert.equal(renderCirclePanel.attributes["aria-hidden"], "true", "inactive circle panel is hidden during graph render");
+  assert.equal(renderNumberLinePanel.innerHTML, "", "inactive number-line panel is cleared during graph render");
+  assert.equal(renderNumberLinePanel.attributes["aria-hidden"], "true", "inactive number-line panel is hidden during graph render");
   assert.equal(renderEigenAllocatorPanel.innerHTML, "", "inactive eigen allocator panel is cleared during graph render");
   assert.equal(renderEigenAllocatorPanel.attributes["aria-hidden"], "true", "inactive eigen allocator panel is hidden during graph render");
   assert.equal(renderAlgebraicPanel.innerHTML, "", "inactive algebraic panel is cleared during graph render");
@@ -275,6 +289,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const helpPanel = createFakeElement();
   const factorizationPanel = createFakeElement();
   const circlePanel = createFakeElement();
+  const numberLinePanel = createFakeElement();
   const eigenAllocatorPanel = createFakeElement();
   const algebraicPanel = createFakeElement();
   const totalPanel = createFakeElement();
@@ -313,6 +328,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-circle-panel]") {
         return circlePanel as unknown as Element;
       }
+      if (selector === "[data-v2-number-line-panel]") {
+        return numberLinePanel as unknown as Element;
+      }
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return eigenAllocatorPanel as unknown as Element;
       }
@@ -330,6 +348,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(helpPanel.innerHTML, "", "clearVisualizerHost clears help panel");
   assert.equal(factorizationPanel.innerHTML, "", "clearVisualizerHost clears factorization panel");
   assert.equal(circlePanel.innerHTML, "", "clearVisualizerHost clears circle panel");
+  assert.equal(numberLinePanel.innerHTML, "", "clearVisualizerHost clears number-line panel");
   assert.equal(eigenAllocatorPanel.innerHTML, "", "clearVisualizerHost clears eigen allocator panel");
   assert.equal(algebraicPanel.innerHTML, "", "clearVisualizerHost clears algebraic panel");
   assert.equal(feedPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides feed panel");
@@ -338,6 +357,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(helpPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides help panel");
   assert.equal(factorizationPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides factorization panel");
   assert.equal(circlePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides circle panel");
+  assert.equal(numberLinePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides number-line panel");
   assert.equal(eigenAllocatorPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides eigen allocator panel");
   assert.equal(algebraicPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides algebraic panel");
   assert.equal(graphDevice.attributes["aria-hidden"], "true", "clearVisualizerHost hides graph panel");
@@ -353,6 +373,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const firstHelpPanel = createFakeElement();
   const firstFactorizationPanel = createFakeElement();
   const firstCirclePanel = createFakeElement();
+  const firstNumberLinePanel = createFakeElement();
   const firstEigenAllocatorPanel = createFakeElement();
   const firstAlgebraicPanel = createFakeElement();
   const firstTotalPanel = createFakeElement();
@@ -385,6 +406,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-circle-panel]") {
         return firstCirclePanel as unknown as Element;
       }
+      if (selector === "[data-v2-number-line-panel]") {
+        return firstNumberLinePanel as unknown as Element;
+      }
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return firstEigenAllocatorPanel as unknown as Element;
       }
@@ -404,6 +428,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const secondHelpPanel = createFakeElement();
   const secondFactorizationPanel = createFakeElement();
   const secondCirclePanel = createFakeElement();
+  const secondNumberLinePanel = createFakeElement();
   const secondEigenAllocatorPanel = createFakeElement();
   const secondAlgebraicPanel = createFakeElement();
   const secondTotalPanel = createFakeElement();
@@ -435,6 +460,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       if (selector === "[data-v2-circle-panel]") {
         return secondCirclePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-number-line-panel]") {
+        return secondNumberLinePanel as unknown as Element;
       }
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return secondEigenAllocatorPanel as unknown as Element;

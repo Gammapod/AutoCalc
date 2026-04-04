@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./node_modules/katex/dist/katex.min.css" />
     <link rel="stylesheet" href="./styles/key-family.css" />
     <link rel="stylesheet" href="./styles/key-visual-affordance.css" />
+    <link rel="stylesheet" href="./styles/visualizer-number-line.css" />
     <style>
       :root {
         --bg-top: #cfd4dc;
@@ -41,6 +42,22 @@
         --v2-visualizer-panel-height: var(--v2-visualizer-effective-height);
         --v2-visualizer-window-height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
         --v2-visualizer-effective-height: calc(var(--v2-visualizer-window-height) * var(--v2-visualizer-scale));
+        --settings-subgroup-visualizers-stripe-off: rgba(114, 154, 190, 0.62);
+        --settings-subgroup-visualizers-text-off: rgba(196, 222, 245, 0.95);
+        --settings-subgroup-visualizers-stripe-on: rgba(156, 208, 252, 0.94);
+        --settings-subgroup-visualizers-text-on: rgba(233, 246, 255, 0.98);
+        --settings-subgroup-mod-wrap-stripe-off: rgba(201, 173, 84, 0.62);
+        --settings-subgroup-mod-wrap-text-off: rgba(247, 236, 197, 0.95);
+        --settings-subgroup-mod-wrap-stripe-on: rgba(244, 215, 111, 0.94);
+        --settings-subgroup-mod-wrap-text-on: rgba(255, 247, 216, 0.98);
+        --settings-subgroup-step-expansion-stripe-off: rgba(141, 190, 147, 0.62);
+        --settings-subgroup-step-expansion-text-off: rgba(213, 240, 216, 0.95);
+        --settings-subgroup-step-expansion-stripe-on: rgba(169, 230, 178, 0.94);
+        --settings-subgroup-step-expansion-text-on: rgba(233, 250, 236, 0.98);
+        --settings-subgroup-base2-stripe-off: rgba(189, 140, 195, 0.62);
+        --settings-subgroup-base2-text-off: rgba(240, 214, 244, 0.95);
+        --settings-subgroup-base2-stripe-on: rgba(224, 166, 232, 0.94);
+        --settings-subgroup-base2-text-on: rgba(250, 232, 252, 0.98);
         --allocator-surface-top: #8e96a3;
         --allocator-surface-bottom: #6a7281;
         --allocator-surface-stroke: #4e5665;
@@ -3161,6 +3178,7 @@
                           <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
@@ -3194,6 +3212,7 @@
                           <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
@@ -3227,6 +3246,7 @@
                           <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>

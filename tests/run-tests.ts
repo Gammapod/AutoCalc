@@ -59,6 +59,8 @@ import { runUiModuleAlgebraicRendererV2Tests } from "./uiModule.algebraicRendere
 import { runUiModuleFactorizationRendererV2Tests } from "./uiModule.factorizationRenderer.v2.test.js";
 import { runUiModuleHelpRendererV2Tests } from "./uiModule.helpRenderer.v2.test.js";
 import { runUiModuleReleaseNotesRendererV2Tests } from "./uiModule.releaseNotesRenderer.v2.test.js";
+import { runUiModuleNumberLineRendererV2Tests } from "./uiModule.numberLineRenderer.v2.test.js";
+import { runUiModuleNumberLineModelV2Tests } from "./uiModule.numberLineModel.v2.test.js";
 import { runUiLayoutEngineTests } from "./uiLayoutEngine.test.js";
 import { runUiMotionCoordinatorTests } from "./uiMotionCoordinator.test.js";
 import { runUiCueLifecycleTests } from "./uiCueLifecycle.test.js";
@@ -185,6 +187,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/factorization-renderer-v2", runUiModuleFactorizationRendererV2Tests],
   ["ui-module/help-renderer-v2", runUiModuleHelpRendererV2Tests],
   ["ui-module/release-notes-renderer-v2", runUiModuleReleaseNotesRendererV2Tests],
+  ["ui-module/number-line-model-v2", runUiModuleNumberLineModelV2Tests],
+  ["ui-module/number-line-renderer-v2", runUiModuleNumberLineRendererV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
   ["ui-module/circle-visualizer-v2", runUiModuleCircleVisualizerV2Tests],
   ["ui-module/eigen-allocator-renderer-v2", runUiModuleEigenAllocatorRendererV2Tests],

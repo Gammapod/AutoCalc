@@ -17,6 +17,10 @@ import {
   clearReleaseNotesVisualizerPanel,
   renderReleaseNotesVisualizerPanel,
 } from "./releaseNotesRenderer.js";
+import {
+  clearNumberLineVisualizerPanel,
+  renderNumberLineVisualizerPanel,
+} from "./numberLineRenderer.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -90,6 +94,16 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     },
     render: renderCircleVisualizerPanel,
     clear: clearCircleVisualizerPanel,
+  },
+  {
+    id: "number_line",
+    fit: {
+      kind: "plot_scale_clip",
+      overflow: "forbid_scroll",
+      budget: { topPx: 8, bodyPx: 118, bottomPx: 8 },
+    },
+    render: renderNumberLineVisualizerPanel,
+    clear: clearNumberLineVisualizerPanel,
   },
   {
     id: "eigen_allocator",

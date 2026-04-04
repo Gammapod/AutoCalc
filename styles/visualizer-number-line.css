@@ -1,0 +1,78 @@
+body[data-ui-shell="mobile"] .v2-number-line-panel,
+body[data-ui-shell="desktop"] .v2-number-line-panel {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  padding: 8px 10px 30px;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(var(--v2-visualizer-inactive-offset));
+  pointer-events: none;
+  transition:
+    opacity 220ms ease,
+    transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+
+body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="number_line"] .v2-number-line-panel,
+body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="number_line"] .v2-number-line-panel {
+  opacity: 1;
+  transform: translateY(var(--v2-visualizer-baseline-offset));
+  pointer-events: auto;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-plot,
+body[data-ui-shell="desktop"] .v2-number-line-plot {
+  width: min(100%, 380px);
+  height: auto;
+  overflow: visible;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-axis,
+body[data-ui-shell="desktop"] .v2-number-line-axis,
+body[data-ui-shell="mobile"] .v2-number-line-center-tick,
+body[data-ui-shell="desktop"] .v2-number-line-center-tick {
+  stroke: #b4f1d3;
+  stroke-width: 0.9;
+  stroke-linecap: round;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-arrowhead,
+body[data-ui-shell="desktop"] .v2-number-line-arrowhead {
+  fill: #b4f1d3;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-grid-mark,
+body[data-ui-shell="desktop"] .v2-number-line-grid-mark {
+  stroke: #b4f1d3;
+  stroke-width: 0.4;
+  stroke-linecap: round;
+  opacity: 0.62;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-vector,
+body[data-ui-shell="desktop"] .v2-number-line-vector {
+  stroke: #8fd4ff;
+  stroke-width: 0.95;
+  stroke-linecap: round;
+  opacity: 0.96;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-vector-tip,
+body[data-ui-shell="desktop"] .v2-number-line-vector-tip {
+  fill: #8fd4ff;
+}
+
+body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-number-line-panel,
+body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-number-line-panel {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-ui-shell="mobile"] .v2-number-line-panel,
+  body[data-ui-shell="desktop"] .v2-number-line-panel {
+    transition-duration: 1ms;
+    transform: none;
+  }
+}
+
