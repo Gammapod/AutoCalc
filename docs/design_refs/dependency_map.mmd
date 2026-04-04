@@ -85,8 +85,7 @@ flowchart TD
 
 
 %% Step
-    %% Visualizer: default (real ints), ▦ (gaussian ints)
-    Sinc["[ n ++ ]"]
+    %% Visualizer: default (real ints)
     %% Primitive
     %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
     %% Completes ℕ on its own
@@ -113,6 +112,8 @@ flowchart TD
     %% Returns index of prime p. ℙ^-1(5) = 3
 %% 
 %% Linear
+    %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
+    Sinc["[ n ++ ]"]
     Lplus -->|Invert| Lminus["a [ − b ]"]
     %% Expanded form `[ 4 - 3 ]` -> `[ 4 +⮌ 3 ]`
     Sdec -->|Iterate| Lminus["a [ − b ]"]
@@ -125,6 +126,7 @@ flowchart TD
     %% Expanded form `[ ⌈(4/3)⌉ ]` -> `[ (4/3) + (1 - ((4/3) ◇ 1)) ]`
 %% 
 %% Magnitude
+    %% Visualizer: function graph (points plotted on x=roll index, y=result)
     Mmul --> Mneg["n [ ± ]"]
     %% Expanded form `[ 4 ± ]` -> `[ 4 × -1 ] ]`
     %% Expanded form `4 [ ± ]` -> `4 [ ↶ 12 ] ]`
@@ -158,7 +160,7 @@ flowchart TD
     
 %% 
 %% Dimension
-    %% Visualizer: Graph
+    %% Visualizer: Not set in stone yet. Cobweb plot? 
     Mmul -->|Iterate| Epow["a [ ^ b ]"]
     %% Expanded form `[ 4 ^ 3 ]` -> `[ 4 ×4 ×4 ]`
 
@@ -180,7 +182,7 @@ flowchart TD
     %% Expanded form `[ ℓ4 ]` -> `[ Σ{h=ℕ}(((-1)^(h+1))×(4^h))/(h) ]`
 %%  
 %% Rotation
-    %% Visualizer: circle ◎◔◷⟲⥀⦾⨀⨁
+    %% Visualizer: circle, which is similar to the cartesian visualizer but projects down to the unit circle to only focus on rotation.
     %% VITAL UX: make it abundantly clear that each rotation "unit" is 1/24 of a circle, or pi/12 radians. The math behind the scenes will be (n × e^(i*2pi*(n/24)))
     Rtwentyfourth["[ n ⦨ ]"]
     %% Primitive
@@ -198,7 +200,7 @@ flowchart TD
     %% Expanded form `[ z θ ]` -> `[ ln(z{6+7i}/|{6+7i}|)/√(-1)]`
 %% 
 %% Logic
-    %% Visualizer: default, binary mode
+    %% Visualizer: default again, but in binary mode
     Mmul --> Bnotp["¬n"]
     %% Primitive
     %% Expanded form `[ 0 ≤ n ]
@@ -242,6 +244,7 @@ flowchart TD
 
 %% subgraph P_Theory ["Returns ℙ (2)"]
 %% %% Still conceptual - has a lot of functions designed, but the way the user will interact with these is not planned yet
+    %% Visualizer: prime factorization, not sure what else would be interesting
     %% Pexponent["e"]
     %% Pprime_expansion["∏ ℙ^e"]
     %% Pomega["Ω"]
