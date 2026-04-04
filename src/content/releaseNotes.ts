@@ -1,7 +1,23 @@
 import type { ReleaseNotesCatalog } from "../contracts/releaseNotes.js";
 
 export const releaseNotes: ReleaseNotesCatalog = {
+  // Ideal release notes are laconic and understated.
+  // 'summary' should contain the main change, and 'bullets' should list smaller changes.
   entries: [
+    {
+      id: "release_v0_10_1",
+      releaseVersion: "v0.10.1",
+      channel: "released",
+      title: "Number Line Vizualizer",
+      summary:
+        "Visualizer that shows numbers spatially. Also:",
+      bullets: [
+        "Performance/Loading upgrades.",
+        "Complex number support.",
+        "Regularized error handling.",
+        "Inverse execution key actually inverts.",
+      ],
+    },
     {
       id: "release_v0_9_32",
       releaseVersion: "v0.9.32",

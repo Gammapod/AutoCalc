@@ -1,25 +1,29 @@
 Truth 2: Releases
 
-# Archived Slice (Unreleased): `slice_error_state_regularization_for_visualizers` (2026-04-02)
+# Release v0.10.1: Performance Stabilization and Cartesian Visualizer v1 (Shipped 2026-04-04)
 
-### User Story
-As a player, I want overflow and NaN/error states to be canonical and mutually exclusive so visualizer behavior is deterministic.
+### Included Slice IDs
+- `slice_perf_hidden_instance_render_elimination`
+- `slice_perf_game_state_persistence_scheduling`
+- `slice_perf_visualizer_lifecycle_stabilization`
+- `slice_perf_boot_dependency_lazy_loading`
+- `slice_perf_calculator_incremental_rendering`
+- `slice_perf_storage_incremental_rendering`
+- `slice_error_state_regularization_for_visualizers`
+- `slice_visualizer_cartesian_v1_real_axis`
+- `slice_visualizer_cartesian_v1_complex_grid`
+- `slice_visualizer_cartesian_v1_range_and_error_semantics`
 
 ### Delivered Behavior
-- Canonicalized overflow error code to `overflow`.
-- Canonicalized NaN-producing error codes to producing operator id (fallback `seed_nan`).
-- Added terminal-NaN lock semantics in execution policy.
-- Extended terminal-NaN lock to reject execution and operator key inputs.
-- Preserved overflow as finite clamped output (non-NaN) with overflow metadata.
+- Runtime now avoids hidden-instance render work and introduces incremental-rendering guardrails for calculator and storage surfaces.
+- Persistence scheduling now coalesces frequent updates while preserving explicit force-save behavior for critical transitions.
+- Startup path now defers heavy dependencies and stabilizes visualizer lifecycle switching to reduce boot/switch overhead.
+- Cartesian visualizer v1 shipped real-axis and complex-grid rendering with dynamic range labels and explicit error-state styling.
+- Error-state regularization is canonicalized (overflow + NaN semantics) with terminal NaN lock enforcement across operator/execution inputs.
 
-### Verification Snapshot
-- Built with `npm run build:web:full`.
-- Targeted suites passed:
-  - `reducer/input`
-  - `domain/execution-mode-policy`
-  - `domain/key-behavior-contract`
-  - `contracts/execution-gate-parity`
-  - `contracts/input-feedback-outcome`
+### Release Notes
+- Release Note ID: `release_v0_10_1`
+- Player-facing summary: Performance-focused runtime slices and cartesian visualizer v1 semantics are now shipped together in the 0.10.1 train.
 
 # Release v0.9.32: IR-First Execution Consolidation (Shipped 2026-03-31)
 
