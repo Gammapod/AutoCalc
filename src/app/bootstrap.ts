@@ -27,6 +27,9 @@ import { APP_VERSION } from "../generated/appVersion.js";
 import { normalizeRuntimeStateInvariants } from "../domain/runtimeStateInvariants.js";
 import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
 import { buildPreDispatchBlockedInputFeedback } from "../domain/inputFeedback.js";
+import { createPersistenceSaveScheduler } from "./persistenceSaveScheduler.js";
+import { resolveModeTransitionRuntimeEnabled } from "./modeTransitionRuntimeFlag.js";
+import { createModeTransitionCoordinator } from "./modeTransitionCoordinator.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -58,9 +61,15 @@ setAppServices(services);
 const uiRefs = resolveBootstrapUiRefs(document);
 
 const storageRepo = createLocalStorageRepo(window.localStorage);
+const saveScheduler = createPersistenceSaveScheduler(storageRepo);
 const importMetaEnv = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env;
 const processEnv = (globalThis as { process?: { env?: Record<string, unknown> } }).process?.env;
-const appMode = resolveAppMode(window.location, {
+const initialAppMode = resolveAppMode(window.location, {
+  ...processEnv,
+  ...importMetaEnv,
+});
+let currentAppMode = initialAppMode;
+const modeTransitionRuntimeEnabled = resolveModeTransitionRuntimeEnabled(window.location, {
   ...processEnv,
   ...importMetaEnv,
 });
@@ -68,8 +77,6 @@ const appShellTarget = resolveAppShellTarget(window.location, {
   ...processEnv,
   ...importMetaEnv,
 });
-const loaded = appMode === "game" ? storageRepo.load() : null;
-const runtimeLoaded = appMode === "game" ? normalizeLoadedStateForRuntime(loaded) : null;
 const createFreshGameState = (): GameState => {
   const fresh = initialState();
   return {
@@ -80,23 +87,29 @@ const createFreshGameState = (): GameState => {
     },
   };
 };
-const modeManifest = resolveModeManifest(appMode);
-const bootStateBase = runtimeLoaded ?? modeManifest.createBootState({
-  createFreshGameState,
-  createSandboxState,
-  createMainMenuState,
-});
-const bootStateUnnormalized: GameState = {
-  ...bootStateBase,
-  ui: {
-    ...bootStateBase.ui,
-    buttonFlags: {
-      ...bootStateBase.ui.buttonFlags,
-      ...modeManifest.modeButtonFlags,
+const buildBootStateForMode = (mode: AppMode): GameState => {
+  const loaded = mode === "game" ? storageRepo.load() : null;
+  const runtimeLoaded = mode === "game" ? normalizeLoadedStateForRuntime(loaded) : null;
+  const modeManifest = resolveModeManifest(mode);
+  const bootStateBase = runtimeLoaded ?? modeManifest.createBootState({
+    createFreshGameState,
+    createSandboxState,
+    createMainMenuState,
+  });
+  const bootStateUnnormalized: GameState = {
+    ...bootStateBase,
+    ui: {
+      ...bootStateBase.ui,
+      buttonFlags: {
+        ...bootStateBase.ui.buttonFlags,
+        ...modeManifest.modeButtonFlags,
+      },
     },
-  },
+  };
+  return normalizeRuntimeStateInvariants(bootStateUnnormalized);
 };
-const bootState = normalizeRuntimeStateInvariants(bootStateUnnormalized);
+
+const bootState = buildBootStateForMode(initialAppMode);
 const store = createStore(bootState, services);
 const interactionRuntime = createInteractionRuntime();
 
@@ -134,7 +147,7 @@ const resolveAppVersionToken = (): string => {
 
 const shellRenderer = createShellRenderer(root, { mode: uiShellMode, services });
 document.body.setAttribute("data-ui-shell", uiShellMode);
-document.body.setAttribute("data-app-mode", appMode);
+document.body.setAttribute("data-app-mode", currentAppMode);
 document.body.dataset.appVersion = resolveAppVersionToken();
 
 const renderApp = (state: GameState, uiEffects: UiEffect[] = []): void => {
@@ -155,8 +168,8 @@ const redraw = (): void => {
 const renderAndPersistState = (state: GameState, uiEffects: UiEffect[] = []): void => {
   renderApp(state, uiEffects);
   uiController?.syncUi(state);
-  if (appMode === "game") {
-    storageRepo.save(state);
+  if (currentAppMode === "game") {
+    saveScheduler.schedule(state);
   }
 };
 
@@ -233,66 +246,80 @@ const unsubscribe = createStoreSubscriptionCoordinator(store, {
     signalQuitApplication(appShellTarget);
   },
   onRequestModeTransition: (mode, savePolicy) => {
-    if (savePolicy === "save_current") {
-      storageRepo.save(store.getState());
-    }
-    if (savePolicy === "clear_save") {
-      storageRepo.clear();
-    }
-    window.location.assign(getAppModeUrl(window.location, mode));
+    modeTransitionCoordinator.requestModeTransition(mode, savePolicy);
   },
   initialState: store.getState(),
 });
+const syncCurrentMode = (mode: AppMode): void => {
+  currentAppMode = mode;
+  document.body.setAttribute("data-app-mode", currentAppMode);
+  uiController?.dispose();
+  uiController = createBootstrapUiController({
+    services,
+    refs: uiRefs,
+    uiShellMode,
+    appMode: currentAppMode,
+    location: window.location,
+    document,
+    getState: () => store.getState(),
+    onResetRun: currentAppMode === "sandbox"
+      ? () => {
+        store.dispatch({ type: "HYDRATE_SAVE", state: createSandboxState() });
+      }
+      : createResetRunHandler(store, storageRepo),
+    onUnlockAll: () => {
+      store.dispatch({ type: "UNLOCK_ALL" });
+    },
+    onSetKeypadDimensions: (calculatorId, columns, rows) => {
+      store.dispatch({ type: "SET_KEYPAD_DIMENSIONS", calculatorId, columns, rows });
+    },
+    onUpgradeKeypadRow: (calculatorId) => {
+      store.dispatch({ type: "UPGRADE_KEYPAD_ROW", calculatorId });
+    },
+    onUpgradeKeypadColumn: (calculatorId) => {
+      store.dispatch({ type: "UPGRADE_KEYPAD_COLUMN", calculatorId });
+    },
+    onSetAllocatorMaxPoints: (calculatorId, value) => {
+      store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", calculatorId, value });
+    },
+    onAddAllocatorMaxPoints: (calculatorId, amount) => {
+      store.dispatch({ type: "ALLOCATOR_ADD_MAX_POINTS", calculatorId, amount });
+    },
+    onSetSessionControlEquations: (calculatorId, equations) => {
+      store.dispatch({ type: "SET_SESSION_CONTROL_EQUATIONS", calculatorId, equations });
+    },
+    onSetActiveCalculator: (calculatorId) => {
+      store.dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId });
+    },
+    onNavigateToUiShell: (url) => {
+      window.location.assign(url);
+    },
+    onNavigateToAppMode: (url) => {
+      window.location.assign(url);
+    },
+  });
+};
 
-uiController = createBootstrapUiController({
-  services,
-  refs: uiRefs,
-  uiShellMode,
-  appMode,
-  location: window.location,
-  document,
-  getState: () => store.getState(),
-  onResetRun: appMode === "sandbox"
-    ? () => {
-      store.dispatch({ type: "HYDRATE_SAVE", state: createSandboxState() });
-    }
-    : createResetRunHandler(store, storageRepo),
-  onUnlockAll: () => {
-    store.dispatch({ type: "UNLOCK_ALL" });
+const modeTransitionCoordinator = createModeTransitionCoordinator({
+  store,
+  storageRepo,
+  saveScheduler,
+  buildBootStateForMode,
+  setCurrentMode: syncCurrentMode,
+  onLegacyNavigate: (mode) => {
+    window.location.assign(getAppModeUrl(window.location, mode));
   },
-  onSetKeypadDimensions: (calculatorId, columns, rows) => {
-    store.dispatch({ type: "SET_KEYPAD_DIMENSIONS", calculatorId, columns, rows });
-  },
-  onUpgradeKeypadRow: (calculatorId) => {
-    store.dispatch({ type: "UPGRADE_KEYPAD_ROW", calculatorId });
-  },
-  onUpgradeKeypadColumn: (calculatorId) => {
-    store.dispatch({ type: "UPGRADE_KEYPAD_COLUMN", calculatorId });
-  },
-  onSetAllocatorMaxPoints: (calculatorId, value) => {
-    store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", calculatorId, value });
-  },
-  onAddAllocatorMaxPoints: (calculatorId, amount) => {
-    store.dispatch({ type: "ALLOCATOR_ADD_MAX_POINTS", calculatorId, amount });
-  },
-  onSetSessionControlEquations: (calculatorId, equations) => {
-    store.dispatch({ type: "SET_SESSION_CONTROL_EQUATIONS", calculatorId, equations });
-  },
-  onSetActiveCalculator: (calculatorId) => {
-    store.dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId });
-  },
-  onNavigateToUiShell: (url) => {
-    window.location.assign(url);
-  },
-  onNavigateToAppMode: (url) => {
-    window.location.assign(url);
-  },
+  runtimeEnabled: () => modeTransitionRuntimeEnabled,
 });
+
+syncCurrentMode(currentAppMode);
 
 redraw();
 autoStepScheduler.startIfNeeded();
 
 window.__autoCalcBootstrapCleanup__ = () => {
+  saveScheduler.flushNow();
+  saveScheduler.cancel();
   uiController?.dispose();
   uiController = null;
   unsubscribe();

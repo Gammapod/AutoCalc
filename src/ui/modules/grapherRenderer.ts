@@ -2,6 +2,7 @@ import type { GameState } from "../../domain/types.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
 import { toStepCount } from "../../domain/rollEntries.js";
 import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
+import { ensureChartLoaded } from "../../infra/runtime/lazyAssetLoader.js";
 
 type GraphDataset = {
   data: GraphPoint[];
@@ -212,6 +213,12 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
 
   const chartCtor = (window as Window & { Chart?: ChartCtor }).Chart;
   if (!chartCtor) {
+    void ensureChartLoaded().then((loaded) => {
+      if (!loaded) {
+        return;
+      }
+      renderGrapherV2Module(root, state);
+    });
     return;
   }
   const context = canvas.getContext("2d");

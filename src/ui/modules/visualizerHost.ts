@@ -8,6 +8,7 @@ type VisualizerTransitionPhase = "idle" | "enter" | "exit" | "swap";
 
 export type VisualizerHostModuleState = {
   previousActivePanel: VisualizerHostPanel;
+  graphDormant: boolean;
   transitionUnlockTimer: ReturnType<typeof setTimeout> | null;
   transitionUnlockHost: HTMLElement | null;
   transitionEndHost: HTMLElement | null;
@@ -23,6 +24,7 @@ const VIEWPORT_PADDING_PX = 32;
 
 const createHostRuntime = (): VisualizerHostModuleState => ({
   previousActivePanel: "total",
+  graphDormant: true,
   transitionUnlockTimer: null,
   transitionUnlockHost: null,
   transitionEndHost: null,
@@ -415,8 +417,19 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
 
   for (const panel of VISUALIZER_REGISTRY) {
     if (panel.id === activePanel) {
+      if (panel.id === "graph") {
+        runtime.graphDormant = false;
+      }
       panel.render(root, state);
-    } else {
+      continue;
+    }
+    if (panel.id === "graph") {
+      if (!runtime.graphDormant) {
+        runtime.graphDormant = true;
+      }
+      continue;
+    }
+    {
       panel.clear(root);
     }
   }
@@ -427,6 +440,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
 
 const clearRuntime = (runtime: VisualizerHostModuleState): void => {
   runtime.previousActivePanel = "total";
+  runtime.graphDormant = true;
   if (runtime.transitionUnlockHost) {
     releaseSwapLock(runtime, runtime.transitionUnlockHost);
   } else {

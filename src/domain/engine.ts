@@ -1,6 +1,7 @@
-﻿import { addInt, divInt, mulInt, subInt } from "../infra/math/rationalEngine.js";
+import { addInt, divInt, mulInt, subInt } from "../infra/math/rationalEngine.js";
 import { euclideanDivide } from "../infra/math/euclideanEngine.js";
 import { parseSimplifiedTextToExactRational, simplifyExpressionToText } from "../infra/math/symbolicAdapter.js";
+import { ensureAlgebriteLoaded } from "../infra/runtime/lazyAssetLoader.js";
 import {
   calculatorValueToExpression,
   isComplexCalculatorValue,
@@ -805,6 +806,7 @@ const executeSlotsValueInternal = (
           }
         | undefined;
       if (!algebriteAny) {
+        void ensureAlgebriteLoaded();
         return null;
       }
       const input = expressionToAlgebriteString(expr);

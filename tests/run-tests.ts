@@ -103,6 +103,9 @@ import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
 import { runAutoStepSchedulerTests } from "./autoStepScheduler.test.js";
+import { runPersistenceSaveSchedulerTests } from "./persistenceSaveScheduler.test.js";
+import { runModeTransitionRuntimeFlagTests } from "./modeTransitionRuntimeFlag.test.js";
+import { runModeTransitionCoordinatorTests } from "./modeTransitionCoordinator.test.js";
 import { runEqualsToggleAutoStepTests } from "./equalsToggleAutoStep.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
 import { runMainMenuPresetTests } from "./mainMenuPreset.test.js";
@@ -128,6 +131,10 @@ import { runReducerPipelineEquivalenceTests } from "./reducer.pipelineEquivalenc
 import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
 import { runOperatorExecutionPolicyRegistryContractTests } from "./operatorExecutionPolicyRegistry.contract.test.js";
 import { runInputFeedbackOutcomeTests } from "./inputFeedback.outcome.test.js";
+import { runBootstrapPersistenceSchedulingTests } from "./bootstrapPersistenceScheduling.test.js";
+import { runLazyAssetLoaderTests } from "./lazyAssetLoader.test.js";
+import { runBootDependencyLazyLoadContractTests } from "./bootDependencyLazyLoadContract.test.js";
+import { runBootstrapModeTransitionRuntimeContractTests } from "./bootstrapModeTransitionRuntimeContract.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["engine", runEngineTests],
@@ -232,6 +239,13 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/complexity-gate", runUiComplexityGateTests],
   ["app/app-mode-resolver", runAppModeResolverTests],
   ["app/auto-step-scheduler", runAutoStepSchedulerTests],
+  ["app/persistence-save-scheduler", runPersistenceSaveSchedulerTests],
+  ["app/mode-transition-runtime-flag", runModeTransitionRuntimeFlagTests],
+  ["app/mode-transition-coordinator", runModeTransitionCoordinatorTests],
+  ["app/bootstrap-persistence-scheduling", runBootstrapPersistenceSchedulingTests],
+  ["app/bootstrap-mode-transition-runtime-contract", runBootstrapModeTransitionRuntimeContractTests],
+  ["app/lazy-asset-loader", runLazyAssetLoaderTests],
+  ["app/boot-dependency-lazy-load-contract", runBootDependencyLazyLoadContractTests],
   ["domain/equals-toggle-auto-step", runEqualsToggleAutoStepTests],
   ["domain/sandbox-preset", runSandboxPresetTests],
   ["domain/main-menu-preset", runMainMenuPresetTests],

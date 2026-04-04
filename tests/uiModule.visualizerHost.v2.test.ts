@@ -228,7 +228,18 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     },
     querySelectorAll: () => [],
   };
-  renderVisualizerHost(renderRoot as unknown as Element, withGraphOn);
+  const graphModule = VISUALIZER_REGISTRY.find((module) => module.id === "graph");
+  if (!graphModule) {
+    throw new Error("graph visualizer module missing");
+  }
+  const originalGraphClear = graphModule.clear;
+  let graphClearCalls = 0;
+  graphModule.clear = (root) => {
+    graphClearCalls += 1;
+    originalGraphClear(root);
+  };
+  try {
+    renderVisualizerHost(renderRoot as unknown as Element, withGraphOn);
   assert.equal(
     renderDisplayWindow.attributes["style:--v2-visualizer-fixed-width"],
     "var(--desktop-calc-width)",
@@ -277,6 +288,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderHost.dataset.v2FitKind, "text_wrap_clamp", "feed activates text-wrap fit strategy");
   assert.equal(renderHost.dataset.v2VisualizerTransition, "swap", "graph to feed is swap transition");
   assert.equal(renderHost.attributes["data-v2-visualizer-height-lock"], "true", "swap applies temporary height lock");
+  assert.equal(graphClearCalls, 0, "graph panel is retained (not cleared) when inactive during graph-first lifecycle mode");
 
   renderVisualizerHost(renderRoot as unknown as Element, base);
   assert.equal(renderHost.dataset.v2VisualizerTransition, "exit", "visualizer to total is exit transition");
@@ -342,6 +354,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     querySelectorAll: () => [],
   };
   clearVisualizerHost(cleanupRoot as unknown as Element);
+  assert.equal(graphClearCalls > 0, true, "clearVisualizerHost still clears graph runtime in full cleanup path");
   assert.equal(feedPanel.innerHTML, "", "clearVisualizerHost clears feed rows");
   assert.equal(titlePanel.innerHTML, "", "clearVisualizerHost clears title panel");
   assert.equal(releaseNotesPanel.innerHTML, "", "clearVisualizerHost clears release notes panel");
@@ -479,5 +492,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   renderVisualizerHost(secondRoot as unknown as Element, withFeedOn);
   assert.equal(firstHost.dataset.v2VisualizerTransition, "enter", "first root transition is independent");
   assert.equal(secondHost.dataset.v2VisualizerTransition, "enter", "second root transition is independent");
+  } finally {
+    graphModule.clear = originalGraphClear;
+  }
 };
 

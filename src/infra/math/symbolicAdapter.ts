@@ -1,6 +1,7 @@
 import { expressionToAlgebriteString } from "../../domain/expression.js";
 import type { ExpressionValue, RationalValue } from "../../domain/types.js";
 import { parseRational } from "./rationalEngine.js";
+import { ensureAlgebriteLoaded } from "../runtime/lazyAssetLoader.js";
 
 const INTEGER_RE = /^-?\d+$/;
 const RATIONAL_RE = /^-?\d+\/-?\d+$/;
@@ -52,6 +53,7 @@ const getAlgebriteApi = (): AlgebriteLike | null => {
 export const simplifyExpressionToText = (expression: ExpressionValue): SimplifyExpressionToTextResult => {
   const algebrite = getAlgebriteApi();
   if (!algebrite) {
+    void ensureAlgebriteLoaded();
     return { ok: false, reason: "cas_error" };
   }
   try {

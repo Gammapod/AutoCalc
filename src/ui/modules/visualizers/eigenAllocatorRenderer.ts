@@ -2,6 +2,7 @@ import { projectControlFromState } from "../../../domain/controlProjection.js";
 import type { ControlField, GameState, MemoryVariable } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 import { buildSelectionRenderModel } from "../../shared/readModel.selection.js";
+import { ensureKatexLoaded } from "../../../infra/runtime/lazyAssetLoader.js";
 
 type KatexRenderOptions = {
   displayMode?: boolean;
@@ -118,6 +119,14 @@ export const renderEigenAllocatorVisualizerPanel = (root: Element, state: GameSt
   const equation = document.createElement("div");
   equation.className = "v2-eigen-equation";
   const katexApi = getKatexApi();
+  if (!katexApi) {
+    void ensureKatexLoaded().then((loaded) => {
+      if (!loaded) {
+        return;
+      }
+      renderEigenAllocatorVisualizerPanel(root, state);
+    });
+  }
   const latex = buildEigenAllocatorLatex(state);
   if (katexApi) {
     try {

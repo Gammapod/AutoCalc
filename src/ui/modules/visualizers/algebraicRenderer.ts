@@ -1,5 +1,6 @@
 import type { GameState } from "../../../domain/types.js";
 import { buildAlgebraicViewModel } from "../../shared/readModel.js";
+import { ensureKatexLoaded } from "../../../infra/runtime/lazyAssetLoader.js";
 
 type KatexRenderOptions = {
   displayMode?: boolean;
@@ -77,6 +78,14 @@ export const renderAlgebraicVisualizerPanel = (root: Element, state: GameState):
   const equation = document.createElement("div");
   equation.className = "v2-algebraic-equation";
   const katexApi = getKatexApi();
+  if (!katexApi) {
+    void ensureKatexLoaded().then((loaded) => {
+      if (!loaded) {
+        return;
+      }
+      renderAlgebraicVisualizerPanel(root, state);
+    });
+  }
   if (katexApi) {
     try {
       katexApi.render(model.mainLine, equation, {
