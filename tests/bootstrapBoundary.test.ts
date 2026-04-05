@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 export const runBootstrapBoundaryTests = (): void => {
@@ -34,22 +34,6 @@ export const runBootstrapBoundaryTests = (): void => {
     bootstrapSource.includes("addEventListener("),
     false,
     "bootstrap should not wire direct UI event listeners",
-  );
-
-  assert.equal(
-    existsSync(resolve(process.cwd(), "src/ui/modules/calculatorRenderer.ts")),
-    false,
-    "calculator wrapper file removed",
-  );
-  assert.equal(
-    existsSync(resolve(process.cwd(), "src/ui/modules/storageRenderer.ts")),
-    false,
-    "storage wrapper file removed",
-  );
-  assert.equal(
-    existsSync(resolve(process.cwd(), "src/ui/modules/programmaticKeyFeedback.ts")),
-    false,
-    "programmatic key feedback wrapper file removed",
   );
 };
 

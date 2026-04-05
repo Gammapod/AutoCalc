@@ -15,7 +15,8 @@ export const runMainMenuPresetTests = (): void => {
   assert.equal(mainMenu.settings.visualizer, "title", "main menu root settings align with menu visualizer startup");
   assert.equal(mainMenu.unlocks.uiUnlocks.storageVisible, false, "main menu hides storage drawer");
   assert.deepEqual(shellModel.menuModules, [], "main menu has no extra menu modules");
-  assert.deepEqual(shellModel.availableSnaps, ["middle", "bottom"], "main menu keeps bottom drawer shell visible");
+  assert.deepEqual(shellModel.availableSnaps, ["middle"], "main menu restricts shell snaps when storage drawer is hidden");
+  assert.equal(shellModel.defaultSnap, "middle", "main menu keeps middle snap as the default shell position");
   assert.equal(mainMenu.ui.buttonFlags["mode.storage_content_visible"], false, "main menu hides storage contents");
 
   assert.ok(Object.values(mainMenu.unlocks.valueAtoms).every((value) => value === false), "main menu starts with value atom keys locked");

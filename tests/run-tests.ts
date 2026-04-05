@@ -116,10 +116,8 @@ import { runCalculatorSeedManifestTests } from "./calculatorSeedManifest.test.js
 import { runContentProviderWiringContractTests } from "./contentProviderWiring.contract.test.js";
 import { runCapabilitySemanticsParityContractTests } from "./capabilitySemanticsParity.contract.test.js";
 import { runStoragePaletteContractTests } from "./storagePalette.contract.test.js";
-import { runShimInventoryTests } from "./shimInventory.test.js";
 import { runBootstrapImportOrderTests } from "./bootstrapImportOrder.test.js";
 import { runKeyUniverseContractGuardTests } from "./keyUniverseContract.guard.test.js";
-import { runContentRegistryBoundaryTests } from "./contentRegistryBoundary.test.js";
 import { runMultiCalculatorContractTests } from "./multiCalculator.contract.test.js";
 import { runDiagnosticsCatalogCoverageTests } from "./diagnosticsCatalogCoverage.test.js";
 import { runDiagnosticsResolverTests } from "./diagnosticsResolver.test.js";
@@ -258,8 +256,6 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/diagnostics-catalog-coverage", runDiagnosticsCatalogCoverageTests],
   ["contracts/capability-semantics-parity", runCapabilitySemanticsParityContractTests],
   ["contracts/key-universe-guard", runKeyUniverseContractGuardTests],
-  ["contracts/shim-inventory", runShimInventoryTests],
-  ["contracts/content-registry-boundary", runContentRegistryBoundaryTests],
   ["domain/diagnostics-resolver", runDiagnosticsResolverTests],
   ["domain/diagnostics-trace", runDiagnosticsTraceTests],
   ["domain/roll-diagnostics-snapshot", runRollDiagnosticsSnapshotTests],

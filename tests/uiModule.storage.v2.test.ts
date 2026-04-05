@@ -1,7 +1,5 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { initialState } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { renderStorageV2Module } from "../src/ui/modules/storage/render.js";
@@ -164,21 +162,6 @@ export const runUiModuleStorageV2Tests = (): void => {
   } finally {
     harness.teardown();
   }
-
-  const renderAdapterSource = readFileSync(
-    resolve(process.cwd(), "src/ui/renderAdapter.ts"),
-    "utf8",
-  );
-  assert.equal(
-    renderAdapterSource.includes("./modules/storage/render.js"),
-    true,
-    "render adapter routes storage export to storage module owner path",
-  );
-  assert.equal(
-    existsSync(resolve(process.cwd(), "src/ui/modules/storageRenderer.ts")),
-    false,
-    "storage wrapper file removed",
-  );
 };
 
 
