@@ -26,6 +26,7 @@ import {
   isMultiCalculatorSession,
   projectCalculatorToLegacy,
   resolveActiveCalculatorId,
+  setActiveCalculator,
 } from "./multiCalculator.js";
 import { getBaseControlProfile } from "./controlProfileRuntime.js";
 import { projectControlFromState } from "./controlProjection.js";
@@ -378,6 +379,10 @@ export const reduceWithProjectionScope = (state: GameState, action: Action, opti
       return commitLegacyProjection(reduced, reduced, "f");
     }
     return reduced;
+  }
+
+  if (action.type === "SET_ACTIVE_CALCULATOR" && state.calculators?.[action.calculatorId]) {
+    return setActiveCalculator(state, action.calculatorId);
   }
 
   const targetCalculatorId = resolveActionCalculatorId(state, action);

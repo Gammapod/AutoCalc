@@ -8,7 +8,7 @@ import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvar
 import { buttonRegistry } from "../src/domain/buttonRegistry.js";
 import type { Action, Key, VisualizerId } from "../src/domain/types.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
-import { isMultiCalculatorSession, materializeCalculatorG, materializeCalculatorMenu } from "../src/domain/multiCalculator.js";
+import { materializeCalculatorG, materializeCalculatorMenu } from "../src/domain/multiCalculator.js";
 import { createSeededMaintenanceRng, SEEDED_MAINTENANCE_RUNS, chooseSeededMaintenanceAction } from "./helpers/seededMaintenance.js";
 
 const visualizerKeyById = new Map<VisualizerId, Key>(
@@ -82,13 +82,7 @@ export const runReducerPipelineEquivalenceTests = (): void => {
       for (let stepIndex = 0; stepIndex < trace.length; stepIndex += 1) {
         const action = trace[stepIndex];
         viaPublic = reducer(viaPublic, action);
-        const reduced = (
-          isMultiCalculatorSession(viaPipeline)
-          && action.type === "SET_ACTIVE_CALCULATOR"
-          && Boolean(viaPipeline.calculators?.[action.calculatorId])
-        )
-          ? { ...viaPipeline, activeCalculatorId: action.calculatorId }
-          : reduceWithProjectionScope(viaPipeline, action);
+        const reduced = reduceWithProjectionScope(viaPipeline, action);
         const withTrace = withRecordedDiagnosticsAction(viaPipeline, reduced, action, visualizerKeyById);
         viaPipeline = normalizeRuntimeStateInvariants(withTrace);
         assert.deepEqual(
