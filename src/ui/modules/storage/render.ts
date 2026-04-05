@@ -279,6 +279,9 @@ export const renderStorageV2Module = (
   const storageModeToggleButton = root.querySelector<HTMLButtonElement>("[data-storage-mode-toggle]");
   const isMainMenuMode = Boolean(state.ui.buttonFlags["mode.main_menu"]);
   const storageContentVisible = state.ui.buttonFlags["mode.storage_content_visible"] ?? !isMainMenuMode;
+  if (storageShell) {
+    storageShell.hidden = !storageContentVisible;
+  }
   if (!storageContentVisible) {
     storageEl.dataset.storageLocked = "true";
     storageEl.innerHTML = "";

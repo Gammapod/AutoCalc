@@ -1,7 +1,5 @@
 import type { AppMode } from "../contracts/appMode.js";
-import type { Action, GameState, Store } from "../domain/types.js";
-
-type SavePolicy = "none" | "save_current" | "clear_save";
+import type { Action, GameState, Store, TransitionSavePolicy } from "../domain/types.js";
 
 type PersistRepo = {
   clear: () => void;
@@ -19,10 +17,8 @@ export const createModeTransitionCoordinator = (options: {
   saveScheduler: SaveScheduler;
   buildBootStateForMode: (mode: AppMode) => GameState;
   setCurrentMode: (mode: AppMode) => void;
-  onLegacyNavigate: (mode: AppMode) => void;
-  runtimeEnabled: () => boolean;
 }) => {
-  const applySavePolicy = (savePolicy: SavePolicy): void => {
+  const applySavePolicy = (savePolicy: TransitionSavePolicy): void => {
     if (savePolicy === "save_current") {
       options.saveScheduler.schedule(options.store.getState());
       options.saveScheduler.flushNow();
@@ -34,22 +30,17 @@ export const createModeTransitionCoordinator = (options: {
     }
   };
 
-  const requestModeTransition = (mode: AppMode, savePolicy: SavePolicy): void => {
+  const requestModeTransition = (mode: AppMode, savePolicy: TransitionSavePolicy): void => {
     applySavePolicy(savePolicy);
-    if (!options.runtimeEnabled()) {
-      options.onLegacyNavigate(mode);
-      return;
-    }
+    options.setCurrentMode(mode);
     const nextState = options.buildBootStateForMode(mode);
     options.store.dispatch({
       type: "HYDRATE_SAVE",
       state: nextState,
     } satisfies Extract<Action, { type: "HYDRATE_SAVE" }>);
-    options.setCurrentMode(mode);
   };
 
   return {
     requestModeTransition,
   };
 };
-

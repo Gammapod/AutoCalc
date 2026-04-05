@@ -104,7 +104,6 @@ import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
 import { runAutoStepSchedulerTests } from "./autoStepScheduler.test.js";
 import { runPersistenceSaveSchedulerTests } from "./persistenceSaveScheduler.test.js";
-import { runModeTransitionRuntimeFlagTests } from "./modeTransitionRuntimeFlag.test.js";
 import { runModeTransitionCoordinatorTests } from "./modeTransitionCoordinator.test.js";
 import { runEqualsToggleAutoStepTests } from "./equalsToggleAutoStep.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
@@ -240,7 +239,6 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["app/app-mode-resolver", runAppModeResolverTests],
   ["app/auto-step-scheduler", runAutoStepSchedulerTests],
   ["app/persistence-save-scheduler", runPersistenceSaveSchedulerTests],
-  ["app/mode-transition-runtime-flag", runModeTransitionRuntimeFlagTests],
   ["app/mode-transition-coordinator", runModeTransitionCoordinatorTests],
   ["app/bootstrap-persistence-scheduling", runBootstrapPersistenceSchedulingTests],
   ["app/bootstrap-mode-transition-runtime-contract", runBootstrapModeTransitionRuntimeContractTests],

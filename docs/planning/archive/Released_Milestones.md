@@ -1,5 +1,38 @@
 Truth 2: Releases
 
+# Release v0.10.2: Runtime Mode Transition Canonicalization (Shipped 2026-04-04)
+
+### Included Slice IDs
+- `slice_mode_transition_in_app_runtime_v1`
+- `slice_mode_transition_policy_contracts`
+
+### Delivered Behavior
+- Mode transitions are now canonical runtime transitions with no URL-reload fallback path in app bootstrap.
+- Transition policy handling remains behavior-preserving and explicit:
+  - `none`: no persistence side effects before hydrate.
+  - `save_current`: schedule + flush current state before hydrate.
+  - `clear_save`: cancel pending schedule + clear persisted state before hydrate.
+- Hydration path is canonical for all transition targets (`game`, `sandbox`, `main_menu`) via `HYDRATE_SAVE` + active mode synchronization.
+
+### App-Domain Boundary Mapping
+- `system_*` key press -> `resolveSystemKeyIntent` (domain registry) -> `request_mode_transition` UI effect (`targetMode`, `savePolicy`) ->
+  app subscription coordinator `onRequestModeTransition` -> `ModeTransitionCoordinator.requestModeTransition` ->
+  policy side effects + `HYDRATE_SAVE` + `setCurrentMode`.
+
+### Verification Snapshot
+- Focused transition suites green at release cut:
+  - `app/mode-transition-coordinator`
+  - `contracts/system-key-intent-registry`
+  - `domain/system-keys-mode-switch-effects`
+  - `app/bootstrap-mode-transition-runtime-contract`
+  - `app/bootstrap-persistence-scheduling`
+  - `ui-integration/mobile-shell`
+  - `ui-integration/desktop-shell`
+
+### Release Notes
+- Release Note ID: `release_v0_10_2`
+- Player-facing summary: Mode switching now stays in runtime with explicit, contract-tested transition-policy behavior.
+
 # Release v0.10.1: Performance Stabilization and Cartesian Visualizer v1 (Shipped 2026-04-04)
 
 ### Included Slice IDs

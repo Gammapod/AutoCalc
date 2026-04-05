@@ -28,7 +28,6 @@ import { normalizeRuntimeStateInvariants } from "../domain/runtimeStateInvariant
 import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
 import { buildPreDispatchBlockedInputFeedback } from "../domain/inputFeedback.js";
 import { createPersistenceSaveScheduler } from "./persistenceSaveScheduler.js";
-import { resolveModeTransitionRuntimeEnabled } from "./modeTransitionRuntimeFlag.js";
 import { createModeTransitionCoordinator } from "./modeTransitionCoordinator.js";
 
 declare global {
@@ -69,10 +68,6 @@ const initialAppMode = resolveAppMode(window.location, {
   ...importMetaEnv,
 });
 let currentAppMode = initialAppMode;
-const modeTransitionRuntimeEnabled = resolveModeTransitionRuntimeEnabled(window.location, {
-  ...processEnv,
-  ...importMetaEnv,
-});
 const appShellTarget = resolveAppShellTarget(window.location, {
   ...processEnv,
   ...importMetaEnv,
@@ -171,12 +166,6 @@ const renderAndPersistState = (state: GameState, uiEffects: UiEffect[] = []): vo
   if (currentAppMode === "game") {
     saveScheduler.schedule(state);
   }
-};
-
-const getAppModeUrl = (location: Location, mode: AppMode): string => {
-  const url = new URL(location.href);
-  url.searchParams.set("mode", mode);
-  return url.toString();
 };
 
 const cueCoordinator = createCueLifecycleCoordinator();
@@ -306,10 +295,6 @@ const modeTransitionCoordinator = createModeTransitionCoordinator({
   saveScheduler,
   buildBootStateForMode,
   setCurrentMode: syncCurrentMode,
-  onLegacyNavigate: (mode) => {
-    window.location.assign(getAppModeUrl(window.location, mode));
-  },
-  runtimeEnabled: () => modeTransitionRuntimeEnabled,
 });
 
 syncCurrentMode(currentAppMode);

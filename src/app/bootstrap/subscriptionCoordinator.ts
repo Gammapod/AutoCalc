@@ -1,4 +1,4 @@
-import type { Action, GameState, Store, UiEffect } from "../../domain/types.js";
+import type { Action, GameState, Store, TransitionSavePolicy, UiEffect } from "../../domain/types.js";
 import type { AppMode } from "../../contracts/appMode.js";
 
 type UnlockTracker = {
@@ -24,7 +24,7 @@ export const createStoreSubscriptionCoordinator = (
     syncAutoStepScheduler?: (state: GameState) => void;
     consumeUiEffects?: () => UiEffect[];
     onQuitApplication?: () => void;
-    onRequestModeTransition?: (mode: AppMode, savePolicy: "none" | "save_current" | "clear_save") => void;
+    onRequestModeTransition?: (mode: AppMode, savePolicy: TransitionSavePolicy) => void;
     initialState: GameState;
   },
 ): (() => void) => {

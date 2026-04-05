@@ -71,7 +71,7 @@ export const runUiModuleStorageV2Tests = (): void => {
       inputBlocked: false,
     });
     const storageShell = harness.root.querySelector<HTMLElement>(".storage");
-    assert.equal(storageShell?.hidden, false, "main menu keeps storage shell visible");
+    assert.equal(storageShell?.hidden, true, "main menu hides storage shell");
     assert.equal(storage?.dataset.storageVisible, "false", "main menu hides storage contents");
 
     const unaryStorageCell = { kind: "key", key: k("unary_inc") } as const;

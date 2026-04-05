@@ -5,6 +5,19 @@ export const releaseNotes: ReleaseNotesCatalog = {
   // 'summary' should contain the main change, and 'bullets' should list smaller changes.
   entries: [
     {
+      id: "release_v0_10_2",
+      releaseVersion: "v0.10.2",
+      channel: "released",
+      title: "Runtime Mode Transition Canonicalization",
+      summary:
+        "Mode transitions are now runtime-only with no URL reload fallback path.",
+      bullets: [
+        "System-key transition policies (`none`, `save_current`, `clear_save`) now flow through one canonical runtime coordinator contract.",
+        "Hydration-equivalence matrix coverage now validates all transition entry points for each policy and target mode.",
+        "Mode shell parity (`game`, `sandbox`, `main_menu`) is preserved through `HYDRATE_SAVE` + active-mode synchronization.",
+      ],
+    },
+    {
       id: "release_v0_10_1",
       releaseVersion: "v0.10.1",
       channel: "released",

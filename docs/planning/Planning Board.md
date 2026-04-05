@@ -13,32 +13,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Later
 
-### Slice `slice_mode_transition_in_app_runtime_v1`
-- User Story: As a player, I want mode switching to be immediate and seamless so context changes do not reload the app shell.
-- Goal: Replace URL-reload mode switching with an in-runtime mode transition coordinator.
-- Dependencies: requires `slice_perf_game_state_persistence_scheduling`; recommended after `slice_perf_boot_dependency_lazy_loading`.
-- Complexity: L (3-6 days).
-- Expected Return: Very High mode-switch latency and UX continuity gains.
-- Maps to concern: full page reload on mode switch.
-- Planned Interface / Contract: `ModeTransitionCoordinator` for in-app mode transitions.
-- Exit Criteria:
-- Mode transitions (`game`, `sandbox`, `main_menu`) run without full page reload.
-- Transition behavior preserves mode-specific save/clear policies.
-- Mobile/desktop shell parity remains intact across mode transitions.
-- Promotion Rule: Move this slice to `Next` after slices 1-4 are complete and stable.
-
-### Slice `slice_mode_transition_policy_contracts`
-- User Story: As a player, I want mode transitions to be reliable so save and reset outcomes are always correct.
-- Goal: Formalize mode transition save/clear/hydrate policy contracts and tests.
-- Dependencies: depends on `slice_mode_transition_in_app_runtime_v1` design; can proceed in parallel once interfaces are drafted.
-- Complexity: M (1-2 days).
-- Expected Return: Indirect High through risk and regression reduction.
-- Maps to concern: transition correctness under new architecture.
-- Exit Criteria:
-- Contract tests cover `save_current`, `clear_save`, and `none` outcomes.
-- Hydration-equivalence checks pass for all mode transition entry points.
-- Policy behavior is explicit and documented at app-domain boundary.
-
 ### Slice `slice_content_completion_pass`
 - User Story: As a player, I want all currently planned-but-not-yet-implemented keys to exist in-game with complete behavior and display metadata so progression and experimentation are not blocked by placeholder content.
 - Exit Criteria:
@@ -79,7 +53,7 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 ### Slice `slice_nary_operator_contract_v1`
 - User Story: As a developer, I want a single canonical contract for the first N-ary operator so implementation and tests align.
 - Exit Criteria:
-- First operator and domain contract is explicit (example: `∏ℕ{1..n}`).
+- First operator and domain contract is explicit (example: `ℿℕ{1..n}`).
 - Seed behavior, binary-operand behavior, and error semantics are specified.
 - Dependencies: none.
 
@@ -173,6 +147,16 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 ## Shipped Trains
 
 Record shipped trains here using this format:
+
+### Train v0.10.2 (2026-04-04)
+- Included Slice IDs:
+- `slice_mode_transition_in_app_runtime_v1`
+- `slice_mode_transition_policy_contracts`
+- Release Note IDs:
+- `release_v0_10_2`
+- Player-facing highlights:
+- Mode transitions (`game`, `sandbox`, `main_menu`) now run in runtime with no URL reload path.
+- Transition save policies (`none`, `save_current`, `clear_save`) are contract-tested with hydration-equivalence matrix coverage.
 
 ### Train v0.10.1 (2026-04-04)
 - Included Slice IDs:

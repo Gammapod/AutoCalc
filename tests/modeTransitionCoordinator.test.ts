@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createModeTransitionCoordinator } from "../src/app/modeTransitionCoordinator.js";
 import { initialState } from "../src/domain/state.js";
-import type { Action, GameState, Store } from "../src/domain/types.js";
+import type { Action, GameState, Store, TransitionSavePolicy } from "../src/domain/types.js";
 import type { AppMode } from "../src/contracts/appMode.js";
 
 const makeStateForMode = (mode: AppMode): GameState => ({
@@ -42,117 +42,106 @@ const createMockStore = (seed: GameState): MockStore => {
   };
 };
 
+const modeTargets: AppMode[] = ["game", "sandbox", "main_menu"];
+const savePolicies: TransitionSavePolicy[] = ["none", "save_current", "clear_save"];
+
 export const runModeTransitionCoordinatorTests = (): void => {
-  const state = initialState();
-  const store = createMockStore(state);
-  const scheduled: GameState[] = [];
-  let flushed = 0;
-  let cancelled = 0;
-  let cleared = 0;
-  const legacyNavigations: AppMode[] = [];
-  const setModeCalls: AppMode[] = [];
-  const buildCalls: AppMode[] = [];
+  const baseline = initialState();
 
-  const buildBootStateForMode = (mode: AppMode): GameState => {
-    buildCalls.push(mode);
-    return makeStateForMode(mode);
-  };
+  for (const targetMode of modeTargets) {
+    for (const savePolicy of savePolicies) {
+      const eventOrder: string[] = [];
+      const store = createMockStore(baseline);
+      const originalDispatch = store.dispatch;
+      store.dispatch = (action: Action) => {
+        eventOrder.push(`dispatch:${action.type}`);
+        return originalDispatch(action);
+      };
+      const scheduled: GameState[] = [];
+      let flushed = 0;
+      let cancelled = 0;
+      let cleared = 0;
+      const setModeCalls: AppMode[] = [];
+      const buildCalls: AppMode[] = [];
 
-  const runtimeCoordinator = createModeTransitionCoordinator({
-    store,
-    storageRepo: {
-      clear: () => {
-        cleared += 1;
-      },
-    },
-    saveScheduler: {
-      schedule: (nextState) => {
-        scheduled.push(nextState);
-      },
-      flushNow: () => {
-        flushed += 1;
-      },
-      cancel: () => {
-        cancelled += 1;
-      },
-    },
-    buildBootStateForMode,
-    setCurrentMode: (mode) => {
-      setModeCalls.push(mode);
-    },
-    onLegacyNavigate: (mode) => {
-      legacyNavigations.push(mode);
-    },
-    runtimeEnabled: () => true,
-  });
+      const coordinator = createModeTransitionCoordinator({
+        store,
+        storageRepo: {
+          clear: () => {
+            cleared += 1;
+          },
+        },
+        saveScheduler: {
+          schedule: (nextState) => {
+            scheduled.push(nextState);
+          },
+          flushNow: () => {
+            flushed += 1;
+          },
+          cancel: () => {
+            cancelled += 1;
+          },
+        },
+        buildBootStateForMode: (mode) => {
+          buildCalls.push(mode);
+          return makeStateForMode(mode);
+        },
+        setCurrentMode: (mode) => {
+          setModeCalls.push(mode);
+          eventOrder.push(`set_mode:${mode}`);
+        },
+      });
 
-  runtimeCoordinator.requestModeTransition("sandbox", "none");
-  assert.deepEqual(buildCalls.at(-1), "sandbox", "none policy still builds target mode boot state");
-  assert.equal(store.actions.at(-1)?.type, "HYDRATE_SAVE", "runtime path hydrates store for target mode");
-  assert.deepEqual(setModeCalls.at(-1), "sandbox", "runtime path updates current mode");
-  assert.equal(legacyNavigations.length, 0, "runtime-enabled transitions do not legacy navigate");
+      coordinator.requestModeTransition(targetMode, savePolicy);
 
-  runtimeCoordinator.requestModeTransition("main_menu", "save_current");
-  assert.equal(scheduled.length >= 1, true, "save_current schedules latest state before transition");
-  assert.equal(flushed >= 1, true, "save_current flushes pending state before transition");
+      assert.deepEqual(
+        buildCalls,
+        [targetMode],
+        `transition ${savePolicy}->${targetMode} builds exactly one boot state`,
+      );
 
-  runtimeCoordinator.requestModeTransition("game", "clear_save");
-  assert.equal(cancelled >= 1, true, "clear_save cancels pending scheduled persistence");
-  assert.equal(cleared >= 1, true, "clear_save clears persisted state");
-
-  const legacyStore = createMockStore(state);
-  const legacyModes: AppMode[] = [];
-  const legacyOnlyCoordinator = createModeTransitionCoordinator({
-    store: legacyStore,
-    storageRepo: {
-      clear: () => {},
-    },
-    saveScheduler: {
-      schedule: () => {},
-      flushNow: () => {},
-      cancel: () => {},
-    },
-    buildBootStateForMode,
-    setCurrentMode: () => {},
-    onLegacyNavigate: (mode) => {
-      legacyModes.push(mode);
-    },
-    runtimeEnabled: () => false,
-  });
-
-  legacyOnlyCoordinator.requestModeTransition("sandbox", "none");
-  assert.deepEqual(legacyModes, ["sandbox"], "legacy-disabled coordinator falls back to URL navigation");
-  assert.equal(legacyStore.actions.length, 0, "legacy-disabled coordinator does not dispatch hydrate action");
-
-  const parityStore = createMockStore(state);
-  const parityTargets: AppMode[] = ["game", "sandbox", "main_menu"];
-  const parityCoordinator = createModeTransitionCoordinator({
-    store: parityStore,
-    storageRepo: {
-      clear: () => {},
-    },
-    saveScheduler: {
-      schedule: () => {},
-      flushNow: () => {},
-      cancel: () => {},
-    },
-    buildBootStateForMode: (mode) => makeStateForMode(mode),
-    setCurrentMode: () => {},
-    onLegacyNavigate: () => {},
-    runtimeEnabled: () => true,
-  });
-
-  for (const mode of parityTargets) {
-    parityCoordinator.requestModeTransition(mode, "none");
-    const last = parityStore.actions.at(-1);
-    assert.equal(last?.type, "HYDRATE_SAVE", `parity transition to ${mode} hydrates target boot state`);
-    if (last?.type === "HYDRATE_SAVE") {
+      const last = store.actions.at(-1);
+      assert.equal(last?.type, "HYDRATE_SAVE", `transition ${savePolicy}->${targetMode} hydrates`);
+      assert.deepEqual(setModeCalls, [targetMode], `transition ${savePolicy}->${targetMode} updates current mode once`);
       assert.equal(
-        Boolean(last.state.ui.buttonFlags["mode.main_menu"]),
-        mode === "main_menu",
-        `target ${mode} main-menu flag parity is preserved`,
+        eventOrder.findIndex((token) => token.startsWith("set_mode:")) < eventOrder.findIndex((token) => token === "dispatch:HYDRATE_SAVE"),
+        true,
+        `transition ${savePolicy}->${targetMode} updates app mode before HYDRATE_SAVE dispatch`,
+      );
+
+      if (last?.type === "HYDRATE_SAVE") {
+        assert.equal(
+          Boolean(last.state.ui.buttonFlags["mode.main_menu"]),
+          targetMode === "main_menu",
+          `transition ${savePolicy}->${targetMode} preserves main-menu parity flags`,
+        );
+        assert.equal(
+          Boolean(last.state.ui.buttonFlags["mode.storage_content_visible"]),
+          targetMode === "game",
+          `transition ${savePolicy}->${targetMode} preserves storage-visibility parity flags`,
+        );
+      }
+
+      assert.equal(
+        savePolicy === "save_current" ? scheduled.length >= 1 : scheduled.length === 0,
+        true,
+        `transition ${savePolicy}->${targetMode} save scheduling semantics are correct`,
+      );
+      assert.equal(
+        savePolicy === "save_current" ? flushed >= 1 : flushed === 0,
+        true,
+        `transition ${savePolicy}->${targetMode} flush semantics are correct`,
+      );
+      assert.equal(
+        savePolicy === "clear_save" ? cancelled >= 1 : cancelled === 0,
+        true,
+        `transition ${savePolicy}->${targetMode} cancel semantics are correct`,
+      );
+      assert.equal(
+        savePolicy === "clear_save" ? cleared >= 1 : cleared === 0,
+        true,
+        `transition ${savePolicy}->${targetMode} clear semantics are correct`,
       );
     }
   }
 };
-

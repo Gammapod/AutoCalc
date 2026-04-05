@@ -18,7 +18,7 @@ export const buildShellViewModel = (state: GameState): ShellViewModel => {
   const storageContentVisible = state.ui.buttonFlags["mode.storage_content_visible"] ?? !isMainMenuMode;
   const availableSnaps: SnapId[] = [];
   availableSnaps.push("middle");
-  if (state.unlocks.uiUnlocks.storageVisible || !storageContentVisible) {
+  if (state.unlocks.uiUnlocks.storageVisible && storageContentVisible) {
     availableSnaps.push("bottom");
   }
 

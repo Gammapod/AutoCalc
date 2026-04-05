@@ -1,14 +1,12 @@
 import type { AppMode } from "../contracts/appMode.js";
 import { KEY_ID, type KeyId } from "./keyPresentation.js";
-import type { UiEffect } from "./types.js";
-
-export type SystemTransitionSavePolicy = "none" | "save_current" | "clear_save";
+import type { TransitionSavePolicy, UiEffect } from "./types.js";
 
 export type SystemKeyIntent =
   | {
       type: "mode_transition";
       targetMode: AppMode;
-      savePolicy: SystemTransitionSavePolicy;
+      savePolicy: TransitionSavePolicy;
     }
   | {
       type: "quit_application";
@@ -51,4 +49,3 @@ export const mapSystemKeyIntentToUiEffect = (intent: SystemKeyIntent): UiEffect 
       targetMode: intent.targetMode,
       savePolicy: intent.savePolicy,
     };
-

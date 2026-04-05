@@ -11,7 +11,7 @@ export const runUiShellSnapAvailabilityTests = (): void => {
   assert.deepEqual(
     baselineModifyModel.availableSnaps,
     ["middle", "bottom"],
-    "bottom snap is always available in shell model",
+    "bottom snap is available when storage is both unlocked and visible",
   );
 
   const withStorage: GameState = {
@@ -29,6 +29,27 @@ export const runUiShellSnapAvailabilityTests = (): void => {
 
   const withStorageModifyModel = buildShellViewModel(withStorage);
   assert.deepEqual(withStorageModifyModel.availableSnaps, ["middle", "bottom"], "storage unlock adds bottom snap");
+
+  const hiddenStorageMode: GameState = {
+    ...baseline,
+    ui: {
+      ...baseline.ui,
+      buttonFlags: {
+        ...baseline.ui.buttonFlags,
+        "mode.main_menu": true,
+        "mode.storage_content_visible": false,
+      },
+    },
+    unlocks: {
+      ...baseline.unlocks,
+      uiUnlocks: {
+        ...baseline.unlocks.uiUnlocks,
+        storageVisible: true,
+      },
+    },
+  };
+  const hiddenStorageModel = buildShellViewModel(hiddenStorageMode);
+  assert.deepEqual(hiddenStorageModel.availableSnaps, ["middle"], "storage-hidden modes remove bottom snap");
 
   assert.deepEqual(
     withStorageModifyModel.availableSnaps,

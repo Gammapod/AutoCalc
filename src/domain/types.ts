@@ -906,6 +906,8 @@ export type Action =
   | SetActiveCalculatorAction
   | AutoStepTickAction;
 
+export type TransitionSavePolicy = "none" | "save_current" | "clear_save";
+
 export type UiEffect =
   | {
       type: "execution_gate_rejected";
@@ -926,7 +928,7 @@ export type UiEffect =
   | {
       type: "request_mode_transition";
       targetMode: "game" | "sandbox" | "main_menu";
-      savePolicy: "none" | "save_current" | "clear_save";
+      savePolicy: TransitionSavePolicy;
     }
   | {
       type: "quit_application";
