@@ -866,12 +866,23 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(5n),
-      rollEntries: re(r(5n)),
+      rollEntries: re(r(5n), r(6n)),
     },
   };
   const afterActiveRollDigit = applyKeyAction(activeRollDigitNoOp, "digit_1");
   assertTotalEquivalent(afterActiveRollDigit.calculator.total, activeRollDigitNoOp.calculator.total, "digit key while roll active preserves total");
   assert.deepEqual(afterActiveRollDigit.calculator.rollEntries, activeRollDigitNoOp.calculator.rollEntries, "digit key while roll active preserves roll");
+
+  const seedOnlyRollDigitAllowed: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(5n),
+      rollEntries: re(r(5n)),
+    },
+  };
+  const afterSeedOnlyRollDigit = applyKeyAction(seedOnlyRollDigitAllowed, "digit_1");
+  assertTotalEquivalent(afterSeedOnlyRollDigit.calculator.total, r(1n), "digit key while roll is seed-only updates total");
 
   const lockedUnaryFromKeypad = applyKeyAction(legacyInitialState(), "unary_inc");
   assert.equal(lockedUnaryFromKeypad.keyPressCounts[uop("unary_inc")] ?? 0, 1, "locked keypad-installed unary key still counts as a press");
@@ -879,9 +890,13 @@ export const runReducerInputTests = (): void => {
   const unaryPlus = applyKeyAction(fullyUnlocked, "unary_inc");
   assert.deepEqual(unaryPlus.calculator.operationSlots, [{ kind: "unary", operator: uop("unary_inc") }], "++ appends unary slot");
   assert.equal(unaryPlus.calculator.draftingSlot, null, "++ does not create drafting slot");
+  assertRollSequenceEquivalent(unaryPlus.calculator.rollEntries, [r(0n)], "starting unary build seeds roll immediately");
 
   const unaryMinus = applyKeyAction(fullyUnlocked, "unary_dec");
   assert.deepEqual(unaryMinus.calculator.operationSlots, [{ kind: "unary", operator: uop("unary_dec") }], "-- appends unary slot");
+
+  const binaryDraft = applyKeyAction(fullyUnlocked, "op_add");
+  assertRollSequenceEquivalent(binaryDraft.calculator.rollEntries, [r(0n)], "starting binary build seeds roll immediately");
 
   const unaryNegate = applyKeyAction(fullyUnlocked, "unary_neg");
   assert.deepEqual(unaryNegate.calculator.operationSlots, [{ kind: "unary", operator: uop("unary_neg") }], "-n appends unary slot");
@@ -928,13 +943,13 @@ export const runReducerInputTests = (): void => {
     calculator: {
       ...fullyUnlocked.calculator,
       total: r(5n),
-      rollEntries: re(r(5n)),
+      rollEntries: re(r(5n), r(6n)),
       operationSlots: [{ operator: op("op_add"), operand: 9n }],
       draftingSlot: { operator: op("op_sub"), operandInput: "2", isNegative: false },
     },
   };
   const activeRollUnary = applyKeyAction(activeRollUnarySource, "unary_inc");
-  assert.equal(activeRollUnary.calculator.rollEntries.length, 0, "unary key clears active roll before insertion");
+  assertRollSequenceEquivalent(activeRollUnary.calculator.rollEntries, [r(5n)], "unary key clears active roll steps and reseeds build roll");
   assert.deepEqual(
     activeRollUnary.calculator.operationSlots,
     [{ kind: "unary", operator: uop("unary_inc") }],
@@ -1367,10 +1382,6 @@ export const runReducerInputTests = (): void => {
   const afterWalk5 = applyKeyAction(afterWalk4, "util_backspace");
   assertTotalEquivalent(afterWalk5.calculator.total, r(0n), "walk 5 trims seed total value");
 };
-
-
-
-
 
 
 

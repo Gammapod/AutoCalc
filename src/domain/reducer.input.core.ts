@@ -127,9 +127,57 @@ const getMagnitudeText = (total: GameState["calculator"]["total"]): string => {
 };
 
 const isSeedEntryContext = (state: GameState): boolean =>
-  state.calculator.rollEntries.length === 0 &&
+  state.calculator.rollEntries.length <= 1 &&
   state.calculator.operationSlots.length === 0 &&
   state.calculator.draftingSlot === null;
+
+const hasExecutedRollSteps = (state: GameState): boolean => state.calculator.rollEntries.length > 1;
+
+const hasStartedFunctionBuild = (state: GameState): boolean =>
+  state.calculator.operationSlots.length > 0 || state.calculator.draftingSlot !== null;
+
+const withSeedRollSyncedToBuildState = (state: GameState): GameState => {
+  if (hasExecutedRollSteps(state)) {
+    return state;
+  }
+  const shouldHaveSeedRow = hasStartedFunctionBuild(state);
+  const currentSeedRow = state.calculator.rollEntries[0];
+  if (!shouldHaveSeedRow) {
+    if (state.calculator.rollEntries.length === 0) {
+      return state;
+    }
+    return {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        rollEntries: [],
+        rollAnalysis: {
+          stopReason: "none",
+          cycle: null,
+        },
+      },
+    };
+  }
+  if (!currentSeedRow) {
+    return {
+      ...state,
+      calculator: {
+        ...state.calculator,
+        rollEntries: [createRollEntry(state.calculator.total)],
+      },
+    };
+  }
+  if (calculatorValueEquals(currentSeedRow.y, state.calculator.total)) {
+    return state;
+  }
+  return {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      rollEntries: [{ ...currentSeedRow, y: state.calculator.total }],
+    },
+  };
+};
 
 const getNextTotalMagnitudeInput = (state: GameState, digit: Digit): string => {
   const currentTotalMagnitudeInput = getMagnitudeText(state.calculator.total);
@@ -168,7 +216,7 @@ export const applyOperator = (state: GameState, operator: BinarySlotOperator): G
     return state;
   }
 
-  return applyUnlocks(withBuilderPatchApplied(state, nextPatch), getUnlockCatalog());
+  return applyUnlocks(withSeedRollSyncedToBuildState(withBuilderPatchApplied(state, nextPatch)), getUnlockCatalog());
 };
 
 export const applyUnaryOperator = (state: GameState, key: UnaryOperator): GameState => {
@@ -206,7 +254,7 @@ export const applyUnaryOperator = (state: GameState, key: UnaryOperator): GameSt
   ) {
     return state;
   }
-  return applyUnlocks(withBuilderPatchApplied(state, nextPatch), getUnlockCatalog());
+  return applyUnlocks(withSeedRollSyncedToBuildState(withBuilderPatchApplied(state, nextPatch)), getUnlockCatalog());
 };
 
 export const applyDigit = (state: GameState, key: Key): GameState => {
@@ -226,7 +274,7 @@ export const applyConstantValue = (state: GameState, constant: ConstantKeyId): G
 };
 
 const applyDigitValue = (state: GameState, digit: Digit): GameState => {
-  if (state.calculator.rollEntries.length > 0) {
+  if (hasExecutedRollSteps(state)) {
     return state;
   }
 
@@ -240,7 +288,7 @@ const applyDigitValue = (state: GameState, digit: Digit): GameState => {
     nextPatch.operationSlots !== state.calculator.operationSlots
     || nextPatch.draftingSlot !== state.calculator.draftingSlot
   ) {
-    return applyUnlocks(withBuilderPatchApplied(state, nextPatch), getUnlockCatalog());
+    return applyUnlocks(withSeedRollSyncedToBuildState(withBuilderPatchApplied(state, nextPatch)), getUnlockCatalog());
   }
   if (state.calculator.draftingSlot !== null || state.calculator.operationSlots.length > 0) {
     return state;
@@ -1533,7 +1581,7 @@ const slotToDrafting = (slot: BinarySlot): NonNullable<GameState["calculator"]["
 const withBackspaceBuilderPatch = (
   state: GameState,
   patch: Pick<GameState["calculator"], "operationSlots" | "draftingSlot">,
-): GameState => applyUnlocks(withBuilderPatchApplied(state, patch), getUnlockCatalog());
+): GameState => applyUnlocks(withSeedRollSyncedToBuildState(withBuilderPatchApplied(state, patch)), getUnlockCatalog());
 
 const withSeedTotalBackspaced = (state: GameState): GameState => {
   if (!isSeedEntryContext(state) || !isRationalCalculatorValue(state.calculator.total) || !isInteger(state.calculator.total.value)) {
@@ -1633,7 +1681,7 @@ export const applyBackspace = (state: GameState): GameState => {
   if (!isKeyUsableForInput(state, KEY_ID.util_backspace)) {
     return withClearedStep;
   }
-  if (withClearedStep.calculator.rollEntries.length > 0) {
+  if (withClearedStep.calculator.rollEntries.length > 1) {
     return withClearedStep;
   }
 
@@ -1687,7 +1735,7 @@ export const isOperator = (key: Key): key is BinarySlotOperator => isBinaryOpera
 export const isUnaryOperator = (key: Key): key is UnaryOperator => isUnaryOperatorId(key);
 
 export const preprocessForActiveRoll = (state: GameState, key: Key): GameState => {
-  if (state.calculator.rollEntries.length === 0 || (!isOperator(key) && !isUnaryOperator(key))) {
+  if (!hasExecutedRollSteps(state) || (!isOperator(key) && !isUnaryOperator(key))) {
     return state;
   }
 
@@ -1757,7 +1805,7 @@ export const applyKeyActionCore = (state: GameState, keyLike: KeyInput): GameSta
   // 1) active-roll digit keys are hard no-op
   // 2) active-roll operator keys clear current operation entry before handling
   // 3) normal key dispatch
-  if (stepAwareState.calculator.rollEntries.length > 0 && isValueAtomDigit(key)) {
+  if (hasExecutedRollSteps(stepAwareState) && isValueAtomDigit(key)) {
     return stepAwareState;
   }
 
@@ -1772,4 +1820,3 @@ export const applyKeyActionCore = (state: GameState, keyLike: KeyInput): GameSta
   const handlerId = resolveKeyActionHandlerId(key);
   return handlers[handlerId](keyed, key);
 };
-

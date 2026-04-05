@@ -195,7 +195,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     expectedProjection: {
       operationSlots: [],
       draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
-      roll: [],
+      roll: [r(0n)],
       keyPressCounts: keyCounts([["op_add", 1], ["digit_1", 1]]),
     },
   },
@@ -438,7 +438,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(5n),
-          rollEntries: re(r(5n)),
+          rollEntries: re(r(5n), r(6n)),
         },
       },
       ["digit_1"],
@@ -446,7 +446,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["digit_1"],
     expectedProjection: {
       total: r(5n),
-      roll: [r(5n)],
+      roll: [r(6n)],
       operationSlots: [],
       draftingSlot: null,
       keyPressCounts: keyCounts([]),
@@ -462,7 +462,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
         calculator: {
           ...base.calculator,
           total: r(5n),
-          rollEntries: re(r(5n)),
+          rollEntries: re(r(5n), r(6n)),
           operationSlots: [{ operator: op("op_add"), operand: 2n }],
         },
       },
@@ -471,7 +471,7 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
     keySequence: ["op_sub"],
     expectedProjection: {
       total: r(5n),
-      roll: [],
+      roll: [r(5n)],
       operationSlots: [],
       draftingSlot: { operator: op("op_sub"), operandInput: "", isNegative: false },
       keyPressCounts: keyCounts([["op_sub", 1]]),
@@ -502,9 +502,6 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
 
 export const getSlotInputScenariosByTag = (tag: SlotInputScenarioTag): SlotInputScenario[] =>
   slotInputScenarios.filter((scenario) => scenario.tags.includes(tag));
-
-
-
 
 
 

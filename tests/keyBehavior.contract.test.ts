@@ -508,7 +508,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         calculator: {
           ...legacyInitialState().calculator,
           total: r(5n),
-          rollEntries: re(r(5n)),
+          rollEntries: re(r(5n), r(6n)),
           operationSlots: [{ operator: op("op_add"), operand: 9n }],
           draftingSlot: { operator: op("op_sub"), operandInput: "2", isNegative: false },
         },
@@ -516,7 +516,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       key,
     );
     const next = applyKeyAction(state, key);
-    assert.equal(next.calculator.rollEntries.length, 0, "unary operator clears active roll before insertion");
+    assert.deepEqual(next.calculator.rollEntries.map((entry) => entry.y), [r(5n)], "unary operator clears active roll steps before insertion");
     assert.equal(next.calculator.draftingSlot, null, "unary operator keeps drafting cleared after active-roll preprocess");
     assert.deepEqual(next.calculator.operationSlots, [{ kind: "unary", operator: key }], "unary operator appends unary slot after clear");
     return;
@@ -647,7 +647,7 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
         completedUnlockIds: unlockCatalog.map((unlock) => unlock.id),
         calculator: {
           ...base.calculator,
-          rollEntries: re(r(3n)),
+          rollEntries: re(r(3n), r(4n)),
         },
       },
       KEY_ID.memory_recall,
@@ -773,8 +773,6 @@ export const runKeyBehaviorContractTests = (): void => {
     }
   }
 };
-
-
 
 
 
