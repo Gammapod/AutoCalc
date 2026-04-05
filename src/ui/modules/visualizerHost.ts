@@ -1,4 +1,4 @@
-import type { GameState } from "../../domain/types.js";
+import type { CalculatorId, GameState } from "../../domain/types.js";
 import { VISUALIZER_REGISTRY } from "./visualizers/registry.js";
 import type { VisualizerHostPanel } from "./visualizers/types.js";
 import { getOrCreateRuntime } from "../runtime/registry.js";
@@ -322,21 +322,18 @@ export const resolveActiveVisualizerPanel = (state: GameState): VisualizerHostPa
 };
 
 export const renderVisualizerHost = (root: Element, state: GameState): void => {
-  const isDual = Boolean(state.calculators?.g && state.calculators?.f);
   const calcInstances = root.querySelectorAll<HTMLElement>("[data-calc-instance-id]");
   if (calcInstances.length > 0) {
-    if (isDual) {
-      calcInstances.forEach((instanceEl) => {
-        const instanceId = instanceEl.dataset.calcInstanceId;
-        if (instanceId !== "f" && instanceId !== "g") {
-          return;
-        }
-        renderVisualizerHost(instanceEl, projectCalculatorToLegacy(state, instanceId));
-      });
-      return;
-    }
-
     calcInstances.forEach((instanceEl) => {
+      const instanceId = instanceEl.dataset.calcInstanceId;
+      if (
+        instanceId
+        && state.calculators
+        && Object.prototype.hasOwnProperty.call(state.calculators, instanceId)
+      ) {
+        renderVisualizerHost(instanceEl, projectCalculatorToLegacy(state, instanceId as CalculatorId));
+        return;
+      }
       renderVisualizerHost(instanceEl, state);
     });
     return;

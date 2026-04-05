@@ -24,6 +24,8 @@ type FakeElement = {
   getBoundingClientRect: () => { height: number };
 };
 
+type FakeVisualizerInstance = FakeElement & RootLike;
+
 const createFakeElement = (): FakeElement => {
   const element: FakeElement = {
     innerHTML: "",
@@ -54,6 +56,48 @@ const createFakeElement = (): FakeElement => {
     },
   };
   return element;
+};
+
+const createFakeVisualizerInstance = (
+  calculatorId: string,
+): {
+  instance: FakeVisualizerInstance;
+  host: FakeElement;
+  graph: FakeElement;
+  feed: FakeElement;
+  total: FakeElement;
+} => {
+  const host = createFakeElement();
+  const graph = createFakeElement();
+  const feed = createFakeElement();
+  const total = createFakeElement();
+  const instance: FakeVisualizerInstance = {
+    ...createFakeElement(),
+    dataset: { calcInstanceId: calculatorId },
+    querySelector: (selector: string): Element | null => {
+      if (selector === "[data-v2-visualizer-host]") {
+        return host as unknown as Element;
+      }
+      if (selector === "[data-grapher-device]") {
+        return graph as unknown as Element;
+      }
+      if (selector === "[data-v2-feed-panel]") {
+        return feed as unknown as Element;
+      }
+      if (selector === "[data-v2-total-panel]") {
+        return total as unknown as Element;
+      }
+      return null;
+    },
+    querySelectorAll: (): Element[] => [],
+  };
+  return {
+    instance,
+    host,
+    graph,
+    feed,
+    total,
+  };
 };
 
 const r = (num: bigint): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
@@ -492,6 +536,108 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   renderVisualizerHost(secondRoot as unknown as Element, withFeedOn);
   assert.equal(firstHost.dataset.v2VisualizerTransition, "enter", "first root transition is independent");
   assert.equal(secondHost.dataset.v2VisualizerTransition, "enter", "second root transition is independent");
+
+  const withPrimeVisualizers: GameState = {
+    ...base,
+    activeCalculatorId: "f_prime",
+    calculatorOrder: ["f_prime", "g_prime"],
+    calculators: {
+      f_prime: {
+        id: "f_prime",
+        symbol: "f_prime",
+        calculator: {
+          ...base.calculator,
+          rollEntries: [...base.calculator.rollEntries],
+          operationSlots: [...base.calculator.operationSlots],
+          stepProgress: {
+            ...base.calculator.stepProgress,
+            executedSlotResults: [...base.calculator.stepProgress.executedSlotResults],
+          },
+        },
+        settings: {
+          ...base.settings,
+          visualizer: "total",
+        },
+        lambdaControl: { ...base.lambdaControl },
+        allocator: {
+          ...base.allocator,
+          allocations: { ...base.allocator.allocations },
+        },
+        ui: {
+          ...base.ui,
+          keyLayout: base.ui.keyLayout.map((cell) => ({ ...cell })),
+          keypadCells: base.ui.keypadCells.map((cell) => ({ ...cell, cell: { ...cell.cell } })),
+          storageLayout: [...base.ui.storageLayout],
+          buttonFlags: { ...base.ui.buttonFlags },
+          diagnostics: {
+            lastAction: { ...base.ui.diagnostics.lastAction },
+          },
+          activeVisualizer: "total",
+        },
+      },
+      g_prime: {
+        id: "g_prime",
+        symbol: "g_prime",
+        calculator: {
+          ...base.calculator,
+          rollEntries: [...base.calculator.rollEntries],
+          operationSlots: [...base.calculator.operationSlots],
+          stepProgress: {
+            ...base.calculator.stepProgress,
+            executedSlotResults: [...base.calculator.stepProgress.executedSlotResults],
+          },
+        },
+        settings: {
+          ...base.settings,
+          visualizer: "graph",
+        },
+        lambdaControl: { ...base.lambdaControl },
+        allocator: {
+          ...base.allocator,
+          allocations: { ...base.allocator.allocations },
+        },
+        ui: {
+          ...base.ui,
+          keyLayout: base.ui.keyLayout.map((cell) => ({ ...cell })),
+          keypadCells: base.ui.keypadCells.map((cell) => ({ ...cell, cell: { ...cell.cell } })),
+          storageLayout: [...base.ui.storageLayout],
+          buttonFlags: { ...base.ui.buttonFlags },
+          diagnostics: {
+            lastAction: { ...base.ui.diagnostics.lastAction },
+          },
+          activeVisualizer: "graph",
+        },
+      },
+    },
+  };
+  const fPrimeInstance = createFakeVisualizerInstance("f_prime");
+  const gPrimeInstance = createFakeVisualizerInstance("g_prime");
+  const primeRoot: RootLike = {
+    querySelector: () => null,
+    querySelectorAll: () => [fPrimeInstance.instance as unknown as Element, gPrimeInstance.instance as unknown as Element],
+  };
+
+  renderVisualizerHost(primeRoot as unknown as Element, withPrimeVisualizers);
+  assert.equal(
+    fPrimeInstance.host.dataset.v2VisualizerPanel,
+    "total",
+    "f_prime instance keeps its own total visualizer projection",
+  );
+  assert.equal(
+    fPrimeInstance.graph.attributes["aria-hidden"],
+    "true",
+    "f_prime graph panel remains hidden when f_prime visualizer is total",
+  );
+  assert.equal(
+    gPrimeInstance.host.dataset.v2VisualizerPanel,
+    "graph",
+    "g_prime instance keeps its own graph visualizer projection",
+  );
+  assert.equal(
+    gPrimeInstance.graph.attributes["aria-hidden"],
+    "false",
+    "g_prime graph panel is visible when g_prime visualizer is graph",
+  );
   } finally {
     graphModule.clear = originalGraphClear;
   }
