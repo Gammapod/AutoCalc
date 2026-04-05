@@ -40,7 +40,7 @@ export type CalculatorSettings = {
   stepExpansion: StepExpansionSetting;
 };
 export type MemoryVariable = "\u03B1" | "\u03B2" | "\u03B3";
-export type CalculatorId = "g" | "f" | "menu";
+export type CalculatorId = "g" | "f" | "menu" | "f_prime" | "g_prime";
 export type ExecKey = ExecKeyId;
 export type Key = KeyId;
 export type CanonicalKeyId = KeyId;
@@ -752,7 +752,14 @@ export type SwapKeySlotsAction = {
   secondIndex: number;
 };
 
-export type LayoutSurface = "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+export type LayoutSurface =
+  | "keypad"
+  | "keypad_f"
+  | "keypad_g"
+  | "keypad_menu"
+  | "keypad_f_prime"
+  | "keypad_g_prime"
+  | "storage";
 
 export type MoveLayoutCellAction = {
   type: "MOVE_LAYOUT_CELL";

@@ -1,5 +1,6 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { getExecutionStageCount, resolveWrapStageMode } from "../../../domain/executionPlan.js";
+import { resolveFormulaSymbol } from "../../../domain/multiCalculator.js";
 import type { CalculatorValue, CalculatorState, GameState, RollEntry } from "../../../domain/types.js";
 import {
   buildOperationSlotDisplay as buildOperationSlotDisplayShared,
@@ -182,7 +183,7 @@ const withDisplayParts = (
 
 export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotDisplayModel => {
   const base = buildOperationSlotDisplayShared(state);
-  const symbol: "f" | "g" = state.activeCalculatorId === "g" ? "g" : "f";
+  const symbol = resolveFormulaSymbol(state);
   const operationSlotCount = state.calculator.operationSlots.length;
   const executionStageCount = getExecutionStageCount(state.calculator.operationSlots, state);
   const hasWrapStage = resolveWrapStageMode(state) !== null;

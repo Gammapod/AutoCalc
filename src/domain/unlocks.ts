@@ -263,6 +263,9 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
 };
 
 export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): GameState => {
+  if (state.ui.buttonFlags["mode.sandbox"]) {
+    return normalizeRuntimeStateInvariants(state);
+  }
   let nextState = state;
   const newlyUnlockedKeys = new Set<Key>();
   const activeCalculatorId = resolveActiveCalculatorId(state);

@@ -38,6 +38,46 @@ const menuPlacements: readonly SeedPlacement[] = [
   { row: 1, col: 1, key: KEY_ID.system_quit_game },
 ];
 
+const fPrimePlacements: readonly SeedPlacement[] = [
+  { row: 5, col: 6, key: KEY_ID.system_save_quit_main_menu },
+  { row: 5, col: 5, key: KEY_ID.viz_number_line },
+  { row: 5, col: 3, key: KEY_ID.toggle_step_expansion },
+  { row: 5, col: 2, key: KEY_ID.util_backspace },
+  { row: 5, col: 1, key: KEY_ID.util_clear_all },
+  { row: 4, col: 6, key: KEY_ID.digit_7 },
+  { row: 4, col: 5, key: KEY_ID.digit_8 },
+  { row: 4, col: 4, key: KEY_ID.digit_9 },
+  { row: 4, col: 3, key: KEY_ID.unary_floor },
+  { row: 4, col: 2, key: KEY_ID.unary_ceil },
+  { row: 4, col: 1, key: KEY_ID.exec_roll_inverse },
+  { row: 3, col: 6, key: KEY_ID.digit_4 },
+  { row: 3, col: 5, key: KEY_ID.digit_5 },
+  { row: 3, col: 4, key: KEY_ID.digit_6 },
+  { row: 3, col: 3, key: KEY_ID.op_pow },
+  { row: 2, col: 6, key: KEY_ID.digit_1 },
+  { row: 2, col: 5, key: KEY_ID.digit_2 },
+  { row: 2, col: 4, key: KEY_ID.digit_3 },
+  { row: 2, col: 3, key: KEY_ID.op_mul },
+  { row: 2, col: 2, key: KEY_ID.op_euclid_div },
+  { row: 2, col: 1, key: KEY_ID.op_mod },
+  { row: 1, col: 6, key: KEY_ID.digit_0 },
+  { row: 1, col: 4, key: KEY_ID.unary_neg },
+  { row: 1, col: 3, key: KEY_ID.op_add },
+  { row: 1, col: 2, key: KEY_ID.op_sub },
+  { row: 1, col: 1, key: KEY_ID.exec_equals },
+];
+
+const gPrimePlacements: readonly SeedPlacement[] = [
+  { row: 2, col: 7, key: KEY_ID.digit_1 },
+  { row: 2, col: 6, key: KEY_ID.unary_not },
+  { row: 2, col: 3, key: KEY_ID.op_mul },
+  { row: 2, col: 2, key: KEY_ID.toggle_binary_mode, behavior: { type: "toggle_flag", flag: "settings.binary_mode" } },
+  { row: 1, col: 7, key: KEY_ID.digit_0 },
+  { row: 1, col: 3, key: KEY_ID.op_add },
+  { row: 1, col: 2, key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: "settings.mod_zero_to_delta" } },
+  { row: 1, col: 1, key: KEY_ID.exec_equals },
+];
+
 export const calculatorSeedManifest: Readonly<Record<CalculatorId, CalculatorSeedSpec>> = {
   f: {
     calculatorId: "f",
@@ -59,6 +99,20 @@ export const calculatorSeedManifest: Readonly<Record<CalculatorId, CalculatorSee
     keypadRows: 6,
     activeVisualizer: "title",
     placements: menuPlacements,
+  },
+  f_prime: {
+    calculatorId: "f_prime",
+    keypadColumns: 6,
+    keypadRows: 5,
+    activeVisualizer: "total",
+    placements: fPrimePlacements,
+  },
+  g_prime: {
+    calculatorId: "g_prime",
+    keypadColumns: 7,
+    keypadRows: 2,
+    activeVisualizer: "total",
+    placements: gPrimePlacements,
   },
 };
 

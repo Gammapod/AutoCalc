@@ -28,9 +28,16 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
         ui: rootUiNormalized,
       };
   const unlocked = new Set<Key>(iterUnlockedButtons(stateWithUi));
-  const seen = new Set<Key>();
+  const collectInstalledKeys = (layout: LayoutCell[], seen: Set<Key>): void => {
+    for (const cell of layout) {
+      if (cell.kind === "key") {
+        seen.add(cell.key);
+      }
+    }
+  };
 
   if (!isMultiCalculatorSession(stateWithUi)) {
+    const seen = new Set<Key>();
     const keyLayout = dedupeKeyLayout(stateWithUi.ui.keyLayout, seen);
     const filteredStorage = dedupeAndFilterStorage(stateWithUi.ui.storageLayout, seen, unlocked);
     const storageLayout = ensureUnlockedKeysPresent(filteredStorage, seen, unlocked);
@@ -64,6 +71,7 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
   const normalizedUiByCalculatorId: Partial<Record<CalculatorId, GameState["ui"]>> = {};
   const normalizedSettingsByCalculatorId: Partial<Record<CalculatorId, GameState["settings"]>> = {};
   const dedupedLayoutByCalculatorId: Partial<Record<CalculatorId, LayoutCell[]>> = {};
+  const installedAcrossKeypads = new Set<Key>();
   for (const calculatorId of orderedCalculatorIds) {
     const instance = calculators[calculatorId];
     if (!instance) {
@@ -77,12 +85,14 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
     const normalizedInstanceSettings = sourceSettings ?? createDefaultCalculatorSettings();
     normalizedUiByCalculatorId[calculatorId] = normalizedInstanceUi;
     normalizedSettingsByCalculatorId[calculatorId] = normalizedInstanceSettings;
-    dedupedLayoutByCalculatorId[calculatorId] = dedupeKeyLayout(normalizedInstanceUi.keyLayout, seen);
+    const dedupedLayout = dedupeKeyLayout(normalizedInstanceUi.keyLayout, new Set<Key>());
+    dedupedLayoutByCalculatorId[calculatorId] = dedupedLayout;
+    collectInstalledKeys(dedupedLayout, installedAcrossKeypads);
   }
 
-  // Preserve keypad ownership first, then collapse storage duplicates for the shared storage surface.
-  const filteredStorage = dedupeAndFilterStorage(stateWithUi.ui.storageLayout, seen, unlocked);
-  const storageLayout = ensureUnlockedKeysPresent(filteredStorage, seen, unlocked);
+  // Keep per-calculator keypads isolated; only storage is deduped against globally installed keys.
+  const filteredStorage = dedupeAndFilterStorage(stateWithUi.ui.storageLayout, installedAcrossKeypads, unlocked);
+  const storageLayout = ensureUnlockedKeysPresent(filteredStorage, installedAcrossKeypads, unlocked);
 
   const nextCalculators = { ...calculators };
   let calculatorsChanged = false;
@@ -96,7 +106,7 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
     }
     const normalizedInstanceUi = normalizedUiByCalculatorId[calculatorId] ?? withNormalizedDiagnostics(instance.ui);
     const normalizedInstanceSettings = normalizedSettingsByCalculatorId[calculatorId] ?? instance.settings ?? createDefaultCalculatorSettings();
-    const dedupedLayout = dedupedLayoutByCalculatorId[calculatorId] ?? dedupeKeyLayout(normalizedInstanceUi.keyLayout, seen);
+    const dedupedLayout = dedupedLayoutByCalculatorId[calculatorId] ?? dedupeKeyLayout(normalizedInstanceUi.keyLayout, new Set<Key>());
     const layoutUi = (dedupedLayout === normalizedInstanceUi.keyLayout && storageLayout === normalizedInstanceUi.storageLayout)
       ? normalizedInstanceUi
       : withLayout(normalizedInstanceUi, dedupedLayout, storageLayout);

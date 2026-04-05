@@ -6,6 +6,7 @@ import type {
   GameState,
   KeyInput,
   LambdaControl,
+  LayoutSurface,
   VisualizerId,
 } from "./types.js";
 
@@ -18,28 +19,28 @@ export type DomainEvent =
   | { type: "KeySlotsSwapped"; firstIndex: number; secondIndex: number }
   | {
       type: "LayoutCellMoved";
-      fromSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      fromSurface: LayoutSurface;
       fromIndex: number;
-      toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      toSurface: LayoutSurface;
       toIndex: number;
     }
   | {
       type: "LayoutCellsSwapped";
-      fromSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      fromSurface: LayoutSurface;
       fromIndex: number;
-      toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      toSurface: LayoutSurface;
       toIndex: number;
     }
   | {
       type: "StorageKeyInstalled";
       key: KeyInput;
-      toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      toSurface: LayoutSurface;
       toIndex: number;
       calculatorId?: CalculatorId;
     }
   | {
       type: "LayoutKeyUninstalled";
-      fromSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage";
+      fromSurface: LayoutSurface;
       fromIndex: number;
       calculatorId?: CalculatorId;
     }

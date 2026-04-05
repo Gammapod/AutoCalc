@@ -5,7 +5,7 @@ import {
   EXECUTION_PAUSE_FLAG,
 } from "./state.js";
 import { isMultiCalculatorSession, resolveActiveCalculatorId, toCalculatorSurface } from "./multiCalculator.js";
-import type { Action, GameState, Key, KeyCell } from "./types.js";
+import type { Action, GameState, Key, KeyCell, LayoutSurface } from "./types.js";
 import { resolveSettingSelectionForFlag } from "./settings.js";
 
 const isKeyCell = (cell: GameState["ui"]["keyLayout"][number] | GameState["ui"]["storageLayout"][number]): cell is KeyCell =>
@@ -241,8 +241,8 @@ export const isExecutionGatedInputKey = (key: Key): boolean => {
 
 const touchesActiveCalculatorSurface = (
   state: GameState,
-  fromSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage",
-  toSurface: "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "storage",
+  fromSurface: LayoutSurface,
+  toSurface: LayoutSurface,
 ): boolean => {
   if (!isMultiCalculatorSession(state)) {
     return fromSurface === "keypad" || toSurface === "keypad";

@@ -58,8 +58,15 @@ const defaultNow = (): number => Date.now();
 const defaultSchedule: Scheduler = (fn, delayMs) => setTimeout(fn, delayMs);
 const defaultCancelScheduled: Canceler = (handle) => clearTimeout(handle);
 
-const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" =>
-  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g" || surface === "keypad_menu";
+const isKeypadSurface = (
+  surface: LayoutSurface,
+): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
+  surface === "keypad"
+  || surface === "keypad_f"
+  || surface === "keypad_g"
+  || surface === "keypad_menu"
+  || surface === "keypad_f_prime"
+  || surface === "keypad_g_prime";
 
 const clearHoverDecorations = (runtime: Runtime): void => {
   runtime.hoverElement?.classList.remove("drop-target-valid", "drop-target-invalid");

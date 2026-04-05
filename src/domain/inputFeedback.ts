@@ -13,6 +13,12 @@ const surfaceToCalculatorId = (state: GameState, surface: LayoutSurface): Calcul
   if (surface === "keypad_menu") {
     return "menu";
   }
+  if (surface === "keypad_f_prime") {
+    return "f_prime";
+  }
+  if (surface === "keypad_g_prime") {
+    return "g_prime";
+  }
   if (surface === "keypad") {
     return resolveActiveCalculatorId(state);
   }
@@ -58,6 +64,8 @@ const toFeedbackComparableState = (state: GameState): unknown => {
       f: toFeedbackComparableCalculator(state.calculators.f),
       g: toFeedbackComparableCalculator(state.calculators.g),
       menu: toFeedbackComparableCalculator(state.calculators.menu),
+      f_prime: toFeedbackComparableCalculator(state.calculators.f_prime),
+      g_prime: toFeedbackComparableCalculator(state.calculators.g_prime),
     }
     : state.calculators;
   if (state.calculators) {

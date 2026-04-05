@@ -73,7 +73,15 @@ const getAppModeToggleUrl = (location: Location, mode: AppMode): string => {
 const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
 
 const toSelectedCalculatorId = (value: string): CalculatorId =>
-  value === "g" ? "g" : value === "menu" ? "menu" : "f";
+  value === "g"
+    ? "g"
+    : value === "menu"
+      ? "menu"
+      : value === "f_prime"
+        ? "f_prime"
+        : value === "g_prime"
+          ? "g_prime"
+          : "f";
 
 const renderMatrixEditor = (root: HTMLElement, equations: Record<ControlField, ControlEquation>): void => {
   const headers = ["out", "a", "b", "g", "d", "e", "c"];

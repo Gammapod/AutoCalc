@@ -35,24 +35,28 @@ export const renderCalculatorStorageV2Module = (
   const calculatorOrder = state.calculatorOrder ?? ["f"];
   const hasMultiple = calculatorOrder.length > 1;
   const hasInstanceNodes = Boolean(calculatorDevice?.querySelector("[data-calc-instance-id]"));
+  const uiShellMode = calculatorDevice?.ownerDocument?.body?.dataset.uiShell;
+  const useDesktopInstanceTrack = uiShellMode === "desktop";
   if (hasMultiple && calculatorDevice && hasInstanceNodes) {
     if (switchRow) {
-      switchRow.hidden = false;
+      switchRow.hidden = useDesktopInstanceTrack;
     }
     const activeCalculatorId = resolveActiveCalculatorId(state);
     calculatorDevice.dataset.activeCalculatorId = activeCalculatorId;
-    const switchButtons = calculatorDevice.querySelectorAll<HTMLButtonElement>("[data-calc-switch]");
-    switchButtons.forEach((button) => {
-      const target = button.dataset.calcSwitch as CalculatorId | undefined;
-      button.setAttribute("aria-pressed", target === activeCalculatorId ? "true" : "false");
-      button.hidden = !target || !calculatorOrder.includes(target);
-      button.onclick = () => {
-        if (!target || !calculatorOrder.includes(target)) {
-          return;
-        }
-        dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId: target });
-      };
-    });
+    if (!useDesktopInstanceTrack) {
+      const switchButtons = calculatorDevice.querySelectorAll<HTMLButtonElement>("[data-calc-switch]");
+      switchButtons.forEach((button) => {
+        const target = button.dataset.calcSwitch as CalculatorId | undefined;
+        button.setAttribute("aria-pressed", target === activeCalculatorId ? "true" : "false");
+        button.hidden = !target || !calculatorOrder.includes(target);
+        button.onclick = () => {
+          if (!target || !calculatorOrder.includes(target)) {
+            return;
+          }
+          dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId: target });
+        };
+      });
+    }
 
     const instances = calculatorDevice.querySelectorAll<HTMLElement>("[data-calc-instance-id]");
     let activeInstanceRendered = false;
@@ -60,6 +64,23 @@ export const renderCalculatorStorageV2Module = (
       const id = instanceEl.dataset.calcInstanceId as CalculatorId | undefined;
       if (!id || !calculatorOrder.includes(id)) {
         instanceEl.hidden = true;
+        return;
+      }
+      if (useDesktopInstanceTrack) {
+        const isActive = id === activeCalculatorId;
+        instanceEl.hidden = false;
+        instanceEl.dataset.calcActive = isActive ? "true" : "false";
+        instanceEl.onclick = () => {
+          dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId: id });
+        };
+        const projected = projectCalculatorToLegacy(state, id);
+        calculatorRenderer(instanceEl, projected, dispatch, {
+          inputBlocked: options.inputBlocked,
+          executionGateRejectCount: executionRejectCountFor(id),
+          acceptedInputCount: inputFeedbackCountFor(id, "accepted"),
+          rejectedInputCount: inputFeedbackCountFor(id, "rejected"),
+        });
+        activeInstanceRendered = true;
         return;
       }
       const isActive = id === activeCalculatorId;

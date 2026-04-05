@@ -13,6 +13,7 @@ Truth 2: Releases
 - `slice_visualizer_cartesian_v1_real_axis`
 - `slice_visualizer_cartesian_v1_complex_grid`
 - `slice_visualizer_cartesian_v1_range_and_error_semantics`
+- `slice_ux_feedback_standardization`
 
 ### Delivered Behavior
 - Runtime now avoids hidden-instance render work and introduces incremental-rendering guardrails for calculator and storage surfaces.

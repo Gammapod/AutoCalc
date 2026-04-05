@@ -145,10 +145,6 @@
         padding-bottom: var(--storage-drawer-height, 0px);
       }
 
-      body[data-app-mode="sandbox"] {
-        --v2-storage-peek: 0px;
-      }
-
       body[data-app-mode="sandbox"] .app-layout {
         grid-template-columns: auto;
       }
@@ -157,9 +153,6 @@
         justify-items: center;
       }
 
-      body[data-app-mode="sandbox"] .storage,
-      body[data-app-mode="sandbox"] [data-v2-section="storage"],
-      body[data-app-mode="sandbox"] .v2-shell-controls,
       body[data-app-mode="sandbox"] .v2-menu {
         display: none !important;
       }
@@ -1158,7 +1151,7 @@
 
       .calc-instance-track {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: repeat(5, 1fr);
         gap: 12px;
       }
 
@@ -1176,6 +1169,14 @@
 
       .calc-instance[data-calc-instance-id="f"] {
         order: 3;
+      }
+
+      .calc-instance[data-calc-instance-id="f_prime"] {
+        order: 4;
+      }
+
+      .calc-instance[data-calc-instance-id="g_prime"] {
+        order: 5;
       }
 
       .slot-display__track {
@@ -2127,7 +2128,9 @@
 
       body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="g"] .calc-instance[data-calc-instance-id="g"],
       body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="menu"] .calc-instance[data-calc-instance-id="menu"],
-      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="f"] .calc-instance[data-calc-instance-id="f"] {
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="f"] .calc-instance[data-calc-instance-id="f"],
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="f_prime"] .calc-instance[data-calc-instance-id="f_prime"],
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="g_prime"] .calc-instance[data-calc-instance-id="g_prime"] {
         display: block;
       }
 
@@ -3114,6 +3117,8 @@
             <option value="menu">menu</option>
             <option value="g">g</option>
             <option value="f">f</option>
+            <option value="f_prime">f'</option>
+            <option value="g_prime">g'</option>
           </select>
           <label for="debug-width">Width</label>
           <input id="debug-width" type="number" min="1" max="8" data-debug-keypad-width />
@@ -3153,6 +3158,8 @@
                 <button type="button" class="calc-switch" data-calc-switch="menu">menu</button>
                 <button type="button" class="calc-switch" data-calc-switch="g">g</button>
                 <button type="button" class="calc-switch" data-calc-switch="f">f</button>
+                <button type="button" class="calc-switch" data-calc-switch="f_prime">f'</button>
+                <button type="button" class="calc-switch" data-calc-switch="g_prime">g'</button>
               </div>
               <div class="calc-instance-track" data-calc-instance-track>
                 <section class="calc-instance" data-calc-instance-id="menu">
@@ -3224,6 +3231,74 @@
                   </section>
                 </section>
                 <section class="calc-instance" data-calc-instance-id="g">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                    </div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-release-notes-panel" data-v2-release-notes-panel aria-label="Release Notes visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
+                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                        <section class="v2-total-footer" data-v2-total-footer aria-hidden="false"></section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+                <section class="calc-instance" data-calc-instance-id="f_prime">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                    </div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-release-notes-panel" data-v2-release-notes-panel aria-label="Release Notes visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
+                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                        <section class="v2-total-footer" data-v2-total-footer aria-hidden="false"></section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+                <section class="calc-instance" data-calc-instance-id="g_prime">
                   <section class="roll" data-roll aria-label="Calculator roll"></section>
                   <section class="calc">
                     <div class="slot" aria-hidden="true"></div>

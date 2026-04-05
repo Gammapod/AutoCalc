@@ -12,6 +12,8 @@ const isSurfaceValue = (value: string | undefined): value is LayoutSurface =>
   || value === "keypad_f"
   || value === "keypad_g"
   || value === "keypad_menu"
+  || value === "keypad_f_prime"
+  || value === "keypad_g_prime"
   || value === "storage";
 
 const parseTargetFromElement = (element: HTMLElement | null): TouchRearrangeTarget | null => {
@@ -60,6 +62,20 @@ const readKeyAtSurfaceIndex = (state: GameState, surface: LayoutSurface, index: 
   }
   if (surface === "keypad_menu") {
     const cell = state.calculators?.menu?.ui.keyLayout[index];
+    if (!cell || cell.kind !== "key") {
+      return null;
+    }
+    return cell.key;
+  }
+  if (surface === "keypad_f_prime") {
+    const cell = state.calculators?.f_prime?.ui.keyLayout[index];
+    if (!cell || cell.kind !== "key") {
+      return null;
+    }
+    return cell.key;
+  }
+  if (surface === "keypad_g_prime") {
+    const cell = state.calculators?.g_prime?.ui.keyLayout[index];
     if (!cell || cell.kind !== "key") {
       return null;
     }

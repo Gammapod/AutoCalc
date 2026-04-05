@@ -3,10 +3,10 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 import { createSeededKeyLayout } from "./calculatorSeedManifest.js";
-import { createInitialUiDiagnosticsLastAction } from "./state.js";
+import { BINARY_MODE_FLAG, createInitialUiDiagnosticsLastAction } from "./state.js";
 import { createDefaultCalculatorSettings } from "./settings.js";
 
-export const CALCULATOR_ORDER: readonly CalculatorId[] = ["menu", "f", "g"];
+export const CALCULATOR_ORDER: readonly CalculatorId[] = ["menu", "f", "g", "f_prime", "g_prime"];
 export const MAIN_CALCULATOR_ID: CalculatorId = "f";
 
 const cloneUi = (ui: GameState["ui"]): GameState["ui"] => ({
@@ -34,6 +34,26 @@ const cloneSettings = (settings: GameState["settings"]): GameState["settings"] =
   ...settings,
 });
 
+const createInitialCalculatorState = (): GameState["calculator"] => ({
+  total: { kind: "rational", value: { num: 0n, den: 1n } },
+  pendingNegativeTotal: false,
+  singleDigitInitialTotalEntry: true,
+  rollEntries: [],
+  rollAnalysis: {
+    stopReason: "none",
+    cycle: null,
+  },
+  operationSlots: [],
+  draftingSlot: null,
+  stepProgress: {
+    active: false,
+    seedTotal: null,
+    currentTotal: null,
+    nextSlotIndex: 0,
+    executedSlotResults: [],
+  },
+});
+
 const createDefaultFCalculator = (state: GameState): CalculatorInstanceState => ({
   id: "f",
   symbol: "f",
@@ -45,15 +65,17 @@ const createDefaultFCalculator = (state: GameState): CalculatorInstanceState => 
 });
 
 const createDefaultGCalculator = (): CalculatorInstanceState => {
-  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout("g");
+  const calculatorId: CalculatorId = "g";
+  const profile = controlProfiles[calculatorId];
+  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout(calculatorId);
 
   const lambdaControl = sanitizeLambdaControl({
-    maxPoints: controlProfiles.g.starts.gamma,
-    alpha: controlProfiles.g.starts.alpha,
-    beta: controlProfiles.g.starts.beta,
-    gamma: controlProfiles.g.starts.gamma,
-    gammaMinRaised: controlProfiles.g.starts.gamma >= 1,
-  }, controlProfiles.g);
+    maxPoints: profile.starts.gamma,
+    alpha: profile.starts.alpha,
+    beta: profile.starts.beta,
+    gamma: profile.starts.gamma,
+    gammaMinRaised: profile.starts.gamma >= 1,
+  }, profile);
 
   const baseUi: GameState["ui"] = {
     keyLayout,
@@ -71,33 +93,15 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
   };
 
   return {
-    id: "g",
-    symbol: "g",
-    calculator: {
-      total: { kind: "rational", value: { num: 0n, den: 1n } },
-      pendingNegativeTotal: false,
-      singleDigitInitialTotalEntry: true,
-      rollEntries: [],
-      rollAnalysis: {
-        stopReason: "none",
-        cycle: null,
-      },
-      operationSlots: [],
-      draftingSlot: null,
-      stepProgress: {
-        active: false,
-        seedTotal: null,
-        currentTotal: null,
-        nextSlotIndex: 0,
-        executedSlotResults: [],
-      },
-    },
+    id: calculatorId,
+    symbol: calculatorId,
+    calculator: createInitialCalculatorState(),
     settings: {
       ...createDefaultCalculatorSettings(),
       visualizer: activeVisualizer,
     },
     lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl, controlProfiles.g),
+    allocator: buildAllocatorSnapshot(lambdaControl, profile),
     ui: baseUi,
   };
 };
@@ -156,6 +160,91 @@ const createDefaultMenuCalculator = (): CalculatorInstanceState => {
     },
     lambdaControl,
     allocator: buildAllocatorSnapshot(lambdaControl, controlProfiles.menu),
+    ui: baseUi,
+  };
+};
+
+const createDefaultFPrimeCalculator = (): CalculatorInstanceState => {
+  const calculatorId: CalculatorId = "f_prime";
+  const profile = controlProfiles[calculatorId];
+  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout(calculatorId);
+  const lambdaControl = sanitizeLambdaControl({
+    maxPoints: profile.starts.gamma,
+    alpha: profile.starts.alpha,
+    beta: profile.starts.beta,
+    gamma: profile.starts.gamma,
+    gammaMinRaised: profile.starts.gamma >= 1,
+  }, profile);
+
+  const baseUi: GameState["ui"] = {
+    keyLayout,
+    keypadCells: fromKeyLayoutArray(keyLayout, keypadColumns, keypadRows),
+    storageLayout: [],
+    keypadColumns,
+    keypadRows,
+    activeVisualizer,
+    selectedControlField: null,
+    memoryVariable: "α",
+    buttonFlags: {},
+    diagnostics: {
+      lastAction: createInitialUiDiagnosticsLastAction(),
+    },
+  };
+
+  return {
+    id: calculatorId,
+    symbol: calculatorId,
+    calculator: createInitialCalculatorState(),
+    settings: {
+      ...createDefaultCalculatorSettings(),
+      visualizer: activeVisualizer,
+    },
+    lambdaControl,
+    allocator: buildAllocatorSnapshot(lambdaControl, profile),
+    ui: baseUi,
+  };
+};
+
+const createDefaultGPrimeCalculator = (): CalculatorInstanceState => {
+  const calculatorId: CalculatorId = "g_prime";
+  const profile = controlProfiles[calculatorId];
+  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout(calculatorId);
+  const lambdaControl = sanitizeLambdaControl({
+    maxPoints: profile.starts.gamma,
+    alpha: profile.starts.alpha,
+    beta: profile.starts.beta,
+    gamma: profile.starts.gamma,
+    gammaMinRaised: profile.starts.gamma >= 1,
+  }, profile);
+
+  const baseUi: GameState["ui"] = {
+    keyLayout,
+    keypadCells: fromKeyLayoutArray(keyLayout, keypadColumns, keypadRows),
+    storageLayout: [],
+    keypadColumns,
+    keypadRows,
+    activeVisualizer,
+    selectedControlField: null,
+    memoryVariable: "α",
+    buttonFlags: {
+      [BINARY_MODE_FLAG]: true,
+    },
+    diagnostics: {
+      lastAction: createInitialUiDiagnosticsLastAction(),
+    },
+  };
+
+  return {
+    id: calculatorId,
+    symbol: calculatorId,
+    calculator: createInitialCalculatorState(),
+    settings: {
+      ...createDefaultCalculatorSettings(),
+      base: "base2",
+      visualizer: activeVisualizer,
+    },
+    lambdaControl,
+    allocator: buildAllocatorSnapshot(lambdaControl, profile),
     ui: baseUi,
   };
 };
@@ -245,12 +334,52 @@ export const materializeCalculatorG = (state: GameState): GameState => {
   };
 };
 
+export const materializeCalculatorFPrime = (state: GameState): GameState => {
+  const withInstances = ensureCalculatorInstances(materializeCalculator(state, "f"));
+  if (withInstances.calculators?.f_prime) {
+    return withInstances;
+  }
+  const nextCalculators = {
+    ...withInstances.calculators,
+    f_prime: createDefaultFPrimeCalculator(),
+  };
+  return {
+    ...withInstances,
+    calculators: nextCalculators,
+    calculatorOrder: resolveCalculatorOrder(nextCalculators),
+    activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
+  };
+};
+
+export const materializeCalculatorGPrime = (state: GameState): GameState => {
+  const withInstances = ensureCalculatorInstances(materializeCalculator(state, "f"));
+  if (withInstances.calculators?.g_prime) {
+    return withInstances;
+  }
+  const nextCalculators = {
+    ...withInstances.calculators,
+    g_prime: createDefaultGPrimeCalculator(),
+  };
+  return {
+    ...withInstances,
+    calculators: nextCalculators,
+    calculatorOrder: resolveCalculatorOrder(nextCalculators),
+    activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
+  };
+};
+
 export const materializeCalculator = (state: GameState, calculatorId: CalculatorId): GameState => {
   if (calculatorId === "f") {
     return ensureCalculatorInstances(state);
   }
   if (calculatorId === "g") {
     return materializeCalculatorG(state);
+  }
+  if (calculatorId === "f_prime") {
+    return materializeCalculatorFPrime(state);
+  }
+  if (calculatorId === "g_prime") {
+    return materializeCalculatorGPrime(state);
   }
   return materializeCalculatorMenu(state);
 };
@@ -315,24 +444,44 @@ export const commitLegacyProjection = (previous: GameState, projected: GameState
       ...base.calculators,
       [calculatorId]: nextInstance,
     },
-    calculatorOrder: base.calculatorOrder ?? (base.calculators?.g ? ["f", "g"] : ["f"]),
+    calculatorOrder: base.calculatorOrder ?? resolveCalculatorOrder(base.calculators ?? {}),
     activeCalculatorId: projected.activeCalculatorId ?? calculatorId,
   };
 };
 
 export const resolveFormulaSymbol = (state: GameState): "f" | "g" => {
   const active = resolveActiveCalculatorId(state);
-  return active === "g" ? "g" : "f";
+  return active === "g" || active === "g_prime" ? "g" : "f";
 };
 
 export const withActiveCalculator = (state: GameState, calculatorId: CalculatorId): GameState =>
   projectCalculatorToLegacy(ensureCalculatorInstances(state), calculatorId);
 
-export const toCalculatorSurface = (calculatorId: CalculatorId): "keypad_f" | "keypad_g" | "keypad_menu" =>
-  calculatorId === "g" ? "keypad_g" : calculatorId === "menu" ? "keypad_menu" : "keypad_f";
+export const toCalculatorSurface = (
+  calculatorId: CalculatorId,
+): "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
+  calculatorId === "g"
+    ? "keypad_g"
+    : calculatorId === "menu"
+      ? "keypad_menu"
+      : calculatorId === "f_prime"
+        ? "keypad_f_prime"
+        : calculatorId === "g_prime"
+          ? "keypad_g_prime"
+          : "keypad_f";
 
-export const fromCalculatorSurface = (surface: "keypad_f" | "keypad_g" | "keypad_menu"): CalculatorId =>
-  surface === "keypad_g" ? "g" : surface === "keypad_menu" ? "menu" : "f";
+export const fromCalculatorSurface = (
+  surface: "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime",
+): CalculatorId =>
+  surface === "keypad_g"
+    ? "g"
+    : surface === "keypad_menu"
+      ? "menu"
+      : surface === "keypad_f_prime"
+        ? "f_prime"
+        : surface === "keypad_g_prime"
+          ? "g_prime"
+          : "f";
 
 export const normalizeLegacyForMissingInstances = (state: GameState): GameState =>
   ensureCalculatorInstances(state);

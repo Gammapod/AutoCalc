@@ -79,8 +79,15 @@ export type ReducerOptions = {
   services?: AppServices;
 };
 
-const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" =>
-  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g" || surface === "keypad_menu";
+const isKeypadSurface = (
+  surface: LayoutSurface,
+): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
+  surface === "keypad"
+  || surface === "keypad_f"
+  || surface === "keypad_g"
+  || surface === "keypad_menu"
+  || surface === "keypad_f_prime"
+  || surface === "keypad_g_prime";
 
 const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
   if (surface === "keypad") {
@@ -94,6 +101,12 @@ const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): C
   }
   if (surface === "keypad_menu") {
     return "menu";
+  }
+  if (surface === "keypad_f_prime") {
+    return "f_prime";
+  }
+  if (surface === "keypad_g_prime") {
+    return "g_prime";
   }
   return null;
 };
@@ -228,7 +241,11 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
             ? (state.calculators?.f?.ui ?? state.ui)
             : normalizedAction.toSurface === "keypad_g"
               ? (state.calculators?.g?.ui ?? null)
-              : (state.calculators?.menu?.ui ?? null);
+              : normalizedAction.toSurface === "keypad_menu"
+                ? (state.calculators?.menu?.ui ?? null)
+                : normalizedAction.toSurface === "keypad_f_prime"
+                  ? (state.calculators?.f_prime?.ui ?? null)
+                  : (state.calculators?.g_prime?.ui ?? null);
         if (!ui) {
           return null;
         }

@@ -84,6 +84,34 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
     assert.equal(gSwitchButton?.getAttribute("aria-pressed"), "true", "active switch button reflects switched active calculator");
     assert.equal(fSwitchButton?.getAttribute("aria-pressed"), "false", "inactive switch button is not pressed");
 
+    harness.document.body.setAttribute("data-ui-shell", "desktop");
+    renderTargets.length = 0;
+    renderCalculatorStorageV2Module(harness.root, activeGState, noopDispatch, {
+      inputBlocked: false,
+      uiEffects: [],
+    });
+    assert.deepEqual(
+      renderTargets.sort(),
+      ["f", "g", "menu"].sort(),
+      "desktop instance-track path renders each available calculator instance",
+    );
+    assert.equal(
+      harness.root.querySelector<HTMLElement>("[data-calc-instance-id='f']")?.hidden,
+      false,
+      "desktop instance-track keeps f visible",
+    );
+    assert.equal(
+      harness.root.querySelector<HTMLElement>("[data-calc-instance-id='g']")?.hidden,
+      false,
+      "desktop instance-track keeps g visible",
+    );
+    assert.equal(
+      harness.root.querySelector<HTMLElement>("[data-calc-instance-id='menu']")?.hidden,
+      false,
+      "desktop instance-track keeps menu visible",
+    );
+    harness.document.body.setAttribute("data-ui-shell", "mobile");
+
     const gNode = harness.root.querySelector<HTMLElement>("[data-calc-instance-id='g']");
     gNode?.remove();
     renderTargets.length = 0;

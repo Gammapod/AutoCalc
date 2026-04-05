@@ -14,6 +14,7 @@ import {
 import type { BinarySlot, GameState, PrimeFactorTerm, RationalPrimeFactorization, RationalValue, RollEntry, Slot, UnarySlot } from "./types.js";
 import type { ContentProvider } from "../contracts/contentProvider.js";
 import { getAppServices } from "../contracts/appServices.js";
+import { resolveFormulaSymbol } from "./multiCalculator.js";
 
 type TokenMap = Record<string, string | undefined>;
 
@@ -111,7 +112,7 @@ const interpolateTemplate = (template: string, tokens: TokenMap): string =>
     return trimmed.length > 0 ? trimmed : EMPTY;
   });
 
-const resolveCalcSymbol = (state: GameState): string => (state.activeCalculatorId === "g" ? "g" : "f");
+const resolveCalcSymbol = (state: GameState): string => resolveFormulaSymbol(state);
 
 const resolveCommonTokens = (state: GameState): TokenMap => ({
   calcSymbol: resolveCalcSymbol(state),

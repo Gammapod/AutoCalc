@@ -1,5 +1,6 @@
 import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js";
 import { expressionToDisplayString, slotOperandToExpression } from "../../domain/expression.js";
+import { resolveFormulaSymbol } from "../../domain/multiCalculator.js";
 import { getSeedRow } from "../../domain/rollEntries.js";
 import { KEY_ID } from "../../domain/keyPresentation.js";
 import type {
@@ -126,7 +127,7 @@ const toExpressionOperandText = (operand: BinarySlot["operand"]): string =>
 export const buildFunctionRecurrenceDisplay = (
   state: GameState,
 ): { line: string; hasIncompleteDraft: boolean; containsEuclidLiteral: boolean; expressionText: string } => {
-  const symbol = state.activeCalculatorId === "g" ? "g" : "f";
+  const symbol = resolveFormulaSymbol(state);
   const useXStyle = symbol === "g";
   const currentToken = useXStyle ? `${symbol}_{x-1}` : `${symbol}_n`;
   const nextToken = useXStyle ? `${symbol}_{x}` : `${symbol}_{n+1}`;
@@ -167,7 +168,7 @@ export const buildFunctionRecurrenceDisplay = (
 };
 
 export const buildAlgebraicViewModel = (state: GameState): AlgebraicViewModel => {
-  const symbol = state.activeCalculatorId === "g" ? "g" : "f";
+  const symbol = resolveFormulaSymbol(state);
   const seedValue = resolveSeedValueForAlgebra(state);
   const seedLine = seedValue ? `${symbol}_0 = ${calculatorValueToDisplayString(seedValue)}` : `${symbol}_0 = _`;
   const recurrence = buildFunctionRecurrenceDisplay(state);

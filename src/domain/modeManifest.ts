@@ -9,8 +9,8 @@ export type ModeBootContext = {
 
 export type ModeManifest = {
   mode: AppMode;
-  bootCalculatorOrder: readonly ("menu" | "f" | "g")[];
-  activeCalculatorId: "menu" | "f" | "g";
+  bootCalculatorOrder: readonly ("menu" | "f" | "g" | "f_prime" | "g_prime")[];
+  activeCalculatorId: "menu" | "f" | "g" | "f_prime" | "g_prime";
   initialLockPolicy: "default_unlocks" | "all_keys_locked";
   storageContentVisible: boolean;
   modeButtonFlags: Readonly<Record<string, boolean>>;
@@ -26,6 +26,7 @@ export const modeManifestById = {
     storageContentVisible: true,
     modeButtonFlags: {
       "mode.main_menu": false,
+      "mode.sandbox": false,
       "mode.storage_content_visible": true,
     },
     createBootState: (context: ModeBootContext) => context.createFreshGameState(),
@@ -35,10 +36,11 @@ export const modeManifestById = {
     bootCalculatorOrder: ["f"],
     activeCalculatorId: "f",
     initialLockPolicy: "default_unlocks",
-    storageContentVisible: false,
+    storageContentVisible: true,
     modeButtonFlags: {
       "mode.main_menu": false,
-      "mode.storage_content_visible": false,
+      "mode.sandbox": true,
+      "mode.storage_content_visible": true,
     },
     createBootState: (context: ModeBootContext) => context.createSandboxState(),
   },
@@ -50,6 +52,7 @@ export const modeManifestById = {
     storageContentVisible: false,
     modeButtonFlags: {
       "mode.main_menu": true,
+      "mode.sandbox": false,
       "mode.storage_content_visible": false,
     },
     createBootState: (context: ModeBootContext) => context.createMainMenuState(),

@@ -16,7 +16,7 @@ import {
 import {
   evaluateLayoutDrop,
 } from "./layoutRules.js";
-import type { GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface } from "./types.js";
+import type { CalculatorId, GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface } from "./types.js";
 import { isMultiCalculatorSession } from "./multiCalculator.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
 
@@ -61,10 +61,17 @@ const appendKeyToStorage = (
 
 const emptyCell = (): LayoutCell => ({ kind: "placeholder", area: "empty" });
 
-const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" =>
-  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g" || surface === "keypad_menu";
+const isKeypadSurface = (
+  surface: LayoutSurface,
+): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
+  surface === "keypad"
+  || surface === "keypad_f"
+  || surface === "keypad_g"
+  || surface === "keypad_menu"
+  || surface === "keypad_f_prime"
+  || surface === "keypad_g_prime";
 
-const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): "f" | "g" | "menu" | null => {
+const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
   if (surface === "keypad_f") {
     return "f";
   }
@@ -73,6 +80,12 @@ const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): "
   }
   if (surface === "keypad_menu") {
     return "menu";
+  }
+  if (surface === "keypad_f_prime") {
+    return "f_prime";
+  }
+  if (surface === "keypad_g_prime") {
+    return "g_prime";
   }
   if (surface === "keypad") {
     return state.activeCalculatorId ?? null;
@@ -96,6 +109,12 @@ const getSurfaceUi = (state: GameState, surface: LayoutSurface): GameState["ui"]
   }
   if (surface === "keypad_menu") {
     return state.calculators?.menu?.ui ?? null;
+  }
+  if (surface === "keypad_f_prime") {
+    return state.calculators?.f_prime?.ui ?? null;
+  }
+  if (surface === "keypad_g_prime") {
+    return state.calculators?.g_prime?.ui ?? null;
   }
   return null;
 };
@@ -200,6 +219,36 @@ const setSurfaceUi = (state: GameState, surface: LayoutSurface, ui: GameState["u
       },
     };
   }
+  if (surface === "keypad_f_prime") {
+    if (!state.calculators?.f_prime) {
+      return state;
+    }
+    return {
+      ...state,
+      calculators: {
+        ...state.calculators,
+        f_prime: {
+          ...state.calculators.f_prime,
+          ui: sharedStorageUi,
+        },
+      },
+    };
+  }
+  if (surface === "keypad_g_prime") {
+    if (!state.calculators?.g_prime) {
+      return state;
+    }
+    return {
+      ...state,
+      calculators: {
+        ...state.calculators,
+        g_prime: {
+          ...state.calculators.g_prime,
+          ui: sharedStorageUi,
+        },
+      },
+    };
+  }
   return state;
 };
 
@@ -265,7 +314,7 @@ const resolveCanonicalKeyCell = (state: GameState, key: KeyCell["key"]): KeyCell
     }
   }
   const surfaces: LayoutSurface[] = isMultiCalculatorSession(state)
-    ? ["keypad_f", "keypad_g", "keypad_menu"]
+    ? ["keypad_f", "keypad_g", "keypad_menu", "keypad_f_prime", "keypad_g_prime"]
     : ["keypad"];
   for (const surface of surfaces) {
     const length = getSurfaceLength(state, surface);
@@ -309,7 +358,13 @@ const hasOnlyExpectedKeyChanges = (
   const hasMultiKeypads = isMultiCalculatorSession(previous);
   if (!hasMultiKeypads) {
     for (const entry of allowedChanges) {
-      if (entry.surface === "keypad_f" || entry.surface === "keypad_g" || entry.surface === "keypad_menu") {
+      if (
+        entry.surface === "keypad_f"
+        || entry.surface === "keypad_g"
+        || entry.surface === "keypad_menu"
+        || entry.surface === "keypad_f_prime"
+        || entry.surface === "keypad_g_prime"
+      ) {
         allow.add(`keypad:${entry.index}`);
       }
     }
@@ -320,7 +375,11 @@ const hasOnlyExpectedKeyChanges = (
         ? "keypad_g"
         : previous.activeCalculatorId === "menu"
           ? "keypad_menu"
-          : "keypad_f";
+          : previous.activeCalculatorId === "f_prime"
+            ? "keypad_f_prime"
+            : previous.activeCalculatorId === "g_prime"
+              ? "keypad_g_prime"
+              : "keypad_f";
     for (const entry of allowedChanges) {
       if (entry.surface === "keypad") {
         allow.add(`${activeSurface}:${entry.index}`);
@@ -328,7 +387,7 @@ const hasOnlyExpectedKeyChanges = (
     }
   }
   const surfaces: LayoutSurface[] = hasMultiKeypads
-    ? ["keypad_f", "keypad_g", "keypad_menu", "storage"]
+    ? ["keypad_f", "keypad_g", "keypad_menu", "keypad_f_prime", "keypad_g_prime", "storage"]
     : ["keypad", "storage"];
 
   for (const surface of surfaces) {

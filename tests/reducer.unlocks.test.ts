@@ -328,6 +328,33 @@ export const runReducerUnlockTests = (): void => {
     true,
     "missing unlocked key is auto-repaired into storage",
   );
+
+  const sandboxBypassSeed: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      buttonFlags: {
+        ...base.ui.buttonFlags,
+        "mode.sandbox": true,
+      },
+    },
+    calculator: {
+      ...base.calculator,
+      total: r(10n),
+      rollEntries: Array.from({ length: 7 }, (_, index) => ({ y: r(BigInt(index)) })),
+    },
+  };
+  const sandboxBypassResult = applyUnlocks(sandboxBypassSeed, unlockCatalog);
+  assert.equal(
+    sandboxBypassResult.unlocks.unaryOperators[uop("unary_inc")],
+    base.unlocks.unaryOperators[uop("unary_inc")],
+    "sandbox mode bypass keeps unlock booleans unchanged",
+  );
+  assert.deepEqual(
+    sandboxBypassResult.completedUnlockIds,
+    base.completedUnlockIds,
+    "sandbox mode bypass does not mutate unlock completion ids",
+  );
 };
 
 

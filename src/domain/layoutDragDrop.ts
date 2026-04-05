@@ -9,8 +9,15 @@ type DragTarget = {
 
 export type LayoutDragDropAction = "move" | "swap" | "install" | "uninstall";
 
-const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" =>
-  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g" || surface === "keypad_menu";
+const isKeypadSurface = (
+  surface: LayoutSurface,
+): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
+  surface === "keypad"
+  || surface === "keypad_f"
+  || surface === "keypad_g"
+  || surface === "keypad_menu"
+  || surface === "keypad_f_prime"
+  || surface === "keypad_g_prime";
 
 const getKeyLayoutForSurface = (state: GameState, surface: LayoutSurface): GameState["ui"]["keyLayout"] | null => {
   if (surface === "keypad") {
@@ -28,6 +35,12 @@ const getKeyLayoutForSurface = (state: GameState, surface: LayoutSurface): GameS
   }
   if (surface === "keypad_menu") {
     return state.calculators?.menu?.ui.keyLayout ?? null;
+  }
+  if (surface === "keypad_f_prime") {
+    return state.calculators?.f_prime?.ui.keyLayout ?? null;
+  }
+  if (surface === "keypad_g_prime") {
+    return state.calculators?.g_prime?.ui.keyLayout ?? null;
   }
   return null;
 };

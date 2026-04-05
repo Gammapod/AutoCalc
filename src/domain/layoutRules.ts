@@ -1,6 +1,6 @@
 import { isKeyUnlocked } from "./keyUnlocks.js";
 import { STORAGE_COLUMNS } from "./state.js";
-import type { GameState, LayoutSurface } from "./types.js";
+import type { CalculatorId, GameState, LayoutSurface } from "./types.js";
 import { isMultiCalculatorSession, resolveActiveCalculatorId } from "./multiCalculator.js";
 
 export type LayoutDropAction = "move" | "swap";
@@ -43,6 +43,12 @@ const getKeyLayoutForSurface = (state: GameState, surface: LayoutSurface): GameS
   if (surface === "keypad_menu") {
     return state.calculators?.menu?.ui.keyLayout ?? null;
   }
+  if (surface === "keypad_f_prime") {
+    return state.calculators?.f_prime?.ui.keyLayout ?? null;
+  }
+  if (surface === "keypad_g_prime") {
+    return state.calculators?.g_prime?.ui.keyLayout ?? null;
+  }
   return null;
 };
 
@@ -55,7 +61,14 @@ const getCellOccupancy = (
   if (!state.unlocks.uiUnlocks.storageVisible && target.surface === "storage") {
     return "invalid";
   }
-  if (target.surface === "keypad" || target.surface === "keypad_f" || target.surface === "keypad_g" || target.surface === "keypad_menu") {
+  if (
+    target.surface === "keypad"
+    || target.surface === "keypad_f"
+    || target.surface === "keypad_g"
+    || target.surface === "keypad_menu"
+    || target.surface === "keypad_f_prime"
+    || target.surface === "keypad_g_prime"
+  ) {
     const keyLayout = getKeyLayoutForSurface(state, target.surface);
     const cell = keyLayout?.[target.index];
     if (!cell) {
@@ -79,10 +92,17 @@ const getCellOccupancy = (
   return "key";
 };
 
-const isKeypadSurface = (surface: LayoutSurface): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" =>
-  surface === "keypad" || surface === "keypad_f" || surface === "keypad_g" || surface === "keypad_menu";
+const isKeypadSurface = (
+  surface: LayoutSurface,
+): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
+  surface === "keypad"
+  || surface === "keypad_f"
+  || surface === "keypad_g"
+  || surface === "keypad_menu"
+  || surface === "keypad_f_prime"
+  || surface === "keypad_g_prime";
 
-const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): "f" | "g" | "menu" | null => {
+const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
   if (surface === "keypad_f") {
     return "f";
   }
@@ -91,6 +111,12 @@ const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): "
   }
   if (surface === "keypad_menu") {
     return state.calculators?.menu ? "menu" : null;
+  }
+  if (surface === "keypad_f_prime") {
+    return state.calculators?.f_prime ? "f_prime" : null;
+  }
+  if (surface === "keypad_g_prime") {
+    return state.calculators?.g_prime ? "g_prime" : null;
   }
   if (surface === "keypad") {
     if (isMultiCalculatorSession(state)) {
@@ -172,12 +198,29 @@ const isStorageDropGeometryValid = (
       nextStorage[destination.index] = sourceStorageCell;
     } else if (
       source.surface === "storage"
-      && (destination.surface === "keypad" || destination.surface === "keypad_f" || destination.surface === "keypad_g" || destination.surface === "keypad_menu")
+      && (
+        destination.surface === "keypad"
+        || destination.surface === "keypad_f"
+        || destination.surface === "keypad_g"
+        || destination.surface === "keypad_menu"
+        || destination.surface === "keypad_f_prime"
+        || destination.surface === "keypad_g_prime"
+      )
     ) {
       const destinationKeypadLayout = getKeyLayoutForSurface(state, destination.surface);
       const destinationKeypadCell = destinationKeypadLayout?.[destination.index];
       nextStorage[source.index] = destinationKeypadCell?.kind === "key" ? destinationKeypadCell : null;
-    } else if ((source.surface === "keypad" || source.surface === "keypad_f" || source.surface === "keypad_g" || source.surface === "keypad_menu") && destination.surface === "storage") {
+    } else if (
+      (
+        source.surface === "keypad"
+        || source.surface === "keypad_f"
+        || source.surface === "keypad_g"
+        || source.surface === "keypad_menu"
+        || source.surface === "keypad_f_prime"
+        || source.surface === "keypad_g_prime"
+      )
+      && destination.surface === "storage"
+    ) {
       const sourceKeypadLayout = getKeyLayoutForSurface(state, source.surface);
       const sourceKeypadCell = sourceKeypadLayout?.[source.index];
       nextStorage[destination.index] = sourceKeypadCell?.kind === "key" ? sourceKeypadCell : null;
