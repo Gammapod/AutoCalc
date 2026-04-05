@@ -83,26 +83,27 @@ export const normalizeLegacyEqualsPress = (action: Action): Action => {
   };
 };
 
+export const isActiveCalculatorScopedAction = (action: Action): boolean =>
+  action.type === "PRESS_KEY"
+  || action.type === "SET_KEYPAD_DIMENSIONS"
+  || action.type === "UPGRADE_KEYPAD_ROW"
+  || action.type === "UPGRADE_KEYPAD_COLUMN"
+  || action.type === "TOGGLE_FLAG"
+  || action.type === "TOGGLE_VISUALIZER"
+  || action.type === "ALLOCATOR_ADJUST"
+  || action.type === "ALLOCATOR_SET_MAX_POINTS"
+  || action.type === "ALLOCATOR_ADD_MAX_POINTS"
+  || action.type === "RESET_ALLOCATOR_DEVICE"
+  || action.type === "ALLOCATOR_RETURN_PRESSED"
+  || action.type === "ALLOCATOR_ALLOCATE_PRESSED"
+  || action.type === "LAMBDA_SET_CONTROL"
+  || action.type === "AUTO_STEP_TICK";
+
 export const resolveActionCalculatorId = (state: GameState, action: Action): CalculatorId | null => {
   if ("calculatorId" in action && action.calculatorId) {
     return action.calculatorId;
   }
-  if (
-    action.type === "PRESS_KEY"
-    || action.type === "SET_KEYPAD_DIMENSIONS"
-    || action.type === "UPGRADE_KEYPAD_ROW"
-    || action.type === "UPGRADE_KEYPAD_COLUMN"
-    || action.type === "TOGGLE_FLAG"
-    || action.type === "TOGGLE_VISUALIZER"
-    || action.type === "ALLOCATOR_ADJUST"
-    || action.type === "ALLOCATOR_SET_MAX_POINTS"
-    || action.type === "ALLOCATOR_ADD_MAX_POINTS"
-    || action.type === "RESET_ALLOCATOR_DEVICE"
-    || action.type === "ALLOCATOR_RETURN_PRESSED"
-    || action.type === "ALLOCATOR_ALLOCATE_PRESSED"
-    || action.type === "LAMBDA_SET_CONTROL"
-    || action.type === "AUTO_STEP_TICK"
-  ) {
+  if (isActiveCalculatorScopedAction(action)) {
     return resolveActiveCalculatorId(state);
   }
   return null;

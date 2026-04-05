@@ -98,6 +98,26 @@ export const runReducerPipelineEquivalenceTests = (): void => {
     multi.calculators?.g?.calculator,
     "SET_ACTIVE_CALCULATOR keeps target calculator runtime execution payload stable (g)",
   );
+  const targetedLayoutAction: Action = { type: "SET_KEYPAD_DIMENSIONS", calculatorId: "g", columns: 3, rows: 2 };
+  const targetedPublic = reducer(multi, targetedLayoutAction);
+  const targetedReduced = reduceWithProjectionScope(multi, targetedLayoutAction);
+  const targetedWithTrace = withRecordedDiagnosticsAction(multi, targetedReduced, targetedLayoutAction, visualizerKeyById);
+  const targetedPipeline = normalizeRuntimeStateInvariants(targetedWithTrace);
+  assert.deepEqual(
+    targetedPipeline,
+    targetedPublic,
+    "targeted calculator action path matches public reducer projection+trace+invariant pipeline",
+  );
+  assert.deepEqual(
+    targetedPublic.calculators?.f?.calculator,
+    multi.calculators?.f?.calculator,
+    "targeted calculator action keeps non-target runtime execution state unchanged (f)",
+  );
+  assert.deepEqual(
+    targetedPublic.calculators?.f?.lambdaControl,
+    multi.calculators?.f?.lambdaControl,
+    "targeted calculator action keeps non-target control state unchanged (f)",
+  );
 
   for (let seedIndex = 0; seedIndex < seeds.length; seedIndex += 1) {
     const seed = seeds[seedIndex];

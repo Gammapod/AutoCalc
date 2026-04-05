@@ -127,6 +127,7 @@ import { runDiagnosticsTraceTests } from "./diagnosticsTrace.test.js";
 import { runRollDiagnosticsSnapshotTests } from "./rollDiagnosticsSnapshot.test.js";
 import { runRuntimeStateInvariantsPipelineEquivalenceTests } from "./runtimeStateInvariants.pipelineEquivalence.test.js";
 import { runReducerPipelineEquivalenceTests } from "./reducer.pipelineEquivalence.test.js";
+import { runReducerPipelineActionRoutingTests } from "./reducer.pipeline.actionRouting.test.js";
 import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
 import { runOperatorExecutionPolicyRegistryContractTests } from "./operatorExecutionPolicyRegistry.contract.test.js";
 import { runInputFeedbackOutcomeTests } from "./inputFeedback.outcome.test.js";
@@ -266,6 +267,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/operator-execution-policy-registry", runOperatorExecutionPolicyRegistryContractTests],
   ["contracts/input-feedback-outcome", runInputFeedbackOutcomeTests],
   ["domain/runtime-state-invariants-pipeline-equivalence", runRuntimeStateInvariantsPipelineEquivalenceTests],
+  ["domain/reducer-pipeline-action-routing", runReducerPipelineActionRoutingTests],
   ["domain/reducer-pipeline-equivalence", runReducerPipelineEquivalenceTests],
   ["contracts/multi-calculator-invariants", runMultiCalculatorContractTests],
   ["app/bootstrap-import-order", runBootstrapImportOrderTests],

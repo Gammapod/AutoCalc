@@ -84,6 +84,13 @@ export type ReducerOptions = {
   services?: AppServices;
 };
 
+type LegacyReduceContext = {
+  state: GameState;
+  action: Action;
+  executionPolicy: ReturnType<typeof classifyExecutionPolicyAction>;
+  unlockCatalog: AppServices["contentProvider"]["unlockCatalog"];
+};
+
 const getSurfaceUi = (state: GameState, surface: LayoutSurface): GameState["ui"] | null => {
   if (!isKeypadSurface(surface)) {
     return null;
@@ -343,21 +350,18 @@ const handleAllocatorAction = (
   return null;
 };
 
-const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
-  const services = options.services ?? getAppServices();
-  const unlockCatalog = services.contentProvider.unlockCatalog;
-  const normalizedAction = normalizeLegacyEqualsPress(action);
-  const executionPolicy = classifyExecutionPolicyAction(state, normalizedAction);
-  if (executionPolicy.decision === "reject") {
-    return state;
-  }
-  if (normalizedAction.type === "PRESS_KEY") {
+const handleExecutionInputAction = (
+  state: GameState,
+  action: Action,
+  executionPolicy: ReturnType<typeof classifyExecutionPolicyAction>,
+): GameState | null => {
+  if (action.type === "PRESS_KEY") {
     if (executionPolicy.decision === "interrupt_and_run") {
-      return applyKeyAction(applyExecutionInterrupt(state, executionPolicy.interrupt), normalizedAction.key);
+      return applyKeyAction(applyExecutionInterrupt(state, executionPolicy.interrupt), action.key);
     }
-    return applyKeyAction(state, normalizedAction.key);
+    return applyKeyAction(state, action.key);
   }
-  if (normalizedAction.type === "AUTO_STEP_TICK") {
+  if (action.type === "AUTO_STEP_TICK") {
     if (!isExecutionModeActive(state)) {
       return state;
     }
@@ -383,22 +387,68 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
     }
     return fallbackEqualsApplied;
   }
+  return null;
+};
 
-  const lifecycleHandled = applyLifecycleAction(state, action);
+type LegacyActionFamilyHandler = (context: LegacyReduceContext) => GameState | null;
+
+const LEGACY_ACTION_FAMILY_HANDLERS: readonly LegacyActionFamilyHandler[] = [
+  ({ state, action }) => handleLayoutMutationAction(state, action),
+  ({ state, action, executionPolicy }) => handleToggleAndVisualizerAction(state, action, executionPolicy),
+  ({ state, action, unlockCatalog }) => handleAllocatorAction(state, action, unlockCatalog),
+];
+
+const reduceWithinTargetCalculatorProjection = (
+  state: GameState,
+  targetCalculatorId: CalculatorId,
+  action: Action,
+  options: ReducerOptions = {},
+): GameState => {
+  const projected = projectCalculatorToLegacy(state, targetCalculatorId);
+  const reduced = reduceLegacy(projected, action, options);
+  const committed = commitLegacyProjection(state, reduced, targetCalculatorId);
+  if ("calculatorId" in action && action.calculatorId) {
+    const preservedActiveCalculatorId = state.activeCalculatorId ?? resolveActiveCalculatorId(committed);
+    return projectCalculatorToLegacy(
+      {
+        ...committed,
+        activeCalculatorId: preservedActiveCalculatorId,
+      },
+      preservedActiveCalculatorId,
+    );
+  }
+  return committed;
+};
+
+const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
+  const services = options.services ?? getAppServices();
+  const unlockCatalog = services.contentProvider.unlockCatalog;
+  const normalizedAction = normalizeLegacyEqualsPress(action);
+  const executionPolicy = classifyExecutionPolicyAction(state, normalizedAction);
+  if (executionPolicy.decision === "reject") {
+    return state;
+  }
+  const executionInputHandled = handleExecutionInputAction(state, normalizedAction, executionPolicy);
+  if (executionInputHandled) {
+    return executionInputHandled;
+  }
+
+  const lifecycleHandled = applyLifecycleAction(state, normalizedAction);
   if (lifecycleHandled) {
     return lifecycleHandled;
   }
-  const layoutHandled = handleLayoutMutationAction(state, normalizedAction);
-  if (layoutHandled) {
-    return layoutHandled;
-  }
-  const toggleHandled = handleToggleAndVisualizerAction(state, normalizedAction, executionPolicy);
-  if (toggleHandled) {
-    return toggleHandled;
-  }
-  const allocatorHandled = handleAllocatorAction(state, normalizedAction, unlockCatalog);
-  if (allocatorHandled) {
-    return allocatorHandled;
+
+  const context: LegacyReduceContext = {
+    state,
+    action: normalizedAction,
+    executionPolicy,
+    unlockCatalog,
+  };
+  for (const handleFamily of LEGACY_ACTION_FAMILY_HANDLERS) {
+    const handled = handleFamily(context);
+    if (handled) {
+      return handled;
+    }
   }
   return state;
 };
@@ -421,18 +471,5 @@ export const reduceWithProjectionScope = (state: GameState, action: Action, opti
     return reduceLegacy(state, action, options);
   }
 
-  const projected = projectCalculatorToLegacy(state, targetCalculatorId);
-  const reduced = reduceLegacy(projected, action, options);
-  const committed = commitLegacyProjection(state, reduced, targetCalculatorId);
-  if ("calculatorId" in action && action.calculatorId) {
-    const preservedActiveCalculatorId = state.activeCalculatorId ?? resolveActiveCalculatorId(committed);
-    return projectCalculatorToLegacy(
-      {
-        ...committed,
-        activeCalculatorId: preservedActiveCalculatorId,
-      },
-      preservedActiveCalculatorId,
-    );
-  }
-  return committed;
+  return reduceWithinTargetCalculatorProjection(state, targetCalculatorId, action, options);
 };

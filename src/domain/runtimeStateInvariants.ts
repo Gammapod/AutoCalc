@@ -66,7 +66,6 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
   if (orderedCalculatorIds.length === 0) {
     return stateWithUi;
   }
-  const activeProjectedCalculatorId = stateWithUi.activeCalculatorId ?? orderedCalculatorIds[0] ?? "f";
 
   const normalizedUiByCalculatorId: Partial<Record<CalculatorId, GameState["ui"]>> = {};
   const normalizedSettingsByCalculatorId: Partial<Record<CalculatorId, GameState["settings"]>> = {};
@@ -77,10 +76,8 @@ export const normalizeRuntimeStateInvariants = (state: GameState): GameState => 
     if (!instance) {
       continue;
     }
-    const sourceUi = calculatorId === activeProjectedCalculatorId ? stateWithUi.ui : instance.ui;
-    const sourceSettings = calculatorId === activeProjectedCalculatorId
-      ? stateWithUi.settings
-      : (instance.settings ?? createDefaultCalculatorSettings());
+    const sourceUi = instance.ui;
+    const sourceSettings = instance.settings ?? createDefaultCalculatorSettings();
     const normalizedInstanceUi = withNormalizedDiagnostics(sourceUi);
     const normalizedInstanceSettings = sourceSettings ?? createDefaultCalculatorSettings();
     normalizedUiByCalculatorId[calculatorId] = normalizedInstanceUi;
