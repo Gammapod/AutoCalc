@@ -53,6 +53,10 @@ export const createMainMenuState = (): GameState => {
   return {
     ...withMenu,
     calculator: menuCalculator,
+    settings: {
+      ...withMenu.settings,
+      visualizer: menuInstance.settings.visualizer,
+    },
     lambdaControl: menuLambdaControl,
     allocator: menuAllocator,
     ui: menuUi,

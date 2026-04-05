@@ -12,6 +12,7 @@ export const runMainMenuPresetTests = (): void => {
   assert.equal(Boolean(mainMenu.calculators?.f), false, "main menu does not materialize f");
   assert.equal(Boolean(mainMenu.calculators?.g), false, "main menu does not materialize g");
   assert.equal(mainMenu.ui.activeVisualizer, "title", "main menu starts on title visualizer");
+  assert.equal(mainMenu.settings.visualizer, "title", "main menu root settings align with menu visualizer startup");
   assert.equal(mainMenu.unlocks.uiUnlocks.storageVisible, false, "main menu hides storage drawer");
   assert.deepEqual(shellModel.menuModules, [], "main menu has no extra menu modules");
   assert.deepEqual(shellModel.availableSnaps, ["middle", "bottom"], "main menu keeps bottom drawer shell visible");

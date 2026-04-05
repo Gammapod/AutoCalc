@@ -14,6 +14,7 @@ import {
 } from "../src/domain/state.js";
 import { projectControlFromState } from "../src/domain/controlProjection.js";
 import { reducer } from "../src/domain/reducer.js";
+import { createMainMenuState } from "../src/domain/mainMenuPreset.js";
 import type { Action, GameState } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
 
@@ -321,6 +322,21 @@ export const runReducerLifecycleTests = (): void => {
     visualizerForcedByKeypadOrder.settings.visualizer,
     "feed",
     "locked installed visualizers force a single active visualizer by keypad scan order",
+  );
+
+  const mainMenu = createMainMenuState();
+  assert.equal(mainMenu.settings.visualizer, "title", "main menu starts with title selected by locked visualizer default");
+  assert.equal(mainMenu.calculators?.menu?.settings.visualizer, "title", "menu calculator instance starts with title visualizer");
+  const mainMenuNotes = reducer(mainMenu, { type: "TOGGLE_VISUALIZER", visualizer: "release_notes" });
+  assert.equal(
+    mainMenuNotes.settings.visualizer,
+    "release_notes",
+    "main menu NOTES visualizer remains selected after runtime invariant normalization",
+  );
+  assert.equal(
+    mainMenuNotes.calculators?.menu?.settings.visualizer,
+    "release_notes",
+    "main menu NOTES visualizer selection is committed back to menu calculator instance",
   );
 };
 

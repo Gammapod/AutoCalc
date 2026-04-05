@@ -456,8 +456,9 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
 export const reduceWithProjectionScope = (state: GameState, action: Action, options: ReducerOptions = {}): GameState => {
   if (!isMultiCalculatorSession(state)) {
     const reduced = reduceLegacy(state, action, options);
-    if (state.calculators?.f) {
-      return commitLegacyProjection(reduced, reduced, "f");
+    const activeCalculatorId = resolveActiveCalculatorId(state);
+    if (state.calculators?.[activeCalculatorId]) {
+      return commitLegacyProjection(state, reduced, activeCalculatorId);
     }
     return reduced;
   }

@@ -206,6 +206,22 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     renderer.render(createMainMenuState(), dispatch, {
             inputBlocked: false,
     });
+    const mainMenuState = createMainMenuState();
+    renderer.render(mainMenuState, dispatch, {
+            inputBlocked: false,
+    });
+    const menuInstance = harness.root.querySelector<HTMLElement>("[data-calc-instance-id='menu']");
+    const menuHost = menuInstance?.querySelector<HTMLElement>("[data-v2-visualizer-host]");
+    assert.equal(menuHost?.dataset.v2VisualizerPanel, "title", "main menu starts with title panel active");
+    const mainMenuNotesState = reducer(mainMenuState, { type: "TOGGLE_VISUALIZER", visualizer: "release_notes" });
+    renderer.render(mainMenuNotesState, dispatch, {
+            inputBlocked: false,
+    });
+    assert.equal(menuHost?.dataset.v2VisualizerPanel, "release_notes", "main menu NOTES toggle activates release-notes panel");
+    const menuTitlePanel = menuInstance?.querySelector<HTMLElement>("[data-v2-title-panel]");
+    const menuReleaseNotesPanel = menuInstance?.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
+    assert.equal(menuTitlePanel?.getAttribute("aria-hidden"), "true", "title panel hides when release notes is active");
+    assert.equal(menuReleaseNotesPanel?.getAttribute("aria-hidden"), "false", "release notes panel is shown when NOTES is active");
 
     const baseStepState = initialState();
     const withStepKey = withCalculatorProjection({
