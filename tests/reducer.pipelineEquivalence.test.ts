@@ -72,6 +72,32 @@ export const runReducerPipelineEquivalenceTests = (): void => {
   });
   const allTraces = [...traces, ...seededTraces];
   const seeds = [base, paused, multi, menu];
+  const setActiveAction: Action = { type: "SET_ACTIVE_CALCULATOR", calculatorId: "g" };
+  const directPublic = reducer(multi, setActiveAction);
+  const directReduced = reduceWithProjectionScope(multi, setActiveAction);
+  const directWithTrace = withRecordedDiagnosticsAction(multi, directReduced, setActiveAction, visualizerKeyById);
+  const directPipeline = normalizeRuntimeStateInvariants(directWithTrace);
+  assert.deepEqual(directPipeline, directPublic, "direct SET_ACTIVE_CALCULATOR path matches public reducer projection+trace+invariant pipeline");
+  assert.deepEqual(
+    directPipeline.ui.diagnostics.lastAction,
+    directPublic.ui.diagnostics.lastAction,
+    "SET_ACTIVE_CALCULATOR diagnostics sequencing remains identical across public and pipeline paths",
+  );
+  assert.deepEqual(
+    directPublic.calculators?.f?.calculator,
+    multi.calculators?.f?.calculator,
+    "SET_ACTIVE_CALCULATOR keeps non-target calculator runtime execution state unchanged (f)",
+  );
+  assert.deepEqual(
+    directPublic.calculators?.f?.lambdaControl,
+    multi.calculators?.f?.lambdaControl,
+    "SET_ACTIVE_CALCULATOR keeps non-target calculator control state unchanged (f)",
+  );
+  assert.deepEqual(
+    directPublic.calculators?.g?.calculator,
+    multi.calculators?.g?.calculator,
+    "SET_ACTIVE_CALCULATOR keeps target calculator runtime execution payload stable (g)",
+  );
 
   for (let seedIndex = 0; seedIndex < seeds.length; seedIndex += 1) {
     const seed = seeds[seedIndex];
