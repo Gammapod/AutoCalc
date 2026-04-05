@@ -1,29 +1,11 @@
 import { resolveActiveCalculatorId } from "./multiCalculator.js";
 import type { Action, CalculatorId, GameState, LayoutSurface, UiEffect } from "./types.js";
+import { resolveSurfaceCalculatorId } from "./calculatorSurface.js";
 
 type InputFeedbackReasonCode = Extract<Extract<UiEffect, { type: "input_feedback" }>["reasonCode"], string>;
 
-const surfaceToCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
-  if (surface === "keypad_f") {
-    return "f";
-  }
-  if (surface === "keypad_g") {
-    return "g";
-  }
-  if (surface === "keypad_menu") {
-    return "menu";
-  }
-  if (surface === "keypad_f_prime") {
-    return "f_prime";
-  }
-  if (surface === "keypad_g_prime") {
-    return "g_prime";
-  }
-  if (surface === "keypad") {
-    return resolveActiveCalculatorId(state);
-  }
-  return null;
-};
+const surfaceToCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null =>
+  resolveSurfaceCalculatorId(state, surface);
 
 export const resolveFeedbackTargetCalculatorId = (state: GameState, action: Action): CalculatorId => {
   if ("calculatorId" in action && action.calculatorId) {

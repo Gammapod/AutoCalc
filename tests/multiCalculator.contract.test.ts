@@ -11,8 +11,10 @@ import {
   fromCalculatorSurface,
   normalizeLegacyForMissingInstances,
   projectCalculatorToLegacy,
+  setActiveCalculator,
   toCalculatorSurface,
 } from "../src/domain/multiCalculator.js";
+import { resolveSurfaceCalculatorId } from "../src/domain/calculatorSurface.js";
 import { fromKeyLayoutArray } from "../src/domain/keypadLayoutModel.js";
 import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import type { Action, GameState } from "../src/domain/types.js";
@@ -35,6 +37,9 @@ export const runMultiCalculatorContractTests = (): void => {
 
   const switched = reducer(base, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "g" });
   assert.equal(switched.activeCalculatorId, "f", "active calculator cannot switch to missing g");
+
+  const switchedViaHelper = setActiveCalculator(base, "g");
+  assert.equal(switchedViaHelper.activeCalculatorId, "f", "setActiveCalculator cannot switch to missing calculator instances");
 
   const isolated = reducer(base, { type: "SET_KEYPAD_DIMENSIONS", calculatorId: "g", columns: 3, rows: 3 });
   assert.equal(Boolean(isolated.calculators?.g), false, "targeted g layout action does not materialize g");
@@ -76,6 +81,16 @@ export const runMultiCalculatorContractTests = (): void => {
 
   const dualUnlocked = materializeCalculatorG(initialState());
   assert.equal(Boolean(dualUnlocked.calculators?.g), true, "unlock-all materializes g calculator");
+  const switchedToG = setActiveCalculator(dualUnlocked, "g");
+  assert.equal(switchedToG.activeCalculatorId, "g", "setActiveCalculator projects to target calculator");
+  assert.equal(
+    switchedToG.ui.keypadColumns,
+    dualUnlocked.calculators?.g?.ui.keypadColumns,
+    "setActiveCalculator syncs root keypad projection with target calculator ui",
+  );
+  assert.equal(resolveSurfaceCalculatorId(switchedToG, "keypad"), "g", "shared surface resolver maps active keypad surface to active calculator");
+  assert.equal(resolveSurfaceCalculatorId(switchedToG, "keypad_f"), "f", "shared surface resolver maps explicit f keypad");
+  assert.equal(resolveSurfaceCalculatorId(switchedToG, "storage"), null, "shared surface resolver returns null for storage");
   const duplicateStorageSeed: GameState = {
     ...dualUnlocked,
     ui: {

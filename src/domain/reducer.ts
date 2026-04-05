@@ -1,7 +1,7 @@
 import { initialState } from "./state.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 import { buttonRegistry } from "./buttonRegistry.js";
-import { isMultiCalculatorSession, projectCalculatorToLegacy } from "./multiCalculator.js";
+import { isMultiCalculatorSession, setActiveCalculator } from "./multiCalculator.js";
 import { reduceWithProjectionScope, type ReducerOptions } from "./reducer.pipeline.scope.js";
 import { withRecordedDiagnosticsAction } from "./reducer.pipeline.diagnostics.js";
 import type {
@@ -24,7 +24,7 @@ export type { ResolvedExecutionPolicy } from "./reducer.pipeline.action.js";
 export const reducer = (state: GameState = initialState(), action: Action, options: ReducerOptions = {}): GameState => {
   let nextState: GameState;
   if (isMultiCalculatorSession(state) && action.type === "SET_ACTIVE_CALCULATOR" && state.calculators?.[action.calculatorId]) {
-    nextState = projectCalculatorToLegacy(state, action.calculatorId);
+    nextState = setActiveCalculator(state, action.calculatorId);
   } else {
     nextState = reduceWithProjectionScope(state, action, options);
   }

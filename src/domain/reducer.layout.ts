@@ -19,6 +19,10 @@ import {
 import type { CalculatorId, GameState, KeyCell, KeypadCellRecord, LayoutCell, LayoutSurface } from "./types.js";
 import { isMultiCalculatorSession } from "./multiCalculator.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
+import {
+  isAnyKeypadSurface as isKeypadSurface,
+  resolveSurfaceCalculatorId as resolveSurfaceOwnerCalculatorId,
+} from "./calculatorSurface.js";
 
 export { isStorageLayoutValid } from "./layoutRules.js";
 
@@ -61,62 +65,15 @@ const appendKeyToStorage = (
 
 const emptyCell = (): LayoutCell => ({ kind: "placeholder", area: "empty" });
 
-const isKeypadSurface = (
-  surface: LayoutSurface,
-): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
-  surface === "keypad"
-  || surface === "keypad_f"
-  || surface === "keypad_g"
-  || surface === "keypad_menu"
-  || surface === "keypad_f_prime"
-  || surface === "keypad_g_prime";
-
-const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
-  if (surface === "keypad_f") {
-    return "f";
-  }
-  if (surface === "keypad_g") {
-    return "g";
-  }
-  if (surface === "keypad_menu") {
-    return "menu";
-  }
-  if (surface === "keypad_f_prime") {
-    return "f_prime";
-  }
-  if (surface === "keypad_g_prime") {
-    return "g_prime";
-  }
-  if (surface === "keypad") {
-    return state.activeCalculatorId ?? null;
-  }
-  return null;
-};
-
 const getSurfaceUi = (state: GameState, surface: LayoutSurface): GameState["ui"] | null => {
-  if (surface === "keypad") {
-    const activeCalculatorId = state.activeCalculatorId;
-    if (activeCalculatorId && state.calculators?.[activeCalculatorId]?.ui) {
-      return state.calculators[activeCalculatorId].ui;
-    }
-    return state.ui;
+  if (!isKeypadSurface(surface)) {
+    return null;
   }
-  if (surface === "keypad_f") {
-    return state.calculators?.f?.ui ?? state.ui;
+  const calculatorId = resolveSurfaceOwnerCalculatorId(state, surface);
+  if (!calculatorId) {
+    return surface === "keypad" ? state.ui : null;
   }
-  if (surface === "keypad_g") {
-    return state.calculators?.g?.ui ?? null;
-  }
-  if (surface === "keypad_menu") {
-    return state.calculators?.menu?.ui ?? null;
-  }
-  if (surface === "keypad_f_prime") {
-    return state.calculators?.f_prime?.ui ?? null;
-  }
-  if (surface === "keypad_g_prime") {
-    return state.calculators?.g_prime?.ui ?? null;
-  }
-  return null;
+  return state.calculators?.[calculatorId]?.ui ?? (calculatorId === "f" ? state.ui : null);
 };
 
 const getCurrentKeypadCells = (ui: GameState["ui"]): KeypadCellRecord[] => {
@@ -146,110 +103,40 @@ const withKeypadState = (
 };
 
 const setSurfaceUi = (state: GameState, surface: LayoutSurface, ui: GameState["ui"]): GameState => {
+  if (!isKeypadSurface(surface)) {
+    return state;
+  }
   const sharedStorageUi: GameState["ui"] = {
     ...ui,
     storageLayout: state.ui.storageLayout,
   };
-  if (surface === "keypad") {
-    const activeCalculatorId = state.activeCalculatorId;
-    if (activeCalculatorId && state.calculators?.[activeCalculatorId]) {
-      return {
-        ...state,
-        ui: sharedStorageUi,
-        calculators: {
-          ...state.calculators,
-          [activeCalculatorId]: {
-            ...state.calculators[activeCalculatorId],
-            ui: sharedStorageUi,
-          },
-        },
-      };
-    }
+  const calculatorId = resolveSurfaceOwnerCalculatorId(state, surface);
+  if (!calculatorId) {
     return {
       ...state,
       ui: sharedStorageUi,
     };
   }
-  if (surface === "keypad_f") {
-    if (!state.calculators?.f) {
-      return {
-        ...state,
+  const instance = state.calculators?.[calculatorId];
+  if (!instance) {
+    return calculatorId === "f"
+      ? {
+          ...state,
+          ui: sharedStorageUi,
+        }
+      : state;
+  }
+  return {
+    ...state,
+    ui: calculatorId === "f" ? sharedStorageUi : state.ui,
+    calculators: {
+      ...state.calculators,
+      [calculatorId]: {
+        ...instance,
         ui: sharedStorageUi,
-      };
-    }
-    return {
-      ...state,
-      ui: sharedStorageUi,
-      calculators: {
-        ...state.calculators,
-        f: {
-          ...state.calculators.f,
-          ui: sharedStorageUi,
-        },
       },
-    };
-  }
-  if (surface === "keypad_g") {
-    if (!state.calculators?.g) {
-      return state;
-    }
-    return {
-      ...state,
-      calculators: {
-        ...state.calculators,
-        g: {
-          ...state.calculators.g,
-          ui: sharedStorageUi,
-        },
-      },
-    };
-  }
-  if (surface === "keypad_menu") {
-    if (!state.calculators?.menu) {
-      return state;
-    }
-    return {
-      ...state,
-      calculators: {
-        ...state.calculators,
-        menu: {
-          ...state.calculators.menu,
-          ui: sharedStorageUi,
-        },
-      },
-    };
-  }
-  if (surface === "keypad_f_prime") {
-    if (!state.calculators?.f_prime) {
-      return state;
-    }
-    return {
-      ...state,
-      calculators: {
-        ...state.calculators,
-        f_prime: {
-          ...state.calculators.f_prime,
-          ui: sharedStorageUi,
-        },
-      },
-    };
-  }
-  if (surface === "keypad_g_prime") {
-    if (!state.calculators?.g_prime) {
-      return state;
-    }
-    return {
-      ...state,
-      calculators: {
-        ...state.calculators,
-        g_prime: {
-          ...state.calculators.g_prime,
-          ui: sharedStorageUi,
-        },
-      },
-    };
-  }
-  return state;
+    },
+  };
 };
 
 const getSurfaceLength = (state: GameState, surface: LayoutSurface): number =>
@@ -450,8 +337,8 @@ const clearToggleFlagWhenLeavingKeypad = (
   if (!isKeypadSurface(fromSurface)) {
     return state;
   }
-  const fromCalculatorId = resolveSurfaceCalculatorId(state, fromSurface);
-  const toCalculatorId = resolveSurfaceCalculatorId(state, toSurface);
+  const fromCalculatorId = resolveSurfaceOwnerCalculatorId(state, fromSurface);
+  const toCalculatorId = resolveSurfaceOwnerCalculatorId(state, toSurface);
   const leftSourceCalculator = !isKeypadSurface(toSurface) || fromCalculatorId !== toCalculatorId;
   if (!leftSourceCalculator) {
     return state;

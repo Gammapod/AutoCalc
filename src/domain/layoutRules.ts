@@ -1,7 +1,12 @@
 import { isKeyUnlocked } from "./keyUnlocks.js";
 import { STORAGE_COLUMNS } from "./state.js";
 import type { CalculatorId, GameState, LayoutSurface } from "./types.js";
-import { isMultiCalculatorSession, resolveActiveCalculatorId } from "./multiCalculator.js";
+import { isMultiCalculatorSession } from "./multiCalculator.js";
+import {
+  getKeyLayoutForSurface,
+  isAnyKeypadSurface as isKeypadSurface,
+  resolveSurfaceCalculatorId,
+} from "./calculatorSurface.js";
 
 export type LayoutDropAction = "move" | "swap";
 
@@ -26,31 +31,6 @@ type Occupancy = "key" | "empty" | "invalid";
 export const isStorageLayoutValid = (storageLayout: Array<GameState["ui"]["storageLayout"][number]>): boolean =>
   storageLayout.length > 0 && storageLayout.length % STORAGE_COLUMNS === 0;
 
-const getKeyLayoutForSurface = (state: GameState, surface: LayoutSurface): GameState["ui"]["keyLayout"] | null => {
-  if (surface === "keypad") {
-    const activeCalculatorId = state.activeCalculatorId;
-    if (activeCalculatorId && state.calculators?.[activeCalculatorId]?.ui.keyLayout) {
-      return state.calculators[activeCalculatorId].ui.keyLayout;
-    }
-    return state.ui.keyLayout;
-  }
-  if (surface === "keypad_f") {
-    return state.calculators?.f?.ui.keyLayout ?? state.ui.keyLayout;
-  }
-  if (surface === "keypad_g") {
-    return state.calculators?.g?.ui.keyLayout ?? null;
-  }
-  if (surface === "keypad_menu") {
-    return state.calculators?.menu?.ui.keyLayout ?? null;
-  }
-  if (surface === "keypad_f_prime") {
-    return state.calculators?.f_prime?.ui.keyLayout ?? null;
-  }
-  if (surface === "keypad_g_prime") {
-    return state.calculators?.g_prime?.ui.keyLayout ?? null;
-  }
-  return null;
-};
 
 const getCellOccupancy = (
   state: GameState,
@@ -92,39 +72,11 @@ const getCellOccupancy = (
   return "key";
 };
 
-const isKeypadSurface = (
-  surface: LayoutSurface,
-): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
-  surface === "keypad"
-  || surface === "keypad_f"
-  || surface === "keypad_g"
-  || surface === "keypad_menu"
-  || surface === "keypad_f_prime"
-  || surface === "keypad_g_prime";
-
-const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
-  if (surface === "keypad_f") {
+const resolveLayoutSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
+  if (surface === "keypad" && !isMultiCalculatorSession(state)) {
     return "f";
   }
-  if (surface === "keypad_g") {
-    return state.calculators?.g ? "g" : null;
-  }
-  if (surface === "keypad_menu") {
-    return state.calculators?.menu ? "menu" : null;
-  }
-  if (surface === "keypad_f_prime") {
-    return state.calculators?.f_prime ? "f_prime" : null;
-  }
-  if (surface === "keypad_g_prime") {
-    return state.calculators?.g_prime ? "g_prime" : null;
-  }
-  if (surface === "keypad") {
-    if (isMultiCalculatorSession(state)) {
-      return resolveActiveCalculatorId(state);
-    }
-    return "f";
-  }
-  return null;
+  return resolveSurfaceCalculatorId(state, surface);
 };
 
 const isLockedInstalledKeypadCell = (state: GameState, target: LayoutTarget): boolean => {
@@ -147,9 +99,9 @@ const wouldMoveOffCalculator = (
   if (!isKeypadSurface(toSurface)) {
     return true;
   }
-  const fromCalculatorId = resolveSurfaceCalculatorId(state, fromSurface);
-  const toCalculatorId = resolveSurfaceCalculatorId(state, toSurface);
-  return fromCalculatorId !== null && toCalculatorId !== null && fromCalculatorId !== toCalculatorId;
+  const resolvedFromCalculatorId = resolveLayoutSurfaceCalculatorId(state, fromSurface);
+  const resolvedToCalculatorId = resolveLayoutSurfaceCalculatorId(state, toSurface);
+  return resolvedFromCalculatorId !== null && resolvedToCalculatorId !== null && resolvedFromCalculatorId !== resolvedToCalculatorId;
 };
 
 const violatesLockedKeyImmobility = (

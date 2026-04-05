@@ -5,6 +5,11 @@ import { controlProfiles } from "./controlProfilesCatalog.js";
 import { createSeededKeyLayout } from "./calculatorSeedManifest.js";
 import { BINARY_MODE_FLAG, createInitialUiDiagnosticsLastAction } from "./state.js";
 import { createDefaultCalculatorSettings } from "./settings.js";
+import {
+  fromCalculatorSurface as fromSurfaceMapping,
+  toCalculatorSurface as toSurfaceMapping,
+  type CalculatorKeypadSurface,
+} from "./calculatorSurface.js";
 
 export const CALCULATOR_ORDER: readonly CalculatorId[] = ["menu", "f", "g", "f_prime", "g_prime"];
 export const MAIN_CALCULATOR_ID: CalculatorId = "f";
@@ -457,31 +462,20 @@ export const resolveFormulaSymbol = (state: GameState): "f" | "g" => {
 export const withActiveCalculator = (state: GameState, calculatorId: CalculatorId): GameState =>
   projectCalculatorToLegacy(ensureCalculatorInstances(state), calculatorId);
 
-export const toCalculatorSurface = (
-  calculatorId: CalculatorId,
-): "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
-  calculatorId === "g"
-    ? "keypad_g"
-    : calculatorId === "menu"
-      ? "keypad_menu"
-      : calculatorId === "f_prime"
-        ? "keypad_f_prime"
-        : calculatorId === "g_prime"
-          ? "keypad_g_prime"
-          : "keypad_f";
+export const setActiveCalculator = (state: GameState, calculatorId: CalculatorId): GameState => {
+  const withInstances = ensureCalculatorInstances(state);
+  if (!withInstances.calculators?.[calculatorId]) {
+    return withInstances;
+  }
+  return projectCalculatorToLegacy(withInstances, calculatorId);
+};
 
 export const fromCalculatorSurface = (
-  surface: "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime",
-): CalculatorId =>
-  surface === "keypad_g"
-    ? "g"
-    : surface === "keypad_menu"
-      ? "menu"
-      : surface === "keypad_f_prime"
-        ? "f_prime"
-        : surface === "keypad_g_prime"
-          ? "g_prime"
-          : "f";
+  surface: CalculatorKeypadSurface,
+): CalculatorId => fromSurfaceMapping(surface);
+
+export const toCalculatorSurface = (calculatorId: CalculatorId): CalculatorKeypadSurface =>
+  toSurfaceMapping(calculatorId);
 
 export const normalizeLegacyForMissingInstances = (state: GameState): GameState =>
   ensureCalculatorInstances(state);

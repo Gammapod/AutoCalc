@@ -3,18 +3,13 @@ import { createShellController } from "../shellController.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "../touchRearrangeController.js";
 import type { Action, GameState, Key, LayoutSurface } from "../../domain/types.js";
 import { buildStorageRenderOrder } from "../modules/storage/viewModel.js";
+import { getKeyLayoutForSurface, isAnyKeypadSurface } from "../../domain/calculatorSurface.js";
 import type { DrawerDragTarget, ShellRefs } from "./types.js";
 import type { ShellRenderRuntimeState } from "./runtimeState.js";
 import { createMenuPointerSession, createViewportPointerSession, updatePointerSessionTrail } from "./pointerSession.js";
 
 const isSurfaceValue = (value: string | undefined): value is LayoutSurface =>
-  value === "keypad"
-  || value === "keypad_f"
-  || value === "keypad_g"
-  || value === "keypad_menu"
-  || value === "keypad_f_prime"
-  || value === "keypad_g_prime"
-  || value === "storage";
+  value === "storage" || Boolean(value && isAnyKeypadSurface(value as LayoutSurface));
 
 const parseTargetFromElement = (element: HTMLElement | null): TouchRearrangeTarget | null => {
   if (!element) {
@@ -36,46 +31,8 @@ const parseTargetFromElement = (element: HTMLElement | null): TouchRearrangeTarg
 };
 
 const readKeyAtSurfaceIndex = (state: GameState, surface: LayoutSurface, index: number): Key | null => {
-  if (surface === "keypad") {
-    const activeCalculatorId = state.activeCalculatorId;
-    const cell = activeCalculatorId
-      ? state.calculators?.[activeCalculatorId]?.ui.keyLayout[index] ?? state.ui.keyLayout[index]
-      : state.ui.keyLayout[index];
-    if (!cell || cell.kind !== "key") {
-      return null;
-    }
-    return cell.key;
-  }
-  if (surface === "keypad_f") {
-    const cell = (state.calculators?.f?.ui.keyLayout ?? state.ui.keyLayout)[index];
-    if (!cell || cell.kind !== "key") {
-      return null;
-    }
-    return cell.key;
-  }
-  if (surface === "keypad_g") {
-    const cell = state.calculators?.g?.ui.keyLayout[index];
-    if (!cell || cell.kind !== "key") {
-      return null;
-    }
-    return cell.key;
-  }
-  if (surface === "keypad_menu") {
-    const cell = state.calculators?.menu?.ui.keyLayout[index];
-    if (!cell || cell.kind !== "key") {
-      return null;
-    }
-    return cell.key;
-  }
-  if (surface === "keypad_f_prime") {
-    const cell = state.calculators?.f_prime?.ui.keyLayout[index];
-    if (!cell || cell.kind !== "key") {
-      return null;
-    }
-    return cell.key;
-  }
-  if (surface === "keypad_g_prime") {
-    const cell = state.calculators?.g_prime?.ui.keyLayout[index];
+  if (isAnyKeypadSurface(surface)) {
+    const cell = getKeyLayoutForSurface(state, surface)?.[index];
     if (!cell || cell.kind !== "key") {
       return null;
     }

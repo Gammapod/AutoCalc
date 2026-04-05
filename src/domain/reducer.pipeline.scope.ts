@@ -46,6 +46,10 @@ import type {
   VisualizerId,
 } from "./types.js";
 import { normalizeLegacyEqualsPress, resolveActionCalculatorId } from "./reducer.pipeline.action.js";
+import {
+  isAnyKeypadSurface as isKeypadSurface,
+  resolveSurfaceCalculatorId,
+} from "./calculatorSurface.js";
 
 const allocatorFieldToAxis = (field: "width" | "height" | "range" | "speed" | "slots"): "alpha" | "beta" | "gamma" | null => {
   if (field === "width") {
@@ -79,36 +83,15 @@ export type ReducerOptions = {
   services?: AppServices;
 };
 
-const isKeypadSurface = (
-  surface: LayoutSurface,
-): surface is "keypad" | "keypad_f" | "keypad_g" | "keypad_menu" | "keypad_f_prime" | "keypad_g_prime" =>
-  surface === "keypad"
-  || surface === "keypad_f"
-  || surface === "keypad_g"
-  || surface === "keypad_menu"
-  || surface === "keypad_f_prime"
-  || surface === "keypad_g_prime";
-
-const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
-  if (surface === "keypad") {
-    return resolveActiveCalculatorId(state);
+const getSurfaceUi = (state: GameState, surface: LayoutSurface): GameState["ui"] | null => {
+  if (!isKeypadSurface(surface)) {
+    return null;
   }
-  if (surface === "keypad_f") {
-    return "f";
+  const calculatorId = resolveSurfaceCalculatorId(state, surface);
+  if (!calculatorId) {
+    return surface === "keypad" ? state.ui : null;
   }
-  if (surface === "keypad_g") {
-    return "g";
-  }
-  if (surface === "keypad_menu") {
-    return "menu";
-  }
-  if (surface === "keypad_f_prime") {
-    return "f_prime";
-  }
-  if (surface === "keypad_g_prime") {
-    return "g_prime";
-  }
-  return null;
+  return state.calculators?.[calculatorId]?.ui ?? (calculatorId === "f" ? state.ui : null);
 };
 
 const resolveMoveResetTargets = (state: GameState, fromSurface: LayoutSurface, toSurface: LayoutSurface): CalculatorId[] => {
@@ -233,19 +216,7 @@ const reduceLegacy = (state: GameState, action: Action, options: ReducerOptions 
   if (normalizedAction.type === "INSTALL_KEY_FROM_STORAGE") {
     const destinationBefore = isKeypadSurface(normalizedAction.toSurface)
       ? (() => {
-        const ui = normalizedAction.toSurface === "keypad"
-          ? (state.activeCalculatorId && state.calculators?.[state.activeCalculatorId]?.ui
-            ? state.calculators[state.activeCalculatorId]!.ui
-            : state.ui)
-          : normalizedAction.toSurface === "keypad_f"
-            ? (state.calculators?.f?.ui ?? state.ui)
-            : normalizedAction.toSurface === "keypad_g"
-              ? (state.calculators?.g?.ui ?? null)
-              : normalizedAction.toSurface === "keypad_menu"
-                ? (state.calculators?.menu?.ui ?? null)
-                : normalizedAction.toSurface === "keypad_f_prime"
-                  ? (state.calculators?.f_prime?.ui ?? null)
-                  : (state.calculators?.g_prime?.ui ?? null);
+        const ui = getSurfaceUi(state, normalizedAction.toSurface);
         if (!ui) {
           return null;
         }
