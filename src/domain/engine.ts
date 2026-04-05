@@ -11,6 +11,7 @@ import {
   toComplexCalculatorValue,
   toExpressionCalculatorValue,
   toExpressionScalarValue,
+  toNanCalculatorValue,
   toRationalCalculatorValue,
   toRationalScalarValue,
   toScalarValue,
@@ -301,10 +302,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
         }
         nextTotal = { num: factorCountWithMultiplicity(nextTotal.num), den: 1n };
       } else if (resolveKeyId(slot.operator) === KEY_ID.unary_not) {
-        if (nextTotal.den !== 1n) {
-          return { ok: false, reason: "nan_input" };
-        }
-        nextTotal = { num: nextTotal.num <= 0n ? 1n : 0n, den: 1n };
+        return { ok: false, reason: "nan_input" };
       } else if (resolveKeyId(slot.operator) === KEY_ID.unary_collatz) {
         if (nextTotal.den !== 1n) {
           return { ok: false, reason: "nan_input" };
@@ -561,9 +559,6 @@ const executeSlotsValueInternal = (
   slots: Slot[],
   routing: ExecutionPolicyRouting,
 ): ExecuteSlotsValueResult => {
-  if (total.kind === "nan") {
-    return { ok: false, reason: "nan_input" };
-  }
   if (slots.length === 0) {
     return { ok: true, total };
   }
@@ -915,9 +910,18 @@ const executeSlotsValueInternal = (
     return result;
   };
 
-  let current: RuntimeValue = total;
+  let current: CalculatorValue = total;
   let lastEuclidRemainder: RationalValue | undefined;
   for (const slot of slots) {
+    if (current.kind === "nan") {
+      if (slot.kind === "unary" && resolveKeyId(slot.operator) === KEY_ID.unary_not) {
+        current = toRationalCalculatorValue({ num: 1n, den: 1n });
+        lastEuclidRemainder = undefined;
+        continue;
+      }
+      return { ok: false, reason: "nan_input", operatorId: slot.operator };
+    }
+
     if (slot.kind === "unary") {
       const unaryKey = resolveKeyId(slot.operator);
       if (unaryKey === KEY_ID.unary_i) {
@@ -963,9 +967,7 @@ const executeSlotsValueInternal = (
         continue;
       }
       if (unaryKey === KEY_ID.unary_not) {
-        const currentComplex = toComplexRuntime(current);
-        const compare = compareScalars(addScalar(currentComplex.re, currentComplex.im), scalarZero());
-        current = toRationalCalculatorValue({ num: compare <= 0 ? 1n : 0n, den: 1n });
+        current = toNanCalculatorValue();
         lastEuclidRemainder = undefined;
         continue;
       }

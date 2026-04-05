@@ -360,8 +360,7 @@ export const runInputFeedbackOutcomeTests = (): void => {
       action: { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
     });
     const feedback = findInputFeedback(result.uiEffects);
-    assert.equal(feedback?.outcome, "rejected", "NaN-lock execution toggle reject emits rejected feedback");
-    assert.equal(feedback?.reasonCode, "execution_gate_reject", "NaN-lock execution toggle reject uses execution gate reason");
+    assert.equal(feedback?.outcome, "accepted", "execution toggle on NaN tail is accepted");
   }
   {
     const base = baseState();
@@ -372,6 +371,14 @@ export const runInputFeedbackOutcomeTests = (): void => {
       activeCalculatorId: undefined,
       perCalculatorCompletedUnlockIds: undefined,
       sessionControlProfiles: undefined,
+      unlocks: {
+        ...base.unlocks,
+        maxSlots: Math.max(base.unlocks.maxSlots, 1),
+        slotOperators: {
+          ...base.unlocks.slotOperators,
+          [KEY_ID.op_add]: true,
+        },
+      },
       calculator: {
         ...base.calculator,
         rollEntries: [
@@ -385,8 +392,7 @@ export const runInputFeedbackOutcomeTests = (): void => {
       action: { type: "PRESS_KEY", key: KEY_ID.op_add },
     });
     const feedback = findInputFeedback(result.uiEffects);
-    assert.equal(feedback?.outcome, "rejected", "NaN-lock operator reject emits rejected feedback");
-    assert.equal(feedback?.reasonCode, "execution_gate_reject", "NaN-lock operator reject uses execution gate reason");
+    assert.equal(feedback?.outcome, "accepted", "operator input on NaN tail is accepted");
   }
 
   {

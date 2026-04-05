@@ -175,12 +175,12 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: prevents duplicate roll/terminal writes.
 - `FS-FB-07` (MUST): If step-through capability is absent, step-specific behavior is inert.
   Rationale: unavailable capabilities cannot leak behavior.
-- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. `=` is the toggle entrypoint for this mode (`execution.pause.equals`). While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating for calculator/progression state, while UI-only feedback effects are allowed. Terminal-NaN lock semantics (see `FS-FB-10`) take precedence over execution-interrupting exceptions for execution-category keys.
+- `FS-FB-08` (MUST): Auto-step mode is an execution-state gate. `=` is the toggle entrypoint for this mode (`execution.pause.equals`). While active, calculator mutations to seed/function-builder/layout are rejected unless the action family is designated as execution-interrupting; rejected inputs are non-mutating for calculator/progression state, while UI-only feedback effects are allowed.
   Rationale: execution cadence and deterministic state transitions require mode-gated mutation boundaries, with explicit toggle-driven entry.
 - `FS-FB-09` (MUST): Auto-step intermediate progress is preview-only. Roll/history and terminal total commit exactly once, only on completion/finalization of the execution path.
   Rationale: prevents duplicate terminal writes and preserves roll as terminal execution history. For equals-toggle mode, the flag auto-clears on terminal roll/total commit.
-- `FS-FB-10` (MUST): Terminal-NaN computation lock is calculator-local and is triggered when the latest roll/history row has `y.kind = "nan"`. While active, all execution-category key inputs (`exec_equals`, `exec_play_pause`, `exec_step_through`, `exec_roll_inverse`) are rejected, remain non-mutating, and use standard reject feedback effects. Further computation resumes only after state changes that remove `NaN` from roll tail (for example undo/reset flows).
-  Rationale: terminal null-result outcomes must halt further execution deterministically until explicit recovery.
+- `FS-FB-10` (MUST): NaN is propagated by execution semantics, not by terminal input lock. When execution starts from `NaN` current total, execution-category inputs remain policy-allowed and operator evaluation returns `NaN` with standard NaN metadata; auto-execution flags still clear on terminal `NaN` commit.
+  Rationale: terminal null-result outcomes should remain deterministic while preserving operator-local semantics and user-visible continuity.
 
 #### 3.2.3 Traceability (Calculator State)
 
@@ -204,9 +204,9 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-FB-05 | Step-through terminal equivalence with full execution | `reducer/input`, `ui-integration/mobile-shell`, `ui-integration/desktop-shell` | unit + workflow/integration | none |
 | FS-FB-06 | Finalization writes one terminal outcome per completion path | `reducer/input`, `persistence` | unit | partial: no dedicated long-trace finalization stress suite |
 | FS-FB-07 | Step behavior inert when capability absent | `reducer/input`, `ui-integration/mobile-shell` | unit + integration | none |
-| FS-FB-08 | `=` toggles auto-step mode; while active, calculator mutation inputs are gated and rejected actions are non-mutating unless execution-interrupting, with terminal-NaN lock precedence | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
+| FS-FB-08 | `=` toggles auto-step mode; while active, calculator mutation inputs are gated and rejected actions are non-mutating unless execution-interrupting | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
 | FS-FB-09 | Auto-step intermediate progress is preview-only; roll/terminal commit exactly once on completion | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | partial: no dedicated auto-step completion stress suite |
-| FS-FB-10 | Latest-roll NaN enforces calculator-local terminal execution lock over all execution keys with non-mutating rejects and standard reject feedback | `reducer/input`, `domain/execution-mode-policy`, `contracts/execution-gate-parity`, `uiModule.calculatorRejectBlink` | unit + contract + integration | partial: explicit execution-key lock matrix for NaN-tail recovery paths pending |
+| FS-FB-10 | NaN execution starts remain policy-allowed and propagate NaN through operator evaluation while keeping standard NaN metadata and terminal auto-flag clear behavior | `reducer/input`, `domain/execution-mode-policy`, `contracts/execution-gate-parity`, `uiModule.calculatorRejectBlink` | unit + contract + integration | partial: explicit NaN-propagation matrix for execution/inverse paths pending |
 
 #### 3.2.4 Traceability (Multi-Calculator Session Model)
 
@@ -293,7 +293,7 @@ None currently.
 2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
 3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but dedicated palette/install contract suites are rolling out.
 4. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
-5. `FS-FB-09`, `FS-FB-10`, and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress, terminal-NaN execution-lock matrix, and exception-bearing progression fixtures are pending.
+5. `FS-FB-09`, `FS-FB-10`, and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress, NaN-propagation matrix for execution/inverse paths, and exception-bearing progression fixtures are pending.
 6. `FS-UP-09`, `FS-UP-10`, `FS-UP-11`, and `FS-UP-12` are intentionally partial at introduction time; dedicated key-only schema, partition-matrix, canonical tie-break, and unresolved-classification fixtures/contracts are pending.
 
 **Lower priority: non-seam or later-phase expansion**

@@ -194,33 +194,33 @@ export const runExecutionModePolicyTests = (): void => {
   };
   assert.deepEqual(
     classifyExecutionPolicyAction(nanLocked, { type: "PRESS_KEY", key: k("exec_roll_inverse") }),
-    { decision: "reject" },
-    "terminal NaN lock rejects roll-inverse input",
+    { decision: "allow" },
+    "NaN tail allows roll-inverse input when execution mode is inactive",
   );
   assert.deepEqual(
     classifyExecutionPolicyAction(nanLocked, { type: "PRESS_KEY", key: k("exec_step_through") }),
-    { decision: "reject" },
-    "terminal NaN lock rejects step-through input",
+    { decision: "allow" },
+    "NaN tail allows step-through input when execution mode is inactive",
   );
   assert.deepEqual(
     classifyExecutionPolicyAction(nanLocked, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG }),
-    { decision: "reject" },
-    "terminal NaN lock rejects play/pause toggle",
+    { decision: "interrupt_and_run", interrupt: { type: "clear_all_except_flag", flag: EXECUTION_PAUSE_FLAG } },
+    "NaN tail allows play/pause toggle execution behavior",
   );
   assert.deepEqual(
     classifyExecutionPolicyAction(nanLocked, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG }),
-    { decision: "reject" },
-    "terminal NaN lock rejects equals toggle",
+    { decision: "interrupt_and_run", interrupt: { type: "clear_all_except_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
+    "NaN tail allows equals-toggle execution behavior",
   );
   assert.deepEqual(
     classifyExecutionPolicyAction(nanLocked, { type: "PRESS_KEY", key: op("op_add") }),
-    { decision: "reject" },
-    "terminal NaN lock rejects binary operator input",
+    { decision: "allow" },
+    "NaN tail allows binary operator input when execution mode is inactive",
   );
   assert.deepEqual(
     classifyExecutionPolicyAction(nanLocked, { type: "PRESS_KEY", key: KEY_ID.unary_sigma }),
-    { decision: "reject" },
-    "terminal NaN lock rejects unary operator input",
+    { decision: "allow" },
+    "NaN tail allows unary operator input when execution mode is inactive",
   );
 
   const dual = reducer(reducer(base, { type: "UNLOCK_ALL" }), { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" });

@@ -17,7 +17,7 @@ import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FL
 import { reducer } from "../src/domain/reducer.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
-import type { GameState, RollEntry } from "../src/domain/types.js";
+import type { BinarySlotOperator, GameState, RollEntry, UnaryOperator } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
@@ -238,6 +238,93 @@ export const runReducerInputTests = (): void => {
   const afterNanEquals = applyKeyAction(nanInputSource, "exec_equals");
   assert.deepEqual(afterNanEquals.calculator.total, toNanCalculatorValue(), "executing on NaN keeps NaN total");
   assert.equal(afterNanEquals.calculator.rollEntries.at(-1)?.error?.code, "seed_nan", "NaN execution records seed_nan error code");
+
+  const binaryOperators = Object.entries(fullyUnlocked.unlocks.slotOperators)
+    .filter(([, unlocked]) => unlocked)
+    .map(([operator]) => operator);
+  for (const operator of binaryOperators) {
+    const binaryNanSource: GameState = {
+      ...fullyUnlocked,
+      calculator: {
+        ...fullyUnlocked.calculator,
+        total: toNanCalculatorValue(),
+        operationSlots: [{ operator: operator as BinarySlotOperator, operand: 1n }],
+      },
+    };
+    const afterBinaryNanEquals = applyKeyAction(binaryNanSource, "exec_equals");
+    assert.deepEqual(afterBinaryNanEquals.calculator.total, toNanCalculatorValue(), `${operator} propagates NaN from seed`);
+    assert.equal(afterBinaryNanEquals.calculator.rollEntries.at(-1)?.error?.kind, "nan_input", `${operator} records nan_input error kind`);
+  }
+
+  const unaryOperators = Object.entries(fullyUnlocked.unlocks.unaryOperators)
+    .filter(([, unlocked]) => unlocked)
+    .map(([operator]) => operator);
+  for (const operator of unaryOperators) {
+    const unaryNanSource: GameState = {
+      ...fullyUnlocked,
+      calculator: {
+        ...fullyUnlocked.calculator,
+        total: toNanCalculatorValue(),
+        operationSlots: [{ kind: "unary", operator: operator as UnaryOperator }],
+      },
+    };
+    const afterUnaryNanEquals = applyKeyAction(unaryNanSource, "exec_equals");
+    if (operator === KEY_ID.unary_not) {
+      assert.deepEqual(afterUnaryNanEquals.calculator.total, r(1n), "unary_not maps NaN seed to one");
+      assert.equal(afterUnaryNanEquals.calculator.rollEntries.at(-1)?.error, undefined, "unary_not from NaN does not record nan_input error");
+    } else {
+      assert.deepEqual(afterUnaryNanEquals.calculator.total, toNanCalculatorValue(), `${operator} propagates NaN from seed`);
+      assert.equal(afterUnaryNanEquals.calculator.rollEntries.at(-1)?.error?.kind, "nan_input", `${operator} records nan_input error kind`);
+    }
+  }
+
+  const nanStepThroughSource: GameState = {
+    ...fullyUnlocked,
+    ui: {
+      ...fullyUnlocked.ui,
+      keyLayout: [{ kind: "key", key: KEY_ID.exec_step_through }],
+      keypadColumns: 1,
+      keypadRows: 1,
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: toNanCalculatorValue(),
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
+      stepProgress: {
+        active: true,
+        seedTotal: toNanCalculatorValue(),
+        currentTotal: toNanCalculatorValue(),
+        nextSlotIndex: 0,
+        executedSlotResults: [],
+      },
+    },
+  };
+  const afterNanStepThrough = applyKeyAction(nanStepThroughSource, "exec_step_through");
+  assert.deepEqual(afterNanStepThrough.calculator.total, toNanCalculatorValue(), "step-through on NaN current total yields NaN");
+  assert.equal(afterNanStepThrough.calculator.rollEntries.at(-1)?.error?.kind, "nan_input", "step-through NaN result keeps nan_input kind");
+
+  const nanInverseSeed: GameState = {
+    ...fullyUnlocked,
+    ui: {
+      ...fullyUnlocked.ui,
+      keyLayout: [
+        { kind: "key", key: KEY_ID.exec_roll_inverse },
+        { kind: "key", key: KEY_ID.exec_step_through },
+      ],
+      keypadColumns: 2,
+      keypadRows: 1,
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: toNanCalculatorValue(),
+      operationSlots: [{ operator: op("op_add"), operand: 1n }],
+    },
+  };
+  const armedNanInverse = applyKeyAction(nanInverseSeed, "exec_roll_inverse");
+  const afterNanInverseStep = applyKeyAction(armedNanInverse, "exec_step_through");
+  assert.deepEqual(afterNanInverseStep.calculator.total, toNanCalculatorValue(), "inverse step on NaN current total yields NaN");
+  assert.equal(afterNanInverseStep.calculator.rollEntries.at(-1)?.error?.kind, "nan_input", "inverse step NaN result keeps nan_input kind");
+
   const nanStopsExecutionSource: GameState = {
     ...divByZeroSource,
     ui: {

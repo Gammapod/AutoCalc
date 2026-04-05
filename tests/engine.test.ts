@@ -1,7 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { executeSlots, executeSlotsValue } from "../src/domain/engine.js";
-import { toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
+import { toNanCalculatorValue, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import type { RationalValue } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): RationalValue => ({ num, den });
@@ -99,13 +99,13 @@ export const runEngineTests = (): void => {
   assert.deepEqual(minOnRational, { ok: true, total: r(5n, 2n) }, "min supports exact rational-vs-integer comparison");
 
   const unaryNotZero = executeSlots(r(0n), [{ kind: "unary", operator: uop("unary_not") }]);
-  assert.deepEqual(unaryNotZero, { ok: true, total: r(1n) }, "not maps zero to one");
+  assert.deepEqual(unaryNotZero, { ok: false, reason: "nan_input" }, "not maps numeric zero to NaN");
 
   const unaryNotNegative = executeSlots(r(-12n), [{ kind: "unary", operator: uop("unary_not") }]);
-  assert.deepEqual(unaryNotNegative, { ok: true, total: r(1n) }, "not maps negative values to one");
+  assert.deepEqual(unaryNotNegative, { ok: false, reason: "nan_input" }, "not maps negative values to NaN");
 
   const unaryNotPositive = executeSlots(r(12n), [{ kind: "unary", operator: uop("unary_not") }]);
-  assert.deepEqual(unaryNotPositive, { ok: true, total: r(0n) }, "not maps positive values to zero");
+  assert.deepEqual(unaryNotPositive, { ok: false, reason: "nan_input" }, "not maps positive values to NaN");
 
   const unaryCollatzEven = executeSlots(r(8n), [{ kind: "unary", operator: uop("unary_collatz") }]);
   assert.deepEqual(unaryCollatzEven, { ok: true, total: r(4n) }, "collatz halves even integers");
@@ -183,7 +183,13 @@ export const runEngineTests = (): void => {
     toRationalCalculatorValue({ num: 34n, den: 1n }),
     [{ kind: "unary", operator: uop("unary_i") }, { kind: "unary", operator: uop("unary_not") }],
   );
-  assert.deepEqual(complexUnaryNot, { ok: true, total: toRationalCalculatorValue({ num: 0n, den: 1n }) }, "unary-not supports complex totals");
+  assert.deepEqual(complexUnaryNot, { ok: true, total: toNanCalculatorValue() }, "unary-not maps complex totals to NaN");
+
+  const unaryNotFromNan = executeSlotsValue(
+    toNanCalculatorValue(),
+    [{ kind: "unary", operator: uop("unary_not") }],
+  );
+  assert.deepEqual(unaryNotFromNan, { ok: true, total: toRationalCalculatorValue({ num: 1n, den: 1n }) }, "unary-not maps NaN input to one");
 
   const gaussianInput = {
     kind: "complex" as const,

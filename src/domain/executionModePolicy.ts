@@ -16,18 +16,6 @@ const isExecutionCategoryKey = (key: Key): boolean => {
   return definition?.category === "execution";
 };
 
-const isTerminalNanLockBlockedKey = (key: Key): boolean => {
-  const definition = getButtonDefinition(key);
-  if (!definition) {
-    return false;
-  }
-  return (
-    definition.category === "execution"
-    || definition.category === "slot_operator"
-    || definition.category === "unary_operator"
-  );
-};
-
 const getExecutionToggleFlagsForKey = (ui: GameState["ui"], key: Key): Set<string> => {
   const flags = new Set<string>();
   if (key === KEY_ID.exec_play_pause) {
@@ -277,13 +265,7 @@ export const isExecutionGatedMutationAction = (state: GameState, action: Action)
 };
 
 export const classifyExecutionPolicyAction = (state: GameState, action: Action): ExecutionPolicyResult => {
-  const latestRollEntry = state.calculator.rollEntries[state.calculator.rollEntries.length - 1];
-  const hasTerminalNanLock = latestRollEntry?.y.kind === "nan";
-
   if (action.type === "TOGGLE_FLAG") {
-    if (hasTerminalNanLock && isExecutionToggleFlag(state, action.flag)) {
-      return { decision: "reject" };
-    }
     if (isExecutionToggleFlag(state, action.flag)) {
       return {
         decision: "interrupt_and_run",
@@ -300,9 +282,6 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
   }
 
   if (action.type === "PRESS_KEY") {
-    if (hasTerminalNanLock && isTerminalNanLockBlockedKey(action.key)) {
-      return { decision: "reject" };
-    }
     if (!isExecutionModeActive(state)) {
       return { decision: "allow" };
     }

@@ -221,36 +221,28 @@ export const runContractsExecutionGateParityTests = (): void => {
     { type: "SWAP_LAYOUT_CELLS", fromSurface: "keypad", fromIndex: 0, toSurface: "storage", toIndex: 0 },
     { expectRejectUiEffect: true },
   );
-  runParityRejectionCase(
-    "nan-lock equals-toggle rejection",
-    nanLockedState,
-    { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG },
-    { expectRejectUiEffect: true, expectStateMutation: true },
-  );
-  runParityRejectionCase(
-    "nan-lock play/pause rejection",
-    nanLockedState,
-    { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG },
-    { expectRejectUiEffect: true, expectStateMutation: true },
-  );
-  runParityRejectionCase(
-    "nan-lock step-through rejection",
-    nanLockedState,
-    { type: "PRESS_KEY", key: KEY_ID.exec_step_through },
-    { expectRejectUiEffect: true, expectStateMutation: true },
-  );
-  runParityRejectionCase(
-    "nan-lock roll-inverse rejection",
-    nanLockedState,
-    { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
-    { expectRejectUiEffect: true, expectStateMutation: true },
-  );
-  runParityRejectionCase(
-    "nan-lock binary-operator rejection",
-    nanLockedState,
-    { type: "PRESS_KEY", key: op("op_add") },
-    { expectRejectUiEffect: true, expectStateMutation: true },
-  );
+  const nanTailAcceptedActions: Array<{ label: string; action: Action }> = [
+    { label: "nan-tail equals-toggle accepted", action: { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
+    { label: "nan-tail play/pause accepted", action: { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_FLAG } },
+    { label: "nan-tail step-through accepted", action: { type: "PRESS_KEY", key: KEY_ID.exec_step_through } },
+    { label: "nan-tail roll-inverse accepted", action: { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse } },
+    { label: "nan-tail binary-operator accepted", action: { type: "PRESS_KEY", key: op("op_add") } },
+  ];
+  for (const row of nanTailAcceptedActions) {
+    const reduced = reducer(nanLockedState, row.action);
+    const commandResult = executeCommand(nanLockedState, { type: "DispatchAction", action: row.action });
+    const parity = compareParity(reduced, commandResult.state);
+    assert.equal(parity.ok, true, `${row.label}: reducer and command outcomes stay parity-equivalent (${JSON.stringify(parity.mismatches)})`);
+    assert.equal(
+      commandResult.uiEffects.some((effect) => effect.type === "execution_gate_rejected"),
+      false,
+      `${row.label}: command path emits no execution-gate rejection`,
+    );
+    assert.ok(
+      commandResult.uiEffects.some((effect) => effect.type === "input_feedback" && effect.outcome === "accepted"),
+      `${row.label}: command path emits accepted input feedback`,
+    );
+  }
 
   const runParityAcceptedCase = (label: string, state: GameState, action: Action): void => {
     const reduced = reducer(state, action);

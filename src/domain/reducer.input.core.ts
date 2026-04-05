@@ -1067,11 +1067,17 @@ const evaluateExecutionOutcomeForSlots = (
   } = {},
 ): EvaluatedExecution => {
   if (seedTotal.kind === "nan") {
-    return {
-      nextTotal: toNanCalculatorValue(),
-      errorCode: resolveNanErrorCode(operationSlots, { fallback: "seed_nan" }),
-      errorKind: "nan_input",
-    };
+    const firstSlot = operationSlots[0];
+    const startsWithUnaryNot = Boolean(
+      firstSlot && firstSlot.kind === "unary" && resolveKeyId(firstSlot.operator) === KEY_ID.unary_not,
+    );
+    if (!startsWithUnaryNot) {
+      return {
+        nextTotal: toNanCalculatorValue(),
+        errorCode: resolveNanErrorCode(operationSlots, { fallback: "seed_nan" }),
+        errorKind: "nan_input",
+      };
+    }
   }
 
   const execution = executeSlotsValue(seedTotal, operationSlots);
