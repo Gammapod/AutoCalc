@@ -1,7 +1,7 @@
 import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../../../domain/keypadLayoutModel.js";
 import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
-import { resolveKeyId } from "../../../domain/keyPresentation.js";
+import { KEY_ID, resolveKeyId } from "../../../domain/keyPresentation.js";
 import type { Action, CalculatorId, GameState, Key, KeyCell } from "../../../domain/types.js";
 import { bindDraggableCell, bindDropTargetCell } from "../input/dragDrop.js";
 import { bindQuickTapPressFeedback, shouldSuppressClick } from "../input/pressFeedback.js";
@@ -79,6 +79,9 @@ export const renderKeypadCells = (
       button.classList.add("key--locked-capability");
     }
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
+    if (cell.key === KEY_ID.const_bottom) {
+      button.classList.add("key--value-bottom");
+    }
     if (getButtonDefinition(resolveKeyId(cell.key))?.unlockGroup === "unaryOperators") {
       button.classList.add("key--unary-operator");
     }

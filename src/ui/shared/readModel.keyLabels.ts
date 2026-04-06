@@ -7,6 +7,7 @@ import {
   getOperatorInlineFaceLabel,
   getOperatorSlotFaceLabel,
   isBinaryOperatorKeyId,
+  isConstantKeyId,
   isDigitKeyId,
   KEY_ID,
   resolveKeyId,
@@ -52,7 +53,7 @@ const isEuclidLiteralOperator = (operator: SlotOperator): boolean => {
 export const formatKeyLabel = (key: Key): string => getKeyButtonFaceLabel(key);
 
 export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
-  if (isDigitKeyId(key)) {
+  if (isDigitKeyId(key) || isConstantKeyId(key)) {
     return "value_expression";
   }
   if (getButtonDefinition(resolveKeyId(key))?.unlockGroup === "unaryOperators") {

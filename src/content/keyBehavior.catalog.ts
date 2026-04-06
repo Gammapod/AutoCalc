@@ -90,6 +90,7 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     primaryExpectation: "graph_counts_only",
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
   },
+  d(KEY_ID.const_bottom),
   op(KEY_ID.op_add),
   op(KEY_ID.op_sub),
   op(KEY_ID.op_mul),

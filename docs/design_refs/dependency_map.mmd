@@ -40,13 +40,19 @@ flowchart TD
         E_tuple
         Eeurad
         Eresid        
+
     subgraph Boolean_Identities ["1/0"]
         Bnotp
+        Band
+        Bor
+
+        subgraph Comparisons ["≤"]
         Bnotgt
         Bless
         Beq
         Bmax
         Bminim
+        end
     end
 
     subgraph Linear_Ops
@@ -202,20 +208,31 @@ flowchart TD
 %% 
 %% Logic
     %% Visualizer: default again, but in binary mode
-    Mmul --> Bnotp["¬n"]
+    %% For logic operators, NaN is treated as False (represented as ⊥ in expansions), and any value (including 0) is treated as true
+    %% a, b, n -> numeric values (else false)
+    %% p, q -> numeric values (true) or ⊥ (false)
+    Mdiv -->|n ÷ 0| Bnotp["¬ p"]
     %% Primitive
-    %% Expanded form `[ 0 ≤ n ]
-    Bnotp --> Bnotgt["a≤b"]
-    %% Expanded form `[ ¬(a-b) ]
-    Bnotgt --> Bless["a\< b"]
-    %% Expanded form `[ (a≤b) × ¬(¬(a-b))]
-    Bless --> Beq["a≡b"]
-    %% Expanded form `[ ¬((a<b) + (b<a)) ]
-    Bless --> Bmax["╧"]
-    %% Expanded form `[ ((a<b)×b) + ¬((a≤b)×a) ]`
-    Bless --> Bminim["╤"]  
-    %% Expanded form `[ ((a<b)×a) + ¬((a≤b)×b) ]`
-    Lminus --> Bnotgt
+    %% Expanded form `[ ⊥ ? 1 : ⊥ ]`
+    Bnotp --> Band["p ∧ q"]
+    %% Expanded form `[ ¬¬(p + q) ]`
+    Band --> Bor["p ∨ q"]
+    %% Expanded form `[ ¬(¬p ∧ ¬q)) ]`
+
+    Lminus --> Bnotgt["a ≤ b"]
+    %% Primitive
+    %% Expanded form `[ ((a - b) ≤ 0) ? 1 : ⊥ ]`
+    Bnotp --> Beq["a ≡ b"]
+    %% Expanded form `[ ¬¬(1/(a-b)) ]`
+    Beq --> Bless
+    Band --> Bless
+    Bnotgt --> Bless
+    Bless["a < b"]
+    %% Expanded form `[ ¬(a ≡ b) ∧ (a ≤ b)]
+    Bless --> Bmax["a ╧ b"]
+    %% Expanded form `[ ((a < b) × b) + ¬((a ≤ b) × a) ]`
+    Bless --> Bminim["a ╤ b"]
+    %% Expanded form `[ ((a < b) × a) + ¬((a ≤ b) × b) ]`
 %% 
 
 %%     subgraph Digits ["Digit Manipulation"]

@@ -25,7 +25,7 @@ import {
   slotOperandToExpression,
 } from "./expression.js";
 import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, ScalarValue, Slot, SlotOperator } from "./types.js";
-import { isUnsupportedSymbolicOperatorKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
+import { BOTTOM_VALUE_SYMBOL, isUnsupportedSymbolicOperatorKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import { resolveOperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
 import {
   buildExecutionPlanIR,
@@ -38,6 +38,26 @@ export type ExecuteSlotsResult =
   | { ok: false; reason: "division_by_zero" | "nan_input" | "unsupported_symbolic" };
 
 const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);
+
+const expressionContainsBottomOperand = (value: ExpressionValue): boolean => {
+  if (value.type === "symbolic") {
+    return value.text === BOTTOM_VALUE_SYMBOL;
+  }
+  if (value.type === "unary") {
+    return expressionContainsBottomOperand(value.arg);
+  }
+  if (value.type === "binary") {
+    return expressionContainsBottomOperand(value.left) || expressionContainsBottomOperand(value.right);
+  }
+  return false;
+};
+
+const slotContainsBottomOperand = (slot: Slot): boolean => {
+  if (!("operand" in slot) || typeof slot.operand === "bigint") {
+    return false;
+  }
+  return expressionContainsBottomOperand(slotOperandToExpression(slot.operand));
+};
 
 const gcdBigInt = (left: bigint, right: bigint): bigint => {
   let a = absBigInt(left);
@@ -331,6 +351,10 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       continue;
     }
 
+    if (slotContainsBottomOperand(slot)) {
+      return { ok: false, reason: "nan_input" };
+    }
+
     if (typeof slot.operand !== "bigint") {
       return { ok: false, reason: "unsupported_symbolic" };
     }
@@ -497,6 +521,9 @@ export const buildSymbolicExpression = (total: CalculatorValue, slots: Slot[]): 
   for (const slot of slots) {
     if (!("operand" in slot)) {
       return { ok: false, reason: "unsupported_symbolic" };
+    }
+    if (slotContainsBottomOperand(slot)) {
+      return { ok: false, reason: "nan_input" };
     }
     if (isUnsupportedSymbolicOperatorKeyId(slot.operator)) {
       return { ok: false, reason: "unsupported_symbolic" };
@@ -1017,6 +1044,10 @@ const executeSlotsValueInternal = (
       current = delegated.total;
       lastEuclidRemainder = delegated.euclidRemainder;
       continue;
+    }
+
+    if (slotContainsBottomOperand(slot)) {
+      return { ok: false, reason: "nan_input", operatorId: slot.operator };
     }
 
     const operatorKey = slot.operator;

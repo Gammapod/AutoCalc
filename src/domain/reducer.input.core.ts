@@ -77,6 +77,7 @@ import {
   resolveMemoryRecallDigit,
 } from "./memoryController.js";
 import {
+  BOTTOM_VALUE_SYMBOL,
   getButtonFace,
   isBinaryOperatorKeyId,
   isConstantKeyId,
@@ -268,10 +269,58 @@ export const applyDigit = (state: GameState, key: Key): GameState => {
 };
 
 export const applyConstantValue = (state: GameState, constant: ConstantKeyId): GameState => {
-  // Player input path: constants are not directly enterable as seed or right operand.
-  void constant;
-  return state;
+  if (constant !== KEY_ID.const_bottom) {
+    // Player input path: constants are not directly enterable as seed or right operand.
+    return state;
+  }
+  if (hasExecutedRollSteps(state)) {
+    return state;
+  }
+  if (state.calculator.draftingSlot) {
+    const nextPatch = {
+      operationSlots: state.calculator.operationSlots,
+      draftingSlot: {
+        ...state.calculator.draftingSlot,
+        operandInput: BOTTOM_VALUE_SYMBOL,
+        isNegative: false,
+      },
+    } satisfies Pick<GameState["calculator"], "operationSlots" | "draftingSlot">;
+    return applyUnlocks(withSeedRollSyncedToBuildState(withBuilderPatchApplied(state, nextPatch)), getUnlockCatalog());
+  }
+  if (state.calculator.operationSlots.length > 0) {
+    const slotIndex = state.calculator.operationSlots.length - 1;
+    const currentSlot = state.calculator.operationSlots[slotIndex];
+    if (!("operand" in currentSlot)) {
+      return state;
+    }
+    const nextSlots = [...state.calculator.operationSlots];
+    nextSlots[slotIndex] = {
+      ...currentSlot,
+      operand: { type: "symbolic", text: BOTTOM_VALUE_SYMBOL },
+    };
+    const nextPatch = {
+      operationSlots: nextSlots,
+      draftingSlot: null,
+    } satisfies Pick<GameState["calculator"], "operationSlots" | "draftingSlot">;
+    return applyUnlocks(withSeedRollSyncedToBuildState(withBuilderPatchApplied(state, nextPatch)), getUnlockCatalog());
+  }
+  const withBottomTotal: GameState = {
+    ...state,
+    calculator: {
+      ...state.calculator,
+      total: toNanCalculatorValue(),
+      pendingNegativeTotal: false,
+      singleDigitInitialTotalEntry: false,
+    },
+  };
+  return applyUnlocks(withBottomTotal, getUnlockCatalog());
 };
+
+const isBottomValueKey = (key: Key): key is ConstantKeyId =>
+  key === KEY_ID.const_bottom;
+
+const isActiveRollValueInputNoop = (key: Key): boolean =>
+  isValueAtomDigit(key) || isBottomValueKey(key);
 
 const applyDigitValue = (state: GameState, digit: Digit): GameState => {
   if (hasExecutedRollSteps(state)) {
@@ -1811,7 +1860,7 @@ export const applyKeyActionCore = (state: GameState, keyLike: KeyInput): GameSta
   // 1) active-roll digit keys are hard no-op
   // 2) active-roll operator keys clear current operation entry before handling
   // 3) normal key dispatch
-  if (hasExecutedRollSteps(stepAwareState) && isValueAtomDigit(key)) {
+  if (hasExecutedRollSteps(stepAwareState) && isActiveRollValueInputNoop(key)) {
     return stepAwareState;
   }
 

@@ -111,6 +111,10 @@
   color: #ffffff;
 }
 
+.key.key--value-bottom .key__label {
+  color: #d11212;
+}
+
 .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-settings):not(.key--group-global_system):not(.key--group-step):not(.key--group-execution):not(:disabled) {
   background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
 }
