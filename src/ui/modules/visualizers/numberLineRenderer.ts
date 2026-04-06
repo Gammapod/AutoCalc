@@ -140,6 +140,7 @@ const appendScaleLabel = (
   point: Point,
   textValue: string,
   textAnchor: "start" | "middle" | "end",
+  maxWidthUnits?: number,
 ): void => {
   const svgNs = "http://www.w3.org/2000/svg";
   const text = documentRef.createElementNS(svgNs, "text");
@@ -147,6 +148,10 @@ const appendScaleLabel = (
   text.setAttribute("y", point.y.toString());
   text.setAttribute("text-anchor", textAnchor);
   text.setAttribute("class", "v2-number-line-scale-label");
+  if (typeof maxWidthUnits === "number" && textValue.length > 6) {
+    text.setAttribute("textLength", maxWidthUnits.toString());
+    text.setAttribute("lengthAdjust", "spacing");
+  }
   applyUxRoleAttributes(text, { uxRole: "default", uxState: "normal" });
   text.textContent = textValue;
   svg.appendChild(text);
@@ -236,12 +241,12 @@ const renderScaleLabels = (
 ): void => {
   const leftLabel = `-${range.toString()}`;
   const rightLabel = range.toString();
-  appendScaleLabel(documentRef, svg, { x: 4, y: 16.8 }, leftLabel, "start");
-  appendScaleLabel(documentRef, svg, { x: 96, y: 16.8 }, rightLabel, "end");
+  appendScaleLabel(documentRef, svg, { x: -4, y: 16.8 }, leftLabel, "start", 16);
+  appendScaleLabel(documentRef, svg, { x: 104, y: 16.8 }, rightLabel, "end", 16);
 
   if (mode === "complex_grid") {
-    appendScaleLabel(documentRef, svg, { x: 52.4, y: 1.6 }, rightLabel, "start");
-    appendScaleLabel(documentRef, svg, { x: 52.4, y: 23 }, leftLabel, "start");
+    appendScaleLabel(documentRef, svg, { x: 50, y: -40.6 }, `${rightLabel}\u00d7i`, "start");
+    appendScaleLabel(documentRef, svg, { x: 50, y: 66.2 }, `${leftLabel}\u00d7i`, "start");
   }
 };
 

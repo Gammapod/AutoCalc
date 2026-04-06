@@ -221,7 +221,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.viz_release_notes, { buttonFace: "NOTES" }],
   [KEY_ID.viz_help, { buttonFace: "HELP" }],
   [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],
-  [KEY_ID.viz_number_line, { buttonFace: "\u27FB\u27FC" }],
+  [KEY_ID.viz_number_line, { buttonFace: "\u25FB" }],
   [KEY_ID.viz_eigen_allocator, { buttonFace: "\u03BB" }],
   [KEY_ID.viz_algebraic, { buttonFace: "ALG" }],
   [KEY_ID.exec_equals, { buttonFace: "=" }],

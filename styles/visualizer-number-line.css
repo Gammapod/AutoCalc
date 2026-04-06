@@ -113,6 +113,8 @@ body[data-ui-shell="desktop"] .v2-number-line-scale-label {
   fill: var(--ux-role-default-color);
   font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
   font-size: 2.6px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
   letter-spacing: 0.02em;
   user-select: none;
 }

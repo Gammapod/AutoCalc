@@ -31,6 +31,10 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.equal(realScaleLabels.length, 2, "real mode renders two scale labels for horizontal extremes");
     assert.equal(realScaleLabels[0]?.textContent, "-9", "left real scale label reflects current range");
     assert.equal(realScaleLabels[1]?.textContent, "9", "right real scale label reflects current range");
+    assert.equal(realScaleLabels[0]?.getAttribute("x"), "-4", "left real scale label is pushed to the draw-space border");
+    assert.equal(realScaleLabels[0]?.getAttribute("text-anchor"), "start", "left real scale label anchors inward to avoid clipping");
+    assert.equal(realScaleLabels[1]?.getAttribute("x"), "104", "right real scale label is pushed to the draw-space border");
+    assert.equal(realScaleLabels[1]?.getAttribute("text-anchor"), "end", "right real scale label anchors inward to avoid clipping");
 
     const withRealRoll = {
       ...initialState(),
@@ -116,6 +120,49 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.ok(panel.querySelector(".v2-number-line-vector-tip"), "complex roll values render vector tip");
     const complexScaleLabels = panel.querySelectorAll<SVGTextElement>(".v2-number-line-scale-label");
     assert.equal(complexScaleLabels.length, 4, "complex mode renders real and imaginary extreme labels");
+    assert.equal(complexScaleLabels[2]?.textContent, "9×i", "complex top scale label appends imaginary-unit suffix");
+    assert.equal(complexScaleLabels[3]?.textContent, "-9×i", "complex bottom scale label appends imaginary-unit suffix");
+    assert.equal(complexScaleLabels[2]?.getAttribute("x"), "50", "complex top scale label left edge aligns to vertical axis arrow x");
+    assert.equal(complexScaleLabels[3]?.getAttribute("x"), "50", "complex bottom scale label left edge aligns to vertical axis arrow x");
+    assert.equal(complexScaleLabels[2]?.hasAttribute("textLength"), false, "complex top scale label keeps natural glyph width");
+    assert.equal(complexScaleLabels[3]?.hasAttribute("textLength"), false, "complex bottom scale label keeps natural glyph width");
+    assert.equal(complexScaleLabels[2]?.getAttribute("y"), "-40.6", "complex top scale label is positioned beyond top vertical axis end");
+    assert.equal(complexScaleLabels[3]?.getAttribute("y"), "66.2", "complex bottom scale label is positioned beyond bottom vertical axis end");
+
+    const withMidRange = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toRationalCalculatorValue({ num: 99_999n, den: 1n }),
+        rollEntries: [{ y: toRationalCalculatorValue({ num: 99_999n, den: 1n }) }],
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, withMidRange);
+    const midRangeLabels = panel.querySelectorAll<SVGTextElement>(".v2-number-line-scale-label");
+    assert.equal(midRangeLabels[0]?.textContent, "-99999", "left mid-range label reflects current range");
+    assert.equal(midRangeLabels[1]?.textContent, "99999", "right mid-range label reflects current range");
+    assert.equal(midRangeLabels[0]?.hasAttribute("textLength"), false, "mid-range real labels keep natural glyph width");
+    assert.equal(midRangeLabels[1]?.hasAttribute("textLength"), false, "mid-range real labels do not apply width squeeze");
+
+    const withLargeRange = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toRationalCalculatorValue({ num: 9_999_999_999n, den: 1n }),
+        rollEntries: [{ y: toRationalCalculatorValue({ num: 9_999_999_999n, den: 1n }) }],
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, withLargeRange);
+    const largeRangeLabels = panel.querySelectorAll<SVGTextElement>(".v2-number-line-scale-label");
+    assert.equal(largeRangeLabels[0]?.textContent, "-9999999999", "left large-range label reflects expanded range");
+    assert.equal(largeRangeLabels[1]?.textContent, "9999999999", "right large-range label reflects expanded range");
+    assert.equal(largeRangeLabels[0]?.getAttribute("textLength"), "16", "left large-range label applies width clamp");
+    assert.equal(largeRangeLabels[1]?.getAttribute("textLength"), "16", "right large-range label applies width clamp");
+    assert.equal(
+      largeRangeLabels[0]?.getAttribute("lengthAdjust"),
+      "spacing",
+      "left large-range label uses spacing-only adjustment to prevent glyph squish",
+    );
 
     const withHistoryEnabled = {
       ...withImaginaryTotal,
