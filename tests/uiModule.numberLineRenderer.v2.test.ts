@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
-import { renderNumberLineVisualizerPanel } from "../src/ui/modules/visualizers/numberLineRenderer.js";
+import {
+  renderNumberLineVisualizerPanel,
+  resolveNumberLineLabels,
+} from "../src/ui/modules/visualizers/numberLineRenderer.js";
 import {
   toRationalCalculatorValue,
   toRationalScalarValue,
@@ -10,6 +13,42 @@ import { HISTORY_FLAG } from "../src/domain/state.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 
 export const runUiModuleNumberLineRendererV2Tests = (): void => {
+  const realSpecs = resolveNumberLineLabels("real", 9);
+  assert.equal(realSpecs.length, 2, "real mode label resolver returns left/right labels only");
+  assert.deepEqual(
+    realSpecs.map((spec) => spec.zone),
+    ["real_left", "real_right"],
+    "real mode emits labels in real-left then real-right order",
+  );
+  assert.equal(realSpecs[0]?.text, "-9", "real-left label text includes negative range value");
+  assert.equal(realSpecs[1]?.text, "9", "real-right label text includes positive range value");
+  assert.equal(realSpecs[0]?.fitPolicy, "constrain_spacing", "real labels use spacing-only fit policy");
+
+  const complexSpecs = resolveNumberLineLabels("complex_grid", 99);
+  assert.equal(complexSpecs.length, 4, "complex-grid label resolver returns real and imaginary labels");
+  assert.deepEqual(
+    complexSpecs.map((spec) => spec.zone),
+    ["real_left", "real_right", "imag_top", "imag_bottom"],
+    "complex-grid emits all label zones in deterministic order",
+  );
+  assert.equal(complexSpecs[2]?.text, "99×i", "imag-top label appends imaginary-unit suffix");
+  assert.equal(complexSpecs[3]?.text, "-99×i", "imag-bottom label appends imaginary-unit suffix");
+  assert.equal(complexSpecs[2]?.fitPolicy, "natural", "imaginary labels preserve natural glyph width");
+
+  const midRangeSpecs = resolveNumberLineLabels("real", 99_999);
+  assert.equal(
+    midRangeSpecs[0]?.text.length > (midRangeSpecs[0]?.fitMinLength ?? 0),
+    false,
+    "mid-range real labels stay below spacing-constrain threshold",
+  );
+
+  const largeRangeSpecs = resolveNumberLineLabels("real", 9_999_999_999);
+  assert.equal(
+    largeRangeSpecs[0]?.text.length > (largeRangeSpecs[0]?.fitMinLength ?? 0),
+    true,
+    "large real labels exceed spacing-constrain threshold",
+  );
+
   const harness = installDomHarness();
   try {
     const panel = harness.root.querySelector<HTMLElement>("[data-v2-number-line-panel]");

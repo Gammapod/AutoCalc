@@ -13,6 +13,18 @@ import {
 } from "./numberLineModel.js";
 
 type AxisKey = "x" | "y";
+export type NumberLineLabelZone = "real_left" | "real_right" | "imag_top" | "imag_bottom";
+export type NumberLineLabelFitPolicy = "natural" | "constrain_spacing";
+export type NumberLineLabelSpec = {
+  zone: NumberLineLabelZone;
+  text: string;
+  x: number;
+  y: number;
+  anchor: "start" | "middle" | "end";
+  fitPolicy: NumberLineLabelFitPolicy;
+  fitMaxWidthUnits?: number;
+  fitMinLength?: number;
+};
 
 const buildAsciiNumberLine = (): string => "\u2190\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2192";
 
@@ -137,23 +149,24 @@ const appendVectorArrowTip = (
 const appendScaleLabel = (
   documentRef: Document,
   svg: SVGElement,
-  point: Point,
-  textValue: string,
-  textAnchor: "start" | "middle" | "end",
-  maxWidthUnits?: number,
+  label: NumberLineLabelSpec,
 ): void => {
   const svgNs = "http://www.w3.org/2000/svg";
   const text = documentRef.createElementNS(svgNs, "text");
-  text.setAttribute("x", point.x.toString());
-  text.setAttribute("y", point.y.toString());
-  text.setAttribute("text-anchor", textAnchor);
+  text.setAttribute("x", label.x.toString());
+  text.setAttribute("y", label.y.toString());
+  text.setAttribute("text-anchor", label.anchor);
   text.setAttribute("class", "v2-number-line-scale-label");
-  if (typeof maxWidthUnits === "number" && textValue.length > 6) {
-    text.setAttribute("textLength", maxWidthUnits.toString());
+  if (
+    label.fitPolicy === "constrain_spacing"
+    && typeof label.fitMaxWidthUnits === "number"
+    && label.text.length > (label.fitMinLength ?? 0)
+  ) {
+    text.setAttribute("textLength", label.fitMaxWidthUnits.toString());
     text.setAttribute("lengthAdjust", "spacing");
   }
   applyUxRoleAttributes(text, { uxRole: "default", uxState: "normal" });
-  text.textContent = textValue;
+  text.textContent = label.text;
   svg.appendChild(text);
 };
 
@@ -233,21 +246,69 @@ const renderComplexGrid = (documentRef: Document, svg: SVGElement, geometry: Num
   );
 };
 
+export const resolveNumberLineLabels = (
+  mode: ReturnType<typeof resolveNumberLineMode>,
+  range: number,
+  geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
+): NumberLineLabelSpec[] => {
+  const leftLabel = `-${range}`;
+  const rightLabel = `${range}`;
+  const labels: NumberLineLabelSpec[] = [
+    {
+      zone: "real_left",
+      text: leftLabel,
+      x: geometry.horizontal.axis.from.x - 6,
+      y: 16.8,
+      anchor: "start",
+      fitPolicy: "constrain_spacing",
+      fitMaxWidthUnits: 16,
+      fitMinLength: 6,
+    },
+    {
+      zone: "real_right",
+      text: rightLabel,
+      x: geometry.horizontal.axis.to.x + 6,
+      y: 16.8,
+      anchor: "end",
+      fitPolicy: "constrain_spacing",
+      fitMaxWidthUnits: 16,
+      fitMinLength: 6,
+    },
+  ];
+
+  if (mode === "complex_grid") {
+    labels.push(
+      {
+        zone: "imag_top",
+        text: `${rightLabel}\u00d7i`,
+        x: geometry.vertical.axis.from.x,
+        y: -40.6,
+        anchor: "start",
+        fitPolicy: "natural",
+      },
+      {
+        zone: "imag_bottom",
+        text: `${leftLabel}\u00d7i`,
+        x: geometry.vertical.axis.to.x,
+        y: 66.2,
+        anchor: "start",
+        fitPolicy: "natural",
+      },
+    );
+  }
+
+  return labels;
+};
+
 const renderScaleLabels = (
   documentRef: Document,
   svg: SVGElement,
   mode: ReturnType<typeof resolveNumberLineMode>,
   range: number,
 ): void => {
-  const leftLabel = `-${range.toString()}`;
-  const rightLabel = range.toString();
-  appendScaleLabel(documentRef, svg, { x: -4, y: 16.8 }, leftLabel, "start", 16);
-  appendScaleLabel(documentRef, svg, { x: 104, y: 16.8 }, rightLabel, "end", 16);
-
-  if (mode === "complex_grid") {
-    appendScaleLabel(documentRef, svg, { x: 50, y: -40.6 }, `${rightLabel}\u00d7i`, "start");
-    appendScaleLabel(documentRef, svg, { x: 50, y: 66.2 }, `${leftLabel}\u00d7i`, "start");
-  }
+  resolveNumberLineLabels(mode, range, NUMBER_LINE_GEOMETRY).forEach((label) => {
+    appendScaleLabel(documentRef, svg, label);
+  });
 };
 
 const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: GameState): void => {
