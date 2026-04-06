@@ -20,6 +20,7 @@ import {
   clearNumberLineVisualizerPanel,
   renderNumberLineVisualizerPanel,
 } from "./numberLineRenderer.js";
+import { resolveNumberLineMode } from "./numberLineModel.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -129,6 +130,10 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
       mode: "ratio",
       ratio: 0.29,
     },
+    resolveSize: (state) =>
+      resolveNumberLineMode(state) === "complex_grid"
+        ? { mode: "ratio", ratio: 1 }
+        : { mode: "ratio", ratio: 0.29 },
     render: renderNumberLineVisualizerPanel,
     clear: clearNumberLineVisualizerPanel,
   },

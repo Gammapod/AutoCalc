@@ -8,6 +8,7 @@ import { click } from "./helpers/eventHarness.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 import { withCalculatorProjection } from "./helpers/dualCalculatorState.js";
 import { createMainMenuState } from "../src/domain/mainMenuPreset.js";
+import { toExplicitComplexCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 
 export const runUiIntegrationDesktopShellTests = (): void => {
   const harness = installDomHarness("http://localhost:4173/index.html?ui=desktop");
@@ -189,6 +190,36 @@ export const runUiIntegrationDesktopShellTests = (): void => {
       harness.root.querySelector<HTMLElement>("[data-display-window]")?.style.getPropertyValue("--v2-visualizer-panel-height") ?? "0",
     );
     assert.equal(graphPanelHeight > totalPanelHeight, true, "graph visualizer resolves a taller canonical panel height than total panel");
+    const numberLineRealState = {
+      ...initialState(),
+      settings: {
+        ...initialState().settings,
+        visualizer: "number_line" as const,
+      },
+    };
+    renderer.render(numberLineRealState, dispatch, {
+            inputBlocked: false,
+    });
+    const numberLineRealHeight = Number.parseFloat(
+      harness.root.querySelector<HTMLElement>("[data-display-window]")?.style.getPropertyValue("--v2-visualizer-panel-height") ?? "0",
+    );
+    const numberLineComplexState = {
+      ...numberLineRealState,
+      calculator: {
+        ...numberLineRealState.calculator,
+        total: toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 3n, den: 1n }),
+          toRationalScalarValue({ num: 2n, den: 1n }),
+        ),
+      },
+    };
+    renderer.render(numberLineComplexState, dispatch, {
+            inputBlocked: false,
+    });
+    const numberLineComplexHeight = Number.parseFloat(
+      harness.root.querySelector<HTMLElement>("[data-display-window]")?.style.getPropertyValue("--v2-visualizer-panel-height") ?? "0",
+    );
+    assert.equal(numberLineComplexHeight > numberLineRealHeight, true, "number-line complex-grid mode grows panel height beyond real-mode height");
 
     const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("exec_equals")}']`);
     assert.ok(keyButton, "calculator key exists after desktop render");

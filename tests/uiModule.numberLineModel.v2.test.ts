@@ -234,4 +234,15 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
   }
 
   assert.equal(resolveNumberLineMode(initialState()), "real", "real totals use real mode");
+  const withComplexTotal = {
+    ...initialState(),
+    calculator: {
+      ...initialState().calculator,
+      total: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 0n, den: 1n }),
+        toRationalScalarValue({ num: 1n, den: 1n }),
+      ),
+    },
+  };
+  assert.equal(resolveNumberLineMode(withComplexTotal), "complex_grid", "nonzero imaginary totals use complex-grid mode");
 };

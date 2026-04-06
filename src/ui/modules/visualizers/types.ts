@@ -35,6 +35,7 @@ export type VisualizerModule = {
   id: VisualizerId;
   fit: VisualizerFitStrategy;
   size: VisualizerCanonicalSize;
+  resolveSize?: (state: GameState) => VisualizerCanonicalSize;
   render: (root: Element, state: GameState) => void;
   clear: (root: Element) => void;
 };

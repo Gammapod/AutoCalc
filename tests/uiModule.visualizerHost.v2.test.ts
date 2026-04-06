@@ -3,6 +3,7 @@ import { initialState } from "../src/domain/state.js";
 import { clearVisualizerHost, renderVisualizerHost, resolveActiveVisualizerPanel } from "../src/ui/renderAdapter.js";
 import { VISUALIZER_REGISTRY } from "../src/ui/modules/visualizers/registry.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
+import { toExplicitComplexCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 
 type RootLike = {
   querySelector: (selector: string) => Element | null;
@@ -126,6 +127,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       assert.equal(module.size.minLines > 0, true, `${module.id} text budget min lines is positive`);
       assert.equal(module.size.targetLines >= module.size.minLines, true, `${module.id} text target respects min lines`);
       assert.equal(module.size.maxLines >= module.size.targetLines, true, `${module.id} text max respects target lines`);
+    }
+    if (module.id === "number_line") {
+      assert.equal(typeof module.resolveSize === "function", true, "number-line module exposes state-aware size resolver");
     }
   }
 
@@ -335,6 +339,30 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderHost.dataset.v2VisualizerTransition, "swap", "graph to feed is swap transition");
   assert.equal(renderHost.attributes["data-v2-visualizer-height-lock"], "true", "swap applies temporary height lock");
   assert.equal(graphClearCalls, 0, "graph panel is retained (not cleared) when inactive during graph-first lifecycle mode");
+
+  renderVisualizerHost(renderRoot as unknown as Element, withNumberLineSelected);
+  assert.equal(
+    renderDisplayWindow.attributes["style:--v2-visualizer-panel-height"],
+    "133.40px",
+    "number-line real mode keeps canonical real ratio height",
+  );
+
+  const withNumberLineComplexSelected: GameState = {
+    ...withNumberLineSelected,
+    calculator: {
+      ...withNumberLineSelected.calculator,
+      total: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 3n, den: 1n }),
+        toRationalScalarValue({ num: 2n, den: 1n }),
+      ),
+    },
+  };
+  renderVisualizerHost(renderRoot as unknown as Element, withNumberLineComplexSelected);
+  assert.equal(
+    renderDisplayWindow.attributes["style:--v2-visualizer-panel-height"],
+    "460.00px",
+    "number-line complex mode resolves square ratio and is not capped by prior global max clamp",
+  );
 
   renderVisualizerHost(renderRoot as unknown as Element, base);
   assert.equal(renderHost.dataset.v2VisualizerTransition, "exit", "visualizer to total is exit transition");
