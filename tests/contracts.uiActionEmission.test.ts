@@ -25,14 +25,6 @@ export const runContractsUiActionEmissionTests = (): void => {
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key emits visualizer toggle action",
   );
-  const circleCell: KeyCell = keyCell("viz_circle");
-  const circleAction = buildKeyButtonAction(circleCell);
-  assert.deepEqual(
-    circleAction,
-    { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
-    "CIRCLE key emits visualizer toggle action",
-  );
-
   const digitCell: KeyCell = keyCell("digit_1");
   const digitAction = buildKeyButtonAction(digitCell);
   assert.deepEqual(digitAction, { type: "PRESS_KEY", key: k("digit_1") }, "digit key emits press action");

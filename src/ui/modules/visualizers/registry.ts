@@ -1,7 +1,6 @@
 import type { VisualizerModule } from "./types.js";
 import { clearFeedVisualizerPanel, renderFeedVisualizerPanel } from "./feedRenderer.js";
 import { clearGrapherV2Module, renderGrapherV2Module } from "../grapherRenderer.js";
-import { clearCircleVisualizerPanel, renderCircleVisualizerPanel } from "./circleRenderer.js";
 import {
   clearEigenAllocatorVisualizerPanel,
   renderEigenAllocatorVisualizerPanel,
@@ -84,16 +83,6 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     },
     render: renderFactorizationVisualizerPanel,
     clear: clearFactorizationVisualizerPanel,
-  },
-  {
-    id: "circle",
-    fit: {
-      kind: "plot_scale_clip",
-      overflow: "forbid_scroll",
-      budget: { topPx: 8, bodyPx: 118, bottomPx: 8 },
-    },
-    render: renderCircleVisualizerPanel,
-    clear: clearCircleVisualizerPanel,
   },
   {
     id: "number_line",

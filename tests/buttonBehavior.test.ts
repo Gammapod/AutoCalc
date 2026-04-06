@@ -70,12 +70,6 @@ export const runButtonBehaviorTests = (): void => {
     { type: "TOGGLE_VISUALIZER", visualizer: "feed" },
     "FEED key dispatches visualizer toggle action",
   );
-  const circleToggleCell: KeyCell = keyCell("viz_circle");
-  assert.deepEqual(
-    buildKeyButtonAction(circleToggleCell),
-    { type: "TOGGLE_VISUALIZER", visualizer: "circle" },
-    "CIRCLE key dispatches visualizer toggle action",
-  );
   const numberLineToggleCell: KeyCell = keyCell("viz_number_line");
   assert.deepEqual(
     buildKeyButtonAction(numberLineToggleCell),

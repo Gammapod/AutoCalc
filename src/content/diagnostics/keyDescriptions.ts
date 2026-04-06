@@ -74,11 +74,6 @@ const overrideEntries: Partial<Record<KeyId, KeyDiagnosticEntry>> = {
     shortTemplate: "{keyFace}: show diagnostics and release notes help.",
     longTemplate: "{keyFace} toggles the HELP visualizer focused on Last Key, Next Operation, and latest release notes.",
   },
-  viz_circle: {
-    title: "Circle Visualizer",
-    shortTemplate: "{keyFace}: toggle orbit circle panel.",
-    longTemplate: "{keyFace} toggles circle visualizer mode.",
-  },
   viz_number_line: {
     title: "Number Line Visualizer",
     shortTemplate: "{keyFace}: toggle number line panel.",

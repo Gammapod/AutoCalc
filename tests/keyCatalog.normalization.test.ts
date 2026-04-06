@@ -58,7 +58,7 @@ export const runKeyCatalogNormalizationTests = (): void => {
 
   for (const entry of keyCatalog) {
     if (entry.behaviorKind === "visualizer") {
-      if (entry.key === "viz_graph" || entry.key === "viz_feed" || entry.key === "viz_circle") {
+      if (entry.key === "viz_graph" || entry.key === "viz_feed") {
         assert.ok(("visualizerId" in entry ? entry.visualizerId : undefined), `visualizer key ${entry.key} must define visualizerId`);
       }
     }

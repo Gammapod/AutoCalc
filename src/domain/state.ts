@@ -157,7 +157,6 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.viz_release_notes },
   { kind: "key", key: KEY_ID.viz_help },
   { kind: "key", key: KEY_ID.viz_factorization },
-  { kind: "key", key: KEY_ID.viz_circle },
   { kind: "key", key: KEY_ID.viz_number_line },
   { kind: "key", key: KEY_ID.viz_graph },
   { kind: "key", key: KEY_ID.viz_algebraic },

@@ -123,7 +123,6 @@ export const runKeyUnlocksTests = (): void => {
   assert.equal(isKeyUnlocked(base, k("util_backspace")), false, "backspace utility key starts locked");
   assert.equal(isKeyUnlocked(base, k("memory_adjust_plus")), false, "memory key starts locked");
   assert.equal(isKeyUnlocked(base, k("viz_graph")), false, "visualizer key starts locked");
-  assert.equal(isKeyUnlocked(base, k("viz_circle")), false, "circle visualizer key starts locked");
   assert.equal(isKeyUnlocked(base, k("exec_equals")), true, "execution key default-unlocked state is applied");
 
   const valueUnlocked = withUnlock(base, "valueExpression", k("digit_1"));

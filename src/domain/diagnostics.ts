@@ -57,18 +57,6 @@ export type RollDiagnosticsSectionRow = {
     | "cycle_period";
 };
 
-export type CircleSemanticSnapshot = {
-  mode: "radial" | "residue_wheel";
-  residueWheelSpec: {
-    cycleStartIndex: number;
-    cycleEndIndex: number;
-    wheelMin: number;
-    wheelMaxExclusive: number;
-    span: number;
-  } | null;
-  radialCapIndex: number | null;
-};
-
 export type RollDiagnosticsSnapshot = {
   lastKey: ResolvedLastKeyDiagnostic;
   nextOperation: ResolvedNextOperationDiagnostic;
@@ -98,7 +86,6 @@ export type RollDiagnosticsSnapshot = {
     cycleStartIndex: number | null;
     cycleEndIndex: number | null;
   };
-  circleSemantics: CircleSemanticSnapshot;
   sectionRows: RollDiagnosticsSectionRow[];
 };
 
@@ -600,80 +587,6 @@ const resolveOrbitHeuristicState = (state: GameState): OrbitHeuristicState => {
   return "none";
 };
 
-const toFiniteEntryValue = (entry: RollEntry): number | null => {
-  if (!isRationalCalculatorValue(entry.y)) {
-    return null;
-  }
-  const value = Number(entry.y.value.num) / Number(entry.y.value.den);
-  return Number.isFinite(value) ? value : null;
-};
-
-const buildCircleSemantics = (state: GameState): CircleSemanticSnapshot => {
-  const deltaRangeWrapEnabled = state.settings.wrapper === "delta_range_clamp";
-  const modZeroToDeltaEnabled = state.settings.wrapper === "mod_zero_to_delta";
-  const displayRadix = state.settings.base === "base2" ? 2 : 10;
-
-  if (deltaRangeWrapEnabled || modZeroToDeltaEnabled) {
-    const boundary = Number(computeOverflowBoundary(state.unlocks.maxTotalDigits, displayRadix));
-    if (!Number.isFinite(boundary) || boundary <= 0) {
-      return { mode: "radial", residueWheelSpec: null, radialCapIndex: null };
-    }
-    if (deltaRangeWrapEnabled) {
-      return {
-        mode: "residue_wheel",
-        residueWheelSpec: {
-          cycleStartIndex: 0,
-          cycleEndIndex: -1,
-          wheelMin: -boundary,
-          wheelMaxExclusive: boundary,
-          span: boundary * 2,
-        },
-        radialCapIndex: -1,
-      };
-    }
-    return {
-      mode: "residue_wheel",
-      residueWheelSpec: {
-        cycleStartIndex: 0,
-        cycleEndIndex: -1,
-        wheelMin: 0,
-        wheelMaxExclusive: boundary,
-        span: boundary,
-      },
-      radialCapIndex: -1,
-    };
-  }
-
-  if (state.calculator.rollAnalysis.stopReason !== "cycle") {
-    return { mode: "radial", residueWheelSpec: null, radialCapIndex: null };
-  }
-  const cycle = state.calculator.rollAnalysis.cycle;
-  if (!cycle || state.calculator.rollEntries.length === 0) {
-    return { mode: "radial", residueWheelSpec: null, radialCapIndex: null };
-  }
-  const maxRollIndex = state.calculator.rollEntries.length - 1;
-  const cycleStartIndex = Math.max(0, Math.min(maxRollIndex, cycle.i));
-  const cycleEndIndex = Math.max(cycleStartIndex, Math.min(maxRollIndex, cycle.j));
-  const cycleValues = state.calculator.rollEntries
-    .slice(cycleStartIndex, cycleEndIndex + 1)
-    .map((entry) => toFiniteEntryValue(entry))
-    .filter((value): value is number => value !== null);
-  if (cycleValues.length === 0) {
-    return { mode: "radial", residueWheelSpec: null, radialCapIndex: null };
-  }
-  const wheelMin = Math.floor(Math.min(...cycleValues));
-  const wheelMaxExclusive = Math.ceil(Math.max(...cycleValues));
-  const span = wheelMaxExclusive - wheelMin;
-  if (span <= 0) {
-    return { mode: "radial", residueWheelSpec: null, radialCapIndex: null };
-  }
-  return {
-    mode: "residue_wheel",
-    residueWheelSpec: { cycleStartIndex, cycleEndIndex, wheelMin, wheelMaxExclusive, span },
-    radialCapIndex: cycleEndIndex,
-  };
-};
-
 const buildSectionRows = (
   lastKey: ResolvedLastKeyDiagnostic,
   nextOperation: ResolvedNextOperationDiagnostic,
@@ -735,7 +648,6 @@ export const buildRollDiagnosticsSnapshot = (
     seedLabel: buildSeedFactorizationLabel(state),
     currentLabel: buildCurrentFactorizationLabel(state),
   };
-  const circleSemantics = buildCircleSemantics(state);
   const rollWindow = {
     analysisEntries: buildAnalysisRollProjection(state.calculator.rollEntries).map((item) => item.entry),
     allEntries: state.calculator.rollEntries,
@@ -762,7 +674,6 @@ export const buildRollDiagnosticsSnapshot = (
     domain,
     factorization,
     rollWindow,
-    circleSemantics,
     sectionRows,
   };
 };
