@@ -32,7 +32,7 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     },
     size: {
       mode: "ratio",
-      ratio: 0.34,
+      ratio: 0.60,
     },
     render: (root, state) => renderGrapherV2Module(root, state),
     clear: (root) => {
@@ -145,10 +145,8 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
       budget: { topPx: 8, bodyPx: 118, bottomPx: 8, maxLines: 6 },
     },
     size: {
-      mode: "text_budget",
-      minLines: 4,
-      targetLines: 5,
-      maxLines: 6,
+      mode: "ratio",
+      ratio: 0.50,
     },
     render: renderEigenAllocatorVisualizerPanel,
     clear: clearEigenAllocatorVisualizerPanel,

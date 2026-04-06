@@ -2224,6 +2224,32 @@
         height: var(--v2-visualizer-lock-height, var(--v2-visualizer-panel-height));
       }
 
+      body[data-debug-menu-open="true"] [data-v2-visualizer-host]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border: 1px solid rgba(121, 195, 255, 0.9);
+        pointer-events: none;
+        z-index: 6;
+      }
+
+      body[data-debug-menu-open="true"] [data-v2-visualizer-host]::before {
+        content: "r " attr(data-v2-visualizer-debug-ratio);
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        padding: 2px 5px;
+        border-radius: 4px;
+        border: 1px solid rgba(121, 195, 255, 0.95);
+        background: rgba(18, 22, 28, 0.85);
+        color: #79c3ff;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+        font-size: 0.66rem;
+        line-height: 1;
+        pointer-events: none;
+        z-index: 7;
+      }
+
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher {
         position: absolute;

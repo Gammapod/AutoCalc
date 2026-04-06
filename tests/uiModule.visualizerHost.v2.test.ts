@@ -293,7 +293,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderHost.dataset.v2FitOverflow, "forbid_scroll", "host exposes active overflow contract");
   assert.equal(
     renderDisplayWindow.attributes["style:--v2-visualizer-panel-height"],
-    "156.40px",
+    "276.00px",
     "graph visualizer resolves canonical ratio height token",
   );
   assert.equal(renderHost.dataset.v2VisualizerFrom, "total", "host tracks previous panel");

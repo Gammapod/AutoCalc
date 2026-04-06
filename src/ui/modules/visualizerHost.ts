@@ -155,6 +155,7 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
     host.dataset.v2FitKind = "";
     host.dataset.v2FitOverflow = "";
     host.dataset.v2FitMaxLines = "";
+    host.dataset.v2VisualizerDebugRatio = "";
   }
   if (displayWindow) {
     displayWindow.style.removeProperty(SCALE_VAR);
@@ -245,12 +246,33 @@ const resolveDisplayWidthPx = (displayWindow: HTMLElement): number => {
   if (Number.isFinite(measuredWidth) && measuredWidth > 0) {
     return measuredWidth;
   }
+  const offsetWidth = Number(displayWindow.offsetWidth);
+  if (Number.isFinite(offsetWidth) && offsetWidth > 0) {
+    return offsetWidth;
+  }
+  const clientWidth = Number(displayWindow.clientWidth);
+  if (Number.isFinite(clientWidth) && clientWidth > 0) {
+    return clientWidth;
+  }
+  if (typeof window !== "undefined") {
+    const computedWidth = Number.parseFloat(window.getComputedStyle(displayWindow).width || "");
+    if (Number.isFinite(computedWidth) && computedWidth > 0) {
+      return computedWidth;
+    }
+  }
   const scaleToken = typeof displayWindow.style.getPropertyValue === "function"
     ? displayWindow.style.getPropertyValue(SCALE_VAR)
     : "";
   const scaleValue = Number.parseFloat(scaleToken || "1");
   const scale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
   return FIXED_WIDTH_PX * Math.min(1, scale);
+};
+
+const isDebugVisualizerOverlayEnabled = (): boolean => {
+  if (typeof document === "undefined") {
+    return false;
+  }
+  return document.body.getAttribute("data-debug-menu-open") === "true";
 };
 
 const resolvePanelHeightPx = (panelSize: VisualizerCanonicalSize, displayWidthPx: number): number => {
@@ -266,16 +288,21 @@ const resolvePanelHeightPx = (panelSize: VisualizerCanonicalSize, displayWidthPx
   return clampPanelHeightMin(Math.max(minHeight, Math.min(maxHeight, targetHeight)));
 };
 
-const applyHostPanelHeight = (root: Element, state: GameState, panel: VisualizerHostPanel): void => {
+const applyHostPanelHeight = (
+  root: Element,
+  state: GameState,
+  panel: VisualizerHostPanel,
+): { displayWidthPx: number; panelHeightPx: number } | null => {
   const displayWindow = root.querySelector<HTMLElement>("[data-display-window]");
   if (!displayWindow) {
-    return;
+    return null;
   }
   const module = resolveVisualizerModule(panel);
   const panelSize = resolveCanonicalPanelSize(module, state);
   const displayWidthPx = resolveDisplayWidthPx(displayWindow);
   const panelHeight = resolvePanelHeightPx(panelSize, displayWidthPx);
   displayWindow.style.setProperty(PANEL_HEIGHT_VAR, `${panelHeight.toFixed(2)}px`);
+  return { displayWidthPx, panelHeightPx: panelHeight };
 };
 
 const applyFitContractState = (host: HTMLElement | null, panel: VisualizerHostPanel): void => {
@@ -421,7 +448,12 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
     } else {
       releaseSwapLock(runtime, host);
     }
-    applyHostPanelHeight(root, state, activePanel);
+    const panelMetrics = applyHostPanelHeight(root, state, activePanel);
+    if (isDebugVisualizerOverlayEnabled() && panelMetrics && panelMetrics.displayWidthPx > 0) {
+      host.dataset.v2VisualizerDebugRatio = `${(panelMetrics.panelHeightPx / panelMetrics.displayWidthPx).toFixed(3)}`;
+    } else {
+      host.dataset.v2VisualizerDebugRatio = "";
+    }
     host.dataset.v2VisualizerPanel = activePanel;
     host.dataset.v2VisualizerTransition = transitionPhase;
     host.dataset.v2VisualizerFrom = previousPanel;
