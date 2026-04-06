@@ -113,13 +113,13 @@ const getGrapherRuntime = (root: Element): GrapherModuleState => {
 
 const buildGraphOptions = (
   hasPoints: boolean,
+  rollEntries: GameState["calculator"]["rollEntries"],
   maxXIndex: number,
-  unlockedTotalDigits: number,
   radix: number,
   documentRef: Document | null,
 ): GraphOptions => {
   const xWindow = buildGraphXWindow(maxXIndex);
-  const bounds = buildGraphYWindow(unlockedTotalDigits, radix);
+  const bounds = buildGraphYWindow(rollEntries, radix);
   const defaultColor = resolveUxRoleColor("default", { document: documentRef });
   const defaultGrid = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.2 });
   const defaultGridAxis = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.75 });
@@ -268,8 +268,8 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   const displayRadix = state.settings.base === "base2" ? 2 : 10;
   const options = buildGraphOptions(
     hasPoints,
+    state.calculator.rollEntries,
     toStepCount(state.calculator.rollEntries),
-    state.unlocks.maxTotalDigits,
     displayRadix,
     root.ownerDocument ?? null,
   );

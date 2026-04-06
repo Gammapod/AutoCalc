@@ -122,9 +122,60 @@ export const runGraphDisplayTests = (): void => {
   assert.deepEqual(buildGraphXWindow(26), { min: 2, max: 26 }, "window slides to latest 25 indices");
   assert.deepEqual(buildGraphXWindow(100), { min: 76, max: 100 }, "window tracks only the latest 25 indices");
 
-  assert.deepEqual(buildGraphYWindow(1), { min: -9, max: 9 }, "one unlocked total digit sets y-axis to -9..9");
-  assert.deepEqual(buildGraphYWindow(2), { min: -99, max: 99 }, "two unlocked total digits sets y-axis to -99..99");
-  assert.deepEqual(buildGraphYWindow(0), { min: -9, max: 9 }, "y-axis helper clamps minimum digit count to one");
+  assert.deepEqual(buildGraphYWindow([]), { min: 0, max: 9 }, "empty roll uses [0, radix-1] y window");
+  assert.deepEqual(
+    buildGraphYWindow([e(r(0n))]),
+    { min: 0, max: 9 },
+    "zero-only plotted values keep y window at [0, radix-1]",
+  );
+  assert.deepEqual(
+    buildGraphYWindow([e(r(-12n)), e(r(-1n))]),
+    { min: -99, max: 0 },
+    "negative-only plotted values set max to 0 and min to snapped negative tier",
+  );
+  assert.deepEqual(
+    buildGraphYWindow([e(r(12n)), e(r(1n))]),
+    { min: 0, max: 99 },
+    "positive-only plotted values set min to 0 and max to snapped positive tier",
+  );
+  assert.deepEqual(
+    buildGraphYWindow([e(r(-1n, 2n)), e(r(1234n, 100n))]),
+    { min: -9, max: 99 },
+    "bounds use sign-aware rounding before tier snap (floor for negatives, ceil for positives)",
+  );
+  assert.deepEqual(
+    buildGraphYWindow([
+      e(r(0n)),
+      e(
+        toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: -6n, den: 1n }),
+          toRationalScalarValue({ num: 900n, den: 1n }),
+        ),
+      ),
+      e(
+        toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 6265n, den: 1n }),
+          toRationalScalarValue({ num: 5n, den: 1n }),
+        ),
+      ),
+      e(
+        toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 5n, den: 1n }),
+          toRationalScalarValue({ num: -10n, den: 1n }),
+        ),
+      ),
+    ]),
+    { min: -99, max: 9999 },
+    "complex roll components both contribute to independent positive/negative axis tiers",
+  );
+  assert.deepEqual(
+    buildGraphYWindow([
+      e(r(1n), { remainder: { num: -500n, den: 1n } }),
+      e(r(2n), { remainder: { num: 700n, den: 1n } }),
+    ]),
+    { min: 0, max: 9 },
+    "remainder-only extremes do not affect y-window bounds",
+  );
 };
 
 
