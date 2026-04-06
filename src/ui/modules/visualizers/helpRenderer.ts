@@ -1,11 +1,5 @@
-import { buildRollDiagnosticsSnapshot } from "../../../domain/diagnostics.js";
 import type { GameState } from "../../../domain/types.js";
-import { getAppServices } from "../../../contracts/appServices.js";
-
-type HelpRow = {
-  text: string;
-  kind: "section" | "normal" | "placeholder";
-};
+import { applyUxRoleAttributes, buildHelpPanelViewModel, resolveHelpRowUxAssignment } from "../../shared/readModel.js";
 
 export const clearHelpVisualizerPanel = (root: Element): void => {
   const panel = root.querySelector<HTMLElement>("[data-v2-help-panel]");
@@ -23,37 +17,16 @@ export const renderHelpVisualizerPanel = (root: Element, state: GameState): void
   }
   panel.innerHTML = "";
   panel.setAttribute("aria-hidden", "false");
-
-  const snapshot = buildRollDiagnosticsSnapshot(state);
-  const latestReleaseNote = getAppServices().contentProvider.releaseNotes.entries[0] ?? null;
-  const rows: HelpRow[] = [
-    { text: "Last Key", kind: "section" },
-    { text: `${snapshot.lastKey.title}: ${snapshot.lastKey.short}`, kind: "normal" },
-    { text: snapshot.lastKey.long, kind: "normal" },
-    ...snapshot.lastKey.caveats.map((line) => ({ text: line, kind: "placeholder" as const })),
-    { text: "Next Operation", kind: "section" },
-    { text: snapshot.nextOperation.expandedShort, kind: snapshot.nextOperation.hasPendingOperation ? "normal" : "placeholder" },
-    { text: snapshot.nextOperation.expandedLong, kind: snapshot.nextOperation.hasPendingOperation ? "normal" : "placeholder" },
-    { text: "Release Notes", kind: "section" },
-    ...(latestReleaseNote
-      ? [
-        {
-          text: `${latestReleaseNote.releaseVersion} (${latestReleaseNote.channel}): ${latestReleaseNote.title}`,
-          kind: "normal" as const,
-        },
-        { text: latestReleaseNote.summary, kind: "normal" as const },
-      ]
-      : [{ text: "No release notes configured.", kind: "placeholder" as const }]),
-  ];
+  const view = buildHelpPanelViewModel(state);
 
   if (typeof document === "undefined") {
-    panel.textContent = rows.map((row) => row.text).join("\n");
+    panel.textContent = view.rows.map((row) => row.text).join("\n");
     return;
   }
 
   const table = document.createElement("div");
   table.className = "v2-help-table";
-  for (const rowView of rows) {
+  for (const rowView of view.rows) {
     const row = document.createElement("div");
     row.className = "v2-help-row";
     if (rowView.kind === "section") {
@@ -62,6 +35,7 @@ export const renderHelpVisualizerPanel = (root: Element, state: GameState): void
     if (rowView.kind === "placeholder") {
       row.classList.add("v2-help-row--placeholder");
     }
+    applyUxRoleAttributes(row, resolveHelpRowUxAssignment(rowView));
     row.textContent = rowView.text;
     table.appendChild(row);
   }

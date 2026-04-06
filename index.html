@@ -42,22 +42,31 @@
         --v2-visualizer-panel-height: var(--v2-visualizer-effective-height);
         --v2-visualizer-window-height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
         --v2-visualizer-effective-height: calc(var(--v2-visualizer-window-height) * var(--v2-visualizer-scale));
-        --settings-subgroup-visualizers-stripe-off: rgba(114, 154, 190, 0.62);
-        --settings-subgroup-visualizers-text-off: rgba(196, 222, 245, 0.95);
-        --settings-subgroup-visualizers-stripe-on: rgba(156, 208, 252, 0.94);
-        --settings-subgroup-visualizers-text-on: rgba(233, 246, 255, 0.98);
-        --settings-subgroup-mod-wrap-stripe-off: rgba(201, 173, 84, 0.62);
-        --settings-subgroup-mod-wrap-text-off: rgba(247, 236, 197, 0.95);
-        --settings-subgroup-mod-wrap-stripe-on: rgba(244, 215, 111, 0.94);
-        --settings-subgroup-mod-wrap-text-on: rgba(255, 247, 216, 0.98);
-        --settings-subgroup-step-expansion-stripe-off: rgba(141, 190, 147, 0.62);
-        --settings-subgroup-step-expansion-text-off: rgba(213, 240, 216, 0.95);
-        --settings-subgroup-step-expansion-stripe-on: rgba(169, 230, 178, 0.94);
-        --settings-subgroup-step-expansion-text-on: rgba(233, 250, 236, 0.98);
-        --settings-subgroup-base2-stripe-off: rgba(189, 140, 195, 0.62);
-        --settings-subgroup-base2-text-off: rgba(240, 214, 244, 0.95);
-        --settings-subgroup-base2-stripe-on: rgba(224, 166, 232, 0.94);
-        --settings-subgroup-base2-text-on: rgba(250, 232, 252, 0.98);
+        --settings-subgroup-visualizers-stripe-off: var(--settings-stripe-family-visualizer-stripe-off);
+        --settings-subgroup-visualizers-text-off: var(--settings-stripe-family-visualizer-text-off);
+        --settings-subgroup-visualizers-stripe-on: var(--settings-stripe-family-visualizer-stripe-on);
+        --settings-subgroup-visualizers-text-on: var(--settings-stripe-family-visualizer-text-on);
+        --settings-subgroup-mod-wrap-stripe-off: var(--settings-stripe-family-wrap-stripe-off);
+        --settings-subgroup-mod-wrap-text-off: var(--settings-stripe-family-wrap-text-off);
+        --settings-subgroup-mod-wrap-stripe-on: var(--settings-stripe-family-wrap-stripe-on);
+        --settings-subgroup-mod-wrap-text-on: var(--settings-stripe-family-wrap-text-on);
+        --settings-subgroup-step-expansion-stripe-off: var(--settings-stripe-family-analysis-stripe-off);
+        --settings-subgroup-step-expansion-text-off: var(--settings-stripe-family-analysis-text-off);
+        --settings-subgroup-step-expansion-stripe-on: var(--settings-stripe-family-analysis-stripe-on);
+        --settings-subgroup-step-expansion-text-on: var(--settings-stripe-family-analysis-text-on);
+        --settings-subgroup-base2-stripe-off: var(--settings-stripe-family-base-stripe-off);
+        --settings-subgroup-base2-text-off: var(--settings-stripe-family-base-text-off);
+        --settings-subgroup-base2-stripe-on: var(--settings-stripe-family-base-stripe-on);
+        --settings-subgroup-base2-text-on: var(--settings-stripe-family-base-text-on);
+        --ux-role-error-color: #ff5c5c;
+        --ux-role-lambda-color: #be8ee8;
+        --ux-role-unlock-color: #79c3ff;
+        --ux-role-analysis-color: #f2cf57;
+        --ux-role-help-color: #e9f4ff;
+        --ux-role-base-setting-color: #c996f0;
+        --ux-role-visualizer-setting-color: #79c3ff;
+        --ux-role-wrap-setting-color: #63c26b;
+        --ux-role-default-color: #b4f1d3;
         --allocator-surface-top: #8e96a3;
         --allocator-surface-bottom: #6a7281;
         --allocator-surface-stroke: #4e5665;
@@ -886,7 +895,7 @@
       }
 
       .total-domain-indicator--nan {
-        color: #ff6f6f;
+        color: var(--ux-role-error-color, #ff6f6f);
         text-shadow: 0 0 6px rgba(255, 111, 111, 0.55);
       }
 
@@ -943,7 +952,7 @@
       }
 
       .total-memory-lambda {
-        color: #be8ee8;
+        color: var(--ux-role-lambda-color);
         text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
         white-space: nowrap;
       }
@@ -952,11 +961,11 @@
         display: inline-flex;
         align-items: center;
         gap: 12px;
-        color: #b4f1d3;
+        color: var(--ux-role-default-color);
       }
 
       .total-memory-var {
-        color: #b4f1d3;
+        color: var(--ux-role-default-color);
         text-shadow: 0 0 5px rgba(180, 241, 211, 0.35);
         white-space: nowrap;
       }
@@ -966,7 +975,7 @@
         width: 0.6ch;
         text-align: center;
         visibility: hidden;
-        color: #be8ee8;
+        color: var(--ux-role-lambda-color);
         text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
       }
 
@@ -975,17 +984,17 @@
       }
 
       .total-memory-symbol {
-        color: #b4f1d3;
+        color: var(--ux-role-default-color);
         text-shadow: 0 0 5px rgba(180, 241, 211, 0.35);
       }
 
       .total-memory-symbol--selected {
-        color: #be8ee8;
+        color: var(--ux-role-lambda-color);
         text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
       }
 
       .total-memory-value {
-        color: #b4f1d3;
+        color: var(--ux-role-default-color);
         text-shadow: 0 0 5px rgba(180, 241, 211, 0.35);
       }
 
@@ -1053,7 +1062,7 @@
       }
 
       .total-display--error .total-primary-display .seg {
-        background: #ff6f6f;
+        background: var(--ux-role-error-color);
       }
 
       .total-display--error .total-primary-display .seg--on {
@@ -1062,7 +1071,7 @@
 
       .total-display--error .total-primary-display .seg-sign,
       .total-display--error .total-primary-display .seg-fraction {
-        color: #ff6f6f;
+        color: var(--ux-role-error-color);
         text-shadow: 0 0 6px rgba(255, 111, 111, 0.55);
       }
 
@@ -1131,7 +1140,7 @@
         font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
         font-size: 0.76rem;
         line-height: 1;
-        color: #b4f1d3;
+        color: var(--ux-role-default-color, #b4f1d3);
         white-space: nowrap;
         overflow: hidden;
         overflow-y: hidden;
@@ -2114,7 +2123,7 @@
         border: 1px solid #4f5b6a;
         border-radius: 8px;
         background: #202734;
-        color: #b4f1d3;
+        color: var(--ux-role-default-color, #b4f1d3);
         font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
       }
 
@@ -2261,7 +2270,7 @@
         background: transparent;
         font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
         font-size: 0.76rem;
-        color: #b4f1d3;
+        color: var(--ux-role-default-color, #b4f1d3);
         flex-direction: column;
         justify-content: flex-start;
         white-space: pre;
@@ -2291,7 +2300,7 @@
         border: 0;
         border-radius: 0;
         background: transparent;
-        color: #b4f1d3;
+        color: var(--ux-role-default-color, #b4f1d3);
         flex-direction: column;
         justify-content: flex-start;
         opacity: 0;
@@ -2452,7 +2461,7 @@
         font-size: 0.76rem;
         line-height: 1;
         letter-spacing: 0.04em;
-        color: #b4f1d3;
+        color: var(--ux-role-default-color, #b4f1d3);
         text-shadow: 0 0 6px rgba(180, 241, 211, 0.36);
       }
 
@@ -2540,19 +2549,19 @@
         font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
         font-size: 0.8rem;
         line-height: 1.2;
-        color: #d3ecff;
+        color: var(--ux-role-help-color);
       }
 
       body[data-ui-shell="mobile"] .v2-help-row--section,
       body[data-ui-shell="desktop"] .v2-help-row--section {
         margin-top: 4px;
         font-weight: 700;
-        color: #e9f4ff;
+        color: var(--ux-role-help-color);
       }
 
       body[data-ui-shell="mobile"] .v2-help-row--placeholder,
       body[data-ui-shell="desktop"] .v2-help-row--placeholder {
-        color: #f2cf57;
+        color: var(--ux-role-analysis-color);
       }
 
       body[data-ui-shell="mobile"] .v2-algebraic-equation,
@@ -2562,7 +2571,7 @@
         overflow-x: hidden;
         overflow-y: hidden;
         text-align: center;
-        color: #b4f1d3;
+        color: var(--ux-role-default-color);
       }
 
       body[data-ui-shell="mobile"] .v2-algebraic-equation .katex-display,
@@ -2573,13 +2582,13 @@
       body[data-ui-shell="mobile"] .v2-algebraic-equation .katex,
       body[data-ui-shell="desktop"] .v2-algebraic-equation .katex {
         font-size: clamp(0.9rem, 2vw, 1rem);
-        color: #b4f1d3;
+        color: var(--ux-role-default-color);
       }
 
       body[data-ui-shell="mobile"] .v2-algebraic-truncated,
       body[data-ui-shell="desktop"] .v2-algebraic-truncated {
         font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
-        color: #f2cf57;
+        color: var(--ux-role-analysis-color);
       }
 
       body[data-ui-shell="mobile"] .v2-algebraic-builder-row,
@@ -2602,7 +2611,7 @@
         font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
         font-size: 0.76rem;
         line-height: 1.25;
-        color: #b4f1d3;
+        color: var(--ux-role-analysis-color);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -2626,7 +2635,7 @@
         overflow-x: hidden;
         overflow-y: hidden;
         text-align: center;
-        color: #b4f1d3;
+        color: var(--ux-role-lambda-color);
       }
 
       body[data-ui-shell="mobile"] .v2-eigen-equation .katex-display,
@@ -2637,7 +2646,7 @@
       body[data-ui-shell="mobile"] .v2-eigen-equation .katex,
       body[data-ui-shell="desktop"] .v2-eigen-equation .katex {
         font-size: clamp(0.90rem, 2vw, 1rem);
-        color: #b4f1d3;
+        color: var(--ux-role-lambda-color);
       }
 
       body[data-ui-shell="mobile"] .v2-circle-mode-indicator,
@@ -2735,7 +2744,7 @@
 
       body[data-ui-shell="mobile"] .v2-circle-point--wheel,
       body[data-ui-shell="desktop"] .v2-circle-point--wheel {
-        fill: #f2cf57;
+        fill: var(--ux-role-analysis-color);
       }
 
       body[data-ui-shell="mobile"] .v2-circle-trace--wheel,
@@ -2751,7 +2760,7 @@
 
       body[data-ui-shell="mobile"] .v2-circle-point--error,
       body[data-ui-shell="desktop"] .v2-circle-point--error {
-        fill: #ff5c5c;
+        fill: var(--ux-role-error-color);
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher,
@@ -2773,7 +2782,7 @@
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-table-line,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-table-line {
-        color: #b4f1d3;
+        color: var(--ux-role-default-color, #b4f1d3);
         display: flex;
         white-space: pre;
       }
@@ -2791,12 +2800,12 @@
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-r-col,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-r-col {
         white-space: pre;
-        color: #f2cf57;
+        color: var(--ux-role-analysis-color);
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-row--error,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-row--error {
-        color: #ff8f7f;
+        color: var(--ux-role-error-color);
       }
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-table,
@@ -2818,13 +2827,13 @@
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--error,
       body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-row--error {
-        color: #ff8f7f;
+        color: var(--ux-role-error-color);
       }
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--section,
       body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-row--section {
         font-weight: 700;
-        color: #e9f4ff;
+        color: var(--ux-role-help-color);
         margin-top: 4px;
       }
 
@@ -2874,12 +2883,59 @@
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--placeholder,
       body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-row--placeholder {
-        color: #f2cf57;
+        color: var(--ux-role-analysis-color);
       }
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--cycle,
       body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-row--cycle {
-        color: #f2cf57;
+        color: var(--ux-role-analysis-color);
+      }
+
+      [data-ux-role="error"] {
+        color: var(--ux-role-error-color);
+      }
+
+      [data-ux-role="lambda"] {
+        color: var(--ux-role-lambda-color);
+      }
+
+      [data-ux-role="unlock"] {
+        color: var(--ux-role-unlock-color);
+      }
+
+      [data-ux-role="analysis"] {
+        color: var(--ux-role-analysis-color);
+      }
+
+      [data-ux-role="help"] {
+        color: var(--ux-role-help-color);
+      }
+
+      [data-ux-role="default"] {
+        color: var(--ux-role-default-color);
+      }
+
+      [data-ux-state="muted"] {
+        opacity: 0.72;
+      }
+
+      [data-ux-state="placeholder"] {
+        color: var(--ux-role-analysis-color);
+      }
+
+      .total-hint-row[data-ux-role="lambda"] .total-hint-label,
+      .total-hint-row[data-ux-role="lambda"] .total-hint-value {
+        color: var(--ux-role-lambda-color);
+      }
+
+      .total-hint-row[data-ux-role="unlock"] .total-hint-label,
+      .total-hint-row[data-ux-role="unlock"] .total-hint-value {
+        color: var(--ux-role-unlock-color);
+      }
+
+      .total-hint-row[data-ux-state="muted"] .total-hint-label,
+      .total-hint-row[data-ux-state="muted"] .total-hint-value {
+        opacity: 0.72;
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher .grapher-screen,

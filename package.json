@@ -31,6 +31,7 @@
     "ci:verify:parity": "npm run build:web:full && node ./dist/tests/run-tests.js --grep=\"^(v2/parity|v2/persistence-parity|contracts/parity-)\"",
     "ci:verify:action-event": "npm run build:web:full && node ./dist/tests/run-tests.js --grep=\"^contracts/action-event-round-trip$\"",
     "ci:verify:shell": "npm run build:web:full && node ./dist/tests/run-tests.js --grep=\"^(ui-shell/|ui-integration/(mobile-shell|desktop-shell)$)\"",
+    "ci:verify:ux-semantics": "npm run build:web:full && node ./dist/tests/run-tests.js --grep=\"^(ui/ux-role-system|ui/ux-role-parity-mobile|ui/grapher-role-color|ui/visualizer-fit-contract|ui/semantic-hex-strict-guard)$\"",
     "ci:verify:ui-complexity": "node ./scripts/check-ui-complexity.mjs",
     "dev:serve": "node ./scripts/dev-server.mjs",
     "release:win:portable": "npm run ci:verify:release && npm run build:release && node ./scripts/build-desktop.mjs",

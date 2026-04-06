@@ -4,7 +4,10 @@ import { resolve } from "node:path";
 
 const readUiCssContractSources = (): { html: string; css: string } => ({
   html: readFileSync(resolve(process.cwd(), "index.html"), "utf8"),
-  css: readFileSync(resolve(process.cwd(), "styles/key-visual-affordance.css"), "utf8"),
+  css: [
+    readFileSync(resolve(process.cwd(), "styles/key-visual-affordance.css"), "utf8"),
+    readFileSync(resolve(process.cwd(), "styles/key-family.css"), "utf8"),
+  ].join("\n"),
 });
 
 export const runUiVisualizerFitContractTests = (): void => {
@@ -62,6 +65,11 @@ export const runUiVisualizerFitContractTests = (): void => {
     "settings CSS defines step-expansion subgroup stripe selector",
   );
   assert.equal(
+    css.includes('.key.key--group-settings[data-key="toggle_history"]'),
+    true,
+    "settings CSS defines history subgroup stripe selector",
+  );
+  assert.equal(
     css.includes('.key.key--group-settings[data-key="toggle_binary_mode"]'),
     true,
     "settings CSS defines base-2 subgroup stripe selector",
@@ -75,9 +83,13 @@ export const runUiVisualizerFitContractTests = (): void => {
     html.includes("--settings-subgroup-visualizers-stripe-off") &&
       html.includes("--settings-subgroup-mod-wrap-stripe-off") &&
       html.includes("--settings-subgroup-step-expansion-stripe-off") &&
-      html.includes("--settings-subgroup-base2-stripe-off"),
+      html.includes("--settings-subgroup-base2-stripe-off") &&
+      css.includes("--settings-stripe-family-visualizer-stripe-off") &&
+      css.includes("--settings-stripe-family-wrap-stripe-off") &&
+      css.includes("--settings-stripe-family-analysis-stripe-off") &&
+      css.includes("--settings-stripe-family-base-stripe-off"),
     true,
-    "settings subgroup stripe off-state tokens are defined",
+    "settings subgroup stripe off-state tokens are defined via canonical stripe-family aliases",
   );
   assert.equal(
     css.includes("var(--settings-subgroup-visualizers-stripe-off)") &&
@@ -92,6 +104,10 @@ export const runUiVisualizerFitContractTests = (): void => {
       html.includes("--settings-subgroup-mod-wrap-stripe-on") &&
       html.includes("--settings-subgroup-step-expansion-stripe-on") &&
       html.includes("--settings-subgroup-base2-stripe-on") &&
+      css.includes("--settings-stripe-family-visualizer-stripe-on") &&
+      css.includes("--settings-stripe-family-wrap-stripe-on") &&
+      css.includes("--settings-stripe-family-analysis-stripe-on") &&
+      css.includes("--settings-stripe-family-base-stripe-on") &&
       css.includes("var(--settings-subgroup-visualizers-stripe-on) 100%") &&
       css.includes("var(--settings-subgroup-mod-wrap-stripe-on) 100%") &&
       css.includes("var(--settings-subgroup-step-expansion-stripe-on) 100%") &&

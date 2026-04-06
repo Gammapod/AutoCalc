@@ -101,6 +101,10 @@ import { runUiModuleCalculatorSlotMarqueeTests } from "./uiModule.calculatorSlot
 import { runUiModuleCalculatorSlotDisplayTests } from "./uiModule.calculatorSlotDisplay.test.js";
 import { runUiComplexityGateTests } from "./uiComplexityGate.test.js";
 import { runUiVisualizerFitContractTests } from "./uiVisualizerFitContract.test.js";
+import { runUiUxRoleSystemTests } from "./uiUxRoleSystem.test.js";
+import { runUiUxRoleParityMobileTests } from "./uiUxRoleParity.mobile.test.js";
+import { runUiGrapherRoleColorTests } from "./uiGrapherRoleColor.test.js";
+import { runUiSemanticHexStrictGuardTests } from "./uiSemanticHex.softGuard.test.js";
 import { runAppModeResolverTests } from "./appMode.resolver.test.js";
 import { runAutoStepSchedulerTests } from "./autoStepScheduler.test.js";
 import { runPersistenceSaveSchedulerTests } from "./persistenceSaveScheduler.test.js";
@@ -234,6 +238,10 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/calculator-slot-marquee", runUiModuleCalculatorSlotMarqueeTests],
   ["ui-module/calculator-slot-display", runUiModuleCalculatorSlotDisplayTests],
   ["ui/visualizer-fit-contract", runUiVisualizerFitContractTests],
+  ["ui/ux-role-system", runUiUxRoleSystemTests],
+  ["ui/ux-role-parity-mobile", runUiUxRoleParityMobileTests],
+  ["ui/grapher-role-color", runUiGrapherRoleColorTests],
+  ["ui/semantic-hex-strict-guard", runUiSemanticHexStrictGuardTests],
   ["ui/complexity-gate", runUiComplexityGateTests],
   ["app/app-mode-resolver", runAppModeResolverTests],
   ["app/auto-step-scheduler", runAutoStepSchedulerTests],

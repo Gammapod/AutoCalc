@@ -97,6 +97,14 @@ Code health scorecard (0-100) with CI enforcement:
 npm run ci:health
 ```
 
+UX semantic-role enforcement (migrated scope strict guard):
+
+```bash
+npm run ci:verify:ux-semantics
+```
+
+This command enforces role-token semantics on migrated surfaces (primary/mobile shell role colors, grapher, visualizer-fit contracts, and strict semantic-hex guard).
+
 Release-notes policy check (required for shipped train records and in-game notes linkage):
 
 ```bash

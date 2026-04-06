@@ -1,5 +1,6 @@
 import type { GameState } from "../../../domain/types.js";
 import { buildRollDiagnosticsSnapshot } from "../../../domain/diagnostics.js";
+import { applyUxRoleAttributes } from "../../shared/readModel.js";
 import {
   detectResidueWheelSpecFromSnapshot,
   projectRadialPoints,
@@ -16,6 +17,9 @@ const PLOT_RADIUS = 48;
 const appendModeIndicator = (circlePanel: HTMLElement, mode: "radial" | "residue_wheel"): void => {
   const indicator = document.createElement("span");
   indicator.className = "v2-circle-mode-indicator";
+  applyUxRoleAttributes(indicator, mode === "residue_wheel"
+    ? { uxRole: "analysis", uxState: "active" }
+    : { uxRole: "default", uxState: "normal" });
   indicator.textContent = mode === "residue_wheel" ? "\u27E1" : "\u03B8";
   indicator.setAttribute("aria-hidden", "true");
   circlePanel.appendChild(indicator);
@@ -37,6 +41,11 @@ const appendTraceSegment = (svg: SVGElement, tracePoints: CircleSegment, classNa
   }
   const trace = document.createElementNS(SVG_NS, "polyline");
   trace.setAttribute("class", className);
+  if (className.includes("--wheel")) {
+    applyUxRoleAttributes(trace, { uxRole: "analysis", uxState: "active" });
+  } else {
+    applyUxRoleAttributes(trace, { uxRole: "default", uxState: "muted" });
+  }
   trace.setAttribute("points", tracePoints.map((point) => `${point.px.toFixed(2)},${point.py.toFixed(2)}`).join(" "));
   svg.insertBefore(trace, svg.firstChild);
 };
@@ -61,6 +70,9 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
 
   const frameCircle = document.createElementNS(SVG_NS, "circle");
   frameCircle.setAttribute("class", "v2-circle-frame");
+  applyUxRoleAttributes(frameCircle, mode === "residue_wheel"
+    ? { uxRole: "analysis", uxState: "active" }
+    : { uxRole: "default", uxState: "normal" });
   frameCircle.setAttribute("cx", CENTER.toString());
   frameCircle.setAttribute("cy", CENTER.toString());
   frameCircle.setAttribute("r", PLOT_RADIUS.toString());
@@ -68,6 +80,7 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
 
   const centerDot = document.createElementNS(SVG_NS, "circle");
   centerDot.setAttribute("class", "v2-circle-center");
+  applyUxRoleAttributes(centerDot, { uxRole: "default", uxState: "normal" });
   centerDot.setAttribute("cx", CENTER.toString());
   centerDot.setAttribute("cy", CENTER.toString());
   centerDot.setAttribute("r", "1.2");
@@ -89,6 +102,9 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
         ? "v2-circle-point v2-circle-point--radial v2-circle-point--error"
         : "v2-circle-point v2-circle-point--radial",
     );
+    applyUxRoleAttributes(dot, point.hasError
+      ? { uxRole: "error", uxState: "active" }
+      : { uxRole: "default", uxState: "normal" });
     dot.setAttribute("cx", point.px.toFixed(2));
     dot.setAttribute("cy", point.py.toFixed(2));
     dot.setAttribute("r", point.hasError ? "1.8" : "1.4");
@@ -108,6 +124,9 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
           ? "v2-circle-point v2-circle-point--wheel v2-circle-point--error"
           : "v2-circle-point v2-circle-point--wheel",
       );
+      applyUxRoleAttributes(dot, point.hasError
+        ? { uxRole: "error", uxState: "active" }
+        : { uxRole: "analysis", uxState: "active" });
       dot.setAttribute("cx", point.px.toFixed(2));
       dot.setAttribute("cy", point.py.toFixed(2));
       dot.setAttribute("r", point.hasError ? "1.8" : "1.4");

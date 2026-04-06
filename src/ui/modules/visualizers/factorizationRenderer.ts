@@ -1,5 +1,5 @@
 import type { GameState } from "../../../domain/types.js";
-import { buildFactorizationPanelViewModel } from "../../shared/readModel.js";
+import { applyUxRoleAttributes, buildFactorizationPanelViewModel, resolveFactorizationRowUxAssignment } from "../../shared/readModel.js";
 
 export const clearFactorizationVisualizerPanel = (root: Element): void => {
   const panel = root.querySelector<HTMLElement>("[data-v2-factorization-panel]");
@@ -19,12 +19,7 @@ export const renderFactorizationVisualizerPanel = (root: Element, state: GameSta
   panel.setAttribute("aria-hidden", "false");
 
   const model = buildFactorizationPanelViewModel(state);
-  const hasLatestRollError = Boolean(state.calculator.rollEntries.at(-1)?.error);
-  const rows = model.snapshot.sectionRows.map((row) => ({
-    text: row.text,
-    kind: row.kind,
-    role: row.role ?? null,
-  }));
+  const rows = model.rows;
 
   if (typeof document === "undefined") {
     panel.textContent = rows.map((row) => row.text).join("\n");
@@ -36,7 +31,7 @@ export const renderFactorizationVisualizerPanel = (root: Element, state: GameSta
   for (const rowView of rows) {
     const row = document.createElement("div");
     row.className = "v2-factorization-row";
-    if (rowView.role === "current_factorization" && hasLatestRollError) {
+    if (rowView.uxRole === "error") {
       row.classList.add("v2-factorization-row--error");
     }
     if (rowView.role === "cycle_transient" || rowView.role === "cycle_period") {
@@ -48,6 +43,7 @@ export const renderFactorizationVisualizerPanel = (root: Element, state: GameSta
     if (rowView.kind === "placeholder") {
       row.classList.add("v2-factorization-row--placeholder");
     }
+    applyUxRoleAttributes(row, resolveFactorizationRowUxAssignment(rowView));
     if (rowView.role === "cycle_transient" || rowView.role === "cycle_period") {
       const equalsIndex = rowView.text.indexOf("=");
       const valueText = equalsIndex >= 0 ? rowView.text.slice(equalsIndex + 1).trim() : "";

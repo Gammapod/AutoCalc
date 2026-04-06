@@ -5,6 +5,7 @@ import type {
   CalculatorValue,
   RollEntry,
 } from "../../domain/types.js";
+import type { UxRole, UxRoleAssignment, UxRoleState } from "./uxRoles.js";
 
 export type RollRow = {
   prefix: string;
@@ -26,6 +27,10 @@ export type FeedTableRow = {
   rText?: string;
   hasRemainder: boolean;
   hasError: boolean;
+  uxRole: UxRole;
+  uxState: UxRoleState;
+  uxRoleOverride?: UxRole;
+  overrideReason?: string;
 };
 
 export type FeedTableViewModel = {
@@ -59,6 +64,8 @@ export const buildFeedTableRows = (
       yText: calculatorValueToFeedText(seedRow.y),
       hasRemainder: false,
       hasError: false,
+      uxRole: "default",
+      uxState: "normal",
     });
   }
   const stepRows = getStepRows(rollEntries);
@@ -72,10 +79,19 @@ export const buildFeedTableRows = (
       ...(hasRemainder ? { rText: toPreferredFractionString(entry.remainder!) } : {}),
       hasRemainder,
       hasError,
+      uxRole: hasError ? "error" : "default",
+      uxState: hasError ? "active" : "normal",
     });
   }
   return rows;
 };
+
+export const resolveFeedRowUxAssignment = (row: FeedTableRow): UxRoleAssignment => ({
+  uxRole: row.uxRole,
+  uxState: row.uxState,
+  ...(row.uxRoleOverride ? { uxRoleOverride: row.uxRoleOverride } : {}),
+  ...(row.overrideReason ? { overrideReason: row.overrideReason } : {}),
+});
 
 export const buildFeedTableViewModel = (
   rollEntries: RollEntry[],

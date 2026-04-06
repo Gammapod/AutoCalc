@@ -8,6 +8,7 @@ import type {
   CalculatorValue,
   GameState,
 } from "../../domain/types.js";
+import type { UxRole, UxRoleAssignment, UxRoleState } from "./uxRoles.js";
 import {
   algebraicHelpers,
   formatOperatorForOperationSlotDisplay,
@@ -25,7 +26,28 @@ export type AlgebraicViewModel = {
   hasIncompleteDraft: boolean;
   containsEuclidLiteral: boolean;
   recurrenceExpressionText: string;
+  builderUxRole: UxRole;
+  builderUxState: UxRoleState;
+  equationUxRole: UxRole;
+  equationUxState: UxRoleState;
+  truncationUxRole: UxRole;
+  truncationUxState: UxRoleState;
 };
+
+export const resolveAlgebraicBuilderUxAssignment = (model: AlgebraicViewModel): UxRoleAssignment => ({
+  uxRole: model.builderUxRole,
+  uxState: model.builderUxState,
+});
+
+export const resolveAlgebraicEquationUxAssignment = (model: AlgebraicViewModel): UxRoleAssignment => ({
+  uxRole: model.equationUxRole,
+  uxState: model.equationUxState,
+});
+
+export const resolveAlgebraicTruncationUxAssignment = (model: AlgebraicViewModel): UxRoleAssignment => ({
+  uxRole: model.truncationUxRole,
+  uxState: model.truncationUxState,
+});
 
 export const buildOperationSlotDisplay = (state: GameState): string => {
   const visibleSlots = state.unlocks.maxSlots;
@@ -183,6 +205,12 @@ export const buildAlgebraicViewModel = (state: GameState): AlgebraicViewModel =>
       hasIncompleteDraft: recurrence.hasIncompleteDraft,
       containsEuclidLiteral: recurrence.containsEuclidLiteral,
       recurrenceExpressionText: recurrence.expressionText,
+      builderUxRole: "analysis",
+      builderUxState: "normal",
+      equationUxRole: "default",
+      equationUxState: "normal",
+      truncationUxRole: "analysis",
+      truncationUxState: "active",
     };
   }
 
@@ -195,6 +223,12 @@ export const buildAlgebraicViewModel = (state: GameState): AlgebraicViewModel =>
       hasIncompleteDraft: recurrence.hasIncompleteDraft,
       containsEuclidLiteral: recurrence.containsEuclidLiteral,
       recurrenceExpressionText: recurrence.expressionText,
+      builderUxRole: "analysis",
+      builderUxState: "normal",
+      equationUxRole: "analysis",
+      equationUxState: "active",
+      truncationUxRole: "analysis",
+      truncationUxState: "active",
     };
   }
 
@@ -211,6 +245,12 @@ export const buildAlgebraicViewModel = (state: GameState): AlgebraicViewModel =>
       hasIncompleteDraft: recurrence.hasIncompleteDraft,
       containsEuclidLiteral: recurrence.containsEuclidLiteral,
       recurrenceExpressionText: recurrence.expressionText,
+      builderUxRole: "analysis",
+      builderUxState: "normal",
+      equationUxRole: "default",
+      equationUxState: "normal",
+      truncationUxRole: "analysis",
+      truncationUxState: "active",
     };
   }
 
@@ -222,5 +262,11 @@ export const buildAlgebraicViewModel = (state: GameState): AlgebraicViewModel =>
     hasIncompleteDraft: recurrence.hasIncompleteDraft,
     containsEuclidLiteral: recurrence.containsEuclidLiteral,
     recurrenceExpressionText: recurrence.expressionText,
+    builderUxRole: "analysis",
+    builderUxState: "normal",
+    equationUxRole: "default",
+    equationUxState: "normal",
+    truncationUxRole: "analysis",
+    truncationUxState: "active",
   };
 };

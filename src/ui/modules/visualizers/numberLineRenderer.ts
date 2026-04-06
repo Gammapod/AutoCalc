@@ -1,4 +1,5 @@
 import type { GameState } from "../../../domain/types.js";
+import { applyUxRoleAttributes } from "../../shared/readModel.js";
 import {
   NUMBER_LINE_GEOMETRY,
   NUMBER_LINE_VECTOR_ARROW_TIP,
@@ -41,6 +42,13 @@ const appendLine = (
   line.setAttribute("x2", segment.to.x.toString());
   line.setAttribute("y2", segment.to.y.toString());
   line.setAttribute("class", className);
+  if (className === "v2-number-line-vector--history" || className === "v2-number-line-vector--forecast-step") {
+    applyUxRoleAttributes(line, { uxRole: "analysis", uxState: "active" });
+  } else if (className === "v2-number-line-vector--forecast") {
+    applyUxRoleAttributes(line, { uxRole: "unlock", uxState: "active" });
+  } else {
+    applyUxRoleAttributes(line, { uxRole: "default", uxState: "normal" });
+  }
   svg.appendChild(line);
 };
 
@@ -49,6 +57,7 @@ const appendArrow = (documentRef: Document, svg: SVGElement, points: [Point, Poi
   const arrow = documentRef.createElementNS(svgNs, "polygon");
   arrow.setAttribute("points", buildPolygonPoints(points));
   arrow.setAttribute("class", "v2-number-line-arrowhead");
+  applyUxRoleAttributes(arrow, { uxRole: "default", uxState: "normal" });
   svg.appendChild(arrow);
 };
 
@@ -68,6 +77,13 @@ const appendVectorTip = (
   tip.setAttribute("cy", point.y.toString());
   tip.setAttribute("r", "1.05");
   tip.setAttribute("class", className);
+  if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
+    applyUxRoleAttributes(tip, { uxRole: "analysis", uxState: "active" });
+  } else if (className === "v2-number-line-vector-tip--forecast") {
+    applyUxRoleAttributes(tip, { uxRole: "unlock", uxState: "active" });
+  } else {
+    applyUxRoleAttributes(tip, { uxRole: "default", uxState: "normal" });
+  }
   svg.appendChild(tip);
 };
 
@@ -110,6 +126,11 @@ const appendVectorArrowTip = (
     `${segment.to.x.toString()},${segment.to.y.toString()} ${left.x.toString()},${left.y.toString()} ${right.x.toString()},${right.y.toString()}`,
   );
   arrow.setAttribute("class", className);
+  if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
+    applyUxRoleAttributes(arrow, { uxRole: "analysis", uxState: "active" });
+  } else {
+    applyUxRoleAttributes(arrow, { uxRole: "unlock", uxState: "active" });
+  }
   svg.appendChild(arrow);
 };
 
@@ -126,6 +147,7 @@ const appendScaleLabel = (
   text.setAttribute("y", point.y.toString());
   text.setAttribute("text-anchor", textAnchor);
   text.setAttribute("class", "v2-number-line-scale-label");
+  applyUxRoleAttributes(text, { uxRole: "default", uxState: "normal" });
   text.textContent = textValue;
   svg.appendChild(text);
 };
@@ -291,6 +313,7 @@ export const renderNumberLineVisualizerPanel = (root: Element, state: GameState)
   const svgNs = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(svgNs, "svg");
   svg.setAttribute("class", "v2-number-line-plot");
+  applyUxRoleAttributes(svg, hasCurrentRollError(state) ? { uxRole: "error", uxState: "active" } : { uxRole: "default", uxState: "normal" });
   if (hasCurrentRollError(state)) {
     svg.classList.add("v2-number-line-plot--error");
   }

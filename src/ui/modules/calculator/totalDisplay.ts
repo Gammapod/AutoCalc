@@ -7,11 +7,10 @@ import {
 } from "../../../domain/calculatorValue.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { projectControlFromState } from "../../../domain/controlProjection.js";
-import { projectEligibleUnlockHintProgressRows, type UnlockHintProgressRow } from "../../../domain/unlockHintProgress.js";
-import type { CalculatorValue, GameState, UnlockEffect } from "../../../domain/types.js";
+import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
-import { getAppServices } from "../../../contracts/appServices.js";
 import { buildSelectionRenderModel } from "../../shared/readModel.selection.js";
+import { applyUxRoleAttributes, buildTotalHintRowsViewModel, resolveTotalHintRowUxAssignment } from "../../shared/readModel.js";
 import {
   buildClearedTotalSlotModel,
   buildTotalSlotModel,
@@ -116,103 +115,6 @@ const buildLiteralSegmentSlotModel = (value: string): TotalSlotModel[] =>
     activeSegments: TOKEN_SEGMENTS[glyph] ?? [],
   }));
 
-type ClosestHintCategory = "operator" | "non_operator" | "lambda_point" | "calculator";
-
-const isOperatorUnlockEffect = (effect: UnlockEffect): boolean =>
-  effect.type === "unlock_slot_operator";
-
-const isNonOperatorKeyUnlockEffect = (effect: UnlockEffect): boolean =>
-  effect.type === "unlock_digit"
-  || effect.type === "unlock_execution"
-  || effect.type === "unlock_visualizer"
-  || effect.type === "unlock_utility"
-  || effect.type === "unlock_memory";
-
-const isLambdaPointUnlockEffect = (effect: UnlockEffect): boolean =>
-  effect.type === "increase_allocator_max_points"
-  || effect.type === "increase_allocator_max_points_for_calculator";
-
-const isCalculatorUnlockEffect = (effect: UnlockEffect): boolean =>
-  effect.type === "unlock_calculator";
-
-const getRowScore = (row: UnlockHintProgressRow): number =>
-  row.progress.mode === "partial"
-    ? row.progress.progress01
-    : row.progress.state === "observed"
-      ? 1
-      : 0;
-
-const toProgressFraction = (row: UnlockHintProgressRow): string => {
-  if (row.progress.mode === "partial") {
-    const current = Math.max(0, Math.floor(row.progress.current));
-    const target = Math.max(1, Math.floor(row.progress.target));
-    return `${current.toString()}/${target.toString()}`;
-  }
-  return row.progress.state === "observed" ? "1/1" : "0/1";
-};
-
-const buildClosestHintRows = (state: GameState): Array<{ label: string; value: string }> => {
-  const eligibleRows = projectEligibleUnlockHintProgressRows(state);
-  const catalog = getAppServices().contentProvider.unlockCatalog;
-  const unlockById = new Map(catalog.map((unlock) => [unlock.id, unlock]));
-
-  const chooseForCategory = (category: ClosestHintCategory): UnlockHintProgressRow | null => {
-    const filtered = eligibleRows.filter((row) => {
-      const unlock = unlockById.get(row.unlockId);
-      if (!unlock) {
-        return false;
-      }
-      if (category === "operator") {
-        return isOperatorUnlockEffect(unlock.effect);
-      }
-      if (category === "non_operator") {
-        return isNonOperatorKeyUnlockEffect(unlock.effect);
-      }
-      if (category === "calculator") {
-        return isCalculatorUnlockEffect(unlock.effect);
-      }
-      return isLambdaPointUnlockEffect(unlock.effect);
-    });
-    if (filtered.length === 0) {
-      return null;
-    }
-    filtered.sort((left, right) => {
-      const delta = getRowScore(right) - getRowScore(left);
-      if (Math.abs(delta) > Number.EPSILON) {
-        return delta > 0 ? 1 : -1;
-      }
-      const leftType = left.predicateType;
-      const rightType = right.predicateType;
-      if (leftType < rightType) {
-        return -1;
-      }
-      if (leftType > rightType) {
-        return 1;
-      }
-      return left.unlockId.localeCompare(right.unlockId);
-    });
-    return filtered[0] ?? null;
-  };
-
-  const categories: Array<{ key: ClosestHintCategory; label: string }> = [
-    { key: "operator", label: "OP" },
-    { key: "non_operator", label: "KEY" },
-    { key: "calculator", label: "CALC" },
-    { key: "lambda_point", label: "LAMBDA" },
-  ];
-
-  return categories.map((category) => {
-    const match = chooseForCategory(category.key);
-    if (!match) {
-      return { label: category.label, value: "n/a" };
-    }
-    return {
-      label: category.label,
-      value: `${toProgressFraction(match)} ${match.predicateType}`,
-    };
-  });
-};
-
 const renderSevenSegmentValue = (
   target: HTMLElement,
   value: CalculatorValue,
@@ -287,11 +189,13 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
 
     const lambda = document.createElement("span");
     lambda.className = "total-memory-lambda";
+    applyUxRoleAttributes(lambda, { uxRole: "lambda", uxState: "active" });
     lambda.textContent = `\u03BB = ${projection.budget.unused.toString()}`;
     row.appendChild(lambda);
 
     const variables = document.createElement("div");
     variables.className = "total-memory-variables";
+    applyUxRoleAttributes(variables, { uxRole: "default", uxState: "normal" });
     const variableValues: Array<{ symbol: "\u03B1" | "\u03B2" | "\u03B3" | "\u03B4" | "\u03F5"; value: string }> = [
       { symbol: "\u03B1", value: projection.fields.alpha.toString() },
       { symbol: "\u03B2", value: projection.fields.beta.toString() },
@@ -302,6 +206,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     for (const entry of variableValues) {
       const token = document.createElement("span");
       token.className = "total-memory-var";
+      applyUxRoleAttributes(token, { uxRole: "default", uxState: "normal" });
       const isSelected = (
         (entry.symbol === "\u03B1" && selectionVm.highlightByField.alpha)
         || (entry.symbol === "\u03B2" && selectionVm.highlightByField.beta)
@@ -313,17 +218,21 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
       leftBracket.className = isSelected
         ? "total-memory-bracket total-memory-bracket--visible"
         : "total-memory-bracket";
+      applyUxRoleAttributes(leftBracket, { uxRole: "lambda", uxState: isSelected ? "active" : "muted" });
       leftBracket.textContent = "[";
       const symbol = document.createElement("span");
       symbol.className = isSelected ? "total-memory-symbol total-memory-symbol--selected" : "total-memory-symbol";
+      applyUxRoleAttributes(symbol, { uxRole: "lambda", uxState: isSelected ? "active" : "normal" });
       symbol.textContent = entry.symbol;
       const rightBracket = document.createElement("span");
       rightBracket.className = isSelected
         ? "total-memory-bracket total-memory-bracket--visible"
         : "total-memory-bracket";
+      applyUxRoleAttributes(rightBracket, { uxRole: "lambda", uxState: isSelected ? "active" : "muted" });
       rightBracket.textContent = "]";
       const valueText = document.createElement("span");
       valueText.className = "total-memory-value";
+      applyUxRoleAttributes(valueText, { uxRole: "default", uxState: "normal" });
       valueText.textContent = ` = ${entry.value}`;
       token.append(leftBracket, symbol, rightBracket, valueText);
       variables.appendChild(token);
@@ -384,17 +293,20 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
 
   const primaryDisplay = document.createElement("div");
   primaryDisplay.className = "total-primary-display";
-  const hintRows = buildClosestHintRows(state);
+  const hintRows = buildTotalHintRowsViewModel(state);
   const hintStrip = document.createElement("div");
   hintStrip.className = "total-hint-strip";
   for (const hintRow of hintRows) {
     const row = document.createElement("div");
     row.className = "total-hint-row";
+    applyUxRoleAttributes(row, resolveTotalHintRowUxAssignment(hintRow));
     const label = document.createElement("span");
     label.className = "total-hint-label";
+    applyUxRoleAttributes(label, resolveTotalHintRowUxAssignment(hintRow));
     label.textContent = hintRow.label;
     const value = document.createElement("span");
     value.className = "total-hint-value";
+    applyUxRoleAttributes(value, resolveTotalHintRowUxAssignment(hintRow));
     value.textContent = hintRow.value;
     row.append(label, value);
     hintStrip.appendChild(row);

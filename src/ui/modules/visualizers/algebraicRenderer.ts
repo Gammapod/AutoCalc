@@ -1,5 +1,11 @@
 import type { GameState } from "../../../domain/types.js";
-import { buildAlgebraicViewModel } from "../../shared/readModel.js";
+import {
+  applyUxRoleAttributes,
+  buildAlgebraicViewModel,
+  resolveAlgebraicBuilderUxAssignment,
+  resolveAlgebraicEquationUxAssignment,
+  resolveAlgebraicTruncationUxAssignment,
+} from "../../shared/readModel.js";
 import { ensureKatexLoaded } from "../../../infra/runtime/lazyAssetLoader.js";
 
 type KatexRenderOptions = {
@@ -16,32 +22,44 @@ const getKatexApi = (): KatexApi | undefined => {
   return scope.katex;
 };
 
-const appendBuilderRow = (panel: HTMLElement, functionText: string, seedText: string): void => {
+const appendBuilderRow = (
+  panel: HTMLElement,
+  functionText: string,
+  seedText: string,
+  assignment: import("../../shared/readModel.js").UxRoleAssignment,
+): void => {
   if (typeof document === "undefined") {
     return;
   }
   const row = document.createElement("div");
   row.className = "v2-algebraic-builder-row";
+  applyUxRoleAttributes(row, assignment);
 
   const functionLine = document.createElement("div");
   functionLine.className = "v2-algebraic-builder-function";
+  applyUxRoleAttributes(functionLine, assignment);
   functionLine.textContent = functionText;
   row.appendChild(functionLine);
 
   const seedLine = document.createElement("div");
   seedLine.className = "v2-algebraic-builder-seed";
+  applyUxRoleAttributes(seedLine, assignment);
   seedLine.textContent = seedText;
   row.appendChild(seedLine);
 
   panel.appendChild(row);
 };
 
-const appendTruncationIndicator = (panel: HTMLElement): void => {
+const appendTruncationIndicator = (
+  panel: HTMLElement,
+  assignment: import("../../shared/readModel.js").UxRoleAssignment,
+): void => {
   if (typeof document === "undefined") {
     return;
   }
   const marker = document.createElement("div");
   marker.className = "v2-algebraic-truncated";
+  applyUxRoleAttributes(marker, assignment);
   marker.textContent = "...";
   marker.setAttribute("aria-label", "Visualizer content compacted to fit");
   panel.appendChild(marker);
@@ -73,10 +91,11 @@ export const renderAlgebraicVisualizerPanel = (root: Element, state: GameState):
     return;
   }
 
-  appendBuilderRow(panel, model.recurrenceLine, model.seedLine);
+  appendBuilderRow(panel, model.recurrenceLine, model.seedLine, resolveAlgebraicBuilderUxAssignment(model));
 
   const equation = document.createElement("div");
   equation.className = "v2-algebraic-equation";
+  applyUxRoleAttributes(equation, resolveAlgebraicEquationUxAssignment(model));
   const katexApi = getKatexApi();
   if (!katexApi) {
     void ensureKatexLoaded().then((loaded) => {
@@ -100,6 +119,6 @@ export const renderAlgebraicVisualizerPanel = (root: Element, state: GameState):
   }
   panel.appendChild(equation);
   if (model.mainLine.length > 120 || model.recurrenceLine.length > 90) {
-    appendTruncationIndicator(panel);
+    appendTruncationIndicator(panel, resolveAlgebraicTruncationUxAssignment(model));
   }
 };

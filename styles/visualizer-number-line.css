@@ -32,19 +32,19 @@ body[data-ui-shell="mobile"] .v2-number-line-axis,
 body[data-ui-shell="desktop"] .v2-number-line-axis,
 body[data-ui-shell="mobile"] .v2-number-line-center-tick,
 body[data-ui-shell="desktop"] .v2-number-line-center-tick {
-  stroke: #b4f1d3;
+  stroke: var(--ux-role-default-color);
   stroke-width: 0.9;
   stroke-linecap: round;
 }
 
 body[data-ui-shell="mobile"] .v2-number-line-arrowhead,
 body[data-ui-shell="desktop"] .v2-number-line-arrowhead {
-  fill: #b4f1d3;
+  fill: var(--ux-role-default-color);
 }
 
 body[data-ui-shell="mobile"] .v2-number-line-grid-mark,
 body[data-ui-shell="desktop"] .v2-number-line-grid-mark {
-  stroke: #b4f1d3;
+  stroke: var(--ux-role-default-color);
   stroke-width: 0.4;
   stroke-linecap: round;
   opacity: 0.62;
@@ -52,7 +52,7 @@ body[data-ui-shell="desktop"] .v2-number-line-grid-mark {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector,
 body[data-ui-shell="desktop"] .v2-number-line-vector {
-  stroke: #8fd4ff;
+  stroke: var(--ux-role-default-color);
   stroke-width: 0.95;
   stroke-linecap: round;
   opacity: 0.96;
@@ -60,12 +60,12 @@ body[data-ui-shell="desktop"] .v2-number-line-vector {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector-tip,
 body[data-ui-shell="desktop"] .v2-number-line-vector-tip {
-  fill: #8fd4ff;
+  fill: var(--ux-role-default-color);
 }
 
 body[data-ui-shell="mobile"] .v2-number-line-vector--history,
 body[data-ui-shell="desktop"] .v2-number-line-vector--history {
-  stroke: #ff8f8f;
+  stroke: var(--ux-role-analysis-color);
   stroke-width: 0.65;
   stroke-linecap: round;
   stroke-dasharray: 1.5 1.2;
@@ -74,13 +74,13 @@ body[data-ui-shell="desktop"] .v2-number-line-vector--history {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector-tip--history,
 body[data-ui-shell="desktop"] .v2-number-line-vector-tip--history {
-  fill: #ff8f8f;
+  fill: var(--ux-role-analysis-color);
   opacity: 0.72;
 }
 
 body[data-ui-shell="mobile"] .v2-number-line-vector--forecast,
 body[data-ui-shell="desktop"] .v2-number-line-vector--forecast {
-  stroke: #8fd4ff;
+  stroke: var(--ux-role-unlock-color);
   stroke-width: 0.65;
   stroke-linecap: round;
   stroke-dasharray: 1.5 1.2;
@@ -89,13 +89,13 @@ body[data-ui-shell="desktop"] .v2-number-line-vector--forecast {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector-tip--forecast,
 body[data-ui-shell="desktop"] .v2-number-line-vector-tip--forecast {
-  fill: #8fd4ff;
+  fill: var(--ux-role-unlock-color);
   opacity: 0.72;
 }
 
 body[data-ui-shell="mobile"] .v2-number-line-vector--forecast-step,
 body[data-ui-shell="desktop"] .v2-number-line-vector--forecast-step {
-  stroke: #ffffff;
+  stroke: var(--ux-role-analysis-color);
   stroke-width: 0.65;
   stroke-linecap: round;
   stroke-dasharray: 1.5 1.2;
@@ -104,13 +104,13 @@ body[data-ui-shell="desktop"] .v2-number-line-vector--forecast-step {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector-tip--forecast-step,
 body[data-ui-shell="desktop"] .v2-number-line-vector-tip--forecast-step {
-  fill: #ffffff;
+  fill: var(--ux-role-analysis-color);
   opacity: 0.72;
 }
 
 body[data-ui-shell="mobile"] .v2-number-line-scale-label,
 body[data-ui-shell="desktop"] .v2-number-line-scale-label {
-  fill: #b4f1d3;
+  fill: var(--ux-role-default-color);
   font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
   font-size: 2.6px;
   letter-spacing: 0.02em;
@@ -123,14 +123,14 @@ body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-center-
 body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-center-tick,
 body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-grid-mark,
 body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-grid-mark {
-  stroke: #ff0000;
+  stroke: var(--ux-role-error-color);
 }
 
 body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-arrowhead,
 body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-arrowhead,
 body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-scale-label,
 body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-scale-label {
-  fill: #ff0000;
+  fill: var(--ux-role-error-color);
 }
 
 body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-number-line-panel,

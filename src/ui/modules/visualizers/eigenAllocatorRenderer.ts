@@ -3,6 +3,7 @@ import type { ControlField, GameState, MemoryVariable } from "../../../domain/ty
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 import { buildSelectionRenderModel } from "../../shared/readModel.selection.js";
 import { ensureKatexLoaded } from "../../../infra/runtime/lazyAssetLoader.js";
+import { applyUxRoleAttributes, resolveUxRoleAssignment } from "../../shared/readModel.js";
 
 type KatexRenderOptions = {
   displayMode?: boolean;
@@ -26,13 +27,20 @@ const formatMatrixNumber = (value: number): string => {
 };
 
 const selectedVectorEntry = (selectedVariable: MemoryVariable): string => {
+  const assignment = resolveUxRoleAssignment({
+    uxRole: "lambda",
+    uxState: "active",
+    uxRoleOverride: "lambda",
+    overrideReason: "KaTeX inline color markup is required for selected vector entries.",
+  });
+  const color = assignment.uxRole === "lambda" ? "#be8ee8" : "#be8ee8";
   if (selectedVariable === "\u03B1") {
-    return String.raw`{\color{#be8ee8}{[\alpha]}}`;
+    return String.raw`{\color{${color}}{[\alpha]}}`;
   }
   if (selectedVariable === "\u03B2") {
-    return String.raw`{\color{#be8ee8}{[\beta]}}`;
+    return String.raw`{\color{${color}}{[\beta]}}`;
   }
-  return String.raw`{\color{#be8ee8}{[\gamma]}}`;
+  return String.raw`{\color{${color}}{[\gamma]}}`;
 };
 
 const buildEigenAllocatorLatex = (state: GameState): string => {
@@ -118,6 +126,7 @@ export const renderEigenAllocatorVisualizerPanel = (root: Element, state: GameSt
   }
   const equation = document.createElement("div");
   equation.className = "v2-eigen-equation";
+  applyUxRoleAttributes(equation, { uxRole: "lambda", uxState: "active" });
   const katexApi = getKatexApi();
   if (!katexApi) {
     void ensureKatexLoaded().then((loaded) => {

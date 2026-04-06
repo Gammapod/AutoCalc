@@ -1,5 +1,5 @@
 import type { GameState } from "../../../domain/types.js";
-import { buildFeedTableViewModel } from "../../shared/readModel.js";
+import { applyUxRoleAttributes, buildFeedTableViewModel, resolveFeedRowUxAssignment, type UxRoleAssignment } from "../../shared/readModel.js";
 
 const padCenter = (text: string, width: number): string => {
   const visibleText = text.length > width ? text.slice(0, width) : text;
@@ -24,9 +24,13 @@ const appendFeedTableLine = (
   leftText: string,
   rText: string | null,
   className?: string,
+  uxAssignment?: UxRoleAssignment,
 ): void => {
   const line = document.createElement("div");
   line.className = className ?? "v2-feed-table-line";
+  if (uxAssignment) {
+    applyUxRoleAttributes(line, uxAssignment);
+  }
   if (rText !== null) {
     line.classList.add("v2-feed-table-line--with-r");
   }
@@ -106,6 +110,7 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
       rowLeft,
       rowR,
       row?.hasError ? "v2-feed-table-line v2-feed-row--error" : "v2-feed-table-line",
+      row ? resolveFeedRowUxAssignment(row) : { uxRole: "default", uxState: "muted" },
     );
   }
 

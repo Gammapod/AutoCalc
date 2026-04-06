@@ -39,7 +39,8 @@
     linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
 }
 
-.key.key--group-settings[data-key="toggle_step_expansion"] {
+.key.key--group-settings[data-key="toggle_step_expansion"],
+.key.key--group-settings[data-key="toggle_history"] {
   background:
     linear-gradient(
       180deg,
@@ -100,7 +101,8 @@
     linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
 }
 
-.key.key--toggle-active.key--group-settings[data-key="toggle_step_expansion"]:not(:disabled) {
+.key.key--toggle-active.key--group-settings[data-key="toggle_step_expansion"]:not(:disabled),
+.key.key--toggle-active.key--group-settings[data-key="toggle_history"]:not(:disabled) {
   background:
     linear-gradient(
       180deg,

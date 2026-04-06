@@ -3,6 +3,7 @@ import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderab
 import { toStepCount } from "../../domain/rollEntries.js";
 import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
 import { ensureChartLoaded } from "../../infra/runtime/lazyAssetLoader.js";
+import { resolveUxRoleColor } from "../shared/readModel.js";
 
 type GraphDataset = {
   data: GraphPoint[];
@@ -99,9 +100,19 @@ const getGrapherRuntime = (root: Element): GrapherModuleState => {
   return created;
 };
 
-const buildGraphOptions = (hasPoints: boolean, maxXIndex: number, unlockedTotalDigits: number, radix: number): GraphOptions => {
+const buildGraphOptions = (
+  hasPoints: boolean,
+  maxXIndex: number,
+  unlockedTotalDigits: number,
+  radix: number,
+  documentRef: Document | null,
+): GraphOptions => {
   const xWindow = buildGraphXWindow(maxXIndex);
   const bounds = buildGraphYWindow(unlockedTotalDigits, radix);
+  const defaultColor = resolveUxRoleColor("default", { document: documentRef });
+  const defaultGrid = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.2 });
+  const defaultGridAxis = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.75 });
+  const defaultBorder = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.45 });
   const defaultWindowMax = buildGraphXWindow(0).max;
   const makeXAxisTickLabelCallback =
     (axisMax: number) =>
@@ -142,20 +153,20 @@ const buildGraphOptions = (hasPoints: boolean, maxXIndex: number, unlockedTotalD
         max: hasPoints ? xWindow.max : defaultWindowMax,
         display: true,
         ticks: {
-          color: "#bcffd6",
+          color: defaultColor,
           precision: 0,
           autoSkip: true,
           callback: makeXAxisTickLabelCallback(xWindow.max),
         },
-        grid: { color: "rgba(188, 255, 214, 0.2)", display: true },
-        border: { color: "rgba(188, 255, 214, 0.45)", display: true },
+        grid: { color: defaultGrid, display: true },
+        border: { color: defaultBorder, display: true },
       },
       y: {
         min: bounds.min,
         max: bounds.max,
         display: true,
         ticks: {
-          color: "#bcffd6",
+          color: defaultColor,
           autoSkip: false,
           callback: makeYAxisTickLabelCallback(bounds.min, bounds.max),
         },
@@ -164,8 +175,8 @@ const buildGraphOptions = (hasPoints: boolean, maxXIndex: number, unlockedTotalD
             const value = context.tick?.value;
             const numeric = typeof value === "number" ? value : Number(value);
             return Number.isFinite(numeric) && Math.abs(numeric) < 1e-9
-              ? "rgba(188, 255, 214, 0.75)"
-              : "rgba(188, 255, 214, 0.2)";
+              ? defaultGridAxis
+              : defaultGrid;
           },
           lineWidth: (context: { tick?: { value?: number | string } }) => {
             const value = context.tick?.value;
@@ -174,7 +185,7 @@ const buildGraphOptions = (hasPoints: boolean, maxXIndex: number, unlockedTotalD
           },
           display: true,
         },
-        border: { color: "rgba(188, 255, 214, 0.45)", display: true },
+        border: { color: defaultBorder, display: true },
       },
     },
   };
@@ -229,18 +240,30 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   const points = buildGraphPoints(state.calculator.rollEntries);
   const hasPoints = isGraphRenderable(state.calculator.rollEntries);
   const displayRadix = state.settings.base === "base2" ? 2 : 10;
-  const options = buildGraphOptions(hasPoints, toStepCount(state.calculator.rollEntries), state.unlocks.maxTotalDigits, displayRadix);
+  const options = buildGraphOptions(
+    hasPoints,
+    toStepCount(state.calculator.rollEntries),
+    state.unlocks.maxTotalDigits,
+    displayRadix,
+    root.ownerDocument ?? null,
+  );
+  const defaultColor = resolveUxRoleColor("default", { document: root.ownerDocument ?? null });
+  const analysisColor = resolveUxRoleColor("analysis", { document: root.ownerDocument ?? null });
+  const errorColor = resolveUxRoleColor("error", { document: root.ownerDocument ?? null });
+  const defaultBorderColor = resolveUxRoleColor("default", { document: root.ownerDocument ?? null, alpha01: 0.9 });
+  const analysisBorderColor = resolveUxRoleColor("analysis", { document: root.ownerDocument ?? null, alpha01: 0.9 });
+  const errorBorderColor = resolveUxRoleColor("error", { document: root.ownerDocument ?? null, alpha01: 0.9 });
   const pointBackgroundColor = points.map((point) => {
     if (point.kind === "remainder") {
-      return "#ffd84d";
+      return analysisColor;
     }
-    return point.hasError ? "#ff6f6f" : "#bcffd6";
+    return point.hasError ? errorColor : defaultColor;
   });
   const pointBorderColor = points.map((point) => {
     if (point.kind === "remainder") {
-      return "rgba(255, 216, 77, 0.9)";
+      return analysisBorderColor;
     }
-    return point.hasError ? "rgba(255, 111, 111, 0.9)" : "rgba(188, 255, 214, 0.9)";
+    return point.hasError ? errorBorderColor : defaultBorderColor;
   });
 
   if (!runtime.graphChart) {
