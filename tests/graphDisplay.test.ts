@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable } from "../src/ui/modules/visualizers/graphModel.js";
+import { toExplicitComplexCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import type { RollEntry } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
@@ -86,6 +87,33 @@ export const runGraphDisplayTests = (): void => {
       { x: 3, y: 3, kind: "roll", hasError: true },
     ],
     "graph keeps non-consecutive duplicate error codes too",
+  );
+
+  const withComplexRows = buildGraphPoints([
+    e(r(0n)),
+    e(
+      toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 7n, den: 1n }),
+        toRationalScalarValue({ num: -3n, den: 1n }),
+      ),
+    ),
+    e(
+      toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: -2n, den: 1n }),
+        toRationalScalarValue({ num: 5n, den: 1n }),
+      ),
+    ),
+  ]);
+  assert.deepEqual(
+    withComplexRows,
+    [
+      { x: 0, y: 0, kind: "seed", hasError: false },
+      { x: 1, y: 7, kind: "roll", hasError: false },
+      { x: 1, y: -3, kind: "imaginary", hasError: false },
+      { x: 2, y: -2, kind: "roll", hasError: false },
+      { x: 2, y: 5, kind: "imaginary", hasError: false },
+    ],
+    "complex roll rows map real and imaginary components as separate points at the same x index",
   );
 
   assert.deepEqual(buildGraphXWindow(0), { min: 0, max: 25 }, "empty roll uses default 0..25 x window");

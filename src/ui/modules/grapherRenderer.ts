@@ -8,8 +8,8 @@ import { resolveUxRoleColor } from "../shared/readModel.js";
 type GraphDataset = {
   data: GraphPoint[];
   showLine: boolean;
-  pointRadius: number;
-  pointHoverRadius: number;
+  pointRadius: number | number[];
+  pointHoverRadius: number | number[];
   pointBackgroundColor: string | string[];
   pointBorderColor: string | string[];
   pointBorderWidth: number;
@@ -23,6 +23,9 @@ type GraphScale = {
     color?: string;
     precision?: number;
     autoSkip?: boolean;
+    padding?: number;
+    maxRotation?: number;
+    minRotation?: number;
     callback?: (value: string | number) => string | number;
   };
   grid?: {
@@ -40,6 +43,14 @@ type GraphOptions = {
   animation: boolean;
   responsive: boolean;
   maintainAspectRatio: boolean;
+  layout?: {
+    padding?: {
+      top?: number;
+      right?: number;
+      bottom?: number;
+      left?: number;
+    };
+  };
   plugins: {
     legend: { display: boolean };
     tooltip: { enabled: boolean };
@@ -143,6 +154,15 @@ const buildGraphOptions = (
     animation: false,
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      // Reserve canvas space for axis labels so large values do not clip.
+      padding: {
+        top: 2,
+        right: 10,
+        bottom: 12,
+        left: 10,
+      },
+    },
     plugins: {
       legend: { display: false },
       tooltip: { enabled: hasPoints },
@@ -156,6 +176,9 @@ const buildGraphOptions = (
           color: defaultColor,
           precision: 0,
           autoSkip: true,
+          padding: 4,
+          maxRotation: 0,
+          minRotation: 0,
           callback: makeXAxisTickLabelCallback(xWindow.max),
         },
         grid: { color: defaultGrid, display: true },
@@ -168,6 +191,9 @@ const buildGraphOptions = (
         ticks: {
           color: defaultColor,
           autoSkip: false,
+          padding: 4,
+          maxRotation: 0,
+          minRotation: 0,
           callback: makeYAxisTickLabelCallback(bounds.min, bounds.max),
         },
         grid: {
@@ -254,17 +280,19 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   const analysisBorderColor = resolveUxRoleColor("analysis", { document: root.ownerDocument ?? null, alpha01: 0.9 });
   const errorBorderColor = resolveUxRoleColor("error", { document: root.ownerDocument ?? null, alpha01: 0.9 });
   const pointBackgroundColor = points.map((point) => {
-    if (point.kind === "remainder") {
+    if (point.kind === "remainder" || point.kind === "imaginary") {
       return analysisColor;
     }
     return point.hasError ? errorColor : defaultColor;
   });
   const pointBorderColor = points.map((point) => {
-    if (point.kind === "remainder") {
+    if (point.kind === "remainder" || point.kind === "imaginary") {
       return analysisBorderColor;
     }
     return point.hasError ? errorBorderColor : defaultBorderColor;
   });
+  const pointRadius = points.map((point) => (point.kind === "imaginary" ? 2.25 : (hasPoints ? 3 : 0)));
+  const pointHoverRadius = points.map((point) => (point.kind === "imaginary" ? 3.25 : 4));
 
   if (!runtime.graphChart) {
     runtime.graphChart = new chartCtor(context, {
@@ -274,8 +302,8 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
           {
             data: points,
             showLine: false,
-            pointRadius: hasPoints ? 3 : 0,
-            pointHoverRadius: 4,
+            pointRadius,
+            pointHoverRadius,
             pointBackgroundColor,
             pointBorderColor,
             pointBorderWidth: 1,
@@ -288,7 +316,8 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   }
 
   runtime.graphChart.data.datasets[0].data = points;
-  runtime.graphChart.data.datasets[0].pointRadius = hasPoints ? 3 : 0;
+  runtime.graphChart.data.datasets[0].pointRadius = pointRadius;
+  runtime.graphChart.data.datasets[0].pointHoverRadius = pointHoverRadius;
   runtime.graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;
   runtime.graphChart.data.datasets[0].pointBorderColor = pointBorderColor;
   runtime.graphChart.options = options;

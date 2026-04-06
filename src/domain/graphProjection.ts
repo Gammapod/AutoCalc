@@ -1,31 +1,76 @@
-import { isRationalCalculatorValue } from "./calculatorValue.js";
+import { expressionToRational } from "./expression.js";
 import { getSeedRow, getStepRows } from "./rollEntries.js";
-import type { RollEntry } from "./types.js";
+import type { CalculatorValue, RollEntry, ScalarValue } from "./types.js";
 
 export type GraphPoint = {
   x: number;
   y: number;
-  kind?: "seed" | "roll" | "remainder";
+  kind?: "seed" | "roll" | "imaginary" | "remainder";
   hasError: boolean;
+};
+
+const scalarToNumber = (value: ScalarValue): number | null => {
+  if (value.kind === "rational") {
+    if (value.value.den === 0n) {
+      return null;
+    }
+    return Number(value.value.num) / Number(value.value.den);
+  }
+  const asRational = expressionToRational(value.value);
+  if (!asRational || asRational.den === 0n) {
+    return null;
+  }
+  return Number(asRational.num) / Number(asRational.den);
+};
+
+const calculatorValueToRealImag = (value: CalculatorValue): { re: number; im: number } | null => {
+  if (value.kind === "nan") {
+    return null;
+  }
+  if (value.kind === "complex") {
+    const re = scalarToNumber(value.value.re);
+    const im = scalarToNumber(value.value.im);
+    if (re === null || im === null) {
+      return null;
+    }
+    return { re, im };
+  }
+  const scalar: ScalarValue = value.kind === "rational"
+    ? { kind: "rational", value: value.value }
+    : { kind: "expr", value: value.value };
+  const real = scalarToNumber(scalar);
+  if (real === null) {
+    return null;
+  }
+  return { re: real, im: 0 };
 };
 
 export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
   const points: GraphPoint[] = [];
   const seed = getSeedRow(rollEntries)?.y;
-  if (seed && isRationalCalculatorValue(seed)) {
+  const seedPair = seed ? calculatorValueToRealImag(seed) : null;
+  if (seedPair) {
     points.push({
       x: 0,
-      y: Number(seed.value.num) / Number(seed.value.den),
+      y: seedPair.re,
       kind: "seed",
       hasError: false,
     });
+    if (Math.abs(seedPair.im) > 0) {
+      points.push({
+        x: 0,
+        y: seedPair.im,
+        kind: "imaginary",
+        hasError: false,
+      });
+    }
   }
   const stepRows = getStepRows(rollEntries);
   for (let index = 0; index < stepRows.length; index += 1) {
     const entry = stepRows[index];
     const x = index + 1;
-    const value = entry.y;
-    if (!isRationalCalculatorValue(value)) {
+    const valuePair = calculatorValueToRealImag(entry.y);
+    if (!valuePair) {
       if (entry.remainder) {
         points.push({
           x,
@@ -38,7 +83,7 @@ export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
     }
     points.push({
       x,
-      y: Number(value.value.num) / Number(value.value.den),
+      y: valuePair.re,
       kind: "roll",
       hasError: Boolean(entry.error),
     });
@@ -47,6 +92,14 @@ export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
         x,
         y: Number(entry.remainder.num) / Number(entry.remainder.den),
         kind: "remainder",
+        hasError: false,
+      });
+    }
+    if (Math.abs(valuePair.im) > 0) {
+      points.push({
+        x,
+        y: valuePair.im,
+        kind: "imaginary",
         hasError: false,
       });
     }
