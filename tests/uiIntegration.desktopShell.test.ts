@@ -78,10 +78,18 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     const lowColumnVisualizerWidthToken = harness.root
       .querySelector<HTMLElement>("[data-display-window]")
       ?.style.getPropertyValue("--v2-visualizer-fixed-width");
+    const initialVisualizerPanelHeight = harness.root
+      .querySelector<HTMLElement>("[data-display-window]")
+      ?.style.getPropertyValue("--v2-visualizer-panel-height") ?? "";
     assert.equal(
       lowColumnVisualizerWidthToken,
       "var(--desktop-calc-width)",
       "when columns are <= 4, visualizer width follows calculator width token",
+    );
+    assert.equal(
+      initialVisualizerPanelHeight.endsWith("px"),
+      true,
+      "desktop render sets canonical visualizer panel height token",
     );
     if (defaultRows >= 2) {
       assert.equal(
@@ -161,6 +169,26 @@ export const runUiIntegrationDesktopShellTests = (): void => {
     });
     const heightAfterTallGrowth = Number.parseFloat(calcBody?.style.getPropertyValue("--desktop-calc-min-height") ?? "0");
     assert.equal(heightAfterTallGrowth > heightAtBaseline, true, "desktop min-height grows once rows exceed 2-row baseline");
+    const graphVisualizerState = {
+      ...initialState(),
+      settings: {
+        ...initialState().settings,
+        visualizer: "graph" as const,
+      },
+    };
+    renderer.render(graphVisualizerState, dispatch, {
+            inputBlocked: false,
+    });
+    const graphPanelHeight = Number.parseFloat(
+      harness.root.querySelector<HTMLElement>("[data-display-window]")?.style.getPropertyValue("--v2-visualizer-panel-height") ?? "0",
+    );
+    renderer.render(initialState(), dispatch, {
+            inputBlocked: false,
+    });
+    const totalPanelHeight = Number.parseFloat(
+      harness.root.querySelector<HTMLElement>("[data-display-window]")?.style.getPropertyValue("--v2-visualizer-panel-height") ?? "0",
+    );
+    assert.equal(graphPanelHeight > totalPanelHeight, true, "graph visualizer resolves a taller canonical panel height than total panel");
 
     const keyButton = harness.root.querySelector<HTMLButtonElement>(`.key[data-key='${k("exec_equals")}']`);
     assert.ok(keyButton, "calculator key exists after desktop render");

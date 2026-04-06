@@ -1,6 +1,6 @@
 import type { CalculatorId, GameState } from "../../domain/types.js";
 import { VISUALIZER_REGISTRY } from "./visualizers/registry.js";
-import type { VisualizerHostPanel } from "./visualizers/types.js";
+import type { VisualizerCanonicalSize, VisualizerHostPanel, VisualizerModule } from "./visualizers/types.js";
 import { getOrCreateRuntime } from "../runtime/registry.js";
 import { projectCalculatorToLegacy } from "../../domain/multiCalculator.js";
 
@@ -15,12 +15,22 @@ export type VisualizerHostModuleState = {
   transitionEndListener: ((event: Event) => void) | null;
 };
 
-const TRANSITION_DURATION_MS = 220;
+const TRANSITION_DURATION_MS = 320;
 const LOCK_HEIGHT_VAR = "--v2-visualizer-lock-height";
 const SCALE_VAR = "--v2-visualizer-scale";
 const FIXED_WIDTH_VAR = "--v2-visualizer-fixed-width";
+const PANEL_HEIGHT_VAR = "--v2-visualizer-panel-height";
 const FIXED_WIDTH_PX = 460;
 const VIEWPORT_PADDING_PX = 32;
+const MIN_PANEL_HEIGHT_PX = 96;
+const MAX_PANEL_HEIGHT_PX = 280;
+const REFERENCE_TEXT_LINE_HEIGHT_PX = 21;
+const DEFAULT_TOTAL_PANEL_SIZE: VisualizerCanonicalSize = {
+  mode: "text_budget",
+  minLines: 6,
+  targetLines: 7,
+  maxLines: 9,
+};
 
 const createHostRuntime = (): VisualizerHostModuleState => ({
   previousActivePanel: "total",
@@ -150,6 +160,7 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   if (displayWindow) {
     displayWindow.style.removeProperty(SCALE_VAR);
     displayWindow.style.removeProperty(FIXED_WIDTH_VAR);
+    displayWindow.style.removeProperty(PANEL_HEIGHT_VAR);
   }
   if (graphDevice) {
     graphDevice.setAttribute("aria-hidden", "true");
@@ -217,6 +228,51 @@ const applyHostWidthToken = (root: Element, state: GameState): void => {
   displayWindow.style.setProperty(FIXED_WIDTH_VAR, widthToken);
 };
 
+const resolveVisualizerModule = (panel: VisualizerHostPanel): VisualizerModule | null =>
+  VISUALIZER_REGISTRY.find((entry) => entry.id === panel) ?? null;
+
+const clampPanelHeight = (value: number): number =>
+  Math.max(MIN_PANEL_HEIGHT_PX, Math.min(MAX_PANEL_HEIGHT_PX, value));
+
+const resolveDisplayWidthPx = (displayWindow: HTMLElement): number => {
+  const measured = displayWindow.getBoundingClientRect();
+  const measuredWidth = measured && typeof measured.width === "number" ? measured.width : NaN;
+  if (Number.isFinite(measuredWidth) && measuredWidth > 0) {
+    return measuredWidth;
+  }
+  const scaleToken = typeof displayWindow.style.getPropertyValue === "function"
+    ? displayWindow.style.getPropertyValue(SCALE_VAR)
+    : "";
+  const scaleValue = Number.parseFloat(scaleToken || "1");
+  const scale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+  return FIXED_WIDTH_PX * Math.min(1, scale);
+};
+
+const resolvePanelHeightPx = (panelSize: VisualizerCanonicalSize, displayWidthPx: number): number => {
+  const safeWidth = Math.max(1, displayWidthPx);
+  if (panelSize.mode === "ratio") {
+    return clampPanelHeight(safeWidth * panelSize.ratio);
+  }
+  const widthScale = safeWidth / FIXED_WIDTH_PX;
+  const scaledLineHeightPx = REFERENCE_TEXT_LINE_HEIGHT_PX * widthScale;
+  const minHeight = panelSize.minLines * scaledLineHeightPx;
+  const maxHeight = panelSize.maxLines * scaledLineHeightPx;
+  const targetHeight = panelSize.targetLines * scaledLineHeightPx;
+  return clampPanelHeight(Math.max(minHeight, Math.min(maxHeight, targetHeight)));
+};
+
+const applyHostPanelHeight = (root: Element, panel: VisualizerHostPanel): void => {
+  const displayWindow = root.querySelector<HTMLElement>("[data-display-window]");
+  if (!displayWindow) {
+    return;
+  }
+  const module = resolveVisualizerModule(panel);
+  const panelSize = module?.size ?? DEFAULT_TOTAL_PANEL_SIZE;
+  const displayWidthPx = resolveDisplayWidthPx(displayWindow);
+  const panelHeight = resolvePanelHeightPx(panelSize, displayWidthPx);
+  displayWindow.style.setProperty(PANEL_HEIGHT_VAR, `${panelHeight.toFixed(2)}px`);
+};
+
 const applyFitContractState = (host: HTMLElement | null, panel: VisualizerHostPanel): void => {
   if (!host || panel === "total") {
     if (host) {
@@ -226,7 +282,7 @@ const applyFitContractState = (host: HTMLElement | null, panel: VisualizerHostPa
     }
     return;
   }
-  const module = VISUALIZER_REGISTRY.find((entry) => entry.id === panel);
+  const module = resolveVisualizerModule(panel);
   if (!module) {
     host.dataset.v2FitKind = "";
     host.dataset.v2FitOverflow = "";
@@ -283,7 +339,7 @@ const runDevFitDiagnostics = (root: Element, panel: VisualizerHostPanel): void =
   if (!shouldRunDevFitDiagnostics() || panel === "total") {
     return;
   }
-  const module = VISUALIZER_REGISTRY.find((entry) => entry.id === panel);
+  const module = resolveVisualizerModule(panel);
   if (!module || module.fit.overflow !== "forbid_scroll") {
     return;
   }
@@ -360,11 +416,14 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
     } else {
       releaseSwapLock(runtime, host);
     }
+    applyHostPanelHeight(root, activePanel);
     host.dataset.v2VisualizerPanel = activePanel;
     host.dataset.v2VisualizerTransition = transitionPhase;
     host.dataset.v2VisualizerFrom = previousPanel;
     host.dataset.v2VisualizerTo = activePanel;
     host.setAttribute("aria-hidden", "false");
+  } else {
+    applyHostPanelHeight(root, activePanel);
   }
 
   if (graphDevice) {

@@ -40,6 +40,16 @@ export const runUiVisualizerFitContractTests = (): void => {
     "visualizer host defines a shared resting baseline offset token",
   );
   assert.equal(
+    html.includes("--v2-visualizer-panel-height"),
+    true,
+    "visualizer host defines canonical panel-height token",
+  );
+  assert.equal(
+    html.includes("height 320ms cubic-bezier(0.2, 0.72, 0.2, 1)"),
+    true,
+    "visualizer host height transition matches calculator sizing motion curve",
+  );
+  assert.equal(
     html.includes("data-v2-total-footer"),
     true,
     "visualizer host markup includes shared total footer container",

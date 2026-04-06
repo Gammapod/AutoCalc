@@ -19,9 +19,22 @@ export type VisualizerFitStrategy = {
   budget: VisualizerFitBudget;
 };
 
+export type VisualizerCanonicalSize =
+  | {
+    mode: "ratio";
+    ratio: number;
+  }
+  | {
+    mode: "text_budget";
+    minLines: number;
+    targetLines: number;
+    maxLines: number;
+  };
+
 export type VisualizerModule = {
   id: VisualizerId;
   fit: VisualizerFitStrategy;
+  size: VisualizerCanonicalSize;
   render: (root: Element, state: GameState) => void;
   clear: (root: Element) => void;
 };

@@ -109,7 +109,14 @@
         --device-width: clamp(300px, 38vw, 420px);
         --v2-storage-peek: clamp(120px, 18dvh, 180px);
         --v2-feed-visible-rows: 7;
+        --v2-visualizer-fixed-width: 460px;
+        --v2-visualizer-scale: 1;
+        --v2-visualizer-baseline-offset: 12px;
+        --v2-visualizer-inactive-offset: calc(var(--v2-visualizer-baseline-offset) + 16px);
+        --v2-visualizer-footer-height: 30px;
         --v2-visualizer-window-height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
+        --v2-visualizer-effective-height: calc(var(--v2-visualizer-window-height) * var(--v2-visualizer-scale));
+        --v2-visualizer-panel-height: var(--v2-visualizer-effective-height);
         --allocator-surface-top: #8e96a3;
         --allocator-surface-bottom: #6a7281;
         --allocator-surface-stroke: #4e5665;
@@ -474,7 +481,7 @@
         max-height: 0;
         min-height: 0;
         overflow: hidden;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         opacity: 0;
         pointer-events: none;
         transition:
@@ -682,7 +689,9 @@
 
       .display--shared {
         position: relative;
+        height: var(--v2-visualizer-panel-height);
         overflow: hidden;
+        transition: height 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
       }
 
       .v2-visualizer-host {
@@ -1093,9 +1102,10 @@
           grid-template-rows 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
       }
 
-      /* Visualizer is currently body-coupled; keep a dedicated width token for future decoupling. */
+      /* Visualizer window scales from fixed-width and viewport scale tokens. */
+      body[data-ui-shell="mobile"] [data-display-window],
       body[data-ui-shell="desktop"] [data-display-window] {
-        width: min(100%, var(--desktop-visualizer-width));
+        width: min(100%, calc(var(--v2-visualizer-fixed-width) * var(--v2-visualizer-scale)));
         margin-inline: auto;
       }
 
@@ -2188,13 +2198,13 @@
         display: block;
         position: relative;
         margin-bottom: 8px;
-        height: var(--v2-visualizer-window-height);
+        height: var(--v2-visualizer-panel-height);
         opacity: 1;
         transform: translateY(0);
         transform-origin: top center;
         overflow: hidden;
         transition:
-          height 220ms cubic-bezier(0.2, 0.7, 0.1, 1),
+          height 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
           opacity 220ms ease,
           transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
@@ -2206,12 +2216,12 @@
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-transition="exit"],
       body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-transition="exit"] {
-        transform: translateY(12px);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
       }
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"],
       body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"] {
-        height: var(--v2-visualizer-lock-height, var(--v2-visualizer-window-height));
+        height: var(--v2-visualizer-lock-height, var(--v2-visualizer-panel-height));
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
@@ -2219,9 +2229,9 @@
         position: absolute;
         inset: 0;
         margin-bottom: 0;
-        height: var(--v2-visualizer-window-height);
+        height: var(--v2-visualizer-panel-height);
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2230,7 +2240,7 @@
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
-        max-height: var(--v2-visualizer-window-height);
+        max-height: var(--v2-visualizer-panel-height);
         transform: translateY(0);
         opacity: 1;
         pointer-events: auto;
@@ -2239,7 +2249,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .calc-grapher {
         max-height: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         opacity: 0;
         pointer-events: none;
       }
@@ -2249,7 +2259,7 @@
         display: flex;
         position: absolute;
         inset: 0;
-        height: var(--v2-visualizer-window-height);
+        height: var(--v2-visualizer-panel-height);
         overflow: hidden;
         padding: 8px 10px;
         border: 0;
@@ -2262,7 +2272,7 @@
         justify-content: flex-start;
         white-space: pre;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2281,7 +2291,7 @@
         display: flex;
         position: absolute;
         inset: 0;
-        height: var(--v2-visualizer-window-height);
+        height: var(--v2-visualizer-panel-height);
         overflow: hidden;
         padding: 8px 10px;
         border: 0;
@@ -2291,7 +2301,7 @@
         flex-direction: column;
         justify-content: flex-start;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2346,7 +2356,7 @@
         justify-content: center;
         align-items: center;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2371,7 +2381,7 @@
         flex-direction: column;
         gap: 6px;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2394,7 +2404,7 @@
         align-items: center;
         justify-content: center;
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2525,7 +2535,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-table,

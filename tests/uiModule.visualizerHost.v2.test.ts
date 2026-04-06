@@ -119,6 +119,14 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     assert.equal(module.fit.budget.topPx > 0, true, `${module.id} fit budget top is positive`);
     assert.equal(module.fit.budget.bodyPx > 0, true, `${module.id} fit budget body is positive`);
     assert.equal(module.fit.budget.bottomPx > 0, true, `${module.id} fit budget bottom is positive`);
+    assert.equal(["ratio", "text_budget"].includes(module.size.mode), true, `${module.id} visualizer declares canonical size mode`);
+    if (module.size.mode === "ratio") {
+      assert.equal(module.size.ratio > 0, true, `${module.id} visualizer ratio is positive`);
+    } else {
+      assert.equal(module.size.minLines > 0, true, `${module.id} text budget min lines is positive`);
+      assert.equal(module.size.targetLines >= module.size.minLines, true, `${module.id} text target respects min lines`);
+      assert.equal(module.size.maxLines >= module.size.targetLines, true, `${module.id} text max respects target lines`);
+    }
   }
 
   const withGraphOn: GameState = {
@@ -279,6 +287,11 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(renderHost.dataset.v2VisualizerPanel, "graph", "host data state tracks active graph panel");
   assert.equal(renderHost.dataset.v2FitKind, "plot_scale_clip", "host exposes active fit kind");
   assert.equal(renderHost.dataset.v2FitOverflow, "forbid_scroll", "host exposes active overflow contract");
+  assert.equal(
+    renderDisplayWindow.attributes["style:--v2-visualizer-panel-height"],
+    "156.40px",
+    "graph visualizer resolves canonical ratio height token",
+  );
   assert.equal(renderHost.dataset.v2VisualizerFrom, "total", "host tracks previous panel");
   assert.equal(renderHost.dataset.v2VisualizerTo, "graph", "host tracks next panel");
   assert.equal(renderHost.dataset.v2VisualizerTransition, "enter", "total to graph is enter transition");
@@ -314,6 +327,11 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   };
   renderVisualizerHost(renderRoot as unknown as Element, withFeedOn);
   assert.equal(renderHost.dataset.v2FitKind, "text_wrap_clamp", "feed activates text-wrap fit strategy");
+  assert.equal(
+    renderDisplayWindow.attributes["style:--v2-visualizer-panel-height"],
+    "147.00px",
+    "feed visualizer resolves canonical text-budget height token",
+  );
   assert.equal(renderHost.dataset.v2VisualizerTransition, "swap", "graph to feed is swap transition");
   assert.equal(renderHost.attributes["data-v2-visualizer-height-lock"], "true", "swap applies temporary height lock");
   assert.equal(graphClearCalls, 0, "graph panel is retained (not cleared) when inactive during graph-first lifecycle mode");

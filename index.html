@@ -664,9 +664,10 @@
       .display--shared {
         position: relative;
         display: grid;
-        grid-template-rows: var(--v2-visualizer-effective-height) var(--v2-visualizer-footer-height);
+        grid-template-rows: var(--v2-visualizer-panel-height) var(--v2-visualizer-footer-height);
         row-gap: 2px;
         overflow: hidden;
+        transition: grid-template-rows 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
       }
 
       .v2-visualizer-host {
@@ -2197,13 +2198,13 @@
         position: relative;
         margin-bottom: 0;
         width: 100%;
-        height: var(--v2-visualizer-effective-height);
+        height: var(--v2-visualizer-panel-height);
         opacity: 1;
         transform: translateY(0);
         transform-origin: top center;
         overflow: hidden;
         transition:
-          height 220ms cubic-bezier(0.2, 0.7, 0.1, 1),
+          height 320ms cubic-bezier(0.2, 0.72, 0.2, 1),
           opacity 220ms ease,
           transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
@@ -2220,7 +2221,7 @@
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"],
       body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"] {
-        height: var(--v2-visualizer-lock-height, var(--v2-visualizer-effective-height));
+        height: var(--v2-visualizer-lock-height, var(--v2-visualizer-panel-height));
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher,
