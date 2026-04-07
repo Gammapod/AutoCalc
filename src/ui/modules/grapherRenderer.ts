@@ -1,9 +1,11 @@
-import type { GameState } from "../../domain/types.js";
-import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
+﻿import type { GameState } from "../../domain/types.js";
 import { toStepCount } from "../../domain/rollEntries.js";
 import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
 import { ensureChartLoaded } from "../../infra/runtime/lazyAssetLoader.js";
 import { resolveUxRoleColor } from "../shared/readModel.js";
+import { buildGraphPoints, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
+import { resolveGraphLayout } from "./visualizers/graphLayoutModel.js";
+import { clearGraphOverlay, renderGraphOverlay } from "./visualizers/graphOverlayRenderer.js";
 
 type GraphDataset = {
   data: GraphPoint[];
@@ -16,25 +18,16 @@ type GraphDataset = {
 };
 
 type GraphScale = {
-  display?: boolean;
   min?: number;
   max?: number;
+  display?: boolean;
   ticks?: {
-    color?: string;
-    precision?: number;
-    autoSkip?: boolean;
-    padding?: number;
-    maxRotation?: number;
-    minRotation?: number;
-    callback?: (value: string | number) => string | number;
+    display?: boolean;
   };
   grid?: {
-    color?: string | ((context: { tick?: { value?: number | string } }) => string);
-    lineWidth?: number | ((context: { tick?: { value?: number | string } }) => number);
     display?: boolean;
   };
   border?: {
-    color?: string;
     display?: boolean;
   };
 };
@@ -88,10 +81,13 @@ const createGrapherRuntime = (): GrapherModuleState => ({
   graphCanvas: null,
 });
 
-const clearGrapherRuntime = (runtime: GrapherModuleState): void => {
+const clearGrapherRuntime = (runtime: GrapherModuleState, root?: Element): void => {
   runtime.graphChart?.destroy();
   runtime.graphChart = null;
   runtime.graphCanvas = null;
+  if (root) {
+    clearGraphOverlay(root);
+  }
 };
 
 const getGrapherRuntime = (root: Element): GrapherModuleState => {
@@ -102,124 +98,64 @@ const getGrapherRuntime = (root: Element): GrapherModuleState => {
   const created = createGrapherRuntime();
   moduleRuntime.moduleState = created;
   moduleRuntime.dispose = () => {
-    clearGrapherRuntime(created);
+    clearGrapherRuntime(created, root);
     moduleRuntime.moduleState = createGrapherRuntime();
   };
   moduleRuntime.resetForTests = () => {
-    clearGrapherRuntime(created);
+    clearGrapherRuntime(created, root);
   };
   return created;
 };
 
+const resolveCanvasDimensions = (canvas: HTMLCanvasElement): { width: number; height: number } => {
+  const rect = canvas.getBoundingClientRect();
+  const width = Number.isFinite(rect.width) && rect.width > 0 ? rect.width : (canvas.clientWidth || 420);
+  const height = Number.isFinite(rect.height) && rect.height > 0 ? rect.height : (canvas.clientHeight || 250);
+  return { width, height };
+};
+
 const buildGraphOptions = (
   hasPoints: boolean,
-  rollEntries: GameState["calculator"]["rollEntries"],
-  maxXIndex: number,
-  radix: number,
-  documentRef: Document | null,
-): GraphOptions => {
-  const xWindow = buildGraphXWindow(maxXIndex);
-  const bounds = buildGraphYWindow(rollEntries, radix);
-  const defaultColor = resolveUxRoleColor("default", { document: documentRef });
-  const defaultGrid = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.2 });
-  const defaultGridAxis = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.75 });
-  const defaultBorder = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.45 });
-  const defaultWindowMax = buildGraphXWindow(0).max;
-  const makeXAxisTickLabelCallback =
-    (axisMax: number) =>
-    (value: string | number): string => {
-      const numeric = typeof value === "number" ? value : Number(value);
-      if (!Number.isFinite(numeric) || Math.abs(numeric - axisMax) < 1e-9) {
-        return "";
-      }
-      const nearestFive = Math.round(numeric / 5) * 5;
-      if (Math.abs(numeric - nearestFive) > 1e-6) {
-        return "";
-      }
-      return nearestFive.toString();
-    };
-  const makeYAxisTickLabelCallback =
-    (axisMin: number, axisMax: number) =>
-    (value: string | number): string => {
-      const numeric = typeof value === "number" ? value : Number(value);
-      if (!Number.isFinite(numeric)) {
-        return "";
-      }
-      if (Math.abs(numeric - axisMin) < 1e-9 || Math.abs(numeric) < 1e-9 || Math.abs(numeric - axisMax) < 1e-9) {
-        return Math.trunc(numeric).toString();
-      }
-      return "";
-    };
-  return {
-    animation: false,
-    responsive: true,
-    maintainAspectRatio: false,
-    layout: {
-      // Reserve canvas space for axis labels so large values do not clip.
-      padding: {
-        top: 2,
-        right: 10,
-        bottom: 12,
-        left: 10,
-      },
+  layout: ReturnType<typeof resolveGraphLayout>,
+): GraphOptions => ({
+  animation: false,
+  responsive: true,
+  maintainAspectRatio: false,
+  layout: {
+    padding: {
+      left: layout.plot.left,
+      right: layout.width - layout.plot.right,
+      top: layout.plot.top,
+      bottom: layout.height - layout.plot.bottom,
     },
-    plugins: {
-      legend: { display: false },
-      tooltip: { enabled: hasPoints },
+  },
+  plugins: {
+    legend: { display: false },
+    tooltip: { enabled: hasPoints },
+  },
+  scales: {
+    x: {
+      min: layout.xDomain.min,
+      max: layout.xDomain.max,
+      display: false,
+      ticks: { display: false },
+      grid: { display: false },
+      border: { display: false },
     },
-    scales: {
-      x: {
-        min: hasPoints ? xWindow.min : 0,
-        max: hasPoints ? xWindow.max : defaultWindowMax,
-        display: true,
-        ticks: {
-          color: defaultColor,
-          precision: 0,
-          autoSkip: true,
-          padding: 4,
-          maxRotation: 0,
-          minRotation: 0,
-          callback: makeXAxisTickLabelCallback(xWindow.max),
-        },
-        grid: { color: defaultGrid, display: true },
-        border: { color: defaultBorder, display: true },
-      },
-      y: {
-        min: bounds.min,
-        max: bounds.max,
-        display: true,
-        ticks: {
-          color: defaultColor,
-          autoSkip: false,
-          padding: 4,
-          maxRotation: 0,
-          minRotation: 0,
-          callback: makeYAxisTickLabelCallback(bounds.min, bounds.max),
-        },
-        grid: {
-          color: (context: { tick?: { value?: number | string } }) => {
-            const value = context.tick?.value;
-            const numeric = typeof value === "number" ? value : Number(value);
-            return Number.isFinite(numeric) && Math.abs(numeric) < 1e-9
-              ? defaultGridAxis
-              : defaultGrid;
-          },
-          lineWidth: (context: { tick?: { value?: number | string } }) => {
-            const value = context.tick?.value;
-            const numeric = typeof value === "number" ? value : Number(value);
-            return Number.isFinite(numeric) && Math.abs(numeric) < 1e-9 ? 2 : 1;
-          },
-          display: true,
-        },
-        border: { color: defaultBorder, display: true },
-      },
+    y: {
+      min: layout.yDomain.min,
+      max: layout.yDomain.max,
+      display: false,
+      ticks: { display: false },
+      grid: { display: false },
+      border: { display: false },
     },
-  };
-};
+  },
+});
 
 export const clearGrapherV2Module = (root?: Element): void => {
   if (root) {
-    clearGrapherRuntime(getGrapherRuntime(root));
+    clearGrapherRuntime(getGrapherRuntime(root), root);
     return;
   }
   forEachUiRootRuntime((runtime) => {
@@ -266,19 +202,24 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   const points = buildGraphPoints(state.calculator.rollEntries);
   const hasPoints = isGraphRenderable(state.calculator.rollEntries);
   const displayRadix = state.settings.base === "base2" ? 2 : 10;
-  const options = buildGraphOptions(
-    hasPoints,
+  const dimensions = resolveCanvasDimensions(canvas);
+  const layout = resolveGraphLayout(
     state.calculator.rollEntries,
-    toStepCount(state.calculator.rollEntries),
     displayRadix,
-    root.ownerDocument ?? null,
+    toStepCount(state.calculator.rollEntries),
+    dimensions.width,
+    dimensions.height,
   );
-  const defaultColor = resolveUxRoleColor("default", { document: root.ownerDocument ?? null });
-  const analysisColor = resolveUxRoleColor("analysis", { document: root.ownerDocument ?? null });
-  const errorColor = resolveUxRoleColor("error", { document: root.ownerDocument ?? null });
-  const defaultBorderColor = resolveUxRoleColor("default", { document: root.ownerDocument ?? null, alpha01: 0.9 });
-  const analysisBorderColor = resolveUxRoleColor("analysis", { document: root.ownerDocument ?? null, alpha01: 0.9 });
-  const errorBorderColor = resolveUxRoleColor("error", { document: root.ownerDocument ?? null, alpha01: 0.9 });
+
+  const options = buildGraphOptions(hasPoints, layout);
+  const documentRef = root.ownerDocument ?? null;
+  const defaultColor = resolveUxRoleColor("default", { document: documentRef });
+  const analysisColor = resolveUxRoleColor("analysis", { document: documentRef });
+  const errorColor = resolveUxRoleColor("error", { document: documentRef });
+  const defaultBorderColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.9 });
+  const analysisBorderColor = resolveUxRoleColor("analysis", { document: documentRef, alpha01: 0.9 });
+  const errorBorderColor = resolveUxRoleColor("error", { document: documentRef, alpha01: 0.9 });
+
   const pointBackgroundColor = points.map((point) => {
     if (point.kind === "remainder" || point.kind === "imaginary") {
       return analysisColor;
@@ -312,14 +253,21 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
       },
       options,
     });
-    return;
+  } else {
+    runtime.graphChart.data.datasets[0].data = points;
+    runtime.graphChart.data.datasets[0].pointRadius = pointRadius;
+    runtime.graphChart.data.datasets[0].pointHoverRadius = pointHoverRadius;
+    runtime.graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;
+    runtime.graphChart.data.datasets[0].pointBorderColor = pointBorderColor;
+    runtime.graphChart.options = options;
+    runtime.graphChart.update("none");
   }
 
-  runtime.graphChart.data.datasets[0].data = points;
-  runtime.graphChart.data.datasets[0].pointRadius = pointRadius;
-  runtime.graphChart.data.datasets[0].pointHoverRadius = pointHoverRadius;
-  runtime.graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;
-  runtime.graphChart.data.datasets[0].pointBorderColor = pointBorderColor;
-  runtime.graphChart.options = options;
-  runtime.graphChart.update("none");
+  const gridColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.2 });
+  const axisColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.75 });
+  renderGraphOverlay(root, layout, {
+    gridColor,
+    axisColor,
+    labelColor: defaultColor,
+  });
 };

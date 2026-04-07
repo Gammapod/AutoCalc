@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import { clearGrapherV2Module, renderGrapherV2Module } from "../src/ui/modules/grapherRenderer.js";
 import { toExplicitComplexCalculatorValue, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
@@ -49,6 +49,9 @@ export const runUiModuleGrapherV2Tests = (): void => {
 
   const canvas = {
     getContext: () => ({} as CanvasRenderingContext2D),
+    getBoundingClientRect: () => ({ width: 420, height: 250 }),
+    clientWidth: 420,
+    clientHeight: 250,
   } as unknown as Element;
   const rootA: RootLike = {
     querySelector: (selector: string) => (selector === "[data-grapher-canvas]" ? canvas : null),
@@ -80,40 +83,81 @@ export const runUiModuleGrapherV2Tests = (): void => {
       | {
         options?: {
           layout?: { padding?: { bottom?: number; left?: number; right?: number } };
+          plugins?: { tooltip?: { enabled?: boolean } };
           scales?: {
-            x?: { ticks?: { padding?: number; maxRotation?: number; minRotation?: number } };
-            y?: { ticks?: { padding?: number; maxRotation?: number; minRotation?: number } };
+            x?: {
+              display?: boolean;
+              ticks?: { display?: boolean };
+              grid?: { display?: boolean };
+              border?: { display?: boolean };
+            };
+            y?: {
+              display?: boolean;
+              ticks?: { display?: boolean };
+              grid?: { display?: boolean };
+              border?: { display?: boolean };
+            };
           };
         };
+        data?: { datasets?: Array<{ pointRadius?: number | number[]; data?: Array<{ kind?: string }> }> };
       }
       | undefined;
     assert.equal(
-      (firstConfig?.options?.layout?.padding?.bottom ?? 0) > 0,
+      (firstConfig?.options?.layout?.padding?.bottom ?? 0) >= 20,
       true,
       "grapher chart reserves bottom canvas padding so x-axis labels remain visible",
     );
     assert.equal(
       (firstConfig?.options?.layout?.padding?.left ?? 0) > 0 && (firstConfig?.options?.layout?.padding?.right ?? 0) > 0,
       true,
-      "grapher chart reserves side canvas padding so y-axis labels remain visible",
+      "grapher chart reserves side canvas padding for fixed overlay plot geometry",
     );
     assert.equal(
-      firstConfig?.options?.scales?.x?.ticks?.maxRotation,
-      0,
-      "x-axis tick labels are kept horizontal to avoid bottom clipping",
+      firstConfig?.options?.plugins?.tooltip?.enabled,
+      true,
+      "tooltips remain enabled when points are present",
     );
     assert.equal(
-      firstConfig?.options?.scales?.x?.ticks?.padding,
-      4,
-      "x-axis ticks include internal padding from chart area",
+      firstConfig?.options?.scales?.x?.display,
+      false,
+      "x axis is hidden so chart acts as points-only layer",
     );
     assert.equal(
-      firstConfig?.options?.scales?.y?.ticks?.padding,
-      4,
-      "y-axis ticks include internal padding from chart area",
+      firstConfig?.options?.scales?.y?.display,
+      false,
+      "y axis is hidden so chart acts as points-only layer",
     );
-    const firstDataset = (firstConfig as { data?: { datasets?: Array<{ pointRadius?: number | number[]; data?: Array<{ kind?: string }> }> } })
-      ?.data?.datasets?.[0];
+    assert.equal(
+      firstConfig?.options?.scales?.x?.ticks?.display,
+      false,
+      "x tick labels are disabled in chart layer",
+    );
+    assert.equal(
+      firstConfig?.options?.scales?.y?.ticks?.display,
+      false,
+      "y tick labels are disabled in chart layer",
+    );
+    assert.equal(
+      firstConfig?.options?.scales?.x?.grid?.display,
+      false,
+      "x grid lines are disabled in chart layer",
+    );
+    assert.equal(
+      firstConfig?.options?.scales?.y?.grid?.display,
+      false,
+      "y grid lines are disabled in chart layer",
+    );
+    assert.equal(
+      firstConfig?.options?.scales?.x?.border?.display,
+      false,
+      "x border is disabled in chart layer",
+    );
+    assert.equal(
+      firstConfig?.options?.scales?.y?.border?.display,
+      false,
+      "y border is disabled in chart layer",
+    );
+    const firstDataset = firstConfig?.data?.datasets?.[0];
     const radii = Array.isArray(firstDataset?.pointRadius) ? firstDataset?.pointRadius : [];
     const kinds = (firstDataset?.data ?? []).map((point) => point.kind ?? "");
     const imaginaryIndex = kinds.indexOf("imaginary");
@@ -138,5 +182,3 @@ export const runUiModuleGrapherV2Tests = (): void => {
     clearGrapherV2Module();
   }
 };
-
-

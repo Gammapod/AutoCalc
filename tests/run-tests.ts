@@ -49,6 +49,7 @@ import { runUiShellTouchRearrangeCancelTests } from "./uiShell.touchRearrange.ca
 import { runUiShellTouchRearrangeGestureLockTests } from "./uiShell.touchRearrange.gestureLock.test.js";
 import { runUiShellTouchRearrangeBottomSnapGateTests } from "./uiShell.touchRearrange.bottomSnapGate.test.js";
 import { runUiModuleGrapherV2Tests } from "./uiModule.grapher.v2.test.js";
+import { runUiModuleGraphLayoutModelV2Tests } from "./uiModule.graphLayoutModel.v2.test.js";
 import { runUiModuleVisualizerHostV2Tests } from "./uiModule.visualizerHost.v2.test.js";
 import { runUiModuleEigenAllocatorRendererV2Tests } from "./uiModule.eigenAllocatorRenderer.v2.test.js";
 import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
@@ -198,6 +199,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui-module/number-line-model-v2", runUiModuleNumberLineModelV2Tests],
   ["ui-module/number-line-renderer-v2", runUiModuleNumberLineRendererV2Tests],
   ["ui-module/grapher-v2", runUiModuleGrapherV2Tests],
+  ["ui-module/graph-layout-model-v2", runUiModuleGraphLayoutModelV2Tests],
   ["ui-module/eigen-allocator-renderer-v2", runUiModuleEigenAllocatorRendererV2Tests],
   ["ui-module/visualizer-host-v2", runUiModuleVisualizerHostV2Tests],
   ["ui/layout-engine", runUiLayoutEngineTests],
