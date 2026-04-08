@@ -160,7 +160,7 @@ export const runUiModuleGrapherV2Tests = (): void => {
     const firstDataset = firstConfig?.data?.datasets?.[0];
     const radii = Array.isArray(firstDataset?.pointRadius) ? firstDataset?.pointRadius : [];
     const kinds = (firstDataset?.data ?? []).map((point) => point.kind ?? "");
-    const imaginaryIndex = kinds.indexOf("imaginary");
+    const imaginaryIndex = kinds.lastIndexOf("imaginary");
     const rollIndex = kinds.indexOf("roll");
     assert.equal(imaginaryIndex > -1, true, "complex roll rows include imaginary point entries");
     assert.equal(rollIndex > -1, true, "complex roll rows include real roll point entries");

@@ -108,12 +108,33 @@ export const runGraphDisplayTests = (): void => {
     withComplexRows,
     [
       { x: 0, y: 0, kind: "seed", hasError: false },
+      { x: 0, y: 0, kind: "imaginary", hasError: false },
       { x: 1, y: 7, kind: "roll", hasError: false },
       { x: 1, y: -3, kind: "imaginary", hasError: false },
       { x: 2, y: -2, kind: "roll", hasError: false },
       { x: 2, y: 5, kind: "imaginary", hasError: false },
     ],
-    "complex roll rows map real and imaginary components as separate points at the same x index",
+    "graphs with non-zero imaginary components include an imaginary channel point at every plotted x, including zeros",
+  );
+
+  const withoutNonZeroImaginary = buildGraphPoints([
+    e(r(0n)),
+    e(
+      toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 7n, den: 1n }),
+        toRationalScalarValue({ num: 0n, den: 1n }),
+      ),
+    ),
+    e(r(2n)),
+  ]);
+  assert.deepEqual(
+    withoutNonZeroImaginary,
+    [
+      { x: 0, y: 0, kind: "seed", hasError: false },
+      { x: 1, y: 7, kind: "roll", hasError: false },
+      { x: 2, y: 2, kind: "roll", hasError: false },
+    ],
+    "zero-imaginary points stay hidden when no non-zero imaginary values are present in the graph",
   );
 
   assert.deepEqual(buildGraphXWindow(0), { min: 0, max: 25 }, "empty roll uses default 0..25 x window");

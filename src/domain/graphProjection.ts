@@ -45,7 +45,7 @@ const calculatorValueToRealImag = (value: CalculatorValue): { re: number; im: nu
   return { re: real, im: 0 };
 };
 
-export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
+export const buildRawGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
   const points: GraphPoint[] = [];
   const seed = getSeedRow(rollEntries)?.y;
   const seedPair = seed ? calculatorValueToRealImag(seed) : null;
@@ -106,6 +106,41 @@ export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
   }
   return points;
 };
+
+export const expandImaginaryChannelPoints = (points: readonly GraphPoint[]): GraphPoint[] => {
+  const hasNonZeroImaginary = points.some((point) => point.kind === "imaginary" && Math.abs(point.y) > 0);
+  if (!hasNonZeroImaginary) {
+    return [...points];
+  }
+
+  const out: GraphPoint[] = [];
+  let index = 0;
+  while (index < points.length) {
+    const start = index;
+    const currentX = points[index].x;
+    while (index < points.length && points[index].x === currentX) {
+      index += 1;
+    }
+    const group = points.slice(start, index);
+    out.push(...group);
+
+    const hasAnchorPoint = group.some((point) => point.kind === "seed" || point.kind === "roll");
+    const hasImaginaryPoint = group.some((point) => point.kind === "imaginary");
+    if (hasAnchorPoint && !hasImaginaryPoint) {
+      out.push({
+        x: currentX,
+        y: 0,
+        kind: "imaginary",
+        hasError: false,
+      });
+    }
+  }
+
+  return out;
+};
+
+export const buildGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] =>
+  expandImaginaryChannelPoints(buildRawGraphPoints(rollEntries));
 
 export const isGraphRenderable = (rollEntries: RollEntry[]): boolean =>
   buildGraphPoints(rollEntries).length > 0;

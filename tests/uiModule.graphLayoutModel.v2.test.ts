@@ -35,12 +35,12 @@ export const runUiModuleGraphLayoutModelV2Tests = (): void => {
   );
   assert.deepEqual(complexRange.yDomain, { min: -99, max: 9999 }, "complex rolls use both real and imaginary components for bounds");
   assert.equal(complexRange.hasImaginary, true, "imaginary point presence is tracked from plotted points");
-  assert.equal(complexRange.boundaryLabels.top, "9999\u00d7i", "nonzero top boundary appends Ã—i when imaginary points exist");
-  assert.equal(complexRange.boundaryLabels.bottom, "-99\u00d7i", "nonzero bottom boundary appends Ã—i when imaginary points exist");
+  assert.equal(complexRange.boundaryLabels.top, "9999\u00d7i", "nonzero top boundary appends ×i when imaginary points exist");
+  assert.equal(complexRange.boundaryLabels.bottom, "-99\u00d7i", "nonzero bottom boundary appends ×i when imaginary points exist");
 
   const complexWithoutImagPoints = resolveGraphLayout([entry(c(10n, 0n))], 10, 1, 420, 250);
   assert.equal(complexWithoutImagPoints.hasImaginary, false, "zero imaginary components do not trigger imaginary channel");
-  assert.equal(complexWithoutImagPoints.boundaryLabels.top, "99", "no Ã—i suffix is applied when no imaginary points are plotted");
+  assert.equal(complexWithoutImagPoints.boundaryLabels.top, "99", "no ×i suffix is applied when no imaginary points are plotted");
 
   const shortLabels = resolveGraphLayout([entry(r(9n))], 10, 2, 420, 250);
   const longLabels = resolveGraphLayout([entry(r(999999n)), entry(r(-99999n))], 10, 2, 420, 250);
@@ -48,3 +48,4 @@ export const runUiModuleGraphLayoutModelV2Tests = (): void => {
   assert.equal(shortLabels.plot.right, longLabels.plot.right, "right plot edge is fixed independent of label length");
   assert.equal(shortLabels.style.overhangPx, longLabels.style.overhangPx, "grid overhang policy is deterministic");
 };
+

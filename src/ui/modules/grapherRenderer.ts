@@ -158,10 +158,10 @@ export const clearGrapherV2Module = (root?: Element): void => {
     clearGrapherRuntime(getGrapherRuntime(root), root);
     return;
   }
-  forEachUiRootRuntime((runtime) => {
+  forEachUiRootRuntime((runtime, runtimeRoot) => {
     const grapherRuntime = runtime.grapher.moduleState;
     if (grapherRuntime) {
-      clearGrapherRuntime(grapherRuntime);
+      clearGrapherRuntime(grapherRuntime, runtimeRoot);
     }
   });
 };

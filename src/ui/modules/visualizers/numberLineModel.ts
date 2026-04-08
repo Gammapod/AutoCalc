@@ -4,6 +4,7 @@ import { expressionToRational } from "../../../domain/expression.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import { applyAutoStepTick } from "../../../domain/reducer.input.core.js";
 import { handleEqualsInput } from "../../../domain/reducer.input.handlers.execution.js";
+import { resolveSymmetricTierRange } from "./plotPolicy.js";
 
 export type NumberLineMode = "real" | "complex_grid";
 export type Point = { x: number; y: number };
@@ -241,15 +242,7 @@ export const resolvePlotRangeForState = (state: GameState): number => {
   if (!Number.isFinite(maxAbsComponent) || maxAbsComponent < 0) {
     maxAbsComponent = 0;
   }
-
-  let range = radix - 1;
-  while (maxAbsComponent > range) {
-    range = (range * radix) + (radix - 1);
-    if (!Number.isFinite(range) || range <= 0) {
-      return radix === 2 ? 1 : 9;
-    }
-  }
-  return range;
+  return resolveSymmetricTierRange(maxAbsComponent, radix);
 };
 
 export const resolveVectorEndpoint = (

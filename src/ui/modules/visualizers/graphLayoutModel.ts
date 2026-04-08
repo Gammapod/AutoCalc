@@ -1,5 +1,6 @@
-﻿import type { RollEntry } from "../../../domain/types.js";
+import type { RollEntry } from "../../../domain/types.js";
 import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow } from "./graphModel.js";
+import { formatBoundaryLabel } from "./plotPolicy.js";
 
 export type GraphDomain = { min: number; max: number };
 
@@ -46,6 +47,7 @@ const TOP_GUTTER_PX = 18;
 const BOTTOM_GUTTER_PX = 18;
 const TOP_PLOT_OFFSET_PX = 4;
 const BOTTOM_PLOT_OFFSET_PX = 4;
+const GRAPH_VERTICAL_SHIFT_PX = 4;
 const MIN_WIDTH_PX = 160;
 const MIN_HEIGHT_PX = 120;
 
@@ -85,14 +87,6 @@ const buildYTicks = (min: number, max: number): GraphGridTick[] => {
   return dedupeSorted(values).map((value) => ({ value }));
 };
 
-const formatBoundary = (value: number, hasImaginary: boolean): string => {
-  if (!Number.isFinite(value) || Math.abs(value) < 1e-9) {
-    return "";
-  }
-  const base = Math.trunc(value).toString();
-  return hasImaginary ? `${base}\u00d7i` : base;
-};
-
 export const resolveGraphLayout = (
   rollEntries: RollEntry[],
   radix: number,
@@ -109,8 +103,8 @@ export const resolveGraphLayout = (
   const plot: GraphPlotRect = {
     left: LEFT_GUTTER_PX,
     right: safeWidth - RIGHT_GUTTER_PX,
-    top: TOP_GUTTER_PX + TOP_PLOT_OFFSET_PX,
-    bottom: safeHeight - BOTTOM_GUTTER_PX - BOTTOM_PLOT_OFFSET_PX,
+    top: TOP_GUTTER_PX + TOP_PLOT_OFFSET_PX - GRAPH_VERTICAL_SHIFT_PX,
+    bottom: safeHeight - BOTTOM_GUTTER_PX - BOTTOM_PLOT_OFFSET_PX - GRAPH_VERTICAL_SHIFT_PX,
   };
 
   return {
@@ -122,16 +116,17 @@ export const resolveGraphLayout = (
     xTicks: buildXTicks(xDomain.min, xDomain.max),
     yTicks: buildYTicks(yDomain.min, yDomain.max),
     boundaryLabels: {
-      top: formatBoundary(yDomain.max, hasImaginary),
-      bottom: formatBoundary(yDomain.min, hasImaginary),
-      zero: "0",
+      top: formatBoundaryLabel(yDomain.max, { appendImaginaryUnit: hasImaginary, zeroPolicy: "empty" }),
+      bottom: formatBoundaryLabel(yDomain.min, { appendImaginaryUnit: hasImaginary, zeroPolicy: "empty" }),
+      zero: formatBoundaryLabel(0, { zeroPolicy: "zero" }),
     },
     hasImaginary,
     style: {
       overhangPx: 5,
       fontSizePx: 11,
-      topLabelInsetPx: 8,
-      bottomLabelInsetPx: 8,
+      topLabelInsetPx: 8 - GRAPH_VERTICAL_SHIFT_PX,
+      bottomLabelInsetPx: 8 + GRAPH_VERTICAL_SHIFT_PX,
     },
   };
 };
+

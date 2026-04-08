@@ -1,7 +1,6 @@
 import type { UiRootRuntime } from "./types.js";
 
-const runtimeByRoot = new WeakMap<Element, UiRootRuntime>();
-const runtimes = new Set<UiRootRuntime>();
+const runtimeByRoot = new Map<Element, UiRootRuntime>();
 
 const createRootRuntime = (): UiRootRuntime => ({
   calculator: {
@@ -44,7 +43,6 @@ export const getOrCreateRuntime = (root: Element): UiRootRuntime => {
   }
   const created = createRootRuntime();
   runtimeByRoot.set(root, created);
-  runtimes.add(created);
   return created;
 };
 
@@ -63,11 +61,10 @@ export const disposeRuntime = (root: Element): void => {
   runtime.grapher.dispose();
   runtime.shell.dispose();
   runtimeByRoot.delete(root);
-  runtimes.delete(runtime);
 };
 
 export const resetAllUiRuntimeForTests = (): void => {
-  for (const runtime of runtimes) {
+  for (const runtime of runtimeByRoot.values()) {
     runtime.calculator.moduleState = null;
     runtime.calculator.layoutState = null;
     runtime.storage.moduleState = null;
@@ -84,8 +81,8 @@ export const resetAllUiRuntimeForTests = (): void => {
   }
 };
 
-export const forEachUiRootRuntime = (visitor: (runtime: UiRootRuntime) => void): void => {
-  for (const runtime of runtimes) {
-    visitor(runtime);
+export const forEachUiRootRuntime = (visitor: (runtime: UiRootRuntime, root: Element) => void): void => {
+  for (const [root, runtime] of runtimeByRoot.entries()) {
+    visitor(runtime, root);
   }
 };

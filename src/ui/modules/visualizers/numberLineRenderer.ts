@@ -11,6 +11,7 @@ import {
   type Point,
   type Segment,
 } from "./numberLineModel.js";
+import { formatBoundaryLabel, NUMBER_LINE_REAL_LABEL_FIT } from "./plotPolicy.js";
 
 type AxisKey = "x" | "y";
 export type NumberLineLabelZone = "real_left" | "real_right" | "imag_top" | "imag_bottom";
@@ -251,8 +252,8 @@ export const resolveNumberLineLabels = (
   range: number,
   geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
 ): NumberLineLabelSpec[] => {
-  const leftLabel = `-${range}`;
-  const rightLabel = `${range}`;
+  const leftLabel = formatBoundaryLabel(-range, { zeroPolicy: "zero" });
+  const rightLabel = formatBoundaryLabel(range, { zeroPolicy: "zero" });
   const labels: NumberLineLabelSpec[] = [
     {
       zone: "real_left",
@@ -261,8 +262,8 @@ export const resolveNumberLineLabels = (
       y: 16.8,
       anchor: "start",
       fitPolicy: "constrain_spacing",
-      fitMaxWidthUnits: 16,
-      fitMinLength: 6,
+      fitMaxWidthUnits: NUMBER_LINE_REAL_LABEL_FIT.maxWidthUnits,
+      fitMinLength: NUMBER_LINE_REAL_LABEL_FIT.minLength,
     },
     {
       zone: "real_right",
@@ -271,8 +272,8 @@ export const resolveNumberLineLabels = (
       y: 16.8,
       anchor: "end",
       fitPolicy: "constrain_spacing",
-      fitMaxWidthUnits: 16,
-      fitMinLength: 6,
+      fitMaxWidthUnits: NUMBER_LINE_REAL_LABEL_FIT.maxWidthUnits,
+      fitMinLength: NUMBER_LINE_REAL_LABEL_FIT.minLength,
     },
   ];
 
@@ -280,7 +281,7 @@ export const resolveNumberLineLabels = (
     labels.push(
       {
         zone: "imag_top",
-        text: `${rightLabel}\u00d7i`,
+        text: formatBoundaryLabel(range, { appendImaginaryUnit: true, zeroPolicy: "zero" }),
         x: geometry.vertical.axis.from.x,
         y: -40.6,
         anchor: "start",
@@ -288,7 +289,7 @@ export const resolveNumberLineLabels = (
       },
       {
         zone: "imag_bottom",
-        text: `${leftLabel}\u00d7i`,
+        text: formatBoundaryLabel(-range, { appendImaginaryUnit: true, zeroPolicy: "zero" }),
         x: geometry.vertical.axis.to.x,
         y: 66.2,
         anchor: "start",
