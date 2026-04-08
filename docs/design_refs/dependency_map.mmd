@@ -45,6 +45,7 @@ flowchart TD
         Bnotp
         Band
         Bor
+        Bifelse
 
         subgraph Comparisons ["≤"]
         Bnotgt
@@ -214,25 +215,29 @@ flowchart TD
     Mdiv -->|n ÷ 0| Bnotp["¬ p"]
     %% Primitive
     %% Expanded form `[ ⊥ ? 1 : ⊥ ]`
-    Bnotp --> Band["p ∧ q"]
-    %% Expanded form `[ ¬¬(p + q) ]`
-    Band --> Bor["p ∨ q"]
-    %% Expanded form `[ ¬(¬p ∧ ¬q)) ]`
-
-    Lminus --> Bnotgt["a ≤ b"]
+    Bifelse["p ⩣ q"]
     %% Primitive
-    %% Expanded form `[ ((a - b) ≤ 0) ? 1 : ⊥ ]`
+    %% Expanded form `[ p ? p : q ]`
+
+    Bifelse --> Bor["p ∨ q"]
+    %% Expanded form `[ ¬¬(p ⩣ q) ]`
+    Bor --> Band["p ∧ q"]
+    %% Expanded form `[ ¬(¬p ∨ ¬q) ]`
+    
     Bnotp --> Beq["a ≡ b"]
     %% Expanded form `[ ¬¬(1/(a-b)) ]`
-    Beq --> Bless
-    Band --> Bless
-    Bnotgt --> Bless
-    Bless["a < b"]
-    %% Expanded form `[ ¬(a ≡ b) ∧ (a ≤ b)]
-    Bless --> Bmax["a ╧ b"]
-    %% Expanded form `[ ((a < b) × b) + ¬((a ≤ b) × a) ]`
-    Bless --> Bminim["a ╤ b"]
-    %% Expanded form `[ ((a < b) × a) + ¬((a ≤ b) × b) ]`
+    Mmodulus --> Bless["a < b"]
+    %% Expanded form `[ ¬¬(1 / ((b - a) + |b - a|)) ]`
+    Beq --> Bnotgt
+    Bless --> Bnotgt["a ≤ b"]
+    %% Expanded form `[ (a < b) ∨ (a ≡ b) ]`
+    
+    Bifelse --> Bmax
+    Bless --> Bmax["a ⫨ b"]
+    %% Expanded form `[ ((a < b) × b) ⩣ ¬((a ≤ b) × a) ]`
+    Bifelse --> Bminim
+    Bless --> Bminim["a ⫧ b"]
+    %% Expanded form `[ ((a < b) × a) ⩣ ¬((a ≤ b) × b) ]`
 %% 
 
 %%     subgraph Digits ["Digit Manipulation"]
@@ -274,11 +279,11 @@ flowchart TD
     %% Pgcd["⋀"]
     %% %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
     %% Plcm["⋁"]
-    %% Expanded form `[ ∏p^(e_a ╧ e_b) ]`    
+    %% Expanded form `[ ∏p^(e_a ⫨ e_b) ]`    
 %% end
-%% Snthprime --> Ptotient
-%% Snthprime --> Sindexofp
-%% Pprime_expansion --> Pomega
+%% Snthprime > Ptotient
+%% Snthp-ime --> Sindexofp
+%% Pprime_expansion --t Pomega
 %% Sindexofp --> Pprime_expansion
 %% Snthprime --> Pgcd
 %% Pexponent --> Pgcd
