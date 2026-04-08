@@ -321,6 +321,7 @@ const normalizeActiveVisualizer = (value: unknown): ActiveVisualizer | null => {
   if (
     value === "total" ||
     value === "graph" ||
+    value === "circle" ||
     value === "feed" ||
     value === "title" ||
     value === "help" ||

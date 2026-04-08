@@ -140,9 +140,78 @@ body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="fo
   overflow: hidden;
 }
 
+body[data-ui-shell="mobile"] .v2-circle-panel,
+body[data-ui-shell="desktop"] .v2-circle-panel {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  padding: 8px 10px 30px;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(var(--v2-visualizer-inactive-offset));
+  pointer-events: none;
+  transition:
+    opacity 220ms ease,
+    transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+
+body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="circle"] .v2-circle-panel,
+body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="circle"] .v2-circle-panel {
+  opacity: 1;
+  transform: translateY(var(--v2-visualizer-baseline-offset));
+  pointer-events: auto;
+}
+
+body[data-ui-shell="mobile"] .v2-circle-plot,
+body[data-ui-shell="desktop"] .v2-circle-plot {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+body[data-ui-shell="mobile"] .v2-circle-grid,
+body[data-ui-shell="desktop"] .v2-circle-grid {
+  fill: none;
+  stroke: var(--ux-role-default-color);
+  stroke-width: 0.9;
+}
+
+body[data-ui-shell="mobile"] .v2-circle-theta-zero,
+body[data-ui-shell="desktop"] .v2-circle-theta-zero {
+  stroke: var(--ux-role-default-color);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  opacity: 0.2;
+}
+
+body[data-ui-shell="mobile"] .v2-circle-center-dot,
+body[data-ui-shell="desktop"] .v2-circle-center-dot {
+  fill: var(--ux-role-default-color);
+}
+
+body[data-ui-shell="mobile"] .v2-circle-radius-label,
+body[data-ui-shell="desktop"] .v2-circle-radius-label {
+  fill: var(--ux-role-default-color);
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+  font-size: 3px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.015em;
+  user-select: none;
+}
+
+body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-circle-panel,
+body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-circle-panel {
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   body[data-ui-shell="mobile"] .v2-number-line-panel,
-  body[data-ui-shell="desktop"] .v2-number-line-panel {
+  body[data-ui-shell="desktop"] .v2-number-line-panel,
+  body[data-ui-shell="mobile"] .v2-circle-panel,
+  body[data-ui-shell="desktop"] .v2-circle-panel {
     transition-duration: 1ms;
     transform: none;
   }

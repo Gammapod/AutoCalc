@@ -21,6 +21,7 @@ import {
   renderNumberLineVisualizerPanel,
 } from "./numberLineRenderer.js";
 import { resolveNumberLineMode } from "./numberLineModel.js";
+import { clearCircleVisualizerPanel, renderCircleVisualizerPanel } from "./circleRenderer.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -136,6 +137,20 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
         : { mode: "ratio", ratio: 0.29 },
     render: renderNumberLineVisualizerPanel,
     clear: clearNumberLineVisualizerPanel,
+  },
+  {
+    id: "circle",
+    fit: {
+      kind: "plot_scale_clip",
+      overflow: "forbid_scroll",
+      budget: { topPx: 8, bodyPx: 118, bottomPx: 8 },
+    },
+    size: {
+      mode: "ratio",
+      ratio: 1,
+    },
+    render: renderCircleVisualizerPanel,
+    clear: clearCircleVisualizerPanel,
   },
   {
     id: "eigen_allocator",

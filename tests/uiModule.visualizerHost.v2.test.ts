@@ -112,8 +112,8 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total");
   assert.deepEqual(
     VISUALIZER_REGISTRY.map((module) => module.id),
-    ["graph", "feed", "title", "release_notes", "help", "factorization", "number_line", "eigen_allocator", "algebraic"],
-    "visualizer registry preserves graph/feed/title/release-notes/help/factorization/number-line order with eigen allocator and algebraic support",
+    ["graph", "feed", "title", "release_notes", "help", "factorization", "number_line", "circle", "eigen_allocator", "algebraic"],
+    "visualizer registry preserves graph/feed/title/release-notes/help/factorization/number-line/circle order with eigen allocator and algebraic support",
   );
   for (const module of VISUALIZER_REGISTRY) {
     assert.equal(module.fit.overflow, "forbid_scroll", `${module.id} visualizer forbids scroll fallback`);
@@ -193,6 +193,14 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     },
   };
   assert.equal(resolveActiveVisualizerPanel(withReleaseNotesSelected), "release_notes", "release notes visualizer resolves to release notes panel");
+  const withCircleSelected: GameState = {
+    ...base,
+    settings: {
+      ...base.settings,
+      visualizer: "circle",
+    },
+  };
+  assert.equal(resolveActiveVisualizerPanel(withCircleSelected), "circle", "circle visualizer resolves to circle panel");
 
   const withEigenSelected: GameState = {
     ...base,
@@ -222,6 +230,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const renderHelpPanel = createFakeElement();
   const renderFactorizationPanel = createFakeElement();
   const renderNumberLinePanel = createFakeElement();
+  const renderCirclePanel = createFakeElement();
   const renderEigenAllocatorPanel = createFakeElement();
   const renderAlgebraicPanel = createFakeElement();
   const renderTotalPanel = createFakeElement();
@@ -259,6 +268,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       }
       if (selector === "[data-v2-number-line-panel]") {
         return renderNumberLinePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-circle-panel]") {
+        return renderCirclePanel as unknown as Element;
       }
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return renderEigenAllocatorPanel as unknown as Element;
@@ -364,6 +376,15 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
     "number-line complex mode resolves square ratio and is not capped by prior global max clamp",
   );
 
+  renderVisualizerHost(renderRoot as unknown as Element, withCircleSelected);
+  assert.equal(
+    renderDisplayWindow.attributes["style:--v2-visualizer-panel-height"],
+    "460.00px",
+    "circle visualizer resolves square ratio height",
+  );
+  assert.equal(renderGraphDevice.attributes["aria-hidden"], "true", "graph device stays hidden for circle visualizer");
+  assert.equal(renderCirclePanel.attributes["aria-hidden"], "false", "circle panel is shown for circle visualizer");
+
   renderVisualizerHost(renderRoot as unknown as Element, base);
   assert.equal(renderHost.dataset.v2VisualizerTransition, "exit", "visualizer to total is exit transition");
 
@@ -375,6 +396,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   const helpPanel = createFakeElement();
   const factorizationPanel = createFakeElement();
   const numberLinePanel = createFakeElement();
+  const circlePanel = createFakeElement();
   const eigenAllocatorPanel = createFakeElement();
   const algebraicPanel = createFakeElement();
   const totalPanel = createFakeElement();
@@ -411,6 +433,9 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
       if (selector === "[data-v2-number-line-panel]") {
         return numberLinePanel as unknown as Element;
       }
+      if (selector === "[data-v2-circle-panel]") {
+        return circlePanel as unknown as Element;
+      }
       if (selector === "[data-v2-eigen-allocator-panel]") {
         return eigenAllocatorPanel as unknown as Element;
       }
@@ -429,6 +454,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(helpPanel.innerHTML, "", "clearVisualizerHost clears help panel");
   assert.equal(factorizationPanel.innerHTML, "", "clearVisualizerHost clears factorization panel");
   assert.equal(numberLinePanel.innerHTML, "", "clearVisualizerHost clears number-line panel");
+  assert.equal(circlePanel.innerHTML, "", "clearVisualizerHost clears circle panel");
   assert.equal(eigenAllocatorPanel.innerHTML, "", "clearVisualizerHost clears eigen allocator panel");
   assert.equal(algebraicPanel.innerHTML, "", "clearVisualizerHost clears algebraic panel");
   assert.equal(feedPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides feed panel");
@@ -437,6 +463,7 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   assert.equal(helpPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides help panel");
   assert.equal(factorizationPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides factorization panel");
   assert.equal(numberLinePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides number-line panel");
+  assert.equal(circlePanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides circle panel");
   assert.equal(eigenAllocatorPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides eigen allocator panel");
   assert.equal(algebraicPanel.attributes["aria-hidden"], "true", "clearVisualizerHost hides algebraic panel");
   assert.equal(graphDevice.attributes["aria-hidden"], "true", "clearVisualizerHost hides graph panel");

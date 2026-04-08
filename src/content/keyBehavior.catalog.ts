@@ -250,6 +250,13 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
   },
   {
+    key: KEY_ID.viz_circle,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
     key: KEY_ID.viz_eigen_allocator,
     lockModel: "unlockable",
     unlockPathPolicy: "none_planned",
