@@ -8,13 +8,12 @@ export const releaseNotes: ReleaseNotesCatalog = {
       id: "release_v1_0_0",
       releaseVersion: "v1.0.0",
       channel: "released",
-      title: "Exact 15-Degree Rotation Runtime",
+      title: "Real rotation implemented.",
       summary:
-        "Introduces exact algebraic scalar handling for 15-degree rotation and closes key complex-circle execution gaps.",
+        "Last major design hurdle cleared; we are now in Alpha.",
       bullets: [
-        "Added exact unary 15-degree rotation behavior with deterministic inverse-stage support.",
-        "Circle and number-line/graph projections now correctly render and project algebraic scalar outputs.",
-        "Runtime and contract coverage expanded across engine, reducer-input, roll-display, and circle-renderer suites.",
+        "Circle Visualizer.",
+        "Rotation supported in 15-degree steps.",
       ],
     },
     {
