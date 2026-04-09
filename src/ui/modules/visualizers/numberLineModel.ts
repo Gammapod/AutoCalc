@@ -1,7 +1,7 @@
 import type { CalculatorValue, GameState, ScalarValue } from "../../../domain/types.js";
 import { isScalarValueZero } from "../../../domain/calculatorValue.js";
 import { expressionToRational } from "../../../domain/expression.js";
-import { algebraicToRational } from "../../../domain/algebraicScalar.js";
+import { algebraicToApproxNumber, algebraicToRational } from "../../../domain/algebraicScalar.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import { applyAutoStepTick } from "../../../domain/reducer.input.core.js";
 import { handleEqualsInput } from "../../../domain/reducer.input.handlers.execution.js";
@@ -105,10 +105,13 @@ const toScalarNumber = (value: ScalarValue): number | null => {
   }
   if (value.kind === "alg") {
     const asRational = algebraicToRational(value.value);
-    if (!asRational || asRational.den === 0n) {
-      return null;
+    if (asRational) {
+      if (asRational.den === 0n) {
+        return null;
+      }
+      return Number(asRational.num) / Number(asRational.den);
     }
-    return Number(asRational.num) / Number(asRational.den);
+    return algebraicToApproxNumber(value.value);
   }
   const asRational = expressionToRational(value.value);
   if (!asRational || asRational.den === 0n) {

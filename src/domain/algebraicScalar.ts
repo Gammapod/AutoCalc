@@ -79,6 +79,18 @@ export const algebraicToRational = (value: AlgebraicValue): RationalValue | null
   return normalized.one ? normalizeRational(normalized.one) : { num: 0n, den: 1n };
 };
 
+const rationalToNumber = (value: RationalValue): number =>
+  Number(value.num) / Number(value.den);
+
+export const algebraicToApproxNumber = (value: AlgebraicValue): number => {
+  const normalized = normalizeAlgebraicValue(value);
+  const one = normalized.one ? rationalToNumber(normalized.one) : 0;
+  const sqrt2 = normalized.sqrt2 ? rationalToNumber(normalized.sqrt2) * Math.SQRT2 : 0;
+  const sqrt3 = normalized.sqrt3 ? rationalToNumber(normalized.sqrt3) * Math.sqrt(3) : 0;
+  const sqrt6 = normalized.sqrt6 ? rationalToNumber(normalized.sqrt6) * Math.sqrt(6) : 0;
+  return one + sqrt2 + sqrt3 + sqrt6;
+};
+
 export const isAlgebraicZero = (value: AlgebraicValue): boolean => {
   const normalized = normalizeAlgebraicValue(value);
   return !normalized.one && !normalized.sqrt2 && !normalized.sqrt3 && !normalized.sqrt6;
