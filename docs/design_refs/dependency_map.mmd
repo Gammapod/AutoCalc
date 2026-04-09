@@ -6,13 +6,6 @@
 %% 2. Operators can be unary (takes previous operator result) or binary (takes previous operator result and second operand)
 %% 3. User enters initial seed value, operators, and binary operands. A combination operator and second operand are a "operation slot"
 %% 4. Values for seeds and binary operands can be digits 0-9
-%% EXPERIMENTAL:
-%% 5. The user can also enter Domains, which modifies the operation to make it an N-ary operation (examples: Σℕ or Πℙ), which repeat the operation across the domain.
-%% Workflow example:
-%% User enters "5 [ + 6 ]" (would resolve to 11), then presses the "Σℕ" key, which changes the input to "5 [ + Σℕ{1..6} ]" (would resolve to 26)
-%% Second example: 
-%% New unary operator Mfact["n!"]
-%% Expanded form `5 [ ! ]` -> `[ Πℕ{1..5} ]` (would resolve to 120)
 %% 
 %% Theoretical progression path:
 %% - Every subgraph defines its own calculator, which starts with its own settings, primitives, and visualizer locked in place (at first).
@@ -21,31 +14,30 @@
 
 flowchart TD
 
-    subgraph Step_Identities ["n"]
-        Sinc
-        Sdec
+    subgraph Identities ["n"]
+        Iprime
+        Inat
+        Irat
+        Iint
+        Irad
+        Iimag
+        Icomp
 
-        Sc_tuple
-        Simag
-        Sreal
+        Ierr
+        Ifalse
 
-        Sp_tuple
-        Snthprime
-        Sindexofp
-        
-        Mdivtuple
-        Meudiv
-        Mmod
-        
-        E_tuple
-        Eeurad
-        Eresid        
+        Imulneg
+        Inegroot
+        Iaddimag
+        Ipythag
+        Inodivisor
 
-    subgraph Boolean_Identities ["1/0"]
+    subgraph Boolean_Ops ["1/0"]
+
         Bnotp
+        Bifelse
         Band
         Bor
-        Bifelse
 
         subgraph Comparisons ["≤"]
         Bnotgt
@@ -57,6 +49,9 @@ flowchart TD
     end
 
     subgraph Linear_Ops
+        Sinc
+        Sdec
+
         Lplus
         Lminus
 
@@ -66,35 +61,95 @@ flowchart TD
 
     subgraph Magnitude_Ops
         Mmul
-        Mneg
-        Mconj
-        Mmodulus
         Mdiv
         Mper
-        Srecip
+        Mrecip
+        Mneg
+        
+        Mdivtuple
+        Meudiv
+        Mmod
     end
 
-    subgraph Dimension_Ops    
+    subgraph Exponential_Ops    
         Epow
-
         Eradical
-
         Elog   
+        
+        Elog_tuple
+        Eeulog
+        Eresid        
     end
 
     subgraph Rotation_Ops ["× 𝕀"]
+
         Rtwentyfourth
         Rrotate
         Rquarter
-        Rc_tuple
-        Rtheta
+        %% Rc_tuple
+        %% Rtheta
         Rtrig("trig")
+
+        Rconj
+
+        Rimpart
+        Rrepart
+        Rmodulus
     end     
+
+    subgraph P_Theory ["Returns ℙ (2)"]
+        Pp_tuple
+        Pnthprime
+        Pindexofp
+
+        Padic
+        Pprime_expansion
+
+        Pomega        
+        Ptotient
+        Pdivisor_sum
+        
+        Pgcd
+        Plcm
+    end
     end
 
 
-%% Step
+%% Identities
     %% Visualizer: default (real ints)
+    
+    Inat{"ℕ"}
+    Lminus --> Iint{"ℤ"}
+    Mdiv --> Irat{"ℚ"}
+    Eradical --> Irad{"𝔸‾"}
+    Irad --> Inegroot
+    Lminus --> Inegroot("√-1")
+    Inegroot --> Iimag{"𝕀"}
+
+    Lplus --> Iaddimag
+    Iimag --> Iaddimag("1 + √-1")
+    Iaddimag --> Icomp{"ℂ"}
+
+    Iimag --> Ipythag
+    Icomp --> Ipythag("√(1^2 + i^2)")
+
+    Inat --> Inodivisor
+    Mmod --> Inodivisor("¬(n ◇ ℕ{2..√n}) ≡ 0")
+    Inodivisor --> Iprime{ℙ}
+    
+
+    Mdiv --> Ierr
+    Iint --> Ierr(n ÷ 0)
+    Ierr --> Ifalse{𝕋/𝔽}
+    
+    Mmul --> Imulneg
+    Iint --> Imulneg(n × -1)
+%% 
+    Inat --> Sinc
+%% Linear
+    %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
+    
+    Sinc["[ n ++ ]"]
     %% Primitive
     %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
     %% Completes ℕ on its own
@@ -102,56 +157,30 @@ flowchart TD
     %% Expanded form `[ 4 –– ]` -> `[ 4 ℤ{..3◌⃔4 5..} ]`
     %% Expanded form `[ 4 –– ]` -> `[ 4 ++⮌ ]`
     %% Completes ℤ with ++
-    Mdiv --> Mconj
-    Epow --> Mconj
-    Mmodulus --> Mconj["z̄"]
-    %% Expanded form `[ (|z|^2) / z ]`
-    Mconj --> Simag["[ Im(z) ]"]
-    %% %% Expanded form `[ Im(z) ]` -> `[ (z - z̄) / 2i ]`
-    Mconj --> Sreal["[ Re(z) ]"]
-    %% %% Expanded form `[ Re(z) ]` -> `[ z + z̄) / 2i ]`
-
-    Mdiv -->|Invert| Srecip["[ 1⁄n ]"]
-    %% Expanded form `(4/3) [ 1⁄n ]` -> `[ 3 ÷ 4 ]` 
-
-    Sp_tuple("ℙ{ℕ}")
-    Snthprime["ℙ(n)"]
-    %% Primitive
-    %% Returns nth prime. ℙ(3) = 5
-    Sindexofp["ℕ(p)"]
-    %% Returns index of prime p. ℙ^-1(5) = 3
-%% 
-%% Linear
-    %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
-    Sinc["[ n ++ ]"]
+    Sinc -->|Iterate| Lplus["a [ \+b ]"]
+    %% Expanded form `[ 4 + 3 ]` -> `[ 4 ++ ++ ++ ]`  
     Lplus -->|Invert| Lminus["a [ − b ]"]
     %% Expanded form `[ 4 - 3 ]` -> `[ 4 +⮌ 3 ]`
     Sdec -->|Iterate| Lminus["a [ − b ]"]
     %% Expanded form `[ 4 - 3 ]` -> `[ 4 –– –– –– ]`
-    Sinc -->|Iterate| Lplus["a [ \+b ]"]
-    %% Expanded form `[ 4 + 3 ]` -> `[ 4 ++ ++ ++ ]`  
-    Mmod --> Lfloor["⌊n⌋"]
-    %% Expanded form `[ ⌊(4/3)⌋ ]` -> `[ (4/3) - ((4/3) ◇ 1) ]`
-    Lfloor --> Lceil["⌈n⌉"]
-    %% Expanded form `[ ⌈(4/3)⌉ ]` -> `[ (4/3) + (1 - ((4/3) ◇ 1)) ]`
+    %% Mmod --> Lfloor["⌊n⌋"]
+    %% %% Expanded form `[ ⌊(4/3)⌋ ]` -> `[ (4/3) - ((4/3) ◇ 1) ]`
+    %% Lfloor --> Lceil["⌈n⌉"]
+    %% %% Expanded form `[ ⌈(4/3)⌉ ]` -> `[ (4/3) + (1 - ((4/3) ◇ 1)) ]`
 %% 
+    Imulneg --> Mneg
 %% Magnitude
     %% Visualizer: function graph (points plotted on x=roll index, y=result)
-    Mmul --> Mneg["n [ ± ]"]
-    %% Expanded form `[ 4 ± ]` -> `[ 4 × -1 ] ]`
-    %% Expanded form `4 [ ± ]` -> `4 [ ↶ 12 ] ]`
+
+    Mdiv -->|Invert| Mrecip["[ 1⁄n ]"]
+    %% Expanded form `(4/3) [ 1⁄n ]` -> `[ 3 ÷ 4 ]` 
     
     Lplus -->|Iterate| Mmul["a [ × b ]"]
     %% Expanded form `[ 4 × 3 ]` -> `[ 4 +4 +4 ]`
-    %% Simag --> Mmodulus
-    %% Sreal --> Mmodulus
+    %% Rimpart --> Rmodulus
+    %% Rrepart --> Rmodulus
     %% Rrotate -->|Iterate| Mneg["n±"]
     
-    Mneg --> Mmodulus["z [ |z| ]"]
-    
-    Bnotp --> Mmodulus["z [ |z| ]"]
-    %% Expanded form `[ |4| ]` -> `[ √(Re(4)² + Im(4)²) ]
-    %% Expanded form `[ |4| ]` -> `[ ¬(4) × ±(4) ] + [ ¬¬(4) × (4)  ]`
 
     Mmul -->|Discrete| Mdivtuple("⫽ + ◇")
 
@@ -167,19 +196,20 @@ flowchart TD
 
     Mdiv --> Mper["％"]
     %% Expanded form `[ (a÷100) × b ]` <-- should 100 change based on base setting? 
-    
+    Mneg["n [ ± ]"]
+    %% Expanded form `[ 4 ± ]` -> `[ 4 × -1 ] ]`
 %% 
-%% Dimension
+%% Growth
     %% Visualizer: Not set in stone yet. Cobweb plot? 
     Mmul -->|Iterate| Epow["a [ ^ b ]"]
     %% Expanded form `[ 4 ^ 3 ]` -> `[ 4 ×4 ×4 ]`
 
-    Epow -->|Discrete| E_tuple("∥ × ⟐")
+    Epow -->|Discrete| Elog_tuple("∥ × ⟐")
 
-    E_tuple -->|Count| Eeurad["n [ ∥ p ]"]
+    Elog_tuple -->|Count| Eeulog["a [ ∥ b ]"]
     %% Expanded form `[ 4 ∥ 3 ]` -> `Σ[ ¬(4 ◇ (3 ^ ℕ)) ]`
 
-    E_tuple -->|Remainder| Eresid["a [ ⟐ b ]"]
+    Elog_tuple -->|Remainder| Eresid["a [ ⟐ b ]"]
     %% Expanded form `[ 4 ⟐ 3 ]` -> `[ 4 ÷ (3 ^ (4 ∥ 3)) ]`
         
     Epow -->|Invert| Eradical["[ ᵇ√a ]"]
@@ -190,48 +220,66 @@ flowchart TD
     %% Expanded form `[ ℓ4 ]` -> `[ dirivitive(1/4) ]`
     %% Expanded form `[ ℓ4 ]` -> `[ lim{h->0}((4^h - 1)/h) ]`
     %% Expanded form `[ ℓ4 ]` -> `[ Σ{h=ℕ}(((-1)^(h+1))×(4^h))/(h) ]`
+
 %%  
 %% Rotation
     %% Visualizer: circle, which is similar to the cartesian visualizer but projects down to the unit circle to only focus on rotation.
     %% VITAL UX: make it abundantly clear that each rotation "unit" is 1/24 of a circle, or pi/12 radians. The math behind the scenes will be (n × e^(i*2pi*(n/24)))
     Rtwentyfourth["[ n ⦨ ]"]
     %% Primitive
-    %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ/12)]`
+    %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ/12) ]`
+    %% Expanded form `[ 4 ⦨ ]` -> `[ -0:30 ]`
     Rtwentyfourth -->|Iterate| Rrotate["a [ ↶ b ]"]
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{i×2π×(3/24)} ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
+    %% Expanded form `[ 4 ↶ 3 ]` -> `[ -1:30 ]`
     Rrotate --> Rquarter
-    %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 ↶ 6 ]`
     Eradical --> Rquarter["[ n ↶ ⦜ ]"]
     %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 × √(-1) ]`
-    Rrotate --> Rc_tuple("|z| + θ")
+    %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 ↶ 6 ]`
+    %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 ⦨ ⦨ ⦨ ⦨ ⦨ ⦨ ]`
+    %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ -3:00 ]`
 
-    Rc_tuple --> Rtheta["z [ θ ]"]
-    %% Expanded form `[ z θ ]` -> `[ ln(z{6+7i}/|{6+7i}|)/√(-1)]`
+    Rmodulus --> Rconj["z̄"]
+    %% Expanded form `[ (|z|^2) / z ]`
+    Rconj --> Rimpart["[ Im(z) ]"]
+    %% %% Ixpanded form `[ Im(z) ]` -> `[ (z - z̄) / 2i ]`
+    Rconj --> Rrepart["[ Re(z) ]"]
+    %% %% Expanded form `[ Re(z) ]` -> `[ z + z̄) / 2i ]`
+
+    Ipythag --> Rmodulus["z [ |z| ]"]
+    %% Expanded form `[ |4| ]` -> `[ √(Re(4)² + Im(4)²) ]
+    %% Mneg --> Rmodulus
+    %% Bnotp --> Rmodulus["z [ |z| ]"]
+    %% %% Expanded form `[ |4| ]` -> `[ ¬(4) × ±(4) ] + [ ¬¬(4) × (4)  ]`
+    
+    %% Rrotate --> Rc_tuple("|z| + θ")
+    
+    %% Rc_tuple --> Rtheta["z [ θ ]"]
+    %% %% Expanded form `[ z θ ]` -> `[ ln(z{6+7i}/|{6+7i}|)/√(-1)]`
 %% 
 %% Logic
     %% Visualizer: default again, but in binary mode
     %% For logic operators, NaN is treated as False (represented as ⊥ in expansions), and any value (including 0) is treated as true
     %% a, b, n -> numeric values (else false)
     %% p, q -> numeric values (true) or ⊥ (false)
-    Mdiv -->|n ÷ 0| Bnotp["¬ p"]
-    %% Primitive
-    %% Expanded form `[ ⊥ ? 1 : ⊥ ]`
-    Bifelse["p ⩣ q"]
-    %% Primitive
-    %% Expanded form `[ p ? p : q ]`
+    
+    Ifalse --> Bnotp["¬ p"]
+    %% Expanded form `[ 1 if n, else ⊥ ]`
+    Ifalse --> Bifelse["p ⩣ q"]
+    %% Expanded form `[ p if p, else q ]`
 
+    Bnotp --> Bor
     Bifelse --> Bor["p ∨ q"]
     %% Expanded form `[ ¬¬(p ⩣ q) ]`
     Bor --> Band["p ∧ q"]
     %% Expanded form `[ ¬(¬p ∨ ¬q) ]`
     
-    Lminus --> Beq
     Bnotp --> Beq["a ≡ b"]
     %% Expanded form `[ ¬¬(1 / (a - b)) ]`
-    Lminus --> Bless
-    Mmodulus --> Bless["a < b"]
+    Rmodulus --> Bless["a < b"]
     %% Expanded form `[ ¬¬(1 / ((b - a) + |b - a|)) ]`
+    Bor --> Bnotgt
     Beq --> Bnotgt
     Bless --> Bnotgt["a ≤ b"]
     %% Expanded form `[ (a < b) ∨ (a ≡ b) ]`
@@ -242,6 +290,50 @@ flowchart TD
     Bifelse --> Bminim
     Bless --> Bminim["a ⫧ b"]
     %% Expanded form `[ ((a < b) × a) ⩣ ¬((a ≤ b) × b) ]`
+%% 
+%% Primes
+    %% Still conceptual - has a lot of functions designed, but the way the user will interact with these is not planned yet
+    %% Visualizer: prime factorization, not sure what else would be interesting
+    
+    Iprime --> Pp_tuple("ℙ{ℕ}")
+    Pp_tuple --> Pnthprime["ℙ(n)"]
+    %% Primitive
+    %% Returns nth prime. ℙ(3) = 5
+    Pp_tuple --> Pindexofp["ℕ(p)"]
+    %% Returns index of prime p. ℙ^-1(5) = 3
+
+    Eeulog --> Padic
+    Pnthprime --> Padic
+    Padic["v_p(n)"]
+    %% Expanded form `[ n ∥ p ]`
+
+    Pp_tuple
+    Pnthprime
+    Pindexofp
+    Pprime_expansion("∏ ℙ^e")
+    %% Expanded form `n ∥ ℙ("⟐
+    Pomega["Ω(n)"]
+    %% n=60
+    %% r=15,5,1
+    %% s=2,1,1,0
+    %% x=1,2,3,4
+    %% Expanded form `r=60 ∥ ℙ(x=1) = s=2`
+    %% Expanded form `r=60 ⟐ ℙ(x=1) = 15`
+    %% Expanded form `r=60 ⟐ ℙ(x=1) ∥ ℙ(x=2) = s=1`
+    %% Expanded form `r=15 ⟐ ℙ(x=2) = 5`
+    %% Expanded form `r=15 ⟐ ℙ(x=2) ∥ ℙ(x=3) = s=1`
+    %% Expanded form `r=5 ⟐ ℙ(x=3) = 1`
+    %% Expanded form `r=5 ⟐ ℙ(x=3) ∥ ℙ(x=4) = s=0`
+    %% Expanded form `r=1 ⟐ ℙ(x=4) = 1`
+    %% Expanded form `Σ{x=1..n}[ ((x - 1) ⟐ ℙ(x - 1)) ∥ ℙ(x) ]`
+    Ptotient["φ"]
+    %% Expanded form `[ n × ∏(1-p^-1) ]`
+    Pdivisor_sum["σ"]
+    %% Expanded form `[ Σ( (d|n) × d) ]`
+    Pgcd["⋀"]
+    %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
+    Plcm["⋁"]
+    %% Expanded form `[" ∏p^(e_a ⫨ e_b) "]`    
 %% 
 
 %%     subgraph Digits ["Digit Manipulation"]
@@ -268,31 +360,14 @@ flowchart TD
 %%     Dsort --> Dmirror
 %%     Bnotgt --> Digits
 %%     Mmod --> Ddig
-
-%% subgraph P_Theory ["Returns ℙ (2)"]
-%% %% Still conceptual - has a lot of functions designed, but the way the user will interact with these is not planned yet
-    %% Visualizer: prime factorization, not sure what else would be interesting
-    %% Pexponent["e"]
-    %% Pprime_expansion["∏ ℙ^e"]
-    %% Pomega["Ω"]
-    %% %% Expanded form `[ Σe_p ]`
-    %% Ptotient["φ"]
-    %% %% Expanded form `[ n × ∏(1-p^-1) ]`
-    %% Pdivisor_sum["σ"]
-    %% %% Expanded form `[ Σ( (d|n) × d) ]`
-    %% Pgcd["⋀"]
-    %% %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
-    %% Plcm["⋁"]
-    %% Expanded form `[ ∏p^(e_a ⫨ e_b) ]`    
-%% end
-%% Snthprime > Ptotient
-%% Snthp-ime --> Sindexofp
+%% Pnthprime > Ptotient
+%% Snthp-ime --> Pindexofp
 %% Pprime_expansion --t Pomega
-%% Sindexofp --> Pprime_expansion
-%% Snthprime --> Pgcd
+%% Pindexofp --> Pprime_expansion
+%% Pnthprime --> Pgcd
 %% Pexponent --> Pgcd
 %% Pexponent --> Plcm
-%% Snthprime --> Plcm
-%% Snthprime --> Pexponent
+%% Pnthprime --> Plcm
+%% Pnthprime --> Pexponent
 %% Bminim --> Plcm
 %% Bmax --> Pgcd
