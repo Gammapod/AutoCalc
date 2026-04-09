@@ -1,8 +1,25 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const plannedReleasesPath = resolve(process.cwd(), "docs/planning/Planned Releases.md");
+const plannedReleasesCandidates = [
+  "docs/planning/Planned Releases.md",
+  "docs/planning/Planning Board.md",
+];
+
+const plannedReleasesPath = plannedReleasesCandidates
+  .map((candidate) => resolve(process.cwd(), candidate))
+  .find((candidatePath) => existsSync(candidatePath));
+
 const releaseNotesCatalogPath = resolve(process.cwd(), "src/content/releaseNotes.ts");
+
+if (!plannedReleasesPath) {
+  console.error("Release notes policy check failed.");
+  console.error("Could not find a planning document. Checked:");
+  for (const candidate of plannedReleasesCandidates) {
+    console.error(`- ${candidate}`);
+  }
+  process.exit(1);
+}
 
 const plannedReleasesText = readFileSync(plannedReleasesPath, "utf8");
 const releaseNotesCatalogText = readFileSync(releaseNotesCatalogPath, "utf8");
