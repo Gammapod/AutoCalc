@@ -18,6 +18,7 @@ import {
 } from "./calculatorValue.js";
 import { expressionToDisplayString, slotOperandToExpression, symbolicExpr } from "./expression.js";
 import { buildSymbolicExpression, evaluateSymbolicExpression, executeSlotsValue } from "./engine.js";
+import { negateAlgebraic } from "./algebraicScalar.js";
 import {
   applyDigitInput,
   applyOperatorInput,
@@ -452,7 +453,9 @@ const normalizeRationalValue = (value: RationalValue): RationalValue => {
 const negateScalarValue = (scalar: ReturnType<typeof toScalarValue>): ReturnType<typeof toScalarValue> =>
   scalar.kind === "rational"
     ? toRationalScalarValue({ num: -scalar.value.num, den: scalar.value.den })
-    : toExpressionScalarValue({ type: "unary", op: "neg", arg: scalar.value });
+    : scalar.kind === "alg"
+      ? { kind: "alg", value: negateAlgebraic(scalar.value) }
+      : toExpressionScalarValue({ type: "unary", op: "neg", arg: scalar.value });
 
 const rootSymbolicExpr = (radicandText: string, exponent: bigint): ReturnType<typeof symbolicExpr> =>
   symbolicExpr(`((${radicandText})^(1/${exponent.toString()}))`);
@@ -1307,6 +1310,13 @@ const evaluateInverseStageAt = (
     return {
       nextTotal: toExplicitComplexCalculatorValue(im, negateScalarValue(re)),
     };
+  }
+  if (stage.kind === "rotate_minus_15") {
+    const inverseSlots: Slot[] = Array.from(
+      { length: 23 },
+      () => ({ kind: "unary", operator: KEY_ID.unary_rotate_15 }),
+    );
+    return evaluateExecutionOutcomeForSlots(state, currentTotal, inverseSlots);
   }
   const rootValue = buildCanonicalRootValue(currentTotal, stage.exponent);
   if (!rootValue) {

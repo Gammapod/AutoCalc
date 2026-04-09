@@ -131,6 +131,9 @@ export const resolveStepExpansionText = (
     if (slot.operator === KEY_ID.unary_i) {
       return "\u00D7 i";
     }
+    if (slot.operator === KEY_ID.unary_rotate_15) {
+      return "\u00D7 e^(i\u03C0/12)";
+    }
     return `${formatUnarySlotOperator(slot.operator)}(${current})`;
   }
   if (slot.operator === KEY_ID.op_add && typeof slot.operand === "bigint") {

@@ -1,6 +1,7 @@
 import { expressionToRational } from "./expression.js";
 import { getSeedRow, getStepRows } from "./rollEntries.js";
 import type { CalculatorValue, RollEntry, ScalarValue } from "./types.js";
+import { algebraicToApproxNumber, algebraicToRational } from "./algebraicScalar.js";
 
 export type GraphPoint = {
   x: number;
@@ -15,6 +16,16 @@ const scalarToNumber = (value: ScalarValue): number | null => {
       return null;
     }
     return Number(value.value.num) / Number(value.value.den);
+  }
+  if (value.kind === "alg") {
+    const rational = algebraicToRational(value.value);
+    if (rational) {
+      if (rational.den === 0n) {
+        return null;
+      }
+      return Number(rational.num) / Number(rational.den);
+    }
+    return algebraicToApproxNumber(value.value);
   }
   const asRational = expressionToRational(value.value);
   if (!asRational || asRational.den === 0n) {

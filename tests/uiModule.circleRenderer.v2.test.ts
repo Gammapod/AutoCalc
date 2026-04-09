@@ -5,6 +5,7 @@ import {
   toRationalCalculatorValue,
   toRationalScalarValue,
 } from "../src/domain/calculatorValue.js";
+import { ALG_CONSTANTS } from "../src/domain/algebraicScalar.js";
 import { HISTORY_FLAG } from "../src/domain/state.js";
 import { renderCircleVisualizerPanel } from "../src/ui/modules/visualizers/circleRenderer.js";
 import { installDomHarness } from "./helpers/domHarness.js";
@@ -62,6 +63,24 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     renderCircleVisualizerPanel(harness.root, withHalfComplex);
     const radicalLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
     assert.equal(radicalLabel?.textContent, "|r| = \u221A(1/2)", "complex rational magnitude renders exact radical form");
+
+    const withAlgebraicUnitRotation = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toExplicitComplexCalculatorValue(
+          { kind: "alg", value: ALG_CONSTANTS.rotate15Cos },
+          { kind: "alg", value: ALG_CONSTANTS.rotate15Sin },
+        ),
+      },
+    };
+    renderCircleVisualizerPanel(harness.root, withAlgebraicUnitRotation);
+    const algebraicVector = panel.querySelector<SVGLineElement>(".v2-number-line-vector");
+    const algebraicLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
+    assert.equal(algebraicLabel?.textContent, "|r| = 1", "unit-magnitude algebraic complex values simplify to exact unit radius label");
+    assert.equal(Boolean(algebraicVector), true, "algebraic complex values render a vector");
+    assert.equal(Number(algebraicVector?.getAttribute("x2")) > 50, true, "15-degree algebraic vector points to positive real side");
+    assert.equal(Number(algebraicVector?.getAttribute("y2")) < 50, true, "15-degree algebraic vector points to positive imaginary side");
 
     const withHistoryAnalysis = {
       ...initialState(),

@@ -67,6 +67,7 @@ flowchart TD
     subgraph Magnitude_Ops
         Mmul
         Mneg
+        Mconj
         Mmodulus
         Mdiv
         Mper
@@ -101,13 +102,14 @@ flowchart TD
     %% Expanded form `[ 4 –– ]` -> `[ 4 ℤ{..3◌⃔4 5..} ]`
     %% Expanded form `[ 4 –– ]` -> `[ 4 ++⮌ ]`
     %% Completes ℤ with ++
-    Sc_tuple("a + bi")
-    %% %% Primitives
-    Sc_tuple --> Simag["[ Im(z) ]"]
-    %% %% Expanded form `[ Im(z) ]` -> `[ n - a ↶ 12 ] ]`
-    %% %% Returns the imaginary component (`b` from `a + b×i`) from part of n, 0 possible
-    Sc_tuple --> Sreal["[ Re(z) ]"]
-    %% %% Returns the non-imaginary component (`a` from `a + b×i`) from part of n, 0 possible
+    Mdiv --> Mconj
+    Epow --> Mconj
+    Mmodulus --> Mconj["z̄"]
+    %% Expanded form `[ (|z|^2) / z ]`
+    Mconj --> Simag["[ Im(z) ]"]
+    %% %% Expanded form `[ Im(z) ]` -> `[ (z - z̄) / 2i ]`
+    Mconj --> Sreal["[ Re(z) ]"]
+    %% %% Expanded form `[ Re(z) ]` -> `[ z + z̄) / 2i ]`
 
     Mdiv -->|Invert| Srecip["[ 1⁄n ]"]
     %% Expanded form `(4/3) [ 1⁄n ]` -> `[ 3 ÷ 4 ]` 
@@ -196,12 +198,12 @@ flowchart TD
     %% Primitive
     %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ/12)]`
     Rtwentyfourth -->|Iterate| Rrotate["a [ ↶ b ]"]
-    %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{i×2π×(3/24) ]`
+    %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{i×2π×(3/24)} ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
-    Rrotate --> Rquarter["[ n ⦜ ]"]
-    %% Expanded form `[ 4 ⦜ ]` -> `[ 4 ↶ 6 ]`
-    Eradical --> Rquarter["[ n ⦜ ]"]
-    %% Expanded form `[ 4 ⦜ ]` -> `[ 4 × √(-1) ]`
+    Rrotate --> Rquarter
+    %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 ↶ 6 ]`
+    Eradical --> Rquarter["[ n ↶ ⦜ ]"]
+    %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 × √(-1) ]`
     Rrotate --> Rc_tuple("|z| + θ")
 
     Rc_tuple --> Rtheta["z [ θ ]"]
@@ -224,8 +226,10 @@ flowchart TD
     Bor --> Band["p ∧ q"]
     %% Expanded form `[ ¬(¬p ∨ ¬q) ]`
     
+    Lminus --> Beq
     Bnotp --> Beq["a ≡ b"]
-    %% Expanded form `[ ¬¬(1/(a-b)) ]`
+    %% Expanded form `[ ¬¬(1 / (a - b)) ]`
+    Lminus --> Bless
     Mmodulus --> Bless["a < b"]
     %% Expanded form `[ ¬¬(1 / ((b - a) + |b - a|)) ]`
     Beq --> Bnotgt

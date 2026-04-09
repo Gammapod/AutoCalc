@@ -1,7 +1,8 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { executeSlots, executeSlotsValue } from "../src/domain/engine.js";
-import { toNanCalculatorValue, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
+import { calculatorValuesEquivalent, toComplexCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
+import { ALG_CONSTANTS, addAlgebraic } from "../src/domain/algebraicScalar.js";
 import type { RationalValue } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n): RationalValue => ({ num, den });
@@ -177,6 +178,51 @@ export const runEngineTests = (): void => {
       },
     },
     "unary-i applied twice collapses back to pure real negative total",
+  );
+
+  const unaryRotate15 = executeSlotsValue(
+    toRationalCalculatorValue({ num: 1n, den: 1n }),
+    [{ kind: "unary", operator: uop("unary_rotate_15") }],
+  );
+  assert.equal(unaryRotate15.ok, true, "15-degree unary rotation executes on rational totals");
+  const rotate15Expected = toComplexCalculatorValue(
+    { kind: "alg", value: ALG_CONSTANTS.rotate15Cos },
+    { kind: "alg", value: ALG_CONSTANTS.rotate15Sin },
+  );
+  assert.equal(
+    calculatorValuesEquivalent(unaryRotate15.ok ? unaryRotate15.total : toNanCalculatorValue(), rotate15Expected),
+    true,
+    "15-degree unary rotation maps 1 to exact algebraic cos/sin components",
+  );
+
+  const rotate15TwentyFour = executeSlotsValue(
+    toRationalCalculatorValue({ num: 1n, den: 1n }),
+    Array.from({ length: 24 }, () => ({ kind: "unary", operator: uop("unary_rotate_15") })),
+  );
+  assert.equal(
+    calculatorValuesEquivalent(
+      rotate15TwentyFour.ok ? rotate15TwentyFour.total : toNanCalculatorValue(),
+      toRationalCalculatorValue({ num: 1n, den: 1n }),
+    ),
+    true,
+    "24 successive 15-degree rotations return exactly to 1",
+  );
+
+  const shiftedSeed = toComplexCalculatorValue(
+    { kind: "alg", value: addAlgebraic(ALG_CONSTANTS.one, ALG_CONSTANTS.rotate15Cos) },
+    { kind: "alg", value: ALG_CONSTANTS.rotate15Sin },
+  );
+  const rotateShiftedTwentyFour = executeSlotsValue(
+    shiftedSeed,
+    Array.from({ length: 24 }, () => ({ kind: "unary", operator: uop("unary_rotate_15") })),
+  );
+  assert.equal(
+    calculatorValuesEquivalent(
+      rotateShiftedTwentyFour.ok ? rotateShiftedTwentyFour.total : toNanCalculatorValue(),
+      shiftedSeed,
+    ),
+    true,
+    "24 successive 15-degree rotations return complex shifted seed exactly",
   );
 
   const complexUnaryNot = executeSlotsValue(

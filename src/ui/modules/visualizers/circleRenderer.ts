@@ -6,6 +6,7 @@ import {
   resolveStepForecastValuesForState,
 } from "./numberLineModel.js";
 import { expressionToDisplayString } from "../../../domain/expression.js";
+import { addAlgebraic, algebraicToDisplayString, algebraicToRational, mulAlgebraic, rationalToAlgebraic } from "../../../domain/algebraicScalar.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -149,10 +150,32 @@ const formatExactRadicalFromRational = (value: { num: bigint; den: bigint }): st
   return `\u221A(${rationalToDisplay({ num: numerator, den: denominator })})`;
 };
 
-const scalarToDisplay = (value: { kind: "rational"; value: { num: bigint; den: bigint } } | { kind: "expr"; value: unknown }): string =>
+const scalarToDisplay = (
+  value:
+    | { kind: "rational"; value: { num: bigint; den: bigint } }
+    | { kind: "alg"; value: { one?: { num: bigint; den: bigint }; sqrt2?: { num: bigint; den: bigint }; sqrt3?: { num: bigint; den: bigint }; sqrt6?: { num: bigint; den: bigint } } }
+    | { kind: "expr"; value: unknown },
+): string =>
   value.kind === "rational"
     ? rationalToDisplay(value.value)
+    : value.kind === "alg"
+      ? algebraicToDisplayString(value.value)
     : expressionToDisplayString(value.value as Parameters<typeof expressionToDisplayString>[0]);
+
+const scalarToAlgebraic = (
+  value:
+    | { kind: "rational"; value: { num: bigint; den: bigint } }
+    | { kind: "alg"; value: { one?: { num: bigint; den: bigint }; sqrt2?: { num: bigint; den: bigint }; sqrt3?: { num: bigint; den: bigint }; sqrt6?: { num: bigint; den: bigint } } }
+    | { kind: "expr"; value: unknown },
+): { one?: { num: bigint; den: bigint }; sqrt2?: { num: bigint; den: bigint }; sqrt3?: { num: bigint; den: bigint }; sqrt6?: { num: bigint; den: bigint } } | null => {
+  if (value.kind === "rational") {
+    return rationalToAlgebraic(value.value);
+  }
+  if (value.kind === "alg") {
+    return value.value;
+  }
+  return null;
+};
 
 const resolveMagnitudeDisplay = (state: GameState): string => {
   const total = state.calculator.total;
@@ -170,6 +193,15 @@ const resolveMagnitudeDisplay = (state: GameState): string => {
   if (re.kind === "rational" && im.kind === "rational") {
     const sumSquares = addRational(squareRational(re.value), squareRational(im.value));
     return formatExactRadicalFromRational(sumSquares);
+  }
+  const reAlg = scalarToAlgebraic(re);
+  const imAlg = scalarToAlgebraic(im);
+  if (reAlg && imAlg) {
+    const normSquared = addAlgebraic(mulAlgebraic(reAlg, reAlg), mulAlgebraic(imAlg, imAlg));
+    const rationalNorm = algebraicToRational(normSquared);
+    if (rationalNorm) {
+      return formatExactRadicalFromRational(rationalNorm);
+    }
   }
   return `sqrt((${scalarToDisplay(re)})^2 + (${scalarToDisplay(im)})^2)`;
 };

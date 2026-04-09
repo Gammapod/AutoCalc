@@ -102,6 +102,15 @@ export type RationalValue = {
   den: bigint;
 };
 
+export type AlgebraicBasis = "one" | "sqrt2" | "sqrt3" | "sqrt6";
+
+export type AlgebraicValue = {
+  one?: RationalValue;
+  sqrt2?: RationalValue;
+  sqrt3?: RationalValue;
+  sqrt6?: RationalValue;
+};
+
 export type ExpressionConstant = "pi" | "e";
 
 export type IntLiteralExpr = {
@@ -155,6 +164,10 @@ export type ScalarValue =
   | {
       kind: "rational";
       value: RationalValue;
+    }
+  | {
+      kind: "alg";
+      value: AlgebraicValue;
     }
   | {
       kind: "expr";

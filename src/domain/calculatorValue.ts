@@ -1,4 +1,4 @@
-import type { CalculatorValue, ErrorCode, ExpressionValue, RationalValue, ScalarValue } from "./types.js";
+import type { AlgebraicValue, CalculatorValue, ErrorCode, ExpressionValue, RationalValue, ScalarValue } from "./types.js";
 import {
   expressionToDisplayString,
   expressionToRational,
@@ -6,6 +6,15 @@ import {
   normalizeExpression,
   rationalExpr,
 } from "./expression.js";
+import {
+  algebraicEquals,
+  algebraicToDisplayString,
+  algebraicToRational,
+  isAlgebraicZero,
+  normalizeAlgebraicValue,
+  normalizeRational,
+  rationalToAlgebraic,
+} from "./algebraicScalar.js";
 
 type NonNanCalculatorValue = Exclude<CalculatorValue, { kind: "nan" }>;
 
@@ -31,30 +40,57 @@ export const toExpressionScalarValue = (value: ExpressionValue): ScalarValue => 
   value: normalizeExpression(value),
 });
 
-export const toScalarValue = (value: Extract<CalculatorValue, { kind: "rational" | "expr" }>): ScalarValue => {
-  if (value.kind === "rational") {
-    return toRationalScalarValue(value.value);
+export const toAlgebraicScalarValue = (value: AlgebraicValue): ScalarValue => ({
+  kind: "alg",
+  value: normalizeAlgebraicValue(value),
+});
+
+export const toScalarValue = (
+  value: Extract<CalculatorValue, { kind: "rational" | "expr" }> | ScalarValue,
+): ScalarValue => {
+  if (value.kind === "alg") {
+    return toAlgebraicScalarValue(value.value);
   }
-  return toExpressionScalarValue(value.value);
+  return value.kind === "rational" ? toRationalScalarValue(value.value) : toExpressionScalarValue(value.value);
 };
 
 export const scalarValueToCalculatorValue = (value: ScalarValue): NonNanCalculatorValue =>
-  value.kind === "rational" ? toRationalCalculatorValue(value.value) : toExpressionCalculatorValue(value.value);
+  value.kind === "rational"
+    ? toRationalCalculatorValue(value.value)
+    : value.kind === "alg"
+      ? (() => {
+        const rational = algebraicToRational(value.value);
+        if (rational) {
+          return toRationalCalculatorValue(rational);
+        }
+        return toExpressionCalculatorValue({ type: "symbolic", text: algebraicToDisplayString(value.value) });
+      })()
+      : toExpressionCalculatorValue(value.value);
 
 export const isScalarValueZero = (value: ScalarValue): boolean =>
   value.kind === "rational"
     ? value.value.num === 0n
-    : Boolean(expressionToRational(value.value)?.num === 0n);
+    : value.kind === "alg"
+      ? isAlgebraicZero(value.value)
+      : Boolean(expressionToRational(value.value)?.num === 0n);
 
 export const toComplexCalculatorValue = (re: ScalarValue, im: ScalarValue): NonNanCalculatorValue => {
-  if (isScalarValueZero(im)) {
+  if (isScalarValueZero(im) && re.kind !== "alg") {
     return scalarValueToCalculatorValue(re);
   }
   return {
     kind: "complex",
     value: {
-      re: re.kind === "rational" ? toRationalScalarValue(re.value) : toExpressionScalarValue(re.value),
-      im: im.kind === "rational" ? toRationalScalarValue(im.value) : toExpressionScalarValue(im.value),
+      re: re.kind === "rational"
+        ? toRationalScalarValue(re.value)
+        : re.kind === "alg"
+          ? toAlgebraicScalarValue(re.value)
+          : toExpressionScalarValue(re.value),
+      im: im.kind === "rational"
+        ? toRationalScalarValue(im.value)
+        : im.kind === "alg"
+          ? toAlgebraicScalarValue(im.value)
+          : toExpressionScalarValue(im.value),
     },
   };
 };
@@ -62,8 +98,16 @@ export const toComplexCalculatorValue = (re: ScalarValue, im: ScalarValue): NonN
 export const toExplicitComplexCalculatorValue = (re: ScalarValue, im: ScalarValue): NonNanCalculatorValue => ({
   kind: "complex",
   value: {
-    re: re.kind === "rational" ? toRationalScalarValue(re.value) : toExpressionScalarValue(re.value),
-    im: im.kind === "rational" ? toRationalScalarValue(im.value) : toExpressionScalarValue(im.value),
+    re: re.kind === "rational"
+      ? toRationalScalarValue(re.value)
+      : re.kind === "alg"
+        ? toAlgebraicScalarValue(re.value)
+        : toExpressionScalarValue(re.value),
+    im: im.kind === "rational"
+      ? toRationalScalarValue(im.value)
+      : im.kind === "alg"
+        ? toAlgebraicScalarValue(im.value)
+        : toExpressionScalarValue(im.value),
   },
 });
 
@@ -84,7 +128,9 @@ export const isComplexCalculatorValue = (
 const scalarToDisplayString = (value: ScalarValue): string =>
   value.kind === "rational"
     ? (value.value.den === 1n ? value.value.num.toString() : `${value.value.num.toString()}/${value.value.den.toString()}`)
-    : expressionToDisplayString(value.value);
+    : value.kind === "alg"
+      ? algebraicToDisplayString(value.value)
+      : expressionToDisplayString(value.value);
 
 export const calculatorValueToDisplayString = (value: CalculatorValue): string =>
   value.kind === "nan"
@@ -140,9 +186,26 @@ const isNormalizedRationalZero = (value: RationalValue): boolean => {
 };
 
 const scalarValueEquals = (left: ScalarValue, right: ScalarValue): boolean => {
+  if (left.kind === "alg" && right.kind === "alg") {
+    return algebraicEquals(left.value, right.value);
+  }
+  if (left.kind === "alg" && right.kind === "rational") {
+    return algebraicEquals(left.value, rationalToAlgebraic(right.value));
+  }
+  if (left.kind === "rational" && right.kind === "alg") {
+    return algebraicEquals(rationalToAlgebraic(left.value), right.value);
+  }
+  if (left.kind === "alg" && right.kind === "expr") {
+    const resolved = expressionToRational(right.value);
+    return resolved ? algebraicEquals(left.value, rationalToAlgebraic(resolved)) : false;
+  }
+  if (left.kind === "expr" && right.kind === "alg") {
+    const resolved = expressionToRational(left.value);
+    return resolved ? algebraicEquals(rationalToAlgebraic(resolved), right.value) : false;
+  }
   if (left.kind === "rational" && right.kind === "rational") {
-    const l = normalizeRationalValue(left.value);
-    const r = normalizeRationalValue(right.value);
+    const l = normalizeRational(left.value);
+    const r = normalizeRational(right.value);
     return l.num === r.num && l.den === r.den;
   }
   if (left.kind === "expr" && right.kind === "expr") {
@@ -153,8 +216,8 @@ const scalarValueEquals = (left: ScalarValue, right: ScalarValue): boolean => {
     if (!resolved) {
       return false;
     }
-    const l = normalizeRationalValue(resolved);
-    const r = normalizeRationalValue(right.value);
+    const l = normalizeRational(resolved);
+    const r = normalizeRational(right.value);
     return l.num === r.num && l.den === r.den;
   }
   if (left.kind === "rational" && right.kind === "expr") {
@@ -162,8 +225,8 @@ const scalarValueEquals = (left: ScalarValue, right: ScalarValue): boolean => {
     if (!resolved) {
       return false;
     }
-    const l = normalizeRationalValue(left.value);
-    const r = normalizeRationalValue(resolved);
+    const l = normalizeRational(left.value);
+    const r = normalizeRational(resolved);
     return l.num === r.num && l.den === r.den;
   }
   return false;
@@ -186,10 +249,13 @@ export const isRealEquivalentCalculatorValue = (value: CalculatorValue): boolean
     return false;
   }
   if (value.kind === "complex") {
-    if (value.value.im.kind !== "rational") {
-      return false;
+    if (value.value.im.kind === "rational") {
+      return isNormalizedRationalZero(value.value.im.value);
     }
-    return isNormalizedRationalZero(value.value.im.value);
+    if (value.value.im.kind === "alg") {
+      return isAlgebraicZero(value.value.im.value);
+    }
+    return false;
   }
   return true;
 };
@@ -209,6 +275,17 @@ export const calculatorValueToRational = (value: CalculatorValue): RationalValue
   }
   if (value.kind === "expr") {
     return expressionToRational(value.value);
+  }
+  if (
+    value.kind === "complex"
+    && isScalarValueZero(value.value.im)
+  ) {
+    if (value.value.re.kind === "rational") {
+      return value.value.re.value;
+    }
+    if (value.value.re.kind === "alg") {
+      return algebraicToRational(value.value.re.value);
+    }
   }
   return null;
 };

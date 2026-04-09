@@ -39,6 +39,7 @@ export const KEY_ID = {
   unary_ceil: "unary_ceil",
   unary_mirror_digits: "unary_mirror_digits",
   unary_i: "unary_i",
+  unary_rotate_15: "unary_rotate_15",
   util_clear_all: "util_clear_all",
   util_backspace: "util_backspace",
   util_undo: "util_undo",
@@ -111,7 +112,8 @@ export type UnaryOperatorKeyId =
   | typeof KEY_ID.unary_floor
   | typeof KEY_ID.unary_ceil
   | typeof KEY_ID.unary_mirror_digits
-  | typeof KEY_ID.unary_i;
+  | typeof KEY_ID.unary_i
+  | typeof KEY_ID.unary_rotate_15;
 export type MemoryKeyId =
   | typeof KEY_ID.memory_cycle_variable
   | typeof KEY_ID.memory_adjust_plus
@@ -200,6 +202,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.unary_ceil, { buttonFace: "\u2308n\u2309", operatorInlineFace: "\u2308n\u2309", operatorSlotFace: "\u2308n\u2309", operatorAlgebraicFace: "\u2308n\u2309" }],
   [KEY_ID.unary_mirror_digits, { buttonFace: "\u21CBd", operatorInlineFace: "\u21CBd", operatorSlotFace: "\u21CB", operatorAlgebraicFace: "\u21CBd" }],
   [KEY_ID.unary_i, { buttonFace: "\u21B6 \u299C", operatorInlineFace: "\u00D7i", operatorSlotFace: "\u299D", operatorAlgebraicFace: "\u00D7i" }],
+  [KEY_ID.unary_rotate_15, { buttonFace: "\u21B6 \u299C/6", operatorInlineFace: "\u00D7e^(i\u03C0/12)", operatorSlotFace: "\u299C/6", operatorAlgebraicFace: "\u00D7e^(i\u03C0/12)" }],
   [KEY_ID.util_clear_all, { buttonFace: "C" }],
   [KEY_ID.util_backspace, { buttonFace: "\u2190" }],
   [KEY_ID.util_undo, { buttonFace: "\u21A9" }],
@@ -326,6 +329,7 @@ const UNARY_OPERATOR_KEY_ID_SET = new Set<UnaryOperatorKeyId>([
   KEY_ID.unary_ceil,
   KEY_ID.unary_mirror_digits,
   KEY_ID.unary_i,
+  KEY_ID.unary_rotate_15,
 ]);
 const MEMORY_KEY_ID_SET = new Set<MemoryKeyId>([
   KEY_ID.memory_cycle_variable,

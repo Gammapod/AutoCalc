@@ -117,6 +117,12 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   unary(KEY_ID.unary_mirror_digits),
   unary(KEY_ID.unary_i),
   {
+    key: KEY_ID.unary_rotate_15,
+    lockModel: "always_unlocked",
+    primaryExpectation: "unary_operator_inserts_pair",
+    edgeCaseExpectation: "unary_operator_clears_active_roll_then_inserts_pair",
+  },
+  {
     key: KEY_ID.util_clear_all,
     lockModel: "unlockable",
     unlockPathPolicy: "catalog",

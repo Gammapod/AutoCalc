@@ -20,6 +20,7 @@ const unaryOps: readonly UnaryOperatorKeyId[] = [
   KEY_ID.unary_ceil,
   KEY_ID.unary_mirror_digits,
   KEY_ID.unary_i,
+  KEY_ID.unary_rotate_15,
 ];
 
 const binaryOps: readonly BinaryOperatorKeyId[] = [

@@ -1,5 +1,14 @@
 import { readFileSync } from "node:fs";
-import ts from "typescript";
+
+const loadTypeScript = async () => {
+  try {
+    const mod = await import("typescript");
+    return mod.default ?? mod;
+  } catch {
+    const fallback = await import("typescript/lib/tsc.js");
+    return fallback.default ?? fallback;
+  }
+};
 
 const LIMITS = {
   maxBranchPoints: 12,
@@ -70,35 +79,37 @@ const collectModuleScopedFunctions = (sourceFile) =>
       node.declarationList.declarations.some((decl) =>
         Boolean(decl.initializer) && (ts.isFunctionExpression(decl.initializer) || ts.isArrowFunction(decl.initializer)))));
 
+const ts = await loadTypeScript();
+
 const violations = [];
 for (const file of TARGET_FILES) {
-  const raw = readFileSync(file, "utf8");
-  const sourceFile = ts.createSourceFile(file, raw, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const functions = collectModuleScopedFunctions(sourceFile);
-  for (const fnNode of functions) {
-    const fn =
-      ts.isVariableStatement(fnNode)
-        ? fnNode.declarationList.declarations[0]?.initializer
-        : fnNode;
-    if (!fn) {
-      continue;
-    }
-    const start = sourceFile.getLineAndCharacterOfPosition(fn.getStart()).line;
-    const end = sourceFile.getLineAndCharacterOfPosition(fn.getEnd()).line;
-    const functionLines = end - start + 1;
-    const branchPoints = countBranchPoints(fn);
-    const name = getFunctionName(fnNode, raw);
-    if (EXEMPT_MODULE_ENTRYPOINTS.has(name)) {
-      continue;
-    }
-    if (functionLines > LIMITS.maxFunctionLines) {
-      violations.push(`${file}: ${name} has ${functionLines} lines (limit ${LIMITS.maxFunctionLines})`);
-    }
-    if (branchPoints > LIMITS.maxBranchPoints) {
-      violations.push(`${file}: ${name} has ${branchPoints} branch points (limit ${LIMITS.maxBranchPoints})`);
+    const raw = readFileSync(file, "utf8");
+    const sourceFile = ts.createSourceFile(file, raw, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const functions = collectModuleScopedFunctions(sourceFile);
+    for (const fnNode of functions) {
+      const fn =
+        ts.isVariableStatement(fnNode)
+          ? fnNode.declarationList.declarations[0]?.initializer
+          : fnNode;
+      if (!fn) {
+        continue;
+      }
+      const start = sourceFile.getLineAndCharacterOfPosition(fn.getStart()).line;
+      const end = sourceFile.getLineAndCharacterOfPosition(fn.getEnd()).line;
+      const functionLines = end - start + 1;
+      const branchPoints = countBranchPoints(fn);
+      const name = getFunctionName(fnNode, raw);
+      if (EXEMPT_MODULE_ENTRYPOINTS.has(name)) {
+        continue;
+      }
+      if (functionLines > LIMITS.maxFunctionLines) {
+        violations.push(`${file}: ${name} has ${functionLines} lines (limit ${LIMITS.maxFunctionLines})`);
+      }
+      if (branchPoints > LIMITS.maxBranchPoints) {
+        violations.push(`${file}: ${name} has ${branchPoints} branch points (limit ${LIMITS.maxBranchPoints})`);
+      }
     }
   }
-}
 
 if (violations.length > 0) {
   console.error("UI complexity checks failed:");
