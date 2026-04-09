@@ -14,12 +14,16 @@ type FakeElement = {
   innerHTML: string;
   dataset: Record<string, string>;
   attributes: Record<string, string>;
+  scrollHeight?: number;
+  clientHeight?: number;
+  offsetHeight?: number;
   style: {
     setProperty: (name: string, value: string) => void;
     removeProperty: (name: string) => void;
   };
   setAttribute: (name: string, value: string) => void;
   removeAttribute: (name: string) => void;
+  querySelector: (selector: string) => Element | null;
   addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
   removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
   getBoundingClientRect: () => { height: number };
@@ -32,6 +36,9 @@ const createFakeElement = (): FakeElement => {
     innerHTML: "",
     dataset: {},
     attributes: {},
+    scrollHeight: 0,
+    clientHeight: 0,
+    offsetHeight: 0,
     style: {
       setProperty(name: string, value: string): void {
         element.attributes[`style:${name}`] = value;
@@ -45,6 +52,9 @@ const createFakeElement = (): FakeElement => {
     },
     removeAttribute(name: string): void {
       delete element.attributes[name];
+    },
+    querySelector(): Element | null {
+      return null;
     },
     addEventListener(): void {
       // no-op in fake element
@@ -577,6 +587,148 @@ export const runUiModuleVisualizerHostV2Tests = (): void => {
   renderVisualizerHost(secondRoot as unknown as Element, withFeedOn);
   assert.equal(firstHost.dataset.v2VisualizerTransition, "enter", "first root transition is independent");
   assert.equal(secondHost.dataset.v2VisualizerTransition, "enter", "second root transition is independent");
+
+  const adaptiveHost = createFakeElement();
+  const adaptiveDisplayWindow = createFakeElement();
+  const adaptiveGraphDevice = createFakeElement();
+  const adaptiveFeedPanel = createFakeElement();
+  const adaptiveTitlePanel = createFakeElement();
+  const adaptiveReleaseNotesPanel = createFakeElement();
+  const adaptiveReleaseNotesBody = createFakeElement();
+  adaptiveReleaseNotesBody.scrollHeight = 160;
+  adaptiveReleaseNotesBody.clientHeight = 160;
+  adaptiveReleaseNotesBody.offsetHeight = 160;
+  adaptiveReleaseNotesPanel.querySelector = (selector: string): Element | null =>
+    selector === ".v2-release-notes-body" ? adaptiveReleaseNotesBody as unknown as Element : null;
+  const adaptiveHelpPanel = createFakeElement();
+  const adaptiveFactorizationPanel = createFakeElement();
+  const adaptiveNumberLinePanel = createFakeElement();
+  const adaptiveCirclePanel = createFakeElement();
+  const adaptiveEigenAllocatorPanel = createFakeElement();
+  const adaptiveAlgebraicPanel = createFakeElement();
+  const adaptiveTotalPanel = createFakeElement();
+  const adaptiveRoot: RootLike = {
+    querySelector: (selector: string) => {
+      if (selector === "[data-v2-visualizer-host]") {
+        return adaptiveHost as unknown as Element;
+      }
+      if (selector === "[data-display-window]") {
+        return adaptiveDisplayWindow as unknown as Element;
+      }
+      if (selector === "[data-grapher-device]") {
+        return adaptiveGraphDevice as unknown as Element;
+      }
+      if (selector === "[data-v2-feed-panel]") {
+        return adaptiveFeedPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-title-panel]") {
+        return adaptiveTitlePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-release-notes-panel]") {
+        return adaptiveReleaseNotesPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-help-panel]") {
+        return adaptiveHelpPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-factorization-panel]") {
+        return adaptiveFactorizationPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-total-panel]") {
+        return adaptiveTotalPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-number-line-panel]") {
+        return adaptiveNumberLinePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-circle-panel]") {
+        return adaptiveCirclePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-eigen-allocator-panel]") {
+        return adaptiveEigenAllocatorPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-algebraic-panel]") {
+        return adaptiveAlgebraicPanel as unknown as Element;
+      }
+      return null;
+    },
+    querySelectorAll: () => [],
+  };
+  renderVisualizerHost(adaptiveRoot as unknown as Element, withReleaseNotesSelected);
+  assert.equal(
+    adaptiveDisplayWindow.attributes["style:--v2-visualizer-panel-height"],
+    "160.00px",
+    "text-budget visualizers can override canonical target height using rendered content measurement",
+  );
+
+  const feedHost = createFakeElement();
+  const feedDisplayWindow = createFakeElement();
+  const feedGraphDevice = createFakeElement();
+  const feedBaselinePanel = createFakeElement();
+  const feedTable = createFakeElement();
+  feedTable.scrollHeight = 58;
+  feedTable.clientHeight = 58;
+  feedTable.offsetHeight = 58;
+  feedBaselinePanel.querySelector = (selector: string): Element | null =>
+    selector === ".v2-feed-table" ? feedTable as unknown as Element : null;
+  const feedTitlePanel = createFakeElement();
+  const feedReleaseNotesPanel = createFakeElement();
+  const feedHelpPanel = createFakeElement();
+  const feedFactorizationPanel = createFakeElement();
+  const feedNumberLinePanel = createFakeElement();
+  const feedCirclePanel = createFakeElement();
+  const feedEigenAllocatorPanel = createFakeElement();
+  const feedAlgebraicPanel = createFakeElement();
+  const feedTotalPanel = createFakeElement();
+  const feedRoot: RootLike = {
+    querySelector: (selector: string) => {
+      if (selector === "[data-v2-visualizer-host]") {
+        return feedHost as unknown as Element;
+      }
+      if (selector === "[data-display-window]") {
+        return feedDisplayWindow as unknown as Element;
+      }
+      if (selector === "[data-grapher-device]") {
+        return feedGraphDevice as unknown as Element;
+      }
+      if (selector === "[data-v2-feed-panel]") {
+        return feedBaselinePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-title-panel]") {
+        return feedTitlePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-release-notes-panel]") {
+        return feedReleaseNotesPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-help-panel]") {
+        return feedHelpPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-factorization-panel]") {
+        return feedFactorizationPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-total-panel]") {
+        return feedTotalPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-number-line-panel]") {
+        return feedNumberLinePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-circle-panel]") {
+        return feedCirclePanel as unknown as Element;
+      }
+      if (selector === "[data-v2-eigen-allocator-panel]") {
+        return feedEigenAllocatorPanel as unknown as Element;
+      }
+      if (selector === "[data-v2-algebraic-panel]") {
+        return feedAlgebraicPanel as unknown as Element;
+      }
+      return null;
+    },
+    querySelectorAll: () => [],
+  };
+  renderVisualizerHost(feedRoot as unknown as Element, withFeedOn);
+  assert.equal(
+    feedDisplayWindow.attributes["style:--v2-visualizer-panel-height"],
+    "96.00px",
+    "feed visualizer can shrink to baseline row height floor for sparse table content",
+  );
 
   const withPrimeVisualizers: GameState = {
     ...base,

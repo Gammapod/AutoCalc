@@ -41,7 +41,7 @@ export type FeedTableViewModel = {
   rWidth: number;
 };
 
-const FEED_MAX_VISIBLE_ROWS = 7;
+const FEED_MAX_VISIBLE_ROWS = 12;
 const FEED_FIXED_COLUMN_WIDTH = 5;
 const FEED_Y_COLUMN_PADDING_CHARS = 3;
 const FEED_R_COLUMN_PADDING_CHARS = 3;

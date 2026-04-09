@@ -45,13 +45,13 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     fit: {
       kind: "text_wrap_clamp",
       overflow: "forbid_scroll",
-      budget: { topPx: 8, bodyPx: 118, bottomPx: 8, maxLines: 9 },
+      budget: { topPx: 8, bodyPx: 118, bottomPx: 8, maxLines: 12 },
     },
     size: {
       mode: "text_budget",
-      minLines: 6,
+      minLines: 1,
       targetLines: 7,
-      maxLines: 9,
+      maxLines: 12,
     },
     render: renderFeedVisualizerPanel,
     clear: clearFeedVisualizerPanel,

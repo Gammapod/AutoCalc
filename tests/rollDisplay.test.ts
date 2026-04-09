@@ -158,8 +158,8 @@ export const runRollDisplayTests = (): void => {
     ],
     9,
   );
-  assert.equal(feedWindowWithRemainder.rows.length, 7, "feed table keeps rolling window of seven rows");
-  assert.equal(feedWindowWithRemainder.rows[0]?.x, 2, "feed table drops oldest rows when window exceeds seven");
+  assert.equal(feedWindowWithRemainder.rows.length, 9, "feed table keeps all rows while count stays at or below twelve");
+  assert.equal(feedWindowWithRemainder.rows[0]?.x, 0, "feed table keeps seed row until row count exceeds twelve");
   assert.equal(feedWindowWithRemainder.showRColumn, true, "feed table shows r column when visible rows contain remainder");
   assert.equal(feedWindowWithRemainder.xWidth, 5, "feed X column width is fixed at five");
   assert.equal(feedWindowWithRemainder.yWidth, 12, "feed Y column width is max digits plus three padding chars");
@@ -176,12 +176,19 @@ export const runRollDisplayTests = (): void => {
       e(r(7n)),
       e(r(8n)),
       e(r(9n)),
+      e(r(10n)),
+      e(r(11n)),
+      e(r(12n)),
+      e(r(13n)),
+      e(r(14n)),
     ],
   );
+  assert.equal(feedWindowWithoutVisibleRemainder.rows.length, 12, "feed table caps visible rows at twelve");
+  assert.equal(feedWindowWithoutVisibleRemainder.rows[0]?.x, 2, "feed table drops oldest rows once row count exceeds twelve");
   assert.equal(
     feedWindowWithoutVisibleRemainder.showRColumn,
     false,
-    "feed table hides r column when remainder is outside the visible seven-row window",
+    "feed table hides r column when remainder is outside the visible twelve-row window",
   );
 
   const base = initialState();

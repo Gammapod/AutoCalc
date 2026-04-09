@@ -172,6 +172,11 @@ export const runUiIntegrationMobileShellTests = (): void => {
           { y: r(7n) },
           { y: r(8n) },
           { y: r(9n) },
+          { y: r(10n) },
+          { y: r(11n) },
+          { y: r(12n) },
+          { y: r(13n) },
+          { y: r(14n) },
         ],
       },
     }));

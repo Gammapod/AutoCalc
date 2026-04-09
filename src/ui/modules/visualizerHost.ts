@@ -292,6 +292,97 @@ const resolvePanelHeightPx = (panelSize: VisualizerCanonicalSize, displayWidthPx
   return clampPanelHeightMin(Math.max(minHeight, Math.min(maxHeight, targetHeight)));
 };
 
+const readElementPixelDimension = (element: Element, key: "scrollHeight" | "clientHeight" | "offsetHeight"): number | null => {
+  const record = element as unknown as Record<string, unknown>;
+  const value = record[key];
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+  return value;
+};
+
+const resolveMeasuredElementHeightPx = (element: Element): number | null => {
+  const scrollHeight = readElementPixelDimension(element, "scrollHeight");
+  const clientHeight = readElementPixelDimension(element, "clientHeight");
+  const offsetHeight = readElementPixelDimension(element, "offsetHeight");
+  const measured = Math.max(scrollHeight ?? 0, clientHeight ?? 0, offsetHeight ?? 0);
+  return measured > 0 ? measured : null;
+};
+
+const resolveElementVerticalPaddingPx = (element: HTMLElement): number => {
+  if (typeof window === "undefined") {
+    return 0;
+  }
+  const computed = window.getComputedStyle(element);
+  const top = Number.parseFloat(computed.paddingTop || "");
+  const bottom = Number.parseFloat(computed.paddingBottom || "");
+  const topPx = Number.isFinite(top) ? top : 0;
+  const bottomPx = Number.isFinite(bottom) ? bottom : 0;
+  return Math.max(0, topPx + bottomPx);
+};
+
+const resolveTextPanelMeasurementTarget = (panelElement: HTMLElement, panel: VisualizerHostPanel): HTMLElement | null => {
+  if (typeof panelElement.querySelector !== "function") {
+    return null;
+  }
+  if (panel === "feed") {
+    return panelElement.querySelector<HTMLElement>(".v2-feed-table");
+  }
+  if (panel === "factorization") {
+    return panelElement.querySelector<HTMLElement>(".v2-factorization-table");
+  }
+  if (panel === "help") {
+    return panelElement.querySelector<HTMLElement>(".v2-help-table");
+  }
+  if (panel === "release_notes") {
+    return panelElement.querySelector<HTMLElement>(".v2-release-notes-body");
+  }
+  return null;
+};
+
+const applyRenderedTextPanelHeight = (
+  root: Element,
+  state: GameState,
+  panel: VisualizerHostPanel,
+  fallbackMetrics: { displayWidthPx: number; panelHeightPx: number } | null,
+): { displayWidthPx: number; panelHeightPx: number } | null => {
+  const module = resolveVisualizerModule(panel);
+  if (!module) {
+    return fallbackMetrics;
+  }
+  const panelSize = resolveCanonicalPanelSize(module, state);
+  if (panelSize.mode !== "text_budget") {
+    return fallbackMetrics;
+  }
+  const panelElement = resolvePanelElement(root, panel);
+  if (!panelElement) {
+    return fallbackMetrics;
+  }
+  const displayWindow = root.querySelector<HTMLElement>("[data-display-window]");
+  if (!displayWindow) {
+    return fallbackMetrics;
+  }
+  const targetElement = resolveTextPanelMeasurementTarget(panelElement, panel);
+  const panelContentHeight = resolveMeasuredElementHeightPx(panelElement);
+  const targetContentHeight = targetElement ? resolveMeasuredElementHeightPx(targetElement) : null;
+  const measuredContentHeight = Math.max(panelContentHeight ?? 0, targetContentHeight ?? 0);
+  if (measuredContentHeight <= 0) {
+    return fallbackMetrics;
+  }
+  const panelPadding = targetElement ? resolveElementVerticalPaddingPx(panelElement) : 0;
+  const measuredPanelHeight = measuredContentHeight + panelPadding;
+
+  const displayWidthPx = fallbackMetrics?.displayWidthPx ?? resolveDisplayWidthPx(displayWindow);
+  const widthScale = Math.max(0.01, displayWidthPx / FIXED_WIDTH_PX);
+  const scaledLineHeightPx = REFERENCE_TEXT_LINE_HEIGHT_PX * widthScale;
+  const minHeight = clampPanelHeightMin(panelSize.minLines * scaledLineHeightPx);
+  // When rendered text exceeds the canonical budget, expand host height so text never clips.
+  const panelHeightPx = Math.max(minHeight, clampPanelHeightMin(measuredPanelHeight));
+
+  displayWindow.style.setProperty(PANEL_HEIGHT_VAR, `${panelHeightPx.toFixed(2)}px`);
+  return { displayWidthPx, panelHeightPx };
+};
+
 const applyHostPanelHeight = (
   root: Element,
   state: GameState,
@@ -446,6 +537,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   applyFitContractState(host, activePanel);
   const transitionPhase = resolveTransitionPhase(runtime.previousActivePanel, activePanel);
   const previousPanel = runtime.previousActivePanel;
+  const panelMetrics = applyHostPanelHeight(root, state, activePanel);
 
   if (host) {
     if (transitionPhase === "swap") {
@@ -456,19 +548,11 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
     } else {
       releaseSwapLock(runtime, host);
     }
-    const panelMetrics = applyHostPanelHeight(root, state, activePanel);
-    if (isDebugVisualizerOverlayEnabled() && panelMetrics && panelMetrics.displayWidthPx > 0) {
-      host.dataset.v2VisualizerDebugRatio = `${(panelMetrics.panelHeightPx / panelMetrics.displayWidthPx).toFixed(3)}`;
-    } else {
-      host.dataset.v2VisualizerDebugRatio = "";
-    }
     host.dataset.v2VisualizerPanel = activePanel;
     host.dataset.v2VisualizerTransition = transitionPhase;
     host.dataset.v2VisualizerFrom = previousPanel;
     host.dataset.v2VisualizerTo = activePanel;
     host.setAttribute("aria-hidden", "false");
-  } else {
-    applyHostPanelHeight(root, state, activePanel);
   }
 
   if (graphDevice) {
@@ -524,6 +608,14 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
     }
     {
       panel.clear(root);
+    }
+  }
+  const finalPanelMetrics = applyRenderedTextPanelHeight(root, state, activePanel, panelMetrics);
+  if (host) {
+    if (isDebugVisualizerOverlayEnabled() && finalPanelMetrics && finalPanelMetrics.displayWidthPx > 0) {
+      host.dataset.v2VisualizerDebugRatio = `${(finalPanelMetrics.panelHeightPx / finalPanelMetrics.displayWidthPx).toFixed(3)}`;
+    } else {
+      host.dataset.v2VisualizerDebugRatio = "";
     }
   }
   runDevFitDiagnostics(root, activePanel);

@@ -17,7 +17,6 @@ const padLeft = (text: string, width: number): string => {
 };
 
 const buildDivider = (width: number): string => "-".repeat(width);
-const FEED_VISIBLE_ROWS = 7;
 
 const appendFeedTableLine = (
   table: HTMLElement,
@@ -79,8 +78,8 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   const headerR = view.showRColumn ? `|${padCenter("r", view.rWidth)}` : null;
   const dividerR = view.showRColumn ? `|${buildDivider(view.rWidth)}` : null;
   const plainLines: string[] = [buildPlainFeedTableLine(headerLeft, headerR), buildPlainFeedTableLine(dividerLeft, dividerR)];
-  for (let index = 0; index < FEED_VISIBLE_ROWS; index += 1) {
-    const row = view.rows[index];
+  const visibleRows = view.rows.length > 0 ? view.rows : [null];
+  for (const row of visibleRows) {
     const rowLeft = row
       ? `${buildFeedXRowCell(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
       : `${buildFeedXRowCell(null, view.xWidth)}|${" ".repeat(view.yWidth)}`;
@@ -99,8 +98,7 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   appendFeedTableLine(table, headerLeft, headerR);
   appendFeedTableLine(table, dividerLeft, dividerR);
 
-  for (let index = 0; index < FEED_VISIBLE_ROWS; index += 1) {
-    const row = view.rows[index];
+  for (const row of visibleRows) {
     const rowLeft = row
       ? `${buildFeedXRowCell(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
       : `${buildFeedXRowCell(null, view.xWidth)}|${" ".repeat(view.yWidth)}`;

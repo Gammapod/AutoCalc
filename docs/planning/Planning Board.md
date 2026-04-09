@@ -11,100 +11,13 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Next
 
-### Slice `n-ary_operators`
-- User Story: As a player, I want the calculator to contain N-ary operations, so that advanced results related to `e` and prime numbers can be reached.
-- Delivery Plan: Implement as ordered dependent slices below.
-- Critical Path: `slice_nary_operator_contract_v1` -> `slice_nary_operand_model_v1` + `slice_nary_key_catalog_scaffold` -> `slice_nary_builder_draft_state_v1` -> `slice_nary_builder_display_tokens_v1` + `slice_nary_execution_symbolic_bridge` -> `slice_nary_execution_exact_prod_n` -> `slice_nary_policy_registry_integration` -> `slice_nary_unlock_capability_integration` -> `slice_nary_contract_tests_and_parity`.
-
-### Slice `slice_nary_operator_contract_v1`
-- User Story: As a developer, I want a single canonical contract for the first N-ary operator so implementation and tests align.
+### Slice `slice_progress_signal_bars`
+- User Story: As a player, I want progression and reward status to be shown visually so I can scan my status faster than reading verbose text blocks.
 - Exit Criteria:
-- First operator and domain contract is explicit (example: `ℿℕ{1..n}`).
-- Seed behavior, binary-operand behavior, and error semantics are specified.
-- Dependencies: none.
-
-### Slice `slice_nary_key_catalog_scaffold`
-- User Story: As a developer, I want N-ary keys represented in the key catalog and presentation layers so input plumbing can be routed.
-- Exit Criteria:
-- Key IDs, faces, and catalog entries exist for N-ary keys.
-- Handler routing recognizes N-ary inputs.
-- Runtime layout/state invariants accept N-ary keys.
-- Dependencies: `slice_nary_operator_contract_v1`.
-
-### Slice `slice_nary_operand_model_v1`
-- User Story: As a developer, I want an explicit operand model for N-ary bounds so runtime does not rely on ad-hoc text.
-- Exit Criteria:
-- Slot operand model supports N-ary bound data.
-- Persistence/serialization handles the new operand shape.
-- Dependencies: `slice_nary_operator_contract_v1`.
-
-### Slice `slice_nary_builder_draft_state_v1`
-- User Story: As a player, I want to stage `∏ℕ{1.._}` inside binary slot drafting and then enter the bound digit.
-- Exit Criteria:
-- Drafting supports incomplete N-ary bound state.
-- Digit input fills N-ary bound in draft state.
-- Dependencies: `slice_nary_key_catalog_scaffold`, `slice_nary_operand_model_v1`.
-
-### Slice `slice_nary_builder_toggle_unset`
-- User Story: As a player, I want pressing the same N-ary key again to unset it while drafting.
-- Exit Criteria:
-- Repeat N-ary press toggles draft operand between set/unset states.
-- Dependencies: `slice_nary_builder_draft_state_v1`.
-
-### Slice `slice_nary_seed_entry_path_v1`
-- User Story: As a player, I want to set the seed as N-ary (`∏ℕ{1..n}`) before adding slots.
-- Exit Criteria:
-- Seed entry path accepts and renders N-ary.
-- Dependencies: `slice_nary_builder_draft_state_v1`.
-
-### Slice `slice_nary_operand_retrofit_previous_slot`
-- User Story: As a player, I want to convert an already-entered binary operand into N-ary if the next slot has not started.
-- Exit Criteria:
-- Workflow `2 [ + 4 ]` -> `2 [ + ∏ℕ{1..4} ]` is supported.
-- Dependencies: `slice_nary_builder_draft_state_v1`.
-
-### Slice `slice_nary_backspace_undo_semantics`
-- User Story: As a player, I want backspace/undo to traverse N-ary draft and committed states predictably.
-- Exit Criteria:
-- Backspace/undo behavior for incomplete and complete N-ary states is deterministic and tested.
-- Dependencies: `slice_nary_builder_toggle_unset`, `slice_nary_seed_entry_path_v1`, `slice_nary_operand_retrofit_previous_slot`.
-
-### Slice `slice_nary_builder_display_tokens_v1`
-- User Story: As a player, I want slot and algebraic displays to show N-ary forms clearly (`{1.._}`, `{1..n}`).
-- Exit Criteria:
-- Operation slot display and algebraic recurrence render N-ary draft/committed tokens.
-- Dependencies: `slice_nary_builder_draft_state_v1`.
-
-### Slice `slice_nary_execution_symbolic_bridge`
-- User Story: As a developer, I want N-ary operands to pass through execution safely before exact evaluator rollout.
-- Exit Criteria:
-- Execution pipeline accepts N-ary operand kind without contract violations.
-- Dependencies: `slice_nary_operand_model_v1`, `slice_nary_builder_display_tokens_v1`.
-
-### Slice `slice_nary_execution_exact_prod_n`
-- User Story: As a player, I want the first N-ary operator to evaluate with exact deterministic math.
-- Exit Criteria:
-- Exact evaluator for first N-ary operator is implemented.
-- Domain invalid cases produce deterministic error outcomes.
-- Dependencies: `slice_nary_execution_symbolic_bridge`.
-
-### Slice `slice_nary_policy_registry_integration`
-- User Story: As a developer, I want N-ary behavior integrated into execution policy and diagnostics contracts.
-- Exit Criteria:
-- Operator policy tables and diagnostics include N-ary behavior.
-- Dependencies: `slice_nary_execution_exact_prod_n`.
-
-### Slice `slice_nary_unlock_capability_integration`
-- User Story: As a designer, I want unlock/capability systems to reason about N-ary keys and behaviors.
-- Exit Criteria:
-- Unlock and capability semantics include N-ary actions.
-- Dependencies: `slice_nary_key_catalog_scaffold`, `slice_nary_policy_registry_integration`.
-
-### Slice `slice_nary_contract_tests_and_parity`
-- User Story: As a maintainer, I want N-ary behavior covered by contracts and parity fixtures to prevent regressions.
-- Exit Criteria:
-- Key behavior, reducer, display, and parity tests cover all agreed workflows.
-- Dependencies: all previous N-ary slices.
+- Goal/reward text blocks are replaced by visual progress/signal bars in primary progression surfaces.
+- Bars are legible on desktop and mobile form factors.
+- Visual states remain non-spoiler and preserve current hint fidelity.
+- Accessibility baseline is preserved (contrast and non-color cue support).
 
 ## Later
 
@@ -122,19 +35,15 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Digits/values: Previous result f(x-1), Roll index X.
 - Visualizer/content: Function display expanded-form rendering improvements.
 
-### Slice `slice_progress_signal_bars`
-- User Story: As a player, I want progression and reward status to be shown visually so I can scan my status faster than reading verbose text blocks.
-- Exit Criteria:
-- Goal/reward text blocks are replaced by visual progress/signal bars in primary progression surfaces.
-- Bars are legible on desktop and mobile form factors.
-- Visual states remain non-spoiler and preserve current hint fidelity.
-- Accessibility baseline is preserved (contrast and non-color cue support).
-
 ### Slice `function_navigation_utility_keys` (unrefined, do not implement)
 - key 1: select previous operation slot. Highlights previous slot for editing.
 - key 2: select next operation slot. Highlights next slot for editing (cannot go beyond a not-fully-defined slot).
 
 ## Eventually
+
+### Slice `values_from_index`
+
+### Slice `values_from_other_calcs`
 
 ### Slice `slice_function_builder_bar_standardization`
 - User Story: As a player, I want the function builder bar to look and behave consistently across states so editing functions feels predictable.
