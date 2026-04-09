@@ -1,6 +1,6 @@
 # AutoCalc Development Guidelines
 
-Last updated: 2026-03-12
+Last updated: 2026-04-08
 Scope: Engineering process and delivery rules that are not runtime behavior specs.
 
 ## 1. Migration Philosophy
@@ -16,6 +16,7 @@ Scope: Engineering process and delivery rules that are not runtime behavior spec
 - Cross-platform changes require parity checks and contract tests.
 - Import boundaries must prevent unintended coupling between shell paths.
 - Accessibility baselines (keyboard and screen-reader support) are required, not optional polish.
+- Runtime math model guardrail: do not introduce new production pathways that create `expr` calculator/scalar values. Treat `expr` as compatibility-only and prefer closed-form `rational`/`alg` outcomes; if an operator cannot stay closed, reject explicitly rather than widening runtime `expr` usage.
 
 ## 3. Quality Gates
 
