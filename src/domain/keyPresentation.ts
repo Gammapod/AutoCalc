@@ -14,6 +14,7 @@ export const KEY_ID = {
   const_pi: "const_pi",
   const_e: "const_e",
   const_bottom: "const_bottom",
+  const_roll_number: "const_roll_number",
   op_add: "op_add",
   op_sub: "op_sub",
   op_mul: "op_mul",
@@ -85,7 +86,11 @@ export type DigitKeyId =
   | typeof KEY_ID.digit_7
   | typeof KEY_ID.digit_8
   | typeof KEY_ID.digit_9;
-export type ConstantKeyId = typeof KEY_ID.const_pi | typeof KEY_ID.const_e | typeof KEY_ID.const_bottom;
+export type ConstantKeyId =
+  | typeof KEY_ID.const_pi
+  | typeof KEY_ID.const_e
+  | typeof KEY_ID.const_bottom
+  | typeof KEY_ID.const_roll_number;
 export type BinaryOperatorKeyId =
   | typeof KEY_ID.op_add
   | typeof KEY_ID.op_sub
@@ -152,6 +157,7 @@ export type ExecKeyId =
 export type ValueAtomKeyId = DigitKeyId | ConstantKeyId;
 export type OperatorKeyId = BinaryOperatorKeyId | UnaryOperatorKeyId;
 export const BOTTOM_VALUE_SYMBOL = "\u22A5";
+export const ROLL_NUMBER_SYMBOL = "\u2116";
 
 export type KeyPresentation = {
   keyId: KeyId;
@@ -177,6 +183,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.const_pi, { buttonFace: "\u03C0" }],
   [KEY_ID.const_e, { buttonFace: "e" }],
   [KEY_ID.const_bottom, { buttonFace: BOTTOM_VALUE_SYMBOL }],
+  [KEY_ID.const_roll_number, { buttonFace: ROLL_NUMBER_SYMBOL }],
   [KEY_ID.op_add, { buttonFace: "+", operatorInlineFace: "+", operatorSlotFace: "+", operatorAlgebraicFace: "+" }],
   [KEY_ID.op_sub, { buttonFace: "-", operatorInlineFace: "-", operatorSlotFace: "-", operatorAlgebraicFace: "-" }],
   [KEY_ID.op_mul, { buttonFace: "\u00D7", operatorInlineFace: "\u00D7", operatorSlotFace: "\u00D7", operatorAlgebraicFace: "\u00D7" }],
@@ -357,5 +364,8 @@ export const isUnsupportedSymbolicOperatorKeyId = (keyId: KeyId): boolean => {
     || keyId === KEY_ID.op_lcm;
 };
 export const isConstantKeyId = (keyId: KeyId): keyId is ConstantKeyId => {
-  return keyId === KEY_ID.const_pi || keyId === KEY_ID.const_e || keyId === KEY_ID.const_bottom;
+  return keyId === KEY_ID.const_pi
+    || keyId === KEY_ID.const_e
+    || keyId === KEY_ID.const_bottom
+    || keyId === KEY_ID.const_roll_number;
 };

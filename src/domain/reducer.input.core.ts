@@ -85,6 +85,7 @@ import {
   isDigitKeyId,
   isUnaryOperatorId,
   KEY_ID,
+  ROLL_NUMBER_SYMBOL,
   resolveKeyId,
   type ConstantKeyId,
 } from "./keyPresentation.js";
@@ -134,6 +135,10 @@ const isSeedEntryContext = (state: GameState): boolean =>
   state.calculator.draftingSlot === null;
 
 const hasExecutedRollSteps = (state: GameState): boolean => state.calculator.rollEntries.length > 1;
+const getCurrentRollNumber = (state: GameState): bigint => {
+  const count = BigInt(state.calculator.rollEntries.length);
+  return count > 0n ? count : 1n;
+};
 
 const hasStartedFunctionBuild = (state: GameState): boolean =>
   state.calculator.operationSlots.length > 0 || state.calculator.draftingSlot !== null;
@@ -270,11 +275,42 @@ export const applyDigit = (state: GameState, key: Key): GameState => {
 };
 
 export const applyConstantValue = (state: GameState, constant: ConstantKeyId): GameState => {
-  if (constant !== KEY_ID.const_bottom) {
+  if (constant !== KEY_ID.const_bottom && constant !== KEY_ID.const_roll_number) {
     // Player input path: constants are not directly enterable as seed or right operand.
     return state;
   }
   if (hasExecutedRollSteps(state)) {
+    return state;
+  }
+  if (constant === KEY_ID.const_roll_number) {
+    if (state.calculator.draftingSlot) {
+      const nextPatch = {
+        operationSlots: state.calculator.operationSlots,
+        draftingSlot: {
+          ...state.calculator.draftingSlot,
+          operandInput: ROLL_NUMBER_SYMBOL,
+          isNegative: false,
+        },
+      } satisfies Pick<GameState["calculator"], "operationSlots" | "draftingSlot">;
+      return applyUnlocks(withSeedRollSyncedToBuildState(withBuilderPatchApplied(state, nextPatch)), getUnlockCatalog());
+    }
+    if (state.calculator.operationSlots.length > 0) {
+      const slotIndex = state.calculator.operationSlots.length - 1;
+      const currentSlot = state.calculator.operationSlots[slotIndex];
+      if (!("operand" in currentSlot)) {
+        return state;
+      }
+      const nextSlots = [...state.calculator.operationSlots];
+      nextSlots[slotIndex] = {
+        ...currentSlot,
+        operand: { type: "symbolic", text: ROLL_NUMBER_SYMBOL },
+      };
+      const nextPatch = {
+        operationSlots: nextSlots,
+        draftingSlot: null,
+      } satisfies Pick<GameState["calculator"], "operationSlots" | "draftingSlot">;
+      return applyUnlocks(withSeedRollSyncedToBuildState(withBuilderPatchApplied(state, nextPatch)), getUnlockCatalog());
+    }
     return state;
   }
   if (state.calculator.draftingSlot) {
@@ -319,9 +355,11 @@ export const applyConstantValue = (state: GameState, constant: ConstantKeyId): G
 
 const isBottomValueKey = (key: Key): key is ConstantKeyId =>
   key === KEY_ID.const_bottom;
+const isRollNumberValueKey = (key: Key): key is ConstantKeyId =>
+  key === KEY_ID.const_roll_number;
 
 const isActiveRollValueInputNoop = (key: Key): boolean =>
-  isValueAtomDigit(key) || isBottomValueKey(key);
+  isValueAtomDigit(key) || isBottomValueKey(key) || isRollNumberValueKey(key);
 
 const applyDigitValue = (state: GameState, digit: Digit): GameState => {
   if (hasExecutedRollSteps(state)) {
@@ -710,12 +748,13 @@ const toDiagnosticRationalValue = (
 const computePeerStepValue = (
   previousPeer: GameState["calculator"]["total"],
   operationSlots: GameState["calculator"]["operationSlots"],
+  currentRollNumber: bigint,
 ): GameState["calculator"]["total"] | null => {
   const peerRational = toDiagnosticRationalValue(previousPeer);
   if (!peerRational) {
     return null;
   }
-  const executed = executeSlotsValue(peerRational, operationSlots);
+  const executed = executeSlotsValue(peerRational, operationSlots, { currentRollNumber });
   if (!executed.ok) {
     return null;
   }
@@ -851,8 +890,9 @@ const resolveRollDiagnosticPatch = (
     return null;
   }
 
-  const seedMinus1Y = computePeerStepValue(previousPeerMinus, operationSlots);
-  const seedPlus1Y = computePeerStepValue(previousPeerPlus, operationSlots);
+  const currentRollNumber = BigInt(context.nextIndex);
+  const seedMinus1Y = computePeerStepValue(previousPeerMinus, operationSlots, currentRollNumber);
+  const seedPlus1Y = computePeerStepValue(previousPeerPlus, operationSlots, currentRollNumber);
   if (!seedMinus1Y || !seedPlus1Y) {
     return null;
   }
@@ -1070,8 +1110,9 @@ const withRollDiagnosticsApplied = (
       };
     }
 
-    const seedMinus1Y = computePeerStepValue(previousPeerMinus, operationSlots);
-    const seedPlus1Y = computePeerStepValue(previousPeerPlus, operationSlots);
+    const currentRollNumber = BigInt(analysisIndex);
+    const seedMinus1Y = computePeerStepValue(previousPeerMinus, operationSlots, currentRollNumber);
+    const seedPlus1Y = computePeerStepValue(previousPeerPlus, operationSlots, currentRollNumber);
     if (!seedMinus1Y || !seedPlus1Y) {
       return {
         ...baseRollState,
@@ -1132,7 +1173,7 @@ const evaluateExecutionOutcomeForSlots = (
     }
   }
 
-  const execution = executeSlotsValue(seedTotal, operationSlots);
+  const execution = executeSlotsValue(seedTotal, operationSlots, { currentRollNumber: getCurrentRollNumber(state) });
   if (!execution.ok) {
     const errorCode = resolveNanErrorCode(operationSlots, {
       operatorId: execution.operatorId,

@@ -416,8 +416,13 @@ const analyzeOperationFirstEuclidEquivalentModulo: PredicateAnalyzer<OperationFi
   let evaluationsSucceeded = false;
   let resultMatchesModuloBaseline = false;
   if (firstIsEuclid) {
-    const combined = executeSlotsValue(state.calculator.total, slots);
-    const baseline = executeSlotsValue(state.calculator.total, [{ kind: "binary", operator: KEY_ID.op_mod, operand: firstSlot.operand }]);
+    const currentRollNumber = BigInt(Math.max(1, state.calculator.rollEntries.length));
+    const combined = executeSlotsValue(state.calculator.total, slots, { currentRollNumber });
+    const baseline = executeSlotsValue(
+      state.calculator.total,
+      [{ kind: "binary", operator: KEY_ID.op_mod, operand: firstSlot.operand }],
+      { currentRollNumber },
+    );
     evaluationsSucceeded = combined.ok && baseline.ok;
     if (combined.ok && baseline.ok) {
       resultMatchesModuloBaseline = calculatorValueToDisplayString(combined.total) === calculatorValueToDisplayString(baseline.total);

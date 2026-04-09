@@ -1295,6 +1295,23 @@ export const runReducerInputTests = (): void => {
     "symbolic render text never uses decimal notation",
   );
 
+  const rollNumberDraftingSource = applyKeyAction(fullyUnlocked, "op_add");
+  const rollNumberDrafting = applyKeyAction(rollNumberDraftingSource, "const_roll_number");
+  assert.equal(rollNumberDrafting.calculator.draftingSlot?.operandInput, "№", "roll-number value key renders as № in drafting operand");
+
+  const rollNumberExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(11n),
+      rollEntries: re(r(10n), r(11n)),
+      operationSlots: [{ operator: op("op_add"), operand: { type: "symbolic", text: "№" } }],
+    },
+  };
+  const afterRollNumberExecution = applyKeyAction(rollNumberExecutionSource, "exec_equals");
+  assertTotalEquivalent(afterRollNumberExecution.calculator.total, r(13n), "№ resolves to current roll number when executing slot");
+  assert.equal(afterRollNumberExecution.calculator.rollEntries.at(-1)?.error, undefined, "roll-number operand executes without symbolic error");
+
   const euclidDraftConstantBlocked = applyKeyAction(
     applyKeyAction(fullyUnlocked, "op_euclid_div"),
     "const_pi",

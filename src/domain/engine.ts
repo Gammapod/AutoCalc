@@ -27,7 +27,7 @@ import {
   slotOperandToExpression,
 } from "./expression.js";
 import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, ScalarValue, Slot, SlotOperator } from "./types.js";
-import { BOTTOM_VALUE_SYMBOL, isUnsupportedSymbolicOperatorKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
+import { BOTTOM_VALUE_SYMBOL, isUnsupportedSymbolicOperatorKeyId, KEY_ID, ROLL_NUMBER_SYMBOL, resolveKeyId } from "./keyPresentation.js";
 import { resolveOperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
 import {
   ALG_CONSTANTS,
@@ -73,6 +73,17 @@ const slotContainsBottomOperand = (slot: Slot): boolean => {
     return false;
   }
   return expressionContainsBottomOperand(slotOperandToExpression(slot.operand));
+};
+
+const expressionIsRollNumberOperand = (value: ExpressionValue): boolean =>
+  value.type === "symbolic" && value.text === ROLL_NUMBER_SYMBOL;
+
+const resolveRuntimeOperand = (operand: Exclude<Slot, { kind: "unary" }>["operand"], currentRollNumber: bigint): Exclude<Slot, { kind: "unary" }>["operand"] => {
+  const expression = typeof operand === "bigint" ? null : slotOperandToExpression(operand);
+  if (!expression || !expressionIsRollNumberOperand(expression)) {
+    return operand;
+  }
+  return currentRollNumber;
 };
 
 const gcdBigInt = (left: bigint, right: bigint): bigint => {
@@ -287,11 +298,16 @@ const sigmaBigInt = (value: bigint): bigint => {
   return result;
 };
 
-export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsResult => {
+export const executeSlots = (
+  total: RationalValue,
+  slots: Slot[],
+  options: { currentRollNumber?: bigint } = {},
+): ExecuteSlotsResult => {
   if (slots.length === 0) {
     return { ok: true, total };
   }
 
+  const currentRollNumber = options.currentRollNumber ?? 1n;
   let nextTotal = total;
   let lastEuclidModComponent: RationalValue | undefined;
   let endsWithEuclidLikeOperator = false;
@@ -371,28 +387,29 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       return { ok: false, reason: "nan_input" };
     }
 
-    if (typeof slot.operand !== "bigint") {
+    const runtimeOperand = resolveRuntimeOperand(slot.operand, currentRollNumber);
+    if (typeof runtimeOperand !== "bigint") {
       return { ok: false, reason: "unsupported_symbolic" };
     }
 
     if (resolveKeyId(slot.operator) === KEY_ID.op_add) {
-      nextTotal = addInt(nextTotal, slot.operand);
+      nextTotal = addInt(nextTotal, runtimeOperand);
       endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_sub) {
-      nextTotal = subInt(nextTotal, slot.operand);
+      nextTotal = subInt(nextTotal, runtimeOperand);
       endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_mul) {
-      nextTotal = mulInt(nextTotal, slot.operand);
+      nextTotal = mulInt(nextTotal, runtimeOperand);
       endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_pow) {
       try {
-        nextTotal = powRationalInt(nextTotal, slot.operand);
+        nextTotal = powRationalInt(nextTotal, runtimeOperand);
       } catch {
         return { ok: false, reason: "division_by_zero" };
       }
@@ -400,15 +417,15 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_div) {
-      if (slot.operand === 0n) {
+      if (runtimeOperand === 0n) {
         return { ok: false, reason: "division_by_zero" };
       }
-      nextTotal = divInt(nextTotal, slot.operand);
+      nextTotal = divInt(nextTotal, runtimeOperand);
       endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_euclid_div) {
-      const euclidean = euclideanDivide(nextTotal, slot.operand);
+      const euclidean = euclideanDivide(nextTotal, runtimeOperand);
       if (!euclidean.ok) {
         return euclidean;
       }
@@ -418,7 +435,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_mod) {
-      const euclidean = euclideanDivide(nextTotal, slot.operand);
+      const euclidean = euclideanDivide(nextTotal, runtimeOperand);
       if (!euclidean.ok) {
         return euclidean;
       }
@@ -431,7 +448,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       if (nextTotal.den !== 1n) {
         return { ok: false, reason: "nan_input" };
       }
-      nextTotal = { num: rotateLeftDigits(nextTotal.num, slot.operand), den: 1n };
+      nextTotal = { num: rotateLeftDigits(nextTotal.num, runtimeOperand), den: 1n };
       endsWithEuclidLikeOperator = false;
       continue;
     }
@@ -439,7 +456,7 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       if (nextTotal.den !== 1n) {
         return { ok: false, reason: "nan_input" };
       }
-      nextTotal = { num: gcdBigInt(nextTotal.num, slot.operand), den: 1n };
+      nextTotal = { num: gcdBigInt(nextTotal.num, runtimeOperand), den: 1n };
       endsWithEuclidLikeOperator = false;
       continue;
     }
@@ -447,21 +464,21 @@ export const executeSlots = (total: RationalValue, slots: Slot[]): ExecuteSlotsR
       if (nextTotal.den !== 1n) {
         return { ok: false, reason: "nan_input" };
       }
-      nextTotal = { num: lcmBigInt(nextTotal.num, slot.operand), den: 1n };
+      nextTotal = { num: lcmBigInt(nextTotal.num, runtimeOperand), den: 1n };
       endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_max) {
       const leftScaled = nextTotal.num;
-      const rightScaled = slot.operand * nextTotal.den;
-      nextTotal = leftScaled >= rightScaled ? nextTotal : { num: slot.operand, den: 1n };
+      const rightScaled = runtimeOperand * nextTotal.den;
+      nextTotal = leftScaled >= rightScaled ? nextTotal : { num: runtimeOperand, den: 1n };
       endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_min) {
       const leftScaled = nextTotal.num;
-      const rightScaled = slot.operand * nextTotal.den;
-      nextTotal = leftScaled <= rightScaled ? nextTotal : { num: slot.operand, den: 1n };
+      const rightScaled = runtimeOperand * nextTotal.den;
+      nextTotal = leftScaled <= rightScaled ? nextTotal : { num: runtimeOperand, den: 1n };
       endsWithEuclidLikeOperator = false;
       continue;
     }
@@ -601,6 +618,7 @@ const executeSlotsValueInternal = (
   total: CalculatorValue,
   slots: Slot[],
   routing: ExecutionPolicyRouting,
+  options: { currentRollNumber?: bigint } = {},
 ): ExecuteSlotsValueResult => {
   if (slots.length === 0) {
     return { ok: true, total };
@@ -611,6 +629,7 @@ const executeSlotsValueInternal = (
   const ZERO_RATIONAL = { num: 0n, den: 1n };
   const ONE_RATIONAL = { num: 1n, den: 1n };
   const COMPARISON_EPSILON = 1e-12;
+  const currentRollNumber = options.currentRollNumber ?? 1n;
 
   const scalarToExpression = (value: ScalarValue): ExpressionValue =>
     value.kind === "rational"
@@ -807,7 +826,12 @@ const executeSlotsValueInternal = (
   const binaryRightToScalar = (slot: Extract<Slot, { kind?: "binary" }>): ScalarValue =>
     typeof slot.operand === "bigint"
       ? toRationalScalarValue({ num: slot.operand, den: 1n })
-      : scalarFromExpression(slotOperandToExpression(slot.operand));
+      : (() => {
+        const resolvedOperand = resolveRuntimeOperand(slot.operand, currentRollNumber);
+        return typeof resolvedOperand === "bigint"
+          ? toRationalScalarValue({ num: resolvedOperand, den: 1n })
+          : scalarFromExpression(slotOperandToExpression(resolvedOperand));
+      })();
 
   const toApproximateNumber = (value: ScalarValue): number | null => {
     const resolved = scalarToRational(value);
@@ -937,7 +961,7 @@ const executeSlotsValueInternal = (
     ) {
       return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
-    const executed = executeSlots(pureReal, [slot]);
+    const executed = executeSlots(pureReal, [slot], { currentRollNumber });
     if (!executed.ok) {
       return { ok: false, reason: executed.reason, operatorId: slot.operator };
     }
@@ -1181,15 +1205,16 @@ const executeSlotsValueInternal = (
         continue;
       }
 
-      if (typeof slot.operand !== "bigint") {
+      const runtimeOperand = resolveRuntimeOperand(slot.operand, currentRollNumber);
+      if (typeof runtimeOperand !== "bigint") {
         return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
       }
       const norm = gaussianNorm(gaussian);
       if (operatorKey === KEY_ID.op_euclid_div || operatorKey === KEY_ID.op_mod) {
-        if (slot.operand === 0n) {
+        if (runtimeOperand === 0n) {
           return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
         }
-        const divided = gaussianDivideByInteger(gaussian, slot.operand);
+        const divided = gaussianDivideByInteger(gaussian, runtimeOperand);
         const quotient = toComplexCalculatorValue(
           toRationalScalarValue({ num: divided.quotient.re, den: 1n }),
           toRationalScalarValue({ num: divided.quotient.im, den: 1n }),
@@ -1205,19 +1230,19 @@ const executeSlotsValueInternal = (
         continue;
       }
       if (operatorKey === KEY_ID.op_gcd) {
-        current = toRationalCalculatorValue({ num: gcdBigInt(norm, slot.operand), den: 1n });
+        current = toRationalCalculatorValue({ num: gcdBigInt(norm, runtimeOperand), den: 1n });
         lastEuclidRemainder = undefined;
         continue;
       }
       if (operatorKey === KEY_ID.op_lcm) {
-        current = toRationalCalculatorValue({ num: lcmBigInt(norm, slot.operand), den: 1n });
+        current = toRationalCalculatorValue({ num: lcmBigInt(norm, runtimeOperand), den: 1n });
         lastEuclidRemainder = undefined;
         continue;
       }
       if (operatorKey === KEY_ID.op_rotate_left) {
         current = toExplicitComplexCalculatorValue(
-          toRationalScalarValue({ num: rotateLeftDigits(gaussian.re, slot.operand), den: 1n }),
-          toRationalScalarValue({ num: rotateLeftDigits(gaussian.im, slot.operand), den: 1n }),
+          toRationalScalarValue({ num: rotateLeftDigits(gaussian.re, runtimeOperand), den: 1n }),
+          toRationalScalarValue({ num: rotateLeftDigits(gaussian.im, runtimeOperand), den: 1n }),
         );
         lastEuclidRemainder = undefined;
         continue;
@@ -1225,7 +1250,8 @@ const executeSlotsValueInternal = (
       return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
 
-    if (operatorKey === KEY_ID.op_pow && typeof slot.operand !== "bigint") {
+    const runtimeOperand = resolveRuntimeOperand(slot.operand, currentRollNumber);
+    if (operatorKey === KEY_ID.op_pow && typeof runtimeOperand !== "bigint") {
       return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
     const rejectsSymbolicOperand = policy
@@ -1269,7 +1295,7 @@ const executeSlotsValueInternal = (
       continue;
     }
     if (operatorKey === KEY_ID.op_pow) {
-      const powOperand = slot.operand;
+      const powOperand = runtimeOperand;
       if (typeof powOperand !== "bigint") {
         return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
       }
@@ -1299,8 +1325,16 @@ export const executePlanIRLegacyPath = (
   plan: ExecutionPlanIR,
 ): ExecuteSlotsValueResult => executeSlotsValueInternal(plan.seed, materializeSlotsFromExecutionPlanIR(plan), "legacy");
 
-export const executeSlotsValue = (total: CalculatorValue, slots: Slot[]): ExecuteSlotsValueResult => {
+export const executeSlotsValue = (
+  total: CalculatorValue,
+  slots: Slot[],
+  options: { currentRollNumber?: bigint } = {},
+): ExecuteSlotsValueResult => {
   const built = buildExecutionPlanIR(total, slots);
-  return executePlanIR(built.plan);
+  return executeSlotsValueInternal(
+    built.plan.seed,
+    materializeSlotsFromExecutionPlanIR(built.plan),
+    "registry",
+    options,
+  );
 };
-

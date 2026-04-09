@@ -1,6 +1,6 @@
 import { parseExpressionOrNull } from "./expression.js";
 import type { BinarySlot, CalculatorState, DraftingSlot, Slot } from "./types.js";
-import { BOTTOM_VALUE_SYMBOL, isNaturalDivisorOperatorKeyId } from "./keyPresentation.js";
+import { BOTTOM_VALUE_SYMBOL, isNaturalDivisorOperatorKeyId, ROLL_NUMBER_SYMBOL } from "./keyPresentation.js";
 
 const DIGITS_ONLY_RE = /^\d+$/;
 const isNaturalDivisorOperator = (operator: DraftingSlot["operator"]): boolean => isNaturalDivisorOperatorKeyId(operator);
@@ -16,6 +16,16 @@ export const toCommittedDraftingSlot = (draftingSlot: DraftingSlot): BinarySlot 
       kind: "binary",
       operator: draftingSlot.operator,
       operand: { type: "symbolic", text: BOTTOM_VALUE_SYMBOL },
+    };
+  }
+  if (normalizedInput === ROLL_NUMBER_SYMBOL) {
+    const operandBase = { type: "symbolic", text: ROLL_NUMBER_SYMBOL } as const;
+    return {
+      kind: "binary",
+      operator: draftingSlot.operator,
+      operand: draftingSlot.isNegative
+        ? { type: "unary", op: "neg", arg: operandBase }
+        : operandBase,
     };
   }
   if (isNaturalDivisorOperator(draftingSlot.operator) && !DIGITS_ONLY_RE.test(normalizedInput)) {

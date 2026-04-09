@@ -238,7 +238,9 @@ const assertPrimaryExpectation = (key: Key, kind: string): void => {
       key,
     );
     const next = applyKeyAction(state, key);
-    const expectedInput = (isDigitKeyId(key) || key === KEY_ID.const_bottom) ? getButtonFace(key) : key;
+    const expectedInput = (isDigitKeyId(key) || key === KEY_ID.const_bottom || key === KEY_ID.const_roll_number)
+      ? getButtonFace(key)
+      : key;
     assert.equal(next.calculator.draftingSlot?.operandInput, expectedInput, `digit ${key} should populate drafting operand`);
     return;
   }
@@ -482,7 +484,9 @@ const assertEdgeExpectation = (key: Key, kind: string): void => {
       key,
     );
     const next = applyKeyAction(state, key);
-    const expectedInput = (isDigitKeyId(key) || key === KEY_ID.const_bottom) ? getButtonFace(key) : key;
+    const expectedInput = (isDigitKeyId(key) || key === KEY_ID.const_bottom || key === KEY_ID.const_roll_number)
+      ? getButtonFace(key)
+      : key;
     assert.equal(next.calculator.draftingSlot?.operandInput, expectedInput, `digit ${key} should replace full one-digit operand`);
     return;
   }

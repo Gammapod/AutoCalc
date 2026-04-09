@@ -144,6 +144,24 @@ export const runEngineTests = (): void => {
   const notNanInput = executeSlots(r(3n, 2n), [{ kind: "unary", operator: uop("unary_not") }]);
   assert.deepEqual(notNanInput, { ok: false, reason: "nan_input" }, "not rejects non-integer totals");
 
+  const rollNumberAsOperand = executeSlots(
+    r(10n),
+    [{ operator: op("op_add"), operand: { type: "symbolic", text: "№" } }],
+    { currentRollNumber: 7n },
+  );
+  assert.deepEqual(rollNumberAsOperand, { ok: true, total: r(17n) }, "roll-number symbolic operand resolves to runtime roll number");
+
+  const rollNumberInExecuteSlotsValue = executeSlotsValue(
+    toRationalCalculatorValue({ num: 11n, den: 1n }),
+    [{ operator: op("op_mul"), operand: { type: "symbolic", text: "№" } }],
+    { currentRollNumber: 3n },
+  );
+  assert.deepEqual(
+    rollNumberInExecuteSlotsValue,
+    { ok: true, total: toRationalCalculatorValue({ num: 33n, den: 1n }) },
+    "executeSlotsValue resolves roll-number symbolic operands before operator execution",
+  );
+
   const unaryI = executeSlotsValue(
     toRationalCalculatorValue({ num: 34n, den: 1n }),
     [{ kind: "unary", operator: uop("unary_i") }],
