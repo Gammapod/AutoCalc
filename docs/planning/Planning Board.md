@@ -148,6 +148,18 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 Record shipped trains here using this format:
 
+### Train v1.0.0 (2026-04-08)
+- Included Slice IDs:
+- `slice_algebraic_rotation_runtime_exactness`
+- `slice_unary_rotate_15_execution_and_inverse`
+- `slice_circle_visualizer_algebraic_projection`
+- `slice_release_docs_math_model_guardrail`
+- Release Note IDs:
+- `release_v1_0_0`
+- Player-facing highlights:
+- 15-degree rotation (`↶ ⦜/6`) now executes with exact algebraic scalar runtime behavior.
+- Circle, graph, and number-line visualizer projections now handle algebraic results consistently.
+
 ### Train v0.10.2 (2026-04-04)
 - Included Slice IDs:
 - `slice_mode_transition_in_app_runtime_v1`

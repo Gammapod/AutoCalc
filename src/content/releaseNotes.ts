@@ -5,6 +5,19 @@ export const releaseNotes: ReleaseNotesCatalog = {
   // 'summary' should contain the main change, and 'bullets' should list smaller changes.
   entries: [
     {
+      id: "release_v1_0_0",
+      releaseVersion: "v1.0.0",
+      channel: "released",
+      title: "Exact 15-Degree Rotation Runtime",
+      summary:
+        "Introduces exact algebraic scalar handling for 15-degree rotation and closes key complex-circle execution gaps.",
+      bullets: [
+        "Added exact unary 15-degree rotation behavior with deterministic inverse-stage support.",
+        "Circle and number-line/graph projections now correctly render and project algebraic scalar outputs.",
+        "Runtime and contract coverage expanded across engine, reducer-input, roll-display, and circle-renderer suites.",
+      ],
+    },
+    {
       id: "release_v0_10_2",
       releaseVersion: "v0.10.2",
       channel: "released",
