@@ -4,9 +4,11 @@ import { parseSimplifiedTextToExactRational, simplifyExpressionToText } from "..
 import { ensureAlgebriteLoaded } from "../infra/runtime/lazyAssetLoader.js";
 import {
   calculatorValueToExpression,
+  isScalarValueZero,
   isComplexCalculatorValue,
   isRationalCalculatorValue,
   scalarValueToCalculatorValue,
+  toAlgebraicScalarValue,
   toExplicitComplexCalculatorValue,
   toComplexCalculatorValue,
   toExpressionCalculatorValue,
@@ -27,6 +29,20 @@ import {
 import type { BinarySlotOperator, CalculatorValue, ExpressionValue, RationalValue, ScalarValue, Slot, SlotOperator } from "./types.js";
 import { BOTTOM_VALUE_SYMBOL, isUnsupportedSymbolicOperatorKeyId, KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import { resolveOperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
+import {
+  ALG_CONSTANTS,
+  addAlgebraic,
+  algebraicToDisplayString,
+  algebraicToRational,
+  divAlgebraic,
+  isAlgebraicZero,
+  mulAlgebraic,
+  negateAlgebraic,
+  normalizeAlgebraicValue,
+  normalizeRational as normalizeRationalShared,
+  rationalToAlgebraic,
+  subAlgebraic,
+} from "./algebraicScalar.js";
 import {
   buildExecutionPlanIR,
   materializeSlotsFromExecutionPlanIR,
@@ -599,26 +615,35 @@ const executeSlotsValueInternal = (
   const scalarToExpression = (value: ScalarValue): ExpressionValue =>
     value.kind === "rational"
       ? (value.value.den === 1n ? intExpr(value.value.num) : { type: "rational_literal", value: value.value })
-      : value.value;
+      : value.kind === "alg"
+        ? { type: "symbolic", text: algebraicToDisplayString(value.value) }
+        : value.value;
 
   const scalarFromExpression = (value: ExpressionValue): ScalarValue =>
     toExpressionScalarValue(normalizeExpression(value));
 
   const scalarZero = (): ScalarValue => toRationalScalarValue(ZERO_RATIONAL);
   const scalarOne = (): ScalarValue => toRationalScalarValue(ONE_RATIONAL);
-  const isScalarZero = (value: ScalarValue): boolean => {
-    if (value.kind === "rational") {
-      return value.value.num === 0n;
-    }
-    const resolved = expressionToRational(value.value);
-    return Boolean(resolved && resolved.num === 0n);
-  };
+  const isScalarZero = (value: ScalarValue): boolean => isScalarValueZero(value);
 
   const scalarToRational = (value: ScalarValue): RationalValue | null => {
     if (value.kind === "rational") {
       return value.value;
     }
+    if (value.kind === "alg") {
+      return algebraicToRational(value.value);
+    }
     return expressionToRational(value.value);
+  };
+
+  const scalarToAlgebraic = (value: ScalarValue): ReturnType<typeof normalizeAlgebraicValue> | null => {
+    if (value.kind === "rational") {
+      return rationalToAlgebraic(value.value);
+    }
+    if (value.kind === "alg") {
+      return normalizeAlgebraicValue(value.value);
+    }
+    return null;
   };
 
   const scalarToIntegerBigInt = (value: ScalarValue): bigint | null => {
@@ -629,10 +654,15 @@ const executeSlotsValueInternal = (
     return resolved.num;
   };
 
-  const negateScalar = (value: ScalarValue): ScalarValue =>
-    value.kind === "rational"
-      ? toRationalScalarValue({ num: -value.value.num, den: value.value.den })
-      : scalarFromExpression({ type: "unary", op: "neg", arg: value.value });
+  const negateScalar = (value: ScalarValue): ScalarValue => {
+    if (value.kind === "rational") {
+      return toRationalScalarValue({ num: -value.value.num, den: value.value.den });
+    }
+    if (value.kind === "alg") {
+      return toAlgebraicScalarValue(negateAlgebraic(value.value));
+    }
+    return scalarFromExpression({ type: "unary", op: "neg", arg: value.value });
+  };
 
   const addScalar = (left: ScalarValue, right: ScalarValue): ScalarValue => {
     if (left.kind === "rational" && right.kind === "rational") {
@@ -640,6 +670,11 @@ const executeSlotsValueInternal = (
         num: left.value.num * right.value.den + right.value.num * left.value.den,
         den: left.value.den * right.value.den,
       }));
+    }
+    const leftAlg = scalarToAlgebraic(left);
+    const rightAlg = scalarToAlgebraic(right);
+    if (leftAlg && rightAlg) {
+      return toAlgebraicScalarValue(addAlgebraic(leftAlg, rightAlg));
     }
     return scalarFromExpression(normalizeExpression({
       type: "binary",
@@ -658,6 +693,11 @@ const executeSlotsValueInternal = (
         den: left.value.den * right.value.den,
       }));
     }
+    const leftAlg = scalarToAlgebraic(left);
+    const rightAlg = scalarToAlgebraic(right);
+    if (leftAlg && rightAlg) {
+      return toAlgebraicScalarValue(mulAlgebraic(leftAlg, rightAlg));
+    }
     return scalarFromExpression(normalizeExpression({
       type: "binary",
       op: "mul",
@@ -670,11 +710,20 @@ const executeSlotsValueInternal = (
     if (right.kind === "rational" && right.value.num === 0n) {
       return null;
     }
+    if (right.kind === "alg" && isAlgebraicZero(right.value)) {
+      return null;
+    }
     if (left.kind === "rational" && right.kind === "rational") {
       return toRationalScalarValue(normalizeRational({
         num: left.value.num * right.value.den,
         den: left.value.den * right.value.num,
       }));
+    }
+    const leftAlg = scalarToAlgebraic(left);
+    const rightAlg = scalarToAlgebraic(right);
+    if (leftAlg && rightAlg) {
+      const divided = divAlgebraic(leftAlg, rightAlg);
+      return divided ? toAlgebraicScalarValue(divided) : null;
     }
     return scalarFromExpression(normalizeExpression({
       type: "binary",
@@ -749,10 +798,10 @@ const executeSlotsValueInternal = (
     if (value.kind !== "complex") {
       return null;
     }
-    if (!isScalarZero(value.value.im) || value.value.re.kind !== "rational") {
+    if (!isScalarZero(value.value.im)) {
       return null;
     }
-    return value.value.re.value;
+    return scalarToRational(value.value.re);
   };
 
   const binaryRightToScalar = (slot: Extract<Slot, { kind?: "binary" }>): ScalarValue =>
@@ -764,6 +813,9 @@ const executeSlotsValueInternal = (
     const resolved = scalarToRational(value);
     if (resolved) {
       return Number(resolved.num) / Number(resolved.den);
+    }
+    if (value.kind === "alg") {
+      return null;
     }
     if (value.kind !== "expr") {
       return null;
@@ -879,7 +931,10 @@ const executeSlotsValueInternal = (
     if (!pureReal) {
       return { ok: false, reason: "nan_input", operatorId: slot.operator };
     }
-    if (!("operand" in slot) && resolveKeyId(slot.operator) === KEY_ID.unary_i) {
+    if (
+      !("operand" in slot)
+      && (resolveKeyId(slot.operator) === KEY_ID.unary_i || resolveKeyId(slot.operator) === KEY_ID.unary_rotate_15)
+    ) {
       return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
     const executed = executeSlots(pureReal, [slot]);
@@ -954,6 +1009,17 @@ const executeSlotsValueInternal = (
       if (unaryKey === KEY_ID.unary_i) {
         const currentComplex = toComplexRuntime(current);
         current = toExplicitComplexCalculatorValue(negateScalar(currentComplex.im), currentComplex.re);
+        continue;
+      }
+      if (unaryKey === KEY_ID.unary_rotate_15) {
+        const currentComplex = toComplexRuntime(current);
+        const cos = toAlgebraicScalarValue(ALG_CONSTANTS.rotate15Cos);
+        const sin = toAlgebraicScalarValue(ALG_CONSTANTS.rotate15Sin);
+        current = fromComplexRuntime({
+          re: subScalar(mulScalar(currentComplex.re, cos), mulScalar(currentComplex.im, sin)),
+          im: addScalar(mulScalar(currentComplex.re, sin), mulScalar(currentComplex.im, cos)),
+        });
+        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_inc || unaryKey === KEY_ID.unary_dec || unaryKey === KEY_ID.unary_neg) {

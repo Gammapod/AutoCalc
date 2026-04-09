@@ -4,7 +4,8 @@ import { KEY_ID } from "./keyPresentation.js";
 export type InverseExecutionStage =
   | { kind: "slot"; slot: Slot }
   | { kind: "pow_root"; exponent: bigint; reciprocal: boolean }
-  | { kind: "divide_by_i" };
+  | { kind: "divide_by_i" }
+  | { kind: "rotate_minus_15" };
 
 export type RollInversePlanResolution =
   | { ok: true; stages: InverseExecutionStage[] }
@@ -23,6 +24,9 @@ const invertSlot = (slot: Slot): InverseExecutionStage | null => {
     }
     if (slot.operator === KEY_ID.unary_i) {
       return { kind: "divide_by_i" };
+    }
+    if (slot.operator === KEY_ID.unary_rotate_15) {
+      return { kind: "rotate_minus_15" };
     }
     return null;
   }

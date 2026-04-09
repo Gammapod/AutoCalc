@@ -116,15 +116,15 @@ export const runRollDisplayTests = (): void => {
 
   assert.deepEqual(
     buildFeedTableRows([e(r(42n))]),
-    [{ x: 0, yText: "42", hasRemainder: false, hasError: false }],
+    [{ x: 0, yText: "42", hasRemainder: false, hasError: false, uxRole: "default", uxState: "normal" }],
     "feed table renders seed-only row",
   );
 
   assert.deepEqual(
     buildFeedTableRows([e(r(42n)), e(r(50n))]),
     [
-      { x: 0, yText: "42", hasRemainder: false, hasError: false },
-      { x: 1, yText: "50", hasRemainder: false, hasError: false },
+      { x: 0, yText: "42", hasRemainder: false, hasError: false, uxRole: "default", uxState: "normal" },
+      { x: 1, yText: "50", hasRemainder: false, hasError: false, uxRole: "default", uxState: "normal" },
     ],
     "feed table appends first calculation row after seed",
   );
@@ -137,9 +137,9 @@ export const runRollDisplayTests = (): void => {
   assert.deepEqual(
     feedWithErrorRows,
     [
-      { x: 0, yText: "10", hasRemainder: false, hasError: false },
-      { x: 1, yText: "11", hasRemainder: false, hasError: true },
-      { x: 2, yText: "12", hasRemainder: false, hasError: true },
+      { x: 0, yText: "10", hasRemainder: false, hasError: false, uxRole: "default", uxState: "normal" },
+      { x: 1, yText: "11", hasRemainder: false, hasError: true, uxRole: "error", uxState: "active" },
+      { x: 2, yText: "12", hasRemainder: false, hasError: true, uxRole: "error", uxState: "active" },
     ],
     "feed table keeps one row per error entry without deduplication while preserving y display text",
   );

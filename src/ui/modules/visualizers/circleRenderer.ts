@@ -6,6 +6,7 @@ import {
   resolveStepForecastValuesForState,
 } from "./numberLineModel.js";
 import { expressionToDisplayString } from "../../../domain/expression.js";
+import { algebraicToDisplayString } from "../../../domain/algebraicScalar.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -149,9 +150,16 @@ const formatExactRadicalFromRational = (value: { num: bigint; den: bigint }): st
   return `\u221A(${rationalToDisplay({ num: numerator, den: denominator })})`;
 };
 
-const scalarToDisplay = (value: { kind: "rational"; value: { num: bigint; den: bigint } } | { kind: "expr"; value: unknown }): string =>
+const scalarToDisplay = (
+  value:
+    | { kind: "rational"; value: { num: bigint; den: bigint } }
+    | { kind: "alg"; value: { one?: { num: bigint; den: bigint }; sqrt2?: { num: bigint; den: bigint }; sqrt3?: { num: bigint; den: bigint }; sqrt6?: { num: bigint; den: bigint } } }
+    | { kind: "expr"; value: unknown },
+): string =>
   value.kind === "rational"
     ? rationalToDisplay(value.value)
+    : value.kind === "alg"
+      ? algebraicToDisplayString(value.value)
     : expressionToDisplayString(value.value as Parameters<typeof expressionToDisplayString>[0]);
 
 const resolveMagnitudeDisplay = (state: GameState): string => {

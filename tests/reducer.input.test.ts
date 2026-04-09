@@ -1,6 +1,7 @@
 ﻿import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { applyKeyAction } from "../src/domain/reducer.input.js";
+import { applyAutoStepTick } from "../src/domain/reducer.input.core.js";
 import {
   calculatorValuesEquivalent,
   toComplexCalculatorValue,
@@ -8,6 +9,7 @@ import {
   toRationalCalculatorValue,
   toRationalScalarValue,
 } from "../src/domain/calculatorValue.js";
+import { ALG_CONSTANTS, addAlgebraic } from "../src/domain/algebraicScalar.js";
 import { MAX_ROLL_ENTRIES } from "../src/domain/rollEntries.js";
 import { getRollYDomain } from "../src/domain/rollDerived.js";
 import { executePlanIR } from "../src/domain/engine.js";
@@ -439,6 +441,102 @@ export const runReducerInputTests = (): void => {
     getRollYDomain(afterUnaryITwice.calculator.rollEntries.at(-1)?.y ?? toNanCalculatorValue()),
     "\u2124",
     "second unary-i result projects to integer domain",
+  );
+
+  const unaryRotate15ExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(1n),
+      operationSlots: [{ kind: "unary", operator: uop("unary_rotate_15") }],
+    },
+  };
+  const afterUnaryRotate15 = applyKeyAction(unaryRotate15ExecutionSource, "exec_equals");
+  assert.equal(
+    calculatorValuesEquivalent(
+      afterUnaryRotate15.calculator.total,
+      toComplexCalculatorValue(
+        { kind: "alg", value: ALG_CONSTANTS.rotate15Cos },
+        { kind: "alg", value: ALG_CONSTANTS.rotate15Sin },
+      ),
+    ),
+    true,
+    "equals with 15-degree unary maps real input to exact algebraic cos/sin complex result",
+  );
+
+  const rotate24Source: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(1n),
+      operationSlots: Array.from({ length: 24 }, () => ({ kind: "unary" as const, operator: uop("unary_rotate_15") })),
+    },
+  };
+  const afterRotate24 = applyKeyAction(rotate24Source, "exec_equals");
+  assertTotalEquivalent(afterRotate24.calculator.total, r(1n), "24 successive 15-degree rotations return exactly to 1");
+
+  const rotateShiftedSeed = toComplexCalculatorValue(
+    { kind: "alg", value: addAlgebraic(ALG_CONSTANTS.one, ALG_CONSTANTS.rotate15Cos) },
+    { kind: "alg", value: ALG_CONSTANTS.rotate15Sin },
+  );
+  const rotateShifted24Source: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: rotateShiftedSeed,
+      operationSlots: Array.from({ length: 24 }, () => ({ kind: "unary" as const, operator: uop("unary_rotate_15") })),
+    },
+  };
+  const afterRotateShifted24 = applyKeyAction(rotateShifted24Source, "exec_equals");
+  assert.equal(
+    calculatorValuesEquivalent(afterRotateShifted24.calculator.total, rotateShiftedSeed),
+    true,
+    "24 successive 15-degree rotations return exact shifted complex seed",
+  );
+
+  const inverseRotate15Source: GameState = {
+    ...fullyUnlocked,
+    ui: {
+      ...fullyUnlocked.ui,
+      keyLayout: [
+        { kind: "key", key: KEY_ID.exec_roll_inverse },
+        { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
+      ],
+      keypadColumns: 2,
+      keypadRows: 1,
+      buttonFlags: {},
+    },
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(1n),
+      operationSlots: [{ kind: "unary", operator: uop("unary_rotate_15") }],
+      rollEntries: [],
+    },
+  };
+  let armedInverseRotate15 = applyKeyAction(inverseRotate15Source, KEY_ID.exec_roll_inverse);
+  for (let index = 0; index < 64; index += 1) {
+    if (!armedInverseRotate15.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]) {
+      break;
+    }
+    armedInverseRotate15 = applyAutoStepTick(armedInverseRotate15);
+  }
+  const inverseCandidate = armedInverseRotate15.calculator.total;
+  const forwardCheck = applyKeyAction(
+    {
+      ...armedInverseRotate15,
+      calculator: {
+        ...armedInverseRotate15.calculator,
+        total: inverseCandidate,
+        operationSlots: [{ kind: "unary", operator: uop("unary_rotate_15") }],
+        rollEntries: [],
+      },
+    },
+    "exec_equals",
+  );
+  assert.equal(
+    calculatorValuesEquivalent(forwardCheck.calculator.total, r(1n)),
+    true,
+    "roll-inverse exact stage for 15-degree unary produces an exact preimage",
   );
 
   const executionPolicyParityCases = [
