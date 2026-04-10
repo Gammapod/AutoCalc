@@ -235,15 +235,6 @@ const syncCurrentMode = (mode: AppMode): void => {
     onUnlockAll: () => {
       store.dispatch({ type: "UNLOCK_ALL" });
     },
-    onSetKeypadDimensions: (calculatorId, columns, rows) => {
-      store.dispatch({ type: "SET_KEYPAD_DIMENSIONS", calculatorId, columns, rows });
-    },
-    onUpgradeKeypadRow: (calculatorId) => {
-      store.dispatch({ type: "UPGRADE_KEYPAD_ROW", calculatorId });
-    },
-    onUpgradeKeypadColumn: (calculatorId) => {
-      store.dispatch({ type: "UPGRADE_KEYPAD_COLUMN", calculatorId });
-    },
     onSetControlField: (calculatorId, field, value) => {
       store.dispatch({ type: "SET_CONTROL_FIELD", calculatorId, field, value });
     },

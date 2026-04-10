@@ -1,4 +1,3 @@
-import { KEYPAD_DIM_MAX, KEYPAD_DIM_MIN } from "../../domain/state.js";
 import type { CalculatorId, ControlField, GameState } from "../../domain/types.js";
 import type { AppMode } from "../../contracts/appMode.js";
 import type { AppServices } from "../../contracts/appServices.js";
@@ -18,9 +17,6 @@ type BootstrapUiControllerDeps = {
   getState: () => GameState;
   onResetRun: () => void;
   onUnlockAll: () => void;
-  onSetKeypadDimensions: (calculatorId: CalculatorId, columns: number, rows: number) => void;
-  onUpgradeKeypadRow: (calculatorId: CalculatorId) => void;
-  onUpgradeKeypadColumn: (calculatorId: CalculatorId) => void;
   onSetControlField: (calculatorId: CalculatorId, field: ControlField, value: number) => void;
   onSetActiveCalculator: (calculatorId: CalculatorId) => void;
   onNavigateToUiShell: (url: string) => void;
@@ -28,13 +24,6 @@ type BootstrapUiControllerDeps = {
 };
 
 const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
-
-const clampDimensionInput = (value: number, fallback: number): number => {
-  if (!Number.isInteger(value)) {
-    return fallback;
-  }
-  return Math.max(KEYPAD_DIM_MIN, Math.min(KEYPAD_DIM_MAX, value));
-};
 
 const getOppositeUiShellMode = (mode: UiShellMode): UiShellMode =>
   mode === "mobile" ? "desktop" : "mobile";
@@ -109,9 +98,6 @@ export const createBootstrapUiController = ({
   getState,
   onResetRun,
   onUnlockAll,
-  onSetKeypadDimensions,
-  onUpgradeKeypadRow,
-  onUpgradeKeypadColumn,
   onSetControlField,
   onSetActiveCalculator,
   onNavigateToUiShell,
@@ -165,8 +151,6 @@ export const createBootstrapUiController = ({
     syncAppModeToggleLink();
 
     refs.debugCalculatorSelect.value = selectedCalculatorId;
-    refs.keypadWidthInput.value = selectedProjected.ui.keypadColumns.toString();
-    refs.keypadHeightInput.value = selectedProjected.ui.keypadRows.toString();
     for (const field of CONTROL_FIELDS) {
       refs.debugControlInputs[field].value = selectedProjected.lambdaControl[field].toString();
     }
@@ -199,34 +183,24 @@ export const createBootstrapUiController = ({
     onUnlockAll();
   });
 
-  listen(refs.applyKeypadSizeButton, "click", () => {
-    const state = getState();
-    const calculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f");
-    const instance = state.calculators?.[calculatorId];
-    const columns = clampDimensionInput(Number(refs.keypadWidthInput.value), instance?.ui.keypadColumns ?? state.ui.keypadColumns);
-    const rows = clampDimensionInput(Number(refs.keypadHeightInput.value), instance?.ui.keypadRows ?? state.ui.keypadRows);
-    onSetKeypadDimensions(calculatorId, columns, rows);
-  });
-
-  listen(refs.upgradeKeypadRowButton, "click", () => {
-    const state = getState();
-    onUpgradeKeypadRow(toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f"));
-  });
-
-  listen(refs.upgradeKeypadColumnButton, "click", () => {
-    const state = getState();
-    onUpgradeKeypadColumn(toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f"));
-  });
-
   listen(refs.applyControlFieldsButton, "click", () => {
     const state = getState();
     const calculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f");
     const instance = state.calculators?.[calculatorId];
     const fallback = instance?.lambdaControl ?? state.lambdaControl;
+    const nextValues: Record<ControlField, number> = {
+      alpha: fallback.alpha,
+      beta: fallback.beta,
+      gamma: fallback.gamma,
+      delta: fallback.delta,
+      epsilon: fallback.epsilon,
+    };
     for (const field of CONTROL_FIELDS) {
       const rawValue = Number(refs.debugControlInputs[field].value);
-      const value = Number.isFinite(rawValue) ? Math.trunc(rawValue) : fallback[field];
-      onSetControlField(calculatorId, field, value);
+      nextValues[field] = Number.isFinite(rawValue) ? Math.trunc(rawValue) : fallback[field];
+    }
+    for (const field of CONTROL_FIELDS) {
+      onSetControlField(calculatorId, field, nextValues[field]);
     }
   });
 

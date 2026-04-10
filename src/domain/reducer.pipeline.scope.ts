@@ -19,6 +19,7 @@ import { sanitizeLambdaControl } from "./lambdaControl.js";
 import {
   commitLegacyProjection,
   isMultiCalculatorSession,
+  materializeCalculator,
   projectCalculatorToLegacy,
   resolveActiveCalculatorId,
   setActiveCalculator,
@@ -402,5 +403,8 @@ export const reduceWithProjectionScope = (state: GameState, action: Action, opti
     return reduceLegacy(state, action, options);
   }
 
-  return reduceWithinTargetCalculatorProjection(state, targetCalculatorId, action, options);
+  const withTargetMaterialized = state.calculators?.[targetCalculatorId]
+    ? state
+    : materializeCalculator(state, targetCalculatorId);
+  return reduceWithinTargetCalculatorProjection(withTargetMaterialized, targetCalculatorId, action, options);
 };

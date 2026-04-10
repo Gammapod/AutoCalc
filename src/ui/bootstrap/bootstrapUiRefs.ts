@@ -4,11 +4,6 @@ export type BootstrapUiRefs = {
   debugCalculatorSelect: HTMLSelectElement;
   clearSaveButton: HTMLButtonElement;
   unlockAllButton: HTMLButtonElement;
-  keypadWidthInput: HTMLInputElement;
-  keypadHeightInput: HTMLInputElement;
-  applyKeypadSizeButton: HTMLButtonElement;
-  upgradeKeypadRowButton: HTMLButtonElement;
-  upgradeKeypadColumnButton: HTMLButtonElement;
   debugControlInputs: Record<"alpha" | "beta" | "gamma" | "delta" | "epsilon", HTMLInputElement>;
   applyControlFieldsButton: HTMLButtonElement;
   copyCalculatorSnapshotButton: HTMLButtonElement;
@@ -23,11 +18,6 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
   const debugCalculatorSelect = doc.querySelector<HTMLSelectElement>("[data-debug-calculator-select]");
   const clearSaveButton = doc.querySelector<HTMLButtonElement>("[data-debug-clear-save]");
   const unlockAllButton = doc.querySelector<HTMLButtonElement>("[data-debug-unlock-all]");
-  const keypadWidthInput = doc.querySelector<HTMLInputElement>("[data-debug-keypad-width]");
-  const keypadHeightInput = doc.querySelector<HTMLInputElement>("[data-debug-keypad-height]");
-  const applyKeypadSizeButton = doc.querySelector<HTMLButtonElement>("[data-debug-apply-keypad-size]");
-  const upgradeKeypadRowButton = doc.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-row]");
-  const upgradeKeypadColumnButton = doc.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-column]");
   const alphaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-alpha]");
   const betaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-beta]");
   const gammaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-gamma]");
@@ -45,11 +35,6 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     !debugCalculatorSelect ||
     !clearSaveButton ||
     !unlockAllButton ||
-    !keypadWidthInput ||
-    !keypadHeightInput ||
-    !applyKeypadSizeButton ||
-    !upgradeKeypadRowButton ||
-    !upgradeKeypadColumnButton ||
     !alphaInput ||
     !betaInput ||
     !gammaInput ||
@@ -70,11 +55,6 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     debugCalculatorSelect,
     clearSaveButton,
     unlockAllButton,
-    keypadWidthInput,
-    keypadHeightInput,
-    applyKeypadSizeButton,
-    upgradeKeypadRowButton,
-    upgradeKeypadColumnButton,
     debugControlInputs: {
       alpha: alphaInput,
       beta: betaInput,
