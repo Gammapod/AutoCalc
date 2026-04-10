@@ -1,7 +1,6 @@
 import type {
   Action,
   CalculatorId,
-  ControlEquation,
   ControlField,
   GameState,
   KeyInput,
@@ -49,14 +48,8 @@ export type DomainEvent =
   | { type: "KeypadColumnUpgraded" }
   | { type: "FlagToggled"; flag: string; calculatorId?: CalculatorId }
   | { type: "VisualizerToggled"; visualizer: VisualizerId; calculatorId?: CalculatorId }
-  | { type: "AllocatorAdjusted"; field: "width" | "height" | "range" | "speed" | "slots"; delta: 1 | -1; calculatorId?: CalculatorId }
-  | { type: "AllocatorMaxPointsSet"; value: number; calculatorId?: CalculatorId }
-  | { type: "AllocatorMaxPointsAdded"; amount: number; calculatorId?: CalculatorId }
-  | { type: "AllocatorDeviceResetRequested"; calculatorId?: CalculatorId }
-  | { type: "AllocatorReturnPressed"; calculatorId?: CalculatorId }
-  | { type: "AllocatorAllocatePressed"; calculatorId?: CalculatorId }
   | { type: "LambdaControlSet"; value: LambdaControl; calculatorId?: CalculatorId }
-  | { type: "SessionControlEquationsSet"; calculatorId: CalculatorId; equations: Record<ControlField, ControlEquation> }
+  | { type: "ControlFieldSet"; field: ControlField; value: number; calculatorId?: CalculatorId }
   | { type: "ActiveCalculatorSet"; calculatorId: CalculatorId }
   | { type: "AutoStepTicked"; calculatorId?: CalculatorId };
 
@@ -134,29 +127,11 @@ export const eventFromAction = (action: Action): DomainEvent => {
   if (action.type === "TOGGLE_VISUALIZER") {
     return { type: "VisualizerToggled", visualizer: action.visualizer, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
-  if (action.type === "ALLOCATOR_ADJUST") {
-    return { type: "AllocatorAdjusted", field: action.field, delta: action.delta, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
-  if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
-    return { type: "AllocatorMaxPointsSet", value: action.value, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
-  if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
-    return { type: "AllocatorMaxPointsAdded", amount: action.amount, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
-  if (action.type === "RESET_ALLOCATOR_DEVICE") {
-    return { type: "AllocatorDeviceResetRequested", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
-  if (action.type === "ALLOCATOR_RETURN_PRESSED") {
-    return { type: "AllocatorReturnPressed", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
-  if (action.type === "ALLOCATOR_ALLOCATE_PRESSED") {
-    return { type: "AllocatorAllocatePressed", ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
-  }
   if (action.type === "LAMBDA_SET_CONTROL") {
     return { type: "LambdaControlSet", value: action.value, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
-  if (action.type === "SET_SESSION_CONTROL_EQUATIONS") {
-    return { type: "SessionControlEquationsSet", calculatorId: action.calculatorId, equations: action.equations };
+  if (action.type === "SET_CONTROL_FIELD") {
+    return { type: "ControlFieldSet", field: action.field, value: action.value, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
   }
   if (action.type === "TOGGLE_FLAG") {
     return { type: "FlagToggled", flag: action.flag, ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}) };
@@ -240,29 +215,11 @@ export const actionFromEvent = (event: DomainEvent): Action => {
   if (event.type === "VisualizerToggled") {
     return { type: "TOGGLE_VISUALIZER", visualizer: event.visualizer, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
-  if (event.type === "AllocatorAdjusted") {
-    return { type: "ALLOCATOR_ADJUST", field: event.field, delta: event.delta, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
-  if (event.type === "AllocatorMaxPointsSet") {
-    return { type: "ALLOCATOR_SET_MAX_POINTS", value: event.value, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
-  if (event.type === "AllocatorMaxPointsAdded") {
-    return { type: "ALLOCATOR_ADD_MAX_POINTS", amount: event.amount, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
-  if (event.type === "AllocatorDeviceResetRequested") {
-    return { type: "RESET_ALLOCATOR_DEVICE", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
-  if (event.type === "AllocatorReturnPressed") {
-    return { type: "ALLOCATOR_RETURN_PRESSED", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
-  if (event.type === "AllocatorAllocatePressed") {
-    return { type: "ALLOCATOR_ALLOCATE_PRESSED", ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
-  }
   if (event.type === "LambdaControlSet") {
     return { type: "LAMBDA_SET_CONTROL", value: event.value, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
-  if (event.type === "SessionControlEquationsSet") {
-    return { type: "SET_SESSION_CONTROL_EQUATIONS", calculatorId: event.calculatorId, equations: event.equations };
+  if (event.type === "ControlFieldSet") {
+    return { type: "SET_CONTROL_FIELD", field: event.field, value: event.value, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };
   }
   if (event.type === "FlagToggled") {
     return { type: "TOGGLE_FLAG", flag: event.flag, ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}) };

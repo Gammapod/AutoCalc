@@ -29,8 +29,6 @@ const DEFAULT_BOUNDS: ProofBounds = {
 };
 
 const FIXED_ACTIONS: readonly ProofAction[] = [
-  { type: "ALLOCATOR_ALLOCATE_PRESSED" },
-  { type: "ALLOCATOR_RETURN_PRESSED" },
   { type: "UPGRADE_KEYPAD_COLUMN" },
   { type: "UPGRADE_KEYPAD_ROW" },
 ];

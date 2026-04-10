@@ -1,5 +1,4 @@
 import {
-  buildAllocatorSnapshot,
   getAutoEqualsRateMultiplier,
   getLambdaDerivedValues,
   sanitizeLambdaControl,
@@ -30,22 +29,19 @@ export const projectControlFromInputs = (
   const derived = getLambdaDerivedValues(control, profile);
   return {
     calculatorId,
-    profile,
     control,
     fields: derived.effectiveFields,
     budget: {
       spent: derived.spentPoints,
       unused: derived.unusedPoints,
-      maxPoints: control.maxPoints,
+      maxPoints: 0,
     },
-    allocator: buildAllocatorSnapshot(control, profile),
     keypadColumns: derived.effectiveFields.alpha,
     keypadRows: derived.effectiveFields.beta,
     maxSlots: derived.effectiveFields.gamma,
     maxTotalDigits: derived.effectiveFields.delta,
     deltaEffective: derived.deltaEffective,
     epsilonEffective: derived.epsilonEffective,
-    gammaMinRaised: Boolean(control.gammaMinRaised),
     autoEqualsRateMultiplier: getAutoEqualsRateMultiplier(control, profile),
   };
 };

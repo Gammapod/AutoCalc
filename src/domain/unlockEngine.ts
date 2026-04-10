@@ -337,9 +337,9 @@ const analyzeKeysUnlockedAll: PredicateAnalyzer<KeysUnlockedAllPredicate> = (pre
 
 const analyzeAllocatorReturnPressCountAtLeast: PredicateAnalyzer<AllocatorReturnPressCountAtLeastPredicate> = (
   predicate,
-  state,
+  _state,
 ) => {
-  const currentCount = state.allocatorReturnPressCount ?? 0;
+  const currentCount = 0;
   const isMet = currentCount >= predicate.count;
   return {
     isMet,
@@ -349,9 +349,9 @@ const analyzeAllocatorReturnPressCountAtLeast: PredicateAnalyzer<AllocatorReturn
 
 const analyzeAllocatorAllocatePressCountAtLeast: PredicateAnalyzer<AllocatorAllocatePressCountAtLeastPredicate> = (
   predicate,
-  state,
+  _state,
 ) => {
-  const currentCount = state.allocatorAllocatePressCount ?? 0;
+  const currentCount = 0;
   const isMet = currentCount >= predicate.count;
   return {
     isMet,

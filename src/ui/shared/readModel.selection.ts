@@ -1,4 +1,3 @@
-import { projectControlFromState } from "../../domain/controlProjection.js";
 import type { ControlField, GameState } from "../../domain/types.js";
 import { resolveSelectedControlContextFromUi, type SelectedControlContext } from "../../domain/controlSelection.js";
 
@@ -28,8 +27,7 @@ const fieldToToken = (field: ControlField | null): SelectionRenderModel["selecte
 };
 
 export const buildSelectionRenderModel = (state: GameState): SelectionRenderModel => {
-  const projection = projectControlFromState(state);
-  const context = resolveSelectedControlContextFromUi(projection.profile, state.ui);
+  const context = resolveSelectedControlContextFromUi(state.ui);
   const selected = context.selectedControlField;
   return {
     context,

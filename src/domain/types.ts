@@ -349,27 +349,24 @@ export type ControlProjectionBudget = {
 
 export type ControlProjection = {
   calculatorId: CalculatorId;
-  profile: ControlProfile;
   control: LambdaControl;
   fields: ControlProjectionFields;
   budget: ControlProjectionBudget;
-  allocator: AllocatorState;
   keypadColumns: number;
   keypadRows: number;
   maxSlots: number;
   maxTotalDigits: number;
   deltaEffective: number;
   epsilonEffective: RationalValue;
-  gammaMinRaised: boolean;
   autoEqualsRateMultiplier: number;
 };
 
 export type LambdaControl = {
-  maxPoints: number;
   alpha: number;
   beta: number;
   gamma: number;
-  gammaMinRaised?: boolean;
+  delta: number;
+  epsilon: number;
 };
 
 export type AllocatorBudgetSnapshot = {
@@ -695,8 +692,6 @@ export type GameState = {
   calculator: CalculatorState;
   settings: CalculatorSettings;
   lambdaControl: LambdaControl;
-  // Legacy projection snapshot kept for compatibility while remaining consumers migrate.
-  allocator: AllocatorState;
   ui: {
     keyLayout: LayoutCell[];
     keypadCells: KeypadCellRecord[];
@@ -705,20 +700,15 @@ export type GameState = {
     keypadRows: number;
     activeVisualizer: ActiveVisualizer;
     selectedControlField?: ControlField | null;
-    // Legacy compatibility field; not authoritative after v0.9.10 selection migration.
-    memoryVariable?: MemoryVariable;
     buttonFlags: Record<string, boolean>;
     diagnostics: {
       lastAction: UiDiagnosticsLastAction;
     };
   };
   keyPressCounts: Partial<Record<Key, number>>;
-  allocatorReturnPressCount?: number;
-  allocatorAllocatePressCount?: number;
   unlocks: UnlockState;
   completedUnlockIds: string[];
   perCalculatorCompletedUnlockIds?: Partial<Record<CalculatorId, string[]>>;
-  sessionControlProfiles?: Partial<Record<CalculatorId, ControlProfile>>;
   calculators?: Partial<Record<CalculatorId, CalculatorInstanceState>>;
   calculatorOrder?: CalculatorId[];
   activeCalculatorId?: CalculatorId;
@@ -730,7 +720,6 @@ export type CalculatorInstanceState = {
   calculator: CalculatorState;
   settings: CalculatorSettings;
   lambdaControl: LambdaControl;
-  allocator: AllocatorState;
   ui: GameState["ui"];
 };
 
@@ -836,50 +825,17 @@ export type ToggleVisualizerAction = {
   calculatorId?: CalculatorId;
 };
 
-export type AllocatorAdjustAction = {
-  type: "ALLOCATOR_ADJUST";
-  field: AllocatorAllocationField;
-  delta: 1 | -1;
-  calculatorId?: CalculatorId;
-};
-
-export type AllocatorSetMaxPointsAction = {
-  type: "ALLOCATOR_SET_MAX_POINTS";
-  value: number;
-  calculatorId?: CalculatorId;
-};
-
-export type AllocatorAddMaxPointsAction = {
-  type: "ALLOCATOR_ADD_MAX_POINTS";
-  amount: number;
-  calculatorId?: CalculatorId;
-};
-
-export type ResetAllocatorDeviceAction = {
-  type: "RESET_ALLOCATOR_DEVICE";
-  calculatorId?: CalculatorId;
-};
-
-export type AllocatorReturnPressedAction = {
-  type: "ALLOCATOR_RETURN_PRESSED";
-  calculatorId?: CalculatorId;
-};
-
-export type AllocatorAllocatePressedAction = {
-  type: "ALLOCATOR_ALLOCATE_PRESSED";
-  calculatorId?: CalculatorId;
-};
-
 export type LambdaSetControlAction = {
   type: "LAMBDA_SET_CONTROL";
   value: LambdaControl;
   calculatorId?: CalculatorId;
 };
 
-export type SetSessionControlEquationsAction = {
-  type: "SET_SESSION_CONTROL_EQUATIONS";
-  calculatorId: CalculatorId;
-  equations: Record<ControlField, ControlEquation>;
+export type SetControlFieldAction = {
+  type: "SET_CONTROL_FIELD";
+  field: ControlField;
+  value: number;
+  calculatorId?: CalculatorId;
 };
 
 export type SetActiveCalculatorAction = {
@@ -908,14 +864,8 @@ export type Action =
   | UpgradeKeypadColumnAction
   | ToggleFlagAction
   | ToggleVisualizerAction
-  | AllocatorAdjustAction
-  | AllocatorSetMaxPointsAction
-  | AllocatorAddMaxPointsAction
-  | ResetAllocatorDeviceAction
-  | AllocatorReturnPressedAction
-  | AllocatorAllocatePressedAction
   | LambdaSetControlAction
-  | SetSessionControlEquationsAction
+  | SetControlFieldAction
   | SetActiveCalculatorAction
   | AutoStepTickAction;
 

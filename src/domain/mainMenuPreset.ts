@@ -44,10 +44,6 @@ export const createMainMenuState = (): GameState => {
       ...modePolicy.modeButtonFlags,
     },
   };
-  const menuAllocator = {
-    ...menuInstance.allocator,
-    allocations: { ...menuInstance.allocator.allocations },
-  };
   const menuLambdaControl = { ...menuInstance.lambdaControl };
 
   return {
@@ -58,7 +54,6 @@ export const createMainMenuState = (): GameState => {
       visualizer: menuInstance.settings.visualizer,
     },
     lambdaControl: menuLambdaControl,
-    allocator: menuAllocator,
     ui: menuUi,
     completedUnlockIds: [],
     keyPressCounts: {},
@@ -84,7 +79,6 @@ export const createMainMenuState = (): GameState => {
         ...menuInstance,
         calculator: menuCalculator,
         lambdaControl: menuLambdaControl,
-        allocator: menuAllocator,
         ui: menuUi,
       },
     },
@@ -93,8 +87,5 @@ export const createMainMenuState = (): GameState => {
     perCalculatorCompletedUnlockIds: {
       menu: [],
     },
-    sessionControlProfiles: withMenu.sessionControlProfiles?.menu
-      ? { menu: withMenu.sessionControlProfiles.menu }
-      : {},
   };
 };

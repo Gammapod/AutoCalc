@@ -59,10 +59,6 @@ export const createSandboxState = (): GameState => {
       f_prime: [],
       g_prime: [],
     },
-    sessionControlProfiles: {
-      ...(sandboxUnlocked.sessionControlProfiles?.f_prime ? { f_prime: sandboxUnlocked.sessionControlProfiles.f_prime } : {}),
-      ...(sandboxUnlocked.sessionControlProfiles?.g_prime ? { g_prime: sandboxUnlocked.sessionControlProfiles.g_prime } : {}),
-    },
     unlocks: {
       ...sandboxUnlocked.unlocks,
       uiUnlocks: {

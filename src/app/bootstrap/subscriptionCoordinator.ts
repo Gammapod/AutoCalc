@@ -5,10 +5,6 @@ type UnlockTracker = {
   hasNewUnlock: (state: GameState) => boolean;
 };
 
-type AllocatorCueCoordinator = {
-  runAllocatorIncreaseCue: () => Promise<void>;
-};
-
 type UnlockRevealCoordinator = {
   runUnlockRevealCue: (state: GameState) => Promise<void>;
 };
@@ -17,9 +13,7 @@ export const createStoreSubscriptionCoordinator = (
   store: Store,
   options: {
     unlockTracker: UnlockTracker;
-    allocatorCueCoordinator: AllocatorCueCoordinator;
     unlockRevealCoordinator: UnlockRevealCoordinator;
-    getAllocatorIncreaseFromUnlocks: (previous: GameState, latest: GameState) => number;
     renderAndPersistState: (state: GameState, uiEffects: UiEffect[]) => void;
     syncAutoStepScheduler?: (state: GameState) => void;
     consumeUiEffects?: () => UiEffect[];
@@ -54,19 +48,10 @@ export const createStoreSubscriptionCoordinator = (
     }
 
     const hasNewUnlock = options.unlockTracker.hasNewUnlock(latest);
-    const maxPointIncreaseFromUnlocks = options.getAllocatorIncreaseFromUnlocks(previous, latest);
-
-    if (maxPointIncreaseFromUnlocks > 0 || hasNewUnlock) {
-      if (maxPointIncreaseFromUnlocks > 0) {
-        void (async () => {
-          await options.allocatorCueCoordinator.runAllocatorIncreaseCue();
-        })();
-      }
-      if (hasNewUnlock) {
-        void (async () => {
-          await options.unlockRevealCoordinator.runUnlockRevealCue(latest);
-        })();
-      }
+    if (hasNewUnlock) {
+      void (async () => {
+        await options.unlockRevealCoordinator.runUnlockRevealCue(latest);
+      })();
       return;
     }
 

@@ -43,11 +43,7 @@ const withDiagnosticsDefaults = (state: GameState): GameState => {
   };
 };
 
-export const serializeV20 = (state: GameState): unknown => ({
-  ...state,
-  // Debug edits are explicitly session-only.
-  sessionControlProfiles: {},
-});
+export const serializeV20 = (state: GameState): unknown => ({ ...state });
 
 export const deserializeV20 = (payloadState: unknown): GameState => {
   try {

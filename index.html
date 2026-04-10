@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -686,7 +686,6 @@
         display: none;
       }
 
-      .v2-eigen-allocator-panel {
         display: none;
       }
 
@@ -2368,8 +2367,6 @@
         visibility: hidden;
       }
 
-      body[data-ui-shell="mobile"] .v2-eigen-allocator-panel,
-      body[data-ui-shell="desktop"] .v2-eigen-allocator-panel {
         display: flex;
         position: absolute;
         inset: 0;
@@ -2384,8 +2381,6 @@
           transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="eigen_allocator"] .v2-eigen-allocator-panel,
-      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="eigen_allocator"] .v2-eigen-allocator-panel {
         opacity: 1;
         transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
@@ -2757,8 +2752,6 @@
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-factorization-panel,
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-algebraic-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-algebraic-panel,
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-eigen-allocator-panel,
-      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-eigen-allocator-panel,
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-title-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-title-panel,
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-release-notes-panel,
@@ -2870,8 +2863,6 @@
         body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher,
         body[data-ui-shell="mobile"] .v2-total-panel,
         body[data-ui-shell="desktop"] .v2-total-panel,
-        body[data-ui-shell="mobile"] .v2-eigen-allocator-panel,
-        body[data-ui-shell="desktop"] .v2-eigen-allocator-panel,
         body[data-ui-shell="mobile"] .v2-algebraic-panel,
         body[data-ui-shell="desktop"] .v2-algebraic-panel,
         body[data-ui-shell="mobile"] .v2-factorization-panel,
@@ -3092,30 +3083,28 @@
           <input id="debug-width" type="number" min="1" max="8" data-debug-keypad-width />
           <label for="debug-height">Height</label>
           <input id="debug-height" type="number" min="1" max="8" data-debug-keypad-height />
-          <label for="debug-max-points">maxPoints</label>
-          <input id="debug-max-points" type="number" min="0" step="1" data-debug-max-points />
+          <label for="debug-alpha">alpha</label>
+          <input id="debug-alpha" type="number" step="1" data-debug-control-alpha />
+          <label for="debug-beta">beta</label>
+          <input id="debug-beta" type="number" step="1" data-debug-control-beta />
+          <label for="debug-gamma">gamma</label>
+          <input id="debug-gamma" type="number" step="1" data-debug-control-gamma />
+          <label for="debug-delta">delta</label>
+          <input id="debug-delta" type="number" step="1" data-debug-control-delta />
+          <label for="debug-epsilon">epsilon</label>
+          <input id="debug-epsilon" type="number" step="1" data-debug-control-epsilon />
         </div>
         <button type="button" class="debug-action" data-debug-apply-keypad-size>Apply Keypad Size</button>
-        <button type="button" class="debug-action" data-debug-apply-max-points>Apply maxPoints</button>
-        <button type="button" class="debug-action" data-debug-add-max-points>+1 lambda point</button>
+        <button type="button" class="debug-action" data-debug-apply-control-fields>Apply alpha-epsilon</button>
         <button type="button" class="debug-action" data-debug-upgrade-keypad-row>Upgrade Row</button>
         <button type="button" class="debug-action" data-debug-upgrade-keypad-column>Upgrade Column</button>
         <button type="button" class="debug-action" data-debug-copy-calculator-snapshot>Copy Calculator Snapshot</button>
-        <label class="debug-option">
-          <input type="checkbox" data-debug-matrix-toggle />
-          <span>Matrix Window</span>
-        </label>
         <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
         <button type="button" class="debug-action" data-debug-unlock-all>Unlock All</button>
         <a class="debug-action" data-debug-toggle-ui-shell href="#">Switch UI Shell</a>
         <a class="debug-action" data-debug-toggle-app-mode href="#">Switch App Mode</a>
         <pre class="debug-report" data-debug-roll-state>[]</pre>
       </div>
-    </section>
-    <section class="debug-matrix-window" data-debug-matrix-window hidden aria-label="Control matrix debug editor">
-      <p class="debug-matrix-title">Control Matrix</p>
-      <div data-debug-control-matrix></div>
-      <button type="button" class="debug-action" data-debug-apply-control-matrix>Apply Control Matrix</button>
     </section>
     <div class="app-shell">
       <main id="app" class="app-layout" aria-label="AutoCalc">
@@ -3154,7 +3143,6 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
-                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                         <section class="v2-total-footer" data-v2-total-footer aria-hidden="false"></section>
@@ -3188,7 +3176,6 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
-                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                         <section class="v2-total-footer" data-v2-total-footer aria-hidden="false"></section>
@@ -3222,7 +3209,6 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
-                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                         <section class="v2-total-footer" data-v2-total-footer aria-hidden="false"></section>
@@ -3256,7 +3242,6 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
-                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                         <section class="v2-total-footer" data-v2-total-footer aria-hidden="false"></section>
@@ -3290,7 +3275,6 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
-                          <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                         <section class="v2-total-footer" data-v2-total-footer aria-hidden="false"></section>
@@ -3319,3 +3303,4 @@
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>
+

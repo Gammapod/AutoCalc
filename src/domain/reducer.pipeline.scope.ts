@@ -15,12 +15,7 @@ import { applyToggleFlag } from "./reducer.flags.js";
 import { resetRunState, withStepProgressCleared } from "./reducer.stateBuilders.js";
 import { applyUnlocks } from "./unlocks.js";
 import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
-import {
-  adjustAxis,
-  resetLambdaAdjustments,
-  withMaxPointsAdded,
-  withMaxPointsSet,
-} from "./lambdaControl.js";
+import { sanitizeLambdaControl } from "./lambdaControl.js";
 import {
   commitLegacyProjection,
   isMultiCalculatorSession,
@@ -28,7 +23,6 @@ import {
   resolveActiveCalculatorId,
   setActiveCalculator,
 } from "./multiCalculator.js";
-import { getBaseControlProfile } from "./controlProfileRuntime.js";
 import { projectControlFromState } from "./controlProjection.js";
 import {
   applyExecutionInterrupt,
@@ -51,19 +45,6 @@ import {
   isAnyKeypadSurface as isKeypadSurface,
   resolveSurfaceCalculatorId,
 } from "./calculatorSurface.js";
-
-const allocatorFieldToAxis = (field: "width" | "height" | "range" | "speed" | "slots"): "alpha" | "beta" | "gamma" | null => {
-  if (field === "width") {
-    return "alpha";
-  }
-  if (field === "height") {
-    return "beta";
-  }
-  if (field === "slots") {
-    return "gamma";
-  }
-  return null;
-};
 
 const applyToggleVisualizer = (state: GameState, visualizer: VisualizerId): GameState => {
   const nextSettings = applySettingsSelection(state, { family: "visualizer", option: visualizer });
@@ -278,74 +259,21 @@ const handleToggleAndVisualizerAction = (
   return null;
 };
 
-const handleAllocatorAction = (
+const handleControlAction = (
   state: GameState,
   action: Action,
   unlockCatalog: AppServices["contentProvider"]["unlockCatalog"],
 ): GameState | null => {
-  if (action.type === "ALLOCATOR_ADJUST") {
-    const projection = projectControlFromState(state);
-    const axis = allocatorFieldToAxis(action.field);
-    if (!axis) {
-      return state;
-    }
-    const nextControl = adjustAxis(projection.control, projection.profile, axis, action.delta);
-    if (nextControl === projection.control) {
-      return state;
-    }
-    return applyUnlocks(applyAllocatorRuntimeProjection(state, nextControl), unlockCatalog);
-  }
-  if (action.type === "ALLOCATOR_SET_MAX_POINTS") {
-    const projection = projectControlFromState(state);
-    const nextControl = withMaxPointsSet(projection.control, projection.profile, action.value);
-    if (nextControl === projection.control) {
-      return state;
-    }
-    return applyAllocatorRuntimeProjection(state, nextControl);
-  }
-  if (action.type === "ALLOCATOR_ADD_MAX_POINTS") {
-    const projection = projectControlFromState(state);
-    const nextControl = withMaxPointsAdded(projection.control, projection.profile, action.amount);
-    if (nextControl === projection.control) {
-      return state;
-    }
-    return applyAllocatorRuntimeProjection(state, nextControl);
-  }
-  if (action.type === "RESET_ALLOCATOR_DEVICE") {
-    const projection = projectControlFromState(state);
-    return applyAllocatorRuntimeProjection(state, resetLambdaAdjustments(projection.control, projection.profile));
-  }
-  if (action.type === "ALLOCATOR_RETURN_PRESSED") {
-    const withCount: GameState = {
-      ...state,
-      allocatorReturnPressCount: (state.allocatorReturnPressCount ?? 0) + 1,
-    };
-    return applyUnlocks(withCount, unlockCatalog);
-  }
-  if (action.type === "ALLOCATOR_ALLOCATE_PRESSED") {
-    const withCount: GameState = {
-      ...state,
-      allocatorAllocatePressCount: (state.allocatorAllocatePressCount ?? 0) + 1,
-    };
-    return applyUnlocks(withCount, unlockCatalog);
-  }
   if (action.type === "LAMBDA_SET_CONTROL") {
     return applyUnlocks(applyAllocatorRuntimeProjection(state, action.value), unlockCatalog);
   }
-  if (action.type === "SET_SESSION_CONTROL_EQUATIONS") {
-    const baseProfile = getBaseControlProfile(action.calculatorId);
-    const merged = {
-      ...baseProfile,
-      equations: action.equations,
-    };
-    const withSessionProfiles: GameState = {
-      ...state,
-      sessionControlProfiles: {
-        ...state.sessionControlProfiles,
-        [action.calculatorId]: merged,
-      },
-    };
-    return applyAllocatorRuntimeProjection(withSessionProfiles, withSessionProfiles.lambdaControl);
+  if (action.type === "SET_CONTROL_FIELD") {
+    const projection = projectControlFromState(state);
+    const nextControl = sanitizeLambdaControl({
+      ...projection.control,
+      [action.field]: action.value,
+    });
+    return applyUnlocks(applyAllocatorRuntimeProjection(state, nextControl), unlockCatalog);
   }
   return null;
 };
@@ -395,7 +323,7 @@ type LegacyActionFamilyHandler = (context: LegacyReduceContext) => GameState | n
 const LEGACY_ACTION_FAMILY_HANDLERS: readonly LegacyActionFamilyHandler[] = [
   ({ state, action }) => handleLayoutMutationAction(state, action),
   ({ state, action, executionPolicy }) => handleToggleAndVisualizerAction(state, action, executionPolicy),
-  ({ state, action, unlockCatalog }) => handleAllocatorAction(state, action, unlockCatalog),
+  ({ state, action, unlockCatalog }) => handleControlAction(state, action, unlockCatalog),
 ];
 
 const reduceWithinTargetCalculatorProjection = (

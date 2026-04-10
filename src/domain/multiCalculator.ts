@@ -1,4 +1,4 @@
-﻿import { buildAllocatorSnapshot, getLambdaDerivedValues, sanitizeLambdaControl } from "./lambdaControl.js";
+import { getLambdaDerivedValues, sanitizeLambdaControl } from "./lambdaControl.js";
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
@@ -59,186 +59,94 @@ const createInitialCalculatorState = (): GameState["calculator"] => ({
   },
 });
 
+const buildDefaultControl = (calculatorId: CalculatorId): GameState["lambdaControl"] =>
+  sanitizeLambdaControl(controlProfiles[calculatorId].starts, controlProfiles[calculatorId]);
+
 const createDefaultFCalculator = (state: GameState): CalculatorInstanceState => ({
   id: "f",
   symbol: "f",
   calculator: cloneCalculator(state.calculator),
   settings: cloneSettings(state.settings),
   lambdaControl: sanitizeLambdaControl(state.lambdaControl, controlProfiles.f),
-  allocator: buildAllocatorSnapshot(sanitizeLambdaControl(state.lambdaControl, controlProfiles.f), controlProfiles.f),
   ui: cloneUi(state.ui),
 });
 
-const createDefaultGCalculator = (): CalculatorInstanceState => {
-  const calculatorId: CalculatorId = "g";
-  const profile = controlProfiles[calculatorId];
+const createCalculatorUi = (
+  calculatorId: CalculatorId,
+  options: { selectedControlField: GameState["ui"]["selectedControlField"]; buttonFlags?: Record<string, boolean> },
+): GameState["ui"] => {
   const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout(calculatorId);
-
-  const lambdaControl = sanitizeLambdaControl({
-    maxPoints: profile.starts.gamma,
-    alpha: profile.starts.alpha,
-    beta: profile.starts.beta,
-    gamma: profile.starts.gamma,
-    gammaMinRaised: profile.starts.gamma >= 1,
-  }, profile);
-
-  const baseUi: GameState["ui"] = {
+  return {
     keyLayout,
     keypadCells: fromKeyLayoutArray(keyLayout, keypadColumns, keypadRows),
     storageLayout: [],
     keypadColumns,
     keypadRows,
     activeVisualizer,
-    selectedControlField: "gamma",
-    memoryVariable: "α",
-    buttonFlags: {},
+    selectedControlField: options.selectedControlField,
+    buttonFlags: { ...(options.buttonFlags ?? {}) },
     diagnostics: {
       lastAction: createInitialUiDiagnosticsLastAction(),
     },
   };
+};
 
+const createDefaultGCalculator = (): CalculatorInstanceState => {
+  const calculatorId: CalculatorId = "g";
+  const ui = createCalculatorUi(calculatorId, { selectedControlField: "gamma" });
   return {
     id: calculatorId,
     symbol: calculatorId,
     calculator: createInitialCalculatorState(),
     settings: {
       ...createDefaultCalculatorSettings(),
-      visualizer: activeVisualizer,
+      visualizer: ui.activeVisualizer,
     },
-    lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl, profile),
-    ui: baseUi,
+    lambdaControl: buildDefaultControl(calculatorId),
+    ui,
   };
 };
 
 const createDefaultMenuCalculator = (): CalculatorInstanceState => {
-  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout("menu");
-
-  const lambdaControl = sanitizeLambdaControl({
-    maxPoints: controlProfiles.menu.starts.gamma,
-    alpha: controlProfiles.menu.starts.alpha,
-    beta: controlProfiles.menu.starts.beta,
-    gamma: controlProfiles.menu.starts.gamma,
-    gammaMinRaised: false,
-  }, controlProfiles.menu);
-
-  const baseUi: GameState["ui"] = {
-    keyLayout,
-    keypadCells: fromKeyLayoutArray(keyLayout, keypadColumns, keypadRows),
-    storageLayout: [],
-    keypadColumns,
-    keypadRows,
-    activeVisualizer,
-    selectedControlField: null,
-    memoryVariable: "α",
-    buttonFlags: {},
-    diagnostics: {
-      lastAction: createInitialUiDiagnosticsLastAction(),
-    },
-  };
-
+  const calculatorId: CalculatorId = "menu";
+  const ui = createCalculatorUi(calculatorId, { selectedControlField: null });
   return {
-    id: "menu",
-    symbol: "menu",
-    calculator: {
-      total: { kind: "rational", value: { num: 0n, den: 1n } },
-      pendingNegativeTotal: false,
-      singleDigitInitialTotalEntry: true,
-      rollEntries: [],
-      rollAnalysis: {
-        stopReason: "none",
-        cycle: null,
-      },
-      operationSlots: [],
-      draftingSlot: null,
-      stepProgress: {
-        active: false,
-        seedTotal: null,
-        currentTotal: null,
-        nextSlotIndex: 0,
-        executedSlotResults: [],
-      },
-    },
+    id: calculatorId,
+    symbol: calculatorId,
+    calculator: createInitialCalculatorState(),
     settings: {
       ...createDefaultCalculatorSettings(),
-      visualizer: activeVisualizer,
+      visualizer: ui.activeVisualizer,
     },
-    lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl, controlProfiles.menu),
-    ui: baseUi,
+    lambdaControl: buildDefaultControl(calculatorId),
+    ui,
   };
 };
 
 const createDefaultFPrimeCalculator = (): CalculatorInstanceState => {
   const calculatorId: CalculatorId = "f_prime";
-  const profile = controlProfiles[calculatorId];
-  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout(calculatorId);
-  const lambdaControl = sanitizeLambdaControl({
-    maxPoints: profile.starts.gamma,
-    alpha: profile.starts.alpha,
-    beta: profile.starts.beta,
-    gamma: profile.starts.gamma,
-    gammaMinRaised: profile.starts.gamma >= 1,
-  }, profile);
-
-  const baseUi: GameState["ui"] = {
-    keyLayout,
-    keypadCells: fromKeyLayoutArray(keyLayout, keypadColumns, keypadRows),
-    storageLayout: [],
-    keypadColumns,
-    keypadRows,
-    activeVisualizer,
-    selectedControlField: null,
-    memoryVariable: "α",
-    buttonFlags: {},
-    diagnostics: {
-      lastAction: createInitialUiDiagnosticsLastAction(),
-    },
-  };
-
+  const ui = createCalculatorUi(calculatorId, { selectedControlField: null });
   return {
     id: calculatorId,
     symbol: calculatorId,
     calculator: createInitialCalculatorState(),
     settings: {
       ...createDefaultCalculatorSettings(),
-      visualizer: activeVisualizer,
+      visualizer: ui.activeVisualizer,
     },
-    lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl, profile),
-    ui: baseUi,
+    lambdaControl: buildDefaultControl(calculatorId),
+    ui,
   };
 };
 
 const createDefaultGPrimeCalculator = (): CalculatorInstanceState => {
   const calculatorId: CalculatorId = "g_prime";
-  const profile = controlProfiles[calculatorId];
-  const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout(calculatorId);
-  const lambdaControl = sanitizeLambdaControl({
-    maxPoints: profile.starts.gamma,
-    alpha: profile.starts.alpha,
-    beta: profile.starts.beta,
-    gamma: profile.starts.gamma,
-    gammaMinRaised: profile.starts.gamma >= 1,
-  }, profile);
-
-  const baseUi: GameState["ui"] = {
-    keyLayout,
-    keypadCells: fromKeyLayoutArray(keyLayout, keypadColumns, keypadRows),
-    storageLayout: [],
-    keypadColumns,
-    keypadRows,
-    activeVisualizer,
+  const ui = createCalculatorUi(calculatorId, {
     selectedControlField: null,
-    memoryVariable: "α",
     buttonFlags: {
       [BINARY_MODE_FLAG]: true,
     },
-    diagnostics: {
-      lastAction: createInitialUiDiagnosticsLastAction(),
-    },
-  };
-
+  });
   return {
     id: calculatorId,
     symbol: calculatorId,
@@ -246,11 +154,10 @@ const createDefaultGPrimeCalculator = (): CalculatorInstanceState => {
     settings: {
       ...createDefaultCalculatorSettings(),
       base: "base2",
-      visualizer: activeVisualizer,
+      visualizer: ui.activeVisualizer,
     },
-    lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl, profile),
-    ui: baseUi,
+    lambdaControl: buildDefaultControl(calculatorId),
+    ui,
   };
 };
 
@@ -416,7 +323,6 @@ export const projectCalculatorToLegacy = (state: GameState, calculatorId: Calcul
     calculator: cloneCalculator(instance.calculator),
     settings: cloneSettings(instance.settings),
     lambdaControl: projectedControl,
-    allocator: instance.allocator,
     unlocks: {
       ...withInstances.unlocks,
       maxSlots: derivedControl.effectiveFields.gamma,
@@ -437,7 +343,6 @@ export const commitLegacyProjection = (previous: GameState, projected: GameState
     calculator: cloneCalculator(projected.calculator),
     settings: cloneSettings(projected.settings),
     lambdaControl: sanitizeLambdaControl(projected.lambdaControl, controlProfiles[calculatorId]),
-    allocator: projected.allocator,
     ui: cloneUi({
       ...projected.ui,
       storageLayout: base.ui.storageLayout,
@@ -479,7 +384,3 @@ export const toCalculatorSurface = (calculatorId: CalculatorId): CalculatorKeypa
 
 export const normalizeLegacyForMissingInstances = (state: GameState): GameState =>
   ensureCalculatorInstances(state);
-
-
-
-

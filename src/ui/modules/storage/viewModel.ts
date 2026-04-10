@@ -69,7 +69,7 @@ export const buildStorageSortToggleSequence = (
 
 const isKeyInFilterGroup = (keyGroup: KeyVisualGroup, filterGroup: StorageFilterGroup): boolean => {
   if (filterGroup === "utility_bundle") {
-    return keyGroup === "utility" || keyGroup === "memory" || keyGroup === "global_system";
+    return keyGroup === "utility" || keyGroup === "global_system";
   }
   return keyGroup === filterGroup;
 };

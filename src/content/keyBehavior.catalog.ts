@@ -14,8 +14,6 @@ export type KeyPrimaryExpectationKind =
   | "graph_counts_only"
   | "equals_toggles_auto_step_mode"
   | "roll_inverse_executes_inverse_plan"
-  | "memory_recall_sets_input"
-  | "memory_adjusts_allocator"
   | "system_key_requests_mode_transition"
   | "system_key_requests_quit";
 
@@ -29,8 +27,6 @@ export type KeyEdgeExpectationKind =
   | "graph_does_not_mutate_calculator_state"
   | "equals_toggle_division_by_zero_sets_nan"
   | "roll_inverse_ambiguous_produces_nan"
-  | "memory_recall_noop_on_active_roll"
-  | "memory_adjust_noop_without_budget_or_bounds"
   | "system_key_leaves_domain_state_unchanged";
 
 export type KeyBehaviorSpec = {
@@ -181,34 +177,6 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "system_key_leaves_domain_state_unchanged",
   },
   {
-    key: KEY_ID.memory_cycle_variable,
-    lockModel: "unlockable",
-    unlockPathPolicy: "none_planned",
-    primaryExpectation: "graph_counts_only",
-    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
-  },
-  {
-    key: KEY_ID.memory_adjust_plus,
-    lockModel: "unlockable",
-    unlockPathPolicy: "none_planned",
-    primaryExpectation: "memory_adjusts_allocator",
-    edgeCaseExpectation: "memory_adjust_noop_without_budget_or_bounds",
-  },
-  {
-    key: KEY_ID.memory_adjust_minus,
-    lockModel: "unlockable",
-    unlockPathPolicy: "none_planned",
-    primaryExpectation: "memory_adjusts_allocator",
-    edgeCaseExpectation: "memory_adjust_noop_without_budget_or_bounds",
-  },
-  {
-    key: KEY_ID.memory_recall,
-    lockModel: "unlockable",
-    unlockPathPolicy: "none_planned",
-    primaryExpectation: "memory_recall_sets_input",
-    edgeCaseExpectation: "memory_recall_noop_on_active_roll",
-  },
-  {
     key: KEY_ID.viz_graph,
     lockModel: "unlockable",
     unlockPathPolicy: "none_planned",
@@ -259,13 +227,6 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   },
   {
     key: KEY_ID.viz_circle,
-    lockModel: "unlockable",
-    unlockPathPolicy: "none_planned",
-    primaryExpectation: "graph_counts_only",
-    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
-  },
-  {
-    key: KEY_ID.viz_eigen_allocator,
     lockModel: "unlockable",
     unlockPathPolicy: "none_planned",
     primaryExpectation: "graph_counts_only",

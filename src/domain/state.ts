@@ -1,7 +1,7 @@
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { buttonRegistry, type ButtonUnlockGroup } from "./buttonRegistry.js";
 import type { GameState, Key, KeyCell, LayoutCell } from "./types.js";
-import { buildAllocatorSnapshot, createDefaultLambdaControl, getLambdaDerivedValues } from "./lambdaControl.js";
+import { createDefaultLambdaControl, getLambdaDerivedValues } from "./lambdaControl.js";
 import { KEY_ID } from "./keyPresentation.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 import { applyCalculatorSeedPlacements } from "./calculatorSeedManifest.js";
@@ -13,7 +13,7 @@ export const createInitialUiDiagnosticsLastAction = (): GameState["ui"]["diagnos
 });
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 21;
+export const SAVE_SCHEMA_VERSION = 22;
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
 export const LAMBDA_POINTS_AWARDED_SEEN_ID = "lambda_points_awarded_seen";
@@ -27,7 +27,6 @@ export const BINARY_ADD_RESULT_ONE_SEEN_ID = "binary_add_result_one_seen";
 export const BINARY_MUL_RESULT_ZERO_SEEN_ID = "binary_mul_result_zero_seen";
 export const EXECUTION_PAUSE_FLAG = "execution.pause";
 export const EXECUTION_PAUSE_EQUALS_FLAG = "execution.pause.equals";
-// Backward-compatible alias retained while downstream modules migrate naming.
 export const AUTO_EQUALS_FLAG = EXECUTION_PAUSE_FLAG;
 export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";
 export const MOD_ZERO_TO_DELTA_FLAG = "settings.mod_zero_to_delta";
@@ -35,7 +34,7 @@ export const STEP_EXPANSION_FLAG = "settings.step_expansion";
 export const BINARY_MODE_FLAG = "settings.binary_mode";
 export const HISTORY_FLAG = "settings.history";
 export const KEYPAD_DIM_MIN = 1;
-export const KEYPAD_DIM_MAX = 8;
+export const KEYPAD_DIM_MAX = 12;
 export const KEYPAD_DEFAULT_COLUMNS = Math.max(
   KEYPAD_DIM_MIN,
   Math.min(KEYPAD_DIM_MAX, Math.trunc(controlProfiles.f.starts.alpha)),
@@ -45,12 +44,13 @@ export const KEYPAD_DEFAULT_ROWS = Math.max(
   Math.min(KEYPAD_DIM_MAX, Math.trunc(controlProfiles.f.starts.beta)),
 );
 export const TOTAL_DIGITS_MIN = 1;
-export const TOTAL_DIGITS_MAX = 12;
+export const TOTAL_DIGITS_MAX = 24;
 export const OPERATION_SLOTS_MIN = 0;
-export const OPERATION_SLOTS_MAX = 4;
+export const OPERATION_SLOTS_MAX = 12;
 export const STORAGE_COLUMNS = 8;
 export const STORAGE_INITIAL_ROWS = 1;
 export const STORAGE_INITIAL_SLOTS = STORAGE_COLUMNS * STORAGE_INITIAL_ROWS;
+
 const DEFAULT_KEYPAD_KEYS: readonly Key[] = [KEY_ID.exec_equals];
 const isDefaultDrawerExecutionCell = (cell: LayoutCell): boolean =>
   cell.kind === "key" && DEFAULT_KEYPAD_KEYS.includes(cell.key) && !cell.behavior;
@@ -138,10 +138,6 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.util_backspace },
   { kind: "key", key: KEY_ID.util_undo },
   { kind: "key", key: KEY_ID.util_clear_all },
-  { kind: "key", key: KEY_ID.memory_adjust_plus },
-  { kind: "key", key: KEY_ID.memory_adjust_minus },
-  { kind: "key", key: KEY_ID.memory_recall },
-  { kind: "key", key: KEY_ID.memory_cycle_variable },
   { kind: "key", key: KEY_ID.system_save_quit_main_menu },
   { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
   { kind: "key", key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } },
@@ -161,7 +157,6 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.viz_circle },
   { kind: "key", key: KEY_ID.viz_graph },
   { kind: "key", key: KEY_ID.viz_algebraic },
-  { kind: "key", key: KEY_ID.viz_eigen_allocator },
   { kind: "key", key: KEY_ID.op_div },
   { kind: "key", key: KEY_ID.op_mod },
   { kind: "key", key: KEY_ID.op_rotate_left },
@@ -218,6 +213,7 @@ export const initialState = (): GameState => {
     initialRows,
   );
   const seededKeyIds = new Set<Key>(keyLayout.flatMap((cell) => (cell.kind === "key" ? [cell.key] : [])));
+
   const base: GameState = {
     calculator: {
       total: { kind: "rational", value: { num: 0n, den: 1n } },
@@ -240,7 +236,6 @@ export const initialState = (): GameState => {
     },
     settings,
     lambdaControl,
-    allocator: buildAllocatorSnapshot(lambdaControl, fProfile),
     ui: {
       keyLayout,
       keypadCells: fromKeyLayoutArray(keyLayout, initialColumns, initialRows),
@@ -249,15 +244,12 @@ export const initialState = (): GameState => {
       keypadRows: initialRows,
       activeVisualizer: settings.visualizer,
       selectedControlField: "alpha",
-      memoryVariable: "α",
       buttonFlags: {},
       diagnostics: {
         lastAction: createInitialUiDiagnosticsLastAction(),
       },
     },
     keyPressCounts: {},
-    allocatorReturnPressCount: 0,
-    allocatorAllocatePressCount: 0,
     unlocks: {
       valueAtoms,
       valueCompose,
@@ -277,6 +269,7 @@ export const initialState = (): GameState => {
     },
     completedUnlockIds: [],
   };
+
   return {
     ...base,
     calculators: {
@@ -286,14 +279,11 @@ export const initialState = (): GameState => {
         calculator: { ...base.calculator },
         settings: { ...base.settings },
         lambdaControl: base.lambdaControl,
-        allocator: base.allocator,
         ui: base.ui,
       },
     },
     calculatorOrder: ["f"],
     activeCalculatorId: "f",
     perCalculatorCompletedUnlockIds: { f: [] },
-    sessionControlProfiles: {},
   };
 };
-

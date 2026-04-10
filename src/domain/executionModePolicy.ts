@@ -207,7 +207,6 @@ export const isExecutionInterruptingKey = (key: Key): boolean => {
   }
   return (
     definition.category === "execution"
-    || definition.category === "memory"
     || definition.category === "utility"
   );
 };

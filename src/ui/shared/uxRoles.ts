@@ -53,13 +53,7 @@ export type UxRoleOverrideRegistryEntry = {
   reason: string;
 };
 
-export const UX_ROLE_OVERRIDE_REGISTRY: readonly UxRoleOverrideRegistryEntry[] = [
-  {
-    id: "eigen-selected-vector-latex",
-    scope: "visualizer/eigen_allocator/selectedVectorEntry",
-    reason: "KaTeX inline color markup is still required to highlight selected vector entries in rendered LaTeX.",
-  },
-];
+export const UX_ROLE_OVERRIDE_REGISTRY: readonly UxRoleOverrideRegistryEntry[] = [];
 
 const UX_ROLE_FALLBACK_HEX: Record<UxRole, `#${string}`> = {
   error: "#ff5c5c",

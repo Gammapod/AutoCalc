@@ -70,8 +70,6 @@ export type ImpossibleCertificate = {
 
 export type ProofAction =
   | { type: "PRESS_KEY"; key: Key }
-  | { type: "ALLOCATOR_RETURN_PRESSED" }
-  | { type: "ALLOCATOR_ALLOCATE_PRESSED" }
   | { type: "UPGRADE_KEYPAD_ROW" }
   | { type: "UPGRADE_KEYPAD_COLUMN" };
 

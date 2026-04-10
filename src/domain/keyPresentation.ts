@@ -50,10 +50,6 @@ export const KEY_ID = {
   system_mode_game: "system_mode_game",
   system_new_game: "system_new_game",
   system_mode_sandbox: "system_mode_sandbox",
-  memory_cycle_variable: "memory_cycle_variable",
-  memory_adjust_plus: "memory_adjust_plus",
-  memory_adjust_minus: "memory_adjust_minus",
-  memory_recall: "memory_recall",
   toggle_delta_range_clamp: "toggle_delta_range_clamp",
   toggle_mod_zero_to_delta: "toggle_mod_zero_to_delta",
   toggle_step_expansion: "toggle_step_expansion",
@@ -67,7 +63,6 @@ export const KEY_ID = {
   viz_factorization: "viz_factorization",
   viz_number_line: "viz_number_line",
   viz_circle: "viz_circle",
-  viz_eigen_allocator: "viz_eigen_allocator",
   viz_algebraic: "viz_algebraic",
   exec_equals: "exec_equals",
   exec_play_pause: "exec_play_pause",
@@ -121,11 +116,7 @@ export type UnaryOperatorKeyId =
   | typeof KEY_ID.unary_mirror_digits
   | typeof KEY_ID.unary_i
   | typeof KEY_ID.unary_rotate_15;
-export type MemoryKeyId =
-  | typeof KEY_ID.memory_cycle_variable
-  | typeof KEY_ID.memory_adjust_plus
-  | typeof KEY_ID.memory_adjust_minus
-  | typeof KEY_ID.memory_recall;
+export type MemoryKeyId = never;
 export type UtilityKeyId =
   | typeof KEY_ID.util_clear_all
   | typeof KEY_ID.util_backspace
@@ -149,7 +140,6 @@ export type VisualizerKeyId =
   | typeof KEY_ID.viz_factorization
   | typeof KEY_ID.viz_number_line
   | typeof KEY_ID.viz_circle
-  | typeof KEY_ID.viz_eigen_allocator
   | typeof KEY_ID.viz_algebraic;
 export type ExecKeyId =
   | typeof KEY_ID.exec_equals
@@ -221,10 +211,6 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.system_mode_game, { buttonFace: "Continue" }],
   [KEY_ID.system_new_game, { buttonFace: "New Game" }],
   [KEY_ID.system_mode_sandbox, { buttonFace: "Sandbox" }],
-  [KEY_ID.memory_cycle_variable, { buttonFace: "\u03B1,\u03B2,\u03B3" }],
-  [KEY_ID.memory_adjust_plus, { buttonFace: "\u03BB \u21D2 \u03B1" }],
-  [KEY_ID.memory_adjust_minus, { buttonFace: "\u03BB \u21D0 \u03B1" }],
-  [KEY_ID.memory_recall, { buttonFace: "M\u2192" }],
   [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
   [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "\u27E1[0, \u{1D6FF})" }],
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
@@ -238,7 +224,6 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],
   [KEY_ID.viz_number_line, { buttonFace: "\u25FB" }],
   [KEY_ID.viz_circle, { buttonFace: "\u25EF" }],
-  [KEY_ID.viz_eigen_allocator, { buttonFace: "\u03BB" }],
   [KEY_ID.viz_algebraic, { buttonFace: "ALG" }],
   [KEY_ID.exec_equals, { buttonFace: "=" }],
   [KEY_ID.exec_play_pause, { buttonFace: "\u25B6" }],
@@ -342,12 +327,7 @@ const UNARY_OPERATOR_KEY_ID_SET = new Set<UnaryOperatorKeyId>([
   KEY_ID.unary_i,
   KEY_ID.unary_rotate_15,
 ]);
-const MEMORY_KEY_ID_SET = new Set<MemoryKeyId>([
-  KEY_ID.memory_cycle_variable,
-  KEY_ID.memory_adjust_plus,
-  KEY_ID.memory_adjust_minus,
-  KEY_ID.memory_recall,
-]);
+const MEMORY_KEY_ID_SET = new Set<MemoryKeyId>();
 
 export const isDigitKeyId = (keyId: KeyId): keyId is DigitKeyId => DIGIT_KEY_ID_SET.has(keyId as DigitKeyId);
 export const isBinaryOperatorKeyId = (keyId: KeyId): keyId is BinaryOperatorKeyId =>

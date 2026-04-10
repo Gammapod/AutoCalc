@@ -24,7 +24,6 @@ export type KeyVisualGroup =
   | "value_expression"
   | "slot_operator"
   | "utility"
-  | "memory"
   | "step"
   | "settings"
   | "global_system"
@@ -70,9 +69,6 @@ export const getKeyVisualGroup = (key: Key): KeyVisualGroup => {
   }
   if (getButtonDefinition(resolveKeyId(key))?.category === "global_system") {
     return "global_system";
-  }
-  if (getButtonDefinition(resolveKeyId(key))?.category === "memory") {
-    return "memory";
   }
   if (getButtonDefinition(resolveKeyId(key))?.behaviorKind === "visualizer") {
     return "settings";

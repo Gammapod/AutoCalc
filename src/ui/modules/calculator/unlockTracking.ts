@@ -27,9 +27,6 @@ const buildUnlockSnapshot = (state: GameState): Record<Key, boolean> => {
   for (const [key, unlocked] of Object.entries(state.unlocks.utilities)) {
     snapshot[key as Key] = unlocked;
   }
-  for (const [key, unlocked] of Object.entries(state.unlocks.memory)) {
-    snapshot[key as Key] = unlocked;
-  }
   for (const [key, unlocked] of Object.entries(state.unlocks.steps)) {
     snapshot[key as Key] = Boolean(unlocked);
   }

@@ -89,11 +89,6 @@ const overrideEntries: Partial<Record<KeyId, KeyDiagnosticEntry>> = {
     shortTemplate: "{keyFace}: toggle algebraic panel.",
     longTemplate: "{keyFace} toggles algebraic visualizer mode.",
   },
-  viz_eigen_allocator: {
-    title: "Allocator Visualizer",
-    shortTemplate: "{keyFace}: toggle allocator diagnostics panel.",
-    longTemplate: "{keyFace} toggles allocator visualizer mode.",
-  },
 };
 
 export const keyDiagnostics: Record<KeyId, KeyDiagnosticEntry> = {

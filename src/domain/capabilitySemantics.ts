@@ -96,8 +96,8 @@ export const computeCapabilityContext = (
   const hasSomeUnaryOperator = Object.keys(state.unlocks.unaryOperators)
     .filter((key): key is Key => isUnaryOperatorId(key as Key))
     .some((key) => isAvailable(key));
-  const allocatorReturnPress = (state.allocatorReturnPressCount ?? 0) >= 1;
-  const allocatorAllocatePress = (state.allocatorAllocatePressCount ?? 0) >= 1;
+  const allocatorReturnPress = false;
+  const allocatorAllocatePress = false;
   const hasUnaryIncrement = isAvailable(KEY_ID.unary_inc);
   const hasUnaryDecrement = isAvailable(KEY_ID.unary_dec);
   const hasUnaryNegate = isAvailable(KEY_ID.unary_neg);

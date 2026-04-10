@@ -11,7 +11,6 @@ export const applyUnlockAllPreset = (state: GameState): GameState => {
     alpha: 7,
     beta: 7,
     gamma: 4,
-    maxPoints: Math.max(withCatalogEffects.lambdaControl.maxPoints, 18),
   });
   return {
     ...withProjectedControl,

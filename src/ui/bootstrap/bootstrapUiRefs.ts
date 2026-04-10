@@ -1,8 +1,6 @@
 export type BootstrapUiRefs = {
   debugToggle: HTMLInputElement;
   debugMenu: HTMLElement;
-  debugMatrixToggle: HTMLInputElement;
-  debugMatrixWindow: HTMLElement;
   debugCalculatorSelect: HTMLSelectElement;
   clearSaveButton: HTMLButtonElement;
   unlockAllButton: HTMLButtonElement;
@@ -11,11 +9,8 @@ export type BootstrapUiRefs = {
   applyKeypadSizeButton: HTMLButtonElement;
   upgradeKeypadRowButton: HTMLButtonElement;
   upgradeKeypadColumnButton: HTMLButtonElement;
-  debugMaxPointsInput: HTMLInputElement;
-  applyMaxPointsButton: HTMLButtonElement;
-  addMaxPointsButton: HTMLButtonElement;
-  debugMatrixEditor: HTMLElement;
-  applyControlMatrixButton: HTMLButtonElement;
+  debugControlInputs: Record<"alpha" | "beta" | "gamma" | "delta" | "epsilon", HTMLInputElement>;
+  applyControlFieldsButton: HTMLButtonElement;
   copyCalculatorSnapshotButton: HTMLButtonElement;
   debugRollStateEl: HTMLElement;
   toggleUiShellLink: HTMLAnchorElement;
@@ -25,8 +20,6 @@ export type BootstrapUiRefs = {
 export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
   const debugToggle = doc.querySelector<HTMLInputElement>("[data-debug-toggle]");
   const debugMenu = doc.querySelector<HTMLElement>("[data-debug-menu]");
-  const debugMatrixToggle = doc.querySelector<HTMLInputElement>("[data-debug-matrix-toggle]");
-  const debugMatrixWindow = doc.querySelector<HTMLElement>("[data-debug-matrix-window]");
   const debugCalculatorSelect = doc.querySelector<HTMLSelectElement>("[data-debug-calculator-select]");
   const clearSaveButton = doc.querySelector<HTMLButtonElement>("[data-debug-clear-save]");
   const unlockAllButton = doc.querySelector<HTMLButtonElement>("[data-debug-unlock-all]");
@@ -35,11 +28,12 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
   const applyKeypadSizeButton = doc.querySelector<HTMLButtonElement>("[data-debug-apply-keypad-size]");
   const upgradeKeypadRowButton = doc.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-row]");
   const upgradeKeypadColumnButton = doc.querySelector<HTMLButtonElement>("[data-debug-upgrade-keypad-column]");
-  const debugMaxPointsInput = doc.querySelector<HTMLInputElement>("[data-debug-max-points]");
-  const applyMaxPointsButton = doc.querySelector<HTMLButtonElement>("[data-debug-apply-max-points]");
-  const addMaxPointsButton = doc.querySelector<HTMLButtonElement>("[data-debug-add-max-points]");
-  const debugMatrixEditor = doc.querySelector<HTMLElement>("[data-debug-control-matrix]");
-  const applyControlMatrixButton = doc.querySelector<HTMLButtonElement>("[data-debug-apply-control-matrix]");
+  const alphaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-alpha]");
+  const betaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-beta]");
+  const gammaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-gamma]");
+  const deltaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-delta]");
+  const epsilonInput = doc.querySelector<HTMLInputElement>("[data-debug-control-epsilon]");
+  const applyControlFieldsButton = doc.querySelector<HTMLButtonElement>("[data-debug-apply-control-fields]");
   const copyCalculatorSnapshotButton = doc.querySelector<HTMLButtonElement>("[data-debug-copy-calculator-snapshot]");
   const debugRollStateEl = doc.querySelector<HTMLElement>("[data-debug-roll-state]");
   const toggleUiShellLink = doc.querySelector<HTMLAnchorElement>("[data-debug-toggle-ui-shell]");
@@ -48,8 +42,6 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
   if (
     !debugToggle ||
     !debugMenu ||
-    !debugMatrixToggle ||
-    !debugMatrixWindow ||
     !debugCalculatorSelect ||
     !clearSaveButton ||
     !unlockAllButton ||
@@ -58,11 +50,12 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     !applyKeypadSizeButton ||
     !upgradeKeypadRowButton ||
     !upgradeKeypadColumnButton ||
-    !debugMaxPointsInput ||
-    !applyMaxPointsButton ||
-    !addMaxPointsButton ||
-    !debugMatrixEditor ||
-    !applyControlMatrixButton ||
+    !alphaInput ||
+    !betaInput ||
+    !gammaInput ||
+    !deltaInput ||
+    !epsilonInput ||
+    !applyControlFieldsButton ||
     !copyCalculatorSnapshotButton ||
     !debugRollStateEl ||
     !toggleUiShellLink ||
@@ -74,8 +67,6 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
   return {
     debugToggle,
     debugMenu,
-    debugMatrixToggle,
-    debugMatrixWindow,
     debugCalculatorSelect,
     clearSaveButton,
     unlockAllButton,
@@ -84,11 +75,14 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     applyKeypadSizeButton,
     upgradeKeypadRowButton,
     upgradeKeypadColumnButton,
-    debugMaxPointsInput,
-    applyMaxPointsButton,
-    addMaxPointsButton,
-    debugMatrixEditor,
-    applyControlMatrixButton,
+    debugControlInputs: {
+      alpha: alphaInput,
+      beta: betaInput,
+      gamma: gammaInput,
+      delta: deltaInput,
+      epsilon: epsilonInput,
+    },
+    applyControlFieldsButton,
     copyCalculatorSnapshotButton,
     debugRollStateEl,
     toggleUiShellLink,

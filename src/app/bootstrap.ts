@@ -6,7 +6,6 @@ import { resolveUiShellMode } from "./uiShellMode.js";
 import { createInteractionRuntime } from "./interactionRuntime.js";
 import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
 import { subscribeCueTelemetry } from "./workflows/cueTelemetry.js";
-import { createAllocatorCueCoordinator, getAllocatorIncreaseFromUnlocks } from "./allocatorCueCoordinator.js";
 import { createUnlockRevealCoordinator, createUnlockTracker } from "./unlockCueCoordinator.js";
 import { resolveBootstrapUiRefs } from "../ui/bootstrap/bootstrapUiRefs.js";
 import { createBootstrapUiController } from "../ui/bootstrap/bootstrapUiController.js";
@@ -190,27 +189,6 @@ const unlockRevealCoordinator = createUnlockRevealCoordinator({
   },
 });
 
-const allocatorCueCoordinator = createAllocatorCueCoordinator({
-  services,
-  cueCoordinator,
-  motionSettlement: {
-    awaitMotionSettled,
-  },
-  playShellCue: async (target) => {
-    await shellRenderer.playTransitionCue(target);
-  },
-  setInputBlocked: (blocked) => {
-    interactionRuntime.setInputBlocked(blocked);
-  },
-  redraw,
-  focusStoragePanel: () => {
-    shellRenderer.forceActiveView({
-      bottomPanelId: "storage",
-      includeTransition: true,
-    });
-  },
-});
-
 const unlockTracker = createUnlockTracker(store.getState());
 const autoStepScheduler = createAutoStepScheduler(store);
 
@@ -223,9 +201,7 @@ const unsubscribeCueTelemetry =
 
 const unsubscribe = createStoreSubscriptionCoordinator(store, {
   unlockTracker,
-  allocatorCueCoordinator,
   unlockRevealCoordinator,
-  getAllocatorIncreaseFromUnlocks: (previous, latest) => getAllocatorIncreaseFromUnlocks(previous, latest, services),
   renderAndPersistState,
   syncAutoStepScheduler: (state) => {
     autoStepScheduler.sync(state);
@@ -268,14 +244,8 @@ const syncCurrentMode = (mode: AppMode): void => {
     onUpgradeKeypadColumn: (calculatorId) => {
       store.dispatch({ type: "UPGRADE_KEYPAD_COLUMN", calculatorId });
     },
-    onSetAllocatorMaxPoints: (calculatorId, value) => {
-      store.dispatch({ type: "ALLOCATOR_SET_MAX_POINTS", calculatorId, value });
-    },
-    onAddAllocatorMaxPoints: (calculatorId, amount) => {
-      store.dispatch({ type: "ALLOCATOR_ADD_MAX_POINTS", calculatorId, amount });
-    },
-    onSetSessionControlEquations: (calculatorId, equations) => {
-      store.dispatch({ type: "SET_SESSION_CONTROL_EQUATIONS", calculatorId, equations });
+    onSetControlField: (calculatorId, field, value) => {
+      store.dispatch({ type: "SET_CONTROL_FIELD", calculatorId, field, value });
     },
     onSetActiveCalculator: (calculatorId) => {
       store.dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId });

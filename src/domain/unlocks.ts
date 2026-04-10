@@ -3,13 +3,9 @@ import { applyUpgradeKeypadColumn, applyUpgradeKeypadRow } from "./reducer.layou
 import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import { STORAGE_COLUMNS } from "./state.js";
 import { setButtonUnlocked } from "./buttonStateAccess.js";
-import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
-import { resolveActiveCalculatorId } from "./multiCalculator.js";
 import { materializeCalculator } from "./multiCalculator.js";
-import { commitLegacyProjection, projectCalculatorToLegacy } from "./multiCalculator.js";
-import { projectControlFromState } from "./controlProjection.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 
 export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean =>
@@ -209,39 +205,10 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
     return state;
   }
   if (effect.type === "increase_allocator_max_points") {
-    const projection = projectControlFromState(state);
-    return applyAllocatorRuntimeProjection(state, {
-      ...projection.control,
-      maxPoints: projection.control.maxPoints + effect.amount,
-    });
+    return state;
   }
   if (effect.type === "increase_allocator_max_points_for_calculator") {
-    const baseState = materializeCalculator(state, effect.calculatorId);
-    const activeCalculatorId = resolveActiveCalculatorId(baseState);
-    if (effect.calculatorId === activeCalculatorId) {
-      const projection = projectControlFromState(baseState);
-      return applyAllocatorRuntimeProjection(baseState, {
-        ...projection.control,
-        maxPoints: projection.control.maxPoints + effect.amount,
-      });
-    }
-    const projected = projectCalculatorToLegacy(baseState, effect.calculatorId);
-    const projection = projectControlFromState(projected);
-    const updatedProjected = applyAllocatorRuntimeProjection(projected, {
-      ...projection.control,
-      maxPoints: projection.control.maxPoints + effect.amount,
-    });
-    const committed = commitLegacyProjection(baseState, updatedProjected, effect.calculatorId);
-    if (activeCalculatorId === effect.calculatorId) {
-      return committed;
-    }
-    return projectCalculatorToLegacy(
-      {
-        ...committed,
-        activeCalculatorId,
-      },
-      activeCalculatorId,
-    );
+    return state;
   }
   if (effect.type === "unlock_second_slot") {
     // Slot capacity is allocator-projected; keep this effect as a backward-compatible no-op.
@@ -268,17 +235,9 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
   }
   let nextState = state;
   const newlyUnlockedKeys = new Set<Key>();
-  const activeCalculatorId = resolveActiveCalculatorId(state);
-  const perCalcCompleted = new Set(nextState.perCalculatorCompletedUnlockIds?.[activeCalculatorId] ?? []);
 
   for (const unlock of catalog) {
-    const isControlAllocatorUnlock = unlock.effect.type === "increase_allocator_max_points";
-    const hasPerCalculatorCompletion = Boolean(nextState.perCalculatorCompletedUnlockIds);
-    const isAlreadyCompleted = isControlAllocatorUnlock
-      ? (hasPerCalculatorCompletion
-        ? perCalcCompleted.has(unlock.id)
-        : nextState.completedUnlockIds.includes(unlock.id))
-      : nextState.completedUnlockIds.includes(unlock.id);
+    const isAlreadyCompleted = nextState.completedUnlockIds.includes(unlock.id);
 
     if (unlock.once && isAlreadyCompleted) {
       // Repair legacy/migrated saves where completion was recorded but calculator instance is absent.
@@ -300,33 +259,10 @@ export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): Gam
       }
     }
     if (!isAlreadyCompleted) {
-      if (isControlAllocatorUnlock) {
-        if (hasPerCalculatorCompletion) {
-          perCalcCompleted.add(unlock.id);
-          nextState = {
-            ...nextState,
-            perCalculatorCompletedUnlockIds: {
-              ...(nextState.perCalculatorCompletedUnlockIds ?? {}),
-              [activeCalculatorId]: [...perCalcCompleted],
-            },
-            completedUnlockIds: nextState.completedUnlockIds.includes(unlock.id)
-              ? nextState.completedUnlockIds
-              : [...nextState.completedUnlockIds, unlock.id],
-          };
-        } else {
-          nextState = {
-            ...nextState,
-            completedUnlockIds: nextState.completedUnlockIds.includes(unlock.id)
-              ? nextState.completedUnlockIds
-              : [...nextState.completedUnlockIds, unlock.id],
-          };
-        }
-      } else {
-        nextState = {
-          ...nextState,
-          completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
-        };
-      }
+      nextState = {
+        ...nextState,
+        completedUnlockIds: [...nextState.completedUnlockIds, unlock.id],
+      };
     }
   }
 

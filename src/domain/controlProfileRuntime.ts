@@ -8,5 +8,4 @@ export const getBaseControlProfile = (calculatorId: CalculatorId): ControlProfil
   getAppServices().contentProvider.controlProfiles[calculatorId];
 
 export const getEffectiveControlProfile = (state: GameState, calculatorId: CalculatorId = resolveStateCalculatorId(state)): ControlProfile =>
-  state.sessionControlProfiles?.[calculatorId] ?? getBaseControlProfile(calculatorId);
-
+  getBaseControlProfile(calculatorId);

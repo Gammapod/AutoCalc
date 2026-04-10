@@ -90,13 +90,8 @@ export const isActiveCalculatorScopedAction = (action: Action): boolean =>
   || action.type === "UPGRADE_KEYPAD_COLUMN"
   || action.type === "TOGGLE_FLAG"
   || action.type === "TOGGLE_VISUALIZER"
-  || action.type === "ALLOCATOR_ADJUST"
-  || action.type === "ALLOCATOR_SET_MAX_POINTS"
-  || action.type === "ALLOCATOR_ADD_MAX_POINTS"
-  || action.type === "RESET_ALLOCATOR_DEVICE"
-  || action.type === "ALLOCATOR_RETURN_PRESSED"
-  || action.type === "ALLOCATOR_ALLOCATE_PRESSED"
   || action.type === "LAMBDA_SET_CONTROL"
+  || action.type === "SET_CONTROL_FIELD"
   || action.type === "AUTO_STEP_TICK";
 
 export const resolveActionCalculatorId = (state: GameState, action: Action): CalculatorId | null => {

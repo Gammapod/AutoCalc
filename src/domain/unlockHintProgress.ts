@@ -320,8 +320,6 @@ const REDACTED_HINT_TEMPLATES_BY_UNLOCK_ID: Record<string, HintTemplate> = {
   award_lambda_to_g_on_binary_mul_result_0: { templateId: "hint.binary.observe", text: "Try binary-mode actions and watch for key milestone outcomes." },
   unlock_memory_plus_on_first_lambda_awarded: { templateId: "hint.lambda.progression", text: "Advance allocator progression milestones to unlock memory tools." },
   unlock_memory_minus_on_first_lambda_spent: { templateId: "hint.lambda.progression", text: "Advance allocator progression milestones to unlock memory tools." },
-  unlock_memory_cycle_variable_on_first_lambda_spent: { templateId: "hint.lambda.progression", text: "Advance allocator progression milestones to unlock memory tools." },
-  unlock_viz_eigen_allocator_on_first_lambda_refunded: { templateId: "hint.lambda.progression", text: "Advance allocator progression milestones to unlock memory tools." },
   unlock_viz_feed_on_roll_length_gt_20: { templateId: "hint.roll.extend", text: "Keep the run going to reach deeper progression surfaces." },
   unlock_exec_play_pause_on_roll_length_gt_40: { templateId: "hint.roll.extend", text: "Keep the run going to reach deeper progression surfaces." },
   unlock_backspace_on_c_clears_function_two_slots: { templateId: "hint.utility.observe", text: "Use utility interactions while building richer function setups." },
