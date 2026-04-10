@@ -31,6 +31,7 @@ flowchart TD
         Iaddimag
         Ipythag
         Inodivisor
+    end
 
     subgraph Boolean_Ops ["1/0"]
 
@@ -53,23 +54,23 @@ flowchart TD
         Linc
         Ldec
 
-        Lplus
         Lminus
+        Lplus
 
         %% Lfloor
         %% Lceil
     end
 
     subgraph Magnitude_Ops
+        Mdivtuple
+        Mmod
+        Meudiv
         Mmul
         Mdiv
         Mper
         Mrecip
         Mneg
         
-        Mdivtuple
-        Meudiv
-        Mmod
     end
 
     subgraph Exponential_Ops    
@@ -113,29 +114,31 @@ flowchart TD
         Pgcd
         Plcm
     end
-    end
 
 
 %% Identities
     %% Visualizer: default (real ints)
     
     Inat{"ℕ"}
+
     Lminus --> Iint{"ℤ"}
+
     Mdiv --> Irat{"ℚ"}
+
     Eradical --> Irad{"𝔸‾"}
-    Irad --> Inegroot
+
     Lminus --> Inegroot("√-1")
+    Irad --> Inegroot
     Inegroot --> Iimag{"𝕀"}
 
-    Lplus --> Iaddimag
-    Iimag --> Iaddimag("1 + √-1")
+    Lplus --> Iaddimag("1 + √-1")
+    Iimag --> Iaddimag
     Iaddimag --> Icomp{"ℂ"}
 
-    Iimag --> Ipythag
     Icomp --> Ipythag("√(1^2 + i^2)")
 
     Inat --> Inodivisor
-    Mmod --> Inodivisor("¬(n ◇ ℕ{2..√n}) ≡ 0")
+    Mmod --> Inodivisor("¬(n ◇ ℕ{2..n} ≡ 0)")
     Inodivisor --> Iprime{ℙ}
     
 
@@ -189,10 +192,9 @@ flowchart TD
     %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(4 – (3 × ℕ)) ]`
 
     Mdivtuple -->|Remainder| Mmod["a◇b"]
-    %% Expanded form `[ 4 ◇ 3 ]` -> `[ 3 – (4 × (4 ⫽ 3)) ]`
+    %% Expanded form `[ 4 ◇ 3 ]` -> `[ 4 – (3 × (4 ⫽ 3)) ]`
 
-    Mmul --> Mdiv["a [ ÷ b ]"]
-    %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 × (⅓) ]`
+    Mmul -->|Invert| Mdiv["a [ ÷ b ]"]
     %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 ×⮌ 3 ]`    
 
     Mdiv --> Mper["％"]

@@ -1,7 +1,7 @@
 Truth 1: Invariants
 # AutoCalc UX Specification
 
-Last updated: 2026-03-25
+Last updated: 2026-04-10
 Status: Canonical Truth 1 UX invariants.
 Purpose: Define UX/runtime interaction invariants that are compatible with `docs/functional-spec.md`.
 
@@ -62,6 +62,10 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 - `UX-IA-02` (MUST): Touch interactions in active shell controllers preserve deterministic action intent for rearrangement and navigation gestures.
 - `UX-IA-03` (SHALL): Keyboard and screen-reader expectations are treated as quality-gate contract requirements.
 - `UX-IA-04` (SHALL): Mobile-responsive behavior preserves usable key interaction targets.
+- `UX-IA-05` (MUST): Input outcome LED/audio feedback (green/red) is emitted only for user action categories (`PRESS_KEY`, layout install/uninstall/move/swap, and pre-dispatch blocks of those actions), never for system/runtime actions.
+  Rationale: feedback channel should communicate direct player action outcomes only.
+- `UX-IA-06` (MUST): A single action/frame outcome for a calculator may emit at most one input outcome color cue (green or red), never both simultaneously.
+  Rationale: mutually exclusive outcome semantics must remain unambiguous.
 
 ### 2.6 Key visual affordance invariants
 
@@ -100,6 +104,8 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 | UX-IA-02 | Touch gesture intent determinism | `ui-integration/mobile-shell`, `ui/layout-engine` | integration + unit | partial: scenario matrix expansion pending |
 | UX-IA-03 | Keyboard/screen-reader baseline | `ui-shell/menu-a11y` | integration | partial: broader shell coverage pending |
 | UX-IA-04 | Mobile usable interaction targets | `ui-integration/mobile-shell` | integration | partial: explicit numeric threshold contract absent |
+| UX-IA-05 | LED/audio input feedback only for user actions | `contracts/input-feedback-outcome`, `ui-module/calculator-storage-v2` | contract + integration | none |
+| UX-IA-06 | Per-calculator outcome cue is mutually exclusive per render pass | `ui-module/calculator-storage-v2`, `ui-module/calculator-reject-blink` | integration | partial: no direct audio-queue exclusivity assertion |
 | UX-KVA-01 | Visualizers use unified settings family | `ui-module/calculator-keypad-render`, `ui-module/storage-v2` | integration | none |
 | UX-KVA-02 | Settings stripe bottom placement and LED on/off semantics | `ui/visualizer-fit-contract` | contract | none |
 | UX-KVA-03 | Binary accent applies only to binary operators | `ui-module/calculator-keypad-render`, `ui-module/storage-v2`, `ui/visualizer-fit-contract` | integration + contract | none |

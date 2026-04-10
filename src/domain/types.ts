@@ -931,6 +931,7 @@ export type UiEffect =
       calculatorId: CalculatorId;
       outcome: "accepted" | "rejected";
       source: "domain_dispatch" | "pre_dispatch_block";
+      trigger?: "user_action" | "system_action";
       reasonCode?:
         | "no_effect"
         | "execution_gate_reject"

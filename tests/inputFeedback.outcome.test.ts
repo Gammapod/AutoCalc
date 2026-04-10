@@ -143,6 +143,7 @@ export const runInputFeedbackOutcomeTests = (): void => {
     assert.ok(feedback, "C no-op emits input feedback");
     assert.equal(feedback?.outcome, "rejected", "C on cleared state is rejected");
     assert.equal(feedback?.source, "domain_dispatch", "domain dispatch source recorded");
+    assert.equal(feedback?.trigger, "user_action", "press-key feedback is marked user-action");
   }
 
   {
@@ -361,6 +362,7 @@ export const runInputFeedbackOutcomeTests = (): void => {
     });
     const feedback = findInputFeedback(result.uiEffects);
     assert.equal(feedback?.outcome, "accepted", "execution toggle on NaN tail is accepted");
+    assert.equal(feedback?.trigger, "system_action", "toggle-flag feedback is marked system-action");
   }
   {
     const base = baseState();
@@ -414,6 +416,7 @@ export const runInputFeedbackOutcomeTests = (): void => {
     assert.equal(subscriberCalls, 1, "enqueueing pre-dispatch feedback still notifies subscribers");
     assert.equal(feedback?.outcome, "rejected", "blocked pre-dispatch attempt emits rejected feedback");
     assert.equal(feedback?.source, "pre_dispatch_block", "blocked pre-dispatch attempt source is tagged");
+    assert.equal(feedback?.trigger, "user_action", "blocked user action feedback is marked user-action");
     assert.equal(feedback?.reasonCode, "pre_dispatch_block", "blocked pre-dispatch attempt reason is tagged");
     unsubscribe();
   }

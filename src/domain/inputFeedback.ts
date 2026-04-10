@@ -3,6 +3,7 @@ import type { Action, CalculatorId, GameState, LayoutSurface, UiEffect } from ".
 import { resolveSurfaceCalculatorId } from "./calculatorSurface.js";
 
 type InputFeedbackReasonCode = Extract<Extract<UiEffect, { type: "input_feedback" }>["reasonCode"], string>;
+type InputFeedbackTrigger = Extract<Extract<UiEffect, { type: "input_feedback" }>["trigger"], string>;
 
 const surfaceToCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null =>
   resolveSurfaceCalculatorId(state, surface);
@@ -24,6 +25,13 @@ export const resolveFeedbackTargetCalculatorId = (state: GameState, action: Acti
   }
   return resolveActiveCalculatorId(state);
 };
+
+export const isUserInputFeedbackAction = (action: Action): boolean =>
+  action.type === "PRESS_KEY"
+  || action.type === "MOVE_LAYOUT_CELL"
+  || action.type === "SWAP_LAYOUT_CELLS"
+  || action.type === "INSTALL_KEY_FROM_STORAGE"
+  || action.type === "UNINSTALL_LAYOUT_KEY";
 
 const toFeedbackComparableCalculator = (
   calculator: NonNullable<GameState["calculators"]>[CalculatorId] | undefined,
@@ -115,12 +123,14 @@ export const resolveDomainDispatchInputFeedback = (
   uiEffects: readonly UiEffect[],
 ): Extract<UiEffect, { type: "input_feedback" }> => {
   const targetCalculatorId = resolveFeedbackTargetCalculatorId(previous, action);
+  const trigger: InputFeedbackTrigger = isUserInputFeedbackAction(action) ? "user_action" : "system_action";
   if (hasTransitionIntent(uiEffects)) {
     return {
       type: "input_feedback",
       calculatorId: targetCalculatorId,
       outcome: "accepted",
       source: "domain_dispatch",
+      trigger,
       reasonCode: "transition_intent_accept",
     };
   }
@@ -131,6 +141,7 @@ export const resolveDomainDispatchInputFeedback = (
       calculatorId: targetCalculatorId,
       outcome: "accepted",
       source: "domain_dispatch",
+      trigger,
     };
   }
   let reasonCode: InputFeedbackReasonCode = "no_effect";
@@ -149,6 +160,7 @@ export const resolveDomainDispatchInputFeedback = (
     calculatorId: targetCalculatorId,
     outcome: "rejected",
     source: "domain_dispatch",
+    trigger,
     reasonCode,
   };
 };
@@ -161,5 +173,6 @@ export const buildPreDispatchBlockedInputFeedback = (
   calculatorId: resolveFeedbackTargetCalculatorId(state, action),
   outcome: "rejected",
   source: "pre_dispatch_block",
+  trigger: isUserInputFeedbackAction(action) ? "user_action" : "system_action",
   reasonCode: "pre_dispatch_block",
 });
