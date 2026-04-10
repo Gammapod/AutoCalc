@@ -6,10 +6,8 @@ import {
   scalarValueToCalculatorValue,
 } from "../../../domain/calculatorValue.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
-import { projectControlFromState } from "../../../domain/controlProjection.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
-import { buildSelectionRenderModel } from "../../shared/readModel.selection.js";
 import { applyUxRoleAttributes, buildTotalHintRowsViewModel, resolveTotalHintRowUxAssignment } from "../../shared/readModel.js";
 import {
   buildClearedTotalSlotModel,
@@ -181,75 +179,6 @@ const renderSevenSegmentValue = (
 export const renderTotalDisplay = (totalEl: Element, state: GameState): void => {
   const binaryModeEnabled = state.settings.base === "base2";
   const displayRadix = binaryModeEnabled ? 2 : 10;
-  const projection = projectControlFromState(state);
-  const selectionVm = buildSelectionRenderModel(state);
-  const buildMemoryStatusRow = (): HTMLElement => {
-    const row = document.createElement("div");
-    row.className = "total-memory-row";
-
-    const lambda = document.createElement("span");
-    lambda.className = "total-memory-lambda";
-    applyUxRoleAttributes(lambda, { uxRole: "lambda", uxState: "active" });
-    lambda.textContent = `\u03BB = ${projection.budget.unused.toString()}`;
-    row.appendChild(lambda);
-
-    const variables = document.createElement("div");
-    variables.className = "total-memory-variables";
-    applyUxRoleAttributes(variables, { uxRole: "default", uxState: "normal" });
-    const variableValues: Array<{ symbol: "\u03B1" | "\u03B2" | "\u03B3" | "\u03B4" | "\u03F5"; value: string }> = [
-      { symbol: "\u03B1", value: projection.fields.alpha.toString() },
-      { symbol: "\u03B2", value: projection.fields.beta.toString() },
-      { symbol: "\u03B3", value: projection.fields.gamma.toString() },
-      { symbol: "\u03B4", value: projection.deltaEffective.toString() },
-      { symbol: "\u03F5", value: toDisplayString(projection.epsilonEffective) },
-    ];
-    for (const entry of variableValues) {
-      const token = document.createElement("span");
-      token.className = "total-memory-var";
-      applyUxRoleAttributes(token, { uxRole: "default", uxState: "normal" });
-      const isSelected = (
-        (entry.symbol === "\u03B1" && selectionVm.highlightByField.alpha)
-        || (entry.symbol === "\u03B2" && selectionVm.highlightByField.beta)
-        || (entry.symbol === "\u03B3" && selectionVm.highlightByField.gamma)
-        || (entry.symbol === "\u03B4" && selectionVm.highlightByField.delta)
-        || (entry.symbol === "\u03F5" && selectionVm.highlightByField.epsilon)
-      );
-      const leftBracket = document.createElement("span");
-      leftBracket.className = isSelected
-        ? "total-memory-bracket total-memory-bracket--visible"
-        : "total-memory-bracket";
-      applyUxRoleAttributes(leftBracket, { uxRole: "lambda", uxState: isSelected ? "active" : "muted" });
-      leftBracket.textContent = "[";
-      const symbol = document.createElement("span");
-      symbol.className = isSelected ? "total-memory-symbol total-memory-symbol--selected" : "total-memory-symbol";
-      applyUxRoleAttributes(symbol, { uxRole: "lambda", uxState: isSelected ? "active" : "normal" });
-      symbol.textContent = entry.symbol;
-      const rightBracket = document.createElement("span");
-      rightBracket.className = isSelected
-        ? "total-memory-bracket total-memory-bracket--visible"
-        : "total-memory-bracket";
-      applyUxRoleAttributes(rightBracket, { uxRole: "lambda", uxState: isSelected ? "active" : "muted" });
-      rightBracket.textContent = "]";
-      const valueText = document.createElement("span");
-      valueText.className = "total-memory-value";
-      applyUxRoleAttributes(valueText, { uxRole: "default", uxState: "normal" });
-      valueText.textContent = ` = ${entry.value}`;
-      token.append(leftBracket, symbol, rightBracket, valueText);
-      variables.appendChild(token);
-    }
-    row.appendChild(variables);
-    return row;
-  };
-  const renderSharedMemoryFooter = (): void => {
-    const displayWindow = totalEl.closest("[data-display-window]");
-    const footer = displayWindow?.querySelector<HTMLElement>("[data-v2-total-footer]");
-    if (!footer) {
-      return;
-    }
-    footer.innerHTML = "";
-    footer.appendChild(buildMemoryStatusRow());
-  };
-
   const latestRollEntry = state.calculator.rollEntries.at(-1);
   const shouldDisplayAlgLabel = latestRollEntry?.error?.kind === "symbolic_result";
   const domainValue = latestRollEntry?.y ?? state.calculator.total;
@@ -260,7 +189,6 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     isClearedCalculatorState(state.calculator) && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress);
   totalEl.classList.toggle("total-display--error", hasLatestRollError);
   totalEl.innerHTML = "";
-  renderSharedMemoryFooter();
   const stack = document.createElement("div");
   stack.className = "total-display-stack";
   const metaRow = document.createElement("div");

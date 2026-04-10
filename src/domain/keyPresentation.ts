@@ -52,6 +52,7 @@ export const KEY_ID = {
   system_mode_sandbox: "system_mode_sandbox",
   toggle_delta_range_clamp: "toggle_delta_range_clamp",
   toggle_mod_zero_to_delta: "toggle_mod_zero_to_delta",
+  toggle_binary_octave_cycle: "toggle_binary_octave_cycle",
   toggle_step_expansion: "toggle_step_expansion",
   toggle_binary_mode: "toggle_binary_mode",
   toggle_history: "toggle_history",
@@ -128,6 +129,7 @@ export type UtilityKeyId =
   | typeof KEY_ID.system_mode_sandbox
   | typeof KEY_ID.toggle_delta_range_clamp
   | typeof KEY_ID.toggle_mod_zero_to_delta
+  | typeof KEY_ID.toggle_binary_octave_cycle
   | typeof KEY_ID.toggle_step_expansion
   | typeof KEY_ID.toggle_binary_mode
   | typeof KEY_ID.toggle_history;
@@ -213,6 +215,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.system_mode_sandbox, { buttonFace: "Sandbox" }],
   [KEY_ID.toggle_delta_range_clamp, { buttonFace: "\u27E1[-\u{1D6FF}, \u{1D6FF})" }],
   [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "\u27E1[0, \u{1D6FF})" }],
+  [KEY_ID.toggle_binary_octave_cycle, { buttonFace: "\u{1D106}" }],
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
   [KEY_ID.toggle_binary_mode, { buttonFace: "b\u2082" }],
   [KEY_ID.toggle_history, { buttonFace: "History" }],

@@ -30,6 +30,7 @@ export const EXECUTION_PAUSE_EQUALS_FLAG = "execution.pause.equals";
 export const AUTO_EQUALS_FLAG = EXECUTION_PAUSE_FLAG;
 export const DELTA_RANGE_CLAMP_FLAG = "settings.delta_range_clamp";
 export const MOD_ZERO_TO_DELTA_FLAG = "settings.mod_zero_to_delta";
+export const BINARY_OCTAVE_CYCLE_FLAG = "settings.binary_octave_cycle";
 export const STEP_EXPANSION_FLAG = "settings.step_expansion";
 export const BINARY_MODE_FLAG = "settings.binary_mode";
 export const HISTORY_FLAG = "settings.history";
@@ -141,6 +142,7 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.system_save_quit_main_menu },
   { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
   { kind: "key", key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } },
+  { kind: "key", key: KEY_ID.toggle_binary_octave_cycle, behavior: { type: "toggle_flag", flag: BINARY_OCTAVE_CYCLE_FLAG } },
   { kind: "key", key: KEY_ID.toggle_step_expansion, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } },
   { kind: "key", key: KEY_ID.toggle_binary_mode, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } },
   { kind: "key", key: KEY_ID.toggle_history, behavior: { type: "toggle_flag", flag: HISTORY_FLAG } },

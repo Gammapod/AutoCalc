@@ -9,7 +9,7 @@ import type {
 import type { OperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
 import { resolveOperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
 
-export type WrapStageMode = "delta_range_clamp" | "mod_zero_to_delta";
+export type WrapStageMode = "delta_range_clamp" | "mod_zero_to_delta" | "binary_octave_cycle";
 
 export type ExecutionPlanStage =
   | { kind: "slot"; slot: Slot }
@@ -62,6 +62,9 @@ export type ExecutionPlanBuildResult = {
 };
 
 export const resolveExecutionPlanIRWrapStageMode = (state: Pick<GameState, "settings">): WrapStageMode | null => {
+  if (state.settings.wrapper === "binary_octave_cycle") {
+    return "binary_octave_cycle";
+  }
   if (state.settings.wrapper === "mod_zero_to_delta") {
     return "mod_zero_to_delta";
   }

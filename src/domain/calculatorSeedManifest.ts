@@ -74,6 +74,7 @@ const gPrimePlacements: readonly SeedPlacement[] = [
   { row: 2, col: 2, key: KEY_ID.toggle_binary_mode, behavior: { type: "toggle_flag", flag: "settings.binary_mode" } },
   { row: 1, col: 7, key: KEY_ID.digit_0 },
   { row: 1, col: 3, key: KEY_ID.op_add },
+  { row: 1, col: 4, key: KEY_ID.toggle_binary_octave_cycle, behavior: { type: "toggle_flag", flag: "settings.binary_octave_cycle" } },
   { row: 1, col: 2, key: KEY_ID.toggle_mod_zero_to_delta, behavior: { type: "toggle_flag", flag: "settings.mod_zero_to_delta" } },
   { row: 1, col: 1, key: KEY_ID.exec_equals },
 ];

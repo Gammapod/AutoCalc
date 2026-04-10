@@ -1,6 +1,7 @@
 import type { Action, GameState, KeyCell } from "../../../domain/types.js";
 import { STORAGE_COLUMNS } from "../../../domain/state.js";
 import {
+  BINARY_OCTAVE_CYCLE_FLAG,
   BINARY_MODE_FLAG,
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_FLAG,
@@ -204,6 +205,9 @@ const toStorageCell = (key: KeyCell["key"]): KeyCell => {
   }
   if (key === "toggle_mod_zero_to_delta") {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } };
+  }
+  if (key === "toggle_binary_octave_cycle") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: BINARY_OCTAVE_CYCLE_FLAG } };
   }
   if (key === "toggle_step_expansion") {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } };

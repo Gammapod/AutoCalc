@@ -137,6 +137,7 @@ export const getRollLineClassName = (row: RollRow): string =>
 
 const DELTA_WRAP_SUFFIX = " [ + \u{1D6FF} \u27E1 2\u{1D6FF} \u2212 \u{1D6FF} ]";
 const MOD_ZERO_TO_DELTA_SUFFIX = " [ \u27E1 \u{1D6FF} ]";
+const BINARY_OCTAVE_CYCLE_SUFFIX = " [ \u{1D106} ]";
 
 export type OperationSlotDisplayModel = {
   base: string;
@@ -211,6 +212,7 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
         : null;
   const deltaWrapEnabled = state.settings.wrapper === "delta_range_clamp";
   const modZeroToDeltaEnabled = state.settings.wrapper === "mod_zero_to_delta";
+  const binaryOctaveCycleEnabled = state.settings.wrapper === "binary_octave_cycle";
   const hasNoCommittedOrDraftedSlots = operationSlotCount === 0 && state.calculator.draftingSlot === null;
   if (modZeroToDeltaEnabled) {
     if (hasNoCommittedOrDraftedSlots) {
@@ -223,6 +225,12 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
       return withDisplayParts("_ [ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", symbol, null, stepTargetTokenIndex);
     }
     return withDisplayParts(base, symbol, DELTA_WRAP_SUFFIX, stepTargetTokenIndex);
+  }
+  if (binaryOctaveCycleEnabled) {
+    if (hasNoCommittedOrDraftedSlots) {
+      return withDisplayParts("_ [ \u{1D106} ]", symbol, null, stepTargetTokenIndex);
+    }
+    return withDisplayParts(base, symbol, BINARY_OCTAVE_CYCLE_SUFFIX, stepTargetTokenIndex);
   }
   return withDisplayParts(base, symbol, null, stepTargetTokenIndex);
 };

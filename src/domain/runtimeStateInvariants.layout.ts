@@ -1,6 +1,7 @@
 import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import { KEY_ID } from "./keyPresentation.js";
 import {
+  BINARY_OCTAVE_CYCLE_FLAG,
   BINARY_MODE_FLAG,
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
@@ -46,6 +47,9 @@ const canonicalCellForKey = (key: Key): KeyCell => {
   }
   if (key === KEY_ID.toggle_mod_zero_to_delta) {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: MOD_ZERO_TO_DELTA_FLAG } };
+  }
+  if (key === KEY_ID.toggle_binary_octave_cycle) {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: BINARY_OCTAVE_CYCLE_FLAG } };
   }
   if (key === KEY_ID.toggle_step_expansion) {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } };

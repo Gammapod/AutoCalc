@@ -233,5 +233,16 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetNodeId: "Umod_zero_to_delta_unlock",
     targetLabel: "⟡[0,Δ)",
   },
+  {
+    id: "unlock_toggle_binary_octave_cycle_on_binary_overflow",
+    description: "Unlock 𝄆 the first time overflow occurs in base-2 mode.",
+    predicate: { type: "completed_unlock_id_seen", unlockId: OVERFLOW_ERROR_IN_BINARY_MODE_SEEN_ID },
+    effect: { type: "unlock_utility", key: KEY_ID.toggle_binary_octave_cycle },
+    sufficientKeySets: [[KEY_ID.toggle_binary_mode]],
+    once: true,
+    domainNodeId: "NQ",
+    targetNodeId: "Ubinary_octave_cycle_unlock",
+    targetLabel: "𝄆",
+  },
 ];
 

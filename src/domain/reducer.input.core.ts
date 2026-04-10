@@ -658,6 +658,64 @@ const euclideanModuloBigInt = (value: bigint, modulus: bigint): bigint => {
   return remainder < 0n ? remainder + modulus : remainder;
 };
 
+const bitLength = (value: bigint): number => {
+  if (value <= 0n) {
+    throw new Error("Bit length is only defined for positive integers.");
+  }
+  return value.toString(2).length;
+};
+
+const floorLog2Rational = (value: RationalValue): number => {
+  const normalized = normalizeRationalValue(value);
+  const absNumerator = absBigInt(normalized.num);
+  const denominator = normalized.den;
+  if (absNumerator === 0n || denominator <= 0n) {
+    throw new Error("floorLog2Rational requires a non-zero positive rational.");
+  }
+  let exponent = bitLength(absNumerator) - bitLength(denominator);
+  if (exponent >= 0) {
+    if (absNumerator < (denominator << BigInt(exponent))) {
+      exponent -= 1;
+    }
+    return exponent;
+  }
+  if ((absNumerator << BigInt(-exponent)) < denominator) {
+    exponent -= 1;
+  }
+  return exponent;
+};
+
+const wrapBinaryOctaveExponent = (exponent: number): number => {
+  const minExponent = -4;
+  const period = 8;
+  const offset = exponent - minExponent;
+  const wrappedOffset = ((offset % period) + period) % period;
+  return minExponent + wrappedOffset;
+};
+
+const applyBinaryOctaveCycleWrap = (value: RationalValue): RationalValue => {
+  const normalized = normalizeRationalValue(value);
+  if (normalized.num === 0n) {
+    return normalized;
+  }
+  const exponent = floorLog2Rational(normalized);
+  const wrappedExponent = wrapBinaryOctaveExponent(exponent);
+  const exponentDelta = wrappedExponent - exponent;
+  if (exponentDelta === 0) {
+    return normalized;
+  }
+  if (exponentDelta > 0) {
+    return normalizeRationalValue({
+      num: normalized.num << BigInt(exponentDelta),
+      den: normalized.den,
+    });
+  }
+  return normalizeRationalValue({
+    num: normalized.num,
+    den: normalized.den << BigInt(-exponentDelta),
+  });
+};
+
 const applyOverflowPolicy = (value: RationalValue, maxDigits: number, radix: number = 10): EvaluatedExecution => {
   const boundary = computeOverflowBoundary(maxDigits, radix);
   if (!exceedsMagnitudeBoundary(value, boundary)) {
@@ -680,6 +738,9 @@ const applyWrapStage = (
     return { nextTotal: total };
   }
   const value = total.value;
+  if (mode === "binary_octave_cycle") {
+    return { nextTotal: toRationalCalculatorValue(applyBinaryOctaveCycleWrap(value)) };
+  }
   const boundary = computeOverflowBoundary(maxDigits, radix);
   if (value.den === 1n) {
     if (mode === "mod_zero_to_delta") {

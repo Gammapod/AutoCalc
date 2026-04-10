@@ -327,6 +327,7 @@ const REDACTED_HINT_TEMPLATES_BY_UNLOCK_ID: Record<string, HintTemplate> = {
   unlock_roll_inverse_on_undo_while_feed_visible: { templateId: "hint.total.raise", text: "Increase your total steadily to open new options." },
   unlock_mod_on_first_cycle_length_gt_2: { templateId: "hint.cycle.observe", text: "Experiment until recurring behavior lasts longer." },
   unlock_toggle_mod_zero_to_delta_on_binary_overflow: { templateId: "hint.binary.observe", text: "Try binary-mode actions and watch for key milestone outcomes." },
+  unlock_toggle_binary_octave_cycle_on_binary_overflow: { templateId: "hint.binary.observe", text: "Try binary-mode actions and watch for key milestone outcomes." },
 };
 
 const getHintTemplate = (unlockId: string): HintTemplate => {
