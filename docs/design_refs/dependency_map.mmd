@@ -43,20 +43,21 @@ flowchart TD
         Bnotgt
         Bless
         Beq
+        Bdivis
         Bmax
         Bminim
         end
     end
 
     subgraph Linear_Ops
-        Sinc
-        Sdec
+        Linc
+        Ldec
 
         Lplus
         Lminus
 
-        Lfloor
-        Lceil
+        %% Lfloor
+        %% Lceil
     end
 
     subgraph Magnitude_Ops
@@ -145,23 +146,23 @@ flowchart TD
     Mmul --> Imulneg
     Iint --> Imulneg(n × -1)
 %% 
-    Inat --> Sinc
+    Inat --> Linc
 %% Linear
     %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
     
-    Sinc["[ n ++ ]"]
+    Linc["[ n ++ ]"]
     %% Primitive
     %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
     %% Completes ℕ on its own
-    Sinc -->|Invert| Sdec["[ n -- ]"]
+    Linc -->|Invert| Ldec["[ n -- ]"]
     %% Expanded form `[ 4 –– ]` -> `[ 4 ℤ{..3◌⃔4 5..} ]`
     %% Expanded form `[ 4 –– ]` -> `[ 4 ++⮌ ]`
     %% Completes ℤ with ++
-    Sinc -->|Iterate| Lplus["a [ \+b ]"]
+    Linc -->|Iterate| Lplus["a [ \+b ]"]
     %% Expanded form `[ 4 + 3 ]` -> `[ 4 ++ ++ ++ ]`  
     Lplus -->|Invert| Lminus["a [ − b ]"]
     %% Expanded form `[ 4 - 3 ]` -> `[ 4 +⮌ 3 ]`
-    Sdec -->|Iterate| Lminus["a [ − b ]"]
+    Ldec -->|Iterate| Lminus["a [ − b ]"]
     %% Expanded form `[ 4 - 3 ]` -> `[ 4 –– –– –– ]`
     %% Mmod --> Lfloor["⌊n⌋"]
     %% %% Expanded form `[ ⌊(4/3)⌋ ]` -> `[ (4/3) - ((4/3) ◇ 1) ]`
@@ -283,6 +284,8 @@ flowchart TD
     Beq --> Bnotgt
     Bless --> Bnotgt["a ≤ b"]
     %% Expanded form `[ (a < b) ∨ (a ≡ b) ]`
+    a --> Bdivis["a | b"]
+    %% Expanded form `[ (a ∥ b) ≡ 1) ]`
     
     Bifelse --> Bmax
     Bless --> Bmax["a ⫨ b"]
@@ -295,24 +298,21 @@ flowchart TD
     %% Still conceptual - has a lot of functions designed, but the way the user will interact with these is not planned yet
     %% Visualizer: prime factorization, not sure what else would be interesting
     
-    Iprime --> Pp_tuple("ℙ{ℕ}")
-    Pp_tuple --> Pnthprime["ℙ(n)"]
+    Iprime --> Pnthprime["ℙ(n)"]
     %% Primitive
     %% Returns nth prime. ℙ(3) = 5
-    Pp_tuple --> Pindexofp["ℕ(p)"]
+    Pnthprime -->|Invert| Pindexofp["ℕ(p)"]
     %% Returns index of prime p. ℙ^-1(5) = 3
 
     Eeulog --> Padic
     Pnthprime --> Padic
     Padic["v_p(n)"]
     %% Expanded form `[ n ∥ p ]`
+    Padic --> Pprime_expansion("∏ ℙ^e")
 
-    Pp_tuple
-    Pnthprime
-    Pindexofp
-    Pprime_expansion("∏ ℙ^e")
     %% Expanded form `n ∥ ℙ("⟐
-    Pomega["Ω(n)"]
+
+    Padic --> Pomega["Ω(n)"]
     %% n=60
     %% r=15,5,1
     %% s=2,1,1,0
