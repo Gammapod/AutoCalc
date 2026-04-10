@@ -25,7 +25,8 @@
 }
 
 .key.key--group-settings[data-key="toggle_delta_range_clamp"],
-.key.key--group-settings[data-key="toggle_mod_zero_to_delta"] {
+.key.key--group-settings[data-key="toggle_mod_zero_to_delta"],
+.key.key--group-settings[data-key="toggle_binary_octave_cycle"] {
   background:
     linear-gradient(
       180deg,
@@ -87,7 +88,8 @@
 }
 
 .key.key--toggle-active.key--group-settings[data-key="toggle_delta_range_clamp"]:not(:disabled),
-.key.key--toggle-active.key--group-settings[data-key="toggle_mod_zero_to_delta"]:not(:disabled) {
+.key.key--toggle-active.key--group-settings[data-key="toggle_mod_zero_to_delta"]:not(:disabled),
+.key.key--toggle-active.key--group-settings[data-key="toggle_binary_octave_cycle"]:not(:disabled) {
   background:
     linear-gradient(
       180deg,
