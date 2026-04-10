@@ -64,6 +64,9 @@ const invertSlot = (slot: Slot): InverseExecutionStage | null => {
       reciprocal: exponent < 0n,
     };
   }
+  if (slot.operator === KEY_ID.op_rotate_15) {
+    return { kind: "slot", slot: { kind: "binary", operator: KEY_ID.op_rotate_15, operand: -slot.operand } };
+  }
   return null;
 };
 

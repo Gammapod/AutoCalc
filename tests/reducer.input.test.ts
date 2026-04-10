@@ -1174,6 +1174,32 @@ export const runReducerInputTests = (): void => {
   const afterRotateExecution = applyKeyAction(rotateExecutionSource, "exec_equals");
   assertTotalEquivalent(afterRotateExecution.calculator.total, r(45123n), "rotate-left supports negative shift as right rotation");
 
+  const rotate15BinaryExecutionSource: GameState = {
+    ...fullyUnlocked,
+    calculator: {
+      ...fullyUnlocked.calculator,
+      total: r(1n),
+      operationSlots: [{ operator: op("op_rotate_15"), operand: 3n }],
+    },
+  };
+  const afterRotate15BinaryExecution = applyKeyAction(rotate15BinaryExecutionSource, "exec_equals");
+  const afterRotate15UnaryThree = applyKeyAction(
+    {
+      ...fullyUnlocked,
+      calculator: {
+        ...fullyUnlocked.calculator,
+        total: r(1n),
+        operationSlots: Array.from({ length: 3 }, () => ({ kind: "unary" as const, operator: uop("unary_rotate_15") })),
+      },
+    },
+    "exec_equals",
+  );
+  assertTotalEquivalent(
+    afterRotate15BinaryExecution.calculator.total,
+    afterRotate15UnaryThree.calculator.total,
+    "binary 15-degree rotation equals three unary 15-degree rotations for operand 3",
+  );
+
   const gcdExecutionSource: GameState = {
     ...fullyUnlocked,
     calculator: {

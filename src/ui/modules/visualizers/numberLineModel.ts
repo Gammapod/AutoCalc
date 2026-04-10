@@ -123,8 +123,11 @@ const toScalarNumber = (value: ScalarValue): number | null => {
 export const hasNonZeroImaginaryPart = (state: GameState): boolean =>
   state.calculator.total.kind === "complex" && !isScalarValueZero(state.calculator.total.value.im);
 
+const hasComplexValueOnRoll = (state: GameState): boolean =>
+  state.calculator.rollEntries.some((entry) => entry.y.kind === "complex");
+
 export const resolveNumberLineMode = (state: GameState): NumberLineMode =>
-  hasNonZeroImaginaryPart(state) ? "complex_grid" : "real";
+  hasNonZeroImaginaryPart(state) || hasComplexValueOnRoll(state) ? "complex_grid" : "real";
 
 export const calculatorValueToArgandPoint = (value: CalculatorValue): { re: number; im: number } | null => {
   if (value.kind === "nan") {

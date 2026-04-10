@@ -31,7 +31,6 @@ flowchart TD
         Iaddimag
         Ipythag
         Inodivisor
-    end
 
     subgraph Boolean_Ops ["1/0"]
 
@@ -114,6 +113,7 @@ flowchart TD
         Pgcd
         Plcm
     end
+    end
 
 
 %% Identities
@@ -148,8 +148,10 @@ flowchart TD
     
     Mmul --> Imulneg
     Iint --> Imulneg(n × -1)
-%% 
+
     Inat --> Linc
+    Imulneg --> Mneg
+%% 
 %% Linear
     %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
     
@@ -172,7 +174,6 @@ flowchart TD
     %% Lfloor --> Lceil["⌈n⌉"]
     %% %% Expanded form `[ ⌈(4/3)⌉ ]` -> `[ (4/3) + (1 - ((4/3) ◇ 1)) ]`
 %% 
-    Imulneg --> Mneg
 %% Magnitude
     %% Visualizer: function graph (points plotted on x=roll index, y=result)
 

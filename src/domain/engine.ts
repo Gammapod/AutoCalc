@@ -452,6 +452,9 @@ export const executeSlots = (
       endsWithEuclidLikeOperator = false;
       continue;
     }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_rotate_15) {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
     if (resolveKeyId(slot.operator) === KEY_ID.op_gcd) {
       if (nextTotal.den !== 1n) {
         return { ok: false, reason: "nan_input" };
@@ -1016,6 +1019,24 @@ const executeSlotsValueInternal = (
     return result;
   };
 
+  const rotateComplexBy15 = (value: ComplexRuntime): ComplexRuntime => {
+    const cos = toAlgebraicScalarValue(ALG_CONSTANTS.rotate15Cos);
+    const sin = toAlgebraicScalarValue(ALG_CONSTANTS.rotate15Sin);
+    return {
+      re: subScalar(mulScalar(value.re, cos), mulScalar(value.im, sin)),
+      im: addScalar(mulScalar(value.re, sin), mulScalar(value.im, cos)),
+    };
+  };
+
+  const rotateComplexBy15Steps = (value: ComplexRuntime, steps: bigint): ComplexRuntime => {
+    const normalizedSteps = Number(((steps % 24n) + 24n) % 24n);
+    let rotated = value;
+    for (let index = 0; index < normalizedSteps; index += 1) {
+      rotated = rotateComplexBy15(rotated);
+    }
+    return rotated;
+  };
+
   let current: CalculatorValue = total;
   let lastEuclidRemainder: RationalValue | undefined;
   for (const slot of slots) {
@@ -1037,12 +1058,7 @@ const executeSlotsValueInternal = (
       }
       if (unaryKey === KEY_ID.unary_rotate_15) {
         const currentComplex = toComplexRuntime(current);
-        const cos = toAlgebraicScalarValue(ALG_CONSTANTS.rotate15Cos);
-        const sin = toAlgebraicScalarValue(ALG_CONSTANTS.rotate15Sin);
-        current = fromComplexRuntime({
-          re: subScalar(mulScalar(currentComplex.re, cos), mulScalar(currentComplex.im, sin)),
-          im: addScalar(mulScalar(currentComplex.re, sin), mulScalar(currentComplex.im, cos)),
-        });
+        current = fromComplexRuntime(rotateComplexBy15Steps(currentComplex, 1n));
         lastEuclidRemainder = undefined;
         continue;
       }
@@ -1152,6 +1168,7 @@ const executeSlotsValueInternal = (
         || operatorKey === KEY_ID.op_mul
         || operatorKey === KEY_ID.op_div
         || operatorKey === KEY_ID.op_pow
+        || operatorKey === KEY_ID.op_rotate_15
       );
     const supportsDeferredComplexPolicy = policy
       ? policy.complexMode === "deferred_complex_policy"
@@ -1304,6 +1321,14 @@ const executeSlotsValueInternal = (
         return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
       }
       current = fromComplexRuntime(powered);
+      lastEuclidRemainder = undefined;
+      continue;
+    }
+    if (operatorKey === KEY_ID.op_rotate_15) {
+      if (typeof runtimeOperand !== "bigint") {
+        return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
+      }
+      current = fromComplexRuntime(rotateComplexBy15Steps(left, runtimeOperand));
       lastEuclidRemainder = undefined;
       continue;
     }

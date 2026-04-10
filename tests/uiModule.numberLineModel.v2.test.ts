@@ -245,4 +245,25 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
     },
   };
   assert.equal(resolveNumberLineMode(withComplexTotal), "complex_grid", "nonzero imaginary totals use complex-grid mode");
+
+  const withComplexRollHistoryAndRealTotal = {
+    ...initialState(),
+    calculator: {
+      ...initialState().calculator,
+      total: toRationalCalculatorValue({ num: 7n, den: 1n }),
+      rollEntries: [
+        {
+          y: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 2n, den: 1n }),
+            toRationalScalarValue({ num: 3n, den: 1n }),
+          ),
+        },
+      ],
+    },
+  };
+  assert.equal(
+    resolveNumberLineMode(withComplexRollHistoryAndRealTotal),
+    "complex_grid",
+    "any complex value on roll history keeps complex-grid mode even when current total is real",
+  );
 };

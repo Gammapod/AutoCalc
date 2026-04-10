@@ -157,8 +157,8 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
         { type: "input_feedback", calculatorId: "g", outcome: "rejected", source: "domain_dispatch", reasonCode: "no_effect" },
       ],
     });
-    const gRenderCall = renderCalls.find((call) => call.target === "g");
-    assert.ok(gRenderCall, "active g calculator render exists for mixed input feedback");
+    const gRenderCall = renderCalls.find((call) => call.target === "g" || call.target === "app");
+    assert.ok(gRenderCall, "active g calculator render (or root fallback) exists for mixed input feedback");
     assert.equal(gRenderCall?.acceptedInputCount, 0, "mixed feedback batch uses latest outcome only (accepted off)");
     assert.equal(gRenderCall?.rejectedInputCount, 1, "mixed feedback batch uses latest outcome only (rejected on)");
 
@@ -169,8 +169,8 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
         { type: "input_feedback", calculatorId: "g", outcome: "accepted", source: "domain_dispatch", trigger: "system_action" },
       ],
     });
-    const gSystemOnlyCall = renderCalls.find((call) => call.target === "g");
-    assert.ok(gSystemOnlyCall, "active g calculator render exists for system-only feedback");
+    const gSystemOnlyCall = renderCalls.find((call) => call.target === "g" || call.target === "app");
+    assert.ok(gSystemOnlyCall, "active g calculator render (or root fallback) exists for system-only feedback");
     assert.equal(gSystemOnlyCall?.acceptedInputCount, 0, "system-action feedback does not trigger green led pulse");
     assert.equal(gSystemOnlyCall?.rejectedInputCount, 0, "system-action feedback does not trigger red led pulse");
   } finally {

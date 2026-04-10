@@ -32,6 +32,7 @@ const binaryOps: readonly BinaryOperatorKeyId[] = [
   KEY_ID.op_euclid_div,
   KEY_ID.op_mod,
   KEY_ID.op_rotate_left,
+  KEY_ID.op_rotate_15,
   KEY_ID.op_gcd,
   KEY_ID.op_lcm,
   KEY_ID.op_max,

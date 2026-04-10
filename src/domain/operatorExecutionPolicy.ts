@@ -93,6 +93,7 @@ const POLICY_ENTRIES: OperatorExecutionPolicy[] = [
     unsupportedSymbolicOnSymbolicOperand: true,
     deferredReason: "complex_rotation_policy_deferred",
   }),
+  entry(KEY_ID.op_rotate_15, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
   entry(KEY_ID.op_gcd, {
     totalKinds: ALL_NON_NAN,
     complexMode: "deferred_complex_policy",

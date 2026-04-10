@@ -4,15 +4,15 @@ export const ROUTINE_MAINTENANCE_GOLDEN = {
   // - seeded_9001_multi
   // - seeded_7777_menu_multi
   runtimeInvariantHashesV1: {
-    base_single: "36ae8b7a0f80a5ec8d9d81bb84adeeca18c7d5b6cb4ba301c4c54ab714fbb863",
-    unlocked_single: "6147a0f7b385ca351ffedb7a23c2cbc04b46933b250b1c5357b026d9141b1f74",
-    multi_f_g: "e281ae378c788461fce3572d8ac0d88440f43afb67267eb50f6f362f6e302734",
-    multi_menu: "d32953bf363106523ed146f65d29e2caeeb5a0c2be0e50d2fbf044f8e4da4993",
-    multi_storage_perturbed: "d301b9178e4fd039f8a54d24c51734e7f7b2ed7daec42e42d69494bb581cc215",
-    seeded_1337_single: "4f3ea67128c5aecb6a257e6ae31690809daaff190f8256de40faedfc02a55c9a",
-    seeded_424242_single: "df38801fc5bba566f9ce73e3da8ce648b5eb4e0706d89ca99a4dae78e97aad50",
-    seeded_9001_multi: "37bd3116968a71d41620aaae6714918614cd6fe8f8fea9603d3699f9864f45b8",
-    seeded_7777_menu_multi: "fde80e1f0b720aa92ee75b19f51b4aaa3742357eca80a60ac841a72ab7e01b51",
+    base_single: "2cb529d7b9d3021a0f205320f2989c1fa44473e9ea9d46f83f39d2aa045e50d5",
+    unlocked_single: "449f148b18eac44748d4683e29fe90a6cc691fcff4f52ffd35d3b5daa7ef387d",
+    multi_f_g: "52056916a26cf36826734f18f2e2f047e287796d7758297c86ac7d1664ad2330",
+    multi_menu: "4605ed04740d6e61aa015035e9f31ccf6372ffaa08c7725e21a09de25350ec1f",
+    multi_storage_perturbed: "532ae5b0f55e9de2867c34df72c92c2cdba788fe809589b7eaf6d0405498bbcf",
+    seeded_1337_single: "6ffb1441af115dd053dc0d2c21666819abca6f854456e827c0d8f59aff932200",
+    seeded_424242_single: "85b464b334f61569c466fc3f27f4a26cdbdacaae5ccd7e141733fd1e87bd2b18",
+    seeded_9001_multi: "9b6817041c9e31f91b6452bdde9a74c8d3048a701919732f237c1da4a83d1a9d",
+    seeded_7777_menu_multi: "c02bcd4e4c6ec857dca4775a2a5b7e6971f72b5dcda8a54c39ec502bf8afe773",
   },
 } as const;
 

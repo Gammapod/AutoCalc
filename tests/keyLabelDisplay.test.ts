@@ -11,6 +11,7 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(k("op_div")), "\u00F7", "div key label renders as \u00F7");
   assert.equal(formatKeyLabel(k("op_euclid_div")), "\u2AFD", "euclidean division key label renders as \u2AFD");
   assert.equal(formatKeyLabel(k("op_mod")), "\u27E1", "modulo key label renders as \u27E1");
+  assert.equal(formatKeyLabel(k("op_rotate_15")), "\u21B6 \u299C/6^n", "binary 15-degree rotation key label renders canonical face");
   assert.equal(formatKeyLabel(k("util_undo")), "\u21A9", "undo key label renders as \u21A9");
   assert.equal(formatKeyLabel(k("util_backspace")), "\u2190", "backspace key label remains left arrow");
   assert.equal(formatKeyLabel(k("system_save_quit_main_menu")), "\uD83D\uDDAB\u27A0\u26ED", "Save&Quit key label renders canonical face");

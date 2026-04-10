@@ -100,6 +100,7 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
   op(KEY_ID.op_euclid_div),
   op(KEY_ID.op_mod),
   op(KEY_ID.op_rotate_left),
+  op(KEY_ID.op_rotate_15),
   op(KEY_ID.op_gcd),
   op(KEY_ID.op_lcm),
   op(KEY_ID.op_max),

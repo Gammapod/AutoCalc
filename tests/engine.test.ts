@@ -226,6 +226,41 @@ export const runEngineTests = (): void => {
     "24 successive 15-degree rotations return exactly to 1",
   );
 
+  const binaryRotate15Three = executeSlotsValue(
+    toRationalCalculatorValue({ num: 1n, den: 1n }),
+    [{ operator: op("op_rotate_15"), operand: 3n }],
+  );
+  const unaryRotate15Three = executeSlotsValue(
+    toRationalCalculatorValue({ num: 1n, den: 1n }),
+    Array.from({ length: 3 }, () => ({ kind: "unary", operator: uop("unary_rotate_15") })),
+  );
+  assert.equal(binaryRotate15Three.ok && unaryRotate15Three.ok, true, "binary 15-degree rotation executes for integer operand");
+  assert.equal(
+    calculatorValuesEquivalent(
+      binaryRotate15Three.ok ? binaryRotate15Three.total : toNanCalculatorValue(),
+      unaryRotate15Three.ok ? unaryRotate15Three.total : toNanCalculatorValue(),
+    ),
+    true,
+    "binary 15-degree rotation matches repeated unary 15-degree rotation",
+  );
+
+  const binaryRotate15NegativeOne = executeSlotsValue(
+    toRationalCalculatorValue({ num: 1n, den: 1n }),
+    [{ operator: op("op_rotate_15"), operand: -1n }],
+  );
+  const unaryRotate15TwentyThree = executeSlotsValue(
+    toRationalCalculatorValue({ num: 1n, den: 1n }),
+    Array.from({ length: 23 }, () => ({ kind: "unary", operator: uop("unary_rotate_15") })),
+  );
+  assert.equal(
+    calculatorValuesEquivalent(
+      binaryRotate15NegativeOne.ok ? binaryRotate15NegativeOne.total : toNanCalculatorValue(),
+      unaryRotate15TwentyThree.ok ? unaryRotate15TwentyThree.total : toNanCalculatorValue(),
+    ),
+    true,
+    "binary 15-degree rotation normalizes negative operands modulo 24",
+  );
+
   const shiftedSeed = toComplexCalculatorValue(
     { kind: "alg", value: addAlgebraic(ALG_CONSTANTS.one, ALG_CONSTANTS.rotate15Cos) },
     { kind: "alg", value: ALG_CONSTANTS.rotate15Sin },

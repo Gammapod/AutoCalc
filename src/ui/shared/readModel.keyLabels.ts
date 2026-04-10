@@ -163,6 +163,9 @@ export const resolveStepExpansionText = (
   if (slot.operator === KEY_ID.op_rotate_left && typeof slot.operand === "bigint" && slot.operand > 0n) {
     return `n ${"<".repeat(Number(slot.operand))}`;
   }
+  if (slot.operator === KEY_ID.op_rotate_15 && typeof slot.operand === "bigint") {
+    return `\u00D7 e^(i${slot.operand.toString()}\u03C0/12)`;
+  }
   if (slot.operator === KEY_ID.op_euclid_div && typeof slot.operand === "bigint") {
     return `q=\u230An \u00F7 ${slot.operand.toString()}\u230B;r=n\u2013q`;
   }

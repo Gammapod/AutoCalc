@@ -23,6 +23,7 @@ export const KEY_ID = {
   op_euclid_div: "op_euclid_div",
   op_mod: "op_mod",
   op_rotate_left: "op_rotate_left",
+  op_rotate_15: "op_rotate_15",
   op_gcd: "op_gcd",
   op_lcm: "op_lcm",
   op_max: "op_max",
@@ -100,6 +101,7 @@ export type BinaryOperatorKeyId =
   | typeof KEY_ID.op_euclid_div
   | typeof KEY_ID.op_mod
   | typeof KEY_ID.op_rotate_left
+  | typeof KEY_ID.op_rotate_15
   | typeof KEY_ID.op_gcd
   | typeof KEY_ID.op_lcm
   | typeof KEY_ID.op_max
@@ -192,6 +194,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.op_euclid_div, { buttonFace: "\u2AFD", operatorInlineFace: "\u2AFD", operatorSlotFace: "\u2AFD", operatorAlgebraicFace: "\u2AFD" }],
   [KEY_ID.op_mod, { buttonFace: "\u27E1", operatorInlineFace: "\u27E1", operatorSlotFace: "\u25C7", operatorAlgebraicFace: "\u27E1" }],
   [KEY_ID.op_rotate_left, { buttonFace: "\u21BA", operatorInlineFace: "\u21BA", operatorSlotFace: "\u21BA", operatorAlgebraicFace: "\u21BA" }],
+  [KEY_ID.op_rotate_15, { buttonFace: "\u21B6", operatorInlineFace: "\u00D7e^(in\u03C0/12)", operatorSlotFace: "\u21B6", operatorAlgebraicFace: "\u00D7e^(in\u03C0/12)" }],
   [KEY_ID.op_gcd, { buttonFace: "\u22C0", operatorInlineFace: "\u22C0", operatorSlotFace: "\u22C0", operatorAlgebraicFace: "\u22C0" }],
   [KEY_ID.op_lcm, { buttonFace: "\u22C1", operatorInlineFace: "\u22C1", operatorSlotFace: "\u22C1", operatorAlgebraicFace: "\u22C1" }],
   [KEY_ID.op_max, { buttonFace: "\u2567", operatorInlineFace: "\u2567", operatorSlotFace: "\u2567", operatorAlgebraicFace: "\u2567" }],
@@ -317,6 +320,7 @@ const BINARY_OPERATOR_KEY_ID_SET = new Set<BinaryOperatorKeyId>([
   KEY_ID.op_euclid_div,
   KEY_ID.op_mod,
   KEY_ID.op_rotate_left,
+  KEY_ID.op_rotate_15,
   KEY_ID.op_gcd,
   KEY_ID.op_lcm,
   KEY_ID.op_max,
@@ -360,6 +364,7 @@ export const isUnsupportedSymbolicOperatorKeyId = (keyId: KeyId): boolean => {
     || keyId === KEY_ID.op_mod
     || keyId === KEY_ID.op_pow
     || keyId === KEY_ID.op_rotate_left
+    || keyId === KEY_ID.op_rotate_15
     || keyId === KEY_ID.op_gcd
     || keyId === KEY_ID.op_lcm;
 };

@@ -239,6 +239,15 @@ export const runOperationSlotDisplayTests = (): void => {
   };
   assert.equal(buildOperationSlotDisplay(committedLcm), "_ [ \u22C1 3 ]", "committed lcm slot renders operator as \u22C1");
 
+  const committedRotate15Binary: GameState = {
+    ...committedGcd,
+    calculator: {
+      ...committedGcd.calculator,
+      operationSlots: [{ operator: op("op_rotate_15"), operand: 3n }],
+    },
+  };
+  assert.equal(buildOperationSlotDisplay(committedRotate15Binary), "_ [ \u299C/6^n 3 ]", "committed binary 15-degree rotation slot renders canonical token");
+
   const committedUnaryInc: GameState = {
     ...base,
     unlocks: {
@@ -408,6 +417,20 @@ export const runOperationSlotDisplayTests = (): void => {
     buildOperationSlotDisplay(steppedRotateLeftExpansion),
     "12 [ n <<< ]",
     "inactive step target applies bespoke rotate-left expansion with repeated arrows",
+  );
+
+  const steppedRotate15BinaryExpansion: GameState = {
+    ...steppedAdditionExpansion,
+    calculator: {
+      ...steppedAdditionExpansion.calculator,
+      total: r(12n),
+      operationSlots: [{ operator: op("op_rotate_15"), operand: 3n }],
+    },
+  };
+  assert.equal(
+    buildOperationSlotDisplay(steppedRotate15BinaryExpansion),
+    "12 [ \u00D7 e^(i3\u03C0/12) ]",
+    "inactive step target applies bespoke binary 15-degree rotation expansion",
   );
 
   const steppedGcdExpansion: GameState = {
