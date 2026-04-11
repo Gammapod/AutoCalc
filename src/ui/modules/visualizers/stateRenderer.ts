@@ -1,5 +1,6 @@
 import { HISTORY_FLAG, STEP_EXPANSION_FLAG } from "../../../domain/state.js";
 import type { GameState } from "../../../domain/types.js";
+import { resolveWrapStageMode } from "../../../domain/executionPlan.js";
 
 type StateRow = {
   label: string;
@@ -11,6 +12,7 @@ const formatSettingToggle = (enabled: boolean): string => (enabled ? "set" : "no
 const buildStateRows = (state: GameState): StateRow[] => {
   const stepExpansionFlagEnabled = Boolean(state.ui.buttonFlags[STEP_EXPANSION_FLAG]);
   const historyFlagEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
+  const wrapMode = resolveWrapStageMode(state) ?? "none";
   return [
     { label: "alpha", value: state.lambdaControl.alpha.toString() },
     { label: "beta", value: state.lambdaControl.beta.toString() },
@@ -19,7 +21,7 @@ const buildStateRows = (state: GameState): StateRow[] => {
     { label: "epsilon", value: state.lambdaControl.epsilon.toString() },
     { label: "active visualizer", value: state.settings.visualizer },
     { label: "active base", value: state.settings.base },
-    { label: "active wrap", value: state.settings.wrapper },
+    { label: "active wrap", value: wrapMode },
     { label: "step_expansion", value: `${state.settings.stepExpansion} (${formatSettingToggle(stepExpansionFlagEnabled)})` },
     { label: "history", value: formatSettingToggle(historyFlagEnabled) },
   ];

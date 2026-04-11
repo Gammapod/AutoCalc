@@ -8,6 +8,11 @@ import type {
 } from "./types.js";
 import type { OperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
 import { resolveOperatorExecutionPolicy } from "./operatorExecutionPolicy.js";
+import {
+  BINARY_OCTAVE_CYCLE_FLAG,
+  DELTA_RANGE_CLAMP_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+} from "./state.js";
 
 export type WrapStageMode = "delta_range_clamp" | "mod_zero_to_delta" | "binary_octave_cycle";
 
@@ -61,14 +66,14 @@ export type ExecutionPlanBuildResult = {
   hasWrapTail: boolean;
 };
 
-export const resolveExecutionPlanIRWrapStageMode = (state: Pick<GameState, "settings">): WrapStageMode | null => {
-  if (state.settings.wrapper === "binary_octave_cycle") {
+export const resolveExecutionPlanIRWrapStageMode = (state: Pick<GameState, "ui">): WrapStageMode | null => {
+  if (state.ui.buttonFlags[BINARY_OCTAVE_CYCLE_FLAG]) {
     return "binary_octave_cycle";
   }
-  if (state.settings.wrapper === "mod_zero_to_delta") {
+  if (state.ui.buttonFlags[MOD_ZERO_TO_DELTA_FLAG]) {
     return "mod_zero_to_delta";
   }
-  if (state.settings.wrapper === "delta_range_clamp") {
+  if (state.ui.buttonFlags[DELTA_RANGE_CLAMP_FLAG]) {
     return "delta_range_clamp";
   }
   return null;
@@ -169,7 +174,7 @@ export const buildExecutionPlanIR = (
 export const buildExecutionPlanIRForState = (
   seed: CalculatorValue,
   slots: Slot[],
-  state: Pick<GameState, "settings">,
+  state: Pick<GameState, "ui">,
 ): ExecutionPlanBuildResult =>
   buildExecutionPlanIR(seed, slots, { wrapStageMode: resolveExecutionPlanIRWrapStageMode(state) });
 

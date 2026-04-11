@@ -210,9 +210,10 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
       : hasWrapStage
         ? operationSlotCount
         : null;
-  const deltaWrapEnabled = state.settings.wrapper === "delta_range_clamp";
-  const modZeroToDeltaEnabled = state.settings.wrapper === "mod_zero_to_delta";
-  const binaryOctaveCycleEnabled = state.settings.wrapper === "binary_octave_cycle";
+  const wrapMode = resolveWrapStageMode(state);
+  const deltaWrapEnabled = wrapMode === "delta_range_clamp";
+  const modZeroToDeltaEnabled = wrapMode === "mod_zero_to_delta";
+  const binaryOctaveCycleEnabled = wrapMode === "binary_octave_cycle";
   const hasNoCommittedOrDraftedSlots = operationSlotCount === 0 && state.calculator.draftingSlot === null;
   if (modZeroToDeltaEnabled) {
     if (hasNoCommittedOrDraftedSlots) {

@@ -8,6 +8,7 @@ import {
   materializeSlotsFromExecutionPlanIR,
 } from "../src/domain/executionPlanIR.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
+import { DELTA_RANGE_CLAMP_FLAG } from "../src/domain/state.js";
 import type { Slot } from "../src/domain/types.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
@@ -46,9 +47,14 @@ export const runExecutionPlanIRBuilderParityTests = (): void => {
   );
 
   const staged = buildExecutionStagePlan(simpleSlots, {
+    ui: {
+      buttonFlags: {
+        [DELTA_RANGE_CLAMP_FLAG]: true,
+      },
+    },
     settings: {
       visualizer: "total",
-      wrapper: "delta_range_clamp",
+      wrapper: "none",
       base: "decimal",
       stepExpansion: "off",
     },

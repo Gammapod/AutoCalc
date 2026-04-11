@@ -1315,7 +1315,8 @@ const resolveExecutionBuildForMode = (
   if (mode !== "inverse") {
     return { runtime: { kind: "forward", built: buildReducerExecutionPlan(state, seedTotal) } };
   }
-  const inversePlan = resolveRollInversePlan(state.calculator.operationSlots, state.settings);
+  const hasWrapStage = buildReducerExecutionPlan(state, seedTotal, state.calculator.operationSlots).wrapStageMode !== null;
+  const inversePlan = resolveRollInversePlan(state.calculator.operationSlots, hasWrapStage);
   if (!inversePlan.ok) {
     return {
       runtime: { kind: "inverse", stages: [] },

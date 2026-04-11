@@ -1,4 +1,4 @@
-import type { CalculatorSettings, Slot } from "./types.js";
+import type { Slot } from "./types.js";
 import { KEY_ID } from "./keyPresentation.js";
 
 export type InverseExecutionStage =
@@ -72,9 +72,9 @@ const invertSlot = (slot: Slot): InverseExecutionStage | null => {
 
 export const resolveRollInversePlan = (
   operationSlots: Slot[],
-  settings: Pick<CalculatorSettings, "wrapper">,
+  hasWrapStage: boolean,
 ): RollInversePlanResolution => {
-  if (settings.wrapper !== "none") {
+  if (hasWrapStage) {
     return { ok: false, reason: "ambiguous" };
   }
   const inverseStages: InverseExecutionStage[] = [];

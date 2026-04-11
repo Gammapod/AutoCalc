@@ -1,12 +1,21 @@
 import { getButtonDefinition } from "./buttonRegistry.js";
 import { KEY_ID } from "./keyPresentation.js";
 import {
+  BINARY_OCTAVE_CYCLE_FLAG,
+  DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
   EXECUTION_PAUSE_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
 } from "./state.js";
 import { isMultiCalculatorSession, resolveActiveCalculatorId, toCalculatorSurface } from "./multiCalculator.js";
 import type { Action, GameState, Key, KeyCell, LayoutSurface } from "./types.js";
 import { resolveSettingSelectionForFlag } from "./settings.js";
+
+const WRAP_SETTING_FLAGS = new Set<string>([
+  DELTA_RANGE_CLAMP_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+  BINARY_OCTAVE_CYCLE_FLAG,
+]);
 
 const isKeyCell = (cell: GameState["ui"]["keyLayout"][number] | GameState["ui"]["storageLayout"][number]): cell is KeyCell =>
   Boolean(cell && cell.kind === "key");
@@ -271,7 +280,7 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
         interrupt: { type: "clear_all_except_flag", flag: action.flag },
       };
     }
-    if (isExecutionModeActive(state) && resolveSettingSelectionForFlag(action.flag)) {
+    if (isExecutionModeActive(state) && (resolveSettingSelectionForFlag(action.flag) || WRAP_SETTING_FLAGS.has(action.flag.trim()))) {
       return {
         decision: "interrupt_and_run",
         interrupt: { type: "clear_all" },

@@ -10,6 +10,7 @@ import { resolveDomainDispatchInputFeedback, resolveFeedbackTargetCalculatorId }
 import { KEY_ID, isBinaryOperatorKeyId, isConstantKeyId, isDigitKeyId, isUnaryOperatorId } from "./keyPresentation.js";
 import { projectCalculatorToLegacy } from "./multiCalculator.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG, HISTORY_FLAG, STEP_EXPANSION_FLAG } from "./state.js";
+import { resolveWrapStageMode } from "./executionPlan.js";
 
 export type DomainCommand = {
   type: "DispatchAction";
@@ -88,7 +89,7 @@ const hasMonitoredSettingsChanged = (previous: GameState, next: GameState): bool
   || previous.lambdaControl.epsilon !== next.lambdaControl.epsilon
   || previous.settings.visualizer !== next.settings.visualizer
   || previous.settings.base !== next.settings.base
-  || previous.settings.wrapper !== next.settings.wrapper
+  || resolveWrapStageMode(previous) !== resolveWrapStageMode(next)
   || previous.settings.stepExpansion !== next.settings.stepExpansion
   || Boolean(previous.ui.buttonFlags[STEP_EXPANSION_FLAG]) !== Boolean(next.ui.buttonFlags[STEP_EXPANSION_FLAG])
   || Boolean(previous.ui.buttonFlags[HISTORY_FLAG]) !== Boolean(next.ui.buttonFlags[HISTORY_FLAG]);

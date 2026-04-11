@@ -55,11 +55,9 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
       ],
       keypadColumns: 3,
       keypadRows: 1,
-      buttonFlags: {},
-    },
-    settings: {
-      ...legacyInitialState().settings,
-      wrapper: "delta_range_clamp",
+      buttonFlags: {
+        [DELTA_RANGE_CLAMP_FLAG]: true,
+      },
     },
     calculator: {
       ...legacyInitialState().calculator,
@@ -135,13 +133,16 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
         ...gBase!,
         settings: {
           ...gBase!.settings,
-          wrapper: "delta_range_clamp",
         },
         ui: {
           ...gBase!.ui,
           keyLayout: [{ kind: "key", key: KEY_ID.util_clear_all }],
           keypadColumns: 1,
           keypadRows: 1,
+          buttonFlags: {
+            ...gBase!.ui.buttonFlags,
+            [DELTA_RANGE_CLAMP_FLAG]: true,
+          },
         },
         calculator: {
           ...gBase!.calculator,

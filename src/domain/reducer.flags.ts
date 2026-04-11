@@ -1,5 +1,8 @@
 import type { GameState } from "./types.js";
 import {
+  BINARY_OCTAVE_CYCLE_FLAG,
+  DELTA_RANGE_CLAMP_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
   OVERFLOW_ERROR_SEEN_ID,
 } from "./state.js";
 import {
@@ -13,6 +16,12 @@ import {
 import { appendSeedIfMissing, appendStepRow, createRollEntry } from "./rollEntries.js";
 import { getRollYPrimeFactorization } from "./rollDerived.js";
 import { applySettingsSelection, resolveSettingSelectionForFlag } from "./settings.js";
+
+const WRAP_TOGGLE_FLAGS = new Set<string>([
+  DELTA_RANGE_CLAMP_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+  BINARY_OCTAVE_CYCLE_FLAG,
+]);
 
 const applyBinaryModeOverflowIfNeeded = (previous: GameState, next: GameState): GameState => {
   if (next.settings.base !== "base2" || previous.settings.base === "base2") {
@@ -63,6 +72,23 @@ export const applyToggleFlag = (state: GameState, flag: string): GameState => {
   const trimmed = flag.trim();
   if (trimmed.length === 0) {
     return state;
+  }
+  if (WRAP_TOGGLE_FLAGS.has(trimmed)) {
+    const currentlyActive = Boolean(state.ui.buttonFlags[trimmed]);
+    const nextFlags = { ...state.ui.buttonFlags };
+    for (const wrapFlag of WRAP_TOGGLE_FLAGS) {
+      delete nextFlags[wrapFlag];
+    }
+    if (!currentlyActive) {
+      nextFlags[trimmed] = true;
+    }
+    return {
+      ...state,
+      ui: {
+        ...state.ui,
+        buttonFlags: nextFlags,
+      },
+    };
   }
   const settingSelection = resolveSettingSelectionForFlag(trimmed);
   if (settingSelection) {

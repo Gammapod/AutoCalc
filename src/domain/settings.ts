@@ -2,10 +2,7 @@ import { keyToVisualizerId } from "./buttonRegistry.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
 import { KEY_ID, resolveKeyId } from "./keyPresentation.js";
 import {
-  BINARY_OCTAVE_CYCLE_FLAG,
   BINARY_MODE_FLAG,
-  DELTA_RANGE_CLAMP_FLAG,
-  MOD_ZERO_TO_DELTA_FLAG,
   STEP_EXPANSION_FLAG,
 } from "./state.js";
 import type {
@@ -43,10 +40,7 @@ export const DEFAULT_CALCULATOR_SETTINGS: CalculatorSettings = {
 export const createDefaultCalculatorSettings = (): CalculatorSettings => ({ ...DEFAULT_CALCULATOR_SETTINGS });
 
 const isSettingsToggleKey = (key: Key): boolean =>
-  key === KEY_ID.toggle_delta_range_clamp
-  || key === KEY_ID.toggle_mod_zero_to_delta
-  || key === KEY_ID.toggle_binary_octave_cycle
-  || key === KEY_ID.toggle_binary_mode
+  key === KEY_ID.toggle_binary_mode
   || key === KEY_ID.toggle_step_expansion;
 
 export const resolveSettingSelectionForKey = (key: Key): SettingSelection | null => {
@@ -58,32 +52,14 @@ export const resolveSettingSelectionForKey = (key: Key): SettingSelection | null
   if (!isSettingsToggleKey(resolved)) {
     return null;
   }
-  if (resolved === KEY_ID.toggle_delta_range_clamp) {
-    return { family: "wrapper", option: "delta_range_clamp" };
-  }
-  if (resolved === KEY_ID.toggle_mod_zero_to_delta) {
-    return { family: "wrapper", option: "mod_zero_to_delta" };
-  }
-  if (resolved === KEY_ID.toggle_binary_octave_cycle) {
-    return { family: "wrapper", option: "binary_octave_cycle" };
-  }
   if (resolved === KEY_ID.toggle_binary_mode) {
     return { family: "base", option: "base2" };
   }
   return { family: "stepExpansion", option: "on" };
 };
 
-export const resolveSettingSelectionForFlag = (flag: string): SettingSelection<"wrapper" | "base" | "stepExpansion"> | null => {
+export const resolveSettingSelectionForFlag = (flag: string): SettingSelection<"base" | "stepExpansion"> | null => {
   const trimmed = flag.trim();
-  if (trimmed === DELTA_RANGE_CLAMP_FLAG) {
-    return { family: "wrapper", option: "delta_range_clamp" };
-  }
-  if (trimmed === MOD_ZERO_TO_DELTA_FLAG) {
-    return { family: "wrapper", option: "mod_zero_to_delta" };
-  }
-  if (trimmed === BINARY_OCTAVE_CYCLE_FLAG) {
-    return { family: "wrapper", option: "binary_octave_cycle" };
-  }
   if (trimmed === BINARY_MODE_FLAG) {
     return { family: "base", option: "base2" };
   }
@@ -167,7 +143,7 @@ export const normalizeSettingsState = (
   state: Pick<GameState, "ui" | "unlocks" | "settings">,
 ): CalculatorSettings => {
   let next = state.settings;
-  const families: SettingsFamily[] = ["visualizer", "wrapper", "base", "stepExpansion"];
+  const families: SettingsFamily[] = ["visualizer", "base", "stepExpansion"];
   for (const family of families) {
     const current = next[family];
     const effectiveDefault = resolveEffectiveDefaultForFamily(state, family);
@@ -189,14 +165,17 @@ export const normalizeSettingsState = (
       [family]: effectiveDefault,
     };
   }
+  if (next.wrapper !== DEFAULT_CALCULATOR_SETTINGS.wrapper) {
+    next = {
+      ...next,
+      wrapper: DEFAULT_CALCULATOR_SETTINGS.wrapper,
+    };
+  }
   return next;
 };
 
 export const normalizeSettingsFlagsFromButtonFlags = (flags: Record<string, boolean>): Record<string, boolean> => {
   const nextFlags = { ...flags };
-  delete nextFlags[DELTA_RANGE_CLAMP_FLAG];
-  delete nextFlags[MOD_ZERO_TO_DELTA_FLAG];
-  delete nextFlags[BINARY_OCTAVE_CYCLE_FLAG];
   delete nextFlags[STEP_EXPANSION_FLAG];
   delete nextFlags[BINARY_MODE_FLAG];
   return nextFlags;

@@ -7,13 +7,13 @@ import {
 
 export type ExecutionStage = ExecutionPlanStage;
 
-export const resolveWrapStageMode = (state: Pick<GameState, "settings">): WrapStageMode | null => {
+export const resolveWrapStageMode = (state: Pick<GameState, "ui">): WrapStageMode | null => {
   return resolveExecutionPlanIRWrapStageMode(state);
 };
 
 export const buildExecutionStagePlan = (
   operationSlots: Slot[],
-  state: Pick<GameState, "settings">,
+  state: Pick<GameState, "ui">,
 ): ExecutionStage[] => {
   const stages: ExecutionStage[] = operationSlots.map((slot) => ({ kind: "slot", slot }));
   const wrapStage = resolveWrapStageMode(state);
@@ -25,5 +25,5 @@ export const buildExecutionStagePlan = (
 
 export const getExecutionStageCount = (
   operationSlots: Slot[],
-  state: Pick<GameState, "settings">,
+  state: Pick<GameState, "ui">,
 ): number => buildExecutionStagePlan(operationSlots, state).length;

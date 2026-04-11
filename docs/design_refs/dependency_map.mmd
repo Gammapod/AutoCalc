@@ -27,6 +27,7 @@ flowchart TD
         Ifalse
 
         Imulneg
+        Imulimag
         Inegroot
         Iaddimag
         Ipythag
@@ -46,6 +47,7 @@ flowchart TD
         Bdivis
         Bmax
         Bminim
+        Bminmaxtuple
         end
     end
 
@@ -99,7 +101,6 @@ flowchart TD
     end     
 
     subgraph P_Theory ["Returns ℙ (2)"]
-        Pp_tuple
         Pnthprime
         Pindexofp
 
@@ -127,12 +128,12 @@ flowchart TD
 
     Eradical --> Irad{"𝔸‾"}
 
-    Lminus --> Inegroot("√-1")
     Irad --> Inegroot
+    Lminus --> Inegroot("√-1")
     Inegroot --> Iimag{"𝕀"}
 
-    Lplus --> Iaddimag("1 + √-1")
     Iimag --> Iaddimag
+    Lplus --> Iaddimag("1 + √-1")
     Iaddimag --> Icomp{"ℂ"}
 
     Icomp --> Ipythag("√(1^2 + i^2)")
@@ -149,13 +150,13 @@ flowchart TD
     Mmul --> Imulneg
     Iint --> Imulneg(n × -1)
 
-    Inat --> Linc
-    Imulneg --> Mneg
+    Mmul --> Imulimag
+    Iimag --> Imulimag(n × i)
 %% 
 %% Linear
     %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
     
-    Linc["[ n ++ ]"]
+    Inat --> Linc["[ n ++ ]"]
     %% Primitive
     %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
     %% Completes ℕ on its own
@@ -200,8 +201,14 @@ flowchart TD
 
     Mdiv --> Mper["％"]
     %% Expanded form `[ (a÷100) × b ]` <-- should 100 change based on base setting? 
-    Mneg["n [ ± ]"]
+    
+    Imulneg --> Mneg["n [ ± ]"]
     %% Expanded form `[ 4 ± ]` -> `[ 4 × -1 ] ]`
+
+    %% More division and fraction-related operations:
+    %% probability (ie, random number generator)
+    %% average 2 numbers
+    %% mediant?
 %% 
 %% Growth
     %% Visualizer: Not set in stone yet. Cobweb plot? 
@@ -238,7 +245,7 @@ flowchart TD
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ -1:30 ]`
     Rrotate --> Rquarter
-    Eradical --> Rquarter["[ n ↶ ⦜ ]"]
+    Imulimag --> Rquarter["[ n ↶ ⦜ ]"]
     %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 × √(-1) ]`
     %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 ↶ 6 ]`
     %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 ⦨ ⦨ ⦨ ⦨ ⦨ ⦨ ]`
@@ -268,6 +275,10 @@ flowchart TD
     %% a, b, n -> numeric values (else false)
     %% p, q -> numeric values (true) or ⊥ (false)
     
+    Mmod --> Bdivis["a | b"]
+    Beq --> Bdivis
+    %% Expanded form `[ (a ◇ b) ≡ 0) ]`
+    
     Ifalse --> Bnotp["¬ p"]
     %% Expanded form `[ 1 if n, else ⊥ ]`
     Ifalse --> Bifelse["p ⩣ q"]
@@ -283,18 +294,16 @@ flowchart TD
     %% Expanded form `[ ¬¬(1 / (a - b)) ]`
     Rmodulus --> Bless["a < b"]
     %% Expanded form `[ ¬¬(1 / ((b - a) + |b - a|)) ]`
-    Bor --> Bnotgt
     Beq --> Bnotgt
     Bless --> Bnotgt["a ≤ b"]
+    Bor --> Bnotgt
     %% Expanded form `[ (a < b) ∨ (a ≡ b) ]`
-    a --> Bdivis["a | b"]
-    %% Expanded form `[ (a ∥ b) ≡ 1) ]`
-    
-    Bifelse --> Bmax
-    Bless --> Bmax["a ⫨ b"]
+
+    Bnotgt --> Bminmaxtuple
+    Bifelse --> Bminmaxtuple("⫧, ⫨")
+    Bminmaxtuple --> Bmax["a ⫨ b"]
     %% Expanded form `[ ((a < b) × b) ⩣ ¬((a ≤ b) × a) ]`
-    Bifelse --> Bminim
-    Bless --> Bminim["a ⫧ b"]
+    Bminmaxtuple --> Bminim["a ⫧ b"]
     %% Expanded form `[ ((a < b) × a) ⩣ ¬((a ≤ b) × b) ]`
 %% 
 %% Primes
@@ -307,15 +316,14 @@ flowchart TD
     Pnthprime -->|Invert| Pindexofp["ℕ(p)"]
     %% Returns index of prime p. ℙ^-1(5) = 3
 
+    Pnthprime --> Padic["v_p(n)"]
     Eeulog --> Padic
-    Pnthprime --> Padic
-    Padic["v_p(n)"]
-    %% Expanded form `[ n ∥ p ]`
+    %% Expanded form `[ n ∥ ℙ(3) ]`
     Padic --> Pprime_expansion("∏ ℙ^e")
 
     %% Expanded form `n ∥ ℙ("⟐
-
     Padic --> Pomega["Ω(n)"]
+    Eresid --> Pomega
     %% n=60
     %% r=15,5,1
     %% s=2,1,1,0
@@ -331,11 +339,12 @@ flowchart TD
     %% Expanded form `Σ{x=1..n}[ ((x - 1) ⟐ ℙ(x - 1)) ∥ ℙ(x) ]`
     Ptotient["φ"]
     %% Expanded form `[ n × ∏(1-p^-1) ]`
-    Pdivisor_sum["σ"]
+    Bdivis --> Pdivisor_sum["σ"]
     %% Expanded form `[ Σ( (d|n) × d) ]`
-    Pgcd["⋀"]
-    %% Expanded form `[ ∏p^(e_a ╤ e_b) ]`
-    Plcm["⋁"]
+    Pprime_expansion --> Pgcd
+    Irat --> Pgcd["⩑"]
+    %% Expanded form `[ ∏p^(e_a ⫧ e_b) ]`
+    Pgcd --> Plcm["⩒"]
     %% Expanded form `[" ∏p^(e_a ⫨ e_b) "]`    
 %% 
 

@@ -2,6 +2,7 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { buildOperationSlotDisplayModel } from "../src/ui/modules/calculator/viewModel.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { DELTA_RANGE_CLAMP_FLAG } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
 
@@ -22,10 +23,10 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
       keyLayout: [{ kind: "key", key: k("exec_step_through") }, { kind: "key", key: k("exec_equals") }],
       keypadColumns: 2,
       keypadRows: 1,
-    },
-    settings: {
-      ...base.settings,
-      wrapper: "delta_range_clamp",
+      buttonFlags: {
+        ...base.ui.buttonFlags,
+        [DELTA_RANGE_CLAMP_FLAG]: true,
+      },
     },
     calculator: {
       ...base.calculator,
@@ -56,10 +57,10 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
       keyLayout: [{ kind: "key", key: k("exec_step_through") }],
       keypadColumns: 1,
       keypadRows: 1,
-    },
-    settings: {
-      ...base.settings,
-      wrapper: "delta_range_clamp",
+      buttonFlags: {
+        ...base.ui.buttonFlags,
+        [DELTA_RANGE_CLAMP_FLAG]: true,
+      },
     },
     calculator: {
       ...base.calculator,

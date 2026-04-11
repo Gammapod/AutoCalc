@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { initialState, HISTORY_FLAG, STEP_EXPANSION_FLAG } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, initialState, HISTORY_FLAG, STEP_EXPANSION_FLAG } from "../src/domain/state.js";
 import { renderStateVisualizerPanel } from "../src/ui/modules/visualizers/stateRenderer.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 
@@ -19,7 +19,6 @@ export const runUiModuleStateRendererV2Tests = (): void => {
         ...base.settings,
         visualizer: "state" as const,
         base: "base2" as const,
-        wrapper: "delta_range_clamp" as const,
         stepExpansion: "on" as const,
       },
       lambdaControl: {
@@ -33,6 +32,7 @@ export const runUiModuleStateRendererV2Tests = (): void => {
         ...base.ui,
         buttonFlags: {
           ...base.ui.buttonFlags,
+          [DELTA_RANGE_CLAMP_FLAG]: true,
           [HISTORY_FLAG]: true,
           [STEP_EXPANSION_FLAG]: true,
         },
