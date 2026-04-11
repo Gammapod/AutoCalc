@@ -141,6 +141,7 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   const titlePanel = root.querySelector<HTMLElement>("[data-v2-title-panel]");
   const releaseNotesPanel = root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
   const helpPanel = root.querySelector<HTMLElement>("[data-v2-help-panel]");
+  const statePanel = root.querySelector<HTMLElement>("[data-v2-state-panel]");
   const numberLinePanel = root.querySelector<HTMLElement>("[data-v2-number-line-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
@@ -179,6 +180,9 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   }
   if (helpPanel) {
     helpPanel.setAttribute("aria-hidden", "true");
+  }
+  if (statePanel) {
+    statePanel.setAttribute("aria-hidden", "true");
   }
   if (releaseNotesPanel) {
     releaseNotesPanel.setAttribute("aria-hidden", "true");
@@ -333,6 +337,9 @@ const resolveTextPanelMeasurementTarget = (panelElement: HTMLElement, panel: Vis
   if (panel === "release_notes") {
     return panelElement.querySelector<HTMLElement>(".v2-release-notes-body");
   }
+  if (panel === "state") {
+    return panelElement.querySelector<HTMLElement>(".v2-state-table");
+  }
   return null;
 };
 
@@ -446,6 +453,9 @@ const resolvePanelElement = (root: Element, panel: VisualizerHostPanel): HTMLEle
   if (panel === "help") {
     return root.querySelector<HTMLElement>("[data-v2-help-panel]");
   }
+  if (panel === "state") {
+    return root.querySelector<HTMLElement>("[data-v2-state-panel]");
+  }
   if (panel === "release_notes") {
     return root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
   }
@@ -522,6 +532,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const titlePanel = root.querySelector<HTMLElement>("[data-v2-title-panel]");
   const releaseNotesPanel = root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
   const helpPanel = root.querySelector<HTMLElement>("[data-v2-help-panel]");
+  const statePanel = root.querySelector<HTMLElement>("[data-v2-state-panel]");
   const numberLinePanel = root.querySelector<HTMLElement>("[data-v2-number-line-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
@@ -564,6 +575,9 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   }
   if (helpPanel) {
     helpPanel.setAttribute("aria-hidden", activePanel === "help" ? "false" : "true");
+  }
+  if (statePanel) {
+    statePanel.setAttribute("aria-hidden", activePanel === "state" ? "false" : "true");
   }
   if (releaseNotesPanel) {
     releaseNotesPanel.setAttribute("aria-hidden", activePanel === "release_notes" ? "false" : "true");

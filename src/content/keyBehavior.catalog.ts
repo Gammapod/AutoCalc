@@ -219,6 +219,12 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
   },
   {
+    key: KEY_ID.viz_state,
+    lockModel: "always_unlocked",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
     key: KEY_ID.viz_number_line,
     lockModel: "unlockable",
     unlockPathPolicy: "none_planned",

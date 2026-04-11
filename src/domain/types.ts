@@ -699,7 +699,6 @@ export type GameState = {
     keypadColumns: number;
     keypadRows: number;
     activeVisualizer: ActiveVisualizer;
-    selectedControlField?: ControlField | null;
     buttonFlags: Record<string, boolean>;
     diagnostics: {
       lastAction: UiDiagnosticsLastAction;

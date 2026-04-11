@@ -62,6 +62,7 @@ export const KEY_ID = {
   viz_release_notes: "viz_release_notes",
   viz_help: "viz_help",
   viz_factorization: "viz_factorization",
+  viz_state: "viz_state",
   viz_number_line: "viz_number_line",
   viz_circle: "viz_circle",
   viz_algebraic: "viz_algebraic",
@@ -140,6 +141,7 @@ export type VisualizerKeyId =
   | typeof KEY_ID.viz_release_notes
   | typeof KEY_ID.viz_help
   | typeof KEY_ID.viz_factorization
+  | typeof KEY_ID.viz_state
   | typeof KEY_ID.viz_number_line
   | typeof KEY_ID.viz_circle
   | typeof KEY_ID.viz_algebraic;
@@ -225,6 +227,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.viz_release_notes, { buttonFace: "NOTES" }],
   [KEY_ID.viz_help, { buttonFace: "HELP" }],
   [KEY_ID.viz_factorization, { buttonFace: "\u2315" }],
+  [KEY_ID.viz_state, { buttonFace: "STATE" }],
   [KEY_ID.viz_number_line, { buttonFace: "\u25FB" }],
   [KEY_ID.viz_circle, { buttonFace: "\u25EF" }],
   [KEY_ID.viz_algebraic, { buttonFace: "ALG" }],

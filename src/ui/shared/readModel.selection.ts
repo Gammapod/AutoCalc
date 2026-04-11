@@ -28,7 +28,7 @@ const fieldToToken = (field: ControlField | null): SelectionRenderModel["selecte
 
 export const buildSelectionRenderModel = (state: GameState): SelectionRenderModel => {
   const context = resolveSelectedControlContextFromUi(state.ui);
-  const selected = context.selectedControlField;
+  const selected: ControlField | null = null;
   return {
     context,
     selectedToken: fieldToToken(selected),

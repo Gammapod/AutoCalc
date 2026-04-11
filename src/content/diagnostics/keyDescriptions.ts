@@ -49,6 +49,11 @@ const overrideEntries: Partial<Record<KeyId, KeyDiagnosticEntry>> = {
     longTemplate: "{keyFace} changes active visualizer to factorization or back to total.",
     caveats: ["When visualizer keys are pressed, Last Key reflects visualizer toggle behavior."],
   },
+  viz_state: {
+    title: "State Visualizer",
+    shortTemplate: "{keyFace}: show internal calculator settings panel.",
+    longTemplate: "{keyFace} toggles internal state visualizer mode for the active calculator instance.",
+  },
   viz_graph: {
     title: "Graph Visualizer",
     shortTemplate: "{keyFace}: toggle graph panel visibility.",

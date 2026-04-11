@@ -19,16 +19,15 @@ export type SelectedControlContext = {
 };
 
 export const resolveSelectedControlFieldFromUi = (
-  ui: Pick<GameState["ui"], "selectedControlField">,
-): ControlField | null => normalizeSelectedControlField(ui.selectedControlField);
+  _ui: GameState["ui"],
+): ControlField | null => null;
 
 export const resolveSelectedControlContextFromUi = (
-  ui: Pick<GameState["ui"], "selectedControlField">,
+  _ui: GameState["ui"],
 ): SelectedControlContext => {
   const settableFields = getSettableControlFields();
-  const selectedControlField = normalizeSelectedControlField(ui.selectedControlField);
   return {
-    selectedControlField,
+    selectedControlField: null,
     settableFields,
   };
 };

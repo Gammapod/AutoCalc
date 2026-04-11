@@ -23,6 +23,7 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(k("viz_title")), "TITLE", "TITLE key label remains TITLE");
   assert.equal(formatKeyLabel(k("viz_release_notes")), "NOTES", "NOTES key label remains NOTES");
   assert.equal(formatKeyLabel(k("viz_help")), "HELP", "HELP key label remains HELP");
+  assert.equal(formatKeyLabel(k("viz_state")), "STATE", "STATE key label remains STATE");
   assert.equal(formatKeyLabel(k("toggle_binary_mode")), "b\u2082", "binary-mode settings key label renders canonical face");
   assert.equal(formatKeyLabel(k("toggle_history")), "History", "history settings key label renders canonical face");
   assert.equal(formatKeyLabel(k("toggle_mod_zero_to_delta")), "\u27E1[0, \u{1D6FF})", "mod-range settings key label renders canonical face");

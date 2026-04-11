@@ -18,6 +18,7 @@ import {
 } from "./numberLineRenderer.js";
 import { resolveNumberLineMode } from "./numberLineModel.js";
 import { clearCircleVisualizerPanel, renderCircleVisualizerPanel } from "./circleRenderer.js";
+import { clearStateVisualizerPanel, renderStateVisualizerPanel } from "./stateRenderer.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -133,6 +134,22 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
         : { mode: "ratio", ratio: 0.29 },
     render: renderNumberLineVisualizerPanel,
     clear: clearNumberLineVisualizerPanel,
+  },
+  {
+    id: "state",
+    fit: {
+      kind: "text_wrap_clamp",
+      overflow: "forbid_scroll",
+      budget: { topPx: 8, bodyPx: 118, bottomPx: 8, maxLines: 12 },
+    },
+    size: {
+      mode: "text_budget",
+      minLines: 9,
+      targetLines: 10,
+      maxLines: 12,
+    },
+    render: renderStateVisualizerPanel,
+    clear: clearStateVisualizerPanel,
   },
   {
     id: "circle",

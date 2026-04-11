@@ -73,7 +73,7 @@ const createDefaultFCalculator = (state: GameState): CalculatorInstanceState => 
 
 const createCalculatorUi = (
   calculatorId: CalculatorId,
-  options: { selectedControlField: GameState["ui"]["selectedControlField"]; buttonFlags?: Record<string, boolean> },
+  options: { buttonFlags?: Record<string, boolean> },
 ): GameState["ui"] => {
   const { keyLayout, columns: keypadColumns, rows: keypadRows, activeVisualizer } = createSeededKeyLayout(calculatorId);
   return {
@@ -83,7 +83,6 @@ const createCalculatorUi = (
     keypadColumns,
     keypadRows,
     activeVisualizer,
-    selectedControlField: options.selectedControlField,
     buttonFlags: { ...(options.buttonFlags ?? {}) },
     diagnostics: {
       lastAction: createInitialUiDiagnosticsLastAction(),
@@ -93,7 +92,7 @@ const createCalculatorUi = (
 
 const createDefaultGCalculator = (): CalculatorInstanceState => {
   const calculatorId: CalculatorId = "g";
-  const ui = createCalculatorUi(calculatorId, { selectedControlField: "gamma" });
+  const ui = createCalculatorUi(calculatorId, {});
   return {
     id: calculatorId,
     symbol: calculatorId,
@@ -109,7 +108,7 @@ const createDefaultGCalculator = (): CalculatorInstanceState => {
 
 const createDefaultMenuCalculator = (): CalculatorInstanceState => {
   const calculatorId: CalculatorId = "menu";
-  const ui = createCalculatorUi(calculatorId, { selectedControlField: null });
+  const ui = createCalculatorUi(calculatorId, {});
   return {
     id: calculatorId,
     symbol: calculatorId,
@@ -125,7 +124,7 @@ const createDefaultMenuCalculator = (): CalculatorInstanceState => {
 
 const createDefaultFPrimeCalculator = (): CalculatorInstanceState => {
   const calculatorId: CalculatorId = "f_prime";
-  const ui = createCalculatorUi(calculatorId, { selectedControlField: null });
+  const ui = createCalculatorUi(calculatorId, {});
   return {
     id: calculatorId,
     symbol: calculatorId,
@@ -142,7 +141,6 @@ const createDefaultFPrimeCalculator = (): CalculatorInstanceState => {
 const createDefaultGPrimeCalculator = (): CalculatorInstanceState => {
   const calculatorId: CalculatorId = "g_prime";
   const ui = createCalculatorUi(calculatorId, {
-    selectedControlField: null,
     buttonFlags: {
       [BINARY_MODE_FLAG]: true,
     },
