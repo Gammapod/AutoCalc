@@ -38,6 +38,13 @@ type InputOutcomeTransportConfig = {
   substepsPerBeat: number;
 };
 
+type CalculatorFeedbackLed =
+  | "rejected"
+  | "builder_changed"
+  | "settings_changed"
+  | "roll_updated"
+  | "substep_executed";
+
 const createCalculatorModuleState = (): CalculatorModuleState => ({
   pendingToggleAnimationByFlag: {},
   previousUnlockSnapshot: null,
@@ -63,7 +70,7 @@ const createCalculatorLayoutRuntimeState = (): CalculatorLayoutRuntimeState => (
 
 let inputOutcomeAudioContext: AudioContext | null = null;
 let inputOutcomeSchedulerTimer: ReturnType<typeof setInterval> | null = null;
-let inputOutcomeQueue: Array<"accepted" | "rejected"> = [];
+let inputOutcomeQueue: CalculatorFeedbackLed[] = [];
 let inputOutcomeNextSlotTimeSec: number | null = null;
 
 const INPUT_OUTCOME_TRANSPORT_DEFAULTS: InputOutcomeTransportConfig = {
@@ -76,20 +83,41 @@ let inputOutcomeTransportConfig: InputOutcomeTransportConfig = {
   substepsPerBeat: INPUT_OUTCOME_TRANSPORT_DEFAULTS.substepsPerBeat,
 };
 
-const INPUT_OUTCOME_TONES: Record<"accepted" | "rejected", InputOutcomeToneSpec> = {
-  accepted: {
-    frequencyStartHz: 2400,
-    frequencyEndHz: 1700,
-    durationMs: 125,
-    peakGain: 0.045,
-    buzzPulseHz: null,
-  },
+const INPUT_OUTCOME_TONES: Record<CalculatorFeedbackLed, InputOutcomeToneSpec> = {
   rejected: {
     frequencyStartHz: 320,
     frequencyEndHz: 240,
     durationMs: 125,
     peakGain: 0.06,
     buzzPulseHz: 90,
+  },
+  builder_changed: {
+    frequencyStartHz: 1040,
+    frequencyEndHz: 860,
+    durationMs: 125,
+    peakGain: 0.042,
+    buzzPulseHz: null,
+  },
+  settings_changed: {
+    frequencyStartHz: 720,
+    frequencyEndHz: 590,
+    durationMs: 125,
+    peakGain: 0.042,
+    buzzPulseHz: null,
+  },
+  roll_updated: {
+    frequencyStartHz: 2400,
+    frequencyEndHz: 1700,
+    durationMs: 125,
+    peakGain: 0.045,
+    buzzPulseHz: null,
+  },
+  substep_executed: {
+    frequencyStartHz: 1800,
+    frequencyEndHz: 1260,
+    durationMs: 115,
+    peakGain: 0.036,
+    buzzPulseHz: null,
   },
 };
 
@@ -120,7 +148,7 @@ const resolveInputOutcomeAudioContext = (): AudioContext | null => {
 
 const playInputOutcomeToneWithContext = (
   context: AudioContext,
-  outcome: "accepted" | "rejected",
+  outcome: CalculatorFeedbackLed,
   startTimeSec: number,
 ): void => {
   const spec = INPUT_OUTCOME_TONES[outcome];
@@ -238,7 +266,7 @@ const ensureInputOutcomeScheduler = (): void => {
   inputOutcomeSchedulerTimer = setInterval(runInputOutcomeSchedulerTick, INPUT_OUTCOME_SCHEDULER_TICK_MS);
 };
 
-const enqueueCalculatorInputOutcomeTone = (outcome: "accepted" | "rejected"): void => {
+const enqueueCalculatorInputOutcomeTone = (outcome: CalculatorFeedbackLed): void => {
   inputOutcomeQueue.push(outcome);
   ensureInputOutcomeScheduler();
   runInputOutcomeSchedulerTick();
@@ -382,7 +410,7 @@ export const triggerExecutionGateRejectBlink = (root: Element, rejectCount: numb
 
 export const triggerCalculatorInputOutcomeLed = (
   root: Element,
-  outcome: "accepted" | "rejected",
+  outcome: CalculatorFeedbackLed,
   triggerCount: number | null | undefined,
 ): void => {
   const normalizedTriggerCount = Math.max(0, Math.trunc(triggerCount ?? 0));
@@ -392,16 +420,18 @@ export const triggerCalculatorInputOutcomeLed = (
   if (root instanceof HTMLElement && root.hidden) {
     return;
   }
-  const target = root.querySelector<HTMLElement>(
-    outcome === "accepted"
-      ? "[data-calc-led='accepted']"
-      : "[data-calc-led='rejected']",
-  );
+  const target = root.querySelector<HTMLElement>(`[data-calc-led='${outcome}']`);
   if (!target) {
     return;
   }
   enqueueCalculatorInputOutcomeTone(outcome);
-  const pulseClass = outcome === "accepted" ? "calc-led--pulse-green" : "calc-led--pulse-red";
+  const pulseClass = {
+    rejected: "calc-led--pulse-red",
+    builder_changed: "calc-led--pulse-blue",
+    settings_changed: "calc-led--pulse-orange",
+    roll_updated: "calc-led--pulse-green",
+    substep_executed: "calc-led--pulse-white",
+  }[outcome];
   target.classList.remove(pulseClass);
   // Force reflow so repeated outcomes retrigger the LED pulse.
   void target.offsetWidth;

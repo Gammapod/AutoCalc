@@ -101,8 +101,11 @@ export const renderCalculatorV2Module = (
   options: {
     inputBlocked: boolean;
     executionGateRejectCount?: number;
-    acceptedInputCount?: number;
     rejectedInputCount?: number;
+    builderChangedCount?: number;
+    settingsChangedCount?: number;
+    rollUpdatedCount?: number;
+    substepExecutedCount?: number;
   },
 ): void => {
   const calculatorId: CalculatorId =
@@ -116,8 +119,11 @@ export const renderCalculatorV2Module = (
             ? "g_prime"
         : "f";
   triggerExecutionGateRejectBlink(root, options.executionGateRejectCount ?? 0);
-  triggerCalculatorInputOutcomeLed(root, "accepted", options.acceptedInputCount ?? 0);
   triggerCalculatorInputOutcomeLed(root, "rejected", options.rejectedInputCount ?? 0);
+  triggerCalculatorInputOutcomeLed(root, "builder_changed", options.builderChangedCount ?? 0);
+  triggerCalculatorInputOutcomeLed(root, "settings_changed", options.settingsChangedCount ?? 0);
+  triggerCalculatorInputOutcomeLed(root, "roll_updated", options.rollUpdatedCount ?? 0);
+  triggerCalculatorInputOutcomeLed(root, "substep_executed", options.substepExecutedCount ?? 0);
   ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
   const slotEl = root.querySelector<HTMLElement>("[data-slot]");

@@ -740,12 +740,36 @@
         background: radial-gradient(circle at 30% 30%, rgba(181, 255, 199, 0.4), rgba(17, 69, 34, 0.9));
       }
 
+      .calc-led--blue {
+        background: radial-gradient(circle at 30% 30%, rgba(182, 218, 255, 0.44), rgba(22, 58, 105, 0.9));
+      }
+
+      .calc-led--orange {
+        background: radial-gradient(circle at 30% 30%, rgba(255, 216, 164, 0.45), rgba(107, 56, 8, 0.9));
+      }
+
+      .calc-led--white {
+        background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.64), rgba(116, 124, 136, 0.94));
+      }
+
       .calc-led--pulse-red {
         animation: calc-led-pulse-red 260ms ease-out 1;
       }
 
       .calc-led--pulse-green {
         animation: calc-led-pulse-green 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-blue {
+        animation: calc-led-pulse-blue 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-orange {
+        animation: calc-led-pulse-orange 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-white {
+        animation: calc-led-pulse-white 260ms ease-out 1;
       }
 
       @keyframes calc-led-pulse-red {
@@ -774,6 +798,51 @@
         }
         100% {
           box-shadow: 0 0 0 rgba(108, 255, 157, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-blue {
+        0% {
+          box-shadow: 0 0 0 rgba(119, 190, 255, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(119, 190, 255, 0.88), 0 0 18px rgba(119, 190, 255, 0.64);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(119, 190, 255, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-orange {
+        0% {
+          box-shadow: 0 0 0 rgba(255, 166, 68, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(255, 166, 68, 0.9), 0 0 18px rgba(255, 166, 68, 0.66);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(255, 166, 68, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-white {
+        0% {
+          box-shadow: 0 0 0 rgba(240, 246, 255, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(240, 246, 255, 0.92), 0 0 18px rgba(240, 246, 255, 0.68);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(240, 246, 255, 0);
           filter: brightness(1);
         }
       }
@@ -3177,7 +3246,10 @@
                     <div class="slot" aria-hidden="true"></div>
                     <div class="calc-leds" aria-hidden="true">
                       <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
-                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3210,7 +3282,10 @@
                     <div class="slot" aria-hidden="true"></div>
                     <div class="calc-leds" aria-hidden="true">
                       <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
-                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3243,7 +3318,10 @@
                     <div class="slot" aria-hidden="true"></div>
                     <div class="calc-leds" aria-hidden="true">
                       <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
-                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3276,7 +3354,10 @@
                     <div class="slot" aria-hidden="true"></div>
                     <div class="calc-leds" aria-hidden="true">
                       <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
-                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3309,7 +3390,10 @@
                     <div class="slot" aria-hidden="true"></div>
                     <div class="calc-leds" aria-hidden="true">
                       <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
-                      <span class="calc-led calc-led--green" data-calc-led="accepted"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">

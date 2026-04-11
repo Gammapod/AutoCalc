@@ -13,14 +13,14 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
   try {
     const displayWindow = harness.root.querySelector<HTMLElement>("[data-display-window]");
     const rejectLed = harness.root.querySelector<HTMLElement>("[data-calc-led='rejected']");
-    const acceptLed = harness.root.querySelector<HTMLElement>("[data-calc-led='accepted']");
+    const rollLed = harness.root.querySelector<HTMLElement>("[data-calc-led='roll_updated']");
     assert.ok(displayWindow, "expected display window mount");
     assert.ok(rejectLed, "expected reject led mount");
-    assert.ok(acceptLed, "expected accept led mount");
+    assert.ok(rollLed, "expected roll led mount");
     if (!displayWindow) {
       return;
     }
-    if (!rejectLed || !acceptLed) {
+    if (!rejectLed || !rollLed) {
       return;
     }
 
@@ -36,9 +36,9 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       "baseline render has no reject led pulse",
     );
     assert.equal(
-      acceptLed.classList.contains("calc-led--pulse-green"),
+      rollLed.classList.contains("calc-led--pulse-green"),
       false,
-      "baseline render has no accept led pulse",
+      "baseline render has no roll-update led pulse",
     );
 
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
@@ -59,7 +59,7 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
 
     displayWindow.classList.remove("display--slot-reject-blink");
     rejectLed.classList.remove("calc-led--pulse-red");
-    acceptLed.classList.remove("calc-led--pulse-green");
+    rollLed.classList.remove("calc-led--pulse-green");
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
       inputBlocked: false,
       executionGateRejectCount: 0,
@@ -75,19 +75,19 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       "zero rejected input count does not pulse red led",
     );
     assert.equal(
-      acceptLed.classList.contains("calc-led--pulse-green"),
+      rollLed.classList.contains("calc-led--pulse-green"),
       false,
-      "zero accepted input count does not pulse green led",
+      "zero roll-update count does not pulse green led",
     );
 
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
       inputBlocked: false,
-      acceptedInputCount: 1,
+      rollUpdatedCount: 1,
     });
     assert.equal(
-      acceptLed.classList.contains("calc-led--pulse-green"),
+      rollLed.classList.contains("calc-led--pulse-green"),
       true,
-      "accepted input count applies green led pulse class",
+      "roll-update count applies green led pulse class",
     );
 
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {

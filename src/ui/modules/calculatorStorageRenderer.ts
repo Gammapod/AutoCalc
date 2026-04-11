@@ -36,11 +36,27 @@ export const renderCalculatorStorageV2Module = (
     },
     {},
   );
-  const inputFeedbackPulseFor = (calculatorId: CalculatorId): { acceptedInputCount: number; rejectedInputCount: number } => {
+  const countUiEffectFor = (
+    calculatorId: CalculatorId,
+    effectType: Extract<UiEffect["type"], "builder_changed" | "settings_changed" | "roll_updated" | "substep_executed">,
+  ): number =>
+    options.uiEffects.filter((effect) => effect.type === effectType && effect.calculatorId === calculatorId).length;
+  const feedbackPulseFor = (
+    calculatorId: CalculatorId,
+  ): {
+    rejectedInputCount: number;
+    builderChangedCount: number;
+    settingsChangedCount: number;
+    rollUpdatedCount: number;
+    substepExecutedCount: number;
+  } => {
     const outcome = latestInputOutcomeByCalculator[calculatorId];
     return {
-      acceptedInputCount: outcome === "accepted" ? 1 : 0,
       rejectedInputCount: outcome === "rejected" ? 1 : 0,
+      builderChangedCount: countUiEffectFor(calculatorId, "builder_changed"),
+      settingsChangedCount: countUiEffectFor(calculatorId, "settings_changed"),
+      rollUpdatedCount: countUiEffectFor(calculatorId, "roll_updated"),
+      substepExecutedCount: countUiEffectFor(calculatorId, "substep_executed"),
     };
   };
   const calculatorDevice = root.querySelector<HTMLElement>("[data-calc-device]");
@@ -87,12 +103,15 @@ export const renderCalculatorStorageV2Module = (
           dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId: id });
         };
         const projected = projectCalculatorToLegacy(state, id);
-        const inputFeedbackPulse = inputFeedbackPulseFor(id);
+        const feedbackPulse = feedbackPulseFor(id);
         calculatorRenderer(instanceEl, projected, dispatch, {
           inputBlocked: options.inputBlocked,
           executionGateRejectCount: executionRejectCountFor(id),
-          acceptedInputCount: inputFeedbackPulse.acceptedInputCount,
-          rejectedInputCount: inputFeedbackPulse.rejectedInputCount,
+          rejectedInputCount: feedbackPulse.rejectedInputCount,
+          builderChangedCount: feedbackPulse.builderChangedCount,
+          settingsChangedCount: feedbackPulse.settingsChangedCount,
+          rollUpdatedCount: feedbackPulse.rollUpdatedCount,
+          substepExecutedCount: feedbackPulse.substepExecutedCount,
         });
         activeInstanceRendered = true;
         return;
@@ -104,22 +123,28 @@ export const renderCalculatorStorageV2Module = (
       }
       activeInstanceRendered = true;
       const projected = projectCalculatorToLegacy(state, id);
-      const inputFeedbackPulse = inputFeedbackPulseFor(id);
+      const feedbackPulse = feedbackPulseFor(id);
       calculatorRenderer(instanceEl, projected, dispatch, {
         inputBlocked: options.inputBlocked,
         executionGateRejectCount: executionRejectCountFor(id),
-        acceptedInputCount: inputFeedbackPulse.acceptedInputCount,
-        rejectedInputCount: inputFeedbackPulse.rejectedInputCount,
+        rejectedInputCount: feedbackPulse.rejectedInputCount,
+        builderChangedCount: feedbackPulse.builderChangedCount,
+        settingsChangedCount: feedbackPulse.settingsChangedCount,
+        rollUpdatedCount: feedbackPulse.rollUpdatedCount,
+        substepExecutedCount: feedbackPulse.substepExecutedCount,
       });
     });
     if (!activeInstanceRendered) {
       const projected = projectCalculatorToLegacy(state, activeCalculatorId);
-      const inputFeedbackPulse = inputFeedbackPulseFor(activeCalculatorId);
+      const feedbackPulse = feedbackPulseFor(activeCalculatorId);
       calculatorRenderer(root, projected, dispatch, {
         inputBlocked: options.inputBlocked,
         executionGateRejectCount: executionRejectCountFor(activeCalculatorId),
-        acceptedInputCount: inputFeedbackPulse.acceptedInputCount,
-        rejectedInputCount: inputFeedbackPulse.rejectedInputCount,
+        rejectedInputCount: feedbackPulse.rejectedInputCount,
+        builderChangedCount: feedbackPulse.builderChangedCount,
+        settingsChangedCount: feedbackPulse.settingsChangedCount,
+        rollUpdatedCount: feedbackPulse.rollUpdatedCount,
+        substepExecutedCount: feedbackPulse.substepExecutedCount,
       });
     }
   } else if (calculatorDevice) {
@@ -132,31 +157,40 @@ export const renderCalculatorStorageV2Module = (
     }
     allInstances.forEach((instanceEl) => {
       instanceEl.hidden = instanceEl !== activeInstance;
-      const inputFeedbackPulse = inputFeedbackPulseFor(activeCalculatorId);
+      const feedbackPulse = feedbackPulseFor(activeCalculatorId);
       calculatorRenderer(instanceEl, state, dispatch, {
         inputBlocked: options.inputBlocked,
         executionGateRejectCount: executionRejectCountFor(activeCalculatorId),
-        acceptedInputCount: inputFeedbackPulse.acceptedInputCount,
-        rejectedInputCount: inputFeedbackPulse.rejectedInputCount,
+        rejectedInputCount: feedbackPulse.rejectedInputCount,
+        builderChangedCount: feedbackPulse.builderChangedCount,
+        settingsChangedCount: feedbackPulse.settingsChangedCount,
+        rollUpdatedCount: feedbackPulse.rollUpdatedCount,
+        substepExecutedCount: feedbackPulse.substepExecutedCount,
       });
     });
     if (!activeInstance) {
-      const inputFeedbackPulse = inputFeedbackPulseFor(activeCalculatorId);
+      const feedbackPulse = feedbackPulseFor(activeCalculatorId);
       calculatorRenderer(root, state, dispatch, {
         inputBlocked: options.inputBlocked,
         executionGateRejectCount: executionRejectCountFor(activeCalculatorId),
-        acceptedInputCount: inputFeedbackPulse.acceptedInputCount,
-        rejectedInputCount: inputFeedbackPulse.rejectedInputCount,
+        rejectedInputCount: feedbackPulse.rejectedInputCount,
+        builderChangedCount: feedbackPulse.builderChangedCount,
+        settingsChangedCount: feedbackPulse.settingsChangedCount,
+        rollUpdatedCount: feedbackPulse.rollUpdatedCount,
+        substepExecutedCount: feedbackPulse.substepExecutedCount,
       });
     }
   } else {
     const activeCalculatorId = resolveActiveCalculatorId(state);
-    const inputFeedbackPulse = inputFeedbackPulseFor(activeCalculatorId);
+    const feedbackPulse = feedbackPulseFor(activeCalculatorId);
     calculatorRenderer(root, state, dispatch, {
       inputBlocked: options.inputBlocked,
       executionGateRejectCount: executionRejectCountFor(activeCalculatorId),
-      acceptedInputCount: inputFeedbackPulse.acceptedInputCount,
-      rejectedInputCount: inputFeedbackPulse.rejectedInputCount,
+      rejectedInputCount: feedbackPulse.rejectedInputCount,
+      builderChangedCount: feedbackPulse.builderChangedCount,
+      settingsChangedCount: feedbackPulse.settingsChangedCount,
+      rollUpdatedCount: feedbackPulse.rollUpdatedCount,
+      substepExecutedCount: feedbackPulse.substepExecutedCount,
     });
   }
   renderStorageV2Module(root, state, dispatch, {

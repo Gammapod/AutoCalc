@@ -135,6 +135,7 @@ import { runReducerPipelineActionRoutingTests } from "./reducer.pipeline.actionR
 import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
 import { runOperatorExecutionPolicyRegistryContractTests } from "./operatorExecutionPolicyRegistry.contract.test.js";
 import { runInputFeedbackOutcomeTests } from "./inputFeedback.outcome.test.js";
+import { runUiFeedbackPathwaysEffectsTests } from "./uiFeedbackPathways.effects.test.js";
 import { runBootstrapPersistenceSchedulingTests } from "./bootstrapPersistenceScheduling.test.js";
 import { runLazyAssetLoaderTests } from "./lazyAssetLoader.test.js";
 import { runBootDependencyLazyLoadContractTests } from "./bootDependencyLazyLoadContract.test.js";
@@ -274,6 +275,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/unlock-hint-progress", runUnlockHintProgressTests],
   ["contracts/operator-execution-policy-registry", runOperatorExecutionPolicyRegistryContractTests],
   ["contracts/input-feedback-outcome", runInputFeedbackOutcomeTests],
+  ["contracts/ui-feedback-pathways-effects", runUiFeedbackPathwaysEffectsTests],
   ["domain/runtime-state-invariants-pipeline-equivalence", runRuntimeStateInvariantsPipelineEquivalenceTests],
   ["domain/reducer-pipeline-action-routing", runReducerPipelineActionRoutingTests],
   ["domain/reducer-pipeline-equivalence", runReducerPipelineEquivalenceTests],

@@ -6,7 +6,10 @@ import { resolveExecutionPolicyForAction } from "./reducer.js";
 import type { UiEffect } from "./types.js";
 import { resolveSystemKeyIntent, mapSystemKeyIntentToUiEffect } from "./systemKeyIntentRegistry.js";
 import { isKeyUsableForInput } from "./keyUnlocks.js";
-import { resolveDomainDispatchInputFeedback } from "./inputFeedback.js";
+import { resolveDomainDispatchInputFeedback, resolveFeedbackTargetCalculatorId } from "./inputFeedback.js";
+import { KEY_ID, isBinaryOperatorKeyId, isConstantKeyId, isDigitKeyId, isUnaryOperatorId } from "./keyPresentation.js";
+import { projectCalculatorToLegacy } from "./multiCalculator.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, HISTORY_FLAG, STEP_EXPANSION_FLAG } from "./state.js";
 
 export type DomainCommand = {
   type: "DispatchAction";
@@ -21,6 +24,104 @@ export type ExecuteCommandResult = {
 
 type ExecuteCommandOptions = {
   services?: AppServices;
+};
+
+const stableSignature = (value: unknown): string =>
+  JSON.stringify(value, (_key, entry) => (typeof entry === "bigint" ? { __bigint: entry.toString() } : entry));
+
+const resolveTargetCalculatorState = (state: GameState, calculatorId: ReturnType<typeof resolveFeedbackTargetCalculatorId>) =>
+  state.calculators?.[calculatorId]
+    ? projectCalculatorToLegacy(state, calculatorId)
+    : state;
+
+const isBuilderFeedbackEligiblePress = (action: Action): boolean => {
+  if (action.type !== "PRESS_KEY") {
+    return false;
+  }
+  const { key } = action;
+  return isDigitKeyId(key)
+    || isConstantKeyId(key)
+    || isBinaryOperatorKeyId(key)
+    || isUnaryOperatorId(key)
+    || key === KEY_ID.util_clear_all
+    || key === KEY_ID.util_backspace;
+};
+
+const hasBuilderChanged = (previous: GameState, next: GameState): boolean =>
+  stableSignature({
+    operationSlots: previous.calculator.operationSlots,
+    draftingSlot: previous.calculator.draftingSlot,
+  }) !== stableSignature({
+    operationSlots: next.calculator.operationSlots,
+    draftingSlot: next.calculator.draftingSlot,
+  });
+
+const isSeedEntryContext = (state: GameState): boolean =>
+  state.calculator.rollEntries.length <= 1
+  && state.calculator.operationSlots.length === 0
+  && state.calculator.draftingSlot === null;
+
+const isSeedSetOrBackspaceAction = (action: Action): boolean =>
+  action.type === "PRESS_KEY"
+  && (
+    isDigitKeyId(action.key)
+    || isConstantKeyId(action.key)
+    || action.key === KEY_ID.util_backspace
+  );
+
+const hasSeedValueChanged = (previous: GameState, next: GameState): boolean =>
+  stableSignature({
+    total: previous.calculator.total,
+    pendingNegativeTotal: previous.calculator.pendingNegativeTotal,
+    singleDigitInitialTotalEntry: previous.calculator.singleDigitInitialTotalEntry,
+  }) !== stableSignature({
+    total: next.calculator.total,
+    pendingNegativeTotal: next.calculator.pendingNegativeTotal,
+    singleDigitInitialTotalEntry: next.calculator.singleDigitInitialTotalEntry,
+  });
+
+const hasMonitoredSettingsChanged = (previous: GameState, next: GameState): boolean =>
+  previous.lambdaControl.alpha !== next.lambdaControl.alpha
+  || previous.lambdaControl.beta !== next.lambdaControl.beta
+  || previous.lambdaControl.gamma !== next.lambdaControl.gamma
+  || previous.lambdaControl.delta !== next.lambdaControl.delta
+  || previous.lambdaControl.epsilon !== next.lambdaControl.epsilon
+  || previous.settings.visualizer !== next.settings.visualizer
+  || previous.settings.base !== next.settings.base
+  || previous.settings.wrapper !== next.settings.wrapper
+  || previous.settings.stepExpansion !== next.settings.stepExpansion
+  || Boolean(previous.ui.buttonFlags[STEP_EXPANSION_FLAG]) !== Boolean(next.ui.buttonFlags[STEP_EXPANSION_FLAG])
+  || Boolean(previous.ui.buttonFlags[HISTORY_FLAG]) !== Boolean(next.ui.buttonFlags[HISTORY_FLAG]);
+
+const hasRollUpdated = (previous: GameState, next: GameState): boolean =>
+  stableSignature(previous.calculator.rollEntries) !== stableSignature(next.calculator.rollEntries);
+
+const isSubstepFeedbackAction = (action: Action): boolean =>
+  action.type === "AUTO_STEP_TICK"
+  || (action.type === "PRESS_KEY" && action.key === KEY_ID.exec_step_through);
+
+const resolveSubstepExecutedCount = (previous: GameState, next: GameState, action: Action): number => {
+  if (!isSubstepFeedbackAction(action)) {
+    return 0;
+  }
+  const previousExecuted = previous.calculator.stepProgress.executedSlotResults.length;
+  const nextExecuted = next.calculator.stepProgress.executedSlotResults.length;
+  if (nextExecuted > previousExecuted) {
+    return nextExecuted - previousExecuted;
+  }
+  const rollDelta = next.calculator.rollEntries.length - previous.calculator.rollEntries.length;
+  if (rollDelta <= 0 || previous.calculator.operationSlots.length <= 0) {
+    return 0;
+  }
+  const isLikelyAutoStepEqualsFallback =
+    action.type === "AUTO_STEP_TICK"
+    && !previous.calculator.stepProgress.active
+    && !next.calculator.stepProgress.active
+    && Boolean(previous.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]);
+  if (isLikelyAutoStepEqualsFallback) {
+    return 0;
+  }
+  return 1;
 };
 
 export const executeCommand = (
@@ -44,6 +145,34 @@ export const executeCommand = (
   }
   const event = eventFromAction(command.action);
   const nextState = applyEvent(state, event, { services: options.services });
+  if (currentState && command.type === "DispatchAction") {
+    const targetCalculatorId = resolveFeedbackTargetCalculatorId(currentState, command.action);
+    const previousTarget = resolveTargetCalculatorState(currentState, targetCalculatorId);
+    const nextTarget = resolveTargetCalculatorState(nextState, targetCalculatorId);
+    const builderChanged =
+      isBuilderFeedbackEligiblePress(command.action)
+      && (
+        hasBuilderChanged(previousTarget, nextTarget)
+        || (
+          isSeedSetOrBackspaceAction(command.action)
+          && isSeedEntryContext(previousTarget)
+          && hasSeedValueChanged(previousTarget, nextTarget)
+        )
+      );
+    if (builderChanged) {
+      uiEffects.push({ type: "builder_changed", calculatorId: targetCalculatorId });
+    }
+    if (hasMonitoredSettingsChanged(previousTarget, nextTarget)) {
+      uiEffects.push({ type: "settings_changed", calculatorId: targetCalculatorId });
+    }
+    if (hasRollUpdated(previousTarget, nextTarget)) {
+      uiEffects.push({ type: "roll_updated", calculatorId: targetCalculatorId });
+    }
+    const substepExecutedCount = resolveSubstepExecutedCount(previousTarget, nextTarget, command.action);
+    for (let index = 0; index < substepExecutedCount; index += 1) {
+      uiEffects.push({ type: "substep_executed", calculatorId: targetCalculatorId });
+    }
+  }
   if (currentState && command.type === "DispatchAction" && command.action.type !== "AUTO_STEP_TICK") {
     uiEffects.push(resolveDomainDispatchInputFeedback(currentState, nextState, command.action, uiEffects));
   }

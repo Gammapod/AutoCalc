@@ -38,8 +38,11 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
   try {
     const renderCalls: Array<{
       target: string;
-      acceptedInputCount: number;
       rejectedInputCount: number;
+      builderChangedCount: number;
+      settingsChangedCount: number;
+      rollUpdatedCount: number;
+      substepExecutedCount: number;
     }> = [];
     setCalculatorRendererForTests((root, _state, _dispatch, options) => {
       const target =
@@ -48,8 +51,11 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
           : "<unknown>";
       renderCalls.push({
         target,
-        acceptedInputCount: options.acceptedInputCount ?? 0,
         rejectedInputCount: options.rejectedInputCount ?? 0,
+        builderChangedCount: options.builderChangedCount ?? 0,
+        settingsChangedCount: options.settingsChangedCount ?? 0,
+        rollUpdatedCount: options.rollUpdatedCount ?? 0,
+        substepExecutedCount: options.substepExecutedCount ?? 0,
       });
       if (root instanceof HTMLElement) {
         return;
@@ -159,7 +165,6 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
     });
     const gRenderCall = renderCalls.find((call) => call.target === "g" || call.target === "app");
     assert.ok(gRenderCall, "active g calculator render (or root fallback) exists for mixed input feedback");
-    assert.equal(gRenderCall?.acceptedInputCount, 0, "mixed feedback batch uses latest outcome only (accepted off)");
     assert.equal(gRenderCall?.rejectedInputCount, 1, "mixed feedback batch uses latest outcome only (rejected on)");
 
     renderCalls.length = 0;
@@ -171,8 +176,25 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
     });
     const gSystemOnlyCall = renderCalls.find((call) => call.target === "g" || call.target === "app");
     assert.ok(gSystemOnlyCall, "active g calculator render (or root fallback) exists for system-only feedback");
-    assert.equal(gSystemOnlyCall?.acceptedInputCount, 0, "system-action feedback does not trigger green led pulse");
     assert.equal(gSystemOnlyCall?.rejectedInputCount, 0, "system-action feedback does not trigger red led pulse");
+
+    renderCalls.length = 0;
+    renderCalculatorStorageV2Module(harness.root, activeGState, noopDispatch, {
+      inputBlocked: false,
+      uiEffects: [
+        { type: "builder_changed", calculatorId: "g" },
+        { type: "settings_changed", calculatorId: "g" },
+        { type: "roll_updated", calculatorId: "g" },
+        { type: "substep_executed", calculatorId: "g" },
+        { type: "substep_executed", calculatorId: "g" },
+      ],
+    });
+    const gExpandedCall = renderCalls.find((call) => call.target === "g" || call.target === "app");
+    assert.ok(gExpandedCall, "active g calculator render (or root fallback) exists for expanded feedback pathways");
+    assert.equal(gExpandedCall?.builderChangedCount, 1, "builder-changed effects map to blue count");
+    assert.equal(gExpandedCall?.settingsChangedCount, 1, "settings-changed effects map to orange count");
+    assert.equal(gExpandedCall?.rollUpdatedCount, 1, "roll-updated effects map to green count");
+    assert.equal(gExpandedCall?.substepExecutedCount, 2, "substep-executed effects preserve multiplicity");
   } finally {
     resetCalculatorRendererForTests();
     harness.teardown();

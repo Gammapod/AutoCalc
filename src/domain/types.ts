@@ -895,6 +895,22 @@ export type UiEffect =
     }
   | {
       type: "quit_application";
+    }
+  | {
+      type: "builder_changed";
+      calculatorId: CalculatorId;
+    }
+  | {
+      type: "settings_changed";
+      calculatorId: CalculatorId;
+    }
+  | {
+      type: "roll_updated";
+      calculatorId: CalculatorId;
+    }
+  | {
+      type: "substep_executed";
+      calculatorId: CalculatorId;
     };
 
 export type Store = {
