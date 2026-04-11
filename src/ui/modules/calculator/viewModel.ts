@@ -183,12 +183,12 @@ const formatWrapBoundaryExpr = (state: GameState): string => {
 
 const buildDeltaWrapDisplayText = (state: GameState): string => {
   const boundary = formatWrapBoundaryExpr(state);
-  return `\ --> [-${boundary},${boundary})`;
+  return `--> [-${boundary},${boundary})`;
 };
 
 const buildModWrapDisplayText = (state: GameState): string => {
   const boundary = formatWrapBoundaryExpr(state);
-  return `\ --> [0,${boundary})`;
+  return `--> [0,${boundary})`;
 };
 
 const BINARY_OCTAVE_CYCLE_DISPLAY = "--> [A0, A8)";

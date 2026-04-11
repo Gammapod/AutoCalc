@@ -217,7 +217,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.system_mode_sandbox, { buttonFace: "Sandbox" }],
   [KEY_ID.toggle_delta_range_clamp, { buttonFace: "[\u2013, +)" }],
   [KEY_ID.toggle_mod_zero_to_delta, { buttonFace: "[0, +)" }],
-  [KEY_ID.toggle_binary_octave_cycle, { buttonFace: "\u{1D106}" }],
+  [KEY_ID.toggle_binary_octave_cycle, { buttonFace: "\u{1D11E}" }],
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
   [KEY_ID.toggle_binary_mode, { buttonFace: "b\u2082" }],
   [KEY_ID.toggle_history, { buttonFace: "History" }],
