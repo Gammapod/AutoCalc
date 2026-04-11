@@ -71,6 +71,25 @@ const collectFilesInRepo = () => {
 const allowedValueOrphans = new Set([
   // Intentional legacy test/adapter seam; used via tests/scripts dynamic loading.
   "src/contracts/contentRegistry.ts",
+  // Intentional externally-addressable contracts/entrypoint-style modules.
+  "src/app/appShellTarget.ts",
+  "src/app/uiShellMode.ts",
+  "src/contracts/appMode.ts",
+  "src/contracts/motionSettlement.ts",
+  "src/contracts/releaseNotes.ts",
+  "src/contracts/uiText.ts",
+  "src/domain/symbolicEngine.ts",
+  "src/generated/appVersion.ts",
+  "src/infra/persistence/migrations/registry.ts",
+  "src/infra/persistence/saveEnvelope.ts",
+  "src/infra/runtime/lazyAssetLoader.ts",
+  "src/infra/stateSignature.ts",
+  "src/ui/bootstrap/bootstrapUiRefs.ts",
+  "src/ui/layout/motionLifecycleBridge.ts",
+  "src/ui/layout/types.ts",
+  "src/ui/modules/visualizers/plotPolicy.ts",
+  "src/ui/shared/uxRoles.ts",
+  "src/ui/shell/types.ts",
 ]);
 
 await mkdir(reportsDir, { recursive: true });
@@ -80,7 +99,8 @@ try {
   throw new Error(`Boundary precondition failed: reports directory not available at ${reportsDir}`);
 }
 
-const jsonRun = runDepCruise(["--config", configPath, "--output-type", "json", "src"]);
+const cruiseTarget = "src/**/*.ts";
+const jsonRun = runDepCruise(["--config", configPath, "--output-type", "json", cruiseTarget]);
 const snapshot = (jsonRun.stdout ?? "").trim();
 if (snapshot.length > 0) {
   await writeFile(snapshotPath, `${snapshot}\n`, "utf8");
@@ -88,7 +108,7 @@ if (snapshot.length > 0) {
   await writeFile(snapshotPath, `${JSON.stringify({ warning: "No dependency-cruiser output." }, null, 2)}\n`, "utf8");
 }
 
-const reportRun = runDepCruise(["--config", configPath, "--output-type", "err-long", "src"]);
+const reportRun = runDepCruise(["--config", configPath, "--output-type", "err-long", cruiseTarget]);
 if (reportRun.stdout) {
   process.stdout.write(reportRun.stdout);
 }
@@ -107,6 +127,11 @@ if (jsonRun.status !== 0 || reportRun.status !== 0) {
 }
 
 const cruiseReport = snapshot.length > 0 ? JSON.parse(snapshot) : { modules: [] };
+const totalCruised = Number(cruiseReport.summary?.totalCruised ?? 0);
+if (totalCruised <= 0) {
+  console.error("Dependency boundaries check failed: dependency-cruiser reported zero cruised modules.");
+  process.exit(1);
+}
 const orphanModules = (cruiseReport.modules ?? [])
   .filter((module) => module.orphan === true)
   .map((module) => module.source)
