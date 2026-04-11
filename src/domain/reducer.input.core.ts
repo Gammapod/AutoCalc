@@ -96,6 +96,7 @@ import {
   getExecutionPlanIRStageAt,
   getExecutionPlanIRStageCount,
   materializeSlotsFromExecutionPlanIR,
+  resolveExecutionPlanIRWrapStageMode,
   type ExecutionPlanBuildResult,
 } from "./executionPlanIR.js";
 import { resolveRollInversePlan, type InverseExecutionStage } from "./rollInverseExecution.js";
@@ -650,14 +651,6 @@ const buildBuilderExpressionSignature = (slots: GameState["calculator"]["operati
   return signature;
 };
 
-const euclideanModuloBigInt = (value: bigint, modulus: bigint): bigint => {
-  if (modulus <= 0n) {
-    throw new Error("Modulus must be positive.");
-  }
-  const remainder = value % modulus;
-  return remainder < 0n ? remainder + modulus : remainder;
-};
-
 const bitLength = (value: bigint): number => {
   if (value <= 0n) {
     throw new Error("Bit length is only defined for positive integers.");
@@ -716,6 +709,162 @@ const applyBinaryOctaveCycleWrap = (value: RationalValue): RationalValue => {
   });
 };
 
+const scaleRationalByPowerOfTwo = (value: RationalValue, exponentDelta: number): RationalValue => {
+  const normalized = normalizeRationalValue(value);
+  if (exponentDelta === 0) {
+    return normalized;
+  }
+  if (exponentDelta > 0) {
+    return normalizeRationalValue({
+      num: normalized.num << BigInt(exponentDelta),
+      den: normalized.den,
+    });
+  }
+  return normalizeRationalValue({
+    num: normalized.num,
+    den: normalized.den << BigInt(-exponentDelta),
+  });
+};
+
+const euclideanModuloRationalByInteger = (value: RationalValue, modulus: bigint): RationalValue => {
+  if (modulus <= 0n) {
+    throw new Error("Modulus must be positive.");
+  }
+  const normalized = normalizeRationalValue(value);
+  const scaledModulus = modulus * normalized.den;
+  let remainder = normalized.num % scaledModulus;
+  if (remainder < 0n) {
+    remainder += scaledModulus;
+  }
+  return normalizeRationalValue({ num: remainder, den: normalized.den });
+};
+
+const addIntegerToRational = (value: RationalValue, integer: bigint): RationalValue =>
+  normalizeRationalValue({
+    num: value.num + integer * value.den,
+    den: value.den,
+  });
+
+const subtractIntegerFromRational = (value: RationalValue, integer: bigint): RationalValue =>
+  normalizeRationalValue({
+    num: value.num - integer * value.den,
+    den: value.den,
+  });
+
+const applyDeltaRangeClampToRational = (value: RationalValue, boundary: bigint): RationalValue => {
+  const ringWidth = boundary * 2n;
+  if (ringWidth <= 0n) {
+    return normalizeRationalValue(value);
+  }
+  const shifted = addIntegerToRational(value, boundary);
+  const wrapped = euclideanModuloRationalByInteger(shifted, ringWidth);
+  return subtractIntegerFromRational(wrapped, boundary);
+};
+
+const applyModZeroToDeltaToRational = (value: RationalValue, boundary: bigint): RationalValue => {
+  if (boundary <= 0n) {
+    return normalizeRationalValue(value);
+  }
+  return euclideanModuloRationalByInteger(value, boundary);
+};
+
+const comparePositiveRationalToPowerOfTwo = (value: RationalValue, exponent: number): -1 | 0 | 1 => {
+  const normalized = normalizeRationalValue(value);
+  if (normalized.num < 0n || normalized.den <= 0n) {
+    throw new Error("Comparison requires a positive rational.");
+  }
+  if (exponent >= 0) {
+    const right = normalized.den << BigInt(exponent);
+    if (normalized.num < right) {
+      return -1;
+    }
+    if (normalized.num > right) {
+      return 1;
+    }
+    return 0;
+  }
+  const left = normalized.num << BigInt(-exponent);
+  if (left < normalized.den) {
+    return -1;
+  }
+  if (left > normalized.den) {
+    return 1;
+  }
+  return 0;
+};
+
+const resolveComplexMagnitudeBinaryExponent = (
+  real: RationalValue,
+  imaginary: RationalValue,
+): number | null => {
+  const re = normalizeRationalValue(real);
+  const im = normalizeRationalValue(imaginary);
+  const magnitudeSquared = normalizeRationalValue({
+    num: (re.num * re.num * im.den * im.den) + (im.num * im.num * re.den * re.den),
+    den: re.den * re.den * im.den * im.den,
+  });
+  if (magnitudeSquared.num === 0n) {
+    return null;
+  }
+  const log2MagnitudeSquared = floorLog2Rational(magnitudeSquared);
+  let exponent = Math.floor(log2MagnitudeSquared / 2);
+  while (comparePositiveRationalToPowerOfTwo(magnitudeSquared, 2 * exponent) < 0) {
+    exponent -= 1;
+  }
+  while (comparePositiveRationalToPowerOfTwo(magnitudeSquared, 2 * (exponent + 1)) >= 0) {
+    exponent += 1;
+  }
+  return exponent;
+};
+
+const applyBinaryOctaveCycleWrapToComplex = (
+  total: Extract<GameState["calculator"]["total"], { kind: "complex" }>,
+): EvaluatedExecution => {
+  const re = total.value.re;
+  const im = total.value.im;
+  if (re.kind !== "rational" || im.kind !== "rational") {
+    return toAmbiguousExecution();
+  }
+  if (re.value.num === 0n && im.value.num === 0n) {
+    return { nextTotal: total };
+  }
+  const exponent = resolveComplexMagnitudeBinaryExponent(re.value, im.value);
+  if (exponent === null) {
+    return { nextTotal: total };
+  }
+  const wrappedExponent = wrapBinaryOctaveExponent(exponent);
+  const exponentDelta = wrappedExponent - exponent;
+  if (exponentDelta === 0) {
+    return { nextTotal: total };
+  }
+  const nextRe = toRationalScalarValue(scaleRationalByPowerOfTwo(re.value, exponentDelta));
+  const nextIm = toRationalScalarValue(scaleRationalByPowerOfTwo(im.value, exponentDelta));
+  return {
+    nextTotal: toComplexCalculatorValue(nextRe, nextIm),
+  };
+};
+
+const applyComponentWrapToComplex = (
+  total: Extract<GameState["calculator"]["total"], { kind: "complex" }>,
+  mode: "delta_range_clamp" | "mod_zero_to_delta",
+  boundary: bigint,
+): EvaluatedExecution => {
+  const re = total.value.re;
+  const im = total.value.im;
+  if (re.kind !== "rational" || im.kind !== "rational") {
+    return toAmbiguousExecution();
+  }
+  const wrap = mode === "mod_zero_to_delta"
+    ? applyModZeroToDeltaToRational
+    : applyDeltaRangeClampToRational;
+  return {
+    nextTotal: toComplexCalculatorValue(
+      toRationalScalarValue(wrap(re.value, boundary)),
+      toRationalScalarValue(wrap(im.value, boundary)),
+    ),
+  };
+};
+
 const applyOverflowPolicy = (value: RationalValue, maxDigits: number, radix: number = 10): EvaluatedExecution => {
   const boundary = computeOverflowBoundary(maxDigits, radix);
   if (!exceedsMagnitudeBoundary(value, boundary)) {
@@ -734,24 +883,30 @@ const applyWrapStage = (
   maxDigits: number,
   radix: number = 10,
 ): EvaluatedExecution => {
+  if (mode === "binary_octave_cycle") {
+    if (total.kind === "complex") {
+      return applyBinaryOctaveCycleWrapToComplex(total);
+    }
+    if (!isRationalCalculatorValue(total)) {
+      return { nextTotal: total };
+    }
+    return { nextTotal: toRationalCalculatorValue(applyBinaryOctaveCycleWrap(total.value)) };
+  }
+  const boundary = computeOverflowBoundary(maxDigits, radix);
+  if (total.kind === "complex") {
+    if (mode === "mod_zero_to_delta" || mode === "delta_range_clamp") {
+      return applyComponentWrapToComplex(total, mode, boundary);
+    }
+    return toAmbiguousExecution();
+  }
   if (!isRationalCalculatorValue(total)) {
     return { nextTotal: total };
   }
   const value = total.value;
-  if (mode === "binary_octave_cycle") {
-    return { nextTotal: toRationalCalculatorValue(applyBinaryOctaveCycleWrap(value)) };
+  if (mode === "mod_zero_to_delta") {
+    return { nextTotal: toRationalCalculatorValue(applyModZeroToDeltaToRational(value, boundary)) };
   }
-  const boundary = computeOverflowBoundary(maxDigits, radix);
-  if (value.den === 1n) {
-    if (mode === "mod_zero_to_delta") {
-      const wrapped = euclideanModuloBigInt(value.num, boundary);
-      return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
-    }
-    const ringWidth = boundary * 2n;
-    const wrapped = euclideanModuloBigInt(value.num + boundary, ringWidth) - boundary;
-    return { nextTotal: toRationalCalculatorValue({ num: wrapped, den: 1n }) };
-  }
-  return applyOverflowPolicy(value, maxDigits, radix);
+  return { nextTotal: toRationalCalculatorValue(applyDeltaRangeClampToRational(value, boundary)) };
 };
 
 const markOverflowErrorSeen = (state: GameState): GameState => {
@@ -1315,8 +1470,8 @@ const resolveExecutionBuildForMode = (
   if (mode !== "inverse") {
     return { runtime: { kind: "forward", built: buildReducerExecutionPlan(state, seedTotal) } };
   }
-  const hasWrapStage = buildReducerExecutionPlan(state, seedTotal, state.calculator.operationSlots).wrapStageMode !== null;
-  const inversePlan = resolveRollInversePlan(state.calculator.operationSlots, hasWrapStage);
+  const wrapStageMode = resolveExecutionPlanIRWrapStageMode(state);
+  const inversePlan = resolveRollInversePlan(state.calculator.operationSlots, wrapStageMode);
   if (!inversePlan.ok) {
     return {
       runtime: { kind: "inverse", stages: [] },
@@ -1401,6 +1556,14 @@ const evaluateInverseStageAt = (
   }
   if (stage.kind === "slot") {
     return evaluateExecutionOutcomeForSlots(state, currentTotal, [stage.slot]);
+  }
+  if (stage.kind === "wrap_inverse") {
+    return applyWrapStage(
+      currentTotal,
+      stage.mode,
+      state.unlocks.maxTotalDigits,
+      getDisplayRadix(state),
+    );
   }
   if (stage.kind === "divide_by_i") {
     if (currentTotal.kind === "nan") {

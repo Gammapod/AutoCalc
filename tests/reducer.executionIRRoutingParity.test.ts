@@ -1,9 +1,20 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
-import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG } from "../src/domain/state.js";
+import {
+  BINARY_OCTAVE_CYCLE_FLAG,
+  DELTA_RANGE_CLAMP_FLAG,
+  EXECUTION_PAUSE_EQUALS_FLAG,
+  MOD_ZERO_TO_DELTA_FLAG,
+} from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
-import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import {
+  toExplicitComplexCalculatorValue,
+  toExpressionScalarValue,
+  toRationalCalculatorValue,
+  toRationalScalarValue,
+} from "../src/domain/calculatorValue.js";
+import { symbolicExpr } from "../src/domain/expression.js";
 import { materializeCalculatorG } from "../src/domain/multiCalculator.js";
 import type { Action, GameState } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
@@ -39,7 +50,7 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
       },
       execution: {
         ...legacyInitialState().unlocks.execution,
-        ...executionUnlockPatch([["exec_equals", true], ["exec_step_through", true]]),
+        ...executionUnlockPatch([["exec_equals", true], ["exec_step_through", true], ["exec_roll_inverse", true]]),
       },
       slotOperators: {
         ...legacyInitialState().unlocks.slotOperators,
@@ -90,6 +101,99 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
   assert.equal(autoTickTerminal.calculator.stepProgress.active, false, "equals-toggle auto-step clears progress at terminal stage");
   assert.deepEqual(autoTickTerminal.calculator.total, r(-98n), "equals-toggle auto-step terminal total matches wrap-tail semantics");
   assert.equal(autoTickTerminal.calculator.rollEntries.length, 2, "equals-toggle auto-step terminal commit remains single seed/result pair");
+
+  const inverseEnabled = reducer(base, { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse });
+  assert.equal(inverseEnabled.calculator.stepProgress.mode, "inverse", "roll-inverse enables inverse step mode even when wrap tail exists");
+  const inversePreview = reducer(inverseEnabled, { type: "PRESS_KEY", key: KEY_ID.exec_step_through });
+  assert.equal(inversePreview.calculator.stepProgress.active, true, "inverse step-through starts staged inverse execution");
+  assert.deepEqual(inversePreview.calculator.stepProgress.currentTotal, r(-99n), "inverse wrap stage projects to canonical principal interval");
+
+  const complexWrapBase: GameState = {
+    ...base,
+    calculator: {
+      ...base.calculator,
+      total: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 150n, den: 1n }),
+        toRationalScalarValue({ num: -150n, den: 1n }),
+      ),
+      operationSlots: [],
+      rollEntries: [],
+      draftingSlot: null,
+    },
+  };
+  const complexDeltaWrapped = reducer(complexWrapBase, { type: "PRESS_KEY", key: KEY_ID.exec_equals });
+  assert.deepEqual(
+    complexDeltaWrapped.calculator.total,
+    toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: -48n, den: 1n }),
+      toRationalScalarValue({ num: 48n, den: 1n }),
+    ),
+    "delta wrap applies principal interval projection independently to complex components",
+  );
+
+  const complexModWrapped = reducer(
+    {
+      ...complexWrapBase,
+      ui: {
+        ...complexWrapBase.ui,
+        buttonFlags: {
+          [MOD_ZERO_TO_DELTA_FLAG]: true,
+        },
+      },
+    },
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    complexModWrapped.calculator.total,
+    toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 51n, den: 1n }),
+      toRationalScalarValue({ num: 48n, den: 1n }),
+    ),
+    "mod wrap applies principal interval projection independently to complex components",
+  );
+
+  const complexInexact = reducer(
+    {
+      ...complexWrapBase,
+      calculator: {
+        ...complexWrapBase.calculator,
+        total: toExplicitComplexCalculatorValue(
+          toExpressionScalarValue(symbolicExpr("pi")),
+          toRationalScalarValue({ num: 0n, den: 1n }),
+        ),
+      },
+    },
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.equal(complexInexact.calculator.total.kind, "nan", "exact-only wrap policy yields ambiguous NaN for non-exact complex component wraps");
+
+  const complexOctaveWrapped = reducer(
+    {
+      ...complexWrapBase,
+      ui: {
+        ...complexWrapBase.ui,
+        buttonFlags: {
+          [BINARY_OCTAVE_CYCLE_FLAG]: true,
+        },
+      },
+      calculator: {
+        ...complexWrapBase.calculator,
+        total: toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 48n, den: 1n }),
+          toRationalScalarValue({ num: 64n, den: 1n }),
+        ),
+      },
+    },
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    complexOctaveWrapped.calculator.total,
+    toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 3n, den: 16n }),
+      toRationalScalarValue({ num: 1n, den: 4n }),
+    ),
+    "octave wrap projects complex magnitude into principal octave while preserving direction",
+  );
 
   const executionSeeds = [1103, 2207, 3313] as const;
   const runTrace = (seed: number): GameState => {

@@ -135,9 +135,63 @@ export const buildRollViewModel = (rollEntries: RollEntry[]): RollViewModel => {
 export const getRollLineClassName = (row: RollRow): string =>
   row.remainder || row.errorCode ? "roll-line roll-line--with-remainder" : "roll-line";
 
-const DELTA_WRAP_SUFFIX = " [ + \u{1D6FF} \u27E1 2\u{1D6FF} \u2212 \u{1D6FF} ]";
-const MOD_ZERO_TO_DELTA_SUFFIX = " [ \u27E1 \u{1D6FF} ]";
-const BINARY_OCTAVE_CYCLE_SUFFIX = " [ \u{1D106} ]";
+const toSuperscript = (source: string): string => source
+  .split("")
+  .map((char) => {
+    if (char === "0") {
+      return "⁰";
+    }
+    if (char === "1") {
+      return "¹";
+    }
+    if (char === "2") {
+      return "²";
+    }
+    if (char === "3") {
+      return "³";
+    }
+    if (char === "4") {
+      return "⁴";
+    }
+    if (char === "5") {
+      return "⁵";
+    }
+    if (char === "6") {
+      return "⁶";
+    }
+    if (char === "7") {
+      return "⁷";
+    }
+    if (char === "8") {
+      return "⁸";
+    }
+    if (char === "9") {
+      return "⁹";
+    }
+    if (char === "-") {
+      return "⁻";
+    }
+    return char;
+  })
+  .join("");
+
+const formatWrapBoundaryExpr = (state: GameState): string => {
+  const radix = state.settings.base === "base2" ? 2 : 10;
+  const delta = state.unlocks.maxTotalDigits;
+  return `${radix.toString()}${toSuperscript(delta.toString())}-1`;
+};
+
+const buildDeltaWrapDisplayText = (state: GameState): string => {
+  const boundary = formatWrapBoundaryExpr(state);
+  return `\ --> [-${boundary},${boundary})`;
+};
+
+const buildModWrapDisplayText = (state: GameState): string => {
+  const boundary = formatWrapBoundaryExpr(state);
+  return `\ --> [0,${boundary})`;
+};
+
+const BINARY_OCTAVE_CYCLE_DISPLAY = "--> [A0, A8)";
 
 export type OperationSlotDisplayModel = {
   base: string;
@@ -217,21 +271,21 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
   const hasNoCommittedOrDraftedSlots = operationSlotCount === 0 && state.calculator.draftingSlot === null;
   if (modZeroToDeltaEnabled) {
     if (hasNoCommittedOrDraftedSlots) {
-      return withDisplayParts("_ [ \u27E1 \u{1D6FF} ]", symbol, null, stepTargetTokenIndex);
+      return withDisplayParts(`_ ${buildModWrapDisplayText(state)}`, symbol, null, stepTargetTokenIndex);
     }
-    return withDisplayParts(base, symbol, MOD_ZERO_TO_DELTA_SUFFIX, stepTargetTokenIndex);
+    return withDisplayParts(base, symbol, ` ${buildModWrapDisplayText(state)}`, stepTargetTokenIndex);
   }
   if (deltaWrapEnabled) {
     if (hasNoCommittedOrDraftedSlots) {
-      return withDisplayParts("_ [ + \u{1D6FF} \u27E1 2\u{1D6FF} - \u{1D6FF} ]", symbol, null, stepTargetTokenIndex);
+      return withDisplayParts(`_ ${buildDeltaWrapDisplayText(state)}`, symbol, null, stepTargetTokenIndex);
     }
-    return withDisplayParts(base, symbol, DELTA_WRAP_SUFFIX, stepTargetTokenIndex);
+    return withDisplayParts(base, symbol, ` ${buildDeltaWrapDisplayText(state)}`, stepTargetTokenIndex);
   }
   if (binaryOctaveCycleEnabled) {
     if (hasNoCommittedOrDraftedSlots) {
-      return withDisplayParts("_ [ \u{1D106} ]", symbol, null, stepTargetTokenIndex);
+      return withDisplayParts(`_ ${BINARY_OCTAVE_CYCLE_DISPLAY}`, symbol, null, stepTargetTokenIndex);
     }
-    return withDisplayParts(base, symbol, BINARY_OCTAVE_CYCLE_SUFFIX, stepTargetTokenIndex);
+    return withDisplayParts(base, symbol, ` ${BINARY_OCTAVE_CYCLE_DISPLAY}`, stepTargetTokenIndex);
   }
   return withDisplayParts(base, symbol, null, stepTargetTokenIndex);
 };

@@ -1,7 +1,9 @@
 import type { Slot } from "./types.js";
 import { KEY_ID } from "./keyPresentation.js";
+import type { WrapStageMode } from "./executionPlanIR.js";
 
 export type InverseExecutionStage =
+  | { kind: "wrap_inverse"; mode: WrapStageMode }
   | { kind: "slot"; slot: Slot }
   | { kind: "pow_root"; exponent: bigint; reciprocal: boolean }
   | { kind: "divide_by_i" }
@@ -72,12 +74,12 @@ const invertSlot = (slot: Slot): InverseExecutionStage | null => {
 
 export const resolveRollInversePlan = (
   operationSlots: Slot[],
-  hasWrapStage: boolean,
+  wrapStageMode: WrapStageMode | null,
 ): RollInversePlanResolution => {
-  if (hasWrapStage) {
-    return { ok: false, reason: "ambiguous" };
-  }
   const inverseStages: InverseExecutionStage[] = [];
+  if (wrapStageMode) {
+    inverseStages.push({ kind: "wrap_inverse", mode: wrapStageMode });
+  }
   for (let index = operationSlots.length - 1; index >= 0; index -= 1) {
     const inverted = invertSlot(operationSlots[index]!);
     if (!inverted) {

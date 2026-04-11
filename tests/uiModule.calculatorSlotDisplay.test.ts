@@ -44,6 +44,11 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
   const targetedWrapTail = buildOperationSlotDisplayModel(withWrapTailTarget);
   assert.equal(targetedWrapTail.stepTargetTokenIndex, 1, "step target points to synthetic wrap tail after slot stages");
   assert.equal(Boolean(targetedWrapTail.deltaWrapSuffix), true, "wrap suffix remains visible for trailing wrap stage");
+  assert.equal(
+    targetedWrapTail.deltaWrapSuffix?.includes("--> [-10²⁻¹,10²⁻¹)"),
+    true,
+    "delta wrap suffix renders concrete superscripted boundary interval",
+  );
 
   const withOnlyWrapStage: GameState = {
     ...base,
@@ -78,6 +83,11 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
   const onlyWrapStage = buildOperationSlotDisplayModel(withOnlyWrapStage);
   assert.equal(onlyWrapStage.stepTargetTokenIndex, 0, "single synthetic wrap stage is targetable when no user slots exist");
   assert.equal(onlyWrapStage.deltaWrapSuffix, null, "single-stage wrap rendering uses inline base token");
+  assert.equal(
+    onlyWrapStage.base.includes("--> [-10²⁻¹,10²⁻¹)"),
+    true,
+    "single-stage wrap rendering uses concrete superscripted delta interval",
+  );
 
   const withExpansionNoStepKey: GameState = {
     ...base,
