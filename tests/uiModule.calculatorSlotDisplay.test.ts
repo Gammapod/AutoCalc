@@ -44,8 +44,10 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
   const targetedWrapTail = buildOperationSlotDisplayModel(withWrapTailTarget);
   assert.equal(targetedWrapTail.stepTargetTokenIndex, 1, "step target points to synthetic wrap tail after slot stages");
   assert.equal(Boolean(targetedWrapTail.deltaWrapSuffix), true, "wrap suffix remains visible for trailing wrap stage");
+  assert.equal(targetedWrapTail.wrapTail?.kind, "wrapTail", "wrap mode exposes dedicated wrap-tail token");
+  assert.equal(targetedWrapTail.slotTokens.length, 1, "slot model emits dedicated slot tokens");
   assert.equal(
-    targetedWrapTail.deltaWrapSuffix?.includes("--> [-10²⁻¹,10²⁻¹)"),
+    targetedWrapTail.deltaWrapSuffix?.includes("--> [-10\u00B2\u207B\u00B9,10\u00B2\u207B\u00B9)"),
     true,
     "delta wrap suffix renders concrete superscripted boundary interval",
   );
@@ -82,11 +84,26 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
   };
   const onlyWrapStage = buildOperationSlotDisplayModel(withOnlyWrapStage);
   assert.equal(onlyWrapStage.stepTargetTokenIndex, 0, "single synthetic wrap stage is targetable when no user slots exist");
-  assert.equal(onlyWrapStage.deltaWrapSuffix, null, "single-stage wrap rendering uses inline base token");
+  assert.equal(Boolean(onlyWrapStage.deltaWrapSuffix), true, "single-stage wrap rendering appends normalization suffix without removing slot strip");
   assert.equal(
-    onlyWrapStage.base.includes("--> [-10²⁻¹,10²⁻¹)"),
+    onlyWrapStage.displayFunctionBase.includes("[ _ _ ]"),
     true,
-    "single-stage wrap rendering uses concrete superscripted delta interval",
+    "single-stage wrap rendering keeps empty slot placeholders visible",
+  );
+  assert.equal(
+    onlyWrapStage.deltaWrapSuffix?.includes("--> [-10\u00B2\u207B\u00B9,10\u00B2\u207B\u00B9)"),
+    true,
+    "single-stage wrap rendering keeps canonical wrap suffix visible",
+  );
+  assert.equal(
+    onlyWrapStage.wrapTail?.compactText?.includes("[-10\u00B2\u207B\u00B9,10\u00B2\u207B\u00B9)"),
+    true,
+    "wrap-tail token includes compact interval variant for responsive compaction",
+  );
+  assert.equal(
+    onlyWrapStage.base.includes("[ _ _ ]"),
+    true,
+    "single-stage base rendering preserves slot placeholders",
   );
 
   const withExpansionNoStepKey: GameState = {

@@ -13,6 +13,7 @@ import {
   buildOperationSlotDisplayModel,
   buildRollViewModel,
   getRollLineClassName,
+  type FunctionBarWrapTailToken,
 } from "./viewModel.js";
 import {
   bindOrUpdateSlotMarquee,
@@ -45,52 +46,49 @@ const STEP_BODY_HIGHLIGHT_CLASS = "keypad-step-body-highlight";
 
 const isFeedRollVisible = (state: GameState): boolean => state.settings.visualizer === "feed";
 
-const appendSlotTrackBase = (
+const appendSlotTrackTokens = (
   parent: HTMLElement,
-  base: string,
+  functionPrefix: string,
+  slotTokens: readonly { text: string }[],
+  executableSlotCount: number,
   stepTargetTokenIndex: number | null,
 ): number => {
-  const tokenRegex = /\[[^\]]*\]/g;
-  const tokenMatches = base.match(tokenRegex);
-  const tokenCount = tokenMatches ? tokenMatches.length : 0;
-  if (stepTargetTokenIndex === null) {
-    const textNode = document.createElement("span");
-    textNode.textContent = base;
-    parent.appendChild(textNode);
-    return tokenCount;
-  }
-
-  let tokenIndex = 0;
-  let cursor = 0;
-  let match: RegExpExecArray | null = tokenRegex.exec(base);
-  while (match) {
-    const start = match.index;
-    const end = tokenRegex.lastIndex;
-    if (start > cursor) {
-      const textPrefix = document.createElement("span");
-      textPrefix.textContent = base.slice(cursor, start);
-      parent.appendChild(textPrefix);
-    }
-
+  const prefix = document.createElement("span");
+  prefix.textContent = functionPrefix;
+  parent.appendChild(prefix);
+  for (let tokenIndex = 0; tokenIndex < slotTokens.length; tokenIndex += 1) {
+    const spacer = document.createElement("span");
+    spacer.textContent = " ";
+    parent.appendChild(spacer);
     const token = document.createElement("span");
     token.className = "slot-display__token";
-    if (tokenIndex === stepTargetTokenIndex) {
+    if (tokenIndex < executableSlotCount && tokenIndex === stepTargetTokenIndex) {
       token.classList.add("slot-display__token--step-target");
     }
-    token.textContent = base.slice(start, end);
+    token.textContent = slotTokens[tokenIndex]!.text;
     parent.appendChild(token);
-
-    tokenIndex += 1;
-    cursor = end;
-    match = tokenRegex.exec(base);
   }
+  return slotTokens.length;
+};
 
-  if (cursor < base.length) {
-    const textSuffix = document.createElement("span");
-    textSuffix.textContent = base.slice(cursor);
-    parent.appendChild(textSuffix);
+const applyWrapTailCompaction = (
+  viewport: HTMLElement,
+  track: HTMLElement,
+  wrapEl: HTMLElement,
+  wrapTail: FunctionBarWrapTailToken,
+): void => {
+  const variants = [wrapTail.fullText, wrapTail.compactText, wrapTail.iconText];
+  wrapEl.setAttribute("aria-label", wrapTail.ariaLabel);
+  wrapEl.setAttribute("title", wrapTail.ariaLabel);
+  let selected = variants[0]!;
+  wrapEl.textContent = selected;
+  for (let index = 1; index < variants.length; index += 1) {
+    if (track.scrollWidth <= viewport.clientWidth) {
+      break;
+    }
+    selected = variants[index]!;
+    wrapEl.textContent = selected;
   }
-  return tokenCount;
 };
 
 
@@ -150,16 +148,28 @@ export const renderCalculatorV2Module = (
   const track = document.createElement("span");
   track.className = "slot-display__track";
   const slotBase = document.createElement("span");
-  const baseTokenCount = appendSlotTrackBase(slotBase, slotDisplay.displayFunctionBase, slotDisplay.stepTargetTokenIndex);
+  let wrapElForCompaction: HTMLElement | null = null;
+  let wrapTailForCompaction: FunctionBarWrapTailToken | null = null;
+  appendSlotTrackTokens(
+    slotBase,
+    slotDisplay.functionPrefix,
+    slotDisplay.slotTokens,
+    slotDisplay.executableSlotCount,
+    slotDisplay.stepTargetTokenIndex,
+  );
   track.appendChild(slotBase);
-  if (slotDisplay.deltaWrapSuffix) {
+  if (slotDisplay.wrapTail) {
+    const spacer = document.createElement("span");
+    spacer.textContent = " ";
+    track.appendChild(spacer);
     const deltaWrap = document.createElement("span");
-    deltaWrap.className = "slot-display__delta-wrap";
-    if (slotDisplay.stepTargetTokenIndex !== null && slotDisplay.stepTargetTokenIndex === baseTokenCount) {
+    deltaWrap.className = "slot-display__wrap-chip";
+    if (slotDisplay.stepTargetTokenIndex !== null && slotDisplay.stepTargetTokenIndex === slotDisplay.executableSlotCount) {
       deltaWrap.classList.add("slot-display__token--step-target");
     }
-    deltaWrap.textContent = slotDisplay.deltaWrapSuffix;
     track.appendChild(deltaWrap);
+    wrapElForCompaction = deltaWrap;
+    wrapTailForCompaction = slotDisplay.wrapTail;
   }
   const ellipsis = document.createElement("span");
   ellipsis.className = "slot-display__ellipsis";
@@ -169,6 +179,9 @@ export const renderCalculatorV2Module = (
   fixedSeed.textContent = slotDisplay.fixedSeedLabel;
   viewport.appendChild(track);
   slotEl.appendChild(viewport);
+  if (wrapElForCompaction && wrapTailForCompaction) {
+    applyWrapTailCompaction(viewport, track, wrapElForCompaction, wrapTailForCompaction);
+  }
   slotEl.appendChild(ellipsis);
   slotEl.appendChild(fixedSeed);
   bindOrUpdateSlotMarquee(root, { slotEl, viewportEl: viewport, trackEl: track });

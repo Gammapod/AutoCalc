@@ -1,5 +1,6 @@
 import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
 import { getExecutionStageCount, resolveWrapStageMode } from "../../../domain/executionPlan.js";
+import type { WrapStageMode } from "../../../domain/executionPlanIR.js";
 import { resolveFormulaSymbol } from "../../../domain/multiCalculator.js";
 import type { CalculatorValue, CalculatorState, GameState, RollEntry } from "../../../domain/types.js";
 import {
@@ -139,37 +140,37 @@ const toSuperscript = (source: string): string => source
   .split("")
   .map((char) => {
     if (char === "0") {
-      return "⁰";
+      return "\u2070";
     }
     if (char === "1") {
-      return "¹";
+      return "\u00B9";
     }
     if (char === "2") {
-      return "²";
+      return "\u00B2";
     }
     if (char === "3") {
-      return "³";
+      return "\u00B3";
     }
     if (char === "4") {
-      return "⁴";
+      return "\u2074";
     }
     if (char === "5") {
-      return "⁵";
+      return "\u2075";
     }
     if (char === "6") {
-      return "⁶";
+      return "\u2076";
     }
     if (char === "7") {
-      return "⁷";
+      return "\u2077";
     }
     if (char === "8") {
-      return "⁸";
+      return "\u2078";
     }
     if (char === "9") {
-      return "⁹";
+      return "\u2079";
     }
     if (char === "-") {
-      return "⁻";
+      return "\u207B";
     }
     return char;
   })
@@ -178,60 +179,146 @@ const toSuperscript = (source: string): string => source
 const formatWrapBoundaryExpr = (state: GameState): string => {
   const radix = state.settings.base === "base2" ? 2 : 10;
   const delta = state.unlocks.maxTotalDigits;
-  return `${radix.toString()}${toSuperscript(delta.toString())}-1`;
+  return `${radix.toString()}${toSuperscript(delta.toString())}${toSuperscript("-1")}`;
 };
 
-const buildDeltaWrapDisplayText = (state: GameState): string => {
-  const boundary = formatWrapBoundaryExpr(state);
-  return `--> [-${boundary},${boundary})`;
-};
-
-const buildModWrapDisplayText = (state: GameState): string => {
-  const boundary = formatWrapBoundaryExpr(state);
-  return `--> [0,${boundary})`;
-};
-
-const BINARY_OCTAVE_CYCLE_DISPLAY = "--> [A0, A8)";
+const BINARY_OCTAVE_CYCLE_DISPLAY = "--> [A0,A8)";
 
 export type OperationSlotDisplayModel = {
   base: string;
   displayFunctionBase: string;
   fixedSeedLabel: string;
+  functionPrefix: string;
+  seedToken: FunctionBarSeedToken;
+  slotTokens: FunctionBarSlotToken[];
+  executableSlotCount: number;
+  wrapTail: FunctionBarWrapTailToken | null;
   deltaWrapSuffix: string | null;
   stepTargetTokenIndex: number | null;
+};
+
+export type FunctionBarSeedToken = {
+  kind: "seed";
+  text: string;
+};
+
+export type FunctionBarSlotToken = {
+  kind: "slot";
+  text: string;
+};
+
+export type FunctionBarWrapTailToken = {
+  kind: "wrapTail";
+  mode: WrapStageMode;
+  fullText: string;
+  compactText: string;
+  iconText: string;
+  ariaLabel: string;
+};
+
+const parseSeedAndSlotTokensFromBase = (
+  base: string,
+): { seedTokenText: string; slotTokenTexts: string[] } => {
+  const trimmed = base.trim();
+  if (trimmed.length === 0 || trimmed === "(no operation slots)") {
+    return { seedTokenText: "_", slotTokenTexts: [] };
+  }
+  const firstTokenStart = trimmed.indexOf("[");
+  const seedTokenText = (firstTokenStart < 0 ? trimmed : trimmed.slice(0, firstTokenStart)).trim() || "_";
+  const slotTokenTexts = trimmed.match(/\[[^\]]*\]/g) ?? [];
+  return { seedTokenText, slotTokenTexts };
+};
+
+const toWrapTailToken = (
+  state: GameState,
+  mode: WrapStageMode,
+): FunctionBarWrapTailToken => {
+  if (mode === "delta_range_clamp") {
+    const boundary = formatWrapBoundaryExpr(state);
+    const full = `--> [-${boundary},${boundary})`;
+    return {
+      kind: "wrapTail",
+      mode,
+      fullText: full,
+      compactText: `[-${boundary},${boundary})`,
+      iconText: "[\u2013,+)",
+      ariaLabel: full,
+    };
+  }
+  if (mode === "mod_zero_to_delta") {
+    const boundary = formatWrapBoundaryExpr(state);
+    const full = `--> [0,${boundary})`;
+    return {
+      kind: "wrapTail",
+      mode,
+      fullText: full,
+      compactText: `[0,${boundary})`,
+      iconText: "[0,+)",
+      ariaLabel: full,
+    };
+  }
+  const full = BINARY_OCTAVE_CYCLE_DISPLAY;
+  return {
+    kind: "wrapTail",
+    mode,
+    fullText: full,
+    compactText: "[A0,A8)",
+    iconText: "\u{1D106}",
+    ariaLabel: full,
+  };
 };
 
 const toFunctionBuilderDisplayParts = (
   base: string,
   symbol: "f" | "g",
-): { displayFunctionBase: string; fixedSeedLabel: string } => {
+): {
+    functionPrefix: string;
+    seedToken: FunctionBarSeedToken;
+    slotTokens: FunctionBarSlotToken[];
+    displayFunctionBase: string;
+    fixedSeedLabel: string;
+  } => {
   const sym = symbol === "g" ? "g" : "f";
   const seedPrefix = `${sym}\u2080`;
   const functionPrefix = symbol === "g" ? `${sym}\u2093 = ${sym}\u2093\u208B\u2081` : `${sym}\u2093 = ${sym}\u2080`;
-  if (base === "(no operation slots)") {
-    return { displayFunctionBase: functionPrefix, fixedSeedLabel: `| ${seedPrefix} = _` };
-  }
-  const firstTokenStart = base.indexOf(" [");
-  const seedToken = firstTokenStart < 0 ? base.trim() : base.slice(0, firstTokenStart).trim();
-  const slotTokens = firstTokenStart < 0 ? "" : base.slice(firstTokenStart).trim();
+  const parsed = parseSeedAndSlotTokensFromBase(base);
+  const seedToken: FunctionBarSeedToken = {
+    kind: "seed",
+    text: parsed.seedTokenText,
+  };
+  const slotTokens = parsed.slotTokenTexts.map<FunctionBarSlotToken>((text) => ({
+    kind: "slot",
+    text,
+  }));
+  const slotTokenText = slotTokens.map((token) => token.text).join(" ");
+  const displayFunctionBase = slotTokenText ? `${functionPrefix} ${slotTokenText}` : functionPrefix;
   return {
-    displayFunctionBase: slotTokens ? `${functionPrefix} ${slotTokens}` : functionPrefix,
-    fixedSeedLabel: `| ${seedPrefix} = ${seedToken || "_"}`,
+    functionPrefix,
+    seedToken,
+    slotTokens,
+    displayFunctionBase,
+    fixedSeedLabel: `| ${seedPrefix} = ${seedToken.text || "_"}`,
   };
 };
 
 const withDisplayParts = (
   base: string,
   symbol: "f" | "g",
-  deltaWrapSuffix: string | null,
+  executableSlotCount: number,
+  wrapTail: FunctionBarWrapTailToken | null,
   stepTargetTokenIndex: number | null,
 ): OperationSlotDisplayModel => {
   const parts = toFunctionBuilderDisplayParts(base, symbol);
   return {
     base,
+    functionPrefix: parts.functionPrefix,
+    seedToken: parts.seedToken,
+    slotTokens: parts.slotTokens,
+    executableSlotCount,
+    wrapTail,
     displayFunctionBase: parts.displayFunctionBase,
     fixedSeedLabel: parts.fixedSeedLabel,
-    deltaWrapSuffix,
+    deltaWrapSuffix: wrapTail ? ` ${wrapTail.fullText}` : null,
     stepTargetTokenIndex,
   };
 };
@@ -265,29 +352,8 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
         ? operationSlotCount
         : null;
   const wrapMode = resolveWrapStageMode(state);
-  const deltaWrapEnabled = wrapMode === "delta_range_clamp";
-  const modZeroToDeltaEnabled = wrapMode === "mod_zero_to_delta";
-  const binaryOctaveCycleEnabled = wrapMode === "binary_octave_cycle";
-  const hasNoCommittedOrDraftedSlots = operationSlotCount === 0 && state.calculator.draftingSlot === null;
-  if (modZeroToDeltaEnabled) {
-    if (hasNoCommittedOrDraftedSlots) {
-      return withDisplayParts(`_ ${buildModWrapDisplayText(state)}`, symbol, null, stepTargetTokenIndex);
-    }
-    return withDisplayParts(base, symbol, ` ${buildModWrapDisplayText(state)}`, stepTargetTokenIndex);
-  }
-  if (deltaWrapEnabled) {
-    if (hasNoCommittedOrDraftedSlots) {
-      return withDisplayParts(`_ ${buildDeltaWrapDisplayText(state)}`, symbol, null, stepTargetTokenIndex);
-    }
-    return withDisplayParts(base, symbol, ` ${buildDeltaWrapDisplayText(state)}`, stepTargetTokenIndex);
-  }
-  if (binaryOctaveCycleEnabled) {
-    if (hasNoCommittedOrDraftedSlots) {
-      return withDisplayParts(`_ ${BINARY_OCTAVE_CYCLE_DISPLAY}`, symbol, null, stepTargetTokenIndex);
-    }
-    return withDisplayParts(base, symbol, ` ${BINARY_OCTAVE_CYCLE_DISPLAY}`, stepTargetTokenIndex);
-  }
-  return withDisplayParts(base, symbol, null, stepTargetTokenIndex);
+  const wrapTail = wrapMode ? toWrapTailToken(state, wrapMode) : null;
+  return withDisplayParts(base, symbol, operationSlotCount, wrapTail, stepTargetTokenIndex);
 };
 
 export const buildOperationSlotDisplay = (state: GameState): string => {
@@ -297,3 +363,4 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
 
 export const formatKeyLabel = formatKeyLabelShared;
 export { formatKeyCellLabel } from "../calculatorStorageCore.js";
+
