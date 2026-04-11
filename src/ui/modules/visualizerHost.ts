@@ -146,6 +146,11 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
   const totalFooter = root.querySelector<HTMLElement>("[data-v2-total-footer]");
+  const setHidden = (el: HTMLElement | null, hidden: boolean): void => {
+    if (el) {
+      el.setAttribute("aria-hidden", hidden ? "true" : "false");
+    }
+  };
   if (host) {
     host.dataset.v2VisualizerPanel = "total";
     host.dataset.v2VisualizerTransition = "idle";
@@ -163,45 +168,18 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
     displayWindow.style.removeProperty(FIXED_WIDTH_VAR);
     displayWindow.style.removeProperty(PANEL_HEIGHT_VAR);
   }
-  if (graphDevice) {
-    graphDevice.setAttribute("aria-hidden", "true");
-  }
-  if (feedPanel) {
-    feedPanel.setAttribute("aria-hidden", "true");
-  }
-  if (totalPanel) {
-    totalPanel.setAttribute("aria-hidden", "false");
-  }
-  if (factorizationPanel) {
-    factorizationPanel.setAttribute("aria-hidden", "true");
-  }
-  if (titlePanel) {
-    titlePanel.setAttribute("aria-hidden", "true");
-  }
-  if (helpPanel) {
-    helpPanel.setAttribute("aria-hidden", "true");
-  }
-  if (statePanel) {
-    statePanel.setAttribute("aria-hidden", "true");
-  }
-  if (releaseNotesPanel) {
-    releaseNotesPanel.setAttribute("aria-hidden", "true");
-  }
-  if (numberLinePanel) {
-    numberLinePanel.setAttribute("aria-hidden", "true");
-  }
-  if (circlePanel) {
-    circlePanel.setAttribute("aria-hidden", "true");
-  }
-  if (algebraicPanel) {
-    algebraicPanel.setAttribute("aria-hidden", "true");
-  }
-  if (titlePanel) {
-    titlePanel.setAttribute("aria-hidden", "true");
-  }
-  if (totalFooter) {
-    totalFooter.setAttribute("aria-hidden", "false");
-  }
+  setHidden(graphDevice, true);
+  setHidden(feedPanel, true);
+  setHidden(totalPanel, false);
+  setHidden(factorizationPanel, true);
+  setHidden(titlePanel, true);
+  setHidden(helpPanel, true);
+  setHidden(statePanel, true);
+  setHidden(releaseNotesPanel, true);
+  setHidden(numberLinePanel, true);
+  setHidden(circlePanel, true);
+  setHidden(algebraicPanel, true);
+  setHidden(totalFooter, false);
 };
 
 const resolveHostScale = (): number => {
@@ -537,6 +515,11 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
   const activePanel = resolveActiveVisualizerPanel(state);
+  const setPanelVisible = (panelEl: HTMLElement | null, visible: boolean): void => {
+    if (panelEl) {
+      panelEl.setAttribute("aria-hidden", visible ? "false" : "true");
+    }
+  };
   applyFitContractState(host, activePanel);
   const transitionPhase = resolveTransitionPhase(runtime.previousActivePanel, activePanel);
   const previousPanel = runtime.previousActivePanel;
@@ -558,42 +541,17 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
     host.setAttribute("aria-hidden", "false");
   }
 
-  if (graphDevice) {
-    graphDevice.setAttribute("aria-hidden", activePanel === "graph" ? "false" : "true");
-  }
-  if (feedPanel) {
-    feedPanel.setAttribute("aria-hidden", activePanel === "feed" ? "false" : "true");
-  }
-  if (totalPanel) {
-    totalPanel.setAttribute("aria-hidden", "false");
-  }
-  if (factorizationPanel) {
-    factorizationPanel.setAttribute("aria-hidden", activePanel === "factorization" ? "false" : "true");
-  }
-  if (titlePanel) {
-    titlePanel.setAttribute("aria-hidden", activePanel === "title" ? "false" : "true");
-  }
-  if (helpPanel) {
-    helpPanel.setAttribute("aria-hidden", activePanel === "help" ? "false" : "true");
-  }
-  if (statePanel) {
-    statePanel.setAttribute("aria-hidden", activePanel === "state" ? "false" : "true");
-  }
-  if (releaseNotesPanel) {
-    releaseNotesPanel.setAttribute("aria-hidden", activePanel === "release_notes" ? "false" : "true");
-  }
-  if (numberLinePanel) {
-    numberLinePanel.setAttribute("aria-hidden", activePanel === "number_line" ? "false" : "true");
-  }
-  if (circlePanel) {
-    circlePanel.setAttribute("aria-hidden", activePanel === "circle" ? "false" : "true");
-  }
-  if (algebraicPanel) {
-    algebraicPanel.setAttribute("aria-hidden", activePanel === "algebraic" ? "false" : "true");
-  }
-  if (titlePanel) {
-    titlePanel.setAttribute("aria-hidden", activePanel === "title" ? "false" : "true");
-  }
+  setPanelVisible(graphDevice, activePanel === "graph");
+  setPanelVisible(feedPanel, activePanel === "feed");
+  setPanelVisible(totalPanel, true);
+  setPanelVisible(factorizationPanel, activePanel === "factorization");
+  setPanelVisible(titlePanel, activePanel === "title");
+  setPanelVisible(helpPanel, activePanel === "help");
+  setPanelVisible(statePanel, activePanel === "state");
+  setPanelVisible(releaseNotesPanel, activePanel === "release_notes");
+  setPanelVisible(numberLinePanel, activePanel === "number_line");
+  setPanelVisible(circlePanel, activePanel === "circle");
+  setPanelVisible(algebraicPanel, activePanel === "algebraic");
 
   for (const panel of VISUALIZER_REGISTRY) {
     if (panel.id === activePanel) {

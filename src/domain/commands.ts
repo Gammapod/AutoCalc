@@ -124,6 +124,55 @@ const resolveSubstepExecutedCount = (previous: GameState, next: GameState, actio
   return 1;
 };
 
+const resolveDispatchUiEffects = (
+  previousState: GameState,
+  nextState: GameState,
+  action: Action,
+): UiEffect[] => {
+  const uiEffects: UiEffect[] = [];
+  const policy = resolveExecutionPolicyForAction(previousState, action);
+  if (policy.decision.decision === "reject") {
+    uiEffects.push({ type: "execution_gate_rejected", calculatorId: policy.calculatorId });
+  }
+  if (action.type === "PRESS_KEY" && isKeyUsableForInput(previousState, action.key)) {
+    const intent = resolveSystemKeyIntent(action.key);
+    if (intent) {
+      uiEffects.push(mapSystemKeyIntentToUiEffect(intent));
+    }
+  }
+
+  const targetCalculatorId = resolveFeedbackTargetCalculatorId(previousState, action);
+  const previousTarget = resolveTargetCalculatorState(previousState, targetCalculatorId);
+  const nextTarget = resolveTargetCalculatorState(nextState, targetCalculatorId);
+  const builderChanged =
+    isBuilderFeedbackEligiblePress(action)
+    && (
+      hasBuilderChanged(previousTarget, nextTarget)
+      || (
+        isSeedSetOrBackspaceAction(action)
+        && isSeedEntryContext(previousTarget)
+        && hasSeedValueChanged(previousTarget, nextTarget)
+      )
+    );
+  if (builderChanged) {
+    uiEffects.push({ type: "builder_changed", calculatorId: targetCalculatorId });
+  }
+  if (hasMonitoredSettingsChanged(previousTarget, nextTarget)) {
+    uiEffects.push({ type: "settings_changed", calculatorId: targetCalculatorId });
+  }
+  if (hasRollUpdated(previousTarget, nextTarget)) {
+    uiEffects.push({ type: "roll_updated", calculatorId: targetCalculatorId });
+  }
+  const substepExecutedCount = resolveSubstepExecutedCount(previousTarget, nextTarget, action);
+  for (let index = 0; index < substepExecutedCount; index += 1) {
+    uiEffects.push({ type: "substep_executed", calculatorId: targetCalculatorId });
+  }
+  if (action.type !== "AUTO_STEP_TICK") {
+    uiEffects.push(resolveDomainDispatchInputFeedback(previousState, nextState, action, uiEffects));
+  }
+  return uiEffects;
+};
+
 export const executeCommand = (
   state: GameState | undefined,
   command: DomainCommand,
@@ -131,50 +180,10 @@ export const executeCommand = (
 ): ExecuteCommandResult => {
   const currentState = state;
   const uiEffects: UiEffect[] = [];
-  if (currentState && command.type === "DispatchAction") {
-    const policy = resolveExecutionPolicyForAction(currentState, command.action);
-    if (policy.decision.decision === "reject") {
-      uiEffects.push({ type: "execution_gate_rejected", calculatorId: policy.calculatorId });
-    }
-    if (command.action.type === "PRESS_KEY" && isKeyUsableForInput(currentState, command.action.key)) {
-      const intent = resolveSystemKeyIntent(command.action.key);
-      if (intent) {
-        uiEffects.push(mapSystemKeyIntentToUiEffect(intent));
-      }
-    }
-  }
   const event = eventFromAction(command.action);
   const nextState = applyEvent(state, event, { services: options.services });
   if (currentState && command.type === "DispatchAction") {
-    const targetCalculatorId = resolveFeedbackTargetCalculatorId(currentState, command.action);
-    const previousTarget = resolveTargetCalculatorState(currentState, targetCalculatorId);
-    const nextTarget = resolveTargetCalculatorState(nextState, targetCalculatorId);
-    const builderChanged =
-      isBuilderFeedbackEligiblePress(command.action)
-      && (
-        hasBuilderChanged(previousTarget, nextTarget)
-        || (
-          isSeedSetOrBackspaceAction(command.action)
-          && isSeedEntryContext(previousTarget)
-          && hasSeedValueChanged(previousTarget, nextTarget)
-        )
-      );
-    if (builderChanged) {
-      uiEffects.push({ type: "builder_changed", calculatorId: targetCalculatorId });
-    }
-    if (hasMonitoredSettingsChanged(previousTarget, nextTarget)) {
-      uiEffects.push({ type: "settings_changed", calculatorId: targetCalculatorId });
-    }
-    if (hasRollUpdated(previousTarget, nextTarget)) {
-      uiEffects.push({ type: "roll_updated", calculatorId: targetCalculatorId });
-    }
-    const substepExecutedCount = resolveSubstepExecutedCount(previousTarget, nextTarget, command.action);
-    for (let index = 0; index < substepExecutedCount; index += 1) {
-      uiEffects.push({ type: "substep_executed", calculatorId: targetCalculatorId });
-    }
-  }
-  if (currentState && command.type === "DispatchAction" && command.action.type !== "AUTO_STEP_TICK") {
-    uiEffects.push(resolveDomainDispatchInputFeedback(currentState, nextState, command.action, uiEffects));
+    uiEffects.push(...resolveDispatchUiEffects(currentState, nextState, command.action));
   }
   return { state: nextState, events: [event], uiEffects };
 };

@@ -54,10 +54,10 @@ Platform-specific visual divergence is allowed only outside these constraints.
 ## Test Contract Categories
 
 1. `contracts/ui-domain`: contract definition sanity checks.
-2. `contracts/parity-long-traces`: deterministic multi-step parity traces.
-3. `contracts/parity-seeded-fuzz`: reproducible seeded randomized parity runs.
-4. `contracts/ui-action-emission`: UI interaction to action mapping contracts.
-5. `contracts/execution-gate-parity`: execution-gated rejection parity and non-mutation contracts.
+2. `contracts/action-event-current`: current action/event contract symmetry.
+3. `contracts/domain-ui-effects-current`: domain dispatch to UI effect intent contracts.
+4. `contracts/catalog-canonical-guard`: canonical key/catalog/unlock contract guard.
+5. `contracts/no-legacy-symbols-guard`: guard against reintroduction of retired legacy symbols in active surfaces.
 
 ## Visualizer-Specific Test Coverage
 

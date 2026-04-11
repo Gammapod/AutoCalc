@@ -287,7 +287,6 @@ export type CalculatorState = {
 export type UnlockState = {
   valueAtoms: Record<ValueAtomKey, boolean>;
   valueCompose: Record<ValueComposeKey, boolean>;
-  // Legacy mirror kept for compatibility while tests and fixtures migrate.
   valueExpression: Record<ValueExpressionKey, boolean>;
   slotOperators: Record<SlotOperator, boolean>;
   unaryOperators: Record<UnaryOperatorKey, boolean>;

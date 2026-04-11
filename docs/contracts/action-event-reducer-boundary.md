@@ -27,6 +27,6 @@ This boundary is the authoritative path for app/runtime dispatch.
 
 ## Test enforcement
 
-- `contracts/action-event-round-trip`: action/event payload symmetry.
-- `v2/parity`, `contracts/parity-long-traces`, `contracts/parity-seeded-fuzz`: reducer-vs-command equivalence.
+- `contracts/action-event-current`: action/event payload symmetry for the current action vocabulary.
+- `contracts/domain-ui-effects-current`: command-dispatch UI intent/effect coverage for current runtime behavior.
 - `contracts/content-registry-boundary`: bans production `getContentProvider(...)` reads.

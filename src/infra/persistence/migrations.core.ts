@@ -1,5 +1,9 @@
-// Legacy migration API retained for compatibility with older tooling/tests.
-// Runtime save-load now uses current schema only and does not run historical migrations.
+import {
+  BINARY_MODE_FLAG,
+  DELTA_RANGE_CLAMP_FLAG,
+  SAVE_SCHEMA_VERSION,
+} from "../../domain/state.js";
+import { createDefaultCalculatorSettings } from "../../domain/settings.js";
 
 export type SerializableSlot = {
   operator: string;
@@ -23,4 +27,78 @@ export const isValidSchemaVersion = (version: unknown): version is number =>
 export const validateSerializableStateV3 = (state: unknown): state is SerializableStateV3 =>
   typeof state === "object" && state !== null;
 
-export const migrateToLatest = (_schemaVersion: number, _state: unknown): SerializableStateV14 | null => null;
+const LEGACY_FLAGS_REMOVED_IN_V22 = [BINARY_MODE_FLAG, DELTA_RANGE_CLAMP_FLAG] as const;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const dropLegacyFlagsFromUi = (ui: unknown): unknown => {
+  if (!isRecord(ui)) {
+    return ui;
+  }
+  if (!isRecord(ui.buttonFlags)) {
+    return ui;
+  }
+  const nextButtonFlags = { ...ui.buttonFlags };
+  for (const flag of LEGACY_FLAGS_REMOVED_IN_V22) {
+    delete nextButtonFlags[flag];
+  }
+  return {
+    ...ui,
+    buttonFlags: nextButtonFlags,
+  };
+};
+
+const resetDeprecatedSettings = (settings: unknown): unknown => {
+  const defaults = createDefaultCalculatorSettings();
+  if (!isRecord(settings)) {
+    return defaults;
+  }
+  return {
+    ...settings,
+    visualizer: defaults.visualizer,
+    wrapper: defaults.wrapper,
+    base: defaults.base,
+    stepExpansion: defaults.stepExpansion,
+  };
+};
+
+const migrateV21ToV22 = (state: unknown): SerializableStateV14 | null => {
+  if (!isRecord(state)) {
+    return null;
+  }
+  const migrated: Record<string, unknown> = {
+    ...state,
+    settings: resetDeprecatedSettings(state.settings),
+    ui: dropLegacyFlagsFromUi(state.ui),
+  };
+  if (isRecord(state.calculators)) {
+    const nextCalculators: Record<string, unknown> = {};
+    for (const [calculatorId, calculator] of Object.entries(state.calculators)) {
+      if (!isRecord(calculator)) {
+        nextCalculators[calculatorId] = calculator;
+        continue;
+      }
+      nextCalculators[calculatorId] = {
+        ...calculator,
+        settings: resetDeprecatedSettings(calculator.settings),
+        ui: dropLegacyFlagsFromUi(calculator.ui),
+      };
+    }
+    migrated.calculators = nextCalculators;
+  }
+  return migrated;
+};
+
+export const migrateToLatest = (schemaVersion: number, state: unknown): SerializableStateV14 | null => {
+  if (!isValidSchemaVersion(schemaVersion) || !validateSerializableStateV3(state)) {
+    return null;
+  }
+  if (schemaVersion === SAVE_SCHEMA_VERSION) {
+    return state as SerializableStateV14;
+  }
+  if (schemaVersion === SAVE_SCHEMA_VERSION - 1) {
+    return migrateV21ToV22(state);
+  }
+  return null;
+};

@@ -60,7 +60,6 @@ export type UnlockGraphReport = {
   analysis: UnlockGraphAnalysis;
 };
 
-// Legacy unlock-proof report types remain for unlockProof module compatibility.
 export type UnlockProofStatus = "proved" | "impossible" | "unknown";
 
 export type ImpossibleCertificate = {

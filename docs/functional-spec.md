@@ -95,11 +95,11 @@ The Global State Interface governs session continuity, progression capability st
 | FS-UP-01 | Unlock runtime state progression-owned | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership is indirectly asserted |
 | FS-UP-02 | Predicate evaluation uses canonical state/history | `domain/unlock-engine` | unit | none |
 | FS-UP-03 | Unlock completion monotonic by default | `content-drill/unlock-extension`, `domain/unlock-engine` | workflow + unit | gap: no generic monotonicity property test |
-| FS-UP-04 | Cross-shell unlock outcome equivalence | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity` | integration + parity | partial: no unlock-focused cross-shell parity fixture |
+| FS-UP-04 | Cross-shell unlock outcome equivalence | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `contracts/action-event-current` | integration + parity | partial: no unlock-focused cross-shell parity fixture |
 | FS-UP-05 | Key catalog/type is separate from runtime unlock flags | `domain/button-registry-contract`, `domain/key-action-handlers-contract`, `domain/key-catalog-normalization` | contract + unit | none |
 | FS-UP-06 | Locked capabilities are inert | `reducer/input`, `domain/key-unlocks` | unit | none |
 | FS-UP-07 | Installed locked keys are usable but immobile; settings toggles forced ON; play/pause excluded; one locked visualizer forced-active by keypad scan order | `domain/key-unlocks`, `domain/layout-rules-invariants`, `ui-module/calculator-keypad-render` | unit + contract + integration | partial: settings-toggle forced-ON, play/pause exclusion, and locked-visualizer keypad-order selection lack dedicated contract assertions |
-| FS-UP-08 | Execution-gated rejected inputs should not normally advance progression evidence, except explicit rule-defined cases | `contracts/execution-gate-parity`, `domain/unlock-engine` | contract + unit | partial: explicit exception-bearing unlock rules may intentionally diverge |
+| FS-UP-08 | Execution-gated rejected inputs should not normally advance progression evidence, except explicit rule-defined cases | `contracts/domain-ui-effects-current`, `domain/unlock-engine` | contract + unit | partial: explicit exception-bearing unlock rules may intentionally diverge |
 | FS-UP-09 | Unlock graph uses unlock-authored sufficient key sets; first set is canonical | `domain/unlock-graph`, `scripts/generate-unlock-graph-report` | unit + workflow | partial: no catalog-wide required-field contract suite yet |
 | FS-UP-10 | Graph includes key and unlock-target nodes with directed canonical dependency edges | `domain/unlock-graph` | unit | partial: additional fixture coverage for mixed target kinds desirable |
 | FS-UP-11 | Strict structural validation for sufficient sets and target ids | `domain/unlock-graph`, `domain/key-catalog-normalization` | unit + contract | partial: no dedicated malformed-catalog matrix beyond core fixtures |
@@ -198,28 +198,28 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-CS-10 | Key visual affordance invariants are UX-owned (`UX-KVA-01`..`UX-KVA-05`) | `docs/ux-spec.md`, `docs/contracts/ui-domain-contract.md` | spec governance | none |
 | FS-CS-11 | Key visual affordance behavior maps to executable UI suites | `ui/visualizer-fit-contract`, `ui-module/calculator-keypad-render`, `ui-module/storage-v2` | contract + integration | partial: coverage is selector/token/assertion driven rather than pixel snapshot baseline |
 | FS-FB-01 | Deterministic seed semantics | `reducer/input`, `contracts/slot-input-target-spec` | unit + contract | partial: target-spec scenarios are selective |
-| FS-FB-02 | Deterministic slot execution order | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | none |
+| FS-FB-02 | Deterministic slot execution order | `reducer/input`, `contracts/slot-input-parity`, `contracts/action-event-current` | unit + contract + parity | none |
 | FS-FB-03 | Value/number behavior is capability-gated | `domain/key-unlocks`, `reducer/input`, `domain/key-behavior-contract` | unit + contract | none |
 | FS-FB-04 | Alternate settings use explicit flags | `reducer/input`, `domain/key-action-handlers-contract` | unit + contract | partial: no dedicated cross-feature settings matrix |
 | FS-FB-05 | Step-through terminal equivalence with full execution | `reducer/input`, `ui-integration/mobile-shell`, `ui-integration/desktop-shell` | unit + workflow/integration | none |
 | FS-FB-06 | Finalization writes one terminal outcome per completion path | `reducer/input`, `persistence` | unit | partial: no dedicated long-trace finalization stress suite |
 | FS-FB-07 | Step behavior inert when capability absent | `reducer/input`, `ui-integration/mobile-shell` | unit + integration | none |
-| FS-FB-08 | `=` toggles auto-step mode; while active, calculator mutation inputs are gated and rejected actions are non-mutating unless execution-interrupting | `contracts/execution-gate-parity`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
-| FS-FB-09 | Auto-step intermediate progress is preview-only; roll/terminal commit exactly once on completion | `reducer/input`, `contracts/slot-input-parity`, `v2/parity` | unit + contract + parity | partial: no dedicated auto-step completion stress suite |
-| FS-FB-10 | NaN execution starts remain policy-allowed and propagate NaN through operator evaluation while keeping standard NaN metadata and terminal auto-flag clear behavior | `reducer/input`, `domain/execution-mode-policy`, `contracts/execution-gate-parity`, `uiModule.calculatorRejectBlink` | unit + contract + integration | partial: explicit NaN-propagation matrix for execution/inverse paths pending |
+| FS-FB-08 | `=` toggles auto-step mode; while active, calculator mutation inputs are gated and rejected actions are non-mutating unless execution-interrupting | `contracts/domain-ui-effects-current`, `reducer/input`, `reducer/layout`, `domain/execution-mode-policy` | contract + unit | partial: full auto-step action-family matrix coverage pending |
+| FS-FB-09 | Auto-step intermediate progress is preview-only; roll/terminal commit exactly once on completion | `reducer/input`, `contracts/slot-input-parity`, `contracts/action-event-current` | unit + contract + parity | partial: no dedicated auto-step completion stress suite |
+| FS-FB-10 | NaN execution starts remain policy-allowed and propagate NaN through operator evaluation while keeping standard NaN metadata and terminal auto-flag clear behavior | `reducer/input`, `domain/execution-mode-policy`, `contracts/domain-ui-effects-current`, `uiModule.calculatorRejectBlink` | unit + contract + integration | partial: explicit NaN-propagation matrix for execution/inverse paths pending |
 
 #### 3.2.4 Traceability (Multi-Calculator Session Model)
 
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
-| FS-MC-01 | One-or-more calculators with exactly one active selection and coherent order/instance representation | `reducer/lifecycle`, `v2/parity`, `contracts/multi-calculator-invariants` | unit + parity + contract | partial: baseline coherence + guard coverage exists; broader malformed-state fixtures pending |
+| FS-MC-01 | One-or-more calculators with exactly one active selection and coherent order/instance representation | `reducer/lifecycle`, `contracts/action-event-current`, `contracts/multi-calculator-invariants` | unit + parity + contract | partial: baseline coherence + guard coverage exists; broader malformed-state fixtures pending |
 | FS-MC-02 | Calculator execution-local state is isolated per instance | `reducer/input`, `contracts/slot-input-parity`, `contracts/multi-calculator-invariants` | unit + contract | partial: core targeted isolation covered; broader randomized isolation matrix pending |
 | FS-MC-03 | Unlock ownership remains global/shared | `domain/unlock-engine`, `contracts/content-provider-wiring`, `contracts/multi-calculator-invariants` | unit + contract | partial: global unlock scope covered; reversible/exception scope policies not yet modeled |
 | FS-MC-05 | Additional calculator initialization deterministically sets control profile selection, initial keypad/loadout projection, calculator settings/defaults, and execution state across unlock/bootstrap entrypoints | `reducer/lifecycle`, `persistence`, `contracts/multi-calculator-invariants` | unit + contract | partial: deterministic initialization covered; migration-triggered initialization fixtures pending |
 | FS-MC-07 | Persistence preserves all instances and active selection | `persistence`, `v2/persistence-parity` | unit + contract | gap: multi-instance migration fixtures not defined |
-| FS-MC-08 | One-calculator mode preserves baseline semantics | `v2/parity`, `contracts/parity-long-traces`, `contracts/multi-calculator-invariants` | parity + contract | partial: baseline-compat fixture pair exists for core sequences; broader long-trace coverage expansion pending |
+| FS-MC-08 | One-calculator mode preserves baseline semantics | `contracts/action-event-current`, `contracts/domain-ui-effects-current`, `contracts/multi-calculator-invariants` | parity + contract | partial: baseline-compat fixture pair exists for core sequences; broader long-trace coverage expansion pending |
 | FS-MC-09 | Multi-calculator enablement and routing are driven by `calculatorOrder` cardinality/coherence, not specific id pairs | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `domain/execution-mode-policy` | contract + unit | partial: property-style coverage for larger calculator sets pending |
-| FS-MC-10 | Calculator identity composes control profile/matrix relationship + deterministic initialization loadout + action-driven runtime evolution; control-matrix similarity alone is non-equivalence | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `v2/parity` | contract + unit + parity | partial: dedicated non-equivalence fixture matrix (same control profile, different initialization/evolution) pending |
+| FS-MC-10 | Calculator identity composes control profile/matrix relationship + deterministic initialization loadout + action-driven runtime evolution; control-matrix similarity alone is non-equivalence | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `contracts/action-event-current` | contract + unit + parity | partial: dedicated non-equivalence fixture matrix (same control profile, different initialization/evolution) pending |
 
 ## 4. Cross-Interface Boundary Clauses
 
@@ -240,7 +240,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 |---|---|---|---|---|
 | FS-BND-01 | Global state owns progression/capability state; no direct mutation of calculator-owned runtime/execution state | `contracts/boundary-direct-mutation`, `v2/import-boundary`, `app/bootstrap-boundary` | contract + boundary | none |
 | FS-BND-02 | Calculator does not own unlock predicate/effect definitions | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership tested indirectly |
-| FS-BND-03 | Shell divergence allowed; emitted intent and outcomes equivalent (dispatch-path specifics centralized in boundary contract) | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity`, `contracts/ui-action-emission`, `contracts/execution-gate-parity`, `contracts/action-event-reducer-boundary` | integration + parity + contract | none |
+| FS-BND-03 | Shell divergence allowed; emitted intent and outcomes equivalent (dispatch-path specifics centralized in boundary contract) | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `contracts/action-event-current`, `contracts/ui-action-emission`, `contracts/domain-ui-effects-current`, `contracts/action-event-reducer-boundary` | integration + parity + contract | none |
 | FS-BND-04 | Contracts remain implementation-independent | `app/bootstrap-boundary`, `contracts/shim-inventory`, `browser/import-safety` | boundary + contract | partial: semantic independence asserted via import boundaries |
 | FS-BND-05 | Calculator lifecycle changes are explicit action/effect or explicit bootstrap policy | `domain/unlock-engine`, `reducer/lifecycle`, `contracts/multi-calculator-invariants` | unit + contract | partial: lifecycle-event matrix can expand with additional calculators |
 
@@ -269,9 +269,9 @@ These are stable documentation interfaces for test/contract alignment, not code 
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
 | FS-TEST-01 | Every normative clause has unique ID and one table entry | this document | spec governance | manual check required |
-| FS-TEST-02 | High-risk clauses map to executable suites | `reducer/input`, `persistence`, `v2/parity`, `ui-integration/*`, `contracts/action-event-round-trip` | mixed | none |
+| FS-TEST-02 | High-risk clauses map to executable suites | `reducer/input`, `persistence`, `contracts/action-event-current`, `ui-integration/*`, `contracts/action-event-current` | mixed | none |
 | FS-TEST-03 | Coverage classification is explicit | this document tables | spec governance | none |
-| FS-TEST-04 | Fixture-only suites do not count as parity/fuzz execution | `contracts/parity-long-traces`, `contracts/parity-seeded-fuzz` | contract hygiene | none |
+| FS-TEST-04 | Fixture-only suites do not count as parity/fuzz execution | `contracts/domain-ui-effects-current`, `contracts/domain-ui-effects-current` | contract hygiene | none |
 
 ## 7. Current Gap Report (Initial Baseline)
 
@@ -323,3 +323,4 @@ When intentional behavior changes occur:
 2. Update contracts/tests second.
 3. Update implementation third.
 4. Reject behavior changes without clause and traceability updates.
+

@@ -1,4 +1,3 @@
-import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import {
   toComplexCalculatorValue,
@@ -17,7 +16,6 @@ import {
   loadFromRawSave,
 } from "../src/infra/persistence/localStorageRepo.js";
 import { serializeEnvelope } from "../src/infra/persistence/saveEnvelope.js";
-import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 
 type MemoryStorage = {
@@ -56,14 +54,11 @@ export const runPersistenceTests = (): void => {
       rollEntries: re(r(9n), r(11n), r(12n)),
     },
     lambdaControl: {
-      maxPoints: 9,
       alpha: 2,
       beta: 1,
       gamma: 2,
-      gammaMinRaised: true,
-    },
-    sessionControlProfiles: {
-      f: controlProfiles.f,
+      delta: 5,
+      epsilon: 3,
     },
     activeCalculatorId: "f",
     perCalculatorCompletedUnlockIds: {
@@ -96,15 +91,14 @@ export const runPersistenceTests = (): void => {
   assert.deepEqual(
     loaded?.lambdaControl,
     {
-      maxPoints: 9,
       alpha: 2,
       beta: 1,
       gamma: 2,
-      gammaMinRaised: true,
+      delta: 5,
+      epsilon: 3,
     },
     "round-trip lambda control",
   );
-  assert.deepEqual(loaded?.sessionControlProfiles, {}, "session-only control profile edits are not persisted");
   assert.equal(loaded?.activeCalculatorId, "f", "active calculator selection round-trips");
   assert.deepEqual(
     loaded?.perCalculatorCompletedUnlockIds,
@@ -150,6 +144,16 @@ export const runPersistenceTests = (): void => {
   );
   assert.equal(unsupported.state, null, "unsupported old schema does not load");
   assert.equal(unsupported.reason, LoadFailureReason.UnsupportedSchemaVersion, "unsupported schema failure reason is reported");
+
+  const malformedLegacy = loadFromRawSave(
+    JSON.stringify({
+      schemaVersion: SAVE_SCHEMA_VERSION - 1,
+      savedAt: Date.now(),
+      state: null,
+    }),
+  );
+  assert.equal(malformedLegacy.state, null, "malformed legacy payload does not hydrate");
+  assert.equal(malformedLegacy.reason, LoadFailureReason.MigrationFailed, "legacy migration failure reason is reported");
 
   const badJson = loadFromRawSave("{");
   assert.equal(badJson.state, null, "invalid JSON fails safely");

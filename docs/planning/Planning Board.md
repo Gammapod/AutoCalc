@@ -7,7 +7,14 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Now
 
-- No active slices.
+### Slice `slice_cleanup_persistence_and_runtime_boundaries`
+- User Story: As an engineer, I want save migration and runtime wiring boundaries to be explicit and deterministic so cleanup work does not introduce silent regressions.
+- Exit Criteria:
+- Persistence load uses one authoritative migration flow (`current` or `current-1` only) with explicit failure reasons for unsupported and malformed payloads.
+- Legacy schema migration resets deprecated settings and removes obsolete UI flags.
+- Domain command dispatch emits UI feedback through one consolidated pipeline path.
+- Visualizer host panel visibility and transition state updates avoid duplicate/stale DOM mutations.
+- Legacy allocator/memory/eigen test assumptions are non-authoritative for current runtime and are rebaselined or retired from active CI scope.
 
 ## Next
 

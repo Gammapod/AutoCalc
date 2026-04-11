@@ -1,5 +1,6 @@
 import { SAVE_KEY, SAVE_SCHEMA_VERSION } from "../../domain/state.js";
 import type { GameState } from "../../domain/types.js";
+import { migrateToLatest } from "./migrations.core.js";
 import { deserializeV20, serializeV20 } from "./saveCodecV20.js";
 import { parseEnvelope, serializeEnvelope, type KeyValueStorage } from "./saveEnvelope.js";
 
@@ -17,7 +18,11 @@ export type LoadResult = {
   reason: LoadFailureReason | null;
 };
 
-export const loadFromRawSave = (raw: string | null): LoadResult => {
+type PersistedLoadState =
+  | { state: unknown; reason: null }
+  | { state: null; reason: Exclude<LoadFailureReason, LoadFailureReason.DeserializeFailed> };
+
+const resolvePersistedStateForLoad = (raw: string | null): PersistedLoadState => {
   if (!raw) {
     return { state: null, reason: LoadFailureReason.MissingSave };
   }
@@ -30,12 +35,35 @@ export const loadFromRawSave = (raw: string | null): LoadResult => {
     };
   }
 
-  if (parsed.payload.schemaVersion !== SAVE_SCHEMA_VERSION) {
+  const { schemaVersion } = parsed.payload;
+  if (schemaVersion > SAVE_SCHEMA_VERSION) {
     return { state: null, reason: LoadFailureReason.UnsupportedSchemaVersion };
   }
 
+  if (schemaVersion === SAVE_SCHEMA_VERSION) {
+    return { state: parsed.payload.state, reason: null };
+  }
+
+  if (schemaVersion !== SAVE_SCHEMA_VERSION - 1) {
+    return { state: null, reason: LoadFailureReason.UnsupportedSchemaVersion };
+  }
+
+  const migrated = migrateToLatest(schemaVersion, parsed.payload.state);
+  if (!migrated) {
+    return { state: null, reason: LoadFailureReason.MigrationFailed };
+  }
+
+  return { state: migrated, reason: null };
+};
+
+export const loadFromRawSave = (raw: string | null): LoadResult => {
+  const persistedState = resolvePersistedStateForLoad(raw);
+  if (persistedState.reason) {
+    return { state: null, reason: persistedState.reason };
+  }
+
   try {
-    const deserialized = deserializeV20(parsed.payload.state);
+    const deserialized = deserializeV20(persistedState.state);
     return { state: deserialized, reason: null };
   } catch {
     return { state: null, reason: LoadFailureReason.DeserializeFailed };

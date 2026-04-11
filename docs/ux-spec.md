@@ -84,9 +84,9 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 
 | Clause ID | Summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
-| UX-PAR-01 | Cross-shell reducer outcome parity | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity` | integration + parity | partial: no UX-only parity fixture bundle |
-| UX-PAR-02 | Cross-shell unlock parity | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity` | integration + parity | partial: no unlock-focused parity fixture |
-| UX-PAR-03 | Execution-gate rejection parity | `contracts/execution-gate-parity`, `reducer/input` | contract + unit | partial: matrix expansion pending |
+| UX-PAR-01 | Cross-shell reducer outcome parity | `contracts/action-event-current`, `contracts/domain-ui-effects-current` | contract | partial: no UX-only parity fixture bundle |
+| UX-PAR-02 | Cross-shell unlock parity | `contracts/catalog-canonical-guard` | contract | partial: no unlock-focused parity fixture |
+| UX-PAR-03 | Execution-gate rejection parity | `contracts/domain-ui-effects-current` | contract | partial: matrix expansion pending |
 | UX-VIS-01 | Visualizers are projections | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2` | contract + integration | partial: CSS-coupled assertions |
 | UX-VIS-02 | Visualizer key -> domain action | `contracts/ui-action-emission` | contract | none |
 | UX-VIS-03 | Single active panel + fallback | `ui-module/visualizer-host-v2`, `rollDisplay` | integration + unit | partial: unsupported-state matrix limited |
@@ -99,7 +99,7 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 | UX-KS-02 | Keypad/storage separation | `ui-module/storage-v2`, `ui/storage-display` | integration | none |
 | UX-KS-03 | Storage unlock gating | `ui-module/storage-v2`, `ui/storage-display` | integration | partial: explicit contract ID absent |
 | UX-KS-04 | Move/swap validity and meaning stability | `ui/drag-drop-behavior`, `contracts/ui-action-emission`, `domain/key-identity-adapters` | integration + contract + unit | partial: direct end-to-end meaning assertion limited |
-| UX-KS-05 | Layout divergence with semantic parity | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `v2/parity` | integration + parity | none |
+| UX-KS-05 | Layout divergence with semantic parity | `contracts/action-event-current` | contract | partial: shell-integration parity suites pending reintroduction |
 | UX-IA-01 | Pointer feedback and valid/invalid targets | `ui/drag-drop-behavior`, `ui-module/calculator-keypad-render` | integration | partial: no dedicated pointer-a11y contract |
 | UX-IA-02 | Touch gesture intent determinism | `ui-integration/mobile-shell`, `ui/layout-engine` | integration + unit | partial: scenario matrix expansion pending |
 | UX-IA-03 | Keyboard/screen-reader baseline | `ui-shell/menu-a11y` | integration | partial: broader shell coverage pending |

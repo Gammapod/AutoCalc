@@ -615,12 +615,9 @@ export const evaluateSymbolicExpression = (expression: ExpressionValue): Evaluat
   };
 };
 
-type ExecutionPolicyRouting = "registry" | "legacy";
-
 const executeSlotsValueInternal = (
   total: CalculatorValue,
   slots: Slot[],
-  routing: ExecutionPolicyRouting,
   options: { currentRollNumber?: bigint } = {},
 ): ExecuteSlotsValueResult => {
   if (slots.length === 0) {
@@ -1157,30 +1154,9 @@ const executeSlotsValueInternal = (
     }
 
     const operatorKey = slot.operator;
-    const policy = routing === "registry"
-      ? resolveOperatorExecutionPolicy(operatorKey)
-      : null;
-    const supportsComplexArithmetic = policy
-      ? policy.complexMode === "complex_arithmetic"
-      : (
-        operatorKey === KEY_ID.op_add
-        || operatorKey === KEY_ID.op_sub
-        || operatorKey === KEY_ID.op_mul
-        || operatorKey === KEY_ID.op_div
-        || operatorKey === KEY_ID.op_pow
-        || operatorKey === KEY_ID.op_rotate_15
-      );
-    const supportsDeferredComplexPolicy = policy
-      ? policy.complexMode === "deferred_complex_policy"
-      : (
-        operatorKey === KEY_ID.op_euclid_div
-        || operatorKey === KEY_ID.op_mod
-        || operatorKey === KEY_ID.op_rotate_left
-        || operatorKey === KEY_ID.op_gcd
-        || operatorKey === KEY_ID.op_lcm
-        || operatorKey === KEY_ID.op_max
-        || operatorKey === KEY_ID.op_min
-      );
+    const policy = resolveOperatorExecutionPolicy(operatorKey);
+    const supportsComplexArithmetic = policy.complexMode === "complex_arithmetic";
+    const supportsDeferredComplexPolicy = policy.complexMode === "deferred_complex_policy";
 
     if (!supportsComplexArithmetic && !supportsDeferredComplexPolicy) {
       const delegated = applyRationalOnlySlot(current, slot);
@@ -1344,11 +1320,7 @@ const executeSlotsValueInternal = (
 
 export const executePlanIR = (
   plan: ExecutionPlanIR,
-): ExecuteSlotsValueResult => executeSlotsValueInternal(plan.seed, materializeSlotsFromExecutionPlanIR(plan), "registry");
-
-export const executePlanIRLegacyPath = (
-  plan: ExecutionPlanIR,
-): ExecuteSlotsValueResult => executeSlotsValueInternal(plan.seed, materializeSlotsFromExecutionPlanIR(plan), "legacy");
+): ExecuteSlotsValueResult => executeSlotsValueInternal(plan.seed, materializeSlotsFromExecutionPlanIR(plan));
 
 export const executeSlotsValue = (
   total: CalculatorValue,
@@ -1359,7 +1331,6 @@ export const executeSlotsValue = (
   return executeSlotsValueInternal(
     built.plan.seed,
     materializeSlotsFromExecutionPlanIR(built.plan),
-    "registry",
     options,
   );
 };

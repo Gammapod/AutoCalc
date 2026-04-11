@@ -1,4 +1,4 @@
-import type { CalculatorSettings, RollEntry, Slot } from "./types.js";
+import type { CalculatorSettings, Slot } from "./types.js";
 import { KEY_ID } from "./keyPresentation.js";
 
 export type InverseExecutionStage =
@@ -87,7 +87,3 @@ export const resolveRollInversePlan = (
   }
   return { ok: true, stages: inverseStages };
 };
-
-// Legacy semantic gate retained for compatibility with execution policy call-sites.
-// Inverse failure now resolves to terminal NaN(ambiguous), not semantic rejection.
-export const shouldRejectRollInverseExecution = (_rollEntries: RollEntry[]): boolean => false;
