@@ -113,8 +113,8 @@ const INPUT_OUTCOME_TONES: Record<CalculatorFeedbackLed, InputOutcomeToneSpec> =
     buzzPulseHz: null,
   },
   substep_executed: {
-    frequencyStartHz: 1800,
-    frequencyEndHz: 1260,
+    frequencyStartHz: 440,
+    frequencyEndHz: 440,
     durationMs: 115,
     peakGain: 0.036,
     buzzPulseHz: null,
@@ -159,7 +159,7 @@ const playInputOutcomeToneWithContext = (
   const attackSeconds = 0.004;
   const endTime = now + durationSeconds;
   const releaseStart = endTime - Math.min(0.03, durationSeconds * 0.45);
-  oscillator.type = "square";
+  oscillator.type = outcome === "substep_executed" ? "sawtooth" : "square";
   oscillator.frequency.setValueAtTime(spec.frequencyStartHz, now);
   oscillator.frequency.exponentialRampToValueAtTime(spec.frequencyEndHz, endTime);
   gainNode.gain.cancelScheduledValues(now);
