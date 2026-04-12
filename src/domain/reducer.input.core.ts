@@ -94,7 +94,6 @@ import { type WrapStageMode } from "./executionPlanIR.js";
 import {
   buildExecutionPlanIRForState,
   getExecutionPlanIRStageAt,
-  getExecutionPlanIRStageCount,
   materializeSlotsFromExecutionPlanIR,
   resolveExecutionPlanIRWrapStageMode,
   type ExecutionPlanBuildResult,
@@ -1490,31 +1489,49 @@ const evaluateExecutionPlanRange = (
   const slotList = materializeSlotsFromExecutionPlanIR(built.plan);
   const startSlotIndex = Math.max(0, Math.min(startStageIndex, slotList.length));
   const pendingSlots = slotList.slice(startSlotIndex);
-  const hasPendingWrap = Boolean(built.wrapStageMode) && startStageIndex <= slotList.length;
+  const wrapMode = built.wrapStageMode;
 
-  let evaluation = pendingSlots.length > 0
-    ? evaluateExecutionOutcomeForSlots(state, seedTotal, pendingSlots, {
-      deferOverflowToWrapStage: hasPendingWrap,
-    })
-    : hasPendingWrap
-      ? { nextTotal: seedTotal }
-      : evaluateExecutionOutcomeForSlots(state, seedTotal, []);
-
-  if (!hasPendingWrap || !built.wrapStageMode || evaluation.errorKind) {
-    return evaluation;
+  if (pendingSlots.length === 0) {
+    if (wrapMode && slotList.length === 0) {
+      return applyWrapStage(seedTotal, wrapMode, state.unlocks.maxTotalDigits, getDisplayRadix(state));
+    }
+    return evaluateExecutionOutcomeForSlots(state, seedTotal, []);
   }
 
-  const wrapped = applyWrapStage(
-    evaluation.nextTotal,
-    built.wrapStageMode,
-    state.unlocks.maxTotalDigits,
-    getDisplayRadix(state),
-  );
-  return {
-    ...wrapped,
-    nextTotal: wrapped.nextTotal,
-    ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
-  };
+  let currentTotal = seedTotal;
+  let latest: EvaluatedExecution | null = null;
+  for (const slot of pendingSlots) {
+    const slotEvaluation = evaluateExecutionOutcomeForSlots(
+      state,
+      currentTotal,
+      [slot],
+      { deferOverflowToWrapStage: Boolean(wrapMode) },
+    );
+    if (slotEvaluation.errorKind) {
+      return slotEvaluation;
+    }
+
+    let nextEvaluation: EvaluatedExecution = slotEvaluation;
+    if (wrapMode) {
+      const wrapped = applyWrapStage(
+        slotEvaluation.nextTotal,
+        wrapMode,
+        state.unlocks.maxTotalDigits,
+        getDisplayRadix(state),
+      );
+      nextEvaluation = {
+        ...wrapped,
+        nextTotal: wrapped.nextTotal,
+        ...(slotEvaluation.symbolic ? { symbolic: slotEvaluation.symbolic } : {}),
+        ...(slotEvaluation.euclidRemainder !== undefined ? { euclidRemainder: slotEvaluation.euclidRemainder } : {}),
+      };
+    }
+
+    latest = nextEvaluation;
+    currentTotal = nextEvaluation.nextTotal;
+  }
+
+  return latest ?? { nextTotal: currentTotal };
 };
 
 const evaluateExecutionPlanStageAt = (
@@ -1535,13 +1552,27 @@ const evaluateExecutionPlanStageAt = (
       getDisplayRadix(state),
     );
   }
-  const nextStage = getExecutionPlanIRStageAt(built.plan, stageIndex + 1);
-  return evaluateExecutionOutcomeForSlots(
+  const slotEvaluation = evaluateExecutionOutcomeForSlots(
     state,
     currentTotal,
     [stage.slot],
-    { deferOverflowToWrapStage: nextStage?.kind === "wrap" },
+    { deferOverflowToWrapStage: Boolean(built.wrapStageMode) },
   );
+  if (!built.wrapStageMode || slotEvaluation.errorKind) {
+    return slotEvaluation;
+  }
+  const wrapped = applyWrapStage(
+    slotEvaluation.nextTotal,
+    built.wrapStageMode,
+    state.unlocks.maxTotalDigits,
+    getDisplayRadix(state),
+  );
+  return {
+    ...wrapped,
+    nextTotal: wrapped.nextTotal,
+    ...(slotEvaluation.symbolic ? { symbolic: slotEvaluation.symbolic } : {}),
+    ...(slotEvaluation.euclidRemainder !== undefined ? { euclidRemainder: slotEvaluation.euclidRemainder } : {}),
+  };
 };
 
 const evaluateInverseStageAt = (
@@ -1596,7 +1627,7 @@ const evaluateInverseStageAt = (
 
 const getExecutionRuntimeStageCount = (runtime: ExecutionRuntime): number =>
   runtime.kind === "forward"
-    ? getExecutionPlanIRStageCount(runtime.built.plan)
+    ? runtime.built.plan.steps.length + (runtime.built.plan.steps.length === 0 && runtime.built.wrapStageMode ? 1 : 0)
     : runtime.stages.length;
 
 const evaluateExecutionRuntimeRange = (
@@ -1808,17 +1839,42 @@ const applyStepThroughInternal = (
     return withClearedStepProgress(finalized);
   }
 
-  const evaluation = evaluateExecutionRuntimeStageAt(
-    finalized,
-    stepProgress.currentTotal,
-    execution.runtime,
-    stepProgress.nextSlotIndex,
-  );
+  let consumedStageCount = 1;
+  let evaluation: EvaluatedExecution | null = null;
+  if (execution.runtime.kind === "forward") {
+    const stage = getExecutionPlanIRStageAt(execution.runtime.built.plan, stepProgress.nextSlotIndex);
+    const nextStage = getExecutionPlanIRStageAt(execution.runtime.built.plan, stepProgress.nextSlotIndex + 1);
+    const shouldCoalesceWrapTail = Boolean(stage && stage.kind === "slot" && nextStage?.kind === "wrap");
+    if (shouldCoalesceWrapTail) {
+      // Normalize with wrap-tail in the same step as the terminal slot.
+      evaluation = evaluateExecutionPlanRange(
+        finalized,
+        stepProgress.currentTotal,
+        execution.runtime.built,
+        stepProgress.nextSlotIndex,
+      );
+      consumedStageCount = 2;
+    } else {
+      evaluation = evaluateExecutionPlanStageAt(
+        finalized,
+        stepProgress.currentTotal,
+        execution.runtime.built,
+        stepProgress.nextSlotIndex,
+      );
+    }
+  } else {
+    evaluation = evaluateInverseStageAt(
+      finalized,
+      stepProgress.currentTotal,
+      execution.runtime.stages,
+      stepProgress.nextSlotIndex,
+    );
+  }
   if (!evaluation) {
     return withClearedStepProgress(finalized);
   }
   const nextResults = [...stepProgress.executedSlotResults, evaluation.nextTotal];
-  const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + 1 >= stageCount;
+  const isTerminal = evaluation.errorKind !== undefined || stepProgress.nextSlotIndex + consumedStageCount >= stageCount;
 
   if (!isTerminal) {
     return applyUnlocks(
@@ -1831,7 +1887,7 @@ const applyStepThroughInternal = (
             ...(mode === "inverse" ? { mode } : {}),
             seedTotal: stepProgress.seedTotal,
             currentTotal: evaluation.nextTotal,
-            nextSlotIndex: stepProgress.nextSlotIndex + 1,
+            nextSlotIndex: stepProgress.nextSlotIndex + consumedStageCount,
             executedSlotResults: nextResults,
           },
         },

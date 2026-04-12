@@ -80,24 +80,16 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
   });
 
   const stepped = reducer(base, { type: "PRESS_KEY", key: KEY_ID.exec_step_through });
-  assert.equal(stepped.calculator.stepProgress.active, true, "step-through remains preview-only before wrap-tail terminal stage");
-  assert.deepEqual(stepped.calculator.stepProgress.currentTotal, r(100n), "step-through preview stores pre-wrap intermediate total");
-  assert.equal(stepped.calculator.rollEntries.length, 0, "step-through preview does not append roll rows");
-
-  const terminalFromPreviewStep = reducer(stepped, { type: "PRESS_KEY", key: KEY_ID.exec_step_through });
-  assert.equal(terminalFromPreviewStep.calculator.stepProgress.active, false, "terminal step-through path clears step progress");
-  assert.deepEqual(terminalFromPreviewStep.calculator.total, r(-98n), "terminal step-through path applies pending wrap-tail");
+  assert.equal(stepped.calculator.stepProgress.active, false, "step-through clears progress when terminal slot and wrap-tail coalesce");
+  assert.deepEqual(stepped.calculator.total, r(-98n), "step-through applies pending wrap-tail on the terminal slot step");
   assert.equal(
-    terminalFromPreviewStep.calculator.rollEntries.length,
+    stepped.calculator.rollEntries.length,
     2,
     "terminal step-through path commits seed + terminal row exactly once",
   );
 
   const withEqualsToggle = reducer(base, { type: "TOGGLE_FLAG", flag: EXECUTION_PAUSE_EQUALS_FLAG });
-  const autoTickPreview = reducer(withEqualsToggle, { type: "AUTO_STEP_TICK" });
-  assert.equal(autoTickPreview.calculator.stepProgress.active, true, "equals-toggle auto-step keeps progress active on preview stage");
-  assert.equal(autoTickPreview.calculator.rollEntries.length, 0, "equals-toggle preview stage remains non-committing");
-  const autoTickTerminal = reducer(autoTickPreview, { type: "AUTO_STEP_TICK" });
+  const autoTickTerminal = reducer(withEqualsToggle, { type: "AUTO_STEP_TICK" });
   assert.equal(autoTickTerminal.calculator.stepProgress.active, false, "equals-toggle auto-step clears progress at terminal stage");
   assert.deepEqual(autoTickTerminal.calculator.total, r(-98n), "equals-toggle auto-step terminal total matches wrap-tail semantics");
   assert.equal(autoTickTerminal.calculator.rollEntries.length, 2, "equals-toggle auto-step terminal commit remains single seed/result pair");
@@ -205,7 +197,7 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
     if (seed % 2 === 0) {
       trace.push({ type: "AUTO_STEP_TICK" }, { type: "AUTO_STEP_TICK" });
     } else {
-      trace.push({ type: "PRESS_KEY", key: KEY_ID.exec_step_through }, { type: "PRESS_KEY", key: KEY_ID.exec_step_through });
+      trace.push({ type: "PRESS_KEY", key: KEY_ID.exec_step_through });
     }
     if (rng() > 0.5) {
       trace.push({ type: "AUTO_STEP_TICK" });

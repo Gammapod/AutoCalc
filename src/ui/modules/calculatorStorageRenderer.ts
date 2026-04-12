@@ -49,14 +49,22 @@ export const renderCalculatorStorageV2Module = (
     settingsChangedCount: number;
     rollUpdatedCount: number;
     substepExecutedCount: number;
+    substepExecutedToneFrequenciesHz: number[];
   } => {
     const outcome = latestInputOutcomeByCalculator[calculatorId];
+    const substepEffects = options.uiEffects.filter(
+      (effect): effect is Extract<UiEffect, { type: "substep_executed" }> =>
+        effect.type === "substep_executed" && effect.calculatorId === calculatorId,
+    );
     return {
       rejectedInputCount: outcome === "rejected" ? 1 : 0,
       builderChangedCount: countUiEffectFor(calculatorId, "builder_changed"),
       settingsChangedCount: countUiEffectFor(calculatorId, "settings_changed"),
       rollUpdatedCount: countUiEffectFor(calculatorId, "roll_updated"),
-      substepExecutedCount: countUiEffectFor(calculatorId, "substep_executed"),
+      substepExecutedCount: substepEffects.length,
+      substepExecutedToneFrequenciesHz: substepEffects
+        .map((effect) => effect.toneFrequencyHz)
+        .filter((frequencyHz): frequencyHz is number => typeof frequencyHz === "number" && Number.isFinite(frequencyHz)),
     };
   };
   const calculatorDevice = root.querySelector<HTMLElement>("[data-calc-device]");
@@ -112,6 +120,7 @@ export const renderCalculatorStorageV2Module = (
           settingsChangedCount: feedbackPulse.settingsChangedCount,
           rollUpdatedCount: feedbackPulse.rollUpdatedCount,
           substepExecutedCount: feedbackPulse.substepExecutedCount,
+          substepExecutedToneFrequenciesHz: feedbackPulse.substepExecutedToneFrequenciesHz,
         });
         activeInstanceRendered = true;
         return;
@@ -132,6 +141,7 @@ export const renderCalculatorStorageV2Module = (
         settingsChangedCount: feedbackPulse.settingsChangedCount,
         rollUpdatedCount: feedbackPulse.rollUpdatedCount,
         substepExecutedCount: feedbackPulse.substepExecutedCount,
+        substepExecutedToneFrequenciesHz: feedbackPulse.substepExecutedToneFrequenciesHz,
       });
     });
     if (!activeInstanceRendered) {
@@ -145,6 +155,7 @@ export const renderCalculatorStorageV2Module = (
         settingsChangedCount: feedbackPulse.settingsChangedCount,
         rollUpdatedCount: feedbackPulse.rollUpdatedCount,
         substepExecutedCount: feedbackPulse.substepExecutedCount,
+        substepExecutedToneFrequenciesHz: feedbackPulse.substepExecutedToneFrequenciesHz,
       });
     }
   } else if (calculatorDevice) {
@@ -166,6 +177,7 @@ export const renderCalculatorStorageV2Module = (
         settingsChangedCount: feedbackPulse.settingsChangedCount,
         rollUpdatedCount: feedbackPulse.rollUpdatedCount,
         substepExecutedCount: feedbackPulse.substepExecutedCount,
+        substepExecutedToneFrequenciesHz: feedbackPulse.substepExecutedToneFrequenciesHz,
       });
     });
     if (!activeInstance) {
@@ -178,6 +190,7 @@ export const renderCalculatorStorageV2Module = (
         settingsChangedCount: feedbackPulse.settingsChangedCount,
         rollUpdatedCount: feedbackPulse.rollUpdatedCount,
         substepExecutedCount: feedbackPulse.substepExecutedCount,
+        substepExecutedToneFrequenciesHz: feedbackPulse.substepExecutedToneFrequenciesHz,
       });
     }
   } else {
@@ -191,6 +204,7 @@ export const renderCalculatorStorageV2Module = (
       settingsChangedCount: feedbackPulse.settingsChangedCount,
       rollUpdatedCount: feedbackPulse.rollUpdatedCount,
       substepExecutedCount: feedbackPulse.substepExecutedCount,
+      substepExecutedToneFrequenciesHz: feedbackPulse.substepExecutedToneFrequenciesHz,
     });
   }
   renderStorageV2Module(root, state, dispatch, {

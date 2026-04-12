@@ -910,6 +910,7 @@ export type UiEffect =
   | {
       type: "substep_executed";
       calculatorId: CalculatorId;
+      toneFrequencyHz?: number;
     };
 
 export type Store = {

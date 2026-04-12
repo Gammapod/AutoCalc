@@ -1,4 +1,4 @@
-import type { Action, GameState } from "./types.js";
+import type { Action, GameState, ScalarValue } from "./types.js";
 import { eventFromAction, type DomainEvent } from "./events.js";
 import { applyEvent } from "./transition.js";
 import type { AppServices } from "../contracts/appServices.js";
@@ -11,6 +11,8 @@ import { KEY_ID, isBinaryOperatorKeyId, isConstantKeyId, isDigitKeyId, isUnaryOp
 import { projectCalculatorToLegacy } from "./multiCalculator.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG, HISTORY_FLAG, STEP_EXPANSION_FLAG } from "./state.js";
 import { resolveWrapStageMode } from "./executionPlan.js";
+import { algebraicToApproxNumber } from "./algebraicScalar.js";
+import { expressionToRational } from "./expression.js";
 
 export type DomainCommand = {
   type: "DispatchAction";
@@ -101,18 +103,83 @@ const isSubstepFeedbackAction = (action: Action): boolean =>
   action.type === "AUTO_STEP_TICK"
   || (action.type === "PRESS_KEY" && action.key === KEY_ID.exec_step_through);
 
-const resolveSubstepExecutedCount = (previous: GameState, next: GameState, action: Action): number => {
+const BASE_WHITE_FEEDBACK_TONE_HZ = 440;
+const MIN_FEEDBACK_TONE_HZ = 20;
+const MAX_FEEDBACK_TONE_HZ = 20000;
+
+const rationalToApprox = (num: bigint, den: bigint): number | null => {
+  if (den === 0n) {
+    return null;
+  }
+  const value = Number(num) / Number(den);
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+  return value;
+};
+
+const scalarToApprox = (value: ScalarValue): number | null => {
+  if (value.kind === "rational") {
+    return rationalToApprox(value.value.num, value.value.den);
+  }
+  if (value.kind === "alg") {
+    const approximated = algebraicToApproxNumber(value.value);
+    return Number.isFinite(approximated) ? approximated : null;
+  }
+  const rational = expressionToRational(value.value);
+  if (!rational) {
+    return null;
+  }
+  return rationalToApprox(rational.num, rational.den);
+};
+
+const resolveCalculatorValueMagnitudeApprox = (value: GameState["calculator"]["total"]): number | null => {
+  if (value.kind === "rational") {
+    const approximated = rationalToApprox(value.value.num, value.value.den);
+    return approximated === null ? null : Math.abs(approximated);
+  }
+  if (value.kind === "complex") {
+    const re = scalarToApprox(value.value.re);
+    const im = scalarToApprox(value.value.im);
+    if (re === null || im === null) {
+      return null;
+    }
+    const magnitude = Math.hypot(re, im);
+    return Number.isFinite(magnitude) ? magnitude : null;
+  }
+  return null;
+};
+
+const resolveSubstepToneFrequencyHz = (
+  value: GameState["calculator"]["total"],
+  state: GameState,
+): number | undefined => {
+  if (resolveWrapStageMode(state) !== "binary_octave_cycle") {
+    return undefined;
+  }
+  const magnitude = resolveCalculatorValueMagnitudeApprox(value);
+  if (magnitude === null || !Number.isFinite(magnitude)) {
+    return undefined;
+  }
+  const proportionalHz = BASE_WHITE_FEEDBACK_TONE_HZ * magnitude;
+  if (!(proportionalHz > 0) || !Number.isFinite(proportionalHz)) {
+    return undefined;
+  }
+  return Math.max(MIN_FEEDBACK_TONE_HZ, Math.min(MAX_FEEDBACK_TONE_HZ, proportionalHz));
+};
+
+const resolveSubstepExecutedResults = (previous: GameState, next: GameState, action: Action): GameState["calculator"]["total"][] => {
   if (!isSubstepFeedbackAction(action)) {
-    return 0;
+    return [];
   }
   const previousExecuted = previous.calculator.stepProgress.executedSlotResults.length;
   const nextExecuted = next.calculator.stepProgress.executedSlotResults.length;
   if (nextExecuted > previousExecuted) {
-    return nextExecuted - previousExecuted;
+    return next.calculator.stepProgress.executedSlotResults.slice(previousExecuted, nextExecuted);
   }
   const rollDelta = next.calculator.rollEntries.length - previous.calculator.rollEntries.length;
   if (rollDelta <= 0 || previous.calculator.operationSlots.length <= 0) {
-    return 0;
+    return [];
   }
   const isLikelyAutoStepEqualsFallback =
     action.type === "AUTO_STEP_TICK"
@@ -120,9 +187,9 @@ const resolveSubstepExecutedCount = (previous: GameState, next: GameState, actio
     && !next.calculator.stepProgress.active
     && Boolean(previous.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]);
   if (isLikelyAutoStepEqualsFallback) {
-    return 0;
+    return [];
   }
-  return 1;
+  return [next.calculator.total];
 };
 
 const resolveDispatchUiEffects = (
@@ -164,9 +231,14 @@ const resolveDispatchUiEffects = (
   if (hasRollUpdated(previousTarget, nextTarget)) {
     uiEffects.push({ type: "roll_updated", calculatorId: targetCalculatorId });
   }
-  const substepExecutedCount = resolveSubstepExecutedCount(previousTarget, nextTarget, action);
-  for (let index = 0; index < substepExecutedCount; index += 1) {
-    uiEffects.push({ type: "substep_executed", calculatorId: targetCalculatorId });
+  const substepExecutedResults = resolveSubstepExecutedResults(previousTarget, nextTarget, action);
+  for (const substepResult of substepExecutedResults) {
+    const toneFrequencyHz = resolveSubstepToneFrequencyHz(substepResult, nextTarget);
+    uiEffects.push({
+      type: "substep_executed",
+      calculatorId: targetCalculatorId,
+      ...(typeof toneFrequencyHz === "number" ? { toneFrequencyHz } : {}),
+    });
   }
   if (action.type !== "AUTO_STEP_TICK") {
     uiEffects.push(resolveDomainDispatchInputFeedback(previousState, nextState, action, uiEffects));

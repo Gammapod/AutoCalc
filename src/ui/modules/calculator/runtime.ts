@@ -26,11 +26,13 @@ export type CalculatorLayoutRuntimeState = {
 };
 
 type InputOutcomeToneSpec = {
+  oscillatorType: OscillatorType;
   frequencyStartHz: number;
   frequencyEndHz: number;
   durationMs: number;
   peakGain: number;
   buzzPulseHz: number | null;
+  percussive?: boolean;
 };
 
 type InputOutcomeTransportConfig = {
@@ -44,6 +46,11 @@ type CalculatorFeedbackLed =
   | "settings_changed"
   | "roll_updated"
   | "substep_executed";
+
+type QueuedInputOutcomeTone = {
+  outcome: CalculatorFeedbackLed;
+  frequencyHz?: number;
+};
 
 const createCalculatorModuleState = (): CalculatorModuleState => ({
   pendingToggleAnimationByFlag: {},
@@ -70,7 +77,7 @@ const createCalculatorLayoutRuntimeState = (): CalculatorLayoutRuntimeState => (
 
 let inputOutcomeAudioContext: AudioContext | null = null;
 let inputOutcomeSchedulerTimer: ReturnType<typeof setInterval> | null = null;
-let inputOutcomeQueue: CalculatorFeedbackLed[] = [];
+let inputOutcomeQueue: QueuedInputOutcomeTone[] = [];
 let inputOutcomeNextSlotTimeSec: number | null = null;
 
 const INPUT_OUTCOME_TRANSPORT_DEFAULTS: InputOutcomeTransportConfig = {
@@ -85,6 +92,7 @@ let inputOutcomeTransportConfig: InputOutcomeTransportConfig = {
 
 const INPUT_OUTCOME_TONES: Record<CalculatorFeedbackLed, InputOutcomeToneSpec> = {
   rejected: {
+    oscillatorType: "square",
     frequencyStartHz: 320,
     frequencyEndHz: 240,
     durationMs: 125,
@@ -92,6 +100,7 @@ const INPUT_OUTCOME_TONES: Record<CalculatorFeedbackLed, InputOutcomeToneSpec> =
     buzzPulseHz: 90,
   },
   builder_changed: {
+    oscillatorType: "square",
     frequencyStartHz: 1040,
     frequencyEndHz: 860,
     durationMs: 125,
@@ -99,6 +108,7 @@ const INPUT_OUTCOME_TONES: Record<CalculatorFeedbackLed, InputOutcomeToneSpec> =
     buzzPulseHz: null,
   },
   settings_changed: {
+    oscillatorType: "square",
     frequencyStartHz: 720,
     frequencyEndHz: 590,
     durationMs: 125,
@@ -106,13 +116,16 @@ const INPUT_OUTCOME_TONES: Record<CalculatorFeedbackLed, InputOutcomeToneSpec> =
     buzzPulseHz: null,
   },
   roll_updated: {
-    frequencyStartHz: 2400,
-    frequencyEndHz: 1700,
-    durationMs: 125,
-    peakGain: 0.045,
+    oscillatorType: "sine",
+    frequencyStartHz: 220,
+    frequencyEndHz: 220,
+    durationMs: 115,
+    peakGain: 0.07,
     buzzPulseHz: null,
+    percussive: true,
   },
   substep_executed: {
+    oscillatorType: "sawtooth",
     frequencyStartHz: 440,
     frequencyEndHz: 440,
     durationMs: 115,
@@ -148,9 +161,10 @@ const resolveInputOutcomeAudioContext = (): AudioContext | null => {
 
 const playInputOutcomeToneWithContext = (
   context: AudioContext,
-  outcome: CalculatorFeedbackLed,
+  request: QueuedInputOutcomeTone,
   startTimeSec: number,
 ): void => {
+  const outcome = request.outcome;
   const spec = INPUT_OUTCOME_TONES[outcome];
   const oscillator = context.createOscillator();
   const gainNode = context.createGain();
@@ -159,12 +173,21 @@ const playInputOutcomeToneWithContext = (
   const attackSeconds = 0.004;
   const endTime = now + durationSeconds;
   const releaseStart = endTime - Math.min(0.03, durationSeconds * 0.45);
-  oscillator.type = outcome === "substep_executed" ? "sawtooth" : "square";
-  oscillator.frequency.setValueAtTime(spec.frequencyStartHz, now);
-  oscillator.frequency.exponentialRampToValueAtTime(spec.frequencyEndHz, endTime);
+  const overrideFrequencyHz =
+    typeof request.frequencyHz === "number" && Number.isFinite(request.frequencyHz) && request.frequencyHz > 0
+      ? request.frequencyHz
+      : null;
+  const frequencyStartHz = overrideFrequencyHz ?? spec.frequencyStartHz;
+  const frequencyEndHz = overrideFrequencyHz ?? spec.frequencyEndHz;
+  oscillator.type = spec.oscillatorType;
+  oscillator.frequency.setValueAtTime(frequencyStartHz, now);
+  oscillator.frequency.exponentialRampToValueAtTime(frequencyEndHz, endTime);
   gainNode.gain.cancelScheduledValues(now);
   gainNode.gain.setValueAtTime(0.0001, now);
-  if (spec.buzzPulseHz && spec.buzzPulseHz > 0) {
+  if (spec.percussive) {
+    gainNode.gain.linearRampToValueAtTime(spec.peakGain, now + attackSeconds);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, endTime);
+  } else if (spec.buzzPulseHz && spec.buzzPulseHz > 0) {
     const pulseHalfPeriod = 1 / (spec.buzzPulseHz * 2);
     const pulseHigh = spec.peakGain;
     const pulseLow = Math.max(0.0001, spec.peakGain * 0.15);
@@ -220,11 +243,11 @@ const scheduleInputOutcomeQueue = (context: AudioContext): void => {
     );
   }
   while (inputOutcomeQueue.length > 0 && inputOutcomeNextSlotTimeSec <= scheduleUntil) {
-    const nextOutcome = inputOutcomeQueue.shift();
-    if (!nextOutcome) {
+    const nextTone = inputOutcomeQueue.shift();
+    if (!nextTone) {
       break;
     }
-    playInputOutcomeToneWithContext(context, nextOutcome, inputOutcomeNextSlotTimeSec);
+    playInputOutcomeToneWithContext(context, nextTone, inputOutcomeNextSlotTimeSec);
     inputOutcomeNextSlotTimeSec += substepDurationSec;
   }
 };
@@ -266,8 +289,16 @@ const ensureInputOutcomeScheduler = (): void => {
   inputOutcomeSchedulerTimer = setInterval(runInputOutcomeSchedulerTick, INPUT_OUTCOME_SCHEDULER_TICK_MS);
 };
 
-const enqueueCalculatorInputOutcomeTone = (outcome: CalculatorFeedbackLed): void => {
-  inputOutcomeQueue.push(outcome);
+const enqueueCalculatorInputOutcomeTone = (
+  outcome: CalculatorFeedbackLed,
+  options: {
+    frequencyHz?: number;
+  } = {},
+): void => {
+  inputOutcomeQueue.push({
+    outcome,
+    ...(typeof options.frequencyHz === "number" ? { frequencyHz: options.frequencyHz } : {}),
+  });
   ensureInputOutcomeScheduler();
   runInputOutcomeSchedulerTick();
 };
@@ -412,6 +443,10 @@ export const triggerCalculatorInputOutcomeLed = (
   root: Element,
   outcome: CalculatorFeedbackLed,
   triggerCount: number | null | undefined,
+  options: {
+    frequencyHz?: number;
+    frequencyHzSequence?: number[];
+  } = {},
 ): void => {
   const normalizedTriggerCount = Math.max(0, Math.trunc(triggerCount ?? 0));
   if (normalizedTriggerCount <= 0) {
@@ -424,7 +459,15 @@ export const triggerCalculatorInputOutcomeLed = (
   if (!target) {
     return;
   }
-  enqueueCalculatorInputOutcomeTone(outcome);
+  const frequencySequence = Array.isArray(options.frequencyHzSequence)
+    ? options.frequencyHzSequence
+    : [];
+  for (let index = 0; index < normalizedTriggerCount; index += 1) {
+    const frequencyHz = frequencySequence[index] ?? options.frequencyHz;
+    enqueueCalculatorInputOutcomeTone(outcome, {
+      ...(typeof frequencyHz === "number" ? { frequencyHz } : {}),
+    });
+  }
   const pulseClass = {
     rejected: "calc-led--pulse-red",
     builder_changed: "calc-led--pulse-blue",

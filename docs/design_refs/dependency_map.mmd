@@ -69,10 +69,16 @@ flowchart TD
         Mmul
         Mdiv
         Mper
+
         Mrecip
         Mneg
-        
     end
+
+        subgraph Music
+        Mwhole
+        Msemit
+        Minter
+        end
 
     subgraph Exponential_Ops    
         Epow
@@ -203,12 +209,21 @@ flowchart TD
     %% Expanded form `[ (a÷100) × b ]` <-- should 100 change based on base setting? 
     
     Imulneg --> Mneg["n [ ± ]"]
-    %% Expanded form `[ 4 ± ]` -> `[ 4 × -1 ] ]`
+    %% Expanded form `[ 4 ± ]` -> `[ 4 × -1 ]`
 
     %% More division and fraction-related operations:
     %% probability (ie, random number generator)
     %% average 2 numbers
     %% mediant?
+
+    Epow --> Mwhole
+    Mdiv --> Mwhole["a ♩↑ b"]
+    %% Expanded form `[ a × ((9 ÷ 8) ^ b) ]`
+    Mrecip --> Minter["a ⋮ b"]
+    %% Expanded form `[ a × (1 + 1⁄b) ]`
+    Eradical --> Msemit["a ♯↑ b"]
+    %% Expanded form `[ a × (¹²√(2 ^ b)) ]`
+
 %% 
 %% Growth
     %% Visualizer: Not set in stone yet. Cobweb plot? 

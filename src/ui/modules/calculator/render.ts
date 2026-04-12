@@ -104,6 +104,7 @@ export const renderCalculatorV2Module = (
     settingsChangedCount?: number;
     rollUpdatedCount?: number;
     substepExecutedCount?: number;
+    substepExecutedToneFrequenciesHz?: number[];
   },
 ): void => {
   const calculatorId: CalculatorId =
@@ -121,7 +122,12 @@ export const renderCalculatorV2Module = (
   triggerCalculatorInputOutcomeLed(root, "builder_changed", options.builderChangedCount ?? 0);
   triggerCalculatorInputOutcomeLed(root, "settings_changed", options.settingsChangedCount ?? 0);
   triggerCalculatorInputOutcomeLed(root, "roll_updated", options.rollUpdatedCount ?? 0);
-  triggerCalculatorInputOutcomeLed(root, "substep_executed", options.substepExecutedCount ?? 0);
+  triggerCalculatorInputOutcomeLed(
+    root,
+    "substep_executed",
+    options.substepExecutedCount ?? 0,
+    { frequencyHzSequence: options.substepExecutedToneFrequenciesHz },
+  );
   ensureKeyLabelResizeListener(root);
   const totalEl = root.querySelector("[data-v2-total-panel]") ?? root.querySelector("[data-total]");
   const slotEl = root.querySelector<HTMLElement>("[data-slot]");
