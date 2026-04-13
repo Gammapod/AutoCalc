@@ -18,6 +18,7 @@ const buildStateRows = (state: GameState): StateRow[] => {
     { label: "beta", value: state.lambdaControl.beta.toString() },
     { label: "gamma", value: state.lambdaControl.gamma.toString() },
     { label: "delta", value: state.lambdaControl.delta.toString() },
+    { label: "delta_q", value: state.lambdaControl.delta_q.toString() },
     { label: "epsilon", value: state.lambdaControl.epsilon.toString() },
     { label: "active visualizer", value: state.settings.visualizer },
     { label: "active base", value: state.settings.base },

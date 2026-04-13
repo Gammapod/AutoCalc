@@ -2,7 +2,7 @@ Truth 1: Invariants
 
 # Math Spec
 
-_Last updated: 2026-03-31_
+_Last updated: 2026-04-11_
 
 ## Scope
 
@@ -41,7 +41,10 @@ Release sequencing for implementation is maintained in `docs/planning/Planned Re
 - `NaN` is a terminal null-result outcome persisted in roll/history rows and is also a valid execution seed for propagation semantics.
 - Runtime MUST populate roll error metadata for NaN-producing execution outcomes (reason taxonomy expansion is deferred to dedicated slices).
 - Execution-category key inputs remain policy-allowed when the latest roll/history row is `NaN`; operator evaluation from NaN current total returns `NaN` and preserves NaN metadata semantics.
-- Overflow is non-NaN failure: overflow clamps to finite boundary output and emits overflow metadata.
+- Magnitude overflow is non-NaN failure: magnitude overflow clamps to finite boundary output and emits overflow metadata.
+- Precision overflow is non-NaN failure: when exact representability limits are exceeded, runtime MUST emit precision-overflow metadata and project to a finite exact representable output (projection policy is deferred).
+- Precision-overflow handling MUST remain exact-output only; approximate numeric values are not persisted as roll outputs.
+- Inverse-power/root evaluation is exact-only: non-perfect roots are treated as ambiguous and resolve to `NaN` (no symbolic radical fallback in runtime totals).
 
 6. Approximation is branch-only and deterministic.
 - Stored/returned operator values remain exact (`rational` / `expr` / `complex`); no approximate roll values are persisted.
@@ -125,3 +128,5 @@ Policy classes:
 
 1. `op_pow` non-integer exponent policy for complex bases (principal branch and branch-cut semantics).
 2. Any future true complex-plane rotation operator remains out of scope for `op_rotate_left`.
+3. Rational precision control projection wiring (`rationalPrecision`/`delta_q`, calculator-local) is deferred; current runtime applies denominator-precision projection using existing range digits.
+4. Algebraic/radical precision projection is intentionally out of scope in the current model; non-perfect inverse roots remain `NaN` rather than symbolic radical runtime totals.

@@ -19,7 +19,7 @@ const buildCurrentActionFixtures = (): Action[] => {
     { type: "UPGRADE_KEYPAD_COLUMN" },
     { type: "TOGGLE_FLAG", flag: "settings.history" },
     { type: "TOGGLE_VISUALIZER", visualizer: "graph" },
-    { type: "LAMBDA_SET_CONTROL", value: { alpha: 3, beta: 2, gamma: 2, delta: 4, epsilon: 1 } },
+    { type: "LAMBDA_SET_CONTROL", value: { alpha: 3, beta: 2, gamma: 2, delta: 4, delta_q: 4, epsilon: 1 } },
     { type: "SET_CONTROL_FIELD", field: "alpha", value: 4 },
     { type: "SET_ACTIVE_CALCULATOR", calculatorId: "f" },
     { type: "AUTO_STEP_TICK" },

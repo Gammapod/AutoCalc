@@ -7,6 +7,7 @@ const lambdaControlEquals = (a: LambdaControl, b: LambdaControl): boolean =>
   && a.beta === b.beta
   && a.gamma === b.gamma
   && a.delta === b.delta
+  && a.delta_q === b.delta_q
   && a.epsilon === b.epsilon;
 
 export const applyAllocatorRuntimeProjection = (

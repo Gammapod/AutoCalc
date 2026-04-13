@@ -6,6 +6,8 @@ import { runCatalogCanonicalGuardTests } from "./catalogCanonical.guard.test.js"
 import { runContractsActionEventCurrentTests } from "./contracts.actionEvent.current.test.js";
 import { runContractsDomainUiEffectsCurrentTests } from "./contracts.domainUiEffects.current.test.js";
 import { runNoLegacySymbolsGuardTests } from "./noLegacySymbols.guard.test.js";
+import { runBootstrapDebugControlBindingsTests } from "./bootstrapDebugControlBindings.test.js";
+import { runReducerScalarLimitPolicyTests } from "./reducer.scalarLimitPolicy.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -15,6 +17,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/action-event-current", runContractsActionEventCurrentTests],
   ["contracts/domain-ui-effects-current", runContractsDomainUiEffectsCurrentTests],
   ["contracts/no-legacy-symbols-guard", runNoLegacySymbolsGuardTests],
+  ["ui/bootstrap-debug-control-bindings", runBootstrapDebugControlBindingsTests],
+  ["reducer/scalar-limit-policy", runReducerScalarLimitPolicyTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

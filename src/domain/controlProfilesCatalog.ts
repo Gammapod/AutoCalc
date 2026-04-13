@@ -5,6 +5,7 @@ const zeroCoefficients = (): Record<ControlField, number> => ({
   beta: 0,
   gamma: 0,
   delta: 0,
+  delta_q: 0,
   epsilon: 0,
 });
 
@@ -21,6 +22,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: 3,
       gamma: 1,
       delta: 1,
+      delta_q: 1,
       epsilon: 0,
     },
     settable: {
@@ -28,6 +30,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: true,
       gamma: true,
       delta: false,
+      delta_q: false,
       epsilon: false,
     },
     bounds: {
@@ -35,6 +38,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { min: 2, max: 8 },
       gamma: { min: 1, max: 8 },
       delta: { min: 1, max: null },
+      delta_q: { min: 1, max: null },
       epsilon: { min: 0, max: null },
     },
     equations: {
@@ -42,6 +46,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { coefficients: coeff({ beta: 1 }), constant: 0 },
       gamma: { coefficients: coeff({ gamma: 1 }), constant: 0 },
       delta: { coefficients: coeff({ alpha: 0.5, beta: 0.5, gamma: 1 }), constant: 0 },
+      delta_q: { coefficients: coeff({ alpha: 0.5, beta: 0.5, gamma: 1 }), constant: 0 },
       epsilon: { coefficients: coeff({ alpha: 0.1, beta: 0.1, gamma: 0.1, delta: 0.1 }), constant: 0.1 },
     },
     rounding: "floor",
@@ -54,6 +59,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: 2,
       gamma: 3,
       delta: 8,
+      delta_q: 8,
       epsilon: 0,
     },
     settable: {
@@ -61,6 +67,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: false,
       gamma: true,
       delta: false,
+      delta_q: false,
       epsilon: false,
     },
     bounds: {
@@ -68,6 +75,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { min: 2, max: 2 },
       gamma: { min: 0, max: 11 },
       delta: { min: 8, max: 8 },
+      delta_q: { min: 8, max: 8 },
       epsilon: { min: 0, max: null },
     },
     equations: {
@@ -75,6 +83,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { coefficients: coeff({ beta: 1 }), constant: 0 },
       gamma: { coefficients: coeff({ gamma: 1 }), constant: 0 },
       delta: { coefficients: coeff({ delta: 1 }), constant: 0 },
+      delta_q: { coefficients: coeff({ delta_q: 1 }), constant: 0 },
       epsilon: { coefficients: coeff({ gamma: 0.5 }), constant: -0.5 },
     },
     rounding: "floor",
@@ -86,6 +95,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: 5,
       gamma: 4,
       delta: 12,
+      delta_q: 12,
       epsilon: 1,
     },
     settable: {
@@ -93,6 +103,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: false,
       gamma: false,
       delta: false,
+      delta_q: false,
       epsilon: false,
     },
     bounds: {
@@ -100,6 +111,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { min: 5, max: 5 },
       gamma: { min: 4, max: 4 },
       delta: { min: 12, max: 12 },
+      delta_q: { min: 12, max: 12 },
       epsilon: { min: 1, max: 1 },
     },
     equations: {
@@ -107,6 +119,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { coefficients: coeff({ beta: 1 }), constant: 0 },
       gamma: { coefficients: coeff({ gamma: 1 }), constant: 0 },
       delta: { coefficients: coeff({ delta: 1 }), constant: 0 },
+      delta_q: { coefficients: coeff({ delta_q: 1 }), constant: 0 },
       epsilon: { coefficients: coeff({ epsilon: 1 }), constant: 0 },
     },
     rounding: "floor",
@@ -118,6 +131,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: 2,
       gamma: 12,
       delta: 8,
+      delta_q: 8,
       epsilon: 4,
     },
     settable: {
@@ -125,6 +139,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: false,
       gamma: false,
       delta: false,
+      delta_q: false,
       epsilon: false,
     },
     bounds: {
@@ -132,6 +147,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { min: 2, max: 2 },
       gamma: { min: 12, max: 12 },
       delta: { min: 8, max: 8 },
+      delta_q: { min: 8, max: 8 },
       epsilon: { min: 4, max: 4 },
     },
     equations: {
@@ -139,6 +155,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { coefficients: coeff({ beta: 1 }), constant: 0 },
       gamma: { coefficients: coeff({ gamma: 1 }), constant: 0 },
       delta: { coefficients: coeff({ delta: 1 }), constant: 0 },
+      delta_q: { coefficients: coeff({ delta_q: 1 }), constant: 0 },
       epsilon: { coefficients: coeff({ epsilon: 1 }), constant: 0 },
     },
     rounding: "floor",
@@ -150,6 +167,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: 6,
       gamma: 0,
       delta: 0,
+      delta_q: 0,
       epsilon: 0,
     },
     settable: {
@@ -157,6 +175,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: false,
       gamma: false,
       delta: false,
+      delta_q: false,
       epsilon: false,
     },
     bounds: {
@@ -164,6 +183,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { min: 6, max: 6 },
       gamma: { min: 0, max: 0 },
       delta: { min: 0, max: 0 },
+      delta_q: { min: 0, max: 0 },
       epsilon: { min: 0, max: 0 },
     },
     equations: {
@@ -171,6 +191,7 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       beta: { coefficients: coeff({ beta: 1 }), constant: 0 },
       gamma: { coefficients: coeff({ gamma: 1 }), constant: 0 },
       delta: { coefficients: coeff({ delta: 1 }), constant: 0 },
+      delta_q: { coefficients: coeff({ delta_q: 1 }), constant: 0 },
       epsilon: { coefficients: coeff({ epsilon: 1 }), constant: 0 },
     },
     rounding: "floor",

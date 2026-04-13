@@ -197,13 +197,20 @@ export type CalculatorValue =
 export type LegacyErrorCode = "x\u2209[-R,R]" | "n/0" | "NaN" | "ALG";
 export type CanonicalErrorCode =
   | "overflow"
+  | "overflow_q"
   | "seed_nan"
   | "inverse_ambiguous"
   | BinarySlotOperator
   | UnarySlotOperator;
 export type ErrorCode = CanonicalErrorCode | LegacyErrorCode;
 
-export type ExecutionErrorKind = "overflow" | "division_by_zero" | "nan_input" | "symbolic_result" | "ambiguous";
+export type ExecutionErrorKind =
+  | "overflow"
+  | "overflow_q"
+  | "division_by_zero"
+  | "nan_input"
+  | "symbolic_result"
+  | "ambiguous";
 
 export type SymbolicRollPayload = {
   // Canonical symbolic evaluation payload used by algebraic visualizer.
@@ -316,7 +323,7 @@ export type AllocatorState = {
 export type AllocatorAllocationField = keyof AllocatorState["allocations"];
 
 export type LambdaAxis = "alpha" | "beta" | "gamma";
-export type ControlField = "alpha" | "beta" | "gamma" | "delta" | "epsilon";
+export type ControlField = "alpha" | "beta" | "gamma" | "delta" | "delta_q" | "epsilon";
 
 export type ControlFieldBounds = {
   min: number;
@@ -355,7 +362,9 @@ export type ControlProjection = {
   keypadRows: number;
   maxSlots: number;
   maxTotalDigits: number;
+  maxDenominatorDigits: number;
   deltaEffective: number;
+  deltaQEffective: number;
   epsilonEffective: RationalValue;
   autoEqualsRateMultiplier: number;
 };
@@ -365,6 +374,7 @@ export type LambdaControl = {
   beta: number;
   gamma: number;
   delta: number;
+  delta_q: number;
   epsilon: number;
 };
 

@@ -20,6 +20,9 @@ const fieldToToken = (field: ControlField | null): SelectionRenderModel["selecte
   if (field === "delta") {
     return "\u03B4";
   }
+  if (field === "delta_q") {
+    return "\u03B4";
+  }
   if (field === "epsilon") {
     return "\u03F5";
   }
@@ -37,6 +40,7 @@ export const buildSelectionRenderModel = (state: GameState): SelectionRenderMode
       beta: selected === "beta",
       gamma: selected === "gamma",
       delta: selected === "delta",
+      delta_q: selected === "delta_q",
       epsilon: selected === "epsilon",
     },
   };

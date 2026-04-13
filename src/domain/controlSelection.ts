@@ -1,6 +1,6 @@
 import type { ControlField, GameState } from "./types.js";
 
-const CONTROL_SELECTION_ORDER: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
+const CONTROL_SELECTION_ORDER: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "delta_q", "epsilon"];
 
 export const getSettableControlFields = (): ControlField[] => [...CONTROL_SELECTION_ORDER];
 

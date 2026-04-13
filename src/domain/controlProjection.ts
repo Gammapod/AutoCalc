@@ -40,7 +40,9 @@ export const projectControlFromInputs = (
     keypadRows: derived.effectiveFields.beta,
     maxSlots: derived.effectiveFields.gamma,
     maxTotalDigits: derived.effectiveFields.delta,
+    maxDenominatorDigits: derived.effectiveFields.delta_q,
     deltaEffective: derived.deltaEffective,
+    deltaQEffective: derived.effectiveFields.delta_q,
     epsilonEffective: derived.epsilonEffective,
     autoEqualsRateMultiplier: getAutoEqualsRateMultiplier(control, profile),
   };

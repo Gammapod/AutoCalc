@@ -26,6 +26,7 @@ export const runUiModuleStateRendererV2Tests = (): void => {
         beta: 4,
         gamma: 3,
         delta: 2,
+        delta_q: 2,
         epsilon: 1,
       },
       ui: {
@@ -42,6 +43,7 @@ export const runUiModuleStateRendererV2Tests = (): void => {
     renderStateVisualizerPanel(harness.root, state);
     assert.equal(panel.getAttribute("aria-hidden"), "false", "state panel is visible after render");
     assert.match(panel.textContent ?? "", /alpha/u, "state panel includes alpha");
+    assert.match(panel.textContent ?? "", /delta_q/u, "state panel includes delta_q");
     assert.match(panel.textContent ?? "", /epsilon/u, "state panel includes epsilon");
     assert.match(panel.textContent ?? "", /active visualizer/u, "state panel includes active visualizer");
     assert.match(panel.textContent ?? "", /active base/u, "state panel includes active base");

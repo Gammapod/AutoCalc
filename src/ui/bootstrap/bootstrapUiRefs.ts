@@ -1,10 +1,12 @@
+import type { ControlField } from "../../domain/types.js";
+
 export type BootstrapUiRefs = {
   debugToggle: HTMLInputElement;
   debugMenu: HTMLElement;
   debugCalculatorSelect: HTMLSelectElement;
   clearSaveButton: HTMLButtonElement;
   unlockAllButton: HTMLButtonElement;
-  debugControlInputs: Record<"alpha" | "beta" | "gamma" | "delta" | "epsilon", HTMLInputElement>;
+  debugControlInputs: Record<ControlField, HTMLInputElement>;
   applyControlFieldsButton: HTMLButtonElement;
   copyCalculatorSnapshotButton: HTMLButtonElement;
   debugRollStateEl: HTMLElement;
@@ -22,6 +24,7 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
   const betaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-beta]");
   const gammaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-gamma]");
   const deltaInput = doc.querySelector<HTMLInputElement>("[data-debug-control-delta]");
+  const deltaQInput = doc.querySelector<HTMLInputElement>("[data-debug-control-delta-q]");
   const epsilonInput = doc.querySelector<HTMLInputElement>("[data-debug-control-epsilon]");
   const applyControlFieldsButton = doc.querySelector<HTMLButtonElement>("[data-debug-apply-control-fields]");
   const copyCalculatorSnapshotButton = doc.querySelector<HTMLButtonElement>("[data-debug-copy-calculator-snapshot]");
@@ -39,6 +42,7 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
     !betaInput ||
     !gammaInput ||
     !deltaInput ||
+    !deltaQInput ||
     !epsilonInput ||
     !applyControlFieldsButton ||
     !copyCalculatorSnapshotButton ||
@@ -60,6 +64,7 @@ export const resolveBootstrapUiRefs = (doc: Document): BootstrapUiRefs => {
       beta: betaInput,
       gamma: gammaInput,
       delta: deltaInput,
+      delta_q: deltaQInput,
       epsilon: epsilonInput,
     },
     applyControlFieldsButton,

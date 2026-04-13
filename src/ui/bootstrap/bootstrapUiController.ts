@@ -23,7 +23,7 @@ type BootstrapUiControllerDeps = {
   onNavigateToAppMode: (url: string) => void;
 };
 
-const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
+const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "delta_q", "epsilon"];
 
 const getOppositeUiShellMode = (mode: UiShellMode): UiShellMode =>
   mode === "mobile" ? "desktop" : "mobile";
@@ -193,6 +193,7 @@ export const createBootstrapUiController = ({
       beta: fallback.beta,
       gamma: fallback.gamma,
       delta: fallback.delta,
+      delta_q: fallback.delta_q,
       epsilon: fallback.epsilon,
     };
     for (const field of CONTROL_FIELDS) {

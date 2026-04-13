@@ -100,6 +100,64 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
   assert.equal(inversePreview.calculator.stepProgress.active, true, "inverse step-through starts staged inverse execution");
   assert.deepEqual(inversePreview.calculator.stepProgress.currentTotal, r(-99n), "inverse wrap stage projects to canonical principal interval");
 
+  const inversePowAmbiguous = reducer(
+    {
+      ...base,
+      ui: {
+        ...base.ui,
+        buttonFlags: {},
+      },
+      calculator: {
+        ...base.calculator,
+        total: r(5n),
+        operationSlots: [{ operator: op("op_pow"), operand: 2n }],
+        rollEntries: [],
+        draftingSlot: null,
+      },
+    },
+    { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
+  );
+  const inversePowStep = reducer(inversePowAmbiguous, { type: "PRESS_KEY", key: KEY_ID.exec_step_through });
+  assert.equal(
+    inversePowStep.calculator.total.kind,
+    "nan",
+    "inverse of non-perfect integer powers resolves to NaN (no symbolic radical fallback)",
+  );
+  assert.equal(
+    inversePowStep.calculator.rollEntries[1]?.error?.code,
+    "inverse_ambiguous",
+    "inverse non-perfect power emits inverse_ambiguous metadata",
+  );
+
+  const rationalPrecisionOverflow = reducer(
+    {
+      ...base,
+      unlocks: {
+        ...base.unlocks,
+        maxTotalDigits: 1,
+      },
+      ui: {
+        ...base.ui,
+        buttonFlags: {},
+      },
+      calculator: {
+        ...base.calculator,
+        total: r(8n),
+        operationSlots: [{ operator: op("op_div"), operand: 11n }],
+        rollEntries: [],
+        draftingSlot: null,
+      },
+    },
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    rationalPrecisionOverflow.calculator.total,
+    r(3n, 4n),
+    "rational precision overflow projects to deterministic nearest denominator-bounded fraction",
+  );
+  assert.equal(rationalPrecisionOverflow.calculator.rollEntries[1]?.error?.code, "overflow_q", "roll row carries overflow_q code");
+  assert.equal(rationalPrecisionOverflow.calculator.rollEntries[1]?.error?.kind, "overflow_q", "roll row carries overflow_q kind");
+
   const complexWrapBase: GameState = {
     ...base,
     calculator: {

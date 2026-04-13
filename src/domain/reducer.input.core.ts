@@ -16,7 +16,7 @@ import {
   toRationalScalarValue,
   toScalarValue,
 } from "./calculatorValue.js";
-import { expressionToDisplayString, slotOperandToExpression, symbolicExpr } from "./expression.js";
+import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
 import { buildSymbolicExpression, evaluateSymbolicExpression, executeSlotsValue } from "./engine.js";
 import { negateAlgebraic } from "./algebraicScalar.js";
 import {
@@ -121,6 +121,14 @@ const withDigit = (source: string, digit: Digit): string => {
 };
 const getDisplayRadix = (state: GameState): 2 | 10 =>
   state.settings.base === "base2" ? 2 : 10;
+
+const getMaxDenominatorDigits = (state: GameState): number => {
+  const value = Number(state.lambdaControl.delta_q);
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.trunc(value));
+};
 
 const getMagnitudeText = (total: GameState["calculator"]["total"]): string => {
   if (!isRationalCalculatorValue(total) || !isInteger(total.value)) {
@@ -457,6 +465,7 @@ const resolveNanErrorCode = (
 };
 
 const INVERSE_AMBIGUOUS_ERROR_CODE: ErrorCode = "inverse_ambiguous";
+const RATIONAL_PRECISION_OVERFLOW_ERROR_CODE: ErrorCode = "overflow_q";
 
 const toAmbiguousExecution = (): EvaluatedExecution => ({
   nextTotal: toNanCalculatorValue(),
@@ -494,9 +503,6 @@ const negateScalarValue = (scalar: ReturnType<typeof toScalarValue>): ReturnType
     : scalar.kind === "alg"
       ? { kind: "alg", value: negateAlgebraic(scalar.value) }
       : toExpressionScalarValue({ type: "unary", op: "neg", arg: scalar.value });
-
-const rootSymbolicExpr = (radicandText: string, exponent: bigint): ReturnType<typeof symbolicExpr> =>
-  symbolicExpr(`((${radicandText})^(1/${exponent.toString()}))`);
 
 const powExactWithin = (base: bigint, exponent: bigint, ceiling: bigint): bigint | null => {
   if (exponent < 0n) {
@@ -579,29 +585,175 @@ const buildCanonicalRootValue = (
       const signedNum = normalized.num < 0n && odd ? -rootNum : rootNum;
       return toRationalCalculatorValue({ num: signedNum, den: rootDen });
     }
-    const absText = calculatorValueToDisplayString(toRationalCalculatorValue({ num: numAbs, den: denAbs }));
-    if (normalized.num < 0n && !odd) {
-      if (exponent === 2n) {
-        const imag = toExpressionScalarValue(rootSymbolicExpr(absText, exponent));
-        return toExplicitComplexCalculatorValue(toRationalScalarValue({ num: 0n, den: 1n }), imag);
-      }
-      const mag = rootSymbolicExpr(absText, exponent);
-      return toExplicitComplexCalculatorValue(
-        toExpressionScalarValue(symbolicExpr(`(${expressionToDisplayString(mag)}*cos(pi/${exponent.toString()}))`)),
-        toExpressionScalarValue(symbolicExpr(`(${expressionToDisplayString(mag)}*sin(pi/${exponent.toString()}))`)),
-      );
-    }
-    if (normalized.num < 0n && odd) {
-      return toExpressionCalculatorValue(symbolicExpr(`(-${expressionToDisplayString(rootSymbolicExpr(absText, exponent))})`));
-    }
-    return toExpressionCalculatorValue(rootSymbolicExpr(absText, exponent));
-  }
-
-  if (total.kind === "complex") {
     return null;
   }
-  const baseText = calculatorValueToDisplayString(total);
-  return toExpressionCalculatorValue(rootSymbolicExpr(baseText, exponent));
+  return null;
+};
+
+const countRadixDigits = (value: bigint, radix: number): number => {
+  const safeRadix = Math.max(2, Math.trunc(radix));
+  const normalized = value < 0n ? -value : value;
+  return normalized.toString(safeRadix).length;
+};
+
+const limitDenominator = (value: RationalValue, maxDenominator: bigint): RationalValue => {
+  const normalized = normalizeRationalValue(value);
+  if (maxDenominator <= 0n || normalized.den <= maxDenominator) {
+    return normalized;
+  }
+  const sign = normalized.num < 0n ? -1n : 1n;
+  let n = normalized.num < 0n ? -normalized.num : normalized.num;
+  let d = normalized.den;
+  let p0 = 0n;
+  let q0 = 1n;
+  let p1 = 1n;
+  let q1 = 0n;
+
+  while (true) {
+    const a = n / d;
+    const q2 = q0 + (a * q1);
+    if (q2 > maxDenominator) {
+      break;
+    }
+    const p2 = p0 + (a * p1);
+    p0 = p1;
+    q0 = q1;
+    p1 = p2;
+    q1 = q2;
+    const nextN = d;
+    const nextD = n - (a * d);
+    n = nextN;
+    d = nextD;
+    if (d === 0n) {
+      break;
+    }
+  }
+
+  const k = q1 === 0n ? 0n : (maxDenominator - q0) / q1;
+  const candidate1 = normalizeRationalValue({
+    num: sign * (p0 + (k * p1)),
+    den: q0 + (k * q1),
+  });
+  const candidate2 = normalizeRationalValue({
+    num: sign * p1,
+    den: q1,
+  });
+
+  const absNum = normalized.num < 0n ? -normalized.num : normalized.num;
+  const cand1AbsNum = candidate1.num < 0n ? -candidate1.num : candidate1.num;
+  const cand2AbsNum = candidate2.num < 0n ? -candidate2.num : candidate2.num;
+  const delta1 = absBigInt((absNum * candidate1.den) - (cand1AbsNum * normalized.den));
+  const delta2 = absBigInt((absNum * candidate2.den) - (cand2AbsNum * normalized.den));
+  if (delta2 < delta1) {
+    return candidate2;
+  }
+  if (delta1 < delta2) {
+    return candidate1;
+  }
+  if (candidate2.den < candidate1.den) {
+    return candidate2;
+  }
+  if (candidate1.den < candidate2.den) {
+    return candidate1;
+  }
+  return candidate2.num < candidate1.num ? candidate2 : candidate1;
+};
+
+type ScalarLimitResult = {
+  value: RationalValue;
+  errorKind?: "overflow" | "overflow_q";
+};
+
+const applyScalarLimitPolicy = (
+  value: RationalValue,
+  maxDigits: number,
+  maxDenominatorDigits: number,
+  radix: number = 10,
+): ScalarLimitResult => {
+  const normalized = normalizeRationalValue(value);
+  const boundary = computeOverflowBoundary(maxDigits, radix);
+  if (exceedsMagnitudeBoundary(normalized, boundary)) {
+    return {
+      value: clampRationalToBoundary(normalized, boundary),
+      errorKind: "overflow",
+    };
+  }
+  if (maxDenominatorDigits <= 0) {
+    return {
+      value: normalized,
+      errorKind: "overflow_q",
+    };
+  }
+  if (countRadixDigits(normalized.den, radix) <= maxDenominatorDigits) {
+    return { value: normalized };
+  }
+  const maxDenominator = computeOverflowBoundary(maxDenominatorDigits, radix);
+  return {
+    value: limitDenominator(normalized, maxDenominator),
+    errorKind: "overflow_q",
+  };
+};
+
+const toExecutionErrorCode = (errorKind: "overflow" | "overflow_q"): ErrorCode =>
+  errorKind === "overflow" ? OVERFLOW_ERROR_CODE : RATIONAL_PRECISION_OVERFLOW_ERROR_CODE;
+
+const aggregateLimitKinds = (
+  left?: "overflow" | "overflow_q",
+  right?: "overflow" | "overflow_q",
+): "overflow" | "overflow_q" | undefined => {
+  if (left === "overflow" || right === "overflow") {
+    return "overflow";
+  }
+  if (left === "overflow_q" || right === "overflow_q") {
+    return "overflow_q";
+  }
+  return undefined;
+};
+
+const applyTotalLimitPolicy = (
+  total: GameState["calculator"]["total"],
+  maxDigits: number,
+  maxDenominatorDigits: number,
+  radix: number = 10,
+): EvaluatedExecution => {
+  if (isRationalCalculatorValue(total)) {
+    const result = applyScalarLimitPolicy(total.value, maxDigits, maxDenominatorDigits, radix);
+    if (!result.errorKind) {
+      return { nextTotal: toRationalCalculatorValue(result.value) };
+    }
+    return {
+      nextTotal: toRationalCalculatorValue(result.value),
+      errorCode: toExecutionErrorCode(result.errorKind),
+      errorKind: result.errorKind,
+    };
+  }
+  if (total.kind === "complex") {
+    const re = total.value.re;
+    const im = total.value.im;
+    if (re.kind !== "rational" || im.kind !== "rational") {
+      return { nextTotal: toRecordedComplexResult(total) };
+    }
+    const nextRe = applyScalarLimitPolicy(re.value, maxDigits, maxDenominatorDigits, radix);
+    const nextIm = applyScalarLimitPolicy(im.value, maxDigits, maxDenominatorDigits, radix);
+    const combinedError = aggregateLimitKinds(nextRe.errorKind, nextIm.errorKind);
+    if (!combinedError) {
+      return {
+        nextTotal: toExplicitComplexCalculatorValue(
+          toRationalScalarValue(nextRe.value),
+          toRationalScalarValue(nextIm.value),
+        ),
+      };
+    }
+    return {
+      nextTotal: toExplicitComplexCalculatorValue(
+        toRationalScalarValue(nextRe.value),
+        toRationalScalarValue(nextIm.value),
+      ),
+      errorCode: toExecutionErrorCode(combinedError),
+      errorKind: combinedError,
+    };
+  }
+  return { nextTotal: total };
 };
 
 const toSymbolicPayload = (exprText: string, renderText: string = exprText): NonNullable<RollEntry["symbolic"]> => {
@@ -864,37 +1016,46 @@ const applyComponentWrapToComplex = (
   };
 };
 
-const applyOverflowPolicy = (value: RationalValue, maxDigits: number, radix: number = 10): EvaluatedExecution => {
-  const boundary = computeOverflowBoundary(maxDigits, radix);
-  if (!exceedsMagnitudeBoundary(value, boundary)) {
-    return { nextTotal: toRationalCalculatorValue(value) };
-  }
-  return {
-    nextTotal: toRationalCalculatorValue(clampRationalToBoundary(value, boundary)),
-    errorCode: OVERFLOW_ERROR_CODE,
-    errorKind: "overflow",
-  };
-};
+const applyOverflowPolicy = (
+  value: RationalValue,
+  maxDigits: number,
+  maxDenominatorDigits: number,
+  radix: number = 10,
+): EvaluatedExecution => applyTotalLimitPolicy(
+  toRationalCalculatorValue(value),
+  maxDigits,
+  maxDenominatorDigits,
+  radix,
+);
 
 const applyWrapStage = (
   total: GameState["calculator"]["total"],
   mode: WrapStageMode,
   maxDigits: number,
+  maxDenominatorDigits: number,
   radix: number = 10,
 ): EvaluatedExecution => {
   if (mode === "binary_octave_cycle") {
     if (total.kind === "complex") {
-      return applyBinaryOctaveCycleWrapToComplex(total);
+      const wrapped = applyBinaryOctaveCycleWrapToComplex(total);
+      if (wrapped.errorKind) {
+        return wrapped;
+      }
+      return applyTotalLimitPolicy(wrapped.nextTotal, maxDigits, maxDenominatorDigits, radix);
     }
     if (!isRationalCalculatorValue(total)) {
       return { nextTotal: total };
     }
-    return { nextTotal: toRationalCalculatorValue(applyBinaryOctaveCycleWrap(total.value)) };
+    return applyOverflowPolicy(applyBinaryOctaveCycleWrap(total.value), maxDigits, maxDenominatorDigits, radix);
   }
   const boundary = computeOverflowBoundary(maxDigits, radix);
   if (total.kind === "complex") {
     if (mode === "mod_zero_to_delta" || mode === "delta_range_clamp") {
-      return applyComponentWrapToComplex(total, mode, boundary);
+      const wrapped = applyComponentWrapToComplex(total, mode, boundary);
+      if (wrapped.errorKind) {
+        return wrapped;
+      }
+      return applyTotalLimitPolicy(wrapped.nextTotal, maxDigits, maxDenominatorDigits, radix);
     }
     return toAmbiguousExecution();
   }
@@ -903,9 +1064,9 @@ const applyWrapStage = (
   }
   const value = total.value;
   if (mode === "mod_zero_to_delta") {
-    return { nextTotal: toRationalCalculatorValue(applyModZeroToDeltaToRational(value, boundary)) };
+    return applyOverflowPolicy(applyModZeroToDeltaToRational(value, boundary), maxDigits, maxDenominatorDigits, radix);
   }
-  return { nextTotal: toRationalCalculatorValue(applyDeltaRangeClampToRational(value, boundary)) };
+  return applyOverflowPolicy(applyDeltaRangeClampToRational(value, boundary), maxDigits, maxDenominatorDigits, radix);
 };
 
 const markOverflowErrorSeen = (state: GameState): GameState => {
@@ -1374,6 +1535,8 @@ const evaluateExecutionOutcomeForSlots = (
     deferOverflowToWrapStage?: boolean;
   } = {},
 ): EvaluatedExecution => {
+  const radix = getDisplayRadix(state);
+  const maxDenominatorDigits = getMaxDenominatorDigits(state);
   if (seedTotal.kind === "nan") {
     const firstSlot = operationSlots[0];
     const startsWithUnaryNot = Boolean(
@@ -1403,8 +1566,14 @@ const evaluateExecutionOutcomeForSlots = (
 
   if (!isRationalCalculatorValue(execution.total)) {
     if (execution.total.kind === "complex") {
+      const limited = applyTotalLimitPolicy(
+        toRecordedComplexResult(execution.total),
+        state.unlocks.maxTotalDigits,
+        maxDenominatorDigits,
+        radix,
+      );
       return {
-        nextTotal: toRecordedComplexResult(execution.total),
+        ...limited,
         ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
       };
     }
@@ -1431,7 +1600,7 @@ const evaluateExecutionOutcomeForSlots = (
     }
     const overflowChecked = options.deferOverflowToWrapStage
       ? { nextTotal: toRationalCalculatorValue(rationalized) }
-      : applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, getDisplayRadix(state));
+      : applyOverflowPolicy(rationalized, state.unlocks.maxTotalDigits, maxDenominatorDigits, radix);
     return {
       ...overflowChecked,
       nextTotal: overflowChecked.nextTotal,
@@ -1442,7 +1611,7 @@ const evaluateExecutionOutcomeForSlots = (
 
   const overflowChecked = options.deferOverflowToWrapStage
     ? { nextTotal: toRationalCalculatorValue(execution.total.value) }
-    : applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, getDisplayRadix(state));
+    : applyOverflowPolicy(execution.total.value, state.unlocks.maxTotalDigits, maxDenominatorDigits, radix);
   return {
     ...overflowChecked,
     nextTotal: overflowChecked.nextTotal,
@@ -1493,7 +1662,13 @@ const evaluateExecutionPlanRange = (
 
   if (pendingSlots.length === 0) {
     if (wrapMode && slotList.length === 0) {
-      return applyWrapStage(seedTotal, wrapMode, state.unlocks.maxTotalDigits, getDisplayRadix(state));
+      return applyWrapStage(
+        seedTotal,
+        wrapMode,
+        state.unlocks.maxTotalDigits,
+        getMaxDenominatorDigits(state),
+        getDisplayRadix(state),
+      );
     }
     return evaluateExecutionOutcomeForSlots(state, seedTotal, []);
   }
@@ -1517,6 +1692,7 @@ const evaluateExecutionPlanRange = (
         slotEvaluation.nextTotal,
         wrapMode,
         state.unlocks.maxTotalDigits,
+        getMaxDenominatorDigits(state),
         getDisplayRadix(state),
       );
       nextEvaluation = {
@@ -1549,6 +1725,7 @@ const evaluateExecutionPlanStageAt = (
       currentTotal,
       stage.mode,
       state.unlocks.maxTotalDigits,
+      getMaxDenominatorDigits(state),
       getDisplayRadix(state),
     );
   }
@@ -1565,6 +1742,7 @@ const evaluateExecutionPlanStageAt = (
     slotEvaluation.nextTotal,
     built.wrapStageMode,
     state.unlocks.maxTotalDigits,
+    getMaxDenominatorDigits(state),
     getDisplayRadix(state),
   );
   return {
@@ -1593,6 +1771,7 @@ const evaluateInverseStageAt = (
       currentTotal,
       stage.mode,
       state.unlocks.maxTotalDigits,
+      getMaxDenominatorDigits(state),
       getDisplayRadix(state),
     );
   }

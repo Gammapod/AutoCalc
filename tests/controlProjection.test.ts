@@ -7,36 +7,32 @@ import { projectControlFromInputs, projectControlFromState } from "../src/domain
 export const runControlProjectionTests = (): void => {
   const base = initialState();
   const fProjection = projectControlFromState(base, "f");
-  const fDerived = getLambdaDerivedValues(fProjection.control, fProjection.profile);
+  const fDerived = getLambdaDerivedValues(fProjection.control, controlProfiles.f);
   assert.deepEqual(fProjection.fields, fDerived.effectiveFields, "projection fields mirror lambda-derived effective fields");
   assert.equal(fProjection.keypadColumns, fDerived.effectiveFields.alpha, "f projection columns match derived alpha");
   assert.equal(fProjection.keypadRows, fDerived.effectiveFields.beta, "f projection rows match derived beta");
-  assert.equal(fProjection.maxSlots, base.calculators?.f?.allocator.allocations.slots, "f projection slots match allocator snapshot");
-  assert.equal(fProjection.maxTotalDigits, base.calculators?.f?.allocator.allocations.range, "f projection range matches allocator snapshot");
-  assert.equal(fProjection.budget.maxPoints, fProjection.control.maxPoints, "projection budget maxPoints mirrors control");
-  assert.equal(fProjection.budget.unused + fProjection.budget.spent, fProjection.budget.maxPoints, "projection budget is internally consistent");
+  assert.equal(fProjection.maxSlots, base.unlocks.maxSlots, "f projection slots match unlocks snapshot");
+  assert.equal(fProjection.maxTotalDigits, base.unlocks.maxTotalDigits, "f projection range matches unlocks snapshot");
+  assert.equal(fProjection.maxDenominatorDigits, fProjection.fields.delta_q, "projection maps delta_q to maxDenominatorDigits");
+  assert.equal(fProjection.deltaQEffective, fProjection.fields.delta_q, "projection exposes delta_q effective field");
+  assert.equal(fProjection.budget.maxPoints, 0, "projection budget maxPoints is currently fixed");
+  assert.equal(fProjection.budget.unused + fProjection.budget.spent, 0, "projection budget is internally consistent");
 
   const gFlooring = projectControlFromInputs(
-    { maxPoints: 11, alpha: 99, beta: 99, gamma: 4, gammaMinRaised: true },
+    { alpha: 99, beta: 99, gamma: 4, delta: 99, delta_q: 99, epsilon: 99 },
     controlProfiles.g,
     "g",
   );
-  assert.equal(gFlooring.control.alpha, controlProfiles.g.starts.alpha, "non-settable g alpha is canonicalized to profile start");
-  assert.equal(gFlooring.control.beta, controlProfiles.g.starts.beta, "non-settable g beta is canonicalized to profile start");
-  assert.equal(gFlooring.fields.alpha, 4, "g alpha equation result is floor-clamped");
-  assert.equal(gFlooring.fields.epsilon, 1, "g epsilon equation uses floor rounding");
+  assert.equal(gFlooring.control.alpha, 12, "g alpha is clamped by hard bounds");
+  assert.equal(gFlooring.control.beta, 12, "g beta is clamped by hard bounds");
+  assert.equal(gFlooring.fields.delta_q, 24, "g delta_q is clamped by hard bounds");
+  assert.equal(gFlooring.maxDenominatorDigits, 24, "g projection delta_q hook resolves from effective field");
 
-  const gammaGateRaised = projectControlFromInputs(
-    { maxPoints: 3, alpha: 1, beta: 1, gamma: 1, gammaMinRaised: true },
+  const sanitized = projectControlFromInputs(
+    { alpha: 1, beta: 1, gamma: 1, delta: 1, delta_q: 1_000, epsilon: 0 },
     controlProfiles.f,
     "f",
   );
-  const gammaGateClamp = projectControlFromInputs(
-    { ...gammaGateRaised.control, gamma: 0, gammaMinRaised: true },
-    controlProfiles.f,
-    "f",
-  );
-  assert.equal(gammaGateClamp.fields.gamma, 1, "f gamma min gate clamps below-1 decrements after gate is raised");
-  assert.equal(gammaGateClamp.control.gamma, 1, "canonical control preserves gamma min gate clamp");
+  assert.equal(sanitized.control.delta_q, 24, "delta_q uses hard-bound sanitization path");
 };
 

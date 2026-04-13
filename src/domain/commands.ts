@@ -88,6 +88,7 @@ const hasMonitoredSettingsChanged = (previous: GameState, next: GameState): bool
   || previous.lambdaControl.beta !== next.lambdaControl.beta
   || previous.lambdaControl.gamma !== next.lambdaControl.gamma
   || previous.lambdaControl.delta !== next.lambdaControl.delta
+  || previous.lambdaControl.delta_q !== next.lambdaControl.delta_q
   || previous.lambdaControl.epsilon !== next.lambdaControl.epsilon
   || previous.settings.visualizer !== next.settings.visualizer
   || previous.settings.base !== next.settings.base

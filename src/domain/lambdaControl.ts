@@ -1,12 +1,13 @@
 import type { AllocatorState, ControlField, ControlProfile, LambdaControl, RationalValue } from "./types.js";
 
-const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "epsilon"];
+const CONTROL_FIELDS: readonly ControlField[] = ["alpha", "beta", "gamma", "delta", "delta_q", "epsilon"];
 
 const HARD_BOUNDS: Record<ControlField, { min: number; max: number }> = {
   alpha: { min: 1, max: 12 },
   beta: { min: 1, max: 12 },
   gamma: { min: 0, max: 12 },
   delta: { min: 1, max: 24 },
+  delta_q: { min: 1, max: 24 },
   epsilon: { min: 0, max: 200 },
 };
 
@@ -27,6 +28,7 @@ const resolveProfileStarts = (profile?: ControlProfile): Record<ControlField, nu
   beta: profile?.starts.beta ?? HARD_BOUNDS.beta.min,
   gamma: profile?.starts.gamma ?? HARD_BOUNDS.gamma.min,
   delta: profile?.starts.delta ?? HARD_BOUNDS.delta.min,
+  delta_q: profile?.starts.delta_q ?? HARD_BOUNDS.delta_q.min,
   epsilon: profile?.starts.epsilon ?? HARD_BOUNDS.epsilon.min,
 });
 
@@ -47,6 +49,7 @@ const sanitizeFields = (input: Partial<Record<ControlField, number>>, profile?: 
     beta: clampField("beta", input.beta ?? starts.beta),
     gamma: clampField("gamma", input.gamma ?? starts.gamma),
     delta: clampField("delta", input.delta ?? starts.delta),
+    delta_q: clampField("delta_q", input.delta_q ?? starts.delta_q),
     epsilon: clampField("epsilon", input.epsilon ?? starts.epsilon),
   };
 };
@@ -61,6 +64,7 @@ export const createDefaultLambdaControl = (profile?: ControlProfile): LambdaCont
     beta: fields.beta,
     gamma: fields.gamma,
     delta: fields.delta,
+    delta_q: fields.delta_q,
     epsilon: fields.epsilon,
   };
 };
@@ -91,6 +95,7 @@ export const sanitizeLambdaControl = (input: LambdaControl | null | undefined, p
     beta: fields.beta,
     gamma: fields.gamma,
     delta: fields.delta,
+    delta_q: fields.delta_q,
     epsilon: fields.epsilon,
   };
 };
