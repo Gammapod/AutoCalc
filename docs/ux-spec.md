@@ -1,7 +1,7 @@
 Truth 1: Invariants
 # AutoCalc UX Specification
 
-Last updated: 2026-04-10
+Last updated: 2026-04-12
 Status: Canonical Truth 1 UX invariants.
 Purpose: Define UX/runtime interaction invariants that are compatible with `docs/functional-spec.md`.
 
@@ -40,6 +40,8 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
   Rationale: host behavior must be deterministic and resilient.
 - `UX-VIS-04` (MUST): Inactive visualizer modules must clear stale DOM/runtime view state during host render.
   Rationale: stale panel state must not leak between visualizer activations.
+- `UX-VIS-05` (MUST): Forecast visualization is projection-only and scoped by visualizer family: `total`/`ratios` do not render forecast simulation, while forecast-capable panels (`number_line`, `circle`, and approved history/plot panels such as `graph`/`feed`) must derive forecast content only from simulated canonical domain transitions.
+  Rationale: forecast UI must remain a read-model hint, never a competing source of truth, and must stay out of integer-only number displays.
 
 ### 2.3 Semantic visual families
 
@@ -91,6 +93,7 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 | UX-VIS-02 | Visualizer key -> domain action | `contracts/ui-action-emission` | contract | none |
 | UX-VIS-03 | Single active panel + fallback | `ui-module/visualizer-host-v2`, `rollDisplay` | integration + unit | partial: unsupported-state matrix limited |
 | UX-VIS-04 | Inactive panel stale-state clearing | `ui-module/visualizer-host-v2` | integration | partial: no explicit stale-DOM contract ID |
+| UX-VIS-05 | Forecast scope and simulation-source constraint | `ui-module/number-line-v2`, `ui-module/circle-renderer-v2` | integration + unit | gap: `graph`/`feed` forecast projection contracts not yet implemented |
 | UX-SVF-01 | Mod/cycle/congruence family | `ui/graph-display`, `ui-module/grapher-v2` | integration | gap: no explicit semantic-family contract |
 | UX-SVF-02 | Memory/control/lambda family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract |
 | UX-SVF-03 | Distinct error family | `ui/total-display`, `ui/roll-display` | integration | partial: family-level checks indirect |
