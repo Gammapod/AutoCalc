@@ -1,4 +1,8 @@
-import type { GameState, ScalarValue } from "../../../domain/types.js";
+import { calculatorValueEquals } from "../../../domain/rollEntries.js";
+import { HISTORY_FLAG } from "../../../domain/state.js";
+import { computeOverflowBoundary, exceedsMagnitudeBoundary } from "../../../domain/calculatorValue.js";
+import { executeSlotsValue } from "../../../domain/engine.js";
+import type { ExecutionErrorKind, GameState, RationalValue, ScalarValue } from "../../../domain/types.js";
 import { applyUxRoleAttributes } from "../../shared/readModel.js";
 
 type SegmentName = "a" | "b" | "c" | "d" | "e" | "f" | "g";
@@ -21,30 +25,78 @@ const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "8": ["a", "b", "c", "d", "e", "f", "g"],
   "9": ["a", "b", "c", "d", "f", "g"],
   "-": ["g"],
+  E: ["a", "d", "e", "f", "g"],
+  r: ["e", "g"],
+  o: ["c", "d", "e", "g"],
 };
+const NAN_ERROR_TOKEN = "Error";
+const NAN_ERROR_KINDS: ReadonlySet<ExecutionErrorKind> = new Set([
+  "division_by_zero",
+  "nan_input",
+  "symbolic_result",
+  "ambiguous",
+]);
 
 const resolveScalarRational = (value: ScalarValue): { num: bigint; den: bigint } | null =>
   value.kind === "rational" ? value.value : null;
 
-const resolveRatioValues = (state: GameState): { reNum: string; reDen: string; imNum: string; imDen: string } => {
-  const total = state.calculator.total;
+const resolveCycleAmberActive = (state: GameState): boolean => {
+  if (!state.ui.buttonFlags[HISTORY_FLAG]) {
+    return false;
+  }
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle"
+    ? state.calculator.rollAnalysis.cycle
+    : null;
+  if (!cycle) {
+    return false;
+  }
+  const latestIndex = state.calculator.rollEntries.length - 1;
+  if (latestIndex < 0 || latestIndex < cycle.j) {
+    return false;
+  }
+  const latestEntry = state.calculator.rollEntries[latestIndex];
+  const cycleStartEntry = state.calculator.rollEntries[cycle.i];
+  if (!latestEntry || !cycleStartEntry) {
+    return false;
+  }
+  return calculatorValueEquals(latestEntry.y, cycleStartEntry.y);
+};
+
+type RatioDisplayValues = { reNum: string; reDen: string; imNum: string; imDen: string };
+type RationalPair = { re: RationalValue; im: RationalValue };
+type ComponentLimitKind = "none" | "overflow" | "overflow_q";
+
+const countRadixDigits = (value: bigint, radix: number): number => {
+  const safeRadix = Math.max(2, Math.trunc(radix));
+  const normalized = value < 0n ? -value : value;
+  return normalized.toString(safeRadix).length;
+};
+
+const getDisplayRadix = (state: GameState): 2 | 10 => (state.settings.base === "base2" ? 2 : 10);
+
+const resolveRationalPair = (total: GameState["calculator"]["total"]): RationalPair | null => {
   if (total.kind === "rational") {
-    return {
-      reNum: total.value.num.toString(),
-      reDen: total.value.den.toString(),
-      imNum: "0",
-      imDen: "1",
-    };
+    return { re: total.value, im: { num: 0n, den: 1n } };
   }
   if (total.kind === "complex") {
     const re = resolveScalarRational(total.value.re);
     const im = resolveScalarRational(total.value.im);
-    return {
-      reNum: (re?.num ?? 0n).toString(),
-      reDen: (re?.den ?? 1n).toString(),
-      imNum: (im?.num ?? 0n).toString(),
-      imDen: (im?.den ?? 1n).toString(),
-    };
+    return { re: re ?? { num: 0n, den: 1n }, im: im ?? { num: 0n, den: 1n } };
+  }
+  return null;
+};
+
+const toRatioDisplayValues = (pair: RationalPair): RatioDisplayValues => ({
+  reNum: pair.re.num.toString(),
+  reDen: pair.re.den.toString(),
+  imNum: pair.im.num.toString(),
+  imDen: pair.im.den.toString(),
+});
+
+const resolveCurrentRatioDisplayValues = (state: GameState): RatioDisplayValues => {
+  const pair = resolveRationalPair(state.calculator.total);
+  if (pair) {
+    return toRatioDisplayValues(pair);
   }
   return {
     reNum: "0",
@@ -52,6 +104,90 @@ const resolveRatioValues = (state: GameState): { reNum: string; reDen: string; i
     imNum: "0",
     imDen: "1",
   };
+};
+
+const resolveRawPairBeforeLatestClamp = (state: GameState): RationalPair | null => {
+  const latestIndex = state.calculator.rollEntries.length - 1;
+  if (latestIndex <= 0) {
+    return null;
+  }
+  if (state.calculator.operationSlots.length === 0) {
+    return null;
+  }
+  const previous = state.calculator.rollEntries[latestIndex - 1];
+  if (!previous) {
+    return null;
+  }
+  const execution = executeSlotsValue(previous.y, state.calculator.operationSlots, { currentRollNumber: BigInt(latestIndex) });
+  if (!execution.ok) {
+    return null;
+  }
+  return resolveRationalPair(execution.total);
+};
+
+const classifyComponentLimitKind = (
+  raw: RationalValue,
+  clamped: RationalValue,
+  state: GameState,
+): ComponentLimitKind => {
+  if (raw.num === clamped.num && raw.den === clamped.den) {
+    return "none";
+  }
+  const radix = getDisplayRadix(state);
+  const boundary = computeOverflowBoundary(state.unlocks.maxTotalDigits, radix);
+  if (exceedsMagnitudeBoundary(raw, boundary)) {
+    return "overflow";
+  }
+  const maxDenominatorDigits = Math.max(0, Math.trunc(state.lambdaControl.delta_q));
+  if (maxDenominatorDigits <= 0 || countRadixDigits(raw.den, radix) > maxDenominatorDigits) {
+    return "overflow_q";
+  }
+  return "none";
+};
+
+const mergeRawAndClampedByErrorKind = (
+  raw: RationalPair,
+  clamped: RationalPair,
+  state: GameState,
+): RationalPair => {
+  const mergeComponent = (rawValue: RationalValue, clampedValue: RationalValue): RationalValue => {
+    const limitKind = classifyComponentLimitKind(rawValue, clampedValue, state);
+    if (limitKind === "overflow") {
+      return { num: clampedValue.num, den: rawValue.den };
+    }
+    if (limitKind === "overflow_q") {
+      return { num: rawValue.num, den: clampedValue.den };
+    }
+    return clampedValue;
+  };
+  return {
+    re: mergeComponent(raw.re, clamped.re),
+    im: mergeComponent(raw.im, clamped.im),
+  };
+};
+
+const resolveErrorAwareRatioDisplayValues = (state: GameState): RatioDisplayValues => {
+  const latestError = state.calculator.rollEntries.at(-1)?.error;
+  if (state.calculator.total.kind === "nan" || (latestError && NAN_ERROR_KINDS.has(latestError.kind))) {
+    return {
+      reNum: NAN_ERROR_TOKEN,
+      reDen: NAN_ERROR_TOKEN,
+      imNum: NAN_ERROR_TOKEN,
+      imDen: NAN_ERROR_TOKEN,
+    };
+  }
+  const clampedPair = resolveRationalPair(state.calculator.total);
+  if (!latestError || !clampedPair) {
+    return resolveCurrentRatioDisplayValues(state);
+  }
+  if (latestError.kind !== "overflow" && latestError.kind !== "overflow_q") {
+    return toRatioDisplayValues(clampedPair);
+  }
+  const rawPair = resolveRawPairBeforeLatestClamp(state);
+  if (!rawPair) {
+    return toRatioDisplayValues(clampedPair);
+  }
+  return toRatioDisplayValues(mergeRawAndClampedByErrorKind(rawPair, clampedPair, state));
 };
 
 const buildTokenSlotModel = (token: string, slotCount: number): RatioSlotModel[] => {
@@ -137,6 +273,8 @@ export const clearRatiosVisualizerPanel = (root: Element): void => {
     return;
   }
   panel.innerHTML = "";
+  panel.classList.remove("v2-ratios-panel--cycle");
+  panel.classList.remove("v2-ratios-panel--error");
   panel.setAttribute("aria-hidden", "true");
 };
 
@@ -147,8 +285,15 @@ export const renderRatiosVisualizerPanel = (root: Element, state: GameState): vo
   }
   panel.innerHTML = "";
   panel.setAttribute("aria-hidden", "false");
-
-  const values = resolveRatioValues(state);
+  const values = resolveErrorAwareRatioDisplayValues(state);
+  panel.classList.toggle("v2-ratios-panel--cycle", resolveCycleAmberActive(state));
+  panel.classList.toggle(
+    "v2-ratios-panel--error",
+    values.reNum === NAN_ERROR_TOKEN
+      || values.reDen === NAN_ERROR_TOKEN
+      || values.imNum === NAN_ERROR_TOKEN
+      || values.imDen === NAN_ERROR_TOKEN,
+  );
   const numeratorSlotCount = Math.max(3, Math.min(MAX_RATIO_SLOT_COUNT, Math.trunc(state.unlocks.maxTotalDigits)));
   const denominatorSlotCount = Math.max(1, Math.min(MAX_RATIO_SLOT_COUNT, Math.trunc(state.lambdaControl.delta_q)));
   if (typeof document === "undefined") {

@@ -1,8 +1,34 @@
 import assert from "node:assert/strict";
-import { initialState } from "../src/domain/state.js";
-import { toExplicitComplexCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
+import { KEY_ID } from "../src/domain/keyPresentation.js";
+import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
+import type { GameState, RollEntry } from "../src/domain/types.js";
+import { toExplicitComplexCalculatorValue, toNanCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import { clearRatiosVisualizerPanel, renderRatiosVisualizerPanel } from "../src/ui/modules/visualizers/ratiosRenderer.js";
 import { installDomHarness } from "./helpers/domHarness.js";
+
+const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
+  kind: "rational",
+  value: { num, den },
+});
+const c = (reNum: bigint, imNum: bigint): { kind: "complex"; value: { re: ReturnType<typeof r>; im: ReturnType<typeof r> } } => ({
+  kind: "complex",
+  value: {
+    re: r(reNum),
+    im: r(imNum),
+  },
+});
+const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
+const withRoll = (state: GameState, entries: RollEntry[], cycle: GameState["calculator"]["rollAnalysis"]["cycle"]): GameState => ({
+  ...state,
+  calculator: {
+    ...state.calculator,
+    total: entries.at(-1)?.y ?? state.calculator.total,
+    rollEntries: entries,
+    rollAnalysis: cycle
+      ? { stopReason: "cycle", cycle }
+      : { stopReason: "none", cycle: null },
+  },
+});
 
 export const runUiModuleRatiosRendererV2Tests = (): void => {
   const harness = installDomHarness();
@@ -15,6 +41,7 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
 
     renderRatiosVisualizerPanel(harness.root, initialState());
     assert.equal(panel.getAttribute("aria-hidden"), "false", "ratios panel is visible after render");
+    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle class is off for initial state");
     const table = panel.querySelector<HTMLElement>(".v2-ratios-table");
     assert.ok(table, "ratios panel renders table scaffold");
     assert.equal(panel.querySelectorAll(".v2-ratios-row").length, 2, "ratios panel renders imaginary and real rows");
@@ -75,9 +102,153 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       .map((display) => display.getAttribute("data-ratios-slot-count"));
     assert.deepEqual(wideSlotCounts, ["11", "10", "11", "10"], "ratios supports slots above 8 up to total-display cap");
 
+    const cycle = { i: 1, j: 4, transientLength: 1, periodLength: 3 };
+    const base = initialState();
+    const historyOffCycleMatch = withRoll(base, re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n), r(5n), r(2n)), cycle);
+    renderRatiosVisualizerPanel(harness.root, historyOffCycleMatch);
+    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle styling is disabled when history is off");
+
+    const historyOnBeforeDetection = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(r(1n), r(2n), r(3n), r(5n)),
+      cycle,
+    );
+    renderRatiosVisualizerPanel(harness.root, historyOnBeforeDetection);
+    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle styling stays off before detection index");
+
+    const historyOnCycleMatch = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n), r(5n), r(2n)),
+      cycle,
+    );
+    renderRatiosVisualizerPanel(harness.root, historyOnCycleMatch);
+    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), true, "cycle styling enables on cycle-start match after detection");
+
+    const historyOnCycleNoMatch = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n)),
+      cycle,
+    );
+    renderRatiosVisualizerPanel(harness.root, historyOnCycleNoMatch);
+    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle styling stays off when latest does not match cycle-start");
+
+    const complexCycleRows = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(c(1n, 0n), c(0n, 1n), c(-1n, 0n), c(0n, -1n), c(1n, 0n), c(0n, 1n)),
+      { i: 1, j: 5, transientLength: 1, periodLength: 4 },
+    );
+    renderRatiosVisualizerPanel(harness.root, complexCycleRows);
+    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), true, "complex cycle-start matches also enable cycle styling");
+
+    const overflowState: GameState = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: r(99n, 1n),
+        operationSlots: [{ operator: KEY_ID.op_add, operand: 0n }],
+        rollEntries: [
+          { y: r(150n, 7n) },
+          { y: r(99n, 1n), error: { code: "overflow", kind: "overflow" } },
+        ],
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        maxTotalDigits: 2,
+      },
+      lambdaControl: {
+        ...initialState().lambdaControl,
+        delta_q: 3,
+      },
+    };
+    renderRatiosVisualizerPanel(harness.root, overflowState);
+    const overflowTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
+      .map((display) => display.getAttribute("data-ratios-token"));
+    assert.deepEqual(overflowTokens, ["0", "1", "99", "7"], "overflow displays clamped numerator while preserving raw denominator");
+
+    const precisionOverflowState: GameState = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: r(3n, 4n),
+        operationSlots: [{ operator: KEY_ID.op_add, operand: 0n }],
+        rollEntries: [
+          { y: r(8n, 11n) },
+          { y: r(3n, 4n), error: { code: "overflow_q", kind: "overflow_q" } },
+        ],
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        maxTotalDigits: 3,
+      },
+      lambdaControl: {
+        ...initialState().lambdaControl,
+        delta_q: 1,
+      },
+    };
+    renderRatiosVisualizerPanel(harness.root, precisionOverflowState);
+    const precisionOverflowTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
+      .map((display) => display.getAttribute("data-ratios-token"));
+    assert.deepEqual(
+      precisionOverflowTokens,
+      ["0", "1", "8", "4"],
+      "precision overflow displays raw numerator while preserving clamped denominator",
+    );
+
+    const nanErrorState: GameState = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toNanCalculatorValue(),
+        rollEntries: [{ y: toNanCalculatorValue(), error: { code: "seed_nan", kind: "nan_input" } }],
+      },
+    };
+    renderRatiosVisualizerPanel(harness.root, nanErrorState);
+    const nanTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
+      .map((display) => display.getAttribute("data-ratios-token"));
+    assert.deepEqual(nanTokens, ["Error", "Error", "Error", "Error"], "NaN errors render Error on all four displays");
+    assert.equal(panel.classList.contains("v2-ratios-panel--error"), true, "NaN Error rendering enables ratios error class");
+
     clearRatiosVisualizerPanel(harness.root);
     assert.equal(panel.getAttribute("aria-hidden"), "true", "clear helper hides ratios panel");
     assert.equal((panel.textContent ?? "").trim(), "", "clear helper empties ratios panel content");
+    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "clear helper resets cycle class");
+    assert.equal(panel.classList.contains("v2-ratios-panel--error"), false, "clear helper resets error class");
   } finally {
     harness.teardown();
   }
