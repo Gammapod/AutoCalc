@@ -86,7 +86,7 @@ subgraph Math ["ℕ,ℤ"]
     subgraph Division
         DIV_cdiv["a⨸b"] %% IMPLEMENTED
         %% Complex_Tuple – keyface `⫽ ╎ ◇→M`
-        %% Expanded form `[ 4 ⨸ 3 ]` -> `[ (4 ⫽ 3) + ((4 ◇ 3) R⭾M) ]`
+        %% Expanded form `[ 4 ⨸ 3 ]` -> `[ (4 ⫽ 3) + ((4 ◇ 3) -M⭾R) ]`
         DIV_eudiv["a ⫽ b"] %% IMPLEMENTED
         %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(4 – (3 × ℕ)) ]`
         DIV_mod["a◇b"] %% IMPLEMENTED
@@ -100,7 +100,7 @@ subgraph Math ["ℕ,ℤ"]
     subgraph Logs
         LOG_clog["a ⦷ b"] %% IMPLEMENTED
         %% Complex_Tuple – keyface `∥ ╎ 🞛→M`
-        %% Expanded form `[ 4 ⦷ 3 ]` -> `[ (4 ∥ 3) + ((4 🞛 3) R⭾M) ]`
+        %% Expanded form `[ 4 ⦷ 3 ]` -> `[ (4 ∥ 3) + ((4 🞛 3) -M⭾R) ]`
         LOG_eulog["a [ ∥ b ]"] %% IMPLEMENTED
         %% Expanded form `[ 4 ∥ 3 ]` -> `Σ[ ¬(4 ◇ (3 ^ ℕ)) ]`
         LOG_resid["a [ 🞛 b ]"] %% IMPLEMENTED
@@ -121,7 +121,7 @@ RAT_recip ==> RAT_div
 MAT_pow -.-x RAT_whole
 subgraph Ratios ["ℚ"]
     %% Visualizer: shows 2 numbers instead of 1, for numerator and denominator (4 numbers when complex)
-    RAT_recip[["[ 1⁄n ]"]]
+    RAT_recip[["[ 1⁄n ]"]] %% IMPLEMENTED
     %% Expanded form `(4÷3) [ 1⁄n ]` -> `[ 3 ÷ 4 ]` 
     RAT_div["a [ ÷ b ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 × 1⁄3 ]`    
@@ -165,10 +165,10 @@ CPX_conj ==> CPX_repart
 CPX_impart ==x CPX_norm
 CPX_horiz ==> CPX_impart
 subgraph Complex_Math ["ℚ[𝕚]"]
-    CPX_quarter[["[ z R⭾M ]"]] %% IMPLEMENTED
-    %% Expanded form `[ 4 R⭾M ]` -> `[ 4 × √(-1) ]`
-    %% Expanded form `[ 4 R⭾M ]` -> `[ 4 ↶ 6 ]`
-    %% Expanded form `[ 4 R⭾M ]` -> `[ -3:00 ]`
+    CPX_quarter[["[ z -M⭾R ]"]] %% IMPLEMENTED
+    %% Expanded form `[ 4 -M⭾R ]` -> `[ 4 × √(-1) ]`
+    %% Expanded form `[ 4 -M⭾R ]` -> `[ 4 ↶ 6 ]`
+    %% Expanded form `[ 4 -M⭾R ]` -> `[ -3:00 ]`
 
     CPX_plusi["z [ M++ ]"]
     %% Expanded form `[ z + i ]`
@@ -185,7 +185,7 @@ subgraph Complex_Math ["ℚ[𝕚]"]
     CPX_repart["z [ MC ]"]
     %% %% Expanded form `[ MC ]` -> `[ (z + (z M±)) ÷ 2 ]`
     CPX_mid["a⦼b"]
-    %% %% Expanded form `[ 4⦼3 ]` -> `[ (3 + (4 R⭾M)) ÷ 2 ]
+    %% %% Expanded form `[ 4⦼3 ]` -> `[ (3 + (4 -M⭾R)) ÷ 2 ]
     CPX_norm["z [ 🞜 ]"]
     %% Expanded form `[ 4 🞜 ]` -> `[ R² + M² ]`
 end
@@ -213,15 +213,15 @@ subgraph Rotation_Ops ["ℂ"]
     
     ROT_theta["z [ ⦾ ]"]
     %% %% Expanded form `[ z ⦾ ]` -> `[ (12 ÷ πi) × ℓ(z ÷ |z|)]`
-    ROT_twentyfourth["[ n ⦨ ]"]
+    ROT_twentyfourth["[ n ⦨ ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ÷12) ]`
     %% Expanded form `[ 4 ⦨ ]` -> `[ -0:30 ]`
     ROT_rotate["a [ ↶ b ]"]
-    %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{2π×(3÷24)R⭾M} ]`
+    %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{2π×(3÷24)-M⭾R} ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ -1:30 ]`
     ROT_polar["n ⊙"]
-    %% Expanded form `[ (4i) ⊙ ]` -> `[ |4i| + ((4i ⦾) R⭾M) ]` <-- resolves to 4 + 6i
+    %% Expanded form `[ (4i) ⊙ ]` -> `[ |4i| + ((4i ⦾) -M⭾R) ]` <-- resolves to 4 + 6i
     ROT_cart["n ⟴"]
     %% Expanded form `[ (4 + 6i) ⟴]` -> `[]` <-- no idea, but resolves to 4i
 end
@@ -346,7 +346,7 @@ end
     %% DIV_mod -.-> Pgcd
     %% CPX_impart -.-> Pgcd["n ⩑"]
     %% %% %% Old:Expanded form `[ ∏p^(e_a ⫧ e_b) ]`
-    %% %% Expanded form `[ Im(n) + ((Re(n) ◇ Im(n)) R⭾M) ]`
+    %% %% Expanded form `[ Im(n) + ((Re(n) ◇ Im(n)) -M⭾R) ]`
     %% Pgcd -.-> Plcm["⩒"]
     %% %% Expanded form `[" ∏p^(e_a ⫨ e_b) "]`    
 %% 

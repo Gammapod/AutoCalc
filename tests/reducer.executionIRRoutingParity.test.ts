@@ -129,6 +129,105 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
     "inverse non-perfect power emits inverse_ambiguous metadata",
   );
 
+  const inverseWholeSteps = reducer(
+    reducer(
+      {
+        ...base,
+        unlocks: {
+          ...base.unlocks,
+          slotOperators: {
+            ...base.unlocks.slotOperators,
+            [op("op_whole_steps")]: true,
+          },
+        },
+        ui: {
+          ...base.ui,
+          buttonFlags: {},
+        },
+        calculator: {
+          ...base.calculator,
+          total: r(729n, 256n),
+          operationSlots: [{ operator: op("op_whole_steps"), operand: 3n }],
+          rollEntries: [],
+          draftingSlot: null,
+        },
+      },
+      { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
+    ),
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    inverseWholeSteps.calculator.total,
+    r(2n),
+    "roll-inverse inverts whole-steps by applying the negated step count",
+  );
+
+  const inverseInterval = reducer(
+    reducer(
+      {
+        ...base,
+        unlocks: {
+          ...base.unlocks,
+          slotOperators: {
+            ...base.unlocks.slotOperators,
+            [op("op_interval")]: true,
+          },
+        },
+        ui: {
+          ...base.ui,
+          buttonFlags: {},
+        },
+        calculator: {
+          ...base.calculator,
+          total: r(6n),
+          operationSlots: [{ operator: op("op_interval"), operand: 2n }],
+          rollEntries: [],
+          draftingSlot: null,
+        },
+      },
+      { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
+    ),
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    inverseInterval.calculator.total,
+    r(4n),
+    "roll-inverse inverts interval via transformed operand -(b+1)",
+  );
+
+  const inverseReciprocal = reducer(
+    reducer(
+      {
+        ...base,
+        unlocks: {
+          ...base.unlocks,
+          unaryOperators: {
+            ...base.unlocks.unaryOperators,
+            [uop("unary_reciprocal")]: true,
+          },
+        },
+        ui: {
+          ...base.ui,
+          buttonFlags: {},
+        },
+        calculator: {
+          ...base.calculator,
+          total: r(1n, 2n),
+          operationSlots: [{ kind: "unary", operator: uop("unary_reciprocal") }],
+          rollEntries: [],
+          draftingSlot: null,
+        },
+      },
+      { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
+    ),
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    inverseReciprocal.calculator.total,
+    r(2n),
+    "roll-inverse treats reciprocal as a self-inverse unary operator",
+  );
+
   const rationalPrecisionOverflow = reducer(
     {
       ...base,

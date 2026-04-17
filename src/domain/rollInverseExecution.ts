@@ -30,6 +30,9 @@ const invertSlot = (slot: Slot): InverseExecutionStage | null => {
     if (slot.operator === KEY_ID.unary_rotate_15) {
       return { kind: "rotate_minus_15" };
     }
+    if (slot.operator === KEY_ID.unary_reciprocal) {
+      return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_reciprocal } };
+    }
     return null;
   }
 
@@ -68,6 +71,15 @@ const invertSlot = (slot: Slot): InverseExecutionStage | null => {
   }
   if (slot.operator === KEY_ID.op_rotate_15) {
     return { kind: "slot", slot: { kind: "binary", operator: KEY_ID.op_rotate_15, operand: -slot.operand } };
+  }
+  if (slot.operator === KEY_ID.op_whole_steps) {
+    return { kind: "slot", slot: { kind: "binary", operator: KEY_ID.op_whole_steps, operand: -slot.operand } };
+  }
+  if (slot.operator === KEY_ID.op_interval) {
+    if (slot.operand === 0n || slot.operand === -1n) {
+      return null;
+    }
+    return { kind: "slot", slot: { kind: "binary", operator: KEY_ID.op_interval, operand: -(slot.operand + 1n) } };
   }
   return null;
 };
