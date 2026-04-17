@@ -11,7 +11,7 @@ import {
 
 const isUxRole = (value: string): value is UxRole =>
   value === "error"
-  || value === "lambda"
+  || value === "imaginary"
   || value === "unlock"
   || value === "analysis"
   || value === "help"
@@ -50,6 +50,5 @@ export const runUiUxRoleSystemTests = (): void => {
   const totalHintRows = buildTotalHintRowsViewModel(base);
   assert.equal(totalHintRows.length >= 4, true, "total hint view-model exposes role-tagged categories");
   const lambdaRow = totalHintRows.find((row) => row.category === "lambda_point");
-  assert.equal(lambdaRow?.uxRole, "lambda", "lambda hint category maps to lambda role");
+  assert.equal(lambdaRow?.uxRole, "imaginary", "lambda-point hint category maps to imaginary role");
 };
-

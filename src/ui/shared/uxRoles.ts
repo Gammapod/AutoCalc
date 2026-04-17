@@ -1,6 +1,6 @@
 export type UxRole =
   | "error"
-  | "lambda"
+  | "imaginary"
   | "unlock"
   | "analysis"
   | "help"
@@ -13,7 +13,7 @@ export type UxRoleState = "normal" | "muted" | "active" | "placeholder";
 
 export type UxRoleTokenName =
   | "--ux-role-error-color"
-  | "--ux-role-lambda-color"
+  | "--ux-role-imaginary-color"
   | "--ux-role-unlock-color"
   | "--ux-role-analysis-color"
   | "--ux-role-help-color"
@@ -24,7 +24,7 @@ export type UxRoleTokenName =
 
 export const UX_ROLE_TOKEN_BY_ROLE: Record<UxRole, UxRoleTokenName> = {
   error: "--ux-role-error-color",
-  lambda: "--ux-role-lambda-color",
+  imaginary: "--ux-role-imaginary-color",
   unlock: "--ux-role-unlock-color",
   analysis: "--ux-role-analysis-color",
   help: "--ux-role-help-color",
@@ -57,7 +57,7 @@ export const UX_ROLE_OVERRIDE_REGISTRY: readonly UxRoleOverrideRegistryEntry[] =
 
 const UX_ROLE_FALLBACK_HEX: Record<UxRole, `#${string}`> = {
   error: "#ff5c5c",
-  lambda: "#be8ee8",
+  imaginary: "#be8ee8",
   unlock: "#79c3ff",
   analysis: "#f2cf57",
   help: "#e9f4ff",

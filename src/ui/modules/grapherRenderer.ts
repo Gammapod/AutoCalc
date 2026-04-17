@@ -215,19 +215,27 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   const documentRef = root.ownerDocument ?? null;
   const defaultColor = resolveUxRoleColor("default", { document: documentRef });
   const analysisColor = resolveUxRoleColor("analysis", { document: documentRef });
+  const imaginaryColor = resolveUxRoleColor("imaginary", { document: documentRef });
   const errorColor = resolveUxRoleColor("error", { document: documentRef });
   const defaultBorderColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.9 });
   const analysisBorderColor = resolveUxRoleColor("analysis", { document: documentRef, alpha01: 0.9 });
+  const imaginaryBorderColor = resolveUxRoleColor("imaginary", { document: documentRef, alpha01: 0.9 });
   const errorBorderColor = resolveUxRoleColor("error", { document: documentRef, alpha01: 0.9 });
 
   const pointBackgroundColor = points.map((point) => {
-    if (point.kind === "remainder" || point.kind === "imaginary") {
+    if (point.kind === "imaginary") {
+      return imaginaryColor;
+    }
+    if (point.kind === "remainder") {
       return analysisColor;
     }
     return point.hasError ? errorColor : defaultColor;
   });
   const pointBorderColor = points.map((point) => {
-    if (point.kind === "remainder" || point.kind === "imaginary") {
+    if (point.kind === "imaginary") {
+      return imaginaryBorderColor;
+    }
+    if (point.kind === "remainder") {
       return analysisBorderColor;
     }
     return point.hasError ? errorBorderColor : defaultBorderColor;

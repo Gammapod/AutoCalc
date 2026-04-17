@@ -184,10 +184,14 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   const domainValue = latestRollEntry?.y ?? state.calculator.total;
   const totalIsNaN = state.calculator.total.kind === "nan";
   const hasLatestRollError = Boolean(state.calculator.rollEntries.at(-1)?.error);
+  const hasImaginaryTotal =
+    state.calculator.total.kind === "complex"
+    && !isRealEquivalentCalculatorValue(state.calculator.total);
   const hasAnyKeyPress = Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
   const shouldRenderClearedPlaceholder =
     isClearedCalculatorState(state.calculator) && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress);
   totalEl.classList.toggle("total-display--error", hasLatestRollError);
+  totalEl.classList.toggle("total-display--imaginary", hasImaginaryTotal);
   totalEl.innerHTML = "";
   const stack = document.createElement("div");
   stack.className = "total-display-stack";

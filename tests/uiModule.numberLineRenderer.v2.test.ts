@@ -62,7 +62,17 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.ok(panel.querySelector(".v2-number-line-center-tick"), "real totals render center tick");
     assert.equal(panel.querySelectorAll(".v2-number-line-axis").length, 1, "real totals render one axis");
     assert.equal(panel.querySelectorAll(".v2-number-line-arrowhead").length, 2, "real totals render two arrowheads");
+    assert.equal(panel.querySelectorAll(".v2-number-line-axis--imaginary").length, 0, "real mode does not apply imaginary axis styling");
+    assert.equal(panel.querySelectorAll(".v2-number-line-arrowhead--imaginary").length, 0, "real mode does not apply imaginary arrowhead styling");
     assert.equal(panel.querySelectorAll(".v2-number-line-grid-mark").length, 18, "real totals render 18 nonzero subdivision ticks");
+    const realGridMarks = panel.querySelectorAll<SVGLineElement>(".v2-number-line-grid-mark");
+    const realAxis = panel.querySelector<SVGLineElement>(".v2-number-line-axis");
+    const realLastGridMark = realGridMarks[realGridMarks.length - 1];
+    assert.equal(
+      Boolean(realLastGridMark && realAxis && (realLastGridMark.compareDocumentPosition(realAxis) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      true,
+      "real-mode horizontal axis is rendered after grid marks so it stays visually on top",
+    );
     assert.equal(panel.querySelector(".v2-number-line-vector"), null, "no roll means no vector");
     assert.equal(panel.querySelector(".v2-number-line-vector-tip"), null, "no roll means no vector tip");
     assert.equal(panel.querySelector(".v2-number-line-vector--forecast"), null, "no roll means no forecast vector");
@@ -154,7 +164,25 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.equal(panel.querySelector(".v2-number-line-center-tick"), null, "nonzero imaginary totals replace center tick");
     assert.equal(panel.querySelectorAll(".v2-number-line-axis").length, 2, "nonzero imaginary totals render horizontal and vertical axes");
     assert.equal(panel.querySelectorAll(".v2-number-line-arrowhead").length, 4, "nonzero imaginary totals render both axis arrowheads");
+    assert.equal(panel.querySelectorAll(".v2-number-line-axis--imaginary").length, 1, "complex mode marks vertical axis with imaginary styling class");
+    assert.equal(panel.querySelectorAll(".v2-number-line-arrowhead--imaginary").length, 2, "complex mode marks vertical axis arrowheads with imaginary styling class");
+    const imaginaryAxis = panel.querySelector<SVGLineElement>(".v2-number-line-axis--imaginary");
+    assert.equal(imaginaryAxis?.getAttribute("x1"), imaginaryAxis?.getAttribute("x2"), "imaginary axis remains vertical (constant x)");
     assert.equal(panel.querySelectorAll(".v2-number-line-grid-mark").length, 36, "nonzero imaginary totals render 18x2 grid subdivisions");
+    const complexGridMarks = panel.querySelectorAll<SVGLineElement>(".v2-number-line-grid-mark");
+    const complexAxes = panel.querySelectorAll<SVGLineElement>(".v2-number-line-axis");
+    const complexLastGridMark = complexGridMarks[complexGridMarks.length - 1];
+    assert.equal(
+      Boolean(
+        complexLastGridMark
+        && complexAxes[0]
+        && complexAxes[1]
+        && (complexLastGridMark.compareDocumentPosition(complexAxes[0]) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && (complexLastGridMark.compareDocumentPosition(complexAxes[1]) & Node.DOCUMENT_POSITION_FOLLOWING),
+      ),
+      true,
+      "complex-mode horizontal and vertical axes are rendered after grid marks so they stay visually on top",
+    );
     assert.ok(panel.querySelector(".v2-number-line-vector"), "complex roll values render vector");
     assert.ok(panel.querySelector(".v2-number-line-vector-tip"), "complex roll values render vector tip");
     const complexScaleLabels = panel.querySelectorAll<SVGTextElement>(".v2-number-line-scale-label");

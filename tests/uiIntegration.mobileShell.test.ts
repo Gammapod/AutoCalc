@@ -252,6 +252,11 @@ export const runUiIntegrationMobileShellTests = (): void => {
             inputBlocked: false,
     });
     assert.equal(totalPanel?.getAttribute("aria-label"), "Total 7", "zero-imaginary complex totals render as real-line display label");
+    assert.equal(
+      totalPanel?.classList.contains("total-display--imaginary"),
+      false,
+      "zero-imaginary complex totals do not trigger imaginary color mode",
+    );
 
     const withComplexImaginary = withCalculatorProjection(withTotal, "f", (projected) => ({
       ...projected,
@@ -264,6 +269,11 @@ export const runUiIntegrationMobileShellTests = (): void => {
             inputBlocked: false,
     });
     assert.equal(totalPanel?.getAttribute("aria-label"), "Total complex", "non-zero imaginary totals keep complex display label");
+    assert.equal(
+      totalPanel?.classList.contains("total-display--imaginary"),
+      true,
+      "total panel enters imaginary color mode when total has non-zero imaginary component",
+    );
 
     const withErrorTotal = withCalculatorProjection(withTotal, "f", (projected) => ({
       ...projected,
@@ -285,6 +295,11 @@ export const runUiIntegrationMobileShellTests = (): void => {
       totalPanel?.classList.contains("total-display--error"),
       true,
       "total panel enters error color mode when latest roll entry has an error",
+    );
+    assert.equal(
+      totalPanel?.classList.contains("total-display--imaginary"),
+      false,
+      "total panel clears imaginary color mode when total no longer has non-zero imaginary component",
     );
     assert.equal(domainIndicatorWithError?.textContent, "ℙ", "domain indicator renders latest y domain symbol");
     assert.equal(

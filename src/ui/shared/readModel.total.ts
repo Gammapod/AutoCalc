@@ -50,7 +50,7 @@ const toProgressFraction = (row: UnlockHintProgressRow): string => {
 
 const resolveHintRole = (category: ClosestHintCategory): { uxRole: UxRole; uxState: UxRoleState } => {
   if (category === "lambda_point") {
-    return { uxRole: "lambda", uxState: "active" };
+    return { uxRole: "imaginary", uxState: "active" };
   }
   return { uxRole: "unlock", uxState: "normal" };
 };
@@ -109,7 +109,7 @@ export const buildTotalHintRowsViewModel = (state: GameState): TotalHintRowViewM
     { key: "operator", label: "OP" },
     { key: "non_operator", label: "KEY" },
     { key: "calculator", label: "CALC" },
-    { key: "lambda_point", label: "LAMBDA" },
+    { key: "lambda_point", label: "IMAG" },
   ];
 
   return categories.map((category) => {
@@ -133,4 +133,3 @@ export const buildTotalHintRowsViewModel = (state: GameState): TotalHintRowViewM
     };
   });
 };
-

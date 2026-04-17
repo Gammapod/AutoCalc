@@ -12,10 +12,11 @@ export const runUiGrapherRoleColorTests = (): void => {
   );
   assert.equal(
     source.includes("resolveUxRoleColor(\"default\"")
+      && source.includes("resolveUxRoleColor(\"imaginary\"")
       && source.includes("resolveUxRoleColor(\"analysis\"")
       && source.includes("resolveUxRoleColor(\"error\""),
     true,
-    "grapher renderer maps default/analysis/error paths to role-derived colors",
+    "grapher renderer maps default/imaginary/analysis/error paths to role-derived colors",
   );
   assert.equal(
     source.includes("#"),

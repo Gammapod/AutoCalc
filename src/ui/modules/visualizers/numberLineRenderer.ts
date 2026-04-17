@@ -47,6 +47,7 @@ const appendLine = (
     | "v2-number-line-vector--history"
     | "v2-number-line-vector--forecast"
     | "v2-number-line-vector--forecast-step",
+  roleOverride?: "imaginary",
 ): void => {
   const svgNs = "http://www.w3.org/2000/svg";
   const line = documentRef.createElementNS(svgNs, "line");
@@ -55,22 +56,37 @@ const appendLine = (
   line.setAttribute("x2", segment.to.x.toString());
   line.setAttribute("y2", segment.to.y.toString());
   line.setAttribute("class", className);
+  if (roleOverride === "imaginary" && className === "v2-number-line-axis") {
+    line.classList.add("v2-number-line-axis--imaginary");
+  }
   if (className === "v2-number-line-vector--history" || className === "v2-number-line-vector--forecast-step") {
     applyUxRoleAttributes(line, { uxRole: "analysis", uxState: "active" });
   } else if (className === "v2-number-line-vector--forecast") {
     applyUxRoleAttributes(line, { uxRole: "unlock", uxState: "active" });
+  } else if (roleOverride === "imaginary") {
+    applyUxRoleAttributes(line, { uxRole: "imaginary", uxState: "active" });
   } else {
     applyUxRoleAttributes(line, { uxRole: "default", uxState: "normal" });
   }
   svg.appendChild(line);
 };
 
-const appendArrow = (documentRef: Document, svg: SVGElement, points: [Point, Point, Point]): void => {
+const appendArrow = (
+  documentRef: Document,
+  svg: SVGElement,
+  points: [Point, Point, Point],
+  roleOverride?: "imaginary",
+): void => {
   const svgNs = "http://www.w3.org/2000/svg";
   const arrow = documentRef.createElementNS(svgNs, "polygon");
   arrow.setAttribute("points", buildPolygonPoints(points));
   arrow.setAttribute("class", "v2-number-line-arrowhead");
-  applyUxRoleAttributes(arrow, { uxRole: "default", uxState: "normal" });
+  if (roleOverride === "imaginary") {
+    arrow.classList.add("v2-number-line-arrowhead--imaginary");
+    applyUxRoleAttributes(arrow, { uxRole: "imaginary", uxState: "active" });
+  } else {
+    applyUxRoleAttributes(arrow, { uxRole: "default", uxState: "normal" });
+  }
   svg.appendChild(arrow);
 };
 
@@ -207,7 +223,11 @@ const appendSubdivisionLines = (
   }
 };
 
-const renderBaseHorizontalAxis = (documentRef: Document, svg: SVGElement, geometry: NumberLineGeometry): void => {
+const renderBaseHorizontalAxis = (
+  documentRef: Document,
+  svg: SVGElement,
+  geometry: NumberLineGeometry,
+): void => {
   appendLine(documentRef, svg, geometry.horizontal.axis, "v2-number-line-axis");
   appendArrow(documentRef, svg, geometry.horizontal.arrowLeft);
   appendArrow(documentRef, svg, geometry.horizontal.arrowRight);
@@ -234,9 +254,6 @@ const renderComplexGrid = (documentRef: Document, svg: SVGElement, geometry: Num
     { start: geometry.vertical.axis.from.y, end: geometry.vertical.axis.to.y },
     geometry.subdivisions.centerIndex,
   );
-  appendLine(documentRef, svg, geometry.vertical.axis, "v2-number-line-axis");
-  appendArrow(documentRef, svg, geometry.vertical.arrowUp);
-  appendArrow(documentRef, svg, geometry.vertical.arrowDown);
   appendSubdivisionLines(
     documentRef,
     svg,
@@ -245,6 +262,9 @@ const renderComplexGrid = (documentRef: Document, svg: SVGElement, geometry: Num
     { start: geometry.horizontal.axis.from.x, end: geometry.horizontal.axis.to.x },
     geometry.subdivisions.centerIndex,
   );
+  appendLine(documentRef, svg, geometry.vertical.axis, "v2-number-line-axis", "imaginary");
+  appendArrow(documentRef, svg, geometry.vertical.arrowUp, "imaginary");
+  appendArrow(documentRef, svg, geometry.vertical.arrowDown, "imaginary");
 };
 
 export const resolveNumberLineLabels = (
@@ -391,12 +411,12 @@ export const renderNumberLineVisualizerPanel = (root: Element, state: GameState)
 
   const mode = resolveNumberLineMode(state);
   const range = resolvePlotRangeForState(state);
-  renderBaseHorizontalAxis(document, svg, NUMBER_LINE_GEOMETRY);
   if (mode === "complex_grid") {
     renderComplexGrid(document, svg, NUMBER_LINE_GEOMETRY);
   } else {
     renderRealTicks(document, svg, NUMBER_LINE_GEOMETRY);
   }
+  renderBaseHorizontalAxis(document, svg, NUMBER_LINE_GEOMETRY);
   renderScaleLabels(document, svg, mode, range);
   renderVectorIfAvailable(document, svg, state);
 

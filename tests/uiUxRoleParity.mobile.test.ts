@@ -7,7 +7,7 @@ export const runUiUxRoleParityMobileTests = (): void => {
 
   assert.equal(
     mobileHtml.includes("--ux-role-error-color")
-      && mobileHtml.includes("--ux-role-lambda-color")
+      && mobileHtml.includes("--ux-role-imaginary-color")
       && mobileHtml.includes("--ux-role-unlock-color")
       && mobileHtml.includes("--ux-role-analysis-color")
       && mobileHtml.includes("--ux-role-help-color")
@@ -18,7 +18,7 @@ export const runUiUxRoleParityMobileTests = (): void => {
 
   assert.equal(
     mobileHtml.includes("[data-ux-role=\"error\"]")
-      && mobileHtml.includes("[data-ux-role=\"lambda\"]")
+      && mobileHtml.includes("[data-ux-role=\"imaginary\"]")
       && mobileHtml.includes("[data-ux-role=\"unlock\"]")
       && mobileHtml.includes("[data-ux-role=\"analysis\"]")
       && mobileHtml.includes("[data-ux-role=\"help\"]")
@@ -27,4 +27,3 @@ export const runUiUxRoleParityMobileTests = (): void => {
     "mobile_web includes role/state selectors for role-driven semantic coloring",
   );
 };
-

@@ -42,6 +42,16 @@ body[data-ui-shell="desktop"] .v2-number-line-arrowhead {
   fill: var(--ux-role-default-color);
 }
 
+body[data-ui-shell="mobile"] .v2-number-line-axis--imaginary,
+body[data-ui-shell="desktop"] .v2-number-line-axis--imaginary {
+  stroke: var(--ux-role-imaginary-color);
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-arrowhead--imaginary,
+body[data-ui-shell="desktop"] .v2-number-line-arrowhead--imaginary {
+  fill: var(--ux-role-imaginary-color);
+}
+
 body[data-ui-shell="mobile"] .v2-number-line-grid-mark,
 body[data-ui-shell="desktop"] .v2-number-line-grid-mark {
   stroke: var(--ux-role-default-color);

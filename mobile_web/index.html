@@ -86,7 +86,7 @@
         --key-execution-bottom: #2f6c4a;
         --key-execution-stroke: #1f4a33;
         --ux-role-error-color: #ff5c5c;
-        --ux-role-lambda-color: #be8ee8;
+        --ux-role-imaginary-color: #be8ee8;
         --ux-role-unlock-color: var(--ux-role-info, #79c3ff);
         --ux-role-analysis-color: #f2cf57;
         --ux-role-help-color: #e9f4ff;
@@ -856,7 +856,7 @@
       }
 
       .total-memory-lambda {
-        color: var(--ux-role-lambda-color);
+        color: var(--ux-role-imaginary-color);
         text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
         white-space: nowrap;
       }
@@ -879,7 +879,7 @@
         width: 0.6ch;
         text-align: center;
         visibility: hidden;
-        color: var(--ux-role-lambda-color);
+        color: var(--ux-role-imaginary-color);
         text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
       }
 
@@ -893,7 +893,7 @@
       }
 
       .total-memory-symbol--selected {
-        color: var(--ux-role-lambda-color);
+        color: var(--ux-role-imaginary-color);
         text-shadow: 0 0 5px rgba(190, 142, 232, 0.45);
       }
 
@@ -963,6 +963,20 @@
       .total-remainder-display .seg-fraction {
         color: #f6d66b;
         text-shadow: 0 0 6px rgba(246, 214, 107, 0.55);
+      }
+
+      .total-display--imaginary .total-primary-display .seg {
+        background: var(--ux-role-imaginary-color);
+      }
+
+      .total-display--imaginary .total-primary-display .seg--on {
+        box-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
+      }
+
+      .total-display--imaginary .total-primary-display .seg-sign,
+      .total-display--imaginary .total-primary-display .seg-fraction {
+        color: var(--ux-role-imaginary-color);
+        text-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
       }
 
       .total-display--error .total-primary-display .seg {
@@ -2547,7 +2561,7 @@
         overflow-x: auto;
         overflow-y: hidden;
         text-align: center;
-        color: var(--ux-role-lambda-color);
+        color: var(--ux-role-imaginary-color);
       }
 
       body[data-ui-shell="mobile"] .v2-eigen-equation .katex-display,
@@ -2558,7 +2572,7 @@
       body[data-ui-shell="mobile"] .v2-eigen-equation .katex,
       body[data-ui-shell="desktop"] .v2-eigen-equation .katex {
         font-size: clamp(0.90rem, 2vw, 1rem);
-        color: var(--ux-role-lambda-color);
+        color: var(--ux-role-imaginary-color);
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher,
@@ -2642,8 +2656,8 @@
         color: var(--ux-role-error-color);
       }
 
-      [data-ux-role="lambda"] {
-        color: var(--ux-role-lambda-color);
+      [data-ux-role="imaginary"] {
+        color: var(--ux-role-imaginary-color);
       }
 
       [data-ux-role="unlock"] {
