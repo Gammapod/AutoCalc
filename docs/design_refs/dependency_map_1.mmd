@@ -1,0 +1,349 @@
+%% Truth 4: Keep
+
+%% ⋕
+%% Design guidelines:
+%% 1. All operators can be constructed from atomic primitives
+%% 2. Operators can be unary (takes previous operator result) or binary (takes previous operator result and second operand)
+%% 3. User enters initial seed value, operators, and binary operands. A combDOM_nation operator and second operand are a "operation slot"
+%% 4. Values for seeds and binary operands can be digits 0-9
+%% 
+%% Theoretical progression path:
+%% - Every subgraph defines its own calculator, which starts with its own settings, primitives, and visualizer locked in place (at first).
+%% - Every calculator is equipped with the settings required to reason about that family of operators and intuitively understand the results.
+%% - The player starts with the increment operator only, and must construct other operators to earn the right to think that way.
+%% - All of the main arithmetic functions can be inverted. Sometimes inverses imply the existence of new numbers.
+%% - Sometimes, using operators on these new types of numbers can have interesting outcomes
+%% - Finding an interesting outcome in a new area unlocks a new calculator with that new outcome as an installed defined operator key
+%% - New unlocks from within a family are added to that calculator directly - not yet freely movable
+%% - Once all of an operator's child nodes are in play, that operator is free to swap and add to other calculators
+%% - Multiple pathways to the same calculator might be possible, not sure yet
+%% - Multiple pathways to the same key might be possible, not sure yet
+
+flowchart TD
+
+subgraph Key
+    Primitive_1
+    Primitive_2
+    
+    Primitive_1 ==>|Sufficient| Unlock_1 
+ 
+end
+Key ~~~ Subkey
+Primitive_1 -.->|Sufficient| Unlock_3
+Primitive_1 -.-x|Necessary| Unlock_2
+Primitive_2 -.-x|Necessary| Unlock_2
+Primitive_2 -.->|Alternate_Sufficient| Unlock_4
+subgraph Subkey
+    Unlock_2
+    Unlock_3
+    Unlock_2 ==x|Necessary| Unlock_4
+    Unlock_3 ==x|Necessary| Unlock_4
+end
+
+Math ~~~ Boolean_Ops
+Rotation_Ops ~~~ ROT_twentyfourth
+
+%% GRO_log -.-> ROT_theta
+
+    RAT_recip -.-x GRO_sqrt
+    TUP_eulog -.-x GRO_sqrt
+    CPX_norm -.-x ROT_modulus
+
+BOO_ifelse -.-o ROT_modulus
+BOO_notgt -.-o ROT_modulus
+subgraph Growth ["𝔸=ℚ‾"]
+    %% Visualizer: Not set in stone yet. Cobweb plot? 
+    GRO_sqrt["[ ²√n ]"]
+    %% Expanded form `[ ²√(4) ]` -> `[ 2 ^ ((4 ∥ 2) × 1⁄2) ]`
+    GRO_sqrt ==>|Invert| GRO_radical["[ ᵇ√a ]"]
+    %% Expanded form `[ ³√(4) ]` -> `[ 3 ^ (1 ÷ 3) ]`
+    %% GRO_log["n [ ℓ ]"]
+    %% %% Primitive?
+    %% %% Expanded form `[ ℓ(⦨) ]` -> `[ (i × π) ÷ 12 ]`
+    %% %% Expanded form `[ ℓn ]` -> `[ 4 × e^(iπ÷12) ]`
+    %% %% Expanded form `[ ℓ4 ]` -> `[ lim{h->0}((4^h - 1)÷h) ]`
+    %% %% Expanded form `[ ℓ4 ]` -> `[ Σ{h=ℕ}(((-1)^(h+1))×(4^h))÷(h) ]`
+    
+    GRO_sqrt ==x ROT_modulus
+    subgraph Rotation_Ops ["ℂ"]
+        %%  ⦿⊙⦶⦼⊗⊘⊕⧁⧀⦹⊖⊜⊛⊚
+        %% Visualizer: circle, which is similar to the cartesian visualizer but projects down to the unit circle to only focus on rotation.
+        %% VITAL UX: make it abundantly clear that each rotation "unit" is 1÷24 of a circle, or pi÷12 radians. The math behind the scenes will be (n × e^(i*2pi*(n÷24)))
+
+        ROT_modulus["z [ |z| ]"]
+        %% %% Expanded form `[ |4| ]` -> `[ (-4 × (4 ≤ 0)) ⩣ (4 × ¬(4 ≤ 0)) ]`
+        %% %% Expanded form `[ |4| ]` -> `[ 4 ↶ -(4 ⦾)]`
+        %% GRO_radical -.-x ROT_modulus
+        %% CPX_norm ==> ROT_modulus["z [ |z| ]"]
+        %% Expanded form `[ |4| ]` -> `[ √(Re(4)² + Im(4)²) ]
+        ROT_modulus ===|Remainder| ROT_theta["z [ ⦾ ]"]
+        %% %% Expanded form `[ z ⦾ ]` -> `[ (12 ÷ πi) × ℓ(z ÷ |z|)]`
+
+        ROT_theta ==>|× 12⁄π| ROT_twentyfourth["[ n ⦨ ]"]
+        %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ÷12) ]`
+        %% Expanded form `[ 4 ⦨ ]` -> `[ -0:30 ]`
+        ROT_twentyfourth ==>|Iterate| ROT_rotate["a [ ↶ b ]"]
+        %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{2π×(3÷24)↶⦜} ]`
+        %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
+        %% Expanded form `[ 4 ↶ 3 ]` -> `[ -1:30 ]`
+
+        ROT_rotate ==> ROT_quarter["[ n ↶⦜ ]"]
+        ROT_polar ==x ROT_quarter
+        %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 × √(-1) ]`
+        %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ 4 ↶ 6 ]`
+        %% Expanded form `[ 4 ↶ ⦜ ]` -> `[ -3:00 ]`
+
+        ROT_theta ==x ROT_polar["n ⊙"]
+        %% Expanded form `[ (4i) ⊙ ]` -> `[ |4i| + ((4i ⦾) ↶⦜) ]` <-- resolves to 4 + 6i
+        ROT_polar ==>|Invert| ROT_cart["n ⟴"]
+        %% Expanded form `[ (4 + 6i) ⟴]` -> `[]` <-- no idea, but resolves to 4i
+        
+    end
+end  
+
+Complex_Math ~~~ RAT_recip
+GRO_radical -.-x RAT_semit
+TUP_eudiv -.->|Iterate| RAT_recip
+MAT_pow -.-x RAT_whole
+    MAT_mul -.-> CPX_horiz
+    TUP_eudiv -.-x CPX_conj
+subgraph Ratios ["ℚ"]
+    %% Visualizer: shows 2 numbers instead of 1, for numerator and denominator (4 numbers when complex)
+    RAT_recip["[ 1⁄n ]"]
+    %% Expanded form `(4÷3) [ 1⁄n ]` -> `[ 3 ÷ 4 ]` 
+    RAT_recip ==> RAT_div["a [ ÷ b ]"]
+    %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 × 1⁄3 ]`    
+    RAT_div ==> RAT_per["％"]
+    %% Expanded form `[ (a÷100) × b ]` <-.- should 100 change based on base setting? 
+    %% Music Mode: When toggled, result is normalized to [1÷16, 16) and a sfx tone plays at result ×440 hz 
+    RAT_div ==x RAT_whole["a ♩↑ b"]
+    %% Expanded form `[ a × ((9 ÷ 8) ^ b) ]`
+    RAT_whole ==> RAT_semit["a ♯↑ b"]
+    %% Expanded form `[ a × (¹²√(2 ^ b)) ]`
+    RAT_whole ==> RAT_inter["a ⋮ b"]
+    %% Expanded form `[ a × (1 + 1⁄b) ]`
+    subgraph Complex_Math ["ℚ[𝕚]"]
+        CPX_horiz["n [ ⭾ ]"]
+        %% Reflects only the real part
+        CPX_horiz ==> CPX_impart["[ Im(z) ]"]
+        %% %% Ixpanded form `[ Im(z) ]` -> `[ (z + (z ⭾)) ÷ 2i ]`
+        CPX_impart ==> CPX_repart["[ Re(z) ]"]
+        %% %% Expanded form `[ Re(z) ]` -> `[ (z + (z ⭿)) ÷ 2 ]`
+        %% ROT_quarter ==x CPX_mid["a⦼b"]
+        %% %% Expanded form `[ 4⦼3 ]` -> `[ (3 + (4 ↶⦜)) ÷ 2 ]
+        CPX_repart ==x CPX_norm["z [ z 🞜 ]"]
+        %% Expanded form `[ 4 🞜 ]` -> `[ Re(z)² + Im(z)² ]`
+        CPX_norm ==x CPX_conj["n [ ⭿ ]"]
+        %% Reflects only the imaginary part
+        %% Expanded form `[ ((z 🞜) ÷ z ]`
+    end
+end
+            
+          
+subgraph Math ["ℕ,ℤ"]
+    %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
+    
+    MAT_inc[["[ n ++ ]"]]
+    %% Primitive
+    %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
+    %% Completes ℕ on its own
+    MAT_inc ==>|Iterate| MAT_plus["a [ \+b ]"]
+    %% Expanded form `[ 4 + 3 ]` -> `[ 4 ++ ++ ++ ]`  
+    MAT_plus ==>|Iterate| MAT_mul["a [ × b ]"]
+    %% Expanded form `[ 4 × 3 ]` -> `[ 4 +4 +4 ]`
+    %% CPX_impart ==> ROT_modulus
+    %% CPX_repart ==> ROT_modulus
+    %% ROT_rotate ==>|Iterate| CPX_horiz["n⭾"]
+    MAT_mul ==>|Iterate| MAT_pow["a [ ^ b ]"]
+    %% Expanded form `[ 4 ^ 3 ]` -> `[ 4 ×4 ×4 ]`
+
+    MAT_inc ==>|Invert| MAT_dec["[ n -- ]"]
+    %% Expanded form `[ 4 –– ]` -> `[ 4 ℤ{..3◌⃔4 5..} ]`
+    %% Expanded form `[ 4 –– ]` -> `[ 4 ++⮌ ]`
+    %% Completes ℤ with ++
+    
+    MAT_plus ==>|Invert| MAT_minus
+    MAT_dec ==>|Iterate| MAT_minus["a [ − b ]"]
+    %% Expanded form `[ 4 - 3 ]` -> `[ 4 –– –– –– ]`
+    %% Expanded form `[ 4 - 3 ]` -> `[ 4 +⮌ 3 ]`
+
+    %% TUP_mod ==> Lfloor["⌊n⌋"]
+    %% %% Expanded form `[ ⌊(4÷3)⌋ ]` -> `[ (4÷3) - ((4÷3) ◇ 1) ]`
+    %% Lfloor ==> Lceil["⌈n⌉"]
+    %% %% Expanded form `[ ⌈(4÷3)⌉ ]` -> `[ (4÷3) + (1 - ((4÷3) ◇ 1)) ]`
+
+    MAT_mul ==>|Invert| TUP_cdiv
+    MAT_minus ==>|Iterate| TUP_cdiv
+    MAT_pow ==>|Invert| TUP_clog
+    subgraph Tuples
+    
+        TUP_cdiv["a⨸b"]
+        %% Complex_Tuple
+        %% Expanded form `[ 4 ⨸ 3 ]` -> `[ (4 ⫽ 3) + ((4 ◇ 3) ↶⦜) ]`
+
+        TUP_cdiv ==>|Iterate| TUP_clog["a ⦷ b"]
+        %% Complex_Tuple
+        %% Expanded form `[ 4 ⦷ 3 ]` -> `[ (4 ∥ 3) + ((4 🞚 3) ↶⦜) ]`
+        TUP_cdiv ==>|Quotient| TUP_eudiv["a ⫽ b"]
+        %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(4 – (3 × ℕ)) ]`
+        TUP_cdiv ===|Remainder| TUP_mod["a◇b"]
+        %% Expanded form `[ 4 ◇ 3 ]` -> `[ 4 – (3 × (4 ⫽ 3)) ]`
+
+        TUP_clog ==> TUP_eulog["a [ ∥ b ]"]
+        %% Expanded form `[ 4 ∥ 3 ]` -> `Σ[ ¬(4 ◇ (3 ^ ℕ)) ]`
+        TUP_clog ==>|Remainder| TUP_resid["a [ 🞚 b ]"]
+        %% Expanded form `[ 4 🞚 3 ]` -> `[ 4 ÷ (3 ^ (4 ∥ 3)) ]`🞛
+
+    end
+
+
+end
+
+    TUP_eudiv -.->|Div-0| BOO_notp
+    TUP_mod -.-x BOO_divis
+    subgraph Boolean_Ops ["𝕋÷𝔽"]
+        %% Visualizer: default again, but in binary mode
+        %% For logic operators, NaN is treated as False (represented as ⊥ in expansions), and any value (including 0) is treated as true
+        %% a, b, n -> numeric values (else false)
+        %% p, q -> numeric values (true) or ⊥ (false)
+        
+        BOO_notp["¬ p"]
+        %% Expanded form `[ ⊥ if p, else 1 ]`
+        BOO_notp === BOO_ifelse["p ⩣ q"]
+        %% Expanded form `[ p if p, else q ]`
+    
+        BOO_ifelse ==> BOO_or["p ∨ q"]
+        %% Expanded form `[ ¬¬(p ⩣ q) ]`
+        BOO_or ==> BOO_and["p ∧ q"]
+        %% Expanded form `[ ¬(¬p ∨ ¬q) ]`
+
+        
+        BOO_notp ==> BOO_eq["a ≡ b"]
+        %% Expanded form `[ ¬¬(1 ÷ (a - b)) ]`
+        BOO_eq ==x BOO_divis["a | b"]
+        %% Expanded form `[ (a ◇ b) ≡ 0) ]`
+        BOO_eq ==> BOO_less["a < b"]
+        %% Expanded form `[ (a ≡ b) ]`
+        BOO_or ==x BOO_notgt
+        BOO_less ==x BOO_notgt["a ≤ b"]
+        %% Expanded form `[ (a ≡ b) ⩣ ]`
+        %% Expanded form `[ (a < b) ∨ (a ≡ b) ]`
+    end
+
+
+    %% RAT_div -.-o|Divide| BOO_sign
+    %% BOO_ifelse -.-o BOO_sign
+    %%     BOO_sign["n ⨩ "]
+    %%     %% Expanded form `[ (n ÷ n) ⩣ n ]`
+    %%     %% 4 possible outputs: -1, 0, 1, NaN
+    %%     %% On complex input, has 10: -1-i, -1, -1+i, -i, 0, i, 1-i, 1, 1+i, NaN
+
+    %% subgraph P_Theory ["Returns ℙ (2)"]
+    %%     Pnthprime
+    %%     Pindexofp
+
+    %%     Padic
+    %%     Pprime_expansion
+
+    %%     Pomega        
+    %%     Ptotient
+    %%     Pdivisor_sum
+        
+    %%     Pgcd
+    %%     Plcm
+    %% end
+
+%% Arithmatic
+%% 
+%% Ratios
+%% 
+%% Music
+%% 
+%% Growth
+%%  
+%% Rotation
+%% 
+%% Geometry
+%% 
+%% Experimental: Complex math
+%% 
+%% Logic
+%% 
+%% Comparisons
+%% 
+%% Primes
+    %% Still conceptual - has a lot of functions designed, but the way the user will interact with these is not planned yet
+    %% Visualizer: prime factorization, not sure what else would be interesting
+    
+    %% DOM_prime -.-> Pnthprime["ℙ(n)"]
+    %% %% Primitive
+    %% %% Returns nth prime. ℙ(3) = 5
+    %% Pnthprime -.->|Invert| Pindexofp["ℕ(p)"]
+    %% %% Returns index of prime p. ℙ^-1(5) = 3
+
+    %% Pnthprime -.-> Padic["v_p(n)"]
+    %% TUP_eulog -.-> Padic
+    %% %% Expanded form `[ n ∥ ℙ(3) ]`
+    %% Padic -.-> Pprime_expansion("∏ ℙ^e")
+
+    %% %% Expanded form `n ∥ ℙ("🞚
+    %% Padic -.-> Pomega["Ω(n)"]
+    %% TUP_resid -.-> Pomega
+    %% %% n=60
+    %% %% r=15,5,1
+    %% %% s=2,1,1,0
+    %% %% x=1,2,3,4
+    %% %% Expanded form `r=60 ∥ ℙ(x=1) = s=2`
+    %% %% Expanded form `r=60 🞚 ℙ(x=1) = 15`
+    %% %% Expanded form `r=60 🞚 ℙ(x=1) ∥ ℙ(x=2) = s=1`
+    %% %% Expanded form `r=15 🞚 ℙ(x=2) = 5`
+    %% %% Expanded form `r=15 🞚 ℙ(x=2) ∥ ℙ(x=3) = s=1`
+    %% %% Expanded form `r=5 🞚 ℙ(x=3) = 1`
+    %% %% Expanded form `r=5 🞚 ℙ(x=3) ∥ ℙ(x=4) = s=0`
+    %% %% Expanded form `r=1 🞚 ℙ(x=4) = 1`
+    %% %% Expanded form `Σ{x=1..n}[ ((x - 1) 🞚 ℙ(x - 1)) ∥ ℙ(x) ]`
+    %% Ptotient["φ"]
+    %% %% Expanded form `[ n × ∏(1-p^-1) ]`
+    %% BOO_divis -.-> Pdivisor_sum["σ"]
+    %% %% Expanded form `[ Σ( (d|n) × d) ]`
+    %% TUP_mod -.-> Pgcd
+    %% CPX_impart -.-> Pgcd["n ⩑"]
+    %% %% %% Old:Expanded form `[ ∏p^(e_a ⫧ e_b) ]`
+    %% %% Expanded form `[ Im(n) + ((Re(n) ◇ Im(n)) ↶⦜) ]`
+    %% Pgcd -.-> Plcm["⩒"]
+    %% %% Expanded form `[" ∏p^(e_a ⫨ e_b) "]`    
+%% 
+
+%%     subgraph Digits ["Digit Manipulation"]
+%%     %% Currently a dead-end; could lead to more complex cycles
+%%         Ddig["a⪼b"]
+%%         %% Primitive, takes last b digits of a (respects base setting)
+%%         %% Expanded form `[ a◇(10^b) ]` <-.- 10 changes with base
+%%         Ddigitn["a#b"]
+%%         %% Expanded form `[ a⪼b - a⪼(b-1) ÷ 10^(b-1)) ]` <-.-- 10 changes with base
+%%         Ddigsum["dΣn"]
+%%         %% Expanded form `[ ..d#3 + d#2 + d#1 ] <-.-- as many entries as digits in operand (respecting current base)
+%%         Ddigsq["d²Σn"]
+%%         %% Expanded form `[ ..(d#2)^2 + (d#1)^2 ] <-.-- as many entries as digits in operand (respecting current base)
+%%         Dsort["d⇡n"]
+%%         Drotate["a⟲b"]
+%%         Dcount["d##n"]
+%%         Dmirror["d⇋n"]
+%%     end
+%%     Ddig -.->|Generalize| Ddigitn
+%%     Ddigitn -.-> Dcount
+%%     Dcount -.-> Ddigsum
+%%     Dcount -.-> Ddigsq
+%%     Dsort -.-> Drotate
+%%     Dsort -.-> Dmirror
+%%     BOO_notgt -.-> Digits
+%%     TUP_mod -.-> Ddig
+%% Pnthprime > Ptotient
+%% Snthp-ime -.-> Pindexofp
+%% Pprime_expansion -.-t Pomega
+%% Pindexofp -.-> Pprime_expansion
+%% Pnthprime -.-> Pgcd
+%% Pexponent -.-> Pgcd
+%% Pexponent -.-> Plcm
+%% Pnthprime -.-> Plcm
+%% Pnthprime -.-> Pexponent
