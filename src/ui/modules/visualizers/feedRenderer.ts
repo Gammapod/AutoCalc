@@ -21,7 +21,7 @@ const buildDivider = (width: number): string => "-".repeat(width);
 const appendFeedTableLine = (
   table: HTMLElement,
   leftText: string,
-  rText: string | null,
+  zText: string | null,
   className?: string,
   uxAssignment?: UxRoleAssignment,
 ): void => {
@@ -30,23 +30,24 @@ const appendFeedTableLine = (
   if (uxAssignment) {
     applyUxRoleAttributes(line, uxAssignment);
   }
-  if (rText !== null) {
-    line.classList.add("v2-feed-table-line--with-r");
+  if (zText !== null) {
+    line.classList.add("v2-feed-table-line--with-z");
   }
   const left = document.createElement("span");
   left.className = "v2-feed-left-col";
   left.textContent = leftText;
   line.appendChild(left);
-  if (rText !== null) {
-    const r = document.createElement("span");
-    r.className = "v2-feed-r-col";
-    r.textContent = rText;
-    line.appendChild(r);
+  if (zText !== null) {
+    const z = document.createElement("span");
+    z.className = "v2-feed-z-col";
+    z.textContent = zText;
+    applyUxRoleAttributes(z, { uxRole: "imaginary", uxState: "active" });
+    line.appendChild(z);
   }
   table.appendChild(line);
 };
 
-const buildPlainFeedTableLine = (leftText: string, rText: string | null): string => `${leftText}${rText ?? ""}`;
+const buildPlainFeedTableLine = (leftText: string, zText: string | null): string => `${leftText}${zText ?? ""}`;
 
 const buildFeedXRowCell = (xText: string | null, width: number): string =>
   xText === null ? " ".repeat(width) : `${padLeft(xText, Math.max(1, width - 1))} `;
@@ -75,16 +76,16 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
 
   const headerLeft = `${padCenter("X", view.xWidth)}|${padCenter("Y", view.yWidth)}`;
   const dividerLeft = `${buildDivider(view.xWidth)}|${buildDivider(view.yWidth)}`;
-  const headerR = view.showRColumn ? `|${padCenter("r", view.rWidth)}` : null;
-  const dividerR = view.showRColumn ? `|${buildDivider(view.rWidth)}` : null;
-  const plainLines: string[] = [buildPlainFeedTableLine(headerLeft, headerR), buildPlainFeedTableLine(dividerLeft, dividerR)];
+  const headerZ = view.showZColumn ? `|${padCenter("Z", view.zWidth)}` : null;
+  const dividerZ = view.showZColumn ? `|${buildDivider(view.zWidth)}` : null;
+  const plainLines: string[] = [buildPlainFeedTableLine(headerLeft, headerZ), buildPlainFeedTableLine(dividerLeft, dividerZ)];
   const visibleRows = view.rows.length > 0 ? view.rows : [null];
   for (const row of visibleRows) {
     const rowLeft = row
       ? `${buildFeedXRowCell(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
       : `${buildFeedXRowCell(null, view.xWidth)}|${" ".repeat(view.yWidth)}`;
-    const rowR = view.showRColumn ? `|${padLeft(row?.rText ?? "", view.rWidth)}` : null;
-    plainLines.push(buildPlainFeedTableLine(rowLeft, rowR));
+    const rowZ = view.showZColumn ? `|${padLeft(row?.zText ?? "0", view.zWidth)}` : null;
+    plainLines.push(buildPlainFeedTableLine(rowLeft, rowZ));
   }
 
   if (typeof document === "undefined") {
@@ -95,18 +96,18 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   const table = document.createElement("div");
   table.className = "v2-feed-table";
 
-  appendFeedTableLine(table, headerLeft, headerR);
-  appendFeedTableLine(table, dividerLeft, dividerR);
+  appendFeedTableLine(table, headerLeft, headerZ);
+  appendFeedTableLine(table, dividerLeft, dividerZ);
 
   for (const row of visibleRows) {
     const rowLeft = row
       ? `${buildFeedXRowCell(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
       : `${buildFeedXRowCell(null, view.xWidth)}|${" ".repeat(view.yWidth)}`;
-    const rowR = view.showRColumn ? `|${padLeft(row?.rText ?? "", view.rWidth)}` : null;
+    const rowZ = view.showZColumn ? `|${padLeft(row?.zText ?? "0", view.zWidth)}` : null;
     appendFeedTableLine(
       table,
       rowLeft,
-      rowR,
+      rowZ,
       row?.hasError ? "v2-feed-table-line v2-feed-row--error" : "v2-feed-table-line",
       row ? resolveFeedRowUxAssignment(row) : { uxRole: "default", uxState: "muted" },
     );

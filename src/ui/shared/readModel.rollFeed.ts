@@ -1,5 +1,5 @@
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
-import { calculatorValueToDisplayString } from "../../domain/calculatorValue.js";
+import { calculatorValueToDisplayString, isScalarValueZero, scalarValueToCalculatorValue } from "../../domain/calculatorValue.js";
 import { getSeedRow, getStepRows } from "../../domain/rollEntries.js";
 import type {
   CalculatorValue,
@@ -24,8 +24,8 @@ export type RollViewModel = {
 export type FeedTableRow = {
   x: number;
   yText: string;
-  rText?: string;
-  hasRemainder: boolean;
+  zText?: string;
+  hasImaginary: boolean;
   hasError: boolean;
   uxRole: UxRole;
   uxState: UxRoleState;
@@ -35,16 +35,16 @@ export type FeedTableRow = {
 
 export type FeedTableViewModel = {
   rows: FeedTableRow[];
-  showRColumn: boolean;
+  showZColumn: boolean;
   xWidth: number;
   yWidth: number;
-  rWidth: number;
+  zWidth: number;
 };
 
 const FEED_MAX_VISIBLE_ROWS = 12;
 const FEED_FIXED_COLUMN_WIDTH = 5;
 const FEED_Y_COLUMN_PADDING_CHARS = 3;
-const FEED_R_COLUMN_PADDING_CHARS = 3;
+const FEED_Z_COLUMN_PADDING_CHARS = 3;
 const MAX_UNLOCKED_TOTAL_DIGITS = 12;
 
 export const buildRollLines = (rollEntries: RollEntry[]): string[] =>
@@ -59,29 +59,51 @@ export const buildFeedTableRows = (
   const rows: FeedTableRow[] = [];
   const seedRow = getSeedRow(rollEntries);
   if (seedRow) {
-    rows.push({
-      x: 0,
-      yText: calculatorValueToFeedText(seedRow.y),
-      hasRemainder: false,
-      hasError: false,
-      uxRole: "default",
-      uxState: "normal",
-    });
+    if (seedRow.y.kind === "complex") {
+      rows.push({
+        x: 0,
+        yText: calculatorValueToFeedText(scalarValueToCalculatorValue(seedRow.y.value.re)),
+        zText: calculatorValueToFeedText(scalarValueToCalculatorValue(seedRow.y.value.im)),
+        hasImaginary: !isScalarValueZero(seedRow.y.value.im),
+        hasError: false,
+        uxRole: "default",
+        uxState: "normal",
+      });
+    } else {
+      rows.push({
+        x: 0,
+        yText: calculatorValueToFeedText(seedRow.y),
+        hasImaginary: false,
+        hasError: false,
+        uxRole: "default",
+        uxState: "normal",
+      });
+    }
   }
   const stepRows = getStepRows(rollEntries);
   for (let index = 0; index < stepRows.length; index += 1) {
     const entry = stepRows[index];
     const hasError = Boolean(entry.error);
-    const hasRemainder = Boolean(entry.remainder) && !hasError;
-    rows.push({
-      x: index + 1,
-      yText: calculatorValueToFeedText(entry.y),
-      ...(hasRemainder ? { rText: toPreferredFractionString(entry.remainder!) } : {}),
-      hasRemainder,
-      hasError,
-      uxRole: hasError ? "error" : "default",
-      uxState: hasError ? "active" : "normal",
-    });
+    if (entry.y.kind === "complex") {
+      rows.push({
+        x: index + 1,
+        yText: calculatorValueToFeedText(scalarValueToCalculatorValue(entry.y.value.re)),
+        zText: calculatorValueToFeedText(scalarValueToCalculatorValue(entry.y.value.im)),
+        hasImaginary: !isScalarValueZero(entry.y.value.im),
+        hasError,
+        uxRole: hasError ? "error" : "default",
+        uxState: hasError ? "active" : "normal",
+      });
+    } else {
+      rows.push({
+        x: index + 1,
+        yText: calculatorValueToFeedText(entry.y),
+        hasImaginary: false,
+        hasError,
+        uxRole: hasError ? "error" : "default",
+        uxState: hasError ? "active" : "normal",
+      });
+    }
   }
   return rows;
 };
@@ -99,16 +121,16 @@ export const buildFeedTableViewModel = (
 ): FeedTableViewModel => {
   const rows = buildFeedTableRows(rollEntries);
   const visibleRows = rows.slice(-FEED_MAX_VISIBLE_ROWS);
-  const showRColumn = visibleRows.some((row) => row.hasRemainder);
+  const showZColumn = rows.some((row) => row.hasImaginary);
   const unlockedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(unlockedTotalDigits)));
   const yWidth = unlockedDigits + FEED_Y_COLUMN_PADDING_CHARS;
-  const rWidth = Math.ceil(unlockedDigits / 2) + FEED_R_COLUMN_PADDING_CHARS;
+  const zWidth = unlockedDigits + FEED_Z_COLUMN_PADDING_CHARS;
   return {
     rows: visibleRows,
-    showRColumn,
+    showZColumn,
     xWidth: FEED_FIXED_COLUMN_WIDTH,
     yWidth,
-    rWidth,
+    zWidth,
   };
 };
 

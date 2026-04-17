@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import { buildFeedTableRows, buildFeedTableViewModel, buildRollLines, buildRollRows, buildRollViewModel } from "../src/ui/shared/readModel.js";
 import { resolveActiveVisualizerPanel } from "../src/ui/modules/visualizerHost.js";
 import { initialState } from "../src/domain/state.js";
@@ -8,6 +9,13 @@ const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ n
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
   kind: "rational",
   value: { num, den },
+});
+const c = (reNum: bigint, imNum: bigint): { kind: "complex"; value: { re: ReturnType<typeof toRationalScalarValue>; im: ReturnType<typeof toRationalScalarValue> } } => ({
+  kind: "complex",
+  value: {
+    re: toRationalScalarValue({ num: reNum, den: 1n }),
+    im: toRationalScalarValue({ num: imNum, den: 1n }),
+  },
 });
 const e = (y: RollEntry["y"], patch: Partial<RollEntry> = {}): RollEntry => ({ y, ...patch });
 
@@ -116,17 +124,23 @@ export const runRollDisplayTests = (): void => {
 
   assert.deepEqual(
     buildFeedTableRows([e(r(42n))]),
-    [{ x: 0, yText: "42", hasRemainder: false, hasError: false, uxRole: "default", uxState: "normal" }],
+    [{ x: 0, yText: "42", hasImaginary: false, hasError: false, uxRole: "default", uxState: "normal" }],
     "feed table renders seed-only row",
   );
 
   assert.deepEqual(
     buildFeedTableRows([e(r(42n)), e(r(50n))]),
     [
-      { x: 0, yText: "42", hasRemainder: false, hasError: false, uxRole: "default", uxState: "normal" },
-      { x: 1, yText: "50", hasRemainder: false, hasError: false, uxRole: "default", uxState: "normal" },
+      { x: 0, yText: "42", hasImaginary: false, hasError: false, uxRole: "default", uxState: "normal" },
+      { x: 1, yText: "50", hasImaginary: false, hasError: false, uxRole: "default", uxState: "normal" },
     ],
     "feed table appends first calculation row after seed",
+  );
+
+  assert.deepEqual(
+    buildFeedTableRows([e(c(7n, 2n))]),
+    [{ x: 0, yText: "7", zText: "2", hasImaginary: true, hasError: false, uxRole: "default", uxState: "normal" }],
+    "feed table splits complex values into real Y and imaginary Z columns",
   );
 
   const feedWithErrorRows = buildFeedTableRows([
@@ -137,14 +151,14 @@ export const runRollDisplayTests = (): void => {
   assert.deepEqual(
     feedWithErrorRows,
     [
-      { x: 0, yText: "10", hasRemainder: false, hasError: false, uxRole: "default", uxState: "normal" },
-      { x: 1, yText: "11", hasRemainder: false, hasError: true, uxRole: "error", uxState: "active" },
-      { x: 2, yText: "12", hasRemainder: false, hasError: true, uxRole: "error", uxState: "active" },
+      { x: 0, yText: "10", hasImaginary: false, hasError: false, uxRole: "default", uxState: "normal" },
+      { x: 1, yText: "11", hasImaginary: false, hasError: true, uxRole: "error", uxState: "active" },
+      { x: 2, yText: "12", hasImaginary: false, hasError: true, uxRole: "error", uxState: "active" },
     ],
     "feed table keeps one row per error entry without deduplication while preserving y display text",
   );
 
-  const feedWindowWithRemainder = buildFeedTableViewModel(
+  const feedWindowWithImaginary = buildFeedTableViewModel(
     [
       e(r(1n)),
       e(r(2n)),
@@ -153,22 +167,22 @@ export const runRollDisplayTests = (): void => {
       e(r(5n)),
       e(r(6n)),
       e(r(7n)),
-      e(r(8n), { remainder: rv(1n, 2n) }),
+      e(c(8n, 2n)),
       e(r(9n)),
     ],
     9,
   );
-  assert.equal(feedWindowWithRemainder.rows.length, 9, "feed table keeps all rows while count stays at or below twelve");
-  assert.equal(feedWindowWithRemainder.rows[0]?.x, 0, "feed table keeps seed row until row count exceeds twelve");
-  assert.equal(feedWindowWithRemainder.showRColumn, true, "feed table shows r column when visible rows contain remainder");
-  assert.equal(feedWindowWithRemainder.xWidth, 5, "feed X column width is fixed at five");
-  assert.equal(feedWindowWithRemainder.yWidth, 12, "feed Y column width is max digits plus three padding chars");
-  assert.equal(feedWindowWithRemainder.rWidth, 8, "feed r column width is half max digits plus three padding chars");
+  assert.equal(feedWindowWithImaginary.rows.length, 9, "feed table keeps all rows while count stays at or below twelve");
+  assert.equal(feedWindowWithImaginary.rows[0]?.x, 0, "feed table keeps seed row until row count exceeds twelve");
+  assert.equal(feedWindowWithImaginary.showZColumn, true, "feed table shows Z column when any roll row has an imaginary result");
+  assert.equal(feedWindowWithImaginary.xWidth, 5, "feed X column width is fixed at five");
+  assert.equal(feedWindowWithImaginary.yWidth, 12, "feed Y column width is max digits plus three padding chars");
+  assert.equal(feedWindowWithImaginary.zWidth, 12, "feed Z column width matches Y sizing");
 
-  const feedWindowWithoutVisibleRemainder = buildFeedTableViewModel(
+  const feedWindowWithoutVisibleImaginary = buildFeedTableViewModel(
     [
       e(r(1n)),
-      e(r(2n), { remainder: rv(1n, 2n) }),
+      e(c(2n, 3n)),
       e(r(3n)),
       e(r(4n)),
       e(r(5n)),
@@ -183,12 +197,12 @@ export const runRollDisplayTests = (): void => {
       e(r(14n)),
     ],
   );
-  assert.equal(feedWindowWithoutVisibleRemainder.rows.length, 12, "feed table caps visible rows at twelve");
-  assert.equal(feedWindowWithoutVisibleRemainder.rows[0]?.x, 2, "feed table drops oldest rows once row count exceeds twelve");
+  assert.equal(feedWindowWithoutVisibleImaginary.rows.length, 12, "feed table caps visible rows at twelve");
+  assert.equal(feedWindowWithoutVisibleImaginary.rows[0]?.x, 2, "feed table drops oldest rows once row count exceeds twelve");
   assert.equal(
-    feedWindowWithoutVisibleRemainder.showRColumn,
-    false,
-    "feed table hides r column when remainder is outside the visible twelve-row window",
+    feedWindowWithoutVisibleImaginary.showZColumn,
+    true,
+    "feed table keeps Z column visible when imaginary rows exist outside the visible twelve-row window",
   );
 
   const base = initialState();

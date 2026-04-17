@@ -115,7 +115,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
         ...projected.calculator,
         rollEntries: [
           { y: r(9n) },
-          { y: r(10n), remainder: { num: 1n, den: 2n } },
+          { y: c(10n, 2n) },
           { y: r(11n), error: { code: "n/0", kind: "division_by_zero" } },
         ],
       },
@@ -131,22 +131,22 @@ export const runUiIntegrationMobileShellTests = (): void => {
     const headerLine = feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line");
     assert.equal(
       headerLine?.textContent ?? "",
-      "  X  |     Y      |   r    ",
+      "  X  |     Y      |     Z      ",
       "feed panel header uses fixed ascii column widths for maxTotalDigits=9",
     );
     assert.equal(
       (feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line")?.textContent?.split("|").length ?? 0) >= 3,
       true,
-      "feed panel renders an r column when a visible row has remainder",
+      "feed panel renders a Z column when any row has an imaginary result",
     );
-    const rSegment = feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line .v2-feed-r-col");
-    assert.equal(Boolean(rSegment), true, "feed panel renders r segment span when r column is visible");
-    assert.equal(rSegment?.textContent?.startsWith("|"), true, "r segment includes the yellow separator bar");
+    const zSegment = feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line .v2-feed-z-col");
+    assert.equal(Boolean(zSegment), true, "feed panel renders Z segment span when Z column is visible");
+    assert.equal(zSegment?.textContent?.startsWith("|"), true, "Z segment includes the separator bar");
     const firstNineLines = Array.from(feedPanel?.querySelectorAll<HTMLElement>(".v2-feed-table-line") ?? []).slice(0, 9);
     const firstPipeColumns = firstNineLines.map((line) => (line.textContent ?? "").indexOf("|"));
     const secondPipeColumns = firstNineLines.map((line) => (line.textContent ?? "").indexOf("|", firstPipeColumns[0]! + 1));
     assert.equal(firstPipeColumns.every((index) => index === firstPipeColumns[0]), true, "first feed separator stays vertically aligned");
-    assert.equal(secondPipeColumns.every((index) => index === secondPipeColumns[0]), true, "r separator stays vertically aligned");
+    assert.equal(secondPipeColumns.every((index) => index === secondPipeColumns[0]), true, "Z separator stays vertically aligned");
     assert.equal(
       feedPanel?.querySelectorAll(".v2-feed-row--error").length,
       1,
@@ -158,13 +158,13 @@ export const runUiIntegrationMobileShellTests = (): void => {
       false,
       "feed divider line does not emit oversized y-column padding dashes",
     );
-    const withFeedNoVisibleRemainder = withCalculatorProjection(withFeed, "f", (projected) => ({
+    const withFeedNoImaginary = withCalculatorProjection(withFeed, "f", (projected) => ({
       ...projected,
       calculator: {
         ...projected.calculator,
         rollEntries: [
           { y: r(1n) },
-          { y: r(2n), remainder: { num: 1n, den: 2n } },
+          { y: r(2n) },
           { y: r(3n) },
           { y: r(4n) },
           { y: r(5n) },
@@ -180,19 +180,19 @@ export const runUiIntegrationMobileShellTests = (): void => {
         ],
       },
     }));
-    renderer.render(withFeedNoVisibleRemainder, dispatch, {
+    renderer.render(withFeedNoImaginary, dispatch, {
             inputBlocked: false,
     });
-    const feedHeaderWithoutRemainder = feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line");
+    const feedHeaderWithoutImaginary = feedPanel?.querySelector<HTMLElement>(".v2-feed-table-line");
     assert.equal(
-      feedHeaderWithoutRemainder?.textContent?.split("|").length ?? 0,
+      feedHeaderWithoutImaginary?.textContent?.split("|").length ?? 0,
       2,
-      "feed panel hides r column when no visible row includes remainder",
+      "feed panel hides Z column when no roll row includes an imaginary result",
     );
     assert.equal(
-      feedPanel?.querySelector(".v2-feed-r-col") ?? null,
+      feedPanel?.querySelector(".v2-feed-z-col") ?? null,
       null,
-      "feed panel removes the r segment span when r column is hidden",
+      "feed panel removes the Z segment span when Z column is hidden",
     );
     renderer.render(withGraph, dispatch, {
             inputBlocked: false,
