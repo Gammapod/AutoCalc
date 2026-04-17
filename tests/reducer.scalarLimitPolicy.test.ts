@@ -84,6 +84,17 @@ export const runReducerScalarLimitPolicyTests = (): void => {
     "rational denominator overflow projects to nearest allowed fraction under delta_q",
   );
   assert.equal(rationalPrecisionOverflow.calculator.rollEntries[1]?.error?.code, "overflow_q", "rational denominator overflow emits overflow_q code");
+  assert.deepEqual(
+    rationalPrecisionOverflow.calculator.rollEntries[1]?.limitMetadata,
+    {
+      rawY: r(8n, 11n),
+      components: {
+        re: "overflow_q",
+        im: "none",
+      },
+    },
+    "rational denominator overflow emits raw pre-limit value and per-component limit metadata",
+  );
 
   const complexRealOverflow = reducer(
     withExecutionSetup(seed, {
@@ -105,6 +116,20 @@ export const runReducerScalarLimitPolicyTests = (): void => {
     "complex real component is clamped independently by maxTotalDigits",
   );
   assert.equal(complexRealOverflow.calculator.rollEntries[1]?.error?.code, "overflow", "complex magnitude overflow emits overflow");
+  assert.deepEqual(
+    complexRealOverflow.calculator.rollEntries[1]?.limitMetadata,
+    {
+      rawY: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 150n, den: 1n }),
+        toRationalScalarValue({ num: 1n, den: 1n }),
+      ),
+      components: {
+        re: "overflow",
+        im: "none",
+      },
+    },
+    "complex real overflow records raw value and component-scoped limit kinds",
+  );
 
   const complexImagPrecisionOverflow = reducer(
     withExecutionSetup(seed, {
@@ -126,6 +151,20 @@ export const runReducerScalarLimitPolicyTests = (): void => {
     "complex imaginary component is projected independently by maxDenominatorDigits",
   );
   assert.equal(complexImagPrecisionOverflow.calculator.rollEntries[1]?.error?.code, "overflow_q", "complex denominator overflow emits overflow_q");
+  assert.deepEqual(
+    complexImagPrecisionOverflow.calculator.rollEntries[1]?.limitMetadata,
+    {
+      rawY: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 1n, den: 1n }),
+        toRationalScalarValue({ num: 8n, den: 11n }),
+      ),
+      components: {
+        re: "none",
+        im: "overflow_q",
+      },
+    },
+    "complex imaginary denominator overflow records per-component limit kinds",
+  );
 
   const complexMixedOverflow = reducer(
     withExecutionSetup(seed, {
@@ -139,6 +178,20 @@ export const runReducerScalarLimitPolicyTests = (): void => {
     { type: "AUTO_STEP_TICK" },
   );
   assert.equal(complexMixedOverflow.calculator.rollEntries[1]?.error?.code, "overflow", "complex mixed overflow prefers overflow over overflow_q");
+  assert.deepEqual(
+    complexMixedOverflow.calculator.rollEntries[1]?.limitMetadata,
+    {
+      rawY: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 150n, den: 1n }),
+        toRationalScalarValue({ num: 8n, den: 11n }),
+      ),
+      components: {
+        re: "overflow",
+        im: "overflow_q",
+      },
+    },
+    "complex mixed overflow records both component limit kinds while preserving overflow precedence",
+  );
   assert.deepEqual(
     complexMixedOverflow.calculator.total,
     toExplicitComplexCalculatorValue(
@@ -168,4 +221,5 @@ export const runReducerScalarLimitPolicyTests = (): void => {
     "complex value within both limits is preserved",
   );
   assert.equal(complexNoOverflow.calculator.rollEntries[1]?.error, undefined, "no overflow metadata is emitted when limits are satisfied");
+  assert.equal(complexNoOverflow.calculator.rollEntries[1]?.limitMetadata, undefined, "non-overflow rows emit no limit metadata");
 };

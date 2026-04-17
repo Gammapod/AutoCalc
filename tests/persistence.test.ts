@@ -51,7 +51,21 @@ export const runPersistenceTests = (): void => {
     calculator: {
       ...base.calculator,
       total: r(12n),
-      rollEntries: re(r(9n), r(11n), r(12n)),
+      rollEntries: [
+        { y: r(9n) },
+        {
+          y: r(11n),
+          error: { code: "overflow_q", kind: "overflow_q" },
+          limitMetadata: {
+            rawY: r(8n, 11n),
+            components: {
+              re: "overflow_q",
+              im: "none",
+            },
+          },
+        },
+        { y: r(12n) },
+      ],
     },
     lambdaControl: {
       alpha: 2,
@@ -89,6 +103,11 @@ export const runPersistenceTests = (): void => {
   assert.ok(loaded, "saved payload hydrates");
   assert.deepEqual(loaded?.calculator.total, r(12n), "round-trip total");
   assert.deepEqual(loaded?.calculator.rollEntries[0]?.y, r(9n), "round-trip roll entries");
+  assert.deepEqual(
+    loaded?.calculator.rollEntries[1]?.limitMetadata,
+    persisted.calculator.rollEntries[1]?.limitMetadata,
+    "round-trip preserves optional generic roll-entry limit metadata",
+  );
   assert.deepEqual(
     loaded?.lambdaControl,
     {
@@ -172,6 +191,11 @@ export const runPersistenceTests = (): void => {
     state: payloadMissingDiagnostics,
   }));
   assert.ok(missingDiagnostics.state, "state without diagnostics metadata still loads");
+  assert.equal(
+    missingDiagnostics.state?.calculator.rollEntries[0]?.limitMetadata,
+    undefined,
+    "legacy payloads without roll-entry limit metadata remain valid",
+  );
   assert.deepEqual(
     missingDiagnostics.state?.ui.diagnostics.lastAction,
     { sequence: 0, actionKind: "none" },

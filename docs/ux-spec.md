@@ -1,7 +1,7 @@
 Truth 1: Invariants
 # AutoCalc UX Specification
 
-Last updated: 2026-04-12
+Last updated: 2026-04-16
 Status: Canonical Truth 1 UX invariants.
 Purpose: Define UX/runtime interaction invariants that are compatible with `docs/functional-spec.md`.
 
@@ -42,6 +42,16 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
   Rationale: stale panel state must not leak between visualizer activations.
 - `UX-VIS-05` (MUST): Forecast visualization is projection-only and scoped by visualizer family: `total`/`ratios` do not render forecast simulation, while forecast-capable panels (`number_line`, `circle`, and approved history/plot panels such as `graph`/`feed`) must derive forecast content only from simulated canonical domain transitions.
   Rationale: forecast UI must remain a read-model hint, never a competing source of truth, and must stay out of integer-only number displays.
+- `UX-VIS-06` (MUST): Cycle-start highlight gating is canonical and parity-consistent across cycle-highlight visualizers (`total`, `feed`, `ratios`): highlight only when History is enabled, cycle metadata exists with `stopReason="cycle"`, the latest committed row index is at/after cycle detection index `j`, and the latest committed value equals cycle-start value `f_i`.
+  Rationale: cycle emphasis semantics must remain deterministic and shared across textual and seven-segment surfaces.
+- `UX-VIS-07` (MUST): Cycle constellation overlays are additive layers and must not replace existing history/current/forecast vectors in plot visualizers (`number_line`, `graph`, `circle`).
+  Rationale: cycle analysis is supplementary context and must preserve baseline trajectory readability.
+- `UX-VIS-08` (MUST): Error styling scope and precedence remain visualizer-specific but deterministic: `total` uses `error > cycle > imaginary`; `number_line` applies error styling only to latest-current representation (with NaN center-marker fallback); `ratios` applies red error styling to `Error` token renders.
+  Rationale: error salience must be unambiguous while preserving non-error analytical context.
+- `UX-VIS-09` (MUST): Ratios seven-segment ghost-digit budgets are field-scoped: numerator displays use `delta` (`maxTotalDigits`), denominator displays use `delta_q` (`maxDenominatorDigits`/control `delta_q`), and slot-cap behavior is explicit and test-locked.
+  Rationale: ratio readability must align with allocator semantics rather than a shared generic slot budget.
+- `UX-VIS-10` (MUST): Feed forecast rows are additive projections appended after visible committed rows, remain forecast-styled only, and never mutate committed-row styling; committed-row visibility cap is enforced independently of appended forecasts.
+  Rationale: projected values must remain clearly synthetic and must not rewrite committed history semantics.
 
 ### 2.3 Semantic visual families
 
@@ -94,6 +104,11 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 | UX-VIS-03 | Single active panel + fallback | `ui-module/visualizer-host-v2`, `rollDisplay` | integration + unit | partial: unsupported-state matrix limited |
 | UX-VIS-04 | Inactive panel stale-state clearing | `ui-module/visualizer-host-v2` | integration | partial: no explicit stale-DOM contract ID |
 | UX-VIS-05 | Forecast scope and simulation-source constraint | `ui-module/number-line-v2`, `ui-module/circle-renderer-v2` | integration + unit | gap: `graph`/`feed` forecast projection contracts not yet implemented |
+| UX-VIS-06 | Cycle-start highlight gating parity (`total`/`feed`/`ratios`) | `ui/visualizer-ux-spec-invariants`, `ui/total-display`, `ui/roll-display`, `ui-module/ratios-renderer-v2` | contract + integration + unit | none |
+| UX-VIS-07 | Cycle overlays are additive to baseline vectors | `ui/visualizer-ux-spec-invariants`, `ui-module/number-line-renderer-v2`, `ui-module/grapher-v2`, `ui-module/circle-renderer-v2` | contract + integration | none |
+| UX-VIS-08 | Visualizer-specific error scope/precedence | `ui/visualizer-ux-spec-invariants`, `ui/total-display`, `ui-module/number-line-renderer-v2`, `ui-module/ratios-renderer-v2` | contract + integration | partial: dedicated precedence matrix snapshot suite not yet separated |
+| UX-VIS-09 | Ratios digit-budget field scoping (`delta` vs `delta_q`) | `ui/visualizer-ux-spec-invariants`, `ui-module/ratios-renderer-v2` | contract + unit | none |
+| UX-VIS-10 | Feed forecast rows are additive and non-mutating | `ui/visualizer-ux-spec-invariants`, `ui/roll-display`, `ui-integration/mobile-shell` | contract + unit + integration | none |
 | UX-SVF-01 | Mod/cycle/congruence family | `ui/graph-display`, `ui-module/grapher-v2` | integration | gap: no explicit semantic-family contract |
 | UX-SVF-02 | Memory/control/lambda family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract |
 | UX-SVF-03 | Distinct error family | `ui/total-display`, `ui/roll-display` | integration | partial: family-level checks indirect |

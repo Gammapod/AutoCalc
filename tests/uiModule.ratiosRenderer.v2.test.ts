@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 import { toExplicitComplexCalculatorValue, toNanCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
@@ -181,10 +180,15 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       calculator: {
         ...initialState().calculator,
         total: r(99n, 1n),
-        operationSlots: [{ operator: KEY_ID.op_add, operand: 0n }],
         rollEntries: [
-          { y: r(150n, 7n) },
-          { y: r(99n, 1n), error: { code: "overflow", kind: "overflow" } },
+          {
+            y: r(99n, 1n),
+            error: { code: "overflow", kind: "overflow" },
+            limitMetadata: {
+              rawY: r(150n, 7n),
+              components: { re: "overflow", im: "none" },
+            },
+          },
         ],
       },
       unlocks: {
@@ -206,10 +210,15 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       calculator: {
         ...initialState().calculator,
         total: r(3n, 4n),
-        operationSlots: [{ operator: KEY_ID.op_add, operand: 0n }],
         rollEntries: [
-          { y: r(8n, 11n) },
-          { y: r(3n, 4n), error: { code: "overflow_q", kind: "overflow_q" } },
+          {
+            y: r(3n, 4n),
+            error: { code: "overflow_q", kind: "overflow_q" },
+            limitMetadata: {
+              rawY: r(8n, 11n),
+              components: { re: "overflow_q", im: "none" },
+            },
+          },
         ],
       },
       unlocks: {
@@ -228,6 +237,25 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       precisionOverflowTokens,
       ["0", "1", "8", "4"],
       "precision overflow displays raw numerator while preserving clamped denominator",
+    );
+
+    const overflowWithoutMetadataState: GameState = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: r(99n, 1n),
+        rollEntries: [
+          { y: r(99n, 1n), error: { code: "overflow", kind: "overflow" } },
+        ],
+      },
+    };
+    renderRatiosVisualizerPanel(harness.root, overflowWithoutMetadataState);
+    const overflowFallbackTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
+      .map((display) => display.getAttribute("data-ratios-token"));
+    assert.deepEqual(
+      overflowFallbackTokens,
+      ["0", "1", "99", "1"],
+      "missing overflow metadata falls back gracefully to clamped display values",
     );
 
     const nanErrorState: GameState = {

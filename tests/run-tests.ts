@@ -8,6 +8,7 @@ import { runContractsDomainUiEffectsCurrentTests } from "./contracts.domainUiEff
 import { runNoLegacySymbolsGuardTests } from "./noLegacySymbols.guard.test.js";
 import { runBootstrapDebugControlBindingsTests } from "./bootstrapDebugControlBindings.test.js";
 import { runReducerScalarLimitPolicyTests } from "./reducer.scalarLimitPolicy.test.js";
+import { runUiVisualizerUxSpecInvariantsTests } from "./uiVisualizerUxSpecInvariants.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -19,6 +20,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/no-legacy-symbols-guard", runNoLegacySymbolsGuardTests],
   ["ui/bootstrap-debug-control-bindings", runBootstrapDebugControlBindingsTests],
   ["reducer/scalar-limit-policy", runReducerScalarLimitPolicyTests],
+  ["ui/visualizer-ux-spec-invariants", runUiVisualizerUxSpecInvariantsTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

@@ -157,6 +157,17 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
   );
   assert.equal(rationalPrecisionOverflow.calculator.rollEntries[1]?.error?.code, "overflow_q", "roll row carries overflow_q code");
   assert.equal(rationalPrecisionOverflow.calculator.rollEntries[1]?.error?.kind, "overflow_q", "roll row carries overflow_q kind");
+  assert.deepEqual(
+    rationalPrecisionOverflow.calculator.rollEntries[1]?.limitMetadata,
+    {
+      rawY: r(8n, 11n),
+      components: {
+        re: "overflow_q",
+        im: "none",
+      },
+    },
+    "roll row carries canonical overflow metadata for UI consumers",
+  );
 
   const complexWrapBase: GameState = {
     ...base,

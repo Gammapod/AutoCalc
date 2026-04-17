@@ -60,6 +60,7 @@ import type {
   Key,
   KeyInput,
   RationalValue,
+  RollLimitComponentKind,
   RollEntry,
   BinarySlot,
   UnaryOperator,
@@ -443,6 +444,7 @@ type EvaluatedExecution = {
   errorCode?: ErrorCode;
   errorKind?: ExecutionErrorKind;
   symbolic?: RollEntry["symbolic"];
+  limitMetadata?: RollEntry["limitMetadata"];
 };
 
 const SYMBOLIC_RENDER_CHAR_CAP = 160;
@@ -697,6 +699,9 @@ const applyScalarLimitPolicy = (
 const toExecutionErrorCode = (errorKind: "overflow" | "overflow_q"): ErrorCode =>
   errorKind === "overflow" ? OVERFLOW_ERROR_CODE : RATIONAL_PRECISION_OVERFLOW_ERROR_CODE;
 
+const toLimitComponentKind = (errorKind?: "overflow" | "overflow_q"): RollLimitComponentKind =>
+  errorKind ?? "none";
+
 const aggregateLimitKinds = (
   left?: "overflow" | "overflow_q",
   right?: "overflow" | "overflow_q",
@@ -725,6 +730,13 @@ const applyTotalLimitPolicy = (
       nextTotal: toRationalCalculatorValue(result.value),
       errorCode: toExecutionErrorCode(result.errorKind),
       errorKind: result.errorKind,
+      limitMetadata: {
+        rawY: total,
+        components: {
+          re: toLimitComponentKind(result.errorKind),
+          im: "none",
+        },
+      },
     };
   }
   if (total.kind === "complex") {
@@ -751,6 +763,13 @@ const applyTotalLimitPolicy = (
       ),
       errorCode: toExecutionErrorCode(combinedError),
       errorKind: combinedError,
+      limitMetadata: {
+        rawY: total,
+        components: {
+          re: toLimitComponentKind(nextRe.errorKind),
+          im: toLimitComponentKind(nextIm.errorKind),
+        },
+      },
     };
   }
   return { nextTotal: total };
@@ -1093,6 +1112,7 @@ const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
         },
       }
       : {}),
+    ...(evaluation.limitMetadata ? { limitMetadata: evaluation.limitMetadata } : {}),
   });
 };
 

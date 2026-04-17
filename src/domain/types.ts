@@ -233,6 +233,16 @@ export type RationalPrimeFactorization = {
 
 export type RollEntryOrigin = "normal" | "roll_inverse";
 
+export type RollLimitComponentKind = "none" | "overflow" | "overflow_q";
+
+export type RollLimitMetadata = {
+  rawY: CalculatorValue;
+  components: {
+    re: RollLimitComponentKind;
+    im: RollLimitComponentKind;
+  };
+};
+
 export type RollEntry = {
   y: CalculatorValue;
   remainder?: RationalValue;
@@ -249,6 +259,7 @@ export type RollEntry = {
   seedPlus1Y?: CalculatorValue | null;
   origin?: RollEntryOrigin;
   analysisIgnored?: boolean;
+  limitMetadata?: RollLimitMetadata;
 };
 
 export type RollCycleMetadata = {
