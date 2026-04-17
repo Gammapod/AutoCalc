@@ -196,6 +196,33 @@ body[data-ui-shell="desktop"] .v2-circle-theta-zero {
   opacity: 0.2;
 }
 
+body[data-ui-shell="mobile"] .v2-circle-imag-axis,
+body[data-ui-shell="desktop"] .v2-circle-imag-axis {
+  stroke: var(--ux-role-imaginary-color);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  opacity: 0.2;
+}
+
+body[data-ui-shell="mobile"] .v2-circle-projection-imag,
+body[data-ui-shell="desktop"] .v2-circle-projection-imag {
+  stroke: var(--ux-role-imaginary-color);
+  stroke-width: 0.85;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  opacity: 1;
+}
+
+body[data-ui-shell="mobile"] .v2-circle-projection-real,
+body[data-ui-shell="desktop"] .v2-circle-projection-real {
+  stroke: var(--ux-role-default-color);
+  stroke-width: 0.85;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  opacity: 1;
+}
+
 body[data-ui-shell="mobile"] .v2-circle-center-dot,
 body[data-ui-shell="desktop"] .v2-circle-center-dot {
   fill: var(--ux-role-default-color);

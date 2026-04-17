@@ -36,10 +36,49 @@ const createCircleGrid = (documentRef: Document): SVGCircleElement => {
 const createThetaZeroLine = (documentRef: Document): SVGLineElement => {
   const line = documentRef.createElementNS(SVG_NS, "line");
   line.setAttribute("class", "v2-circle-theta-zero");
-  line.setAttribute("x1", CENTER.toString());
+  line.setAttribute("x1", (CENTER - RADIUS).toString());
   line.setAttribute("y1", CENTER.toString());
   line.setAttribute("x2", (CENTER + RADIUS).toString());
   line.setAttribute("y2", CENTER.toString());
+  applyUxRoleAttributes(line, { uxRole: "default", uxState: "normal" });
+  return line;
+};
+
+const createImaginaryAxisLine = (documentRef: Document): SVGLineElement => {
+  const line = documentRef.createElementNS(SVG_NS, "line");
+  line.setAttribute("class", "v2-circle-imag-axis");
+  line.setAttribute("x1", CENTER.toString());
+  line.setAttribute("y1", (CENTER - RADIUS).toString());
+  line.setAttribute("x2", CENTER.toString());
+  line.setAttribute("y2", (CENTER + RADIUS).toString());
+  applyUxRoleAttributes(line, { uxRole: "imaginary", uxState: "active" });
+  return line;
+};
+
+const createProjectionToHorizontalDiameter = (
+  documentRef: Document,
+  endpoint: { x: number; y: number },
+): SVGLineElement => {
+  const line = documentRef.createElementNS(SVG_NS, "line");
+  line.setAttribute("class", "v2-circle-projection-imag");
+  line.setAttribute("x1", endpoint.x.toString());
+  line.setAttribute("y1", endpoint.y.toString());
+  line.setAttribute("x2", endpoint.x.toString());
+  line.setAttribute("y2", CENTER.toString());
+  applyUxRoleAttributes(line, { uxRole: "imaginary", uxState: "active" });
+  return line;
+};
+
+const createProjectionToVerticalDiameter = (
+  documentRef: Document,
+  endpoint: { x: number; y: number },
+): SVGLineElement => {
+  const line = documentRef.createElementNS(SVG_NS, "line");
+  line.setAttribute("class", "v2-circle-projection-real");
+  line.setAttribute("x1", endpoint.x.toString());
+  line.setAttribute("y1", endpoint.y.toString());
+  line.setAttribute("x2", CENTER.toString());
+  line.setAttribute("y2", endpoint.y.toString());
   applyUxRoleAttributes(line, { uxRole: "default", uxState: "normal" });
   return line;
 };
@@ -351,10 +390,13 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
   const svg = createSvg(document);
   svg.appendChild(createCircleGrid(document));
   svg.appendChild(createThetaZeroLine(document));
+  svg.appendChild(createImaginaryAxisLine(document));
   svg.appendChild(createMagnitudeLabel(document, state));
   const direction = resolveVectorDirection(state);
   if (direction) {
     const endpoint = toPerimeterPoint(direction);
+    svg.appendChild(createProjectionToHorizontalDiameter(document, endpoint));
+    svg.appendChild(createProjectionToVerticalDiameter(document, endpoint));
 
     const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
     const previousValue = historyEnabled ? (state.calculator.rollEntries[state.calculator.rollEntries.length - 2]?.y ?? null) : null;

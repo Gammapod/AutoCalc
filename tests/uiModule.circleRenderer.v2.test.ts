@@ -23,6 +23,19 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     assert.equal(panel.getAttribute("aria-hidden"), "false", "circle panel is visible after render");
     assert.equal(panel.querySelectorAll(".v2-circle-grid").length, 1, "circle panel renders one perimeter circle");
     assert.equal(panel.querySelectorAll(".v2-circle-theta-zero").length, 1, "circle panel renders one theta=0 gridline");
+    assert.equal(panel.querySelectorAll(".v2-circle-imag-axis").length, 1, "circle panel renders one imaginary-axis gridline");
+    assert.equal(panel.querySelectorAll(".v2-circle-projection-imag").length, 1, "circle panel renders one imaginary projection line");
+    assert.equal(panel.querySelectorAll(".v2-circle-projection-real").length, 1, "circle panel renders one real projection line");
+    const thetaZeroLine = panel.querySelector<SVGLineElement>(".v2-circle-theta-zero");
+    assert.equal(thetaZeroLine?.getAttribute("x1"), "5", "theta=0 guide starts at left perimeter");
+    assert.equal(thetaZeroLine?.getAttribute("x2"), "95", "theta=0 guide ends at right perimeter");
+    assert.equal(thetaZeroLine?.getAttribute("y1"), "50", "theta=0 guide stays on center y");
+    assert.equal(thetaZeroLine?.getAttribute("y2"), "50", "theta=0 guide stays on center y");
+    const imaginaryAxisLine = panel.querySelector<SVGLineElement>(".v2-circle-imag-axis");
+    assert.equal(imaginaryAxisLine?.getAttribute("x1"), "50", "imaginary-axis guide stays on center x");
+    assert.equal(imaginaryAxisLine?.getAttribute("x2"), "50", "imaginary-axis guide stays on center x");
+    assert.equal(imaginaryAxisLine?.getAttribute("y1"), "5", "imaginary-axis guide starts at top perimeter");
+    assert.equal(imaginaryAxisLine?.getAttribute("y2"), "95", "imaginary-axis guide ends at bottom perimeter");
     assert.equal(panel.querySelectorAll(".v2-circle-center-dot").length, 1, "circle panel renders a center dot");
     const initialLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
     assert.equal(initialLabel?.textContent, "|r| = 0", "circle panel renders exact zero magnitude label");
@@ -77,10 +90,20 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     renderCircleVisualizerPanel(harness.root, withAlgebraicUnitRotation);
     const algebraicVector = panel.querySelector<SVGLineElement>(".v2-number-line-vector");
     const algebraicLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
+    const algebraicImagProjection = panel.querySelector<SVGLineElement>(".v2-circle-projection-imag");
+    const algebraicRealProjection = panel.querySelector<SVGLineElement>(".v2-circle-projection-real");
     assert.equal(algebraicLabel?.textContent, "|r| = 1", "unit-magnitude algebraic complex values simplify to exact unit radius label");
     assert.equal(Boolean(algebraicVector), true, "algebraic complex values render a vector");
     assert.equal(Number(algebraicVector?.getAttribute("x2")) > 50, true, "15-degree algebraic vector points to positive real side");
     assert.equal(Number(algebraicVector?.getAttribute("y2")) < 50, true, "15-degree algebraic vector points to positive imaginary side");
+    assert.equal(algebraicImagProjection?.getAttribute("x1"), algebraicVector?.getAttribute("x2"), "imaginary projection starts at vector tip x");
+    assert.equal(algebraicImagProjection?.getAttribute("y1"), algebraicVector?.getAttribute("y2"), "imaginary projection starts at vector tip y");
+    assert.equal(algebraicImagProjection?.getAttribute("x2"), algebraicVector?.getAttribute("x2"), "imaginary projection keeps constant x");
+    assert.equal(algebraicImagProjection?.getAttribute("y2"), "50", "imaginary projection terminates on horizontal diameter");
+    assert.equal(algebraicRealProjection?.getAttribute("x1"), algebraicVector?.getAttribute("x2"), "real projection starts at vector tip x");
+    assert.equal(algebraicRealProjection?.getAttribute("y1"), algebraicVector?.getAttribute("y2"), "real projection starts at vector tip y");
+    assert.equal(algebraicRealProjection?.getAttribute("x2"), "50", "real projection terminates on vertical diameter");
+    assert.equal(algebraicRealProjection?.getAttribute("y2"), algebraicVector?.getAttribute("y2"), "real projection keeps constant y");
 
     const withHistoryAnalysis = {
       ...initialState(),
