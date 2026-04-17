@@ -257,20 +257,6 @@ const createMagnitudeLabel = (documentRef: Document, state: GameState): SVGTextE
   return label;
 };
 
-const createTotalVectorLine = (
-  documentRef: Document,
-  endpoint: { x: number; y: number },
-): SVGLineElement => {
-  const line = documentRef.createElementNS(SVG_NS, "line");
-  line.setAttribute("class", "v2-number-line-vector");
-  line.setAttribute("x1", CENTER.toString());
-  line.setAttribute("y1", CENTER.toString());
-  line.setAttribute("x2", endpoint.x.toString());
-  line.setAttribute("y2", endpoint.y.toString());
-  applyUxRoleAttributes(line, { uxRole: "default", uxState: "normal" });
-  return line;
-};
-
 const createSegmentLine = (
   documentRef: Document,
   from: { x: number; y: number },
@@ -289,30 +275,6 @@ const createSegmentLine = (
     applyUxRoleAttributes(line, { uxRole: "unlock", uxState: "active" });
   }
   return line;
-};
-
-const createTotalVectorTip = (
-  documentRef: Document,
-  endpoint: { x: number; y: number },
-  direction: { x: number; y: number },
-): SVGPolygonElement => {
-  const headLength = 3.6;
-  const headHalfWidth = 1.6;
-  const baseCenterX = endpoint.x - (direction.x * headLength);
-  const baseCenterY = endpoint.y + (direction.y * headLength);
-  const leftX = baseCenterX + (direction.y * headHalfWidth);
-  const leftY = baseCenterY + (direction.x * headHalfWidth);
-  const rightX = baseCenterX - (direction.y * headHalfWidth);
-  const rightY = baseCenterY - (direction.x * headHalfWidth);
-
-  const tip = documentRef.createElementNS(SVG_NS, "polygon");
-  tip.setAttribute(
-    "points",
-    `${endpoint.x.toString()},${endpoint.y.toString()} ${leftX.toString()},${leftY.toString()} ${rightX.toString()},${rightY.toString()}`,
-  );
-  tip.setAttribute("class", "v2-number-line-vector-tip");
-  applyUxRoleAttributes(tip, { uxRole: "default", uxState: "normal" });
-  return tip;
 };
 
 const createArrowTip = (
@@ -436,9 +398,6 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
         fromPoint = stepPoint;
       }
     }
-
-    svg.appendChild(createTotalVectorLine(document, endpoint));
-    svg.appendChild(createTotalVectorTip(document, endpoint, direction));
   }
   svg.appendChild(createCenterDot(document));
   panel.appendChild(svg);
