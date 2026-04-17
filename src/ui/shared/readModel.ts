@@ -25,7 +25,15 @@ export {
 export { buildFactorizationPanelViewModel, resolveFactorizationRowUxAssignment } from "./readModel.factorization.js";
 export { buildHelpPanelViewModel, resolveHelpRowUxAssignment } from "./readModel.help.js";
 export { buildTotalHintRowsViewModel, resolveTotalHintRowUxAssignment } from "./readModel.total.js";
-export { buildRollLines, buildFeedTableRows, buildFeedTableViewModel, buildRollRows, buildRollViewModel, resolveFeedRowUxAssignment } from "./readModel.rollFeed.js";
+export {
+  buildRollLines,
+  buildFeedTableRows,
+  buildFeedTableViewModel,
+  buildFeedTableViewModelForState,
+  buildRollRows,
+  buildRollViewModel,
+  resolveFeedRowUxAssignment,
+} from "./readModel.rollFeed.js";
 export {
   UX_ROLE_OVERRIDE_REGISTRY,
   UX_ROLE_TOKEN_BY_ROLE,

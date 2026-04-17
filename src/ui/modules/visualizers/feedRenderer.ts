@@ -1,5 +1,10 @@
 import type { GameState } from "../../../domain/types.js";
-import { applyUxRoleAttributes, buildFeedTableViewModel, resolveFeedRowUxAssignment, type UxRoleAssignment } from "../../shared/readModel.js";
+import {
+  applyUxRoleAttributes,
+  buildFeedTableViewModelForState,
+  resolveFeedRowUxAssignment,
+  type UxRoleAssignment,
+} from "../../shared/readModel.js";
 
 const padCenter = (text: string, width: number): string => {
   const visibleText = text.length > width ? text.slice(0, width) : text;
@@ -67,10 +72,7 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
     return;
   }
 
-  const view = buildFeedTableViewModel(
-    state.calculator.rollEntries,
-    state.unlocks.maxTotalDigits,
-  );
+  const view = buildFeedTableViewModelForState(state);
   feedPanel.innerHTML = "";
   feedPanel.setAttribute("aria-hidden", "false");
 
@@ -82,7 +84,7 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
   const visibleRows = view.rows.length > 0 ? view.rows : [null];
   for (const row of visibleRows) {
     const rowLeft = row
-      ? `${buildFeedXRowCell(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
+      ? `${buildFeedXRowCell(row.xLabel, view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
       : `${buildFeedXRowCell(null, view.xWidth)}|${" ".repeat(view.yWidth)}`;
     const rowZ = view.showZColumn ? `|${padLeft(row?.zText ?? "0", view.zWidth)}` : null;
     plainLines.push(buildPlainFeedTableLine(rowLeft, rowZ));
@@ -101,14 +103,29 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
 
   for (const row of visibleRows) {
     const rowLeft = row
-      ? `${buildFeedXRowCell(row.x.toString(), view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
+      ? `${buildFeedXRowCell(row.xLabel, view.xWidth)}|${padLeft(row.yText, view.yWidth)}`
       : `${buildFeedXRowCell(null, view.xWidth)}|${" ".repeat(view.yWidth)}`;
     const rowZ = view.showZColumn ? `|${padLeft(row?.zText ?? "0", view.zWidth)}` : null;
+    const rowClassName = (() => {
+      if (!row) {
+        return "v2-feed-table-line";
+      }
+      if (row.hasError) {
+        return "v2-feed-table-line v2-feed-row--error";
+      }
+      if (row.rowKind === "committed" && row.isCycle) {
+        return "v2-feed-table-line v2-feed-row--cycle";
+      }
+      if (row.rowKind !== "committed") {
+        return "v2-feed-table-line v2-feed-row--forecast";
+      }
+      return "v2-feed-table-line";
+    })();
     appendFeedTableLine(
       table,
       rowLeft,
       rowZ,
-      row?.hasError ? "v2-feed-table-line v2-feed-row--error" : "v2-feed-table-line",
+      rowClassName,
       row ? resolveFeedRowUxAssignment(row) : { uxRole: "default", uxState: "muted" },
     );
   }

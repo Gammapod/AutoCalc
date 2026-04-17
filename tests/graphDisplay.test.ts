@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { buildGraphPoints, buildGraphXWindow, buildGraphYWindow, isGraphRenderable } from "../src/ui/modules/visualizers/graphModel.js";
+import {
+  buildGraphPoints,
+  buildGraphXWindow,
+  buildGraphYWindow,
+  isGraphRenderable,
+  resolveGraphCycleOverlaySegments,
+} from "../src/ui/modules/visualizers/graphModel.js";
 import { toExplicitComplexCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import type { RollEntry } from "../src/domain/types.js";
 
@@ -196,6 +202,88 @@ export const runGraphDisplayTests = (): void => {
     ]),
     { min: 0, max: 9 },
     "remainder-only extremes do not affect y-window bounds",
+  );
+
+  const cycleSampleA = buildGraphPoints([e(r(1n)), e(r(2n)), e(r(3n)), e(r(4n)), e(r(5n)), e(r(6n)), e(r(7n)), e(r(4n)), e(r(5n))]);
+  assert.deepEqual(
+    resolveGraphCycleOverlaySegments(cycleSampleA, {
+      historyEnabled: true,
+      cycle: { i: 3, j: 7, transientLength: 3, periodLength: 4 },
+      xWindow: { min: 0, max: 25 },
+    }),
+    [
+      { kind: "chain", from: { x: 4, y: 5 }, to: { x: 5, y: 6 } },
+      { kind: "chain", from: { x: 5, y: 6 }, to: { x: 6, y: 7 } },
+      { kind: "chain", from: { x: 6, y: 7 }, to: { x: 7, y: 4 } },
+      { kind: "chain", from: { x: 7, y: 4 }, to: { x: 8, y: 5 } },
+      { kind: "closure", from: { x: 4, y: 5 }, to: { x: 8, y: 5 } },
+    ],
+    "cycle overlay uses latest periodLength+1 points and adds closure for equal start/end y",
+  );
+
+  const cycleSampleB = buildGraphPoints([
+    e(r(1n)),
+    e(r(2n)),
+    e(r(3n)),
+    e(r(4n)),
+    e(r(5n)),
+    e(r(6n)),
+    e(r(7n)),
+    e(r(4n)),
+    e(r(5n)),
+    e(r(6n)),
+  ]);
+  assert.deepEqual(
+    resolveGraphCycleOverlaySegments(cycleSampleB, {
+      historyEnabled: true,
+      cycle: { i: 3, j: 7, transientLength: 3, periodLength: 4 },
+      xWindow: { min: 0, max: 25 },
+    }),
+    [
+      { kind: "chain", from: { x: 5, y: 6 }, to: { x: 6, y: 7 } },
+      { kind: "chain", from: { x: 6, y: 7 }, to: { x: 7, y: 4 } },
+      { kind: "chain", from: { x: 7, y: 4 }, to: { x: 8, y: 5 } },
+      { kind: "chain", from: { x: 8, y: 5 }, to: { x: 9, y: 6 } },
+      { kind: "closure", from: { x: 5, y: 6 }, to: { x: 9, y: 6 } },
+    ],
+    "cycle overlay advances to the most recent cycle window as roll grows",
+  );
+
+  assert.deepEqual(
+    resolveGraphCycleOverlaySegments(cycleSampleA, {
+      historyEnabled: false,
+      cycle: { i: 3, j: 7, transientLength: 3, periodLength: 4 },
+      xWindow: { min: 0, max: 25 },
+    }),
+    [],
+    "history-off disables cycle overlay rendering",
+  );
+
+  assert.deepEqual(
+    resolveGraphCycleOverlaySegments(cycleSampleA, {
+      historyEnabled: true,
+      cycle: null,
+      xWindow: { min: 0, max: 25 },
+    }),
+    [],
+    "missing cycle metadata disables cycle overlay rendering",
+  );
+
+  const clippedSegments = resolveGraphCycleOverlaySegments(cycleSampleA, {
+    historyEnabled: true,
+    cycle: { i: 3, j: 7, transientLength: 3, periodLength: 4 },
+    xWindow: { min: 6.5, max: 8 },
+  });
+  assert.equal(
+    clippedSegments.length > 0,
+    true,
+    "clip window preserves partially visible cycle segments",
+  );
+  assert.equal(
+    clippedSegments.every((segment) =>
+      segment.from.x >= 6.5 && segment.from.x <= 8 && segment.to.x >= 6.5 && segment.to.x <= 8),
+    true,
+    "clipped cycle segments remain within visible x window",
   );
 };
 

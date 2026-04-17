@@ -1,8 +1,9 @@
-﻿import assert from "node:assert/strict";
-import { initialState } from "../src/domain/state.js";
+import assert from "node:assert/strict";
+import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
 import { clearGrapherV2Module, renderGrapherV2Module } from "../src/ui/modules/grapherRenderer.js";
 import { toExplicitComplexCalculatorValue, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import type { GameState } from "../src/domain/types.js";
+import { installDomHarness } from "./helpers/domHarness.js";
 
 type RootLike = {
   querySelector: (selector: string) => Element | null;
@@ -179,6 +180,91 @@ export const runUiModuleGrapherV2Tests = (): void => {
     assert.equal(destroyed.length, 1, "root-scoped grapher clear destroys only one runtime");
   } finally {
     (globalThis as { window?: unknown }).window = previousWindow;
+    clearGrapherV2Module();
+  }
+
+  const harness = installDomHarness();
+  const previousWindowForDom = (globalThis as { window?: unknown }).window;
+  (globalThis as { window?: unknown }).window = {
+    ...(harness.window as unknown as object),
+    Chart: class {
+      update(): void {
+        // no-op
+      }
+      destroy(): void {
+        // no-op
+      }
+      data = { datasets: [{ data: [], pointRadius: 0, pointBackgroundColor: "", pointBorderColor: "" }] };
+      options = {} as unknown;
+      constructor() {
+        // no-op
+      }
+    },
+  };
+  try {
+    const canvasEl = harness.root.querySelector<HTMLCanvasElement>("[data-grapher-canvas]");
+    assert.ok(canvasEl, "expected grapher canvas in dom harness");
+    if (!canvasEl) {
+      return;
+    }
+    (canvasEl as unknown as { getContext: () => CanvasRenderingContext2D }).getContext = () => ({} as CanvasRenderingContext2D);
+
+    const withCycleOverlay: GameState = {
+      ...withGraphVisible,
+      ui: {
+        ...withGraphVisible.ui,
+        buttonFlags: {
+          ...withGraphVisible.ui.buttonFlags,
+          [HISTORY_FLAG]: true,
+        },
+      },
+      calculator: {
+        ...withGraphVisible.calculator,
+        rollEntries: [
+          { y: toRationalCalculatorValue({ num: 1n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 4n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 5n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 6n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 7n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 4n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 5n, den: 1n }) },
+        ],
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 3, j: 7, transientLength: 3, periodLength: 4 },
+        },
+      },
+    };
+
+    renderGrapherV2Module(harness.root, withCycleOverlay);
+    const cycleLines = harness.root.querySelectorAll<SVGLineElement>(".v2-grapher-cycle-line");
+    const chainLines = harness.root.querySelectorAll<SVGLineElement>(".v2-grapher-cycle-line--chain");
+    const closureLines = harness.root.querySelectorAll<SVGLineElement>(".v2-grapher-cycle-line--closure");
+    assert.equal(cycleLines.length >= 1, true, "cycle overlay renders amber line segments when history and cycle are active");
+    assert.equal(chainLines.length >= 1, true, "cycle overlay renders chain segments");
+    assert.equal(closureLines.length, 1, "cycle overlay renders one closure line for equal-value span endpoints");
+
+    const withoutHistory: GameState = {
+      ...withCycleOverlay,
+      ui: {
+        ...withCycleOverlay.ui,
+        buttonFlags: {
+          ...withCycleOverlay.ui.buttonFlags,
+          [HISTORY_FLAG]: false,
+        },
+      },
+    };
+    renderGrapherV2Module(harness.root, withoutHistory);
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-cycle-line").length,
+      0,
+      "cycle overlay does not render when history is disabled",
+    );
+  } finally {
+    (globalThis as { window?: unknown }).window = previousWindowForDom;
+    harness.teardown();
     clearGrapherV2Module();
   }
 };

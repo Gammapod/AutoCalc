@@ -1,9 +1,11 @@
-﻿import type { GraphLayout } from "./graphLayoutModel.js";
+import type { GraphLayout } from "./graphLayoutModel.js";
+import type { GraphCycleOverlaySegment } from "./graphModel.js";
 
 export type GraphOverlayColors = {
   gridColor: string;
   axisColor: string;
   labelColor: string;
+  cycleColor: string;
 };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -93,6 +95,7 @@ export const renderGraphOverlay = (
   root: Element,
   layout: GraphLayout,
   colors: GraphOverlayColors,
+  cycleSegments: readonly GraphCycleOverlaySegment[] = [],
 ): void => {
   const screen = root.querySelector<HTMLElement>("[data-grapher-device] .grapher-screen");
   if (!screen || !screen.ownerDocument) {
@@ -118,7 +121,6 @@ export const renderGraphOverlay = (
     overlay.appendChild(line(doc, x, layout.plot.top - overhang, x, layout.plot.bottom + overhang, colors.gridColor, 1));
   }
 
-  // Emphasized left axis and zero line.
   overlay.appendChild(
     line(
       doc,
@@ -184,4 +186,26 @@ export const renderGraphOverlay = (
       "middle",
     ),
   );
+
+  const cycleStrokeWidthByKind: Record<GraphCycleOverlaySegment["kind"], number> = {
+    chain: 1.15,
+    closure: 1.15,
+  };
+  for (const segment of cycleSegments) {
+    const cycleLine = line(
+      doc,
+      xToPx(layout, segment.from.x),
+      yToPx(layout, segment.from.y),
+      xToPx(layout, segment.to.x),
+      yToPx(layout, segment.to.y),
+      colors.cycleColor,
+      cycleStrokeWidthByKind[segment.kind],
+    );
+    cycleLine.setAttribute("class", `v2-grapher-cycle-line v2-grapher-cycle-line--${segment.kind}`);
+    if (segment.kind === "closure") {
+      cycleLine.setAttribute("stroke-opacity", "0.62");
+      cycleLine.setAttribute("stroke-dasharray", "2.4 1.8");
+    }
+    overlay.appendChild(cycleLine);
+  }
 };

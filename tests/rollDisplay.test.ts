@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import { toRationalScalarValue } from "../src/domain/calculatorValue.js";
-import { buildFeedTableRows, buildFeedTableViewModel, buildRollLines, buildRollRows, buildRollViewModel } from "../src/ui/shared/readModel.js";
+import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
+import {
+  buildFeedTableRows,
+  buildFeedTableViewModel,
+  buildFeedTableViewModelForState,
+  buildRollLines,
+  buildRollRows,
+  buildRollViewModel,
+} from "../src/ui/shared/readModel.js";
 import { resolveActiveVisualizerPanel } from "../src/ui/modules/visualizerHost.js";
-import { initialState } from "../src/domain/state.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
@@ -124,22 +131,22 @@ export const runRollDisplayTests = (): void => {
 
   assert.deepEqual(
     buildFeedTableRows([e(r(42n))]),
-    [{ x: 0, yText: "42", hasImaginary: false, hasError: false, uxRole: "default", uxState: "normal" }],
+    [{ rowKind: "committed", x: 0, xLabel: "0", yText: "42", hasImaginary: false, hasError: false, isCycle: false, uxRole: "default", uxState: "normal" }],
     "feed table renders seed-only row",
   );
 
   assert.deepEqual(
     buildFeedTableRows([e(r(42n)), e(r(50n))]),
     [
-      { x: 0, yText: "42", hasImaginary: false, hasError: false, uxRole: "default", uxState: "normal" },
-      { x: 1, yText: "50", hasImaginary: false, hasError: false, uxRole: "default", uxState: "normal" },
+      { rowKind: "committed", x: 0, xLabel: "0", yText: "42", hasImaginary: false, hasError: false, isCycle: false, uxRole: "default", uxState: "normal" },
+      { rowKind: "committed", x: 1, xLabel: "1", yText: "50", hasImaginary: false, hasError: false, isCycle: false, uxRole: "default", uxState: "normal" },
     ],
     "feed table appends first calculation row after seed",
   );
 
   assert.deepEqual(
     buildFeedTableRows([e(c(7n, 2n))]),
-    [{ x: 0, yText: "7", zText: "2", hasImaginary: true, hasError: false, uxRole: "default", uxState: "normal" }],
+    [{ rowKind: "committed", x: 0, xLabel: "0", yText: "7", zText: "2", hasImaginary: true, hasError: false, isCycle: false, uxRole: "default", uxState: "normal" }],
     "feed table splits complex values into real Y and imaginary Z columns",
   );
 
@@ -151,9 +158,9 @@ export const runRollDisplayTests = (): void => {
   assert.deepEqual(
     feedWithErrorRows,
     [
-      { x: 0, yText: "10", hasImaginary: false, hasError: false, uxRole: "default", uxState: "normal" },
-      { x: 1, yText: "11", hasImaginary: false, hasError: true, uxRole: "error", uxState: "active" },
-      { x: 2, yText: "12", hasImaginary: false, hasError: true, uxRole: "error", uxState: "active" },
+      { rowKind: "committed", x: 0, xLabel: "0", yText: "10", hasImaginary: false, hasError: false, isCycle: false, uxRole: "default", uxState: "normal" },
+      { rowKind: "committed", x: 1, xLabel: "1", yText: "11", hasImaginary: false, hasError: true, isCycle: false, uxRole: "error", uxState: "active" },
+      { rowKind: "committed", x: 2, xLabel: "2", yText: "12", hasImaginary: false, hasError: true, isCycle: false, uxRole: "error", uxState: "active" },
     ],
     "feed table keeps one row per error entry without deduplication while preserving y display text",
   );
@@ -204,6 +211,104 @@ export const runRollDisplayTests = (): void => {
     true,
     "feed table keeps Z column visible when imaginary rows exist outside the visible twelve-row window",
   );
+
+  const cycleBase = initialState();
+  const cycleRollEntries: RollEntry[] = [
+    { y: r(1n) },
+    { y: r(2n) },
+    { y: r(3n) },
+    { y: r(5n) },
+    { y: r(2n) },
+    { y: r(3n) },
+    { y: r(5n), error: { code: "n/0", kind: "division_by_zero" } },
+    { y: r(2n) },
+  ];
+  const cycleMetadata = { i: 1, j: 4, transientLength: 1, periodLength: 3 };
+
+  const cycleHistoryOff: GameState = {
+    ...cycleBase,
+    calculator: {
+      ...cycleBase.calculator,
+      rollEntries: cycleRollEntries,
+      rollAnalysis: { stopReason: "cycle", cycle: cycleMetadata },
+    },
+  };
+  const cycleHistoryOffView = buildFeedTableViewModelForState(cycleHistoryOff);
+  assert.equal(
+    cycleHistoryOffView.rows.some((row) => row.rowKind === "committed" && row.isCycle),
+    false,
+    "history-off keeps cycle styling disabled",
+  );
+
+  const cycleHistoryOn: GameState = {
+    ...cycleHistoryOff,
+    ui: {
+      ...cycleHistoryOff.ui,
+      buttonFlags: { ...cycleHistoryOff.ui.buttonFlags, [HISTORY_FLAG]: true },
+    },
+  };
+  const cycleHistoryOnView = buildFeedTableViewModelForState(cycleHistoryOn);
+  const committedCycleRows = cycleHistoryOnView.rows.filter((row) => row.rowKind === "committed" && row.isCycle);
+  assert.equal(committedCycleRows.length, 1, "history-on styles qualifying cycle-start rows at/after detection");
+  assert.equal(committedCycleRows[0]?.x, 7, "latest qualifying cycle-start row is marked");
+  const erroredCycleCandidate = cycleHistoryOnView.rows.find((row) => row.rowKind === "committed" && row.x === 6);
+  assert.equal(erroredCycleCandidate?.hasError, true, "errored cycle candidate remains error-scoped");
+  assert.equal(erroredCycleCandidate?.isCycle, false, "error precedence suppresses cycle styling");
+
+  const withForecasts: GameState = {
+    ...cycleBase,
+    settings: {
+      ...cycleBase.settings,
+      stepExpansion: "on",
+    },
+    ui: {
+      ...cycleBase.ui,
+      buttonFlags: { ...cycleBase.ui.buttonFlags, [HISTORY_FLAG]: true },
+    },
+    calculator: {
+      ...cycleBase.calculator,
+      total: r(5n),
+      rollEntries: [{ y: r(5n) }],
+      operationSlots: [{ operator: "op_add", operand: 1n }],
+    },
+  };
+  const withForecastsView = buildFeedTableViewModelForState(withForecasts);
+  const forecastRows = withForecastsView.rows.filter((row) => row.rowKind !== "committed");
+  assert.equal(forecastRows.length, 2, "history + step forecast rows append after committed rows");
+  assert.equal(forecastRows[0]?.xLabel, "~1", "history forecast uses ~1 prefix");
+  assert.equal(forecastRows[1]?.xLabel, "~2", "step forecast increments projection prefix");
+
+  const withoutForecastsView = buildFeedTableViewModelForState({
+    ...withForecasts,
+    ui: {
+      ...withForecasts.ui,
+      buttonFlags: {},
+    },
+    settings: {
+      ...withForecasts.settings,
+      stepExpansion: "off",
+    },
+  });
+  assert.equal(
+    withoutForecastsView.rows.some((row) => row.rowKind !== "committed"),
+    false,
+    "forecast rows are omitted when no forecast source is enabled",
+  );
+
+  const longCommittedWithForecasts = buildFeedTableViewModelForState({
+    ...withForecasts,
+    calculator: {
+      ...withForecasts.calculator,
+      rollEntries: Array.from({ length: 16 }, (_unused, index) => ({ y: r(BigInt(index + 1)) })),
+    },
+  });
+  const committedRows = longCommittedWithForecasts.rows.filter((row) => row.rowKind === "committed");
+  const appendedForecastRows = longCommittedWithForecasts.rows.filter((row) => row.rowKind !== "committed");
+  assert.equal(committedRows.length, 12, "state-aware feed keeps committed rows capped at twelve");
+  assert.equal(appendedForecastRows.length, 2, "forecast rows append after committed cap");
+  assert.equal(committedRows[0]?.x, 4, "committed visible window remains the latest twelve entries");
+  assert.equal(appendedForecastRows[0]?.xLabel, "~16", "history forecast label uses next absolute roll index");
+  assert.equal(appendedForecastRows[1]?.xLabel, "~17", "step forecast label increments absolute roll index");
 
   const base = initialState();
   assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total panel");

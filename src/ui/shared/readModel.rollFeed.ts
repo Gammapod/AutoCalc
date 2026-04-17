@@ -1,10 +1,18 @@
 import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
-import { calculatorValueToDisplayString, isScalarValueZero, scalarValueToCalculatorValue } from "../../domain/calculatorValue.js";
+import {
+  calculatorValueToDisplayString,
+  calculatorValuesEquivalent,
+  isScalarValueZero,
+  scalarValueToCalculatorValue,
+} from "../../domain/calculatorValue.js";
+import { HISTORY_FLAG } from "../../domain/state.js";
 import { getSeedRow, getStepRows } from "../../domain/rollEntries.js";
 import type {
   CalculatorValue,
+  GameState,
   RollEntry,
 } from "../../domain/types.js";
+import { resolveHistoryForecastValueForState, resolveStepForecastValuesForState } from "../modules/visualizers/numberLineModel.js";
 import type { UxRole, UxRoleAssignment, UxRoleState } from "./uxRoles.js";
 
 export type RollRow = {
@@ -22,11 +30,14 @@ export type RollViewModel = {
 };
 
 export type FeedTableRow = {
-  x: number;
+  rowKind: "committed" | "forecast_history" | "forecast_step";
+  x: number | null;
+  xLabel: string;
   yText: string;
   zText?: string;
   hasImaginary: boolean;
   hasError: boolean;
+  isCycle: boolean;
   uxRole: UxRole;
   uxState: UxRoleState;
   uxRoleOverride?: UxRole;
@@ -53,57 +64,74 @@ export const buildRollLines = (rollEntries: RollEntry[]): string[] =>
 const calculatorValueToFeedText = (value: CalculatorValue): string =>
   calculatorValueToDisplayString(value);
 
+const buildFeedTableRowFromValue = (
+  value: CalculatorValue,
+  options: {
+    rowKind: FeedTableRow["rowKind"];
+    x: number | null;
+    xLabel: string;
+    hasError: boolean;
+    isCycle: boolean;
+    uxRole: UxRole;
+    uxState: UxRoleState;
+  },
+): FeedTableRow => {
+  if (value.kind === "complex") {
+    return {
+      rowKind: options.rowKind,
+      x: options.x,
+      xLabel: options.xLabel,
+      yText: calculatorValueToFeedText(scalarValueToCalculatorValue(value.value.re)),
+      zText: calculatorValueToFeedText(scalarValueToCalculatorValue(value.value.im)),
+      hasImaginary: !isScalarValueZero(value.value.im),
+      hasError: options.hasError,
+      isCycle: options.isCycle,
+      uxRole: options.uxRole,
+      uxState: options.uxState,
+    };
+  }
+  return {
+    rowKind: options.rowKind,
+    x: options.x,
+    xLabel: options.xLabel,
+    yText: calculatorValueToFeedText(value),
+    hasImaginary: false,
+    hasError: options.hasError,
+    isCycle: options.isCycle,
+    uxRole: options.uxRole,
+    uxState: options.uxState,
+  };
+};
+
 export const buildFeedTableRows = (
   rollEntries: RollEntry[],
 ): FeedTableRow[] => {
   const rows: FeedTableRow[] = [];
   const seedRow = getSeedRow(rollEntries);
   if (seedRow) {
-    if (seedRow.y.kind === "complex") {
-      rows.push({
-        x: 0,
-        yText: calculatorValueToFeedText(scalarValueToCalculatorValue(seedRow.y.value.re)),
-        zText: calculatorValueToFeedText(scalarValueToCalculatorValue(seedRow.y.value.im)),
-        hasImaginary: !isScalarValueZero(seedRow.y.value.im),
-        hasError: false,
-        uxRole: "default",
-        uxState: "normal",
-      });
-    } else {
-      rows.push({
-        x: 0,
-        yText: calculatorValueToFeedText(seedRow.y),
-        hasImaginary: false,
-        hasError: false,
-        uxRole: "default",
-        uxState: "normal",
-      });
-    }
+    rows.push(buildFeedTableRowFromValue(seedRow.y, {
+      rowKind: "committed",
+      x: 0,
+      xLabel: "0",
+      hasError: false,
+      isCycle: false,
+      uxRole: "default",
+      uxState: "normal",
+    }));
   }
   const stepRows = getStepRows(rollEntries);
   for (let index = 0; index < stepRows.length; index += 1) {
     const entry = stepRows[index];
     const hasError = Boolean(entry.error);
-    if (entry.y.kind === "complex") {
-      rows.push({
-        x: index + 1,
-        yText: calculatorValueToFeedText(scalarValueToCalculatorValue(entry.y.value.re)),
-        zText: calculatorValueToFeedText(scalarValueToCalculatorValue(entry.y.value.im)),
-        hasImaginary: !isScalarValueZero(entry.y.value.im),
-        hasError,
-        uxRole: hasError ? "error" : "default",
-        uxState: hasError ? "active" : "normal",
-      });
-    } else {
-      rows.push({
-        x: index + 1,
-        yText: calculatorValueToFeedText(entry.y),
-        hasImaginary: false,
-        hasError,
-        uxRole: hasError ? "error" : "default",
-        uxState: hasError ? "active" : "normal",
-      });
-    }
+    rows.push(buildFeedTableRowFromValue(entry.y, {
+      rowKind: "committed",
+      x: index + 1,
+      xLabel: (index + 1).toString(),
+      hasError,
+      isCycle: false,
+      uxRole: hasError ? "error" : "default",
+      uxState: hasError ? "active" : "normal",
+    }));
   }
   return rows;
 };
@@ -127,6 +155,93 @@ export const buildFeedTableViewModel = (
   const zWidth = unlockedDigits + FEED_Z_COLUMN_PADDING_CHARS;
   return {
     rows: visibleRows,
+    showZColumn,
+    xWidth: FEED_FIXED_COLUMN_WIDTH,
+    yWidth,
+    zWidth,
+  };
+};
+
+const resolveCommittedRowsWithCycleStyling = (
+  state: GameState,
+  committedRows: FeedTableRow[],
+): FeedTableRow[] => {
+  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
+  const rollEntries = state.calculator.rollEntries;
+  const cycleStartEntry = cycle ? rollEntries[cycle.i] : null;
+  if (!historyEnabled || !cycle || !cycleStartEntry) {
+    return committedRows;
+  }
+  return committedRows.map((row) => {
+    if (row.rowKind !== "committed" || row.x === null || row.hasError) {
+      return row;
+    }
+    if (row.x < cycle.j) {
+      return row;
+    }
+    const rowEntry = rollEntries[row.x];
+    if (!rowEntry) {
+      return row;
+    }
+    if (!calculatorValuesEquivalent(rowEntry.y, cycleStartEntry.y)) {
+      return row;
+    }
+    return {
+      ...row,
+      isCycle: true,
+      uxRole: "analysis",
+      uxState: "active",
+    };
+  });
+};
+
+const buildForecastRowsForState = (state: GameState, nextIndexBase: number): FeedTableRow[] => {
+  const rows: FeedTableRow[] = [];
+  let nextIndex = nextIndexBase;
+  const historyForecast = resolveHistoryForecastValueForState(state);
+  if (historyForecast) {
+    rows.push(buildFeedTableRowFromValue(historyForecast, {
+      rowKind: "forecast_history",
+      x: null,
+      xLabel: `~${nextIndex.toString()}`,
+      hasError: false,
+      isCycle: false,
+      uxRole: "analysis",
+      uxState: "muted",
+    }));
+    nextIndex += 1;
+  }
+  const stepForecasts = resolveStepForecastValuesForState(state);
+  stepForecasts.forEach((value) => {
+    rows.push(buildFeedTableRowFromValue(value, {
+      rowKind: "forecast_step",
+      x: null,
+      xLabel: `~${nextIndex.toString()}`,
+      hasError: false,
+      isCycle: false,
+      uxRole: "analysis",
+      uxState: "muted",
+    }));
+    nextIndex += 1;
+  });
+  return rows;
+};
+
+export const buildFeedTableViewModelForState = (
+  state: GameState,
+): FeedTableViewModel => {
+  const committedRows = buildFeedTableRows(state.calculator.rollEntries);
+  const committedRowsWithCycleStyling = resolveCommittedRowsWithCycleStyling(state, committedRows);
+  const visibleCommittedRows = committedRowsWithCycleStyling.slice(-FEED_MAX_VISIBLE_ROWS);
+  const forecastRows = buildForecastRowsForState(state, committedRowsWithCycleStyling.length);
+  const rows = [...visibleCommittedRows, ...forecastRows];
+  const showZColumn = rows.some((row) => row.hasImaginary);
+  const unlockedDigits = Math.max(1, Math.min(MAX_UNLOCKED_TOTAL_DIGITS, Math.trunc(state.unlocks.maxTotalDigits)));
+  const yWidth = unlockedDigits + FEED_Y_COLUMN_PADDING_CHARS;
+  const zWidth = unlockedDigits + FEED_Z_COLUMN_PADDING_CHARS;
+  return {
+    rows,
     showZColumn,
     xWidth: FEED_FIXED_COLUMN_WIDTH,
     yWidth,

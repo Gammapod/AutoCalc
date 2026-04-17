@@ -1,6 +1,6 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
-import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, HISTORY_FLAG, initialState } from "../src/domain/state.js";
 import { calculatorValuesEquivalent, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import type { Action, GameState, RollEntry } from "../src/domain/types.js";
 import { reducer } from "../src/domain/reducer.js";
@@ -193,6 +193,59 @@ export const runUiIntegrationMobileShellTests = (): void => {
       feedPanel?.querySelector(".v2-feed-z-col") ?? null,
       null,
       "feed panel removes the Z segment span when Z column is hidden",
+    );
+    const withFeedCycleAndForecast = withCalculatorProjection(withFeed, "f", (projected) => ({
+      ...projected,
+      settings: {
+        ...projected.settings,
+        stepExpansion: "on",
+      },
+      ui: {
+        ...projected.ui,
+        buttonFlags: {
+          ...projected.ui.buttonFlags,
+          [HISTORY_FLAG]: true,
+        },
+      },
+      calculator: {
+        ...projected.calculator,
+        total: r(5n),
+        operationSlots: [{ operator: op("op_add"), operand: 1n }],
+        rollEntries: [
+          { y: r(1n) },
+          { y: r(2n) },
+          { y: r(3n) },
+          { y: r(5n) },
+          { y: r(2n) },
+          { y: r(3n) },
+          { y: r(5n) },
+          { y: r(2n) },
+        ],
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 1, j: 4, transientLength: 1, periodLength: 3 },
+        },
+      },
+    }));
+    renderer.render(withFeedCycleAndForecast, dispatch, {
+            inputBlocked: false,
+    });
+    assert.equal(
+      feedPanel?.querySelectorAll(".v2-feed-row--cycle").length,
+      1,
+      "feed panel marks qualifying committed cycle-start rows in amber",
+    );
+    assert.equal(
+      feedPanel?.querySelectorAll(".v2-feed-row--forecast").length,
+      2,
+      "feed panel appends forecast projection rows with forecast styling",
+    );
+    const feedLinesWithForecast = Array.from(feedPanel?.querySelectorAll<HTMLElement>(".v2-feed-table-line") ?? []);
+    const forecastLineText = feedLinesWithForecast.slice(-2).map((line) => line.textContent ?? "").join("\n");
+    assert.equal(
+      forecastLineText.includes("~8") && forecastLineText.includes("~9"),
+      true,
+      "feed forecast rows render absolute projection index prefixes",
     );
     renderer.render(withGraph, dispatch, {
             inputBlocked: false,

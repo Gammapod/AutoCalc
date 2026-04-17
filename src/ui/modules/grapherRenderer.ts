@@ -1,9 +1,15 @@
-﻿import type { GameState } from "../../domain/types.js";
+import type { GameState } from "../../domain/types.js";
 import { toStepCount } from "../../domain/rollEntries.js";
+import { HISTORY_FLAG } from "../../domain/state.js";
 import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
 import { ensureChartLoaded } from "../../infra/runtime/lazyAssetLoader.js";
 import { resolveUxRoleColor } from "../shared/readModel.js";
-import { buildGraphPoints, isGraphRenderable, type GraphPoint } from "./visualizers/graphModel.js";
+import {
+  buildGraphPoints,
+  isGraphRenderable,
+  resolveGraphCycleOverlaySegments,
+  type GraphPoint,
+} from "./visualizers/graphModel.js";
 import { resolveGraphLayout } from "./visualizers/graphLayoutModel.js";
 import { clearGraphOverlay, renderGraphOverlay } from "./visualizers/graphOverlayRenderer.js";
 
@@ -210,6 +216,12 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     dimensions.width,
     dimensions.height,
   );
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
+  const cycleOverlaySegments = resolveGraphCycleOverlaySegments(points, {
+    historyEnabled: Boolean(state.ui.buttonFlags[HISTORY_FLAG]),
+    cycle,
+    xWindow: layout.xDomain,
+  });
 
   const options = buildGraphOptions(hasPoints, layout);
   const documentRef = root.ownerDocument ?? null;
@@ -273,9 +285,11 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
 
   const gridColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.2 });
   const axisColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.75 });
+  const cycleColor = resolveUxRoleColor("analysis", { document: documentRef });
   renderGraphOverlay(root, layout, {
     gridColor,
     axisColor,
     labelColor: defaultColor,
-  });
+    cycleColor,
+  }, cycleOverlaySegments);
 };
