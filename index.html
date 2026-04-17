@@ -2669,6 +2669,88 @@
         pointer-events: auto;
       }
 
+      body[data-ui-shell="mobile"] .v2-ratios-panel,
+      body[data-ui-shell="desktop"] .v2-ratios-panel {
+        display: block;
+        position: absolute;
+        inset: 0;
+        padding: 8px 10px 30px;
+        opacity: 0;
+        transform: translateY(var(--v2-visualizer-inactive-offset));
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="ratios"] .v2-ratios-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="ratios"] .v2-ratios-panel {
+        opacity: 1;
+        transform: translateY(var(--v2-visualizer-baseline-offset));
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-table,
+      body[data-ui-shell="desktop"] .v2-ratios-table {
+        display: grid;
+        grid-template-rows: repeat(2, max-content);
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row,
+      body[data-ui-shell="desktop"] .v2-ratios-row {
+        display: grid;
+        grid-template-columns: max-content max-content max-content;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-display,
+      body[data-ui-shell="desktop"] .v2-ratios-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-separator,
+      body[data-ui-shell="desktop"] .v2-ratios-separator {
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: clamp(18px, 2.8vw, 24px);
+        line-height: 1;
+        color: var(--ux-role-default-color);
+        text-shadow: 0 0 6px rgba(188, 255, 214, 0.45);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row--imaginary .v2-ratios-separator,
+      body[data-ui-shell="desktop"] .v2-ratios-row--imaginary .v2-ratios-separator {
+        color: var(--ux-role-imaginary-color);
+        text-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel .seg-digit,
+      body[data-ui-shell="desktop"] .v2-ratios-panel .seg-digit {
+        width: clamp(11px, 1.7vw, 14px);
+        height: clamp(18px, 2.8vw, 24px);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel .seg-frame,
+      body[data-ui-shell="desktop"] .v2-ratios-panel .seg-frame {
+        gap: 3px;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row--imaginary .seg,
+      body[data-ui-shell="desktop"] .v2-ratios-row--imaginary .seg {
+        background: var(--ux-role-imaginary-color);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row--imaginary .seg--on,
+      body[data-ui-shell="desktop"] .v2-ratios-row--imaginary .seg--on {
+        box-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
+      }
+
       body[data-ui-shell="mobile"] .v2-state-table,
       body[data-ui-shell="desktop"] .v2-state-table {
         display: flex;
@@ -2941,7 +3023,9 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-help-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-help-panel,
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-state-panel,
-      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-state-panel {
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-state-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-ratios-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-ratios-panel {
         overflow: hidden;
       }
 
@@ -3328,6 +3412,7 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                       </div>
@@ -3364,6 +3449,7 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                       </div>
@@ -3400,6 +3486,7 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                       </div>
@@ -3436,6 +3523,7 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                       </div>
@@ -3472,6 +3560,7 @@
                           <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
                                                     <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
                           <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
                           <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
                         </section>
                       </div>
@@ -3499,6 +3588,7 @@
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>
+
 
 
 

@@ -18,6 +18,7 @@ Legend:
 | `circle` | match | match | match | mismatch | mismatch | match | match | match | match |
 | `ratios` | mismatch | mismatch | mismatch | mismatch | mismatch | mismatch | mismatch | mismatch | mismatch |
 
+
 ## Notes For Mismatched Play-Facing Cells
 
 - `total.cycles`: current implementation does not use cycle metadata/history-toggle to style cycle-start rows.

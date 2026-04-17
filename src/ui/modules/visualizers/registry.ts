@@ -19,6 +19,7 @@ import {
 import { resolveNumberLineMode } from "./numberLineModel.js";
 import { clearCircleVisualizerPanel, renderCircleVisualizerPanel } from "./circleRenderer.js";
 import { clearStateVisualizerPanel, renderStateVisualizerPanel } from "./stateRenderer.js";
+import { clearRatiosVisualizerPanel, renderRatiosVisualizerPanel } from "./ratiosRenderer.js";
 
 export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
   {
@@ -164,6 +165,20 @@ export const VISUALIZER_REGISTRY: readonly VisualizerModule[] = [
     },
     render: renderCircleVisualizerPanel,
     clear: clearCircleVisualizerPanel,
+  },
+  {
+    id: "ratios",
+    fit: {
+      kind: "plot_scale_clip",
+      overflow: "forbid_scroll",
+      budget: { topPx: 8, bodyPx: 118, bottomPx: 8 },
+    },
+    size: {
+      mode: "ratio",
+      ratio: 0.29,
+    },
+    render: renderRatiosVisualizerPanel,
+    clear: clearRatiosVisualizerPanel,
   },
   {
     id: "algebraic",

@@ -89,6 +89,11 @@ const overrideEntries: Partial<Record<KeyId, KeyDiagnosticEntry>> = {
     shortTemplate: "{keyFace}: toggle circle panel.",
     longTemplate: "{keyFace} toggles circle visualizer mode.",
   },
+  viz_ratios: {
+    title: "Ratios Visualizer",
+    shortTemplate: "{keyFace}: toggle ratios panel.",
+    longTemplate: "{keyFace} toggles ratios visualizer mode.",
+  },
   viz_algebraic: {
     title: "Algebraic Visualizer",
     shortTemplate: "{keyFace}: toggle algebraic panel.",

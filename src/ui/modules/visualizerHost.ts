@@ -142,6 +142,7 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   const releaseNotesPanel = root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
   const helpPanel = root.querySelector<HTMLElement>("[data-v2-help-panel]");
   const statePanel = root.querySelector<HTMLElement>("[data-v2-state-panel]");
+  const ratiosPanel = root.querySelector<HTMLElement>("[data-v2-ratios-panel]");
   const numberLinePanel = root.querySelector<HTMLElement>("[data-v2-number-line-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
@@ -175,6 +176,7 @@ const clearHostUiState = (runtime: VisualizerHostModuleState, root: Element): vo
   setHidden(titlePanel, true);
   setHidden(helpPanel, true);
   setHidden(statePanel, true);
+  setHidden(ratiosPanel, true);
   setHidden(releaseNotesPanel, true);
   setHidden(numberLinePanel, true);
   setHidden(circlePanel, true);
@@ -318,6 +320,9 @@ const resolveTextPanelMeasurementTarget = (panelElement: HTMLElement, panel: Vis
   if (panel === "state") {
     return panelElement.querySelector<HTMLElement>(".v2-state-table");
   }
+  if (panel === "ratios") {
+    return panelElement.querySelector<HTMLElement>(".v2-ratios-table");
+  }
   return null;
 };
 
@@ -434,6 +439,9 @@ const resolvePanelElement = (root: Element, panel: VisualizerHostPanel): HTMLEle
   if (panel === "state") {
     return root.querySelector<HTMLElement>("[data-v2-state-panel]");
   }
+  if (panel === "ratios") {
+    return root.querySelector<HTMLElement>("[data-v2-ratios-panel]");
+  }
   if (panel === "release_notes") {
     return root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
   }
@@ -511,6 +519,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const releaseNotesPanel = root.querySelector<HTMLElement>("[data-v2-release-notes-panel]");
   const helpPanel = root.querySelector<HTMLElement>("[data-v2-help-panel]");
   const statePanel = root.querySelector<HTMLElement>("[data-v2-state-panel]");
+  const ratiosPanel = root.querySelector<HTMLElement>("[data-v2-ratios-panel]");
   const numberLinePanel = root.querySelector<HTMLElement>("[data-v2-number-line-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
@@ -548,6 +557,7 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   setPanelVisible(titlePanel, activePanel === "title");
   setPanelVisible(helpPanel, activePanel === "help");
   setPanelVisible(statePanel, activePanel === "state");
+  setPanelVisible(ratiosPanel, activePanel === "ratios");
   setPanelVisible(releaseNotesPanel, activePanel === "release_notes");
   setPanelVisible(numberLinePanel, activePanel === "number_line");
   setPanelVisible(circlePanel, activePanel === "circle");

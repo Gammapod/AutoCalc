@@ -78,6 +78,7 @@ const visualizerSet = new Set<VisualizerKey>([
   KEY_ID.viz_state,
   KEY_ID.viz_number_line,
   KEY_ID.viz_circle,
+  KEY_ID.viz_ratios,
   KEY_ID.viz_algebraic,
 ]);
 

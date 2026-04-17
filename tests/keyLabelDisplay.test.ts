@@ -32,6 +32,7 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(KEY_ID.viz_factorization), "\u2315", "factorization visualizer key label renders canonical face");
   assert.equal(formatKeyLabel(k("viz_number_line")), "\u25FB", "number-line visualizer key label renders canonical face");
   assert.equal(formatKeyLabel(k("viz_circle")), "\u25EF", "circle visualizer key label renders canonical face");
+  assert.equal(formatKeyLabel(k("viz_ratios")), "RATIO", "ratios visualizer key label renders canonical face");
 
   const base = initialState();
   const equalsCell = { kind: "key", key: k("exec_equals") } as const;

@@ -239,6 +239,13 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
   },
   {
+    key: KEY_ID.viz_ratios,
+    lockModel: "unlockable",
+    unlockPathPolicy: "none_planned",
+    primaryExpectation: "graph_counts_only",
+    edgeCaseExpectation: "graph_does_not_mutate_calculator_state",
+  },
+  {
     key: KEY_ID.viz_algebraic,
     lockModel: "unlockable",
     unlockPathPolicy: "catalog",

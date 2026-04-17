@@ -65,6 +65,7 @@ export const KEY_ID = {
   viz_state: "viz_state",
   viz_number_line: "viz_number_line",
   viz_circle: "viz_circle",
+  viz_ratios: "viz_ratios",
   viz_algebraic: "viz_algebraic",
   exec_equals: "exec_equals",
   exec_play_pause: "exec_play_pause",
@@ -144,6 +145,7 @@ export type VisualizerKeyId =
   | typeof KEY_ID.viz_state
   | typeof KEY_ID.viz_number_line
   | typeof KEY_ID.viz_circle
+  | typeof KEY_ID.viz_ratios
   | typeof KEY_ID.viz_algebraic;
 export type ExecKeyId =
   | typeof KEY_ID.exec_equals
@@ -230,6 +232,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.viz_state, { buttonFace: "STATE" }],
   [KEY_ID.viz_number_line, { buttonFace: "\u25FB" }],
   [KEY_ID.viz_circle, { buttonFace: "\u25EF" }],
+  [KEY_ID.viz_ratios, { buttonFace: "RATIO" }],
   [KEY_ID.viz_algebraic, { buttonFace: "ALG" }],
   [KEY_ID.exec_equals, { buttonFace: "=" }],
   [KEY_ID.exec_play_pause, { buttonFace: "\u25B6" }],
