@@ -1,9 +1,10 @@
 import {
+  calculatorValueToRational,
   calculatorValueToDisplayString,
   isComplexCalculatorValue,
   isRationalCalculatorValue,
   isRealEquivalentCalculatorValue,
-  scalarValueToCalculatorValue,
+  toRationalCalculatorValue,
 } from "../../../domain/calculatorValue.js";
 import { calculatorValueEquals } from "../../../domain/rollEntries.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
@@ -31,6 +32,9 @@ const getFractionToken = (unlockedDigits: number): string =>
 const getComplexToken = (unlockedDigits: number): string =>
   unlockedDigits >= 4 ? "CIRC" : unlockedDigits === 3 ? "CIR" : unlockedDigits === 2 ? "CI" : "C";
 
+const getRadicalToken = (unlockedDigits: number): string =>
+  unlockedDigits >= 3 ? "rAd" : unlockedDigits === 2 ? "rA" : "r";
+
 const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "0": ["a", "b", "c", "d", "e", "f"],
   "1": ["b", "c"],
@@ -51,6 +55,7 @@ const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
   C: ["a", "d", "e", "f"],
   I: ["b", "c"],
   R: ["e", "g"],
+  d: ["b", "c", "d", "e", "g"],
 };
 
 const clampUnlockedDigits = (value: number): number =>
@@ -147,15 +152,15 @@ const renderSevenSegmentValue = (
     fractionAsToken?: boolean;
   } = {},
 ): void => {
-  const displayValue = (
-    value.kind === "complex" && isRealEquivalentCalculatorValue(value)
-      ? scalarValueToCalculatorValue(value.value.re)
-      : value
-  );
+  const displayValue = value;
   const fractionAsToken = options.fractionAsToken ?? true;
-  const rationalValue = isRationalCalculatorValue(displayValue) ? displayValue.value : null;
   const isNaNValue = displayValue.kind === "nan";
   const isComplexValue = isComplexCalculatorValue(displayValue);
+  const rationalValue = isRationalCalculatorValue(displayValue)
+    ? displayValue.value
+    : !isNaNValue && !isComplexValue
+      ? calculatorValueToRational(displayValue)
+      : null;
   const hasRationalValue = rationalValue !== null;
   const hasIntegerValue = hasRationalValue && rationalValue.den === 1n;
   const isNegative =
@@ -170,10 +175,7 @@ const renderSevenSegmentValue = (
     return;
   }
   if (!hasRationalValue) {
-    const symbolic = document.createElement("div");
-    symbolic.className = "seg-fraction";
-    symbolic.textContent = calculatorValueToDisplayString(displayValue);
-    target.appendChild(symbolic);
+    appendSevenSegmentFrame(target, buildTokenSlotModel(getRadicalToken(unlockedDigits), unlockedDigits));
     return;
   }
 
@@ -189,7 +191,7 @@ const renderSevenSegmentValue = (
     return;
   }
 
-  const slotModels = buildTotalSlotModel(displayValue, unlockedDigits, radix);
+  const slotModels = buildTotalSlotModel(toRationalCalculatorValue(rationalValue), unlockedDigits, radix);
 
   const firstActiveIndex = slotModels.findIndex((slot) => slot.state === "active");
   const signSlotIndex = isNegative && firstActiveIndex > 0 ? firstActiveIndex - 1 : -1;
@@ -287,11 +289,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     return;
   }
   const defaultDisplayLabel = (() => {
-    const displayValue = (
-      state.calculator.total.kind === "complex" && isRealEquivalentCalculatorValue(state.calculator.total)
-        ? scalarValueToCalculatorValue(state.calculator.total.value.re)
-        : state.calculator.total
-    );
+    const displayValue = state.calculator.total;
     if (shouldDisplayAlgLabel) {
       return "ALG";
     }

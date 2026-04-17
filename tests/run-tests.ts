@@ -9,6 +9,7 @@ import { runNoLegacySymbolsGuardTests } from "./noLegacySymbols.guard.test.js";
 import { runBootstrapDebugControlBindingsTests } from "./bootstrapDebugControlBindings.test.js";
 import { runReducerScalarLimitPolicyTests } from "./reducer.scalarLimitPolicy.test.js";
 import { runUiVisualizerUxSpecInvariantsTests } from "./uiVisualizerUxSpecInvariants.test.js";
+import { runUiModuleRatiosRendererV2Tests } from "./uiModule.ratiosRenderer.v2.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -20,6 +21,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/no-legacy-symbols-guard", runNoLegacySymbolsGuardTests],
   ["ui/bootstrap-debug-control-bindings", runBootstrapDebugControlBindingsTests],
   ["reducer/scalar-limit-policy", runReducerScalarLimitPolicyTests],
+  ["ui/module-ratios-renderer-v2", runUiModuleRatiosRendererV2Tests],
   ["ui/visualizer-ux-spec-invariants", runUiVisualizerUxSpecInvariantsTests],
 ];
 

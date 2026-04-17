@@ -2,6 +2,13 @@ import assert from "node:assert/strict";
 import { buildClearedTotalSlotModel, buildTotalSlotModel, isClearedCalculatorState } from "../src/ui/modules/calculator/viewModel.js";
 import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
+import {
+  toExplicitComplexCalculatorValue,
+  toExpressionCalculatorValue,
+  toExpressionScalarValue,
+  toRationalScalarValue,
+} from "../src/domain/calculatorValue.js";
+import { symbolicExpr } from "../src/domain/expression.js";
 import { renderTotalDisplay } from "../src/ui/modules/calculator/totalDisplay.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 
@@ -17,6 +24,14 @@ const c = (reNum: bigint, imNum: bigint): { kind: "complex"; value: { re: Return
   },
 });
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
+
+const getPrimaryActiveDigitSegments = (panel: HTMLElement): string[][] =>
+  Array.from(panel.querySelectorAll<HTMLElement>(".total-primary-display .seg-digit--active"))
+    .map((digit) =>
+      Array.from(digit.querySelectorAll<HTMLElement>(".seg--on"))
+        .map((segment) => (segment.className.match(/seg-([a-g])/u)?.[1] ?? ""))
+        .filter((name) => name.length > 0),
+    );
 
 const withRoll = (state: GameState, entries: RollEntry[], cycle: GameState["calculator"]["rollAnalysis"]["cycle"]): GameState => ({
   ...state,
@@ -310,6 +325,63 @@ export const runTotalDisplayTests = (): void => {
       totalPanel.classList.contains("total-display--cycle"),
       true,
       "regression: repeated cycle-start value is amber after detection",
+    );
+
+    const realIrrationalState: GameState = {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        total: toExpressionCalculatorValue(symbolicExpr("sqrt(2)")),
+      },
+    };
+    renderTotalDisplay(totalPanel, realIrrationalState);
+    const realIrrationalSegments = getPrimaryActiveDigitSegments(totalPanel);
+    assert.deepEqual(
+      realIrrationalSegments.slice(-3),
+      [
+        ["e", "g"],
+        ["a", "b", "c", "e", "f", "g"],
+        ["b", "c", "d", "e", "g"],
+      ],
+      "real irrational totals render rAd token in the seven-segment display",
+    );
+
+    const complexAnyState: GameState = {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        total: toExplicitComplexCalculatorValue(
+          toExpressionScalarValue(symbolicExpr("sqrt(2)")),
+          toRationalScalarValue({ num: 0n, den: 1n }),
+        ),
+      },
+    };
+    renderTotalDisplay(totalPanel, complexAnyState);
+    const complexAnySegments = getPrimaryActiveDigitSegments(totalPanel);
+    assert.deepEqual(
+      complexAnySegments.slice(-4),
+      [
+        ["a", "d", "e", "f"],
+        ["b", "c"],
+        ["e", "g"],
+        ["a", "d", "e", "f"],
+      ],
+      "all complex totals, including real-equivalent complex values, render the CIRC token",
+    );
+
+    const rationalExprState: GameState = {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        total: toExpressionCalculatorValue({ type: "rational_literal", value: { num: 6n, den: 3n } }),
+      },
+    };
+    renderTotalDisplay(totalPanel, rationalExprState);
+    const rationalExprSegments = getPrimaryActiveDigitSegments(totalPanel);
+    assert.deepEqual(
+      rationalExprSegments.at(-1),
+      ["a", "b", "d", "e", "g"],
+      "rational-equivalent expression totals render numerically and clear rAd token",
     );
   } finally {
     harness.teardown();

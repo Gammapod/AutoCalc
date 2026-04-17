@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
-import { toExplicitComplexCalculatorValue, toNanCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
+import {
+  toExplicitComplexCalculatorValue,
+  toExpressionCalculatorValue,
+  toExpressionScalarValue,
+  toNanCalculatorValue,
+  toRationalScalarValue,
+} from "../src/domain/calculatorValue.js";
+import { symbolicExpr } from "../src/domain/expression.js";
 import { clearRatiosVisualizerPanel, renderRatiosVisualizerPanel } from "../src/ui/modules/visualizers/ratiosRenderer.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 
@@ -100,6 +107,57 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     const wideSlotCounts = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
       .map((display) => display.getAttribute("data-ratios-slot-count"));
     assert.deepEqual(wideSlotCounts, ["11", "10", "11", "10"], "ratios supports slots above 8 up to total-display cap");
+
+    const realIrrationalState: GameState = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toExpressionCalculatorValue(symbolicExpr("sqrt(2)")),
+      },
+    };
+    renderRatiosVisualizerPanel(harness.root, realIrrationalState);
+    const realIrrationalTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
+      .map((display) => display.getAttribute("data-ratios-token"));
+    assert.deepEqual(
+      realIrrationalTokens,
+      ["0", "1", "rAdicAL", "rAdicAL"],
+      "real irrational totals render rAdicAL on both real numerator and denominator fields",
+    );
+
+    const complexImaginaryIrrationalState: GameState = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 3n, den: 2n }),
+          toExpressionScalarValue(symbolicExpr("sqrt(2)")),
+        ),
+      },
+    };
+    renderRatiosVisualizerPanel(harness.root, complexImaginaryIrrationalState);
+    const complexImaginaryIrrationalTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
+      .map((display) => display.getAttribute("data-ratios-token"));
+    assert.deepEqual(
+      complexImaginaryIrrationalTokens,
+      ["rAdicAL", "rAdicAL", "3", "2"],
+      "complex irrational components render rAdicAL in both fields of the affected component",
+    );
+
+    const rationalExprState: GameState = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toExpressionCalculatorValue({ type: "rational_literal", value: { num: 8n, den: 4n } }),
+      },
+    };
+    renderRatiosVisualizerPanel(harness.root, rationalExprState);
+    const rationalExprTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
+      .map((display) => display.getAttribute("data-ratios-token"));
+    assert.deepEqual(
+      rationalExprTokens,
+      ["0", "1", "2", "1"],
+      "rational-equivalent expressions clear rAdicAL and render numeric ratios",
+    );
 
     const cycle = { i: 1, j: 4, transientLength: 1, periodLength: 3 };
     const base = initialState();

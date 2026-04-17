@@ -1,4 +1,5 @@
 import { calculatorValueEquals } from "../../../domain/rollEntries.js";
+import { calculatorValueToRational, scalarValueToCalculatorValue } from "../../../domain/calculatorValue.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { ExecutionErrorKind, GameState, RationalValue, RollLimitComponentKind, ScalarValue } from "../../../domain/types.js";
 import { applyUxRoleAttributes } from "../../shared/readModel.js";
@@ -26,8 +27,13 @@ const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
   E: ["a", "d", "e", "f", "g"],
   r: ["e", "g"],
   o: ["c", "d", "e", "g"],
+  d: ["b", "c", "d", "e", "g"],
+  i: ["c"],
+  c: ["d", "e", "g"],
+  L: ["d", "e", "f"],
 };
 const NAN_ERROR_TOKEN = "Error";
+const IRRATIONAL_TOKEN = "rAdicAL";
 const NAN_ERROR_KINDS: ReadonlySet<ExecutionErrorKind> = new Set([
   "division_by_zero",
   "nan_input",
@@ -36,7 +42,7 @@ const NAN_ERROR_KINDS: ReadonlySet<ExecutionErrorKind> = new Set([
 ]);
 
 const resolveScalarRational = (value: ScalarValue): { num: bigint; den: bigint } | null =>
-  value.kind === "rational" ? value.value : null;
+  calculatorValueToRational(scalarValueToCalculatorValue(value));
 
 const resolveCycleAmberActive = (state: GameState): boolean => {
   if (!state.ui.buttonFlags[HISTORY_FLAG]) {
@@ -64,8 +70,9 @@ type RatioDisplayValues = { reNum: string; reDen: string; imNum: string; imDen: 
 type RationalPair = { re: RationalValue; im: RationalValue };
 
 const resolveRationalPair = (total: GameState["calculator"]["total"]): RationalPair | null => {
-  if (total.kind === "rational") {
-    return { re: total.value, im: { num: 0n, den: 1n } };
+  const rational = calculatorValueToRational(total);
+  if (rational) {
+    return { re: rational, im: { num: 0n, den: 1n } };
   }
   if (total.kind === "complex") {
     const re = resolveScalarRational(total.value.re);
@@ -92,6 +99,37 @@ const resolveCurrentRatioDisplayValues = (state: GameState): RatioDisplayValues 
     reDen: "1",
     imNum: "0",
     imDen: "1",
+  };
+};
+
+const resolveIrrationalRatioDisplayValues = (total: GameState["calculator"]["total"]): RatioDisplayValues | null => {
+  if (total.kind === "nan") {
+    return null;
+  }
+  if (total.kind === "rational") {
+    return null;
+  }
+  if (total.kind === "expr") {
+    if (calculatorValueToRational(total)) {
+      return null;
+    }
+    return {
+      reNum: IRRATIONAL_TOKEN,
+      reDen: IRRATIONAL_TOKEN,
+      imNum: "0",
+      imDen: "1",
+    };
+  }
+  const re = resolveScalarRational(total.value.re);
+  const im = resolveScalarRational(total.value.im);
+  if (re && im) {
+    return null;
+  }
+  return {
+    reNum: re ? re.num.toString() : IRRATIONAL_TOKEN,
+    reDen: re ? re.den.toString() : IRRATIONAL_TOKEN,
+    imNum: im ? im.num.toString() : IRRATIONAL_TOKEN,
+    imDen: im ? im.den.toString() : IRRATIONAL_TOKEN,
   };
 };
 
@@ -125,6 +163,10 @@ const resolveErrorAwareRatioDisplayValues = (state: GameState): RatioDisplayValu
       imNum: NAN_ERROR_TOKEN,
       imDen: NAN_ERROR_TOKEN,
     };
+  }
+  const irrationalValues = resolveIrrationalRatioDisplayValues(state.calculator.total);
+  if (irrationalValues) {
+    return irrationalValues;
   }
   const clampedPair = resolveRationalPair(state.calculator.total);
   if (!latestError || !clampedPair) {
