@@ -4,6 +4,7 @@ import {
   NUMBER_LINE_GEOMETRY,
   NUMBER_LINE_VECTOR_ARROW_TIP,
   resolveNumberLineMode,
+  resolveNumberLineCycleOverlaySegmentsForState,
   resolvePlotRangeForState,
   resolveVectorLayersForState,
   type NumberLineGeometry,
@@ -44,9 +45,13 @@ const appendLine = (
     | "v2-number-line-grid-mark"
     | "v2-number-line-center-tick"
     | "v2-number-line-vector"
+    | "v2-number-line-vector--current-error"
     | "v2-number-line-vector--history"
     | "v2-number-line-vector--forecast"
-    | "v2-number-line-vector--forecast-step",
+    | "v2-number-line-vector--forecast-step"
+    | "v2-number-line-cycle-line"
+    | "v2-number-line-cycle-line--chain"
+    | "v2-number-line-cycle-line--closure",
   roleOverride?: "imaginary",
 ): void => {
   const svgNs = "http://www.w3.org/2000/svg";
@@ -59,7 +64,15 @@ const appendLine = (
   if (roleOverride === "imaginary" && className === "v2-number-line-axis") {
     line.classList.add("v2-number-line-axis--imaginary");
   }
-  if (className === "v2-number-line-vector--history" || className === "v2-number-line-vector--forecast-step") {
+  if (className === "v2-number-line-vector--current-error") {
+    applyUxRoleAttributes(line, { uxRole: "error", uxState: "active" });
+  } else if (
+    className === "v2-number-line-vector--history"
+    || className === "v2-number-line-vector--forecast-step"
+    || className === "v2-number-line-cycle-line"
+    || className === "v2-number-line-cycle-line--chain"
+    || className === "v2-number-line-cycle-line--closure"
+  ) {
     applyUxRoleAttributes(line, { uxRole: "analysis", uxState: "active" });
   } else if (className === "v2-number-line-vector--forecast") {
     applyUxRoleAttributes(line, { uxRole: "unlock", uxState: "active" });
@@ -96,6 +109,7 @@ const appendVectorTip = (
   point: Point,
   className:
     | "v2-number-line-vector-tip"
+    | "v2-number-line-vector-tip--current-error"
     | "v2-number-line-vector-tip--history"
     | "v2-number-line-vector-tip--forecast"
     | "v2-number-line-vector-tip--forecast-step",
@@ -106,7 +120,9 @@ const appendVectorTip = (
   tip.setAttribute("cy", point.y.toString());
   tip.setAttribute("r", "1.05");
   tip.setAttribute("class", className);
-  if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
+  if (className === "v2-number-line-vector-tip--current-error") {
+    applyUxRoleAttributes(tip, { uxRole: "error", uxState: "active" });
+  } else if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
     applyUxRoleAttributes(tip, { uxRole: "analysis", uxState: "active" });
   } else if (className === "v2-number-line-vector-tip--forecast") {
     applyUxRoleAttributes(tip, { uxRole: "unlock", uxState: "active" });
@@ -121,6 +137,7 @@ const appendVectorArrowTip = (
   svg: SVGElement,
   segment: Segment,
   className:
+    | "v2-number-line-vector-tip--current-error"
     | "v2-number-line-vector-tip--history"
     | "v2-number-line-vector-tip--forecast"
     | "v2-number-line-vector-tip--forecast-step",
@@ -155,7 +172,9 @@ const appendVectorArrowTip = (
     `${segment.to.x.toString()},${segment.to.y.toString()} ${left.x.toString()},${left.y.toString()} ${right.x.toString()},${right.y.toString()}`,
   );
   arrow.setAttribute("class", className);
-  if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
+  if (className === "v2-number-line-vector-tip--current-error") {
+    applyUxRoleAttributes(arrow, { uxRole: "error", uxState: "active" });
+  } else if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
     applyUxRoleAttributes(arrow, { uxRole: "analysis", uxState: "active" });
   } else {
     applyUxRoleAttributes(arrow, { uxRole: "unlock", uxState: "active" });
@@ -332,17 +351,51 @@ const renderScaleLabels = (
   });
 };
 
+const renderCycleOverlayIfAvailable = (documentRef: Document, svg: SVGElement, state: GameState): void => {
+  const segments = resolveNumberLineCycleOverlaySegmentsForState(state, NUMBER_LINE_GEOMETRY);
+  for (const overlaySegment of segments) {
+    const className = overlaySegment.kind === "closure"
+      ? "v2-number-line-cycle-line v2-number-line-cycle-line--closure"
+      : "v2-number-line-cycle-line v2-number-line-cycle-line--chain";
+    appendLine(
+      documentRef,
+      svg,
+      overlaySegment.segment,
+      overlaySegment.kind === "closure" ? "v2-number-line-cycle-line--closure" : "v2-number-line-cycle-line--chain",
+    );
+    const rendered = svg.lastElementChild as SVGElement | null;
+    if (rendered) {
+      rendered.setAttribute("class", className);
+    }
+  }
+};
+
+const appendCurrentErrorCenterMarker = (documentRef: Document, svg: SVGElement): void => {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const marker = documentRef.createElementNS(svgNs, "circle");
+  marker.setAttribute("cx", NUMBER_LINE_GEOMETRY.origin.x.toString());
+  marker.setAttribute("cy", NUMBER_LINE_GEOMETRY.origin.y.toString());
+  marker.setAttribute("r", "1.35");
+  marker.setAttribute("class", "v2-number-line-error-center-marker");
+  applyUxRoleAttributes(marker, { uxRole: "error", uxState: "active" });
+  svg.appendChild(marker);
+};
+
 const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: GameState): void => {
+  const latestHasError = hasCurrentRollError(state);
+  let renderedCurrentLayer = false;
   const classByKind: Record<
     NumberLineVectorLayer["kind"],
     {
       line:
         | "v2-number-line-vector"
+        | "v2-number-line-vector--current-error"
         | "v2-number-line-vector--history"
         | "v2-number-line-vector--forecast"
         | "v2-number-line-vector--forecast-step";
       tip:
         | "v2-number-line-vector-tip"
+        | "v2-number-line-vector-tip--current-error"
         | "v2-number-line-vector-tip--history"
         | "v2-number-line-vector-tip--forecast"
         | "v2-number-line-vector-tip--forecast-step";
@@ -355,8 +408,13 @@ const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: 
   };
 
   resolveVectorLayersForState(state, NUMBER_LINE_GEOMETRY).forEach((layer) => {
-    const classes = classByKind[layer.kind];
+    const classes = layer.kind === "current" && latestHasError
+      ? { line: "v2-number-line-vector--current-error" as const, tip: "v2-number-line-vector-tip--current-error" as const }
+      : classByKind[layer.kind];
     appendLine(documentRef, svg, layer.segment, classes.line);
+    if (layer.kind === "current") {
+      renderedCurrentLayer = true;
+    }
     if (layer.tipKind === "dot") {
       appendVectorTip(documentRef, svg, layer.segment.to, classes.tip);
     } else {
@@ -365,12 +423,16 @@ const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: 
         svg,
         layer.segment,
         classes.tip as
+          | "v2-number-line-vector-tip--current-error"
           | "v2-number-line-vector-tip--history"
           | "v2-number-line-vector-tip--forecast"
           | "v2-number-line-vector-tip--forecast-step",
       );
     }
   });
+  if (latestHasError && !renderedCurrentLayer) {
+    appendCurrentErrorCenterMarker(documentRef, svg);
+  }
 };
 
 export const clearNumberLineVisualizerPanel = (root: Element): void => {
@@ -400,10 +462,7 @@ export const renderNumberLineVisualizerPanel = (root: Element, state: GameState)
   const svgNs = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(svgNs, "svg");
   svg.setAttribute("class", "v2-number-line-plot");
-  applyUxRoleAttributes(svg, hasCurrentRollError(state) ? { uxRole: "error", uxState: "active" } : { uxRole: "default", uxState: "normal" });
-  if (hasCurrentRollError(state)) {
-    svg.classList.add("v2-number-line-plot--error");
-  }
+  applyUxRoleAttributes(svg, { uxRole: "default", uxState: "normal" });
   svg.setAttribute("viewBox", "0 0 100 24");
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
   svg.setAttribute("role", "img");
@@ -418,6 +477,7 @@ export const renderNumberLineVisualizerPanel = (root: Element, state: GameState)
   }
   renderBaseHorizontalAxis(document, svg, NUMBER_LINE_GEOMETRY);
   renderScaleLabels(document, svg, mode, range);
+  renderCycleOverlayIfAvailable(document, svg, state);
   renderVectorIfAvailable(document, svg, state);
 
   panel.appendChild(svg);

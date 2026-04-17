@@ -73,6 +73,19 @@ body[data-ui-shell="desktop"] .v2-number-line-vector-tip {
   fill: var(--ux-role-default-color);
 }
 
+body[data-ui-shell="mobile"] .v2-number-line-vector--current-error,
+body[data-ui-shell="desktop"] .v2-number-line-vector--current-error {
+  stroke: var(--ux-role-error-color);
+  stroke-width: 0.95;
+  stroke-linecap: round;
+  opacity: 0.96;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-vector-tip--current-error,
+body[data-ui-shell="desktop"] .v2-number-line-vector-tip--current-error {
+  fill: var(--ux-role-error-color);
+}
+
 body[data-ui-shell="mobile"] .v2-number-line-vector--history,
 body[data-ui-shell="desktop"] .v2-number-line-vector--history {
   stroke: var(--ux-role-analysis-color);
@@ -129,20 +142,26 @@ body[data-ui-shell="desktop"] .v2-number-line-scale-label {
   user-select: none;
 }
 
-body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-axis,
-body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-axis,
-body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-center-tick,
-body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-center-tick,
-body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-grid-mark,
-body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-grid-mark {
-  stroke: var(--ux-role-error-color);
+body[data-ui-shell="mobile"] .v2-number-line-cycle-line,
+body[data-ui-shell="desktop"] .v2-number-line-cycle-line {
+  stroke: var(--ux-role-analysis-color);
+  stroke-width: 0.55;
+  stroke-linecap: round;
+  stroke-dasharray: 1 1.5;
+  opacity: 0.78;
 }
 
-body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-arrowhead,
-body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-arrowhead,
-body[data-ui-shell="mobile"] .v2-number-line-plot--error .v2-number-line-scale-label,
-body[data-ui-shell="desktop"] .v2-number-line-plot--error .v2-number-line-scale-label {
-  fill: var(--ux-role-error-color);
+body[data-ui-shell="mobile"] .v2-number-line-cycle-line--closure,
+body[data-ui-shell="desktop"] .v2-number-line-cycle-line--closure {
+  opacity: 0.62;
+}
+
+body[data-ui-shell="mobile"] .v2-number-line-error-center-marker,
+body[data-ui-shell="desktop"] .v2-number-line-error-center-marker {
+  fill: none;
+  stroke: var(--ux-role-error-color);
+  stroke-width: 0.5;
+  opacity: 0.95;
 }
 
 body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-number-line-panel,

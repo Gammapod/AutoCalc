@@ -102,7 +102,7 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.equal(panel.querySelector(".v2-number-line-vector--forecast-step"), null, "step-forecast remains hidden while [ ??? ] is off");
     assert.equal(panel.querySelector(".v2-number-line-vector-tip--forecast-step"), null, "step-forecast tip remains hidden while [ ??? ] is off");
     assert.equal(panel.querySelector(".v2-number-line-vector--history"), null, "history vector remains hidden while history toggle is off");
-    assert.equal(panel.querySelector(".v2-number-line-plot--error"), null, "non-error roll keeps default plane styling");
+    assert.equal(panel.querySelector(".v2-number-line-vector--current-error"), null, "non-error roll keeps current vector in default styling");
 
     const withStepExpansionForecast = {
       ...withRealRoll,
@@ -253,6 +253,7 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.ok(panel.querySelector(".v2-number-line-vector-tip--history"), "history toggle renders previous-roll vector tip");
     assert.ok(panel.querySelector(".v2-number-line-vector--forecast"), "history mode renders full-function forecast vector");
     assert.equal(panel.querySelector(".v2-number-line-vector--forecast-step"), null, "history mode alone does not render step forecast");
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line").length, 0, "history mode without cycle metadata does not render cycle constellation");
     const historyLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector--history");
     const currentLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector");
     const forecastLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector--forecast");
@@ -306,19 +307,72 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
       true,
       "equal magnitudes render newer current vector on top",
     );
+    const withCycleOverlay = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        buttonFlags: {
+          ...initialState().ui.buttonFlags,
+          [HISTORY_FLAG]: true,
+        },
+      },
+      calculator: {
+        ...initialState().calculator,
+        total: toRationalCalculatorValue({ num: 3n, den: 1n }),
+        rollEntries: [
+          { y: toRationalCalculatorValue({ num: 1n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 4n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 4n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+        ],
+        rollAnalysis: {
+          stopReason: "cycle" as const,
+          cycle: { i: 1, j: 4, transientLength: 1, periodLength: 3 },
+        },
+        operationSlots: [{ operator: "op_add" as const, operand: 1n }],
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, withCycleOverlay);
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line").length >= 3, true, "cycle metadata renders cycle constellation overlay lines");
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line--chain").length, 3, "cycle overlay renders chain segments");
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line--closure").length, 1, "cycle overlay renders closure segment for equal span endpoints");
+    assert.ok(panel.querySelector(".v2-number-line-vector--history"), "cycle overlay is additive and keeps history vector rendering");
+    assert.ok(panel.querySelector(".v2-number-line-vector--forecast"), "cycle overlay is additive and keeps forecast vector rendering");
 
     const withCurrentError = {
       ...withHistoryEnabled,
       calculator: {
         ...withHistoryEnabled.calculator,
-        rollEntries: [{
-          ...withHistoryEnabled.calculator.rollEntries[0],
-          error: { code: "op_div" as const, kind: "division_by_zero" as const },
-        }],
+        rollEntries: withHistoryEnabled.calculator.rollEntries.map((entry, index, source) => (
+          index === source.length - 1
+            ? { ...entry, error: { code: "op_div" as const, kind: "division_by_zero" as const } }
+            : entry
+        )),
       },
     };
     renderNumberLineVisualizerPanel(harness.root, withCurrentError);
-    assert.ok(panel.querySelector(".v2-number-line-plot--error"), "error on current roll switches plane into error styling mode");
+    assert.ok(panel.querySelector(".v2-number-line-vector--current-error"), "latest errored current vector is styled in error color");
+    assert.ok(panel.querySelector(".v2-number-line-vector-tip--current-error"), "latest errored current tip is styled in error color");
+    assert.equal(panel.querySelector(".v2-number-line-vector--history")?.classList.contains("v2-number-line-vector--current-error"), false, "history vector remains non-error styled");
+    assert.equal(panel.querySelector(".v2-number-line-vector--forecast")?.classList.contains("v2-number-line-vector--current-error"), false, "forecast vector remains non-error styled");
+    assert.equal(panel.querySelector(".v2-number-line-axis")?.classList.contains("v2-number-line-vector--current-error"), false, "axes remain non-error styled");
+
+    const withNanError = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: { kind: "nan" as const },
+        rollEntries: [{ y: { kind: "nan" as const }, error: { code: "seed_nan" as const, kind: "nan_input" as const } }],
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, withNanError);
+    assert.equal(panel.querySelector(".v2-number-line-vector"), null, "NaN current roll does not render a current vector");
+    assert.ok(panel.querySelector(".v2-number-line-error-center-marker"), "NaN error fallback renders hollow red center marker");
   } finally {
     harness.teardown();
   }

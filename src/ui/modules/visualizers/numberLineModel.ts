@@ -10,6 +10,11 @@ import { resolveSymmetricTierRange } from "./plotPolicy.js";
 export type NumberLineMode = "real" | "complex_grid";
 export type Point = { x: number; y: number };
 export type Segment = { from: Point; to: Point };
+export type NumberLineCycleOverlaySegmentKind = "chain" | "closure";
+export type NumberLineCycleOverlaySegment = {
+  kind: NumberLineCycleOverlaySegmentKind;
+  segment: Segment;
+};
 export type NumberLineVectorKind = "current" | "history" | "forecast_history" | "forecast_step";
 export type NumberLineVectorTipKind = "dot" | "arrow";
 export type NumberLineVectorLayer = {
@@ -440,4 +445,74 @@ export const resolveVectorLayersForState = (
   });
 
   return sortVectorLayers(layers);
+};
+
+export const resolveNumberLineCycleOverlaySegmentsForState = (
+  state: GameState,
+  geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
+): NumberLineCycleOverlaySegment[] => {
+  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
+  if (!historyEnabled || !cycle) {
+    return [];
+  }
+  const latestIndex = state.calculator.rollEntries.length - 1;
+  if (latestIndex < 0 || latestIndex < cycle.j) {
+    return [];
+  }
+  if (!Number.isInteger(cycle.periodLength) || cycle.periodLength < 1) {
+    return [];
+  }
+  const spanLength = cycle.periodLength + 1;
+  const spanStart = latestIndex - (spanLength - 1);
+  if (spanStart < 0) {
+    return [];
+  }
+  const spanEntries = state.calculator.rollEntries.slice(spanStart, latestIndex + 1);
+  if (spanEntries.length < 2) {
+    return [];
+  }
+  const range = resolvePlotRangeForState(state);
+  const argandPoints = spanEntries.map((entry) => calculatorValueToArgandPoint(entry.y));
+  if (argandPoints.some((argand) => !argand || Math.abs(argand.im) > 1e-12)) {
+    return [];
+  }
+  const endpoints = argandPoints
+    .filter((argand): argand is { re: number; im: number } => Boolean(argand))
+    .map((argand) => resolveVectorEndpoint(geometry, argand, range));
+  if (endpoints.length < 2) {
+    return [];
+  }
+
+  const segments: NumberLineCycleOverlaySegment[] = [];
+  for (let index = 1; index < endpoints.length; index += 1) {
+    const previous = endpoints[index - 1];
+    const current = endpoints[index];
+    if (!previous || !current) {
+      continue;
+    }
+    segments.push({
+      kind: "chain",
+      segment: { from: previous, to: current },
+    });
+  }
+
+  const first = argandPoints[0];
+  const last = argandPoints[argandPoints.length - 1];
+  const firstEndpoint = endpoints[0];
+  const lastEndpoint = endpoints[endpoints.length - 1];
+  if (
+    first
+    && last
+    && firstEndpoint
+    && lastEndpoint
+    && Math.abs(first.re - last.re) <= 1e-12
+    && Math.abs(first.im - last.im) <= 1e-12
+  ) {
+    segments.push({
+      kind: "closure",
+      segment: { from: firstEndpoint, to: lastEndpoint },
+    });
+  }
+  return segments;
 };

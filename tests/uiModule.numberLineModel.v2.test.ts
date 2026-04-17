@@ -4,6 +4,7 @@ import {
   resolveNumberLineMode,
   NUMBER_LINE_GEOMETRY,
   calculatorValueToArgandPoint,
+  resolveNumberLineCycleOverlaySegmentsForState,
   resolveHistoryForecastVectorSegmentForState,
   resolvePlotRangeForState,
   resolveForecastVectorSegmentForState,
@@ -232,6 +233,57 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
       );
     }
   }
+
+  const withCycleOverlay = {
+    ...initialState(),
+    ui: {
+      ...initialState().ui,
+      buttonFlags: {
+        ...initialState().ui.buttonFlags,
+        [HISTORY_FLAG]: true,
+      },
+    },
+    calculator: {
+      ...initialState().calculator,
+      rollEntries: [
+        { y: toRationalCalculatorValue({ num: 1n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 4n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 4n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+        { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+      ],
+      rollAnalysis: {
+        stopReason: "cycle" as const,
+        cycle: { i: 1, j: 4, transientLength: 1, periodLength: 3 },
+      },
+    },
+  };
+  const cycleSegments = resolveNumberLineCycleOverlaySegmentsForState(withCycleOverlay);
+  assert.equal(cycleSegments.length, 4, "cycle overlay emits chain plus closure segments for latest period span");
+  assert.equal(cycleSegments.filter((segment) => segment.kind === "chain").length, 3, "cycle overlay emits periodLength chain segments");
+  assert.equal(cycleSegments.filter((segment) => segment.kind === "closure").length, 1, "cycle overlay emits closure segment when span endpoints match");
+
+  const cycleSegmentsHistoryOff = resolveNumberLineCycleOverlaySegmentsForState({
+    ...withCycleOverlay,
+    ui: {
+      ...withCycleOverlay.ui,
+      buttonFlags: {},
+    },
+  });
+  assert.equal(cycleSegmentsHistoryOff.length, 0, "history-off disables cycle overlay segment generation");
+
+  const cycleSegmentsNoMetadata = resolveNumberLineCycleOverlaySegmentsForState({
+    ...withCycleOverlay,
+    calculator: {
+      ...withCycleOverlay.calculator,
+      rollAnalysis: { stopReason: "none", cycle: null },
+    },
+  });
+  assert.equal(cycleSegmentsNoMetadata.length, 0, "missing cycle metadata disables cycle overlay segment generation");
 
   assert.equal(resolveNumberLineMode(initialState()), "real", "real totals use real mode");
   const withComplexTotal = {
