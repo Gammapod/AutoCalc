@@ -1,13 +1,27 @@
 import assert from "node:assert/strict";
 import { buildClearedTotalSlotModel, buildTotalSlotModel, isClearedCalculatorState } from "../src/ui/modules/calculator/viewModel.js";
-import { initialState } from "../src/domain/state.js";
-import type { RollEntry } from "../src/domain/types.js";
+import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
+import type { GameState, RollEntry } from "../src/domain/types.js";
+import { renderTotalDisplay } from "../src/ui/modules/calculator/totalDisplay.js";
+import { installDomHarness } from "./helpers/domHarness.js";
 
 const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: bigint; den: bigint } } => ({
   kind: "rational",
   value: { num, den },
 });
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
+
+const withRoll = (state: GameState, entries: RollEntry[], cycle: GameState["calculator"]["rollAnalysis"]["cycle"]): GameState => ({
+  ...state,
+  calculator: {
+    ...state.calculator,
+    total: entries.at(-1)?.y ?? state.calculator.total,
+    rollEntries: entries,
+    rollAnalysis: cycle
+      ? { stopReason: "cycle", cycle }
+      : { stopReason: "none", cycle: null },
+  },
+});
 
 export const runTotalDisplayTests = (): void => {
   const baseline = buildTotalSlotModel(r(0n), 2);
@@ -91,5 +105,186 @@ export const runTotalDisplayTests = (): void => {
     ["d"],
     "cleared model renders underscore with the bottom segment",
   );
+
+  const harness = installDomHarness();
+  try {
+    const totalPanel = harness.root.querySelector<HTMLElement>("[data-v2-total-panel]");
+    assert.ok(totalPanel, "expected total panel mount");
+    if (!totalPanel) {
+      return;
+    }
+
+    const cycle = { i: 1, j: 4, transientLength: 1, periodLength: 3 };
+    const base = initialState();
+
+    const historyOffCycleMatch = withRoll(base, re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n), r(5n), r(2n)), cycle);
+    renderTotalDisplay(totalPanel, historyOffCycleMatch);
+    assert.equal(
+      totalPanel.classList.contains("total-display--cycle"),
+      false,
+      "cycle color remains off when history toggle is off",
+    );
+
+    const historyOnBeforeDetection = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(r(1n), r(2n), r(3n), r(5n)),
+      cycle,
+    );
+    renderTotalDisplay(totalPanel, historyOnBeforeDetection);
+    assert.equal(
+      totalPanel.classList.contains("total-display--cycle"),
+      false,
+      "cycle color stays off before cycle detection index is reached",
+    );
+
+    const historyOnCycleMatch = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n), r(5n), r(2n)),
+      cycle,
+    );
+    renderTotalDisplay(totalPanel, historyOnCycleMatch);
+    assert.equal(
+      totalPanel.classList.contains("total-display--cycle"),
+      true,
+      "cycle color enables when latest value matches cycle-start after detection",
+    );
+
+    const historyOnCycleNoMatch = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n)),
+      cycle,
+    );
+    renderTotalDisplay(totalPanel, historyOnCycleNoMatch);
+    assert.equal(
+      totalPanel.classList.contains("total-display--cycle"),
+      false,
+      "cycle color stays off when latest value is not cycle-start value",
+    );
+
+    const historyOnCycleWithError = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      [
+        { y: r(1n) },
+        { y: r(2n) },
+        { y: r(3n) },
+        { y: r(5n) },
+        { y: r(2n) },
+        { y: r(3n) },
+        { y: r(5n) },
+        { y: r(2n), error: { code: "overflow", kind: "overflow" } },
+      ],
+      cycle,
+    );
+    renderTotalDisplay(totalPanel, historyOnCycleWithError);
+    assert.equal(totalPanel.classList.contains("total-display--error"), true, "error class remains active on latest error");
+    assert.equal(totalPanel.classList.contains("total-display--cycle"), false, "error precedence disables cycle color");
+
+    const imaginaryCycleState = {
+      ...historyOnCycleMatch,
+      calculator: {
+        ...historyOnCycleMatch.calculator,
+        total: {
+          kind: "complex" as const,
+          value: {
+            re: { kind: "rational" as const, value: { num: 2n, den: 1n } },
+            im: { kind: "rational" as const, value: { num: 1n, den: 1n } },
+          },
+        },
+      },
+    };
+    renderTotalDisplay(totalPanel, imaginaryCycleState);
+    assert.equal(totalPanel.classList.contains("total-display--cycle"), true, "cycle color remains active when cycle condition is met");
+    assert.equal(
+      totalPanel.classList.contains("total-display--imaginary"),
+      false,
+      "cycle color takes precedence over imaginary color when both apply",
+    );
+
+    const imaginaryNoCycleState = {
+      ...historyOnCycleNoMatch,
+      calculator: {
+        ...historyOnCycleNoMatch.calculator,
+        total: {
+          kind: "complex" as const,
+          value: {
+            re: { kind: "rational" as const, value: { num: 3n, den: 1n } },
+            im: { kind: "rational" as const, value: { num: 1n, den: 1n } },
+          },
+        },
+      },
+    };
+    renderTotalDisplay(totalPanel, imaginaryNoCycleState);
+    assert.equal(
+      totalPanel.classList.contains("total-display--imaginary"),
+      true,
+      "imaginary color applies when no error/cycle color is active",
+    );
+
+    const firstTwoNotAmber = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(r(1n), r(2n)),
+      cycle,
+    );
+    renderTotalDisplay(totalPanel, firstTwoNotAmber);
+    assert.equal(
+      totalPanel.classList.contains("total-display--cycle"),
+      false,
+      "regression: first appearance of cycle-start value is not amber before detection",
+    );
+
+    renderTotalDisplay(totalPanel, historyOnCycleMatch);
+    assert.equal(
+      totalPanel.classList.contains("total-display--cycle"),
+      true,
+      "regression: repeated cycle-start value is amber after detection",
+    );
+  } finally {
+    harness.teardown();
+  }
 };
 

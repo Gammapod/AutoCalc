@@ -5,7 +5,9 @@ import {
   isRealEquivalentCalculatorValue,
   scalarValueToCalculatorValue,
 } from "../../../domain/calculatorValue.js";
+import { calculatorValueEquals } from "../../../domain/rollEntries.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
+import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 import { applyUxRoleAttributes, buildTotalHintRowsViewModel, resolveTotalHintRowUxAssignment } from "../../shared/readModel.js";
@@ -113,6 +115,28 @@ const buildLiteralSegmentSlotModel = (value: string): TotalSlotModel[] =>
     activeSegments: TOKEN_SEGMENTS[glyph] ?? [],
   }));
 
+const resolveCycleAmberActive = (state: GameState): boolean => {
+  if (!state.ui.buttonFlags[HISTORY_FLAG]) {
+    return false;
+  }
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle"
+    ? state.calculator.rollAnalysis.cycle
+    : null;
+  if (!cycle) {
+    return false;
+  }
+  const latestIndex = state.calculator.rollEntries.length - 1;
+  if (latestIndex < 0 || latestIndex < cycle.j) {
+    return false;
+  }
+  const latestEntry = state.calculator.rollEntries[latestIndex];
+  const cycleStartEntry = state.calculator.rollEntries[cycle.i];
+  if (!latestEntry || !cycleStartEntry) {
+    return false;
+  }
+  return calculatorValueEquals(latestEntry.y, cycleStartEntry.y);
+};
+
 const renderSevenSegmentValue = (
   target: HTMLElement,
   value: CalculatorValue,
@@ -184,14 +208,18 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   const domainValue = latestRollEntry?.y ?? state.calculator.total;
   const totalIsNaN = state.calculator.total.kind === "nan";
   const hasLatestRollError = Boolean(state.calculator.rollEntries.at(-1)?.error);
+  const hasCycleAmberActive = resolveCycleAmberActive(state);
   const hasImaginaryTotal =
     state.calculator.total.kind === "complex"
     && !isRealEquivalentCalculatorValue(state.calculator.total);
+  const shouldApplyCycleStyling = !hasLatestRollError && hasCycleAmberActive;
+  const shouldApplyImaginaryStyling = !hasLatestRollError && !shouldApplyCycleStyling && hasImaginaryTotal;
   const hasAnyKeyPress = Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
   const shouldRenderClearedPlaceholder =
     isClearedCalculatorState(state.calculator) && (state.calculator.singleDigitInitialTotalEntry || !hasAnyKeyPress);
   totalEl.classList.toggle("total-display--error", hasLatestRollError);
-  totalEl.classList.toggle("total-display--imaginary", hasImaginaryTotal);
+  totalEl.classList.toggle("total-display--cycle", shouldApplyCycleStyling);
+  totalEl.classList.toggle("total-display--imaginary", shouldApplyImaginaryStyling);
   totalEl.innerHTML = "";
   const stack = document.createElement("div");
   stack.className = "total-display-stack";
