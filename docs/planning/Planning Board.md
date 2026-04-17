@@ -18,25 +18,6 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Next
 
-### Slice `slice_progress_signal_bars`
-- User Story: As a player, I want progression and reward status to be shown visually so I can scan my status faster than reading verbose text blocks.
-- Exit Criteria:
-- Goal/reward text blocks are replaced by visual progress/signal bars in primary progression surfaces.
-- Bars are legible on desktop and mobile form factors.
-- Visual states remain non-spoiler and preserve current hint fidelity.
-- Accessibility baseline is preserved (contrast and non-color cue support).
-
-### Slice `slice_complex_cycle_detection_enablement`
-- User Story: As a player, I want cycle detection to work for complex roll sequences so cycle-aware visual feedback is consistent across real and complex runs.
-- Exit Criteria:
-- Roll analysis can emit `stopReason: "cycle"` for complex trajectories (including non-zero imaginary paths) when a prior roll value repeats by canonical calculator-value equivalence.
-- `total` visualizer cycle-start amber behavior activates for qualifying complex runs under the same gating as real runs (`History` on, post-detection, cycle-start value match).
-- Existing real-number cycle detection behavior remains unchanged.
-- Rational-only orbit diagnostics (`d1`, `d2`, `r1`, growth heuristics) remain explicitly out of scope and are not widened in this slice.
-- Regression tests cover: complex cycle detection success, no false positives, and class-precedence behavior (`error > cycle > imaginary`) with complex totals.
-- Notes:
-- Execute on a dedicated branch after current visualizer parity work; do not implement in the current branch.
-
 ## Later
 
 ### Slice `slice_content_completion_pass`

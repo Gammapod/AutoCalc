@@ -50,27 +50,27 @@ MAT_plus ==>|Invert| MAT_minus
 subgraph Math ["ℕ,ℤ"]
     %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
     
-    MAT_inc[["[ n ++ ]"]]
+    MAT_inc[["[ n ++ ]"]] %% IMPLEMENTED
     %% Primitive
     %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
     %% Completes ℕ on its own
 
-    MAT_plus["a [ \+b ]"]
+    MAT_plus["a [ \+b ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 + 3 ]` -> `[ 4 ++ ++ ++ ]`  
-    MAT_mul["a [ × b ]"]
+    MAT_mul["a [ × b ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 × 3 ]` -> `[ 4 +4 +4 ]`
     %% CPX_impart ==> ROT_modulus
     %% CPX_repart ==> ROT_modulus
     %% ROT_rotate ==>|Iterate| CPX_horiz["n R±"]
-    MAT_pow["a [ ^ b ]"]
+    MAT_pow["a [ ^ b ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 ^ 3 ]` -> `[ 4 ×4 ×4 ]`
 
-    MAT_dec["[ n -- ]"]
+    MAT_dec["[ n -- ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 –– ]` -> `[ 4 ℤ{..3◌⃔4 5..} ]`
     %% Expanded form `[ 4 –– ]` -> `[ 4 ++⮌ ]`
     %% Completes ℤ with ++
     MAT_minus
-    MAT_minus["a [ − b ]"]
+    MAT_minus["a [ − b ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 – 3 ]` -> `[ 4 –– –– –– ]`
     %% Expanded form `[ 4 – 3 ]` -> `[ 4 +⮌ 3 ]`
 
@@ -84,12 +84,12 @@ subgraph Math ["ℕ,ℤ"]
     DIV_cdiv ==>|Quotient| DIV_eudiv
     DIV_cdiv ===|Remainder| DIV_mod
     subgraph Division
-        DIV_cdiv["a⨸b"]
+        DIV_cdiv["a⨸b"] %% IMPLEMENTED
         %% Complex_Tuple – keyface `⫽ ╎ ◇→M`
         %% Expanded form `[ 4 ⨸ 3 ]` -> `[ (4 ⫽ 3) + ((4 ◇ 3) R⭾M) ]`
-        DIV_eudiv["a ⫽ b"]
+        DIV_eudiv["a ⫽ b"] %% IMPLEMENTED
         %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(4 – (3 × ℕ)) ]`
-        DIV_mod["a◇b"]
+        DIV_mod["a◇b"] %% IMPLEMENTED
         %% Expanded form `[ 4 ◇ 3 ]` -> `[ 4 – (3 × (4 ⫽ 3)) ]`
     end
     
@@ -98,13 +98,13 @@ subgraph Math ["ℕ,ℤ"]
     LOG_clog ==> LOG_eulog
     LOG_clog ==>|Remainder| LOG_resid
     subgraph Logs
-        LOG_clog["a ⦷ b"]
-        %% Complex_Tuple – keyface `∥ ╎ 🞚→M`
-        %% Expanded form `[ 4 ⦷ 3 ]` -> `[ (4 ∥ 3) + ((4 🞚 3) R⭾M) ]`
-        LOG_eulog["a [ ∥ b ]"]
+        LOG_clog["a ⦷ b"] %% IMPLEMENTED
+        %% Complex_Tuple – keyface `∥ ╎ 🞛→M`
+        %% Expanded form `[ 4 ⦷ 3 ]` -> `[ (4 ∥ 3) + ((4 🞛 3) R⭾M) ]`
+        LOG_eulog["a [ ∥ b ]"] %% IMPLEMENTED
         %% Expanded form `[ 4 ∥ 3 ]` -> `Σ[ ¬(4 ◇ (3 ^ ℕ)) ]`
-        LOG_resid["a [ 🞚 b ]"]
-        %% Expanded form `[ 4 🞚 3 ]` -> `[ 4 ÷ (3 ^ (4 ∥ 3)) ]`🞛
+        LOG_resid["a [ 🞛 b ]"] %% IMPLEMENTED
+        %% Expanded form `[ 4 🞛 3 ]` -> `[ 4 ÷ (3 ^ (4 ∥ 3)) ]`🞛
     end
 end
 
@@ -123,16 +123,16 @@ subgraph Ratios ["ℚ"]
     %% Visualizer: shows 2 numbers instead of 1, for numerator and denominator (4 numbers when complex)
     RAT_recip[["[ 1⁄n ]"]]
     %% Expanded form `(4÷3) [ 1⁄n ]` -> `[ 3 ÷ 4 ]` 
-    RAT_div["a [ ÷ b ]"]
+    RAT_div["a [ ÷ b ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 × 1⁄3 ]`    
     RAT_per["％"]
     %% Expanded form `[ (a÷100) × b ]` <-.- should 100 change based on base setting? 
     %% Music Mode: When toggled, result is normalized to [1÷16, 16) and a sfx tone plays at result ×440 hz 
-    RAT_whole["a ♩↑ b"]
+    RAT_whole["a ♩↑ b"] %% IMPLEMENTED
     %% Expanded form `[ a × ((9 ÷ 8) ^ b) ]`
     RAT_semit["a ♯↑ b"]
     %% Expanded form `[ a × (¹²√(2 ^ b)) ]`
-    RAT_inter["a ⋮ b"]
+    RAT_inter["a ⋮ b"] %% IMPLEMENTED
     %% Expanded form `[ a × (1 + 1⁄b) ]`
 end
 
@@ -165,7 +165,7 @@ CPX_conj ==> CPX_repart
 CPX_impart ==x CPX_norm
 CPX_horiz ==> CPX_impart
 subgraph Complex_Math ["ℚ[𝕚]"]
-    CPX_quarter[["[ z R⭾M ]"]]
+    CPX_quarter[["[ z R⭾M ]"]] %% IMPLEMENTED
     %% Expanded form `[ 4 R⭾M ]` -> `[ 4 × √(-1) ]`
     %% Expanded form `[ 4 R⭾M ]` -> `[ 4 ↶ 6 ]`
     %% Expanded form `[ 4 R⭾M ]` -> `[ -3:00 ]`
@@ -323,7 +323,7 @@ end
     %% %% Expanded form `[ n ∥ ℙ(3) ]`
     %% Padic -.-> Pprime_expansion("∏ ℙ^e")
 
-    %% %% Expanded form `n ∥ ℙ("🞚
+    %% %% Expanded form `n ∥ ℙ("🞛
     %% Padic -.-> Pomega["Ω(n)"]
     %% LOG_resid -.-> Pomega
     %% %% n=60
@@ -331,14 +331,14 @@ end
     %% %% s=2,1,1,0
     %% %% x=1,2,3,4
     %% %% Expanded form `r=60 ∥ ℙ(x=1) = s=2`
-    %% %% Expanded form `r=60 🞚 ℙ(x=1) = 15`
-    %% %% Expanded form `r=60 🞚 ℙ(x=1) ∥ ℙ(x=2) = s=1`
-    %% %% Expanded form `r=15 🞚 ℙ(x=2) = 5`
-    %% %% Expanded form `r=15 🞚 ℙ(x=2) ∥ ℙ(x=3) = s=1`
-    %% %% Expanded form `r=5 🞚 ℙ(x=3) = 1`
-    %% %% Expanded form `r=5 🞚 ℙ(x=3) ∥ ℙ(x=4) = s=0`
-    %% %% Expanded form `r=1 🞚 ℙ(x=4) = 1`
-    %% %% Expanded form `Σ{x=1..n}[ ((x – 1) 🞚 ℙ(x – 1)) ∥ ℙ(x) ]`
+    %% %% Expanded form `r=60 🞛 ℙ(x=1) = 15`
+    %% %% Expanded form `r=60 🞛 ℙ(x=1) ∥ ℙ(x=2) = s=1`
+    %% %% Expanded form `r=15 🞛 ℙ(x=2) = 5`
+    %% %% Expanded form `r=15 🞛 ℙ(x=2) ∥ ℙ(x=3) = s=1`
+    %% %% Expanded form `r=5 🞛 ℙ(x=3) = 1`
+    %% %% Expanded form `r=5 🞛 ℙ(x=3) ∥ ℙ(x=4) = s=0`
+    %% %% Expanded form `r=1 🞛 ℙ(x=4) = 1`
+    %% %% Expanded form `Σ{x=1..n}[ ((x – 1) 🞛 ℙ(x – 1)) ∥ ℙ(x) ]`
     %% Ptotient["φ"]
     %% %% Expanded form `[ n × ∏(1-p^-1) ]`
     %% BOO_divis -.-> Pdivisor_sum["σ"]

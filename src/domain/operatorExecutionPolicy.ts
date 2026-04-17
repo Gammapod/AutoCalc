@@ -79,6 +79,42 @@ const POLICY_ENTRIES: OperatorExecutionPolicy[] = [
     unsupportedSymbolicOnSymbolicOperand: true,
     deferredReason: "gaussian_divisor_policy_deferred",
   }),
+  entry(KEY_ID.op_euclid_tuple, {
+    totalKinds: ALL_NON_NAN,
+    complexMode: "deferred_complex_policy",
+    status: "deferred",
+    unsupportedSymbolicOnSymbolicOperand: true,
+    deferredReason: "gaussian_divisor_policy_deferred",
+  }),
+  entry(KEY_ID.op_eulog, {
+    totalKinds: ALL_NON_NAN,
+    complexMode: "deferred_complex_policy",
+    status: "deferred",
+    unsupportedSymbolicOnSymbolicOperand: true,
+    deferredReason: "gaussian_divisor_policy_deferred",
+  }),
+  entry(KEY_ID.op_residual, {
+    totalKinds: ALL_NON_NAN,
+    complexMode: "deferred_complex_policy",
+    status: "deferred",
+    unsupportedSymbolicOnSymbolicOperand: true,
+    deferredReason: "gaussian_divisor_policy_deferred",
+  }),
+  entry(KEY_ID.op_log_tuple, {
+    totalKinds: ALL_NON_NAN,
+    complexMode: "deferred_complex_policy",
+    status: "deferred",
+    unsupportedSymbolicOnSymbolicOperand: true,
+    deferredReason: "gaussian_divisor_policy_deferred",
+  }),
+  entry(KEY_ID.op_whole_steps, {
+    totalKinds: ALL_NON_NAN,
+    complexMode: "complex_arithmetic",
+  }),
+  entry(KEY_ID.op_interval, {
+    totalKinds: ALL_NON_NAN,
+    complexMode: "complex_arithmetic",
+  }),
   entry(KEY_ID.op_mod, {
     totalKinds: ALL_NON_NAN,
     complexMode: "deferred_complex_policy",
@@ -124,6 +160,7 @@ const POLICY_ENTRIES: OperatorExecutionPolicy[] = [
   entry(KEY_ID.unary_mirror_digits, { totalKinds: ALL_NON_NAN, complexMode: "deferred_complex_policy" }),
   entry(KEY_ID.unary_i, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
   entry(KEY_ID.unary_rotate_15, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
+  entry(KEY_ID.unary_reciprocal, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
 ];
 
 const OPERATOR_POLICY_MAP = new Map<

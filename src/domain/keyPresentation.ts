@@ -21,6 +21,12 @@ export const KEY_ID = {
   op_pow: "op_pow",
   op_div: "op_div",
   op_euclid_div: "op_euclid_div",
+  op_euclid_tuple: "op_euclid_tuple",
+  op_eulog: "op_eulog",
+  op_residual: "op_residual",
+  op_log_tuple: "op_log_tuple",
+  op_whole_steps: "op_whole_steps",
+  op_interval: "op_interval",
   op_mod: "op_mod",
   op_rotate_left: "op_rotate_left",
   op_rotate_15: "op_rotate_15",
@@ -42,6 +48,7 @@ export const KEY_ID = {
   unary_mirror_digits: "unary_mirror_digits",
   unary_i: "unary_i",
   unary_rotate_15: "unary_rotate_15",
+  unary_reciprocal: "unary_reciprocal",
   util_clear_all: "util_clear_all",
   util_backspace: "util_backspace",
   util_undo: "util_undo",
@@ -97,6 +104,12 @@ export type BinaryOperatorKeyId =
   | typeof KEY_ID.op_pow
   | typeof KEY_ID.op_div
   | typeof KEY_ID.op_euclid_div
+  | typeof KEY_ID.op_euclid_tuple
+  | typeof KEY_ID.op_eulog
+  | typeof KEY_ID.op_residual
+  | typeof KEY_ID.op_log_tuple
+  | typeof KEY_ID.op_whole_steps
+  | typeof KEY_ID.op_interval
   | typeof KEY_ID.op_mod
   | typeof KEY_ID.op_rotate_left
   | typeof KEY_ID.op_rotate_15
@@ -118,7 +131,8 @@ export type UnaryOperatorKeyId =
   | typeof KEY_ID.unary_ceil
   | typeof KEY_ID.unary_mirror_digits
   | typeof KEY_ID.unary_i
-  | typeof KEY_ID.unary_rotate_15;
+  | typeof KEY_ID.unary_rotate_15
+  | typeof KEY_ID.unary_reciprocal;
 export type MemoryKeyId = never;
 export type UtilityKeyId =
   | typeof KEY_ID.util_clear_all
@@ -188,6 +202,12 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.op_pow, { buttonFace: "^", operatorInlineFace: "^", operatorSlotFace: "^", operatorAlgebraicFace: "^" }],
   [KEY_ID.op_div, { buttonFace: "\u00F7", operatorInlineFace: "\u00F7", operatorSlotFace: "\u00F7", operatorAlgebraicFace: "\u00F7" }],
   [KEY_ID.op_euclid_div, { buttonFace: "\u2AFD", operatorInlineFace: "\u2AFD", operatorSlotFace: "\u2AFD", operatorAlgebraicFace: "\u2AFD" }],
+  [KEY_ID.op_euclid_tuple, { buttonFace: "\u2AFD \u254E \u25C7\u2192M", operatorInlineFace: "\u2A38", operatorSlotFace: "\u2A38", operatorAlgebraicFace: "\u2A38" }],
+  [KEY_ID.op_eulog, { buttonFace: "\u2225", operatorInlineFace: "\u2225", operatorSlotFace: "\u2225", operatorAlgebraicFace: "\u2225" }],
+  [KEY_ID.op_residual, { buttonFace: "\u{1F79B}", operatorInlineFace: "\u{1F79B}", operatorSlotFace: "\u{1F79B}", operatorAlgebraicFace: "\u{1F79B}" }],
+  [KEY_ID.op_log_tuple, { buttonFace: "\u2225 \u254E \u{1F79B}\u2192M", operatorInlineFace: "\u29B7", operatorSlotFace: "\u29B7", operatorAlgebraicFace: "\u29B7" }],
+  [KEY_ID.op_whole_steps, { buttonFace: "\u2669\u2191", operatorInlineFace: "\u2669\u2191", operatorSlotFace: "\u2669\u2191", operatorAlgebraicFace: "\u2669\u2191" }],
+  [KEY_ID.op_interval, { buttonFace: "\u22EE", operatorInlineFace: "\u22EE", operatorSlotFace: "\u22EE", operatorAlgebraicFace: "\u22EE" }],
   [KEY_ID.op_mod, { buttonFace: "\u27E1", operatorInlineFace: "\u27E1", operatorSlotFace: "\u25C7", operatorAlgebraicFace: "\u27E1" }],
   [KEY_ID.op_rotate_left, { buttonFace: "\u21BA", operatorInlineFace: "\u21BA", operatorSlotFace: "\u21BA", operatorAlgebraicFace: "\u21BA" }],
   [KEY_ID.op_rotate_15, { buttonFace: "\u21B6", operatorInlineFace: "\u00D7e^(in\u03C0/12)", operatorSlotFace: "\u21B6", operatorAlgebraicFace: "\u00D7e^(in\u03C0/12)" }],
@@ -209,6 +229,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.unary_mirror_digits, { buttonFace: "\u21CBd", operatorInlineFace: "\u21CBd", operatorSlotFace: "\u21CB", operatorAlgebraicFace: "\u21CBd" }],
   [KEY_ID.unary_i, { buttonFace: "\u21B6 \u299C", operatorInlineFace: "\u00D7i", operatorSlotFace: "\u299D", operatorAlgebraicFace: "\u00D7i" }],
   [KEY_ID.unary_rotate_15, { buttonFace: "\u21B6 \u299C/6", operatorInlineFace: "\u00D7e^(i\u03C0/12)", operatorSlotFace: "\u299C/6", operatorAlgebraicFace: "\u00D7e^(i\u03C0/12)" }],
+  [KEY_ID.unary_reciprocal, { buttonFace: "\u00B9\u2044\u2099", operatorInlineFace: "\u00B9\u2044\u2099", operatorSlotFace: "\u00B9\u2044\u2099", operatorAlgebraicFace: "\u00B9\u2044\u2099" }],
   [KEY_ID.util_clear_all, { buttonFace: "C" }],
   [KEY_ID.util_backspace, { buttonFace: "\u2190" }],
   [KEY_ID.util_undo, { buttonFace: "\u21A9" }],
@@ -312,6 +333,12 @@ const BINARY_OPERATOR_KEY_ID_SET = new Set<BinaryOperatorKeyId>([
   KEY_ID.op_pow,
   KEY_ID.op_div,
   KEY_ID.op_euclid_div,
+  KEY_ID.op_euclid_tuple,
+  KEY_ID.op_eulog,
+  KEY_ID.op_residual,
+  KEY_ID.op_log_tuple,
+  KEY_ID.op_whole_steps,
+  KEY_ID.op_interval,
   KEY_ID.op_mod,
   KEY_ID.op_rotate_left,
   KEY_ID.op_rotate_15,
@@ -335,6 +362,7 @@ const UNARY_OPERATOR_KEY_ID_SET = new Set<UnaryOperatorKeyId>([
   KEY_ID.unary_mirror_digits,
   KEY_ID.unary_i,
   KEY_ID.unary_rotate_15,
+  KEY_ID.unary_reciprocal,
 ]);
 const MEMORY_KEY_ID_SET = new Set<MemoryKeyId>();
 
@@ -346,10 +374,19 @@ export const isUnaryOperatorId = (keyId: KeyId): keyId is UnaryOperatorKeyId =>
 export const isMemoryKeyId = (keyId: KeyId): keyId is MemoryKeyId =>
   MEMORY_KEY_ID_SET.has(keyId as MemoryKeyId);
 export const isNaturalDivisorOperatorKeyId = (keyId: KeyId): boolean => {
-  return keyId === KEY_ID.op_euclid_div || keyId === KEY_ID.op_mod;
+  return keyId === KEY_ID.op_euclid_div
+    || keyId === KEY_ID.op_euclid_tuple
+    || keyId === KEY_ID.op_eulog
+    || keyId === KEY_ID.op_residual
+    || keyId === KEY_ID.op_log_tuple
+    || keyId === KEY_ID.op_mod;
 };
 export const isUnsupportedSymbolicOperatorKeyId = (keyId: KeyId): boolean => {
   return keyId === KEY_ID.op_euclid_div
+    || keyId === KEY_ID.op_euclid_tuple
+    || keyId === KEY_ID.op_eulog
+    || keyId === KEY_ID.op_residual
+    || keyId === KEY_ID.op_log_tuple
     || keyId === KEY_ID.op_mod
     || keyId === KEY_ID.op_pow
     || keyId === KEY_ID.op_rotate_left

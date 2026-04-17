@@ -46,7 +46,7 @@ const formatAlgebraicOperator = (operator: SlotOperator): string =>
 
 const isEuclidLiteralOperator = (operator: SlotOperator): boolean => {
   const operatorId = resolveKeyId(operator);
-  return operatorId === KEY_ID.op_euclid_div || operatorId === KEY_ID.op_mod;
+  return operatorId === KEY_ID.op_euclid_div || operatorId === KEY_ID.op_euclid_tuple || operatorId === KEY_ID.op_mod;
 };
 
 export const formatKeyLabel = (key: Key): string => getKeyButtonFaceLabel(key);
@@ -130,6 +130,9 @@ export const resolveStepExpansionText = (
     if (slot.operator === KEY_ID.unary_rotate_15) {
       return "\u00D7 e^(i\u03C0/12)";
     }
+    if (slot.operator === KEY_ID.unary_reciprocal) {
+      return "1/n";
+    }
     return `${formatUnarySlotOperator(slot.operator)}(${current})`;
   }
   if (slot.operator === KEY_ID.op_add && typeof slot.operand === "bigint") {
@@ -164,6 +167,24 @@ export const resolveStepExpansionText = (
   }
   if (slot.operator === KEY_ID.op_euclid_div && typeof slot.operand === "bigint") {
     return `q=\u230An \u00F7 ${slot.operand.toString()}\u230B;r=n\u2013q`;
+  }
+  if (slot.operator === KEY_ID.op_euclid_tuple && typeof slot.operand === "bigint") {
+    return `q=n\u2AFD${slot.operand.toString()};r=n\u25C7${slot.operand.toString()};q+ir`;
+  }
+  if (slot.operator === KEY_ID.op_eulog && typeof slot.operand === "bigint") {
+    return `v_${slot.operand.toString()}(n)`;
+  }
+  if (slot.operator === KEY_ID.op_residual && typeof slot.operand === "bigint") {
+    return `n/${slot.operand.toString()}^v`;
+  }
+  if (slot.operator === KEY_ID.op_log_tuple && typeof slot.operand === "bigint") {
+    return `v_${slot.operand.toString()}(n)+i*(n/${slot.operand.toString()}^v)`;
+  }
+  if (slot.operator === KEY_ID.op_whole_steps && typeof slot.operand === "bigint") {
+    return `\u00D7(9/8)^${slot.operand.toString()}`;
+  }
+  if (slot.operator === KEY_ID.op_interval && typeof slot.operand === "bigint") {
+    return `\u00D7(1+1/${slot.operand.toString()})`;
   }
   if (slot.operator === KEY_ID.op_mod && typeof slot.operand === "bigint") {
     return `n \u00F7 ${slot.operand.toString()} \u2013 (n\u2AFD${slot.operand.toString()})`;

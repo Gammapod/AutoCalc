@@ -10,7 +10,14 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(k("op_mul")), "\u00D7", "mul key label renders as \u00D7");
   assert.equal(formatKeyLabel(k("op_div")), "\u00F7", "div key label renders as \u00F7");
   assert.equal(formatKeyLabel(k("op_euclid_div")), "\u2AFD", "euclidean division key label renders as \u2AFD");
+  assert.equal(formatKeyLabel(k("op_euclid_tuple")), "\u2AFD \u254E \u25C7\u2192M", "euclidean tuple key label renders as \u2AFD \u254E \u25C7\u2192M");
+  assert.equal(formatKeyLabel(k("op_eulog")), "\u2225", "eulog key label renders as \u2225");
+  assert.equal(formatKeyLabel(k("op_residual")), "\u{1F79B}", "residual key label renders as \u{1F79B}");
+  assert.equal(formatKeyLabel(k("op_log_tuple")), "\u2225 \u254E \u{1F79B}\u2192M", "log tuple key label renders as \u2225 \u254E \u{1F79B}\u2192M");
+  assert.equal(formatKeyLabel(k("op_whole_steps")), "\u2669\u2191", "whole-steps key label renders as \u2669\u2191");
+  assert.equal(formatKeyLabel(k("op_interval")), "\u22EE", "interval key label renders as \u22EE");
   assert.equal(formatKeyLabel(k("op_mod")), "\u27E1", "modulo key label renders as \u27E1");
+  assert.equal(formatKeyLabel(k("unary_reciprocal")), "\u00B9\u2044\u2099", "reciprocal key label renders as \u00B9\u2044\u2099");
   assert.equal(formatKeyLabel(k("op_rotate_15")), "\u21B6 \u299C/6^n", "binary 15-degree rotation key label renders canonical face");
   assert.equal(formatKeyLabel(k("util_undo")), "\u21A9", "undo key label renders as \u21A9");
   assert.equal(formatKeyLabel(k("util_backspace")), "\u2190", "backspace key label remains left arrow");

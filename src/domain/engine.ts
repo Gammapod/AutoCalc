@@ -106,6 +106,79 @@ const lcmBigInt = (left: bigint, right: bigint): bigint => {
   return (a / gcdBigInt(a, b)) * b;
 };
 
+const computeValuationAndResidual = (
+  value: RationalValue,
+  divisor: bigint,
+): { valuation: bigint; residual: RationalValue } | null => {
+  const base = absBigInt(divisor);
+  if (value.den !== 1n || base <= 1n || value.num === 0n) {
+    return null;
+  }
+  let valuation = 0n;
+  let residual = value.num;
+  while (residual % base === 0n) {
+    residual /= base;
+    valuation += 1n;
+  }
+  return {
+    valuation,
+    residual: { num: residual, den: 1n },
+  };
+};
+
+const countFactorExponent = (value: bigint, factor: bigint): bigint => {
+  let remaining = absBigInt(value);
+  let exponent = 0n;
+  while (remaining !== 0n && remaining % factor === 0n) {
+    remaining /= factor;
+    exponent += 1n;
+  }
+  return exponent;
+};
+
+const powBigInt = (base: bigint, exponent: bigint): bigint => {
+  if (exponent < 0n) {
+    throw new Error("Negative exponent is not supported for bigint power.");
+  }
+  if (exponent === 0n) {
+    return 1n;
+  }
+  let result = 1n;
+  let factor = base;
+  let power = exponent;
+  while (power > 0n) {
+    if ((power & 1n) === 1n) {
+      result *= factor;
+    }
+    power >>= 1n;
+    if (power > 0n) {
+      factor *= factor;
+    }
+  }
+  return result;
+};
+
+const valuationOfRationalAtBase = (value: RationalValue, base: bigint): bigint | null => {
+  if (value.num === 0n) {
+    return null;
+  }
+  const numExponent = countFactorExponent(value.num, base);
+  const denExponent = countFactorExponent(value.den, base);
+  return numExponent - denExponent;
+};
+
+const divideRationalByIntegerPower = (value: RationalValue, base: bigint, exponent: bigint): RationalValue => {
+  if (exponent === 0n) {
+    return normalizeRational(value);
+  }
+  if (exponent > 0n) {
+    const scale = powBigInt(base, exponent);
+    return normalizeRational({ num: value.num, den: value.den * scale });
+  }
+  const scale = powBigInt(base, -exponent);
+  return normalizeRational({ num: value.num * scale, den: value.den });
+};
+
 const normalizeRational = (value: RationalValue): RationalValue => {
   if (value.den === 0n) {
     throw new Error("Invalid rational denominator.");
@@ -376,6 +449,11 @@ export const executeSlots = (
           return { ok: false, reason: "nan_input" };
         }
         nextTotal = { num: reverseDigits(nextTotal.num), den: 1n };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_reciprocal) {
+        if (nextTotal.num === 0n) {
+          return { ok: false, reason: "division_by_zero" };
+        }
+        nextTotal = invertRational(nextTotal);
       } else {
         return { ok: false, reason: "unsupported_symbolic" };
       }
@@ -416,6 +494,19 @@ export const executeSlots = (
       endsWithEuclidLikeOperator = false;
       continue;
     }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_whole_steps) {
+      nextTotal = multiplyRational(nextTotal, powRationalInt({ num: 9n, den: 8n }, runtimeOperand));
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_interval) {
+      if (runtimeOperand === 0n) {
+        return { ok: false, reason: "division_by_zero" };
+      }
+      nextTotal = multiplyRational(nextTotal, { num: runtimeOperand + 1n, den: runtimeOperand });
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
     if (resolveKeyId(slot.operator) === KEY_ID.op_div) {
       if (runtimeOperand === 0n) {
         return { ok: false, reason: "division_by_zero" };
@@ -433,6 +524,30 @@ export const executeSlots = (
       lastEuclidModComponent = euclidean.remainder;
       endsWithEuclidLikeOperator = true;
       continue;
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_euclid_tuple) {
+      return { ok: false, reason: "unsupported_symbolic" };
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_eulog) {
+      const result = computeValuationAndResidual(nextTotal, runtimeOperand);
+      if (!result) {
+        return { ok: false, reason: "nan_input" };
+      }
+      nextTotal = { num: result.valuation, den: 1n };
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_residual) {
+      const result = computeValuationAndResidual(nextTotal, runtimeOperand);
+      if (!result) {
+        return { ok: false, reason: "nan_input" };
+      }
+      nextTotal = result.residual;
+      endsWithEuclidLikeOperator = false;
+      continue;
+    }
+    if (resolveKeyId(slot.operator) === KEY_ID.op_log_tuple) {
+      return { ok: false, reason: "unsupported_symbolic" };
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_mod) {
       const euclidean = euclideanDivide(nextTotal, runtimeOperand);
@@ -1101,6 +1216,16 @@ const executeSlotsValueInternal = (
         lastEuclidRemainder = undefined;
         continue;
       }
+      if (unaryKey === KEY_ID.unary_reciprocal) {
+        const currentComplex = toComplexRuntime(current);
+        const inverse = complexInverse(currentComplex);
+        if (!inverse) {
+          return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
+        }
+        current = fromComplexRuntime(inverse);
+        lastEuclidRemainder = undefined;
+        continue;
+      }
       if (unaryKey === KEY_ID.unary_sigma || unaryKey === KEY_ID.unary_phi || unaryKey === KEY_ID.unary_omega) {
         const gaussian = asGaussianInteger(current);
         if (gaussian) {
@@ -1184,6 +1309,115 @@ const executeSlotsValueInternal = (
         continue;
       }
 
+      if (operatorKey === KEY_ID.op_euclid_tuple) {
+        const runtimeOperand = resolveRuntimeOperand(slot.operand, currentRollNumber);
+        if (typeof runtimeOperand !== "bigint") {
+          return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
+        }
+        if (runtimeOperand === 0n) {
+          return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
+        }
+
+        const gaussian = asGaussianInteger(current);
+        if (gaussian) {
+          const divided = gaussianDivideByInteger(gaussian, runtimeOperand);
+          const quotient: ComplexRuntime = {
+            re: toRationalScalarValue({ num: divided.quotient.re, den: 1n }),
+            im: toRationalScalarValue({ num: divided.quotient.im, den: 1n }),
+          };
+          const remainder: ComplexRuntime = {
+            re: toRationalScalarValue({ num: divided.remainder.re, den: 1n }),
+            im: toRationalScalarValue({ num: divided.remainder.im, den: 1n }),
+          };
+          const iTimesRemainder: ComplexRuntime = {
+            re: negateScalar(remainder.im),
+            im: remainder.re,
+          };
+          current = toExplicitComplexCalculatorValue(
+            addScalar(quotient.re, iTimesRemainder.re),
+            addScalar(quotient.im, iTimesRemainder.im),
+          );
+          lastEuclidRemainder = undefined;
+          continue;
+        }
+
+        const pureReal = asPureRealRational(current);
+        if (!pureReal) {
+          return { ok: false, reason: "nan_input", operatorId: slot.operator };
+        }
+        const euclidean = euclideanDivide(pureReal, runtimeOperand);
+        if (!euclidean.ok) {
+          return { ok: false, reason: euclidean.reason, operatorId: slot.operator };
+        }
+        current = toExplicitComplexCalculatorValue(
+          toRationalScalarValue(euclidean.quotient),
+          toRationalScalarValue(euclidean.remainder),
+        );
+        lastEuclidRemainder = undefined;
+        continue;
+      }
+      if (operatorKey === KEY_ID.op_eulog || operatorKey === KEY_ID.op_residual || operatorKey === KEY_ID.op_log_tuple) {
+        const runtimeOperand = resolveRuntimeOperand(slot.operand, currentRollNumber);
+        if (typeof runtimeOperand !== "bigint") {
+          return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
+        }
+        const base = absBigInt(runtimeOperand);
+        if (base <= 1n) {
+          return { ok: false, reason: "nan_input", operatorId: slot.operator };
+        }
+
+        const asComplexRational = (): { re: RationalValue; im: RationalValue } | null => {
+          if (current.kind === "nan") {
+            return null;
+          }
+          if (current.kind === "complex") {
+            const re = scalarToRational(current.value.re);
+            const im = scalarToRational(current.value.im);
+            return re && im ? { re, im } : null;
+          }
+          const re = asPureRealRational(current);
+          return re ? { re, im: { num: 0n, den: 1n } } : null;
+        };
+
+        const complexRational = asComplexRational();
+        if (!complexRational) {
+          return { ok: false, reason: "nan_input", operatorId: slot.operator };
+        }
+
+        const reValuation = valuationOfRationalAtBase(complexRational.re, base);
+        const imValuation = valuationOfRationalAtBase(complexRational.im, base);
+        const valuations = [reValuation, imValuation].filter((value): value is bigint => value !== null);
+        if (valuations.length === 0) {
+          return { ok: false, reason: "nan_input", operatorId: slot.operator };
+        }
+
+        let valuation = valuations[0]!;
+        if (valuations.length > 1 && valuations[1]! < valuation) {
+          valuation = valuations[1]!;
+        }
+        const residualRe = divideRationalByIntegerPower(complexRational.re, base, valuation);
+        const residualIm = divideRationalByIntegerPower(complexRational.im, base, valuation);
+
+        if (operatorKey === KEY_ID.op_log_tuple) {
+          const valuationScalar = toRationalScalarValue({ num: valuation, den: 1n });
+          const residualReScalar = toRationalScalarValue(residualRe);
+          const residualImScalar = toRationalScalarValue(residualIm);
+          current = toExplicitComplexCalculatorValue(
+            addScalar(valuationScalar, negateScalar(residualImScalar)),
+            residualReScalar,
+          );
+        } else {
+          current = operatorKey === KEY_ID.op_eulog
+            ? toRationalCalculatorValue({ num: valuation, den: 1n })
+            : toComplexCalculatorValue(
+              toRationalScalarValue(residualRe),
+              toRationalScalarValue(residualIm),
+            );
+        }
+        lastEuclidRemainder = undefined;
+        continue;
+      }
+
       const gaussian = asGaussianInteger(current);
       if (!gaussian) {
         const delegated = applyRationalOnlySlot(current, slot);
@@ -1244,7 +1478,10 @@ const executeSlotsValueInternal = (
     }
 
     const runtimeOperand = resolveRuntimeOperand(slot.operand, currentRollNumber);
-    if (operatorKey === KEY_ID.op_pow && typeof runtimeOperand !== "bigint") {
+    if (
+      (operatorKey === KEY_ID.op_pow || operatorKey === KEY_ID.op_whole_steps || operatorKey === KEY_ID.op_interval)
+      && typeof runtimeOperand !== "bigint"
+    ) {
       return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
     const rejectsSymbolicOperand = policy
@@ -1297,6 +1534,35 @@ const executeSlotsValueInternal = (
         return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
       }
       current = fromComplexRuntime(powered);
+      lastEuclidRemainder = undefined;
+      continue;
+    }
+    if (operatorKey === KEY_ID.op_whole_steps) {
+      const wholeStepsOperand = runtimeOperand;
+      if (typeof wholeStepsOperand !== "bigint") {
+        return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
+      }
+      const stepFactor = toRationalScalarValue(powRationalInt({ num: 9n, den: 8n }, wholeStepsOperand));
+      current = fromComplexRuntime({
+        re: mulScalar(left.re, stepFactor),
+        im: mulScalar(left.im, stepFactor),
+      });
+      lastEuclidRemainder = undefined;
+      continue;
+    }
+    if (operatorKey === KEY_ID.op_interval) {
+      const intervalOperand = runtimeOperand;
+      if (typeof intervalOperand !== "bigint") {
+        return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
+      }
+      if (intervalOperand === 0n) {
+        return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
+      }
+      const factor = toRationalScalarValue({ num: intervalOperand + 1n, den: intervalOperand });
+      current = fromComplexRuntime({
+        re: mulScalar(left.re, factor),
+        im: mulScalar(left.im, factor),
+      });
       lastEuclidRemainder = undefined;
       continue;
     }

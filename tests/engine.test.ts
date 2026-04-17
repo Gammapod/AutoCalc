@@ -22,6 +22,24 @@ export const runEngineTests = (): void => {
   const divisionResult = executeSlots(r(10n), [{ operator: op("op_div"), operand: 4n }]);
   assert.deepEqual(divisionResult, { ok: true, total: r(5n, 2n) }, "single division slot returns reduced fraction");
 
+  const wholeStepsOne = executeSlots(r(1n), [{ operator: op("op_whole_steps"), operand: 1n }]);
+  assert.deepEqual(wholeStepsOne, { ok: true, total: r(9n, 8n) }, "whole-steps applies one 9/8 multiplier");
+
+  const wholeStepsTwo = executeSlots(r(1n), [{ operator: op("op_whole_steps"), operand: 2n }]);
+  assert.deepEqual(wholeStepsTwo, { ok: true, total: r(81n, 64n) }, "whole-steps composes repeated 9/8 multipliers");
+
+  const wholeStepsThreeOnTwo = executeSlots(r(2n), [{ operator: op("op_whole_steps"), operand: 3n }]);
+  assert.deepEqual(wholeStepsThreeOnTwo, { ok: true, total: r(729n, 256n) }, "whole-steps scales arbitrary totals by (9/8)^b");
+
+  const intervalOneOnTwo = executeSlots(r(1n), [{ operator: op("op_interval"), operand: 2n }]);
+  assert.deepEqual(intervalOneOnTwo, { ok: true, total: r(3n, 2n) }, "interval scales by (1 + 1/b)");
+
+  const intervalFourOnTwo = executeSlots(r(4n), [{ operator: op("op_interval"), operand: 2n }]);
+  assert.deepEqual(intervalFourOnTwo, { ok: true, total: r(6n) }, "interval preserves integer exactness when ratio simplifies");
+
+  const intervalTwoOnFour = executeSlots(r(2n), [{ operator: op("op_interval"), operand: 4n }]);
+  assert.deepEqual(intervalTwoOnFour, { ok: true, total: r(5n, 2n) }, "interval handles larger denominators exactly");
+
   const mixedResult = executeSlots(r(10n), [
     { operator: op("op_add"), operand: 2n },
     { operator: op("op_div"), operand: 4n },
@@ -87,6 +105,162 @@ export const runEngineTests = (): void => {
     "modulo operator supports fractional totals and preserves exact remainder metadata",
   );
 
+  const eulogOnSixty = executeSlots(r(60n), [{ operator: op("op_eulog"), operand: 2n }]);
+  assert.deepEqual(
+    eulogOnSixty,
+    { ok: true, total: r(2n) },
+    "eulog returns b-valuation for divisible input",
+  );
+
+  const eulogOnFifteen = executeSlots(r(15n), [{ operator: op("op_eulog"), operand: 2n }]);
+  assert.deepEqual(
+    eulogOnFifteen,
+    { ok: true, total: r(0n) },
+    "eulog returns zero valuation when base does not divide input",
+  );
+
+  const eulogOnTen = executeSlots(r(10n), [{ operator: op("op_eulog"), operand: 5n }]);
+  assert.deepEqual(
+    eulogOnTen,
+    { ok: true, total: r(1n) },
+    "eulog handles non-prime divisors as valuation bases",
+  );
+
+  const residualOnSixty = executeSlots(r(60n), [{ operator: op("op_residual"), operand: 2n }]);
+  assert.deepEqual(
+    residualOnSixty,
+    { ok: true, total: r(15n) },
+    "residual returns post-valuation cofactor",
+  );
+
+  const residualOnFifteen = executeSlots(r(15n), [{ operator: op("op_residual"), operand: 2n }]);
+  assert.deepEqual(
+    residualOnFifteen,
+    { ok: true, total: r(15n) },
+    "residual preserves value when valuation is zero",
+  );
+
+  const residualOnTen = executeSlots(r(10n), [{ operator: op("op_residual"), operand: 5n }]);
+  assert.deepEqual(
+    residualOnTen,
+    { ok: true, total: r(2n) },
+    "residual matches expected cofactor after removing b-adic power",
+  );
+
+  const logTupleOnSixty = executeSlotsValue(
+    toRationalCalculatorValue({ num: 60n, den: 1n }),
+    [{ operator: op("op_log_tuple"), operand: 2n }],
+  );
+  assert.deepEqual(
+    logTupleOnSixty,
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: 2n, den: 1n }),
+          im: toRationalScalarValue({ num: 15n, den: 1n }),
+        },
+      },
+    },
+    "log tuple returns valuation as real and residual as imaginary for divisible input",
+  );
+
+  const logTupleOnFifteen = executeSlotsValue(
+    toRationalCalculatorValue({ num: 15n, den: 1n }),
+    [{ operator: op("op_log_tuple"), operand: 2n }],
+  );
+  assert.deepEqual(
+    logTupleOnFifteen,
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: 0n, den: 1n }),
+          im: toRationalScalarValue({ num: 15n, den: 1n }),
+        },
+      },
+    },
+    "log tuple returns zero valuation with unchanged residual when base does not divide input",
+  );
+
+  const logTupleOnTen = executeSlotsValue(
+    toRationalCalculatorValue({ num: 10n, den: 1n }),
+    [{ operator: op("op_log_tuple"), operand: 5n }],
+  );
+  assert.deepEqual(
+    logTupleOnTen,
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: 1n, den: 1n }),
+          im: toRationalScalarValue({ num: 2n, den: 1n }),
+        },
+      },
+    },
+    "log tuple supports non-prime bases and returns expected complex tuple",
+  );
+
+  const euclidTupleSimple = executeSlotsValue(
+    toRationalCalculatorValue({ num: 4n, den: 1n }),
+    [{ operator: op("op_euclid_tuple"), operand: 3n }],
+  );
+  assert.deepEqual(
+    euclidTupleSimple,
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: 1n, den: 1n }),
+          im: toRationalScalarValue({ num: 1n, den: 1n }),
+        },
+      },
+    },
+    "euclidean tuple encodes quotient and remainder as q + i*r",
+  );
+
+  const euclidTupleNoRemainder = executeSlotsValue(
+    toRationalCalculatorValue({ num: 60n, den: 1n }),
+    [{ operator: op("op_euclid_tuple"), operand: 3n }],
+  );
+  assert.deepEqual(
+    euclidTupleNoRemainder,
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: 20n, den: 1n }),
+          im: toRationalScalarValue({ num: 0n, den: 1n }),
+        },
+      },
+    },
+    "euclidean tuple keeps explicit complex form when remainder is zero",
+  );
+
+  const euclidTupleGeneral = executeSlotsValue(
+    toRationalCalculatorValue({ num: 18n, den: 1n }),
+    [{ operator: op("op_euclid_tuple"), operand: 7n }],
+  );
+  assert.deepEqual(
+    euclidTupleGeneral,
+    {
+      ok: true,
+      total: {
+        kind: "complex",
+        value: {
+          re: toRationalScalarValue({ num: 2n, den: 1n }),
+          im: toRationalScalarValue({ num: 4n, den: 1n }),
+        },
+      },
+    },
+    "euclidean tuple supports non-zero quotient and remainder",
+  );
+
   const maxOnInteger = executeSlots(r(10n), [{ operator: op("op_max"), operand: 12n }]);
   assert.deepEqual(maxOnInteger, { ok: true, total: r(12n) }, "max returns larger value");
 
@@ -132,6 +306,12 @@ export const runEngineTests = (): void => {
   const unaryCeilNegative = executeSlots(r(-7n, 3n), [{ kind: "unary", operator: uop("unary_ceil") }]);
   assert.deepEqual(unaryCeilNegative, { ok: true, total: r(-2n) }, "ceiling maps negative rational to integer ceiling");
 
+  const unaryReciprocalRational = executeSlots(r(2n), [{ kind: "unary", operator: uop("unary_reciprocal") }]);
+  assert.deepEqual(unaryReciprocalRational, { ok: true, total: r(1n, 2n) }, "reciprocal maps integer totals to exact reciprocals");
+
+  const unaryReciprocalZero = executeSlots(r(0n), [{ kind: "unary", operator: uop("unary_reciprocal") }]);
+  assert.deepEqual(unaryReciprocalZero, { ok: false, reason: "division_by_zero" }, "reciprocal rejects zero with division-by-zero");
+
   const collatzNanInput = executeSlots(r(3n, 2n), [{ kind: "unary", operator: uop("unary_collatz") }]);
   assert.deepEqual(collatzNanInput, { ok: false, reason: "nan_input" }, "collatz rejects non-integer totals");
 
@@ -143,6 +323,25 @@ export const runEngineTests = (): void => {
 
   const notNanInput = executeSlots(r(3n, 2n), [{ kind: "unary", operator: uop("unary_not") }]);
   assert.deepEqual(notNanInput, { ok: false, reason: "nan_input" }, "not rejects non-integer totals");
+
+  const reciprocalOnComplex = executeSlotsValue(
+    toComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 1n }),
+      toRationalScalarValue({ num: 4n, den: 1n }),
+    ),
+    [{ kind: "unary", operator: uop("unary_reciprocal") }],
+  );
+  assert.deepEqual(
+    reciprocalOnComplex,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 5n, den: 41n }),
+        toRationalScalarValue({ num: -4n, den: 41n }),
+      ),
+    },
+    "reciprocal maps a+bi to (a-bi)/(a^2+b^2)",
+  );
 
   const rollNumberAsOperand = executeSlots(
     r(10n),
@@ -318,6 +517,44 @@ export const runEngineTests = (): void => {
     modOnGaussian,
     { ok: true, total: toRationalCalculatorValue({ num: -1n, den: 1n }) },
     "mod on gaussian complex returns gaussian remainder",
+  );
+
+  const gaussianRationalInput = toComplexCalculatorValue(
+    toRationalScalarValue({ num: 3n, den: 4n }),
+    toRationalScalarValue({ num: 5n, den: 8n }),
+  );
+
+  const eulogOnGaussianRational = executeSlotsValue(gaussianRationalInput, [{ operator: op("op_eulog"), operand: 2n }]);
+  assert.deepEqual(
+    eulogOnGaussianRational,
+    { ok: true, total: toRationalCalculatorValue({ num: -3n, den: 1n }) },
+    "eulog on gaussian rational uses minimum component valuation at the integer base",
+  );
+
+  const residualOnGaussianRational = executeSlotsValue(gaussianRationalInput, [{ operator: op("op_residual"), operand: 2n }]);
+  assert.deepEqual(
+    residualOnGaussianRational,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 6n, den: 1n }),
+        toRationalScalarValue({ num: 5n, den: 1n }),
+      ),
+    },
+    "residual on gaussian rational divides by b^v and preserves exact complex arithmetic",
+  );
+
+  const logTupleOnGaussianRational = executeSlotsValue(gaussianRationalInput, [{ operator: op("op_log_tuple"), operand: 2n }]);
+  assert.deepEqual(
+    logTupleOnGaussianRational,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: -8n, den: 1n }),
+        toRationalScalarValue({ num: 6n, den: 1n }),
+      ),
+    },
+    "log tuple on gaussian rational returns v + i*residual",
   );
 
   const irrationalMagnitudeInput = {

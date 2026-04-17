@@ -21,6 +21,7 @@ const unaryOps: readonly UnaryOperatorKeyId[] = [
   KEY_ID.unary_mirror_digits,
   KEY_ID.unary_i,
   KEY_ID.unary_rotate_15,
+  KEY_ID.unary_reciprocal,
 ];
 
 const binaryOps: readonly BinaryOperatorKeyId[] = [
@@ -30,6 +31,12 @@ const binaryOps: readonly BinaryOperatorKeyId[] = [
   KEY_ID.op_pow,
   KEY_ID.op_div,
   KEY_ID.op_euclid_div,
+  KEY_ID.op_euclid_tuple,
+  KEY_ID.op_eulog,
+  KEY_ID.op_residual,
+  KEY_ID.op_log_tuple,
+  KEY_ID.op_whole_steps,
+  KEY_ID.op_interval,
   KEY_ID.op_mod,
   KEY_ID.op_rotate_left,
   KEY_ID.op_rotate_15,
