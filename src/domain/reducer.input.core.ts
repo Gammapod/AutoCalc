@@ -1169,14 +1169,13 @@ const withCycleRollAnalysis = (base: GameState, cycleMatchIndex: number, nextInd
 });
 
 type RollDiagnosticContext = {
-  invalid: boolean;
   rollEntries: RollEntry[];
   nextIndex: number;
   current: RollEntry;
   previous: RollEntry;
-  currentX: Extract<GameState["calculator"]["total"], { kind: "rational" }>;
-  previousX: Extract<GameState["calculator"]["total"], { kind: "rational" }>;
-  seed: Extract<GameState["calculator"]["total"], { kind: "rational" }>;
+  currentX: Extract<GameState["calculator"]["total"], { kind: "rational" }> | null;
+  previousX: Extract<GameState["calculator"]["total"], { kind: "rational" }> | null;
+  seed: Extract<GameState["calculator"]["total"], { kind: "rational" }> | null;
 };
 
 const resolveRollDiagnosticContext = (base: GameState): RollDiagnosticContext | null => {
@@ -1198,26 +1197,7 @@ const resolveRollDiagnosticContext = (base: GameState): RollDiagnosticContext | 
   const currentX = currentXRaw ? toDiagnosticRationalValue(currentXRaw) : null;
   const previousX = previousXRaw ? toDiagnosticRationalValue(previousXRaw) : null;
   const seed = seedRaw ? toDiagnosticRationalValue(seedRaw) : null;
-  if (
-    !currentX
-    || !previousX
-    || !seed
-    || current.error
-  ) {
-    return {
-      invalid: true,
-      rollEntries,
-      nextIndex,
-      current,
-      previous,
-      currentX: { kind: "rational", value: { num: 0n, den: 1n } },
-      previousX: { kind: "rational", value: { num: 0n, den: 1n } },
-      seed: { kind: "rational", value: { num: 0n, den: 1n } },
-    };
-  }
-
   return {
-    invalid: false,
     rollEntries,
     nextIndex,
     current,
@@ -1242,6 +1222,9 @@ const resolveRollDiagnosticPatch = (
   context: RollDiagnosticContext,
   operationSlots: GameState["calculator"]["operationSlots"],
 ): Pick<RollEntry, "d1" | "d2" | "r1" | "seedMinus1Y" | "seedPlus1Y"> | null => {
+  if (!context.currentX || !context.previousX || !context.seed) {
+    return null;
+  }
   const d1 = subRational(context.currentX.value, context.previousX.value);
   let d2: RollEntry["d2"] = null;
   if (context.nextIndex >= 2) {
@@ -1290,7 +1273,7 @@ const withIncrementalRollDiagnosticsApplied = (
   if (!context) {
     return base;
   }
-  if (context.invalid) {
+  if (context.current.error) {
     return withInvalidRollAnalysis(base);
   }
 
@@ -1301,9 +1284,13 @@ const withIncrementalRollDiagnosticsApplied = (
     return withCycleRollAnalysis(base, cycleMatchIndex, context.nextIndex);
   }
 
+  if (!context.currentX || !context.previousX || !context.seed) {
+    return base;
+  }
+
   const patch = resolveRollDiagnosticPatch(context, operationSlots);
   if (!patch) {
-    return withInvalidRollAnalysis(base);
+    return base;
   }
 
   context.rollEntries[context.nextIndex] = {
@@ -1363,18 +1350,6 @@ const withRollDiagnosticsApplied = (
 
   const seed = projection[0]?.entry.y;
   const seedRational = seed ? toDiagnosticRationalValue(seed) : null;
-  if (!seedRational) {
-    return {
-      ...baseRollState,
-      calculator: {
-        ...baseRollState.calculator,
-        rollAnalysis: {
-          stopReason: "invalid",
-          cycle: null,
-        },
-      },
-    };
-  }
 
   for (let analysisIndex = 1; analysisIndex < projection.length; analysisIndex += 1) {
     const currentProjection = projection[analysisIndex];
@@ -1385,13 +1360,9 @@ const withRollDiagnosticsApplied = (
 
     const current = rollEntries[currentProjection.rawIndex];
     const previous = rollEntries[previousProjection.rawIndex];
-    const currentX = current?.y ? toDiagnosticRationalValue(current.y) : null;
-    const previousX = previous?.y ? toDiagnosticRationalValue(previous.y) : null;
     if (
       !current
       || !previous
-      || !currentX
-      || !previousX
       || current.error
     ) {
       return {
@@ -1443,22 +1414,18 @@ const withRollDiagnosticsApplied = (
       };
     }
 
+    const currentX = toDiagnosticRationalValue(current.y);
+    const previousX = toDiagnosticRationalValue(previous.y);
+    if (!currentX || !previousX || !seedRational) {
+      continue;
+    }
+
     const d1 = subRational(currentX.value, previousX.value);
     let d2: RollEntry["d2"] = null;
     if (analysisIndex >= 2) {
       const previousD1 = previous.d1;
       if (!previousD1) {
-        return {
-          ...baseRollState,
-          calculator: {
-            ...baseRollState.calculator,
-            rollEntries,
-            rollAnalysis: {
-              stopReason: "invalid",
-              cycle: null,
-            },
-          },
-        };
+        continue;
       }
       d2 = subRational(d1, previousD1);
     }
@@ -1473,34 +1440,14 @@ const withRollDiagnosticsApplied = (
         ? toRationalCalculatorValue(addIntToRational(seedRational.value, 1n))
         : (previous.seedPlus1Y ?? null);
     if (!previousPeerMinus || !previousPeerPlus) {
-      return {
-        ...baseRollState,
-        calculator: {
-          ...baseRollState.calculator,
-          rollEntries,
-          rollAnalysis: {
-            stopReason: "invalid",
-            cycle: null,
-          },
-        },
-      };
+      continue;
     }
 
     const currentRollNumber = BigInt(analysisIndex);
     const seedMinus1Y = computePeerStepValue(previousPeerMinus, operationSlots, currentRollNumber);
     const seedPlus1Y = computePeerStepValue(previousPeerPlus, operationSlots, currentRollNumber);
     if (!seedMinus1Y || !seedPlus1Y) {
-      return {
-        ...baseRollState,
-        calculator: {
-          ...baseRollState.calculator,
-          rollEntries,
-          rollAnalysis: {
-            stopReason: "invalid",
-            cycle: null,
-          },
-        },
-      };
+      continue;
     }
 
     rollEntries[currentProjection.rawIndex] = {

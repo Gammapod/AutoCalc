@@ -119,6 +119,7 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     renderCircleVisualizerPanel(harness.root, withHistoryAnalysis);
     assert.equal(panel.querySelectorAll(".v2-number-line-vector--history").length, 1, "history toggle adds previous-to-current segment");
     assert.equal(panel.querySelectorAll(".v2-number-line-vector--forecast").length, 1, "history toggle adds current-to-next segment");
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line").length, 0, "cycle overlay is absent without cycle metadata");
 
     const withStepExpansion = {
       ...withHistoryAnalysis,
@@ -141,6 +142,67 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
       true,
       "[ ??? ] toggle adds forecast step segments",
     );
+
+    const withCycleOverlay = {
+      ...withHistoryAnalysis,
+      calculator: {
+        ...withHistoryAnalysis.calculator,
+        rollEntries: [
+          { y: toRationalCalculatorValue({ num: 1n, den: 1n }) },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 0n, den: 1n }),
+              toRationalScalarValue({ num: 1n, den: 1n }),
+            ),
+          },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: -1n, den: 1n }),
+              toRationalScalarValue({ num: 0n, den: 1n }),
+            ),
+          },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 0n, den: 1n }),
+              toRationalScalarValue({ num: -1n, den: 1n }),
+            ),
+          },
+          { y: toRationalCalculatorValue({ num: 1n, den: 1n }) },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 0n, den: 1n }),
+              toRationalScalarValue({ num: 1n, den: 1n }),
+            ),
+          },
+        ],
+        total: toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 0n, den: 1n }),
+          toRationalScalarValue({ num: 1n, den: 1n }),
+        ),
+        rollAnalysis: {
+          stopReason: "cycle" as const,
+          cycle: { i: 1, j: 5, transientLength: 1, periodLength: 4 },
+        },
+      },
+    };
+    renderCircleVisualizerPanel(harness.root, withCycleOverlay);
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line").length, 5, "circle cycle overlay renders chain plus closure constellation");
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line--chain").length, 4, "circle cycle overlay renders periodLength chain segments");
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line--closure").length, 1, "circle cycle overlay renders closure for matching span endpoints");
+    assert.equal(panel.querySelectorAll(".v2-number-line-vector--history").length, 1, "cycle overlay remains additive to history vector");
+
+    const cycleWithHistoryOff = {
+      ...withCycleOverlay,
+      ui: {
+        ...withCycleOverlay.ui,
+        buttonFlags: {
+          ...withCycleOverlay.ui.buttonFlags,
+          [HISTORY_FLAG]: false,
+        },
+      },
+    };
+    renderCircleVisualizerPanel(harness.root, cycleWithHistoryOff);
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line").length, 0, "history-off disables circle cycle overlay");
   } finally {
     harness.teardown();
   }

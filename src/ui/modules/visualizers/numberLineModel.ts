@@ -474,7 +474,7 @@ export const resolveNumberLineCycleOverlaySegmentsForState = (
   }
   const range = resolvePlotRangeForState(state);
   const argandPoints = spanEntries.map((entry) => calculatorValueToArgandPoint(entry.y));
-  if (argandPoints.some((argand) => !argand || Math.abs(argand.im) > 1e-12)) {
+  if (argandPoints.some((argand) => !argand)) {
     return [];
   }
   const endpoints = argandPoints

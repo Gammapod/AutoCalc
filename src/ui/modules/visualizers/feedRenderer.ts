@@ -29,6 +29,7 @@ const appendFeedTableLine = (
   zText: string | null,
   className?: string,
   uxAssignment?: UxRoleAssignment,
+  zUxAssignment?: UxRoleAssignment,
 ): void => {
   const line = document.createElement("div");
   line.className = className ?? "v2-feed-table-line";
@@ -46,7 +47,7 @@ const appendFeedTableLine = (
     const z = document.createElement("span");
     z.className = "v2-feed-z-col";
     z.textContent = zText;
-    applyUxRoleAttributes(z, { uxRole: "imaginary", uxState: "active" });
+    applyUxRoleAttributes(z, zUxAssignment ?? { uxRole: "imaginary", uxState: "active" });
     line.appendChild(z);
   }
   table.appendChild(line);
@@ -121,12 +122,27 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
       }
       return "v2-feed-table-line";
     })();
+    const rowZUxAssignment: UxRoleAssignment = row
+      ? (() => {
+        if (row.hasError) {
+          return { uxRole: "error", uxState: "active" };
+        }
+        if (row.rowKind === "committed" && row.isCycle) {
+          return { uxRole: "analysis", uxState: "active" };
+        }
+        if (row.rowKind !== "committed") {
+          return { uxRole: "analysis", uxState: "muted" };
+        }
+        return { uxRole: "imaginary", uxState: "active" };
+      })()
+      : { uxRole: "imaginary", uxState: "active" };
     appendFeedTableLine(
       table,
       rowLeft,
       rowZ,
       rowClassName,
       row ? resolveFeedRowUxAssignment(row) : { uxRole: "default", uxState: "muted" },
+      rowZUxAssignment,
     );
   }
 

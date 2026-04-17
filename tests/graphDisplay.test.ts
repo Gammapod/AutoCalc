@@ -5,6 +5,7 @@ import {
   buildGraphYWindow,
   isGraphRenderable,
   resolveGraphCycleOverlaySegments,
+  resolveGraphImaginaryCycleOverlaySegments,
 } from "../src/ui/modules/visualizers/graphModel.js";
 import { toExplicitComplexCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import type { RollEntry } from "../src/domain/types.js";
@@ -219,6 +220,45 @@ export const runGraphDisplayTests = (): void => {
       { kind: "closure", from: { x: 4, y: 5 }, to: { x: 8, y: 5 } },
     ],
     "cycle overlay uses latest periodLength+1 points and adds closure for equal start/end y",
+  );
+
+  const complexCycleSample = buildGraphPoints([
+    e(r(1n)),
+    e(toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 1n }),
+      toRationalScalarValue({ num: 2n, den: 1n }),
+    )),
+    e(toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 6n, den: 1n }),
+      toRationalScalarValue({ num: 3n, den: 1n }),
+    )),
+    e(toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 7n, den: 1n }),
+      toRationalScalarValue({ num: 4n, den: 1n }),
+    )),
+    e(toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 4n, den: 1n }),
+      toRationalScalarValue({ num: 1n, den: 1n }),
+    )),
+    e(toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 1n }),
+      toRationalScalarValue({ num: 2n, den: 1n }),
+    )),
+  ]);
+  assert.deepEqual(
+    resolveGraphImaginaryCycleOverlaySegments(complexCycleSample, {
+      historyEnabled: true,
+      cycle: { i: 1, j: 5, transientLength: 1, periodLength: 4 },
+      xWindow: { min: 0, max: 25 },
+    }),
+    [
+      { kind: "chain", from: { x: 1, y: 2 }, to: { x: 2, y: 3 } },
+      { kind: "chain", from: { x: 2, y: 3 }, to: { x: 3, y: 4 } },
+      { kind: "chain", from: { x: 3, y: 4 }, to: { x: 4, y: 1 } },
+      { kind: "chain", from: { x: 4, y: 1 }, to: { x: 5, y: 2 } },
+      { kind: "closure", from: { x: 1, y: 2 }, to: { x: 5, y: 2 } },
+    ],
+    "imaginary cycle overlay resolves latest period span and closure independently",
   );
 
   const cycleSampleB = buildGraphPoints([

@@ -255,6 +255,24 @@ export const runRollDisplayTests = (): void => {
   assert.equal(erroredCycleCandidate?.hasError, true, "errored cycle candidate remains error-scoped");
   assert.equal(erroredCycleCandidate?.isCycle, false, "error precedence suppresses cycle styling");
 
+  const complexCycleView = buildFeedTableViewModelForState({
+    ...cycleBase,
+    ui: {
+      ...cycleBase.ui,
+      buttonFlags: { ...cycleBase.ui.buttonFlags, [HISTORY_FLAG]: true },
+    },
+    calculator: {
+      ...cycleBase.calculator,
+      rollEntries: [e(c(1n, 0n)), e(c(0n, 1n)), e(c(-1n, 0n)), e(c(0n, -1n)), e(c(1n, 0n)), e(c(0n, 1n))],
+      rollAnalysis: { stopReason: "cycle", cycle: { i: 1, j: 5, transientLength: 1, periodLength: 4 } },
+    },
+  });
+  assert.equal(
+    complexCycleView.rows.some((row) => row.rowKind === "committed" && row.isCycle),
+    true,
+    "complex cycle-start committed rows are marked when cycle metadata is present",
+  );
+
   const withForecasts: GameState = {
     ...cycleBase,
     settings: {

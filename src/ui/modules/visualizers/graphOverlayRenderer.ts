@@ -6,6 +6,7 @@ export type GraphOverlayColors = {
   axisColor: string;
   labelColor: string;
   cycleColor: string;
+  cycleImaginaryColor: string;
 };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -96,6 +97,7 @@ export const renderGraphOverlay = (
   layout: GraphLayout,
   colors: GraphOverlayColors,
   cycleSegments: readonly GraphCycleOverlaySegment[] = [],
+  imaginaryCycleSegments: readonly GraphCycleOverlaySegment[] = [],
 ): void => {
   const screen = root.querySelector<HTMLElement>("[data-grapher-device] .grapher-screen");
   if (!screen || !screen.ownerDocument) {
@@ -187,25 +189,29 @@ export const renderGraphOverlay = (
     ),
   );
 
-  const cycleStrokeWidthByKind: Record<GraphCycleOverlaySegment["kind"], number> = {
-    chain: 1.15,
-    closure: 1.15,
-  };
-  for (const segment of cycleSegments) {
-    const cycleLine = line(
-      doc,
-      xToPx(layout, segment.from.x),
-      yToPx(layout, segment.from.y),
-      xToPx(layout, segment.to.x),
-      yToPx(layout, segment.to.y),
-      colors.cycleColor,
-      cycleStrokeWidthByKind[segment.kind],
-    );
-    cycleLine.setAttribute("class", `v2-grapher-cycle-line v2-grapher-cycle-line--${segment.kind}`);
-    if (segment.kind === "closure") {
-      cycleLine.setAttribute("stroke-opacity", "0.62");
-      cycleLine.setAttribute("stroke-dasharray", "2.4 1.8");
+  const appendCycleSegments = (
+    segments: readonly GraphCycleOverlaySegment[],
+    color: string,
+    channelClassName: "real" | "imaginary",
+  ): void => {
+    for (const segment of segments) {
+      const cycleLine = line(
+        doc,
+        xToPx(layout, segment.from.x),
+        yToPx(layout, segment.from.y),
+        xToPx(layout, segment.to.x),
+        yToPx(layout, segment.to.y),
+        color,
+        1,
+      );
+      cycleLine.setAttribute(
+        "class",
+        `v2-grapher-cycle-line v2-grapher-cycle-line--${segment.kind} v2-grapher-cycle-line--${channelClassName}`,
+      );
+      overlay.appendChild(cycleLine);
     }
-    overlay.appendChild(cycleLine);
-  }
+  };
+
+  appendCycleSegments(cycleSegments, colors.cycleColor, "real");
+  appendCycleSegments(imaginaryCycleSegments, colors.cycleImaginaryColor, "imaginary");
 };

@@ -2883,6 +2883,11 @@
         color: var(--ux-role-analysis-color);
       }
 
+      body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-row--cycle .v2-feed-z-col,
+      body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-row--cycle .v2-feed-z-col {
+        color: inherit;
+      }
+
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-row--forecast,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-row--forecast {
         color: color-mix(in srgb, var(--ux-role-analysis-color) 75%, #ffffff 25%);

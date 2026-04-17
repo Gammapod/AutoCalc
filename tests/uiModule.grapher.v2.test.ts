@@ -246,6 +246,61 @@ export const runUiModuleGrapherV2Tests = (): void => {
     assert.equal(chainLines.length >= 1, true, "cycle overlay renders chain segments");
     assert.equal(closureLines.length, 1, "cycle overlay renders one closure line for equal-value span endpoints");
 
+    const withComplexCycleOverlay: GameState = {
+      ...withCycleOverlay,
+      calculator: {
+        ...withCycleOverlay.calculator,
+        rollEntries: [
+          { y: toRationalCalculatorValue({ num: 1n, den: 1n }) },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 5n, den: 1n }),
+              toRationalScalarValue({ num: 2n, den: 1n }),
+            ),
+          },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 6n, den: 1n }),
+              toRationalScalarValue({ num: 3n, den: 1n }),
+            ),
+          },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 7n, den: 1n }),
+              toRationalScalarValue({ num: 4n, den: 1n }),
+            ),
+          },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 4n, den: 1n }),
+              toRationalScalarValue({ num: 1n, den: 1n }),
+            ),
+          },
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 5n, den: 1n }),
+              toRationalScalarValue({ num: 2n, den: 1n }),
+            ),
+          },
+        ],
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 1, j: 5, transientLength: 1, periodLength: 4 },
+        },
+      },
+    };
+    renderGrapherV2Module(harness.root, withComplexCycleOverlay);
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-cycle-line--real").length >= 1,
+      true,
+      "complex cycle overlay keeps the existing real-channel cycle lines",
+    );
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-cycle-line--imaginary").length >= 1,
+      true,
+      "complex cycle overlay renders additional imaginary-channel cycle lines",
+    );
+
     const withoutHistory: GameState = {
       ...withCycleOverlay,
       ui: {

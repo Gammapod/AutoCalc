@@ -16,6 +16,8 @@ export type GraphCycleOverlaySegment = {
 
 const isRealGraphPoint = (point: GraphPoint): boolean =>
   point.kind === "seed" || point.kind === "roll";
+const isImaginaryGraphPoint = (point: GraphPoint): boolean =>
+  point.kind === "imaginary";
 
 const clipSegmentToXWindow = (
   segment: GraphCycleOverlaySegment,
@@ -97,29 +99,42 @@ export const resolveGraphCycleOverlaySegments = (
     return [];
   }
 
+  const spanLength = periodLength + 1;
   const realPoints = points.filter((point) => isRealGraphPoint(point));
-  let latestRollIndex = -1;
-  for (let index = realPoints.length - 1; index >= 0; index -= 1) {
-    if (realPoints[index]?.kind === "roll") {
-      latestRollIndex = index;
+  const latestSpan = resolveCycleSpanFromLatest(realPoints, spanLength, (point) => point.kind === "roll");
+  if (!latestSpan) {
+    return [];
+  }
+
+  return buildCycleSegments(latestSpan)
+    .map((segment) => clipSegmentToXWindow(segment, options.xWindow))
+    .filter((segment): segment is GraphCycleOverlaySegment => Boolean(segment));
+};
+
+const resolveCycleSpanFromLatest = (
+  channelPoints: readonly GraphPoint[],
+  spanLength: number,
+  isLatestPoint: (point: GraphPoint) => boolean,
+): GraphPoint[] | null => {
+  let latestIndex = -1;
+  for (let index = channelPoints.length - 1; index >= 0; index -= 1) {
+    if (isLatestPoint(channelPoints[index]!)) {
+      latestIndex = index;
       break;
     }
   }
-  if (latestRollIndex < 0) {
-    return [];
+  if (latestIndex < 0) {
+    return null;
   }
-
-  const spanLength = periodLength + 1;
-  const spanStart = latestRollIndex - (spanLength - 1);
+  const spanStart = latestIndex - (spanLength - 1);
   if (spanStart < 0) {
-    return [];
+    return null;
   }
+  const span = channelPoints.slice(spanStart, latestIndex + 1);
+  return span.length >= 2 ? span : null;
+};
 
-  const span = realPoints.slice(spanStart, latestRollIndex + 1);
-  if (span.length < 2) {
-    return [];
-  }
-
+const buildCycleSegments = (span: readonly GraphPoint[]): GraphCycleOverlaySegment[] => {
   const segments: GraphCycleOverlaySegment[] = [];
   for (let index = 1; index < span.length; index += 1) {
     segments.push({
@@ -128,7 +143,6 @@ export const resolveGraphCycleOverlaySegments = (
       to: { x: span[index]!.x, y: span[index]!.y },
     });
   }
-
   const first = span[0];
   const last = span[span.length - 1];
   if (first && last && Math.abs(first.y - last.y) < 1e-12) {
@@ -138,8 +152,46 @@ export const resolveGraphCycleOverlaySegments = (
       to: { x: last.x, y: last.y },
     });
   }
+  return segments;
+};
 
-  return segments
+export const resolveGraphImaginaryCycleOverlaySegments = (
+  points: readonly GraphPoint[],
+  options: {
+    historyEnabled: boolean;
+    cycle: RollCycleMetadata | null;
+    xWindow: { min: number; max: number };
+  },
+): GraphCycleOverlaySegment[] => {
+  if (!options.historyEnabled || !options.cycle) {
+    return [];
+  }
+  const periodLength = options.cycle.periodLength;
+  if (!Number.isInteger(periodLength) || periodLength < 1) {
+    return [];
+  }
+
+  let latestRollX: number | null = null;
+  for (let index = points.length - 1; index >= 0; index -= 1) {
+    const point = points[index];
+    if (point?.kind === "roll") {
+      latestRollX = point.x;
+      break;
+    }
+  }
+  if (latestRollX === null) {
+    return [];
+  }
+
+  const imaginaryPoints = points
+    .filter((point) => isImaginaryGraphPoint(point) && point.x <= latestRollX);
+  const spanLength = periodLength + 1;
+  const latestSpan = resolveCycleSpanFromLatest(imaginaryPoints, spanLength, (point) => point.x === latestRollX);
+  if (!latestSpan) {
+    return [];
+  }
+
+  return buildCycleSegments(latestSpan)
     .map((segment) => clipSegmentToXWindow(segment, options.xWindow))
     .filter((segment): segment is GraphCycleOverlaySegment => Boolean(segment));
 };

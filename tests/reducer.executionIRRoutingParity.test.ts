@@ -18,7 +18,7 @@ import { symbolicExpr } from "../src/domain/expression.js";
 import { materializeCalculatorG } from "../src/domain/multiCalculator.js";
 import type { Action, GameState } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
-import { executionUnlockPatch, op } from "./support/keyCompat.js";
+import { executionUnlockPatch, op, uop } from "./support/keyCompat.js";
 import { createSeededMaintenanceRng } from "./helpers/seededMaintenance.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
@@ -243,6 +243,95 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
       toRationalScalarValue({ num: 1n, den: 4n }),
     ),
     "octave wrap projects complex magnitude into principal octave while preserving direction",
+  );
+
+  const complexCycleBase: GameState = {
+    ...base,
+    ui: {
+      ...base.ui,
+      buttonFlags: {},
+    },
+    unlocks: {
+      ...base.unlocks,
+      unaryOperators: {
+        ...base.unlocks.unaryOperators,
+        [uop("unary_i")]: true,
+      },
+      slotOperators: {
+        ...base.unlocks.slotOperators,
+        [op("op_mul")]: true,
+      },
+    },
+    calculator: {
+      ...base.calculator,
+      total: r(1n),
+      operationSlots: [{ kind: "unary", operator: uop("unary_i") }],
+      rollEntries: [],
+      rollAnalysis: { stopReason: "none", cycle: null },
+      draftingSlot: null,
+    },
+  };
+  let complexCycleDetected = complexCycleBase;
+  for (let step = 0; step < 4; step += 1) {
+    complexCycleDetected = reducer(complexCycleDetected, { type: "PRESS_KEY", key: KEY_ID.exec_equals });
+  }
+  assert.equal(complexCycleDetected.calculator.rollAnalysis.stopReason, "cycle", "complex unary-i orbit detects cycle metadata");
+  assert.deepEqual(
+    complexCycleDetected.calculator.rollAnalysis.cycle,
+    { i: 0, j: 4, transientLength: 0, periodLength: 4 },
+    "complex unary-i orbit exposes canonical cycle indices and lengths",
+  );
+
+  let complexNonCycle: GameState = {
+    ...complexCycleBase,
+    calculator: {
+      ...complexCycleBase.calculator,
+      operationSlots: [{ kind: "unary", operator: uop("unary_rotate_15") }],
+      rollEntries: [],
+      rollAnalysis: { stopReason: "none", cycle: null },
+    },
+  };
+  for (let step = 0; step < 6; step += 1) {
+    complexNonCycle = reducer(complexNonCycle, { type: "PRESS_KEY", key: KEY_ID.exec_equals });
+  }
+  assert.equal(complexNonCycle.calculator.rollAnalysis.stopReason, "none", "non-cyclic complex prefixes do not produce false-positive cycles");
+
+  const complexCycleProjectionSeed: GameState = {
+    ...complexCycleDetected,
+    calculator: {
+      ...complexCycleDetected.calculator,
+      rollAnalysis: { stopReason: "none", cycle: null },
+      rollEntries: complexCycleDetected.calculator.rollEntries.map((entry, index) => ({
+        ...entry,
+        ...(index === 2 ? { analysisIgnored: true } : {}),
+      })),
+    },
+  };
+  const complexCycleProjectionResult = reducer(complexCycleProjectionSeed, { type: "PRESS_KEY", key: KEY_ID.exec_equals });
+  assert.equal(
+    complexCycleProjectionResult.calculator.rollAnalysis.stopReason,
+    "cycle",
+    "analysis projection path still detects cycles on complex runs",
+  );
+
+  let realCycle: GameState = {
+    ...complexCycleBase,
+    calculator: {
+      ...complexCycleBase.calculator,
+      total: r(1n),
+      operationSlots: [{ operator: op("op_mul"), operand: -1n }],
+      rollEntries: [],
+      rollAnalysis: { stopReason: "none", cycle: null },
+    },
+  };
+  for (let step = 0; step < 2; step += 1) {
+    realCycle = reducer(realCycle, { type: "PRESS_KEY", key: KEY_ID.exec_equals });
+  }
+  assert.equal(realCycle.calculator.rollAnalysis.stopReason, "cycle", "real cycle detection semantics remain unchanged");
+  assert.deepEqual(
+    realCycle.calculator.rollAnalysis.cycle,
+    { i: 0, j: 2, transientLength: 0, periodLength: 2 },
+    "real cycle metadata remains canonical after complex parity refactor",
   );
 
   const executionSeeds = [1103, 2207, 3313] as const;

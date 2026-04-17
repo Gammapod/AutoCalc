@@ -9,6 +9,13 @@ const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: big
   kind: "rational",
   value: { num, den },
 });
+const c = (reNum: bigint, imNum: bigint): { kind: "complex"; value: { re: ReturnType<typeof r>; im: ReturnType<typeof r> } } => ({
+  kind: "complex",
+  value: {
+    re: r(reNum),
+    im: r(imNum),
+  },
+});
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const withRoll = (state: GameState, entries: RollEntry[], cycle: GameState["calculator"]["rollAnalysis"]["cycle"]): GameState => ({
@@ -254,6 +261,27 @@ export const runTotalDisplayTests = (): void => {
       totalPanel.classList.contains("total-display--imaginary"),
       true,
       "imaginary color applies when no error/cycle color is active",
+    );
+
+    const complexCycleRows = withRoll(
+      {
+        ...base,
+        ui: {
+          ...base.ui,
+          buttonFlags: {
+            ...base.ui.buttonFlags,
+            [HISTORY_FLAG]: true,
+          },
+        },
+      },
+      re(c(1n, 0n), c(0n, 1n), c(-1n, 0n), c(0n, -1n), c(1n, 0n), c(0n, 1n)),
+      { i: 1, j: 5, transientLength: 1, periodLength: 4 },
+    );
+    renderTotalDisplay(totalPanel, complexCycleRows);
+    assert.equal(
+      totalPanel.classList.contains("total-display--cycle"),
+      true,
+      "complex cycle-start matches activate cycle color under history gating",
     );
 
     const firstTwoNotAmber = withRoll(

@@ -285,6 +285,58 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
   });
   assert.equal(cycleSegmentsNoMetadata.length, 0, "missing cycle metadata disables cycle overlay segment generation");
 
+  const complexCycleSegments = resolveNumberLineCycleOverlaySegmentsForState({
+    ...withCycleOverlay,
+    calculator: {
+      ...withCycleOverlay.calculator,
+      rollEntries: [
+        {
+          y: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 1n, den: 1n }),
+            toRationalScalarValue({ num: 0n, den: 1n }),
+          ),
+        },
+        {
+          y: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 0n, den: 1n }),
+            toRationalScalarValue({ num: 1n, den: 1n }),
+          ),
+        },
+        {
+          y: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: -1n, den: 1n }),
+            toRationalScalarValue({ num: 0n, den: 1n }),
+          ),
+        },
+        {
+          y: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 0n, den: 1n }),
+            toRationalScalarValue({ num: -1n, den: 1n }),
+          ),
+        },
+        {
+          y: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 1n, den: 1n }),
+            toRationalScalarValue({ num: 0n, den: 1n }),
+          ),
+        },
+        {
+          y: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 0n, den: 1n }),
+            toRationalScalarValue({ num: 1n, den: 1n }),
+          ),
+        },
+      ],
+      rollAnalysis: {
+        stopReason: "cycle" as const,
+        cycle: { i: 1, j: 5, transientLength: 1, periodLength: 4 },
+      },
+    },
+  });
+  assert.equal(complexCycleSegments.length, 5, "complex cycle metadata emits period chain plus closure overlay segments");
+  assert.equal(complexCycleSegments.filter((segment) => segment.kind === "chain").length, 4, "complex cycle overlay emits chain segments");
+  assert.equal(complexCycleSegments.filter((segment) => segment.kind === "closure").length, 1, "complex cycle overlay emits closure for matching endpoints");
+
   assert.equal(resolveNumberLineMode(initialState()), "real", "real totals use real mode");
   const withComplexTotal = {
     ...initialState(),

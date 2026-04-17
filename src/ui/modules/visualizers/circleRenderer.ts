@@ -277,6 +277,29 @@ const createSegmentLine = (
   return line;
 };
 
+type CircleCycleOverlaySegment = {
+  kind: "chain" | "closure";
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+};
+
+const createCycleSegmentLine = (
+  documentRef: Document,
+  segment: CircleCycleOverlaySegment,
+): SVGLineElement => {
+  const line = documentRef.createElementNS(SVG_NS, "line");
+  line.setAttribute("class", `v2-number-line-cycle-line v2-number-line-cycle-line--${segment.kind}`);
+  line.setAttribute("x1", segment.from.x.toString());
+  line.setAttribute("y1", segment.from.y.toString());
+  line.setAttribute("x2", segment.to.x.toString());
+  line.setAttribute("y2", segment.to.y.toString());
+  line.setAttribute("stroke-width", "1");
+  line.setAttribute("stroke-dasharray", "none");
+  line.setAttribute("vector-effect", "non-scaling-stroke");
+  applyUxRoleAttributes(line, { uxRole: "analysis", uxState: "active" });
+  return line;
+};
+
 const createArrowTip = (
   documentRef: Document,
   endpoint: { x: number; y: number },
@@ -331,6 +354,65 @@ const toPerimeterPoint = (direction: { x: number; y: number }): { x: number; y: 
 
 const resolveVectorDirection = (state: GameState): { x: number; y: number } | null =>
   resolveUnitDirection(state.calculator.total);
+
+const resolveCircleCycleOverlaySegmentsForState = (state: GameState): CircleCycleOverlaySegment[] => {
+  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
+  const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
+  if (!historyEnabled || !cycle) {
+    return [];
+  }
+  const latestIndex = state.calculator.rollEntries.length - 1;
+  if (latestIndex < 0 || latestIndex < cycle.j) {
+    return [];
+  }
+  if (!Number.isInteger(cycle.periodLength) || cycle.periodLength < 1) {
+    return [];
+  }
+  const spanLength = cycle.periodLength + 1;
+  const spanStart = latestIndex - (spanLength - 1);
+  if (spanStart < 0) {
+    return [];
+  }
+  const spanEntries = state.calculator.rollEntries.slice(spanStart, latestIndex + 1);
+  if (spanEntries.length < 2) {
+    return [];
+  }
+  const endpoints = spanEntries.map((entry) => {
+    const direction = resolveUnitDirection(entry.y);
+    return direction ? toPerimeterPoint(direction) : null;
+  });
+  if (endpoints.some((endpoint) => endpoint === null)) {
+    return [];
+  }
+  const resolvedEndpoints = endpoints.filter((endpoint): endpoint is { x: number; y: number } => endpoint !== null);
+  if (resolvedEndpoints.length < 2) {
+    return [];
+  }
+
+  const segments: CircleCycleOverlaySegment[] = [];
+  for (let index = 1; index < resolvedEndpoints.length; index += 1) {
+    const previous = resolvedEndpoints[index - 1];
+    const current = resolvedEndpoints[index];
+    if (!previous || !current) {
+      continue;
+    }
+    segments.push({
+      kind: "chain",
+      from: previous,
+      to: current,
+    });
+  }
+  const first = resolvedEndpoints[0];
+  const last = resolvedEndpoints[resolvedEndpoints.length - 1];
+  if (first && last && Math.abs(first.x - last.x) <= 1e-9 && Math.abs(first.y - last.y) <= 1e-9) {
+    segments.push({
+      kind: "closure",
+      from: first,
+      to: last,
+    });
+  }
+  return segments;
+};
 
 export const clearCircleVisualizerPanel = (root: Element): void => {
   const panel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
@@ -397,6 +479,11 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
         }, "v2-number-line-vector-tip--forecast-step"));
         fromPoint = stepPoint;
       }
+    }
+
+    const cycleSegments = resolveCircleCycleOverlaySegmentsForState(state);
+    for (const cycleSegment of cycleSegments) {
+      svg.appendChild(createCycleSegmentLine(document, cycleSegment));
     }
   }
   svg.appendChild(createCenterDot(document));

@@ -7,6 +7,7 @@ import { resolveUxRoleColor } from "../shared/readModel.js";
 import {
   buildGraphPoints,
   isGraphRenderable,
+  resolveGraphImaginaryCycleOverlaySegments,
   resolveGraphCycleOverlaySegments,
   type GraphPoint,
 } from "./visualizers/graphModel.js";
@@ -222,6 +223,11 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     cycle,
     xWindow: layout.xDomain,
   });
+  const imaginaryCycleOverlaySegments = resolveGraphImaginaryCycleOverlaySegments(points, {
+    historyEnabled: Boolean(state.ui.buttonFlags[HISTORY_FLAG]),
+    cycle,
+    xWindow: layout.xDomain,
+  });
 
   const options = buildGraphOptions(hasPoints, layout);
   const documentRef = root.ownerDocument ?? null;
@@ -286,10 +292,12 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   const gridColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.2 });
   const axisColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.75 });
   const cycleColor = resolveUxRoleColor("analysis", { document: documentRef });
+  const cycleImaginaryColor = resolveUxRoleColor("imaginary", { document: documentRef });
   renderGraphOverlay(root, layout, {
     gridColor,
     axisColor,
     labelColor: defaultColor,
     cycleColor,
-  }, cycleOverlaySegments);
+    cycleImaginaryColor,
+  }, cycleOverlaySegments, imaginaryCycleOverlaySegments);
 };
