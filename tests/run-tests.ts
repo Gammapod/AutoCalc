@@ -11,6 +11,7 @@ import { runReducerScalarLimitPolicyTests } from "./reducer.scalarLimitPolicy.te
 import { runUiVisualizerUxSpecInvariantsTests } from "./uiVisualizerUxSpecInvariants.test.js";
 import { runUiModuleRatiosRendererV2Tests } from "./uiModule.ratiosRenderer.v2.test.js";
 import { runKeyCapabilityProgressionTests } from "./keyCapabilityProgression.test.js";
+import { runOperatorTestingMatrixContractTests } from "./operatorTestingMatrix.contract.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -25,6 +26,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/module-ratios-renderer-v2", runUiModuleRatiosRendererV2Tests],
   ["ui/visualizer-ux-spec-invariants", runUiVisualizerUxSpecInvariantsTests],
   ["domain/key-capability-progression", runKeyCapabilityProgressionTests],
+  ["contracts/operator-testing-matrix", runOperatorTestingMatrixContractTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));
