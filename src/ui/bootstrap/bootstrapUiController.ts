@@ -252,7 +252,6 @@ export const createBootstrapUiController = ({
       keypad: {
         columns: selectedProjected.ui.keypadColumns,
         rows: selectedProjected.ui.keypadRows,
-        keyLayout: selectedProjected.ui.keyLayout,
         keyLayoutDebug,
       },
     };
