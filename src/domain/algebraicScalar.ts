@@ -226,6 +226,134 @@ export const divAlgebraic = (left: AlgebraicValue, right: AlgebraicValue): Algeb
   return mulAlgebraic(left, inverse);
 };
 
+const compareRational = (left: RationalValue, right: RationalValue): number => {
+  const l = normalizeRational(left);
+  const r = normalizeRational(right);
+  const delta = (l.num * r.den) - (r.num * l.den);
+  if (delta < 0n) {
+    return -1;
+  }
+  if (delta > 0n) {
+    return 1;
+  }
+  return 0;
+};
+
+const floorRational = (value: RationalValue): bigint => {
+  const normalized = normalizeRational(value);
+  let quotient = normalized.num / normalized.den;
+  if (normalized.num < 0n && normalized.num % normalized.den !== 0n) {
+    quotient -= 1n;
+  }
+  return quotient;
+};
+
+const ceilRational = (value: RationalValue): bigint => {
+  const normalized = normalizeRational(value);
+  let quotient = normalized.num / normalized.den;
+  if (normalized.num > 0n && normalized.num % normalized.den !== 0n) {
+    quotient += 1n;
+  }
+  return quotient;
+};
+
+const integerSqrtFloor = (value: bigint): bigint => {
+  if (value < 0n) {
+    throw new Error("Invalid integer square root for negative input.");
+  }
+  if (value < 2n) {
+    return value;
+  }
+  let x0 = value;
+  let x1 = (x0 + (value / x0)) >> 1n;
+  while (x1 < x0) {
+    x0 = x1;
+    x1 = (x0 + (value / x0)) >> 1n;
+  }
+  return x0;
+};
+
+const sqrtBoundsDyadic = (radicand: bigint, precisionBits: number): { lower: RationalValue; upper: RationalValue } => {
+  const scale = 1n << BigInt(precisionBits);
+  const scaled = radicand << BigInt(precisionBits * 2);
+  const floor = integerSqrtFloor(scaled);
+  return {
+    lower: { num: floor, den: scale },
+    upper: { num: floor + 1n, den: scale },
+  };
+};
+
+const addInterval = (
+  left: { lower: RationalValue; upper: RationalValue },
+  right: { lower: RationalValue; upper: RationalValue },
+): { lower: RationalValue; upper: RationalValue } => ({
+  lower: addRational(left.lower, right.lower),
+  upper: addRational(left.upper, right.upper),
+});
+
+const scaleInterval = (
+  coefficient: RationalValue,
+  interval: { lower: RationalValue; upper: RationalValue },
+): { lower: RationalValue; upper: RationalValue } => {
+  const normalized = normalizeRational(coefficient);
+  if (normalized.num === 0n) {
+    return {
+      lower: { num: 0n, den: 1n },
+      upper: { num: 0n, den: 1n },
+    };
+  }
+  const lo = mulRational(normalized, interval.lower);
+  const hi = mulRational(normalized, interval.upper);
+  return compareRational(lo, hi) <= 0
+    ? { lower: lo, upper: hi }
+    : { lower: hi, upper: lo };
+};
+
+const algebraicToInterval = (value: AlgebraicValue, precisionBits: number): { lower: RationalValue; upper: RationalValue } => {
+  const normalized = normalizeAlgebraicValue(value);
+  let out = {
+    lower: normalized.one ? normalizeRational(normalized.one) : { num: 0n, den: 1n },
+    upper: normalized.one ? normalizeRational(normalized.one) : { num: 0n, den: 1n },
+  };
+  if (normalized.sqrt2) {
+    out = addInterval(out, scaleInterval(normalized.sqrt2, sqrtBoundsDyadic(2n, precisionBits)));
+  }
+  if (normalized.sqrt3) {
+    out = addInterval(out, scaleInterval(normalized.sqrt3, sqrtBoundsDyadic(3n, precisionBits)));
+  }
+  if (normalized.sqrt6) {
+    out = addInterval(out, scaleInterval(normalized.sqrt6, sqrtBoundsDyadic(6n, precisionBits)));
+  }
+  return out;
+};
+
+export const floorAlgebraic = (value: AlgebraicValue): bigint | null => {
+  const normalized = normalizeAlgebraicValue(value);
+  const rational = algebraicToRational(normalized);
+  if (rational) {
+    return floorRational(rational);
+  }
+  for (let precisionBits = 24; precisionBits <= 384; precisionBits += 24) {
+    const interval = algebraicToInterval(normalized, precisionBits);
+    const floorLower = floorRational(interval.lower);
+    const floorUpper = floorRational(interval.upper);
+    if (floorLower === floorUpper) {
+      return floorLower;
+    }
+  }
+  return null;
+};
+
+export const ceilAlgebraic = (value: AlgebraicValue): bigint | null => {
+  const normalized = normalizeAlgebraicValue(value);
+  const rational = algebraicToRational(normalized);
+  if (rational) {
+    return ceilRational(rational);
+  }
+  const floor = floorAlgebraic(normalized);
+  return floor === null ? null : floor + 1n;
+};
+
 const formatRational = (value: RationalValue): string =>
   value.den === 1n ? value.num.toString() : `${value.num.toString()}/${value.den.toString()}`;
 

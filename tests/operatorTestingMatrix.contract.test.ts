@@ -1,16 +1,20 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { reducer } from "../src/domain/reducer.js";
+import { applyEqualsFromStepProgress } from "../src/domain/reducer.input.core.js";
 import {
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
 } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import {
+  calculatorValuesEquivalent,
+  toAlgebraicScalarValue,
   toExplicitComplexCalculatorValue,
   toRationalCalculatorValue,
   toRationalScalarValue,
 } from "../src/domain/calculatorValue.js";
+import { executeSlotsValue } from "../src/domain/engine.js";
 import { resolveRollInversePlan } from "../src/domain/rollInverseExecution.js";
 import type { GameState, Slot } from "../src/domain/types.js";
 import { legacyInitialState } from "./support/legacyState.js";
@@ -26,6 +30,21 @@ const withStepProgressReset = (state: GameState): GameState => ({
       active: false,
       seedTotal: null,
       currentTotal: null,
+      nextSlotIndex: 0,
+      executedSlotResults: [],
+    },
+  },
+});
+
+const withActiveInverseStepProgress = (state: GameState): GameState => ({
+  ...state,
+  calculator: {
+    ...state.calculator,
+    stepProgress: {
+      active: true,
+      mode: "inverse",
+      seedTotal: state.calculator.total,
+      currentTotal: state.calculator.total,
       nextSlotIndex: 0,
       executedSlotResults: [],
     },
@@ -90,11 +109,12 @@ export const runOperatorTestingMatrixContractTests = (): void => {
     ui: {
       ...legacyInitialState().ui,
       keyLayout: [
+        { kind: "key", key: KEY_ID.exec_roll_inverse },
         { kind: "key", key: KEY_ID.exec_step_through },
         { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
         { kind: "key", key: KEY_ID.toggle_delta_range_clamp, behavior: { type: "toggle_flag", flag: DELTA_RANGE_CLAMP_FLAG } },
       ],
-      keypadColumns: 3,
+      keypadColumns: 4,
       keypadRows: 1,
       buttonFlags: {
         [DELTA_RANGE_CLAMP_FLAG]: true,
@@ -302,4 +322,149 @@ export const runOperatorTestingMatrixContractTests = (): void => {
     { type: "PRESS_KEY", key: KEY_ID.exec_equals },
   );
   assert.notEqual(inverseRealFlip.calculator.total.kind, "nan", "INV-EXEC-UNARY-REAL-FLIP-01: inverse execution remains non-NaN");
+
+  const inversePowPrincipal = applyEqualsFromStepProgress(
+    withActiveInverseStepProgress({
+      ...base,
+      unlocks: {
+        ...base.unlocks,
+        slotOperators: {
+          ...base.unlocks.slotOperators,
+          [op("op_pow")]: true,
+        },
+      },
+      ui: {
+        ...base.ui,
+        buttonFlags: {},
+      },
+      calculator: {
+        ...base.calculator,
+        total: r(2n),
+        operationSlots: [{ operator: op("op_pow"), operand: 2n }],
+        rollEntries: [],
+        draftingSlot: null,
+      },
+    }),
+  );
+  const inversePowPrincipalExpected = toExplicitComplexCalculatorValue(
+    toAlgebraicScalarValue({ sqrt2: { num: 1n, den: 1n } }),
+    toRationalScalarValue({ num: 0n, den: 1n }),
+  );
+  assert.equal(
+    calculatorValuesEquivalent(inversePowPrincipal.calculator.total, inversePowPrincipalExpected),
+    true,
+    "INV-EXEC-OP-POW-PRINCIPAL-01: inverse sqrt uses principal representable radical output",
+  );
+  assert.equal(
+    inversePowPrincipal.calculator.rollEntries.at(-1)?.inverseAmbiguous,
+    true,
+    "INV-EXEC-OP-POW-AMB-META-01: principal inverse root emits ambiguity metadata",
+  );
+
+  const inversePowAmbiguous = applyEqualsFromStepProgress(
+    withActiveInverseStepProgress({
+      ...base,
+      unlocks: {
+        ...base.unlocks,
+        slotOperators: {
+          ...base.unlocks.slotOperators,
+          [op("op_pow")]: true,
+        },
+      },
+      ui: {
+        ...base.ui,
+        buttonFlags: {},
+      },
+      calculator: {
+        ...base.calculator,
+        total: r(5n),
+        operationSlots: [{ operator: op("op_pow"), operand: 2n }],
+        rollEntries: [],
+        draftingSlot: null,
+      },
+    }),
+  );
+  const inversePowAmbiguousEntry = inversePowAmbiguous.calculator.rollEntries.at(-1);
+  assert.equal(inversePowAmbiguous.calculator.total.kind, "nan", "INV-EXEC-OP-POW-AMB-NEG-01: non-representable inverse root remains NaN");
+  assert.deepEqual(
+    inversePowAmbiguousEntry?.error,
+    { code: "inverse_ambiguous", kind: "ambiguous" },
+    "INV-EXEC-OP-POW-AMB-NEG-02: non-representable inverse root preserves inverse ambiguity error metadata",
+  );
+
+  const wholeStepsAlgebraic = executeSlotsValue(
+    toExplicitComplexCalculatorValue(
+      toAlgebraicScalarValue({ sqrt2: { num: 1n, den: 1n } }),
+      toRationalScalarValue({ num: 0n, den: 1n }),
+    ),
+    [{ operator: op("op_whole_steps"), operand: 2n }],
+  );
+  assert.deepEqual(
+    wholeStepsAlgebraic,
+    {
+      ok: true,
+      total: toExplicitComplexCalculatorValue(
+        toAlgebraicScalarValue({ sqrt2: { num: 81n, den: 64n } }),
+        toRationalScalarValue({ num: 0n, den: 1n }),
+      ),
+    },
+    "ALG-OP-WHOLE-STEPS-01: whole-steps scales algebraic components in canonical basis",
+  );
+
+  const intervalAlgebraic = executeSlotsValue(
+    toExplicitComplexCalculatorValue(
+      toAlgebraicScalarValue({ sqrt3: { num: 1n, den: 1n } }),
+      toRationalScalarValue({ num: 0n, den: 1n }),
+    ),
+    [{ operator: op("op_interval"), operand: 2n }],
+  );
+  assert.deepEqual(
+    intervalAlgebraic,
+    {
+      ok: true,
+      total: toExplicitComplexCalculatorValue(
+        toAlgebraicScalarValue({ sqrt3: { num: 3n, den: 2n } }),
+        toRationalScalarValue({ num: 0n, den: 1n }),
+      ),
+    },
+    "ALG-OP-INTERVAL-01: interval scales algebraic components in canonical basis",
+  );
+
+  const floorOnAlgebraicComplex = executeSlotsValue(
+    toExplicitComplexCalculatorValue(
+      toAlgebraicScalarValue({ sqrt2: { num: 3n, den: 1n } }),
+      toAlgebraicScalarValue({ one: { num: -1n, den: 2n }, sqrt3: { num: 1n, den: 1n } }),
+    ),
+    [{ kind: "unary", operator: uop("unary_floor") }],
+  );
+  assert.deepEqual(
+    floorOnAlgebraicComplex,
+    {
+      ok: true,
+      total: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 4n, den: 1n }),
+        toRationalScalarValue({ num: 1n, den: 1n }),
+      ),
+    },
+    "ALG-UNARY-FLOOR-01: floor applies exact componentwise ordering on algebraic complex values",
+  );
+
+  const ceilOnAlgebraicComplex = executeSlotsValue(
+    toExplicitComplexCalculatorValue(
+      toAlgebraicScalarValue({ sqrt2: { num: 3n, den: 1n } }),
+      toAlgebraicScalarValue({ one: { num: -1n, den: 2n }, sqrt3: { num: 1n, den: 1n } }),
+    ),
+    [{ kind: "unary", operator: uop("unary_ceil") }],
+  );
+  assert.deepEqual(
+    ceilOnAlgebraicComplex,
+    {
+      ok: true,
+      total: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 5n, den: 1n }),
+        toRationalScalarValue({ num: 2n, den: 1n }),
+      ),
+    },
+    "ALG-UNARY-CEIL-01: ceil applies exact componentwise ordering on algebraic complex values",
+  );
 };

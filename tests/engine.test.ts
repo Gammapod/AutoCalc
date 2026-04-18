@@ -1,7 +1,7 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { executeSlots, executeSlotsValue } from "../src/domain/engine.js";
-import { calculatorValuesEquivalent, toComplexCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
+import { calculatorValuesEquivalent, toAlgebraicScalarValue, toComplexCalculatorValue, toExplicitComplexCalculatorValue, toNanCalculatorValue, toRationalCalculatorValue, toRationalScalarValue } from "../src/domain/calculatorValue.js";
 import { ALG_CONSTANTS, addAlgebraic } from "../src/domain/algebraicScalar.js";
 import type { RationalValue } from "../src/domain/types.js";
 
@@ -31,6 +31,25 @@ export const runEngineTests = (): void => {
   const wholeStepsThreeOnTwo = executeSlots(r(2n), [{ operator: op("op_whole_steps"), operand: 3n }]);
   assert.deepEqual(wholeStepsThreeOnTwo, { ok: true, total: r(729n, 256n) }, "whole-steps scales arbitrary totals by (9/8)^b");
 
+  const wholeStepsOnAlgebraic = executeSlotsValue(
+    toExplicitComplexCalculatorValue(
+      toAlgebraicScalarValue({ sqrt2: { num: 1n, den: 1n } }),
+      toRationalScalarValue({ num: 0n, den: 1n }),
+    ),
+    [{ operator: op("op_whole_steps"), operand: 2n }],
+  );
+  assert.deepEqual(
+    wholeStepsOnAlgebraic,
+    {
+      ok: true,
+      total: toExplicitComplexCalculatorValue(
+        toAlgebraicScalarValue({ sqrt2: { num: 81n, den: 64n } }),
+        toRationalScalarValue({ num: 0n, den: 1n }),
+      ),
+    },
+    "whole-steps preserves canonical algebraic basis and scales coefficients exactly",
+  );
+
   const intervalOneOnTwo = executeSlots(r(1n), [{ operator: op("op_interval"), operand: 2n }]);
   assert.deepEqual(intervalOneOnTwo, { ok: true, total: r(3n, 2n) }, "interval scales by (1 + 1/b)");
 
@@ -39,6 +58,25 @@ export const runEngineTests = (): void => {
 
   const intervalTwoOnFour = executeSlots(r(2n), [{ operator: op("op_interval"), operand: 4n }]);
   assert.deepEqual(intervalTwoOnFour, { ok: true, total: r(5n, 2n) }, "interval handles larger denominators exactly");
+
+  const intervalOnAlgebraic = executeSlotsValue(
+    toExplicitComplexCalculatorValue(
+      toAlgebraicScalarValue({ sqrt3: { num: 1n, den: 1n } }),
+      toRationalScalarValue({ num: 0n, den: 1n }),
+    ),
+    [{ operator: op("op_interval"), operand: 2n }],
+  );
+  assert.deepEqual(
+    intervalOnAlgebraic,
+    {
+      ok: true,
+      total: toExplicitComplexCalculatorValue(
+        toAlgebraicScalarValue({ sqrt3: { num: 3n, den: 2n } }),
+        toRationalScalarValue({ num: 0n, den: 1n }),
+      ),
+    },
+    "interval preserves canonical algebraic basis and scales coefficients exactly",
+  );
 
   const mixedResult = executeSlots(r(10n), [
     { operator: op("op_add"), operand: 2n },
@@ -771,6 +809,44 @@ export const runEngineTests = (): void => {
       },
     },
     "floor on complex is componentwise",
+  );
+
+  const floorOnAlgebraicComplex = executeSlotsValue(
+    toExplicitComplexCalculatorValue(
+      toAlgebraicScalarValue({ sqrt2: { num: 3n, den: 1n } }),
+      toAlgebraicScalarValue({ one: { num: -1n, den: 2n }, sqrt3: { num: 1n, den: 1n } }),
+    ),
+    [{ kind: "unary", operator: uop("unary_floor") }],
+  );
+  assert.deepEqual(
+    floorOnAlgebraicComplex,
+    {
+      ok: true,
+      total: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 4n, den: 1n }),
+        toRationalScalarValue({ num: 1n, den: 1n }),
+      ),
+    },
+    "floor on algebraic complex values resolves exact componentwise integer projections",
+  );
+
+  const ceilOnAlgebraicComplex = executeSlotsValue(
+    toExplicitComplexCalculatorValue(
+      toAlgebraicScalarValue({ sqrt2: { num: 3n, den: 1n } }),
+      toAlgebraicScalarValue({ one: { num: -1n, den: 2n }, sqrt3: { num: 1n, den: 1n } }),
+    ),
+    [{ kind: "unary", operator: uop("unary_ceil") }],
+  );
+  assert.deepEqual(
+    ceilOnAlgebraicComplex,
+    {
+      ok: true,
+      total: toExplicitComplexCalculatorValue(
+        toRationalScalarValue({ num: 5n, den: 1n }),
+        toRationalScalarValue({ num: 2n, den: 1n }),
+      ),
+    },
+    "ceil on algebraic complex values resolves exact componentwise integer projections",
   );
 
   const maxOnComplex = executeSlotsValue(gaussianInput, [{ operator: op("op_max"), operand: 6n }]);

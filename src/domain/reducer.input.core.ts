@@ -6,6 +6,7 @@ import {
   computeOverflowBoundary,
   exceedsMagnitudeBoundary,
   isRationalCalculatorValue,
+  toAlgebraicScalarValue,
   OVERFLOW_ERROR_CODE,
   toComplexCalculatorValue,
   toExplicitComplexCalculatorValue,
@@ -18,7 +19,7 @@ import {
 } from "./calculatorValue.js";
 import { expressionToDisplayString, slotOperandToExpression } from "./expression.js";
 import { buildSymbolicExpression, evaluateSymbolicExpression, executeSlotsValue } from "./engine.js";
-import { negateAlgebraic } from "./algebraicScalar.js";
+import { negateAlgebraic, normalizeRational, rationalToAlgebraic } from "./algebraicScalar.js";
 import {
   applyDigitInput,
   applyOperatorInput,
@@ -443,6 +444,7 @@ type EvaluatedExecution = {
   euclidRemainder?: RationalValue;
   errorCode?: ErrorCode;
   errorKind?: ExecutionErrorKind;
+  inverseAmbiguous?: boolean;
   symbolic?: RollEntry["symbolic"];
   limitMetadata?: RollEntry["limitMetadata"];
 };
@@ -564,10 +566,93 @@ const exactNthRootBigInt = (value: bigint, exponent: bigint): bigint | null => {
   return null;
 };
 
+const powBigInt = (base: bigint, exponent: bigint): bigint => {
+  if (exponent < 0n) {
+    throw new Error("Negative exponent is not supported for bigint power.");
+  }
+  let result = 1n;
+  let factor = base;
+  let power = exponent;
+  while (power > 0n) {
+    if ((power & 1n) === 1n) {
+      result *= factor;
+    }
+    power >>= 1n;
+    if (power > 0n) {
+      factor *= factor;
+    }
+  }
+  return result;
+};
+
+const splitSquarePart = (value: bigint): { rootSquare: bigint; squarefree: bigint } => {
+  if (value <= 0n) {
+    return { rootSquare: 0n, squarefree: 0n };
+  }
+  let remaining = value;
+  let rootSquare = 1n;
+  let squarefree = 1n;
+  let factor = 2n;
+  while (factor * factor <= remaining) {
+    let count = 0n;
+    while (remaining % factor === 0n) {
+      remaining /= factor;
+      count += 1n;
+    }
+    if (count > 0n) {
+      const pairs = count / 2n;
+      if (pairs > 0n) {
+        rootSquare *= powBigInt(factor, pairs);
+      }
+      if ((count % 2n) === 1n) {
+        squarefree *= factor;
+      }
+    }
+    factor = factor === 2n ? 3n : factor + 2n;
+  }
+  if (remaining > 1n) {
+    squarefree *= remaining;
+  }
+  return { rootSquare, squarefree };
+};
+
+const sqrtPrincipalScalarFromPositiveRational = (
+  value: RationalValue,
+): ReturnType<typeof toRationalScalarValue> | ReturnType<typeof toAlgebraicScalarValue> | null => {
+  const normalized = normalizeRationalValue(value);
+  if (normalized.num < 0n) {
+    return null;
+  }
+  const numAbs = absBigInt(normalized.num);
+  const denAbs = absBigInt(normalized.den);
+  const rootNum = exactNthRootBigInt(numAbs, 2n);
+  const rootDen = exactNthRootBigInt(denAbs, 2n);
+  if (rootNum !== null && rootDen !== null) {
+    return toRationalScalarValue({ num: rootNum, den: rootDen });
+  }
+  const numSplit = splitSquarePart(numAbs);
+  const denSplit = splitSquarePart(denAbs);
+  const basisSquarefree = numSplit.squarefree * denSplit.squarefree;
+  if (basisSquarefree !== 2n && basisSquarefree !== 3n && basisSquarefree !== 6n) {
+    return null;
+  }
+  const coeff = normalizeRational({
+    num: numSplit.rootSquare,
+    den: denSplit.rootSquare * denSplit.squarefree,
+  });
+  if (basisSquarefree === 2n) {
+    return toAlgebraicScalarValue({ sqrt2: coeff });
+  }
+  if (basisSquarefree === 3n) {
+    return toAlgebraicScalarValue({ sqrt3: coeff });
+  }
+  return toAlgebraicScalarValue({ sqrt6: coeff });
+};
+
 const buildCanonicalRootValue = (
   total: GameState["calculator"]["total"],
   exponent: bigint,
-): GameState["calculator"]["total"] | null => {
+): { total: GameState["calculator"]["total"]; inverseAmbiguous?: boolean } | null => {
   if (exponent <= 0n) {
     return null;
   }
@@ -582,10 +667,47 @@ const buildCanonicalRootValue = (
     if (rootNum !== null && rootDen !== null) {
       if (normalized.num < 0n && !odd) {
         const imag = toRationalScalarValue({ num: rootNum, den: rootDen });
-        return toExplicitComplexCalculatorValue(toRationalScalarValue({ num: 0n, den: 1n }), imag);
+        return {
+          total: toExplicitComplexCalculatorValue(toRationalScalarValue({ num: 0n, den: 1n }), imag),
+          ...(exponent > 1n ? { inverseAmbiguous: true } : {}),
+        };
       }
       const signedNum = normalized.num < 0n && odd ? -rootNum : rootNum;
-      return toRationalCalculatorValue({ num: signedNum, den: rootDen });
+      return {
+        total: toRationalCalculatorValue({ num: signedNum, den: rootDen }),
+        ...(exponent > 1n ? { inverseAmbiguous: true } : {}),
+      };
+    }
+    if (exponent === 2n) {
+      const positiveRoot = sqrtPrincipalScalarFromPositiveRational({
+        num: numAbs,
+        den: denAbs,
+      });
+      if (!positiveRoot) {
+        return null;
+      }
+      if (normalized.num < 0n) {
+        return {
+          total: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 0n, den: 1n }),
+            positiveRoot,
+          ),
+          inverseAmbiguous: true,
+        };
+      }
+      if (positiveRoot.kind === "rational") {
+        return {
+          total: toRationalCalculatorValue(positiveRoot.value),
+          inverseAmbiguous: true,
+        };
+      }
+      return {
+        total: toExplicitComplexCalculatorValue(
+          positiveRoot,
+          toRationalScalarValue({ num: 0n, den: 1n }),
+        ),
+        inverseAmbiguous: true,
+      };
     }
     return null;
   }
@@ -1112,13 +1234,14 @@ const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
         },
       }
       : {}),
+    ...(evaluation.inverseAmbiguous ? { inverseAmbiguous: true } : {}),
     ...(evaluation.limitMetadata ? { limitMetadata: evaluation.limitMetadata } : {}),
   });
 };
 
 const toRollEntryWithPatch = (
   evaluation: EvaluatedExecution,
-  patch: Partial<Pick<RollEntry, "origin" | "analysisIgnored">> = {},
+  patch: Partial<Pick<RollEntry, "origin" | "analysisIgnored" | "inverseAmbiguous">> = {},
 ): RollEntry => ({
   ...toRollEntry(evaluation),
   ...patch,
@@ -1761,14 +1884,22 @@ const evaluateInverseStageAt = (
     );
     return evaluateExecutionOutcomeForSlots(state, currentTotal, inverseSlots);
   }
-  const rootValue = buildCanonicalRootValue(currentTotal, stage.exponent);
-  if (!rootValue) {
+  const resolvedRoot = buildCanonicalRootValue(currentTotal, stage.exponent);
+  if (!resolvedRoot) {
     return toAmbiguousExecution();
   }
+  const rootValue = resolvedRoot.total;
   if (!stage.reciprocal) {
-    return { nextTotal: rootValue };
+    return { nextTotal: rootValue, ...(resolvedRoot.inverseAmbiguous ? { inverseAmbiguous: true } : {}) };
   }
-  return evaluateExecutionOutcomeForSlots(state, rootValue, [{ kind: "binary", operator: KEY_ID.op_pow, operand: -1n }]);
+  const reciprocal = evaluateExecutionOutcomeForSlots(state, rootValue, [{ kind: "binary", operator: KEY_ID.op_pow, operand: -1n }]);
+  if (reciprocal.errorKind) {
+    return reciprocal;
+  }
+  return {
+    ...reciprocal,
+    ...(resolvedRoot.inverseAmbiguous ? { inverseAmbiguous: true } : {}),
+  };
 };
 
 const getExecutionRuntimeStageCount = (runtime: ExecutionRuntime): number =>
@@ -1786,6 +1917,7 @@ const evaluateExecutionRuntimeRange = (
     return evaluateExecutionPlanRange(state, seedTotal, runtime.built, startStageIndex);
   }
   let current = seedTotal;
+  let inverseAmbiguous = false;
   const start = Math.max(0, Math.min(startStageIndex, runtime.stages.length));
   for (let index = start; index < runtime.stages.length; index += 1) {
     const stageEvaluation = evaluateInverseStageAt(state, current, runtime.stages, index);
@@ -1795,9 +1927,12 @@ const evaluateExecutionRuntimeRange = (
     if (stageEvaluation.errorKind) {
       return stageEvaluation;
     }
+    if (stageEvaluation.inverseAmbiguous) {
+      inverseAmbiguous = true;
+    }
     current = stageEvaluation.nextTotal;
   }
-  return { nextTotal: current };
+  return { nextTotal: current, ...(inverseAmbiguous ? { inverseAmbiguous: true } : {}) };
 };
 
 const evaluateExecutionRuntimeStageAt = (

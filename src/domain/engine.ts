@@ -34,7 +34,9 @@ import {
   addAlgebraic,
   algebraicToDisplayString,
   algebraicToRational,
+  ceilAlgebraic,
   divAlgebraic,
+  floorAlgebraic,
   isAlgebraicZero,
   mulAlgebraic,
   negateAlgebraic,
@@ -1201,18 +1203,31 @@ const executeSlotsValueInternal = (
       }
       if (unaryKey === KEY_ID.unary_floor || unaryKey === KEY_ID.unary_ceil) {
         const currentComplex = toComplexRuntime(current);
-        const re = scalarToRational(currentComplex.re);
-        const im = scalarToRational(currentComplex.im);
-        if (!re || !im) {
+        const scalarToIntegralProjection = (value: ScalarValue): bigint | null => {
+          if (value.kind === "rational") {
+            return unaryKey === KEY_ID.unary_floor
+              ? floorDiv(value.value.num, value.value.den)
+              : ceilDiv(value.value.num, value.value.den);
+          }
+          if (value.kind === "alg") {
+            return unaryKey === KEY_ID.unary_floor
+              ? floorAlgebraic(value.value)
+              : ceilAlgebraic(value.value);
+          }
+          return null;
+        };
+        const reInt = scalarToIntegralProjection(currentComplex.re);
+        const imInt = scalarToIntegralProjection(currentComplex.im);
+        if (reInt === null || imInt === null) {
           return { ok: false, reason: "nan_input", operatorId: slot.operator };
         }
         current = fromComplexRuntime({
           re: toRationalScalarValue({
-            num: unaryKey === KEY_ID.unary_floor ? floorDiv(re.num, re.den) : ceilDiv(re.num, re.den),
+            num: reInt,
             den: 1n,
           }),
           im: toRationalScalarValue({
-            num: unaryKey === KEY_ID.unary_floor ? floorDiv(im.num, im.den) : ceilDiv(im.num, im.den),
+            num: imInt,
             den: 1n,
           }),
         });
@@ -1540,7 +1555,12 @@ const executeSlotsValueInternal = (
     const rejectsSymbolicOperand = policy
       ? policy.rejectPolicy.unsupportedSymbolicOnSymbolicOperand
       : isUnsupportedSymbolicOperatorKeyId(slot.operator);
-    if (operatorKey !== KEY_ID.op_pow && rejectsSymbolicOperand) {
+    if (
+      operatorKey !== KEY_ID.op_pow
+      && operatorKey !== KEY_ID.op_whole_steps
+      && operatorKey !== KEY_ID.op_interval
+      && rejectsSymbolicOperand
+    ) {
       return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
     }
 

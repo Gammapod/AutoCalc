@@ -44,7 +44,7 @@ Release sequencing for implementation is maintained in `docs/planning/Planned Re
 - Magnitude overflow is non-NaN failure: magnitude overflow clamps to finite boundary output and emits overflow metadata.
 - Precision overflow is non-NaN failure: when exact representability limits are exceeded, runtime MUST emit precision-overflow metadata and project to a finite exact representable output (projection policy is deferred).
 - Precision-overflow handling MUST remain exact-output only; approximate numeric values are not persisted as roll outputs.
-- Inverse-power/root evaluation is exact-only: non-perfect roots are treated as ambiguous and resolve to `NaN` (no symbolic radical fallback in runtime totals).
+- Inverse-power/root evaluation is exact-only: representable principal roots in the canonical algebraic basis (`1`, `sqrt(2)`, `sqrt(3)`, `sqrt(6)`) may resolve as non-NaN; non-representable roots remain ambiguous and resolve to `NaN`.
 
 6. Approximation is branch-only and deterministic.
 - Stored/returned operator values remain exact (`rational` / `expr` / `complex`); no approximate roll values are persisted.
@@ -106,8 +106,8 @@ Policy classes:
 | `unary_collatz` | Integer-only transform | `complex_total` | For Gaussian complex-left, apply componentwise; non-Gaussian complex keeps non-integer reject parity. |
 | `unary_sort_asc` | Integer digit transform | `complex_total` | For Gaussian complex-left, apply componentwise; non-Gaussian complex keeps non-integer reject parity. |
 | `unary_mirror_digits` | Integer digit transform | `complex_total` | For Gaussian complex-left, apply componentwise; non-Gaussian complex keeps non-integer reject parity. |
-| `unary_floor` | Componentwise floor | `complex_total` | Accept all complex-left values and floor `re`/`im` separately. |
-| `unary_ceil` | Componentwise ceil | `complex_total` | Accept all complex-left values and ceil `re`/`im` separately. |
+| `unary_floor` | Componentwise floor | `complex_total` | Accept all complex-left values and floor `re`/`im` separately, including exact algebraic-basis scalar components. |
+| `unary_ceil` | Componentwise ceil | `complex_total` | Accept all complex-left values and ceil `re`/`im` separately, including exact algebraic-basis scalar components. |
 
 ### Registry sync rule
 - Runtime execution policy is canonicalized in `src/domain/operatorExecutionPolicy.ts`.
@@ -129,4 +129,4 @@ Policy classes:
 1. `op_pow` non-integer exponent policy for complex bases (principal branch and branch-cut semantics).
 2. Any future true complex-plane rotation operator remains out of scope for `op_rotate_left`.
 3. Rational precision control projection wiring (`rationalPrecision`/`delta_q`, calculator-local) is deferred; current runtime applies denominator-precision projection using existing range digits.
-4. Algebraic/radical precision projection is intentionally out of scope in the current model; non-perfect inverse roots remain `NaN` rather than symbolic radical runtime totals.
+4. Algebraic/radical precision projection remains out of scope; inverse roots outside the canonical algebraic basis remain `NaN` rather than widening symbolic runtime totals.

@@ -35,6 +35,11 @@ Radical/expression scenarios:
 - `R-NUM`: seed `sqrt(2)` (numerator radical)
 - `R-DEN`: seed `1/sqrt(2)` (denominator radical)
 
+Algebraic-basis scenarios (runtime canonical irrational domain):
+- `A-SQRT2`: seed `sqrt(2)` as algebraic basis coefficient (`sqrt2 = 1`)
+- `A-SQRT3`: seed `sqrt(3)` as algebraic basis coefficient (`sqrt3 = 1`)
+- `A-MIX`: seed `-1/2 + sqrt(3)` (algebraic basis mix for floor/ceil component tests)
+
 NaN scenario:
 - `N-SEED`: seed `NaN`
 
@@ -50,6 +55,10 @@ Invertible operator mappings:
 `INV-PLAN-OP-ADD-01`, `INV-PLAN-OP-SUB-01`, `INV-PLAN-OP-MUL-01`, `INV-PLAN-OP-DIV-01`, `INV-PLAN-OP-POW-01`, `INV-PLAN-OP-ROTATE15-01`, `INV-PLAN-OP-WHOLE-STEPS-01`, `INV-PLAN-OP-INTERVAL-01`, `INV-PLAN-UNARY-INC-01`, `INV-PLAN-UNARY-DEC-01`, `INV-PLAN-UNARY-NEG-01`, `INV-PLAN-UNARY-I-01`, `INV-PLAN-UNARY-ROTATE15-01`, `INV-PLAN-UNARY-RECIPROCAL-01`, `INV-PLAN-UNARY-PLUS-I-01`, `INV-PLAN-UNARY-MINUS-I-01`, `INV-PLAN-UNARY-CONJUGATE-01`, `INV-PLAN-UNARY-REAL-FLIP-01`.
 - Runtime inverse execution (non-NaN) coverage:
 `INV-EXEC-OP-WHOLE-STEPS-01`, `INV-EXEC-OP-INTERVAL-01`, `INV-EXEC-UNARY-RECIPROCAL-01`, `INV-EXEC-UNARY-PLUS-I-01`, `INV-EXEC-UNARY-CONJUGATE-01`, `INV-EXEC-UNARY-REAL-FLIP-01`.
+- Canonical inverse root + ambiguity metadata coverage:
+`INV-EXEC-OP-POW-PRINCIPAL-01`, `INV-EXEC-OP-POW-AMB-META-01`, `INV-EXEC-OP-POW-AMB-NEG-01`, `INV-EXEC-OP-POW-AMB-NEG-02`.
+- Algebraic scaling + exact ordering coverage:
+`ALG-OP-WHOLE-STEPS-01`, `ALG-OP-INTERVAL-01`, `ALG-UNARY-FLOOR-01`, `ALG-UNARY-CEIL-01`.
 - Conditional guard coverage (`yes*`):
 `INV-PLAN-OP-MUL-GUARD-01`, `INV-PLAN-OP-DIV-GUARD-01`, `INV-PLAN-OP-POW-GUARD-01`, `INV-PLAN-OP-INTERVAL-GUARD-01A`, `INV-PLAN-OP-INTERVAL-GUARD-01B`.
 
@@ -79,8 +88,8 @@ Inverse runtime-mode transfer coverage:
 | `op_eulog` | no | yes (complex-rational) | no | no | no | `ok:-1 / reject:nan_input / 0` | different (`0` vs `1`) | `ok:rational` on complex-rational inputs | `reject:nan_input` | `reject:nan_input` |
 | `op_residual` | no | yes (complex-rational) | no | no | no | `ok:5 / reject:nan_input / 1` | different (`2` vs `3`) | `ok:complex_or_rational` on complex-rational inputs | `reject:nan_input` | `reject:nan_input` |
 | `op_log_tuple` | no | yes (complex-rational) | no | no | no | `ok:(-1 + i*5) / reject:nan_input / (0 + i*1)` | different (`0 + i*2` vs `1 + i*3`) | `ok:complex` on complex-rational inputs | `reject:nan_input` | `reject:nan_input` |
-| `op_whole_steps` | no | yes | no | no | yes | `ok:405/128 / 0 / 81/64` | different | `ok:complex` (multiplies by `(9/8)^b`) | `reject:unsupported_symbolic` | `reject:nan_input` |
-| `op_interval` | no | yes | no | no | yes* | `ok:15/4 / 0 / 3/2` | different | `ok:complex` (multiplies by `(b+1)/b`) | `reject:unsupported_symbolic` | `reject:nan_input` |
+| `op_whole_steps` | no | yes | no | no | yes | `ok:405/128 / 0 / 81/64` | different | `ok:complex` (multiplies by `(9/8)^b`) | `ok:complex` for algebraic-basis inputs (`A-SQRT2 -> (81/64)sqrt(2)`); expression-only radicals remain rejected | `reject:nan_input` |
+| `op_interval` | no | yes | no | no | yes* | `ok:15/4 / 0 / 3/2` | different | `ok:complex` (multiplies by `(b+1)/b`) | `ok:complex` for algebraic-basis inputs (`A-SQRT3 -> (3/2)sqrt(3)`); expression-only radicals remain rejected | `reject:nan_input` |
 | `op_mod` | no | yes (gaussian-int path) | no | no | no | `ok:1/2 / 0 / 1` | different (`2` vs `1`) | `ok:complex` on Gaussian integer; `reject:nan_input` on `C-FR` | `reject:nan_input` | `reject:nan_input` |
 | `op_rotate_left` | no | yes (gaussian-int path) | no | no | no | `reject:nan_input / ok:0 / ok:1` | different (`23` vs `32`) | `ok:complex` on Gaussian integer; `reject:nan_input` on `C-FR` | `reject:nan_input` | `reject:nan_input` |
 | `op_rotate_15` | no | yes | no | no | yes | `ok:complex / ok:0 / ok:complex` | different | `ok:complex` (rotates by `b * 15deg`) | `reject:unsupported_symbolic` | `reject:nan_input` |
@@ -103,8 +112,8 @@ Inverse runtime-mode transfer coverage:
 | `unary_collatz` | yes (gaussian-int path) | no | no | no | `reject:nan_input / ok:0 / ok:4` | `ok:complex` on Gaussian integer; `reject:nan_input` on `C-FR` | `reject:nan_input` | `reject:nan_input` |
 | `unary_sort_asc` | yes (gaussian-int path) | no | no | no | `reject:nan_input / ok:0 / ok:1` | `ok:complex` on Gaussian integer; `reject:nan_input` on `C-FR` | `reject:nan_input` | `reject:nan_input` |
 | `unary_mirror_digits` | yes (gaussian-int path) | no | no | no | `reject:nan_input / ok:0 / ok:1` | `ok:complex` on Gaussian integer; `reject:nan_input` on `C-FR` | `reject:nan_input` | `reject:nan_input` |
-| `unary_floor` | yes | no | no | no | `ok:2 / 0 / 1` | `ok:complex` (componentwise floor) on rational components; `reject:nan_input` on radical components | `reject:nan_input` | `reject:nan_input` |
-| `unary_ceil` | yes | no | no | no | `ok:3 / 0 / 1` | `ok:complex` (componentwise ceil) on rational components; `reject:nan_input` on radical components | `reject:nan_input` | `reject:nan_input` |
+| `unary_floor` | yes | no | no | no | `ok:2 / 0 / 1` | `ok:complex` (componentwise floor) on rational/algebraic components | `ok:rational` for algebraic-basis components (`A-MIX -> floor(-1/2 + sqrt(3)) = 1`) | `reject:nan_input` |
+| `unary_ceil` | yes | no | no | no | `ok:3 / 0 / 1` | `ok:complex` (componentwise ceil) on rational/algebraic components | `ok:rational` for algebraic-basis components (`A-MIX -> ceil(-1/2 + sqrt(3)) = 2`) | `reject:nan_input` |
 | `unary_i` | yes | yes | no | yes | `ok:(0 + i*5/2) / ok:0 / ok:i` | `ok:complex` (multiply by `i`) | `ok:complex_or_expr` | `reject:nan_input` |
 | `unary_rotate_15` | yes | yes | no | yes | `ok:complex / ok:0 / ok:complex` | `ok:complex` (rotate +15deg) | `ok:complex_or_expr` | `reject:nan_input` |
 | `unary_reciprocal` | yes | yes | no | yes* | `ok:2/5 / reject:division_by_zero / ok:1` | `ok:complex` (inverse) | `ok:expr_or_complex` | `reject:nan_input` |
@@ -125,3 +134,4 @@ Inverse runtime-mode transfer coverage:
 3. If an operator has a deferred policy status, expected outcome cells must explicitly mark current runtime behavior (`ok` or `reject:*`) rather than roadmap intent.
 4. Every operator marked `Invertible = yes` or `yes*` must have at least one `I-01` test using `exec_roll_inverse` + `exec_step_through` that produces a non-NaN output on a valid input.
 5. `yes*` means invertible only under stated guard conditions (for example non-zero operand, non-zero exponent, or non-ambiguous inverse root domain).
+6. `op_pow` inverse root canonicalization uses principal branch output when representable in allowed basis; ambiguous/multi-branch semantics must still be asserted via inverse ambiguity metadata.

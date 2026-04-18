@@ -250,6 +250,7 @@ export type RollEntry = {
     code: ErrorCode;
     kind: ExecutionErrorKind;
   };
+  inverseAmbiguous?: boolean;
   symbolic?: SymbolicRollPayload;
   factorization?: RationalPrimeFactorization;
   d1?: RationalValue | null;
