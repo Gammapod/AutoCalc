@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 import {
   toExplicitComplexCalculatorValue,
@@ -202,68 +202,56 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     const base = initialState();
     const historyOffCycleMatch = withRoll(base, re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n), r(5n), r(2n)), cycle);
     renderRatiosVisualizerPanel(harness.root, historyOffCycleMatch);
-    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle styling is disabled when history is off");
+    assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle styling is disabled when cycle setting is off");
 
-    const historyOnBeforeDetection = withRoll(
+    const cycleOnBeforeDetection = withRoll(
       {
         ...base,
-        ui: {
-          ...base.ui,
-          buttonFlags: {
-            ...base.ui.buttonFlags,
-            [HISTORY_FLAG]: true,
-          },
+        settings: {
+          ...base.settings,
+          cycle: "on",
         },
       },
       re(r(1n), r(2n), r(3n), r(5n)),
       cycle,
     );
-    renderRatiosVisualizerPanel(harness.root, historyOnBeforeDetection);
+    renderRatiosVisualizerPanel(harness.root, cycleOnBeforeDetection);
     assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle styling stays off before detection index");
 
-    const historyOnCycleMatch = withRoll(
+    const cycleOnCycleMatch = withRoll(
       {
         ...base,
-        ui: {
-          ...base.ui,
-          buttonFlags: {
-            ...base.ui.buttonFlags,
-            [HISTORY_FLAG]: true,
-          },
+        settings: {
+          ...base.settings,
+          cycle: "on",
         },
       },
       re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n), r(5n), r(2n)),
       cycle,
     );
-    renderRatiosVisualizerPanel(harness.root, historyOnCycleMatch);
+    renderRatiosVisualizerPanel(harness.root, cycleOnCycleMatch);
     assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), true, "cycle styling enables on cycle-start match after detection");
 
-    const historyOnCycleNoMatch = withRoll(
+    const cycleOnCycleNoMatch = withRoll(
       {
         ...base,
-        ui: {
-          ...base.ui,
-          buttonFlags: {
-            ...base.ui.buttonFlags,
-            [HISTORY_FLAG]: true,
-          },
+        settings: {
+          ...base.settings,
+          cycle: "on",
         },
       },
       re(r(1n), r(2n), r(3n), r(5n), r(2n), r(3n)),
       cycle,
     );
-    renderRatiosVisualizerPanel(harness.root, historyOnCycleNoMatch);
+    renderRatiosVisualizerPanel(harness.root, cycleOnCycleNoMatch);
     assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle styling stays off when latest does not match cycle-start");
 
     const complexCycleRows = withRoll(
       {
         ...base,
-        ui: {
-          ...base.ui,
-          buttonFlags: {
-            ...base.ui.buttonFlags,
-            [HISTORY_FLAG]: true,
-          },
+        settings: {
+          ...base.settings,
+          cycle: "on",
         },
       },
       re(c(1n, 0n), c(0n, 1n), c(-1n, 0n), c(0n, -1n), c(1n, 0n), c(0n, 1n)),

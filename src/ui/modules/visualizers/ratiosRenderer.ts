@@ -2,7 +2,6 @@ import { calculatorValueEquals } from "../../../domain/rollEntries.js";
 import { calculatorValueToRational, scalarValueToCalculatorValue } from "../../../domain/calculatorValue.js";
 import { normalizeRational } from "../../../domain/algebraicScalar.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
-import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { ExecutionErrorKind, GameState, RationalValue, RollLimitComponentKind, ScalarValue } from "../../../domain/types.js";
 import {
   IRRATIONAL_TOKEN,
@@ -34,7 +33,7 @@ const resolveScalarRational = (value: ScalarValue): { num: bigint; den: bigint }
   calculatorValueToRational(scalarValueToCalculatorValue(value));
 
 const resolveCycleAmberActive = (state: GameState): boolean => {
-  if (!state.ui.buttonFlags[HISTORY_FLAG]) {
+  if (state.settings.cycle !== "on") {
     return false;
   }
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle"

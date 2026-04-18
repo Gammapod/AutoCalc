@@ -329,7 +329,7 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
   const operationSlotCount = state.calculator.operationSlots.length;
   const executionStageCount = getExecutionStageCount(state.calculator.operationSlots, state);
   const hasWrapStage = resolveWrapStageMode(state) !== null;
-  const stepExpansionEnabled = state.settings.stepExpansion === "on";
+  const stepExpansionEnabled = state.settings.stepExpansion === "on" && state.settings.forecast === "on";
   const stepThroughOnKeypad = state.ui.keyLayout.some(
     (cell) => cell.kind === "key" && cell.key === "exec_step_through",
   );

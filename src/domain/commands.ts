@@ -9,7 +9,7 @@ import { isKeyUsableForInput } from "./keyUnlocks.js";
 import { resolveDomainDispatchInputFeedback, resolveFeedbackTargetCalculatorId } from "./inputFeedback.js";
 import { KEY_ID, isBinaryOperatorKeyId, isConstantKeyId, isDigitKeyId, isUnaryOperatorId } from "./keyPresentation.js";
 import { projectCalculatorToLegacy } from "./multiCalculator.js";
-import { EXECUTION_PAUSE_EQUALS_FLAG, HISTORY_FLAG, STEP_EXPANSION_FLAG } from "./state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG } from "./state.js";
 import { resolveWrapStageMode } from "./executionPlan.js";
 import { algebraicToApproxNumber } from "./algebraicScalar.js";
 import { expressionToRational } from "./expression.js";
@@ -94,8 +94,9 @@ const hasMonitoredSettingsChanged = (previous: GameState, next: GameState): bool
   || previous.settings.base !== next.settings.base
   || resolveWrapStageMode(previous) !== resolveWrapStageMode(next)
   || previous.settings.stepExpansion !== next.settings.stepExpansion
-  || Boolean(previous.ui.buttonFlags[STEP_EXPANSION_FLAG]) !== Boolean(next.ui.buttonFlags[STEP_EXPANSION_FLAG])
-  || Boolean(previous.ui.buttonFlags[HISTORY_FLAG]) !== Boolean(next.ui.buttonFlags[HISTORY_FLAG]);
+  || previous.settings.history !== next.settings.history
+  || previous.settings.forecast !== next.settings.forecast
+  || previous.settings.cycle !== next.settings.cycle;
 
 const hasRollUpdated = (previous: GameState, next: GameState): boolean =>
   stableSignature(previous.calculator.rollEntries) !== stableSignature(next.calculator.rollEntries);

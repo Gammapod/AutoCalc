@@ -69,6 +69,8 @@ export const KEY_ID = {
   toggle_step_expansion: "toggle_step_expansion",
   toggle_binary_mode: "toggle_binary_mode",
   toggle_history: "toggle_history",
+  toggle_forecast: "toggle_forecast",
+  toggle_cycle: "toggle_cycle",
   viz_graph: "viz_graph",
   viz_feed: "viz_feed",
   viz_title: "viz_title",
@@ -160,7 +162,9 @@ export type UtilityKeyId =
   | typeof KEY_ID.toggle_binary_octave_cycle
   | typeof KEY_ID.toggle_step_expansion
   | typeof KEY_ID.toggle_binary_mode
-  | typeof KEY_ID.toggle_history;
+  | typeof KEY_ID.toggle_history
+  | typeof KEY_ID.toggle_forecast
+  | typeof KEY_ID.toggle_cycle;
 export type VisualizerKeyId =
   | typeof KEY_ID.viz_graph
   | typeof KEY_ID.viz_feed
@@ -262,6 +266,8 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.toggle_step_expansion, { buttonFace: "[ ??? ]" }],
   [KEY_ID.toggle_binary_mode, { buttonFace: "b\u2082" }],
   [KEY_ID.toggle_history, { buttonFace: "History" }],
+  [KEY_ID.toggle_forecast, { buttonFace: "Fcast" }],
+  [KEY_ID.toggle_cycle, { buttonFace: "Cycle" }],
   [KEY_ID.viz_graph, { buttonFace: "GRAPH" }],
   [KEY_ID.viz_feed, { buttonFace: "FEED" }],
   [KEY_ID.viz_title, { buttonFace: "TITLE" }],

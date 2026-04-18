@@ -39,6 +39,8 @@ export const runKeyLabelDisplayTests = (): void => {
   assert.equal(formatKeyLabel(k("viz_state")), "STATE", "STATE key label remains STATE");
   assert.equal(formatKeyLabel(k("toggle_binary_mode")), "b\u2082", "binary-mode settings key label renders canonical face");
   assert.equal(formatKeyLabel(k("toggle_history")), "History", "history settings key label renders canonical face");
+  assert.equal(formatKeyLabel(k("toggle_forecast")), "Fcast", "forecast settings key label renders canonical face");
+  assert.equal(formatKeyLabel(k("toggle_cycle")), "Cycle", "cycle settings key label renders canonical face");
   assert.equal(formatKeyLabel(k("toggle_delta_range_clamp")), "[\u2013, +)", "delta-range settings key label renders canonical face");
   assert.equal(formatKeyLabel(k("toggle_mod_zero_to_delta")), "[0, +)", "mod-range settings key label renders canonical face");
   assert.equal(formatKeyLabel(k("toggle_binary_octave_cycle")), "\u{1D106}", "octave-cycle settings key label renders canonical face");

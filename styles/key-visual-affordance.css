@@ -41,7 +41,9 @@
 }
 
 .key.key--group-settings[data-key="toggle_step_expansion"],
-.key.key--group-settings[data-key="toggle_history"] {
+.key.key--group-settings[data-key="toggle_history"],
+.key.key--group-settings[data-key="toggle_forecast"],
+.key.key--group-settings[data-key="toggle_cycle"] {
   background:
     linear-gradient(
       180deg,
@@ -104,7 +106,9 @@
 }
 
 .key.key--toggle-active.key--group-settings[data-key="toggle_step_expansion"]:not(:disabled),
-.key.key--toggle-active.key--group-settings[data-key="toggle_history"]:not(:disabled) {
+.key.key--toggle-active.key--group-settings[data-key="toggle_history"]:not(:disabled),
+.key.key--toggle-active.key--group-settings[data-key="toggle_forecast"]:not(:disabled),
+.key.key--toggle-active.key--group-settings[data-key="toggle_cycle"]:not(:disabled) {
   background:
     linear-gradient(
       180deg,

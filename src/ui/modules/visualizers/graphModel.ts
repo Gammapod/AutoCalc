@@ -86,12 +86,12 @@ const clipSegmentToXWindow = (
 export const resolveGraphCycleOverlaySegments = (
   points: readonly GraphPoint[],
   options: {
-    historyEnabled: boolean;
+    cycleEnabled: boolean;
     cycle: RollCycleMetadata | null;
     xWindow: { min: number; max: number };
   },
 ): GraphCycleOverlaySegment[] => {
-  if (!options.historyEnabled || !options.cycle) {
+  if (!options.cycleEnabled || !options.cycle) {
     return [];
   }
   const periodLength = options.cycle.periodLength;
@@ -158,12 +158,12 @@ const buildCycleSegments = (span: readonly GraphPoint[]): GraphCycleOverlaySegme
 export const resolveGraphImaginaryCycleOverlaySegments = (
   points: readonly GraphPoint[],
   options: {
-    historyEnabled: boolean;
+    cycleEnabled: boolean;
     cycle: RollCycleMetadata | null;
     xWindow: { min: number; max: number };
   },
 ): GraphCycleOverlaySegment[] => {
-  if (!options.historyEnabled || !options.cycle) {
+  if (!options.cycleEnabled || !options.cycle) {
     return [];
   }
   const periodLength = options.cycle.periodLength;

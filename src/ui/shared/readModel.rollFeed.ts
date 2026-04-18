@@ -4,14 +4,13 @@ import {
   isScalarValueZero,
   scalarValueToCalculatorValue,
 } from "../../domain/calculatorValue.js";
-import { HISTORY_FLAG } from "../../domain/state.js";
 import { getSeedRow, getStepRows } from "../../domain/rollEntries.js";
 import type {
   CalculatorValue,
   GameState,
   RollEntry,
 } from "../../domain/types.js";
-import { resolveHistoryForecastValueForState, resolveStepForecastValuesForState } from "../modules/visualizers/numberLineModel.js";
+import { resolveHistoryForecastValueForState } from "../modules/visualizers/numberLineModel.js";
 import type { UxRole, UxRoleAssignment, UxRoleState } from "./uxRoles.js";
 
 export type RollRow = {
@@ -164,11 +163,10 @@ const resolveCommittedRowsWithCycleStyling = (
   state: GameState,
   committedRows: FeedTableRow[],
 ): FeedTableRow[] => {
-  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
   const rollEntries = state.calculator.rollEntries;
   const cycleStartEntry = cycle ? rollEntries[cycle.i] : null;
-  if (!historyEnabled || !cycle || !cycleStartEntry) {
+  if (state.settings.cycle !== "on" || !cycle || !cycleStartEntry) {
     return committedRows;
   }
   return committedRows.map((row) => {
@@ -196,7 +194,7 @@ const resolveCommittedRowsWithCycleStyling = (
 
 const buildForecastRowsForState = (state: GameState, nextIndexBase: number): FeedTableRow[] => {
   const rows: FeedTableRow[] = [];
-  let nextIndex = nextIndexBase;
+  const nextIndex = nextIndexBase;
   const historyForecast = resolveHistoryForecastValueForState(state);
   if (historyForecast) {
     rows.push(buildFeedTableRowFromValue(historyForecast, {
@@ -208,21 +206,7 @@ const buildForecastRowsForState = (state: GameState, nextIndexBase: number): Fee
       uxRole: "analysis",
       uxState: "muted",
     }));
-    nextIndex += 1;
   }
-  const stepForecasts = resolveStepForecastValuesForState(state);
-  stepForecasts.forEach((value) => {
-    rows.push(buildFeedTableRowFromValue(value, {
-      rowKind: "forecast_step",
-      x: null,
-      xLabel: `~${nextIndex.toString()}`,
-      hasError: false,
-      isCycle: false,
-      uxRole: "analysis",
-      uxState: "muted",
-    }));
-    nextIndex += 1;
-  });
   return rows;
 };
 

@@ -80,6 +80,16 @@ export const runUiVisualizerFitContractTests = (): void => {
     "settings CSS defines history subgroup stripe selector",
   );
   assert.equal(
+    css.includes('.key.key--group-settings[data-key="toggle_forecast"]'),
+    true,
+    "settings CSS defines forecast subgroup stripe selector",
+  );
+  assert.equal(
+    css.includes('.key.key--group-settings[data-key="toggle_cycle"]'),
+    true,
+    "settings CSS defines cycle subgroup stripe selector",
+  );
+  assert.equal(
     css.includes('.key.key--group-settings[data-key="toggle_binary_mode"]'),
     true,
     "settings CSS defines base-2 subgroup stripe selector",

@@ -13,7 +13,7 @@ export const createInitialUiDiagnosticsLastAction = (): GameState["ui"]["diagnos
 });
 
 export const SAVE_KEY = "autocalc.v1.save";
-export const SAVE_SCHEMA_VERSION = 22;
+export const SAVE_SCHEMA_VERSION = 23;
 export const OVERFLOW_ERROR_SEEN_ID = "overflow_error_seen";
 export const LAMBDA_SPENT_POINTS_DROPPED_TO_ZERO_SEEN_ID = "lambda_spent_points_dropped_to_zero_seen";
 export const LAMBDA_POINTS_AWARDED_SEEN_ID = "lambda_points_awarded_seen";
@@ -34,6 +34,8 @@ export const BINARY_OCTAVE_CYCLE_FLAG = "settings.binary_octave_cycle";
 export const STEP_EXPANSION_FLAG = "settings.step_expansion";
 export const BINARY_MODE_FLAG = "settings.binary_mode";
 export const HISTORY_FLAG = "settings.history";
+export const FORECAST_FLAG = "settings.forecast";
+export const CYCLE_FLAG = "settings.cycle";
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 12;
 export const KEYPAD_DEFAULT_COLUMNS = Math.max(
@@ -163,6 +165,8 @@ export const defaultKeyLayout = (): LayoutCell[] => [
   { kind: "key", key: KEY_ID.toggle_step_expansion, behavior: { type: "toggle_flag", flag: STEP_EXPANSION_FLAG } },
   { kind: "key", key: KEY_ID.toggle_binary_mode, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } },
   { kind: "key", key: KEY_ID.toggle_history, behavior: { type: "toggle_flag", flag: HISTORY_FLAG } },
+  { kind: "key", key: KEY_ID.toggle_forecast, behavior: { type: "toggle_flag", flag: FORECAST_FLAG } },
+  { kind: "key", key: KEY_ID.toggle_cycle, behavior: { type: "toggle_flag", flag: CYCLE_FLAG } },
   { kind: "key", key: KEY_ID.system_quit_game },
   { kind: "key", key: KEY_ID.system_mode_game },
   { kind: "key", key: KEY_ID.system_new_game },

@@ -1,6 +1,5 @@
 import type { GameState } from "../../domain/types.js";
 import { toStepCount } from "../../domain/rollEntries.js";
-import { HISTORY_FLAG } from "../../domain/state.js";
 import { forEachUiRootRuntime, getOrCreateRuntime } from "../runtime/registry.js";
 import { ensureChartLoaded } from "../../infra/runtime/lazyAssetLoader.js";
 import { resolveUxRoleColor } from "../shared/readModel.js";
@@ -219,12 +218,12 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   );
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
   const cycleOverlaySegments = resolveGraphCycleOverlaySegments(points, {
-    historyEnabled: Boolean(state.ui.buttonFlags[HISTORY_FLAG]),
+    cycleEnabled: state.settings.cycle === "on",
     cycle,
     xWindow: layout.xDomain,
   });
   const imaginaryCycleOverlaySegments = resolveGraphImaginaryCycleOverlaySegments(points, {
-    historyEnabled: Boolean(state.ui.buttonFlags[HISTORY_FLAG]),
+    cycleEnabled: state.settings.cycle === "on",
     cycle,
     xWindow: layout.xDomain,
   });

@@ -69,7 +69,7 @@ export const buildOperationSlotDisplay = (state: GameState): string => {
   const stepThroughOnKeypad = state.ui.keyLayout.some(
     (cell) => cell.kind === "key" && cell.key === KEY_ID.exec_step_through,
   );
-  const expansionEnabled = state.settings.stepExpansion === "on";
+  const expansionEnabled = state.settings.stepExpansion === "on" && state.settings.forecast === "on";
   const stepProgress = state.calculator.stepProgress;
   const stepTargetIndex =
     (stepThroughOnKeypad || expansionEnabled) && state.calculator.operationSlots.length > 0

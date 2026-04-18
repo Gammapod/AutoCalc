@@ -66,6 +66,8 @@ const utilitySet = new Set<UtilityKey>([
   KEY_ID.toggle_step_expansion,
   KEY_ID.toggle_binary_mode,
   KEY_ID.toggle_history,
+  KEY_ID.toggle_forecast,
+  KEY_ID.toggle_cycle,
 ]);
 
 const visualizerSet = new Set<VisualizerKey>([

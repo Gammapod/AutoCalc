@@ -3,8 +3,11 @@ import { STORAGE_COLUMNS } from "../../../domain/state.js";
 import {
   BINARY_OCTAVE_CYCLE_FLAG,
   BINARY_MODE_FLAG,
+  CYCLE_FLAG,
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_FLAG,
+  FORECAST_FLAG,
+  HISTORY_FLAG,
   MOD_ZERO_TO_DELTA_FLAG,
   STEP_EXPANSION_FLAG,
 } from "../../../domain/state.js";
@@ -214,6 +217,15 @@ const toStorageCell = (key: KeyCell["key"]): KeyCell => {
   }
   if (key === "toggle_binary_mode") {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } };
+  }
+  if (key === "toggle_history") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: HISTORY_FLAG } };
+  }
+  if (key === "toggle_forecast") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: FORECAST_FLAG } };
+  }
+  if (key === "toggle_cycle") {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: CYCLE_FLAG } };
   }
   if (key === "exec_play_pause") {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } };

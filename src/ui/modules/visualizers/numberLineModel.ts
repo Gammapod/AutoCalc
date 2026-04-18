@@ -2,7 +2,6 @@ import type { CalculatorValue, GameState, ScalarValue } from "../../../domain/ty
 import { isScalarValueZero } from "../../../domain/calculatorValue.js";
 import { expressionToRational } from "../../../domain/expression.js";
 import { algebraicToApproxNumber, algebraicToRational } from "../../../domain/algebraicScalar.js";
-import { HISTORY_FLAG } from "../../../domain/state.js";
 import { applyAutoStepTick } from "../../../domain/reducer.input.core.js";
 import { handleEqualsInput } from "../../../domain/reducer.input.handlers.execution.js";
 import { resolveSymmetricTierRange } from "./plotPolicy.js";
@@ -194,8 +193,7 @@ export const resolveStepForecastValuesForState = (state: GameState): CalculatorV
 };
 
 export const resolveHistoryForecastValueForState = (state: GameState): CalculatorValue | null => {
-  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
-  if (!historyEnabled) {
+  if (state.settings.forecast !== "on") {
     return null;
   }
   if (state.calculator.rollEntries.length < 1) {
@@ -237,8 +235,7 @@ export const resolvePlotRangeForState = (state: GameState): number => {
   if (latestRoll?.y) {
     plottedValues.push(latestRoll.y);
   }
-  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
-  if (historyEnabled) {
+  if (state.settings.history === "on") {
     const previousRoll = state.calculator.rollEntries[state.calculator.rollEntries.length - 2];
     if (previousRoll?.y) {
       plottedValues.push(previousRoll.y);
@@ -375,8 +372,7 @@ export const resolveHistoryVectorSegmentForState = (
   state: GameState,
   geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
 ): Segment | null => {
-  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
-  if (!historyEnabled || state.calculator.rollEntries.length < 2) {
+  if (state.settings.history !== "on" || state.calculator.rollEntries.length < 2) {
     return null;
   }
   const currentSegment = resolveVectorSegmentForState(state, geometry);
@@ -451,9 +447,8 @@ export const resolveNumberLineCycleOverlaySegmentsForState = (
   state: GameState,
   geometry: NumberLineGeometry = NUMBER_LINE_GEOMETRY,
 ): NumberLineCycleOverlaySegment[] => {
-  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
-  if (!historyEnabled || !cycle) {
+  if (state.settings.cycle !== "on" || !cycle) {
     return [];
   }
   const latestIndex = state.calculator.rollEntries.length - 1;

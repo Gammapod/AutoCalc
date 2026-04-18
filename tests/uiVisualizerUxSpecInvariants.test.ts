@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { toNanCalculatorValue } from "../src/domain/calculatorValue.js";
-import { HISTORY_FLAG, initialState } from "../src/domain/state.js";
+import { initialState } from "../src/domain/state.js";
 import type { GameState, RollEntry } from "../src/domain/types.js";
 import { renderTotalDisplay } from "../src/ui/modules/calculator/totalDisplay.js";
 import { renderNumberLineVisualizerPanel } from "../src/ui/modules/visualizers/numberLineRenderer.js";
@@ -64,35 +64,40 @@ export const runUiVisualizerUxSpecInvariantsTests = (): void => {
     const historyOff = withRoll(base, cycleRows, cycle);
     renderTotalDisplay(totalPanel, historyOff);
     renderRatiosVisualizerPanel(harness.root, historyOff);
-    assert.equal(totalPanel.classList.contains("total-display--cycle"), false, "history-off disables total cycle highlight");
-    assert.equal(ratiosPanel.classList.contains("v2-ratios-panel--cycle"), false, "history-off disables ratios cycle highlight");
+    assert.equal(totalPanel.classList.contains("total-display--cycle"), false, "cycle-off disables total cycle highlight");
+    assert.equal(ratiosPanel.classList.contains("v2-ratios-panel--cycle"), false, "cycle-off disables ratios cycle highlight");
     const feedHistoryOff = buildFeedTableViewModelForState(historyOff);
-    assert.equal(feedHistoryOff.rows.some((row) => row.rowKind === "committed" && row.isCycle), false, "history-off disables feed cycle row marking");
+    assert.equal(feedHistoryOff.rows.some((row) => row.rowKind === "committed" && row.isCycle), false, "cycle-off disables feed cycle row marking");
 
-    const historyOn = withRoll(
+    const cycleOn = withRoll(
       {
         ...base,
-        ui: {
-          ...base.ui,
-          buttonFlags: { ...base.ui.buttonFlags, [HISTORY_FLAG]: true },
+        settings: {
+          ...base.settings,
+          cycle: "on",
         },
       },
       cycleRows,
       cycle,
     );
-    renderTotalDisplay(totalPanel, historyOn);
-    renderRatiosVisualizerPanel(harness.root, historyOn);
-    assert.equal(totalPanel.classList.contains("total-display--cycle"), true, "history-on enables total cycle highlight after detection");
-    assert.equal(ratiosPanel.classList.contains("v2-ratios-panel--cycle"), true, "history-on enables ratios cycle highlight after detection");
-    const feedHistoryOn = buildFeedTableViewModelForState(historyOn);
-    assert.equal(feedHistoryOn.rows.some((row) => row.rowKind === "committed" && row.isCycle), true, "history-on enables feed cycle row marking");
+    renderTotalDisplay(totalPanel, cycleOn);
+    renderRatiosVisualizerPanel(harness.root, cycleOn);
+    assert.equal(totalPanel.classList.contains("total-display--cycle"), true, "cycle-on enables total cycle highlight after detection");
+    assert.equal(ratiosPanel.classList.contains("v2-ratios-panel--cycle"), true, "cycle-on enables ratios cycle highlight after detection");
+    const feedHistoryOn = buildFeedTableViewModelForState(cycleOn);
+    assert.equal(feedHistoryOn.rows.some((row) => row.rowKind === "committed" && row.isCycle), true, "cycle-on enables feed cycle row marking");
 
     // UX-VIS-07: cycle overlays are additive.
     const withNumberLineCycleOverlay = {
-      ...historyOn,
+      ...cycleOn,
       calculator: {
-        ...historyOn.calculator,
+        ...cycleOn.calculator,
         operationSlots: [{ operator: "op_add" as const, operand: 1n }],
+      },
+      settings: {
+        ...cycleOn.settings,
+        history: "on" as const,
+        forecast: "on" as const,
       },
     };
     renderNumberLineVisualizerPanel(harness.root, withNumberLineCycleOverlay);

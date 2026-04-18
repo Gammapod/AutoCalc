@@ -7,7 +7,6 @@ import {
 } from "./numberLineModel.js";
 import { expressionToDisplayString } from "../../../domain/expression.js";
 import { addAlgebraic, algebraicToDisplayString, algebraicToRational, mulAlgebraic, rationalToAlgebraic } from "../../../domain/algebraicScalar.js";
-import { HISTORY_FLAG } from "../../../domain/state.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const VIEWBOX_SIZE = 100;
@@ -356,9 +355,8 @@ const resolveVectorDirection = (state: GameState): { x: number; y: number } | nu
   resolveUnitDirection(state.calculator.total);
 
 const resolveCircleCycleOverlaySegmentsForState = (state: GameState): CircleCycleOverlaySegment[] => {
-  const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
-  if (!historyEnabled || !cycle) {
+  if (state.settings.cycle !== "on" || !cycle) {
     return [];
   }
   const latestIndex = state.calculator.rollEntries.length - 1;
@@ -442,7 +440,7 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
     svg.appendChild(createProjectionToHorizontalDiameter(document, endpoint));
     svg.appendChild(createProjectionToVerticalDiameter(document, endpoint));
 
-    const historyEnabled = Boolean(state.ui.buttonFlags[HISTORY_FLAG]);
+    const historyEnabled = state.settings.history === "on";
     const previousValue = historyEnabled ? (state.calculator.rollEntries[state.calculator.rollEntries.length - 2]?.y ?? null) : null;
     const previousDirection = previousValue ? resolveUnitDirection(previousValue) : null;
     if (historyEnabled && previousDirection) {
@@ -456,7 +454,7 @@ export const renderCircleVisualizerPanel = (root: Element, state: GameState): vo
 
     const nextHistoryValue = resolveHistoryForecastValueForState(state);
     const nextHistoryDirection = nextHistoryValue ? resolveUnitDirection(nextHistoryValue) : null;
-    if (historyEnabled && nextHistoryDirection) {
+    if (nextHistoryDirection) {
       const nextPoint = toPerimeterPoint(nextHistoryDirection);
       svg.appendChild(createSegmentLine(document, endpoint, nextPoint, "v2-number-line-vector--forecast"));
       svg.appendChild(createArrowTip(document, nextPoint, {

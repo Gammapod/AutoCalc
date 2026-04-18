@@ -9,7 +9,7 @@ import {
 } from "./state.js";
 import { isMultiCalculatorSession, resolveActiveCalculatorId, toCalculatorSurface } from "./multiCalculator.js";
 import type { Action, GameState, Key, KeyCell, LayoutSurface } from "./types.js";
-import { resolveSettingSelectionForFlag } from "./settings.js";
+import { isAnalyticsSettingsFamily, resolveSettingSelectionForFlag } from "./settings.js";
 
 const WRAP_SETTING_FLAGS = new Set<string>([
   DELTA_RANGE_CLAMP_FLAG,
@@ -280,7 +280,14 @@ export const classifyExecutionPolicyAction = (state: GameState, action: Action):
         interrupt: { type: "clear_all_except_flag", flag: action.flag },
       };
     }
-    if (isExecutionModeActive(state) && (resolveSettingSelectionForFlag(action.flag) || WRAP_SETTING_FLAGS.has(action.flag.trim()))) {
+    const settingSelection = resolveSettingSelectionForFlag(action.flag);
+    if (
+      isExecutionModeActive(state)
+      && (
+        WRAP_SETTING_FLAGS.has(action.flag.trim())
+        || (settingSelection !== null && !isAnalyticsSettingsFamily(settingSelection.family))
+      )
+    ) {
       return {
         decision: "interrupt_and_run",
         interrupt: { type: "clear_all" },

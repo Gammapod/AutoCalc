@@ -3,9 +3,12 @@ import { KEY_ID } from "./keyPresentation.js";
 import {
   BINARY_OCTAVE_CYCLE_FLAG,
   BINARY_MODE_FLAG,
+  CYCLE_FLAG,
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
   EXECUTION_PAUSE_FLAG,
+  FORECAST_FLAG,
+  HISTORY_FLAG,
   MOD_ZERO_TO_DELTA_FLAG,
   STEP_EXPANSION_FLAG,
   STORAGE_COLUMNS,
@@ -56,6 +59,15 @@ const canonicalCellForKey = (key: Key): KeyCell => {
   }
   if (key === KEY_ID.toggle_binary_mode) {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: BINARY_MODE_FLAG } };
+  }
+  if (key === KEY_ID.toggle_history) {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: HISTORY_FLAG } };
+  }
+  if (key === KEY_ID.toggle_forecast) {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: FORECAST_FLAG } };
+  }
+  if (key === KEY_ID.toggle_cycle) {
+    return { kind: "key", key, behavior: { type: "toggle_flag", flag: CYCLE_FLAG } };
   }
   if (key === KEY_ID.exec_play_pause) {
     return { kind: "key", key, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_FLAG } };

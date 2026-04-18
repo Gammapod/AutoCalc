@@ -277,6 +277,7 @@ export const runRollDisplayTests = (): void => {
     ...cycleBase,
     settings: {
       ...cycleBase.settings,
+      forecast: "on",
       stepExpansion: "on",
     },
     ui: {
@@ -292,9 +293,8 @@ export const runRollDisplayTests = (): void => {
   };
   const withForecastsView = buildFeedTableViewModelForState(withForecasts);
   const forecastRows = withForecastsView.rows.filter((row) => row.rowKind !== "committed");
-  assert.equal(forecastRows.length, 2, "history + step forecast rows append after committed rows");
+  assert.equal(forecastRows.length, 1, "feed appends only history forecast rows");
   assert.equal(forecastRows[0]?.xLabel, "~1", "history forecast uses ~1 prefix");
-  assert.equal(forecastRows[1]?.xLabel, "~2", "step forecast increments projection prefix");
 
   const withoutForecastsView = buildFeedTableViewModelForState({
     ...withForecasts,
@@ -304,6 +304,7 @@ export const runRollDisplayTests = (): void => {
     },
     settings: {
       ...withForecasts.settings,
+      forecast: "off",
       stepExpansion: "off",
     },
   });
@@ -323,10 +324,9 @@ export const runRollDisplayTests = (): void => {
   const committedRows = longCommittedWithForecasts.rows.filter((row) => row.rowKind === "committed");
   const appendedForecastRows = longCommittedWithForecasts.rows.filter((row) => row.rowKind !== "committed");
   assert.equal(committedRows.length, 12, "state-aware feed keeps committed rows capped at twelve");
-  assert.equal(appendedForecastRows.length, 2, "forecast rows append after committed cap");
+  assert.equal(appendedForecastRows.length, 1, "feed appends only one history forecast row after committed cap");
   assert.equal(committedRows[0]?.x, 4, "committed visible window remains the latest twelve entries");
   assert.equal(appendedForecastRows[0]?.xLabel, "~16", "history forecast label uses next absolute roll index");
-  assert.equal(appendedForecastRows[1]?.xLabel, "~17", "step forecast label increments absolute roll index");
 
   const base = initialState();
   assert.equal(resolveActiveVisualizerPanel(base), "total", "default active visualizer resolves to total panel");

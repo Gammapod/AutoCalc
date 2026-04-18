@@ -33,11 +33,15 @@ export type ActiveVisualizer = "total" | VisualizerId;
 export type WrapperSetting = "none" | "delta_range_clamp" | "mod_zero_to_delta" | "binary_octave_cycle";
 export type BaseSetting = "decimal" | "base2";
 export type StepExpansionSetting = "off" | "on";
+export type AnalyticsSetting = "off" | "on";
 export type CalculatorSettings = {
   visualizer: ActiveVisualizer;
   wrapper: WrapperSetting;
   base: BaseSetting;
   stepExpansion: StepExpansionSetting;
+  history: AnalyticsSetting;
+  forecast: AnalyticsSetting;
+  cycle: AnalyticsSetting;
 };
 export type MemoryVariable = "\u03B1" | "\u03B2" | "\u03B3";
 export type CalculatorId = "g" | "f" | "menu" | "f_prime" | "g_prime";

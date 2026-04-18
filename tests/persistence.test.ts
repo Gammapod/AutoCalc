@@ -143,6 +143,10 @@ export const runPersistenceTests = (): void => {
             ...base.ui.buttonFlags,
             "settings.binary_mode": true,
             "settings.delta_range_clamp": true,
+            "settings.step_expansion": true,
+            "settings.history": true,
+            "settings.forecast": true,
+            "settings.cycle": true,
           },
         },
       },
@@ -154,7 +158,14 @@ export const runPersistenceTests = (): void => {
   assert.equal(migratedLegacy.state?.settings.wrapper, "none", "legacy migration resets wrapper setting to default");
   assert.equal(migratedLegacy.state?.settings.base, "decimal", "legacy migration resets base setting to default");
   assert.equal(migratedLegacy.state?.settings.stepExpansion, "off", "legacy migration resets step expansion setting to default");
+  assert.equal(migratedLegacy.state?.settings.history, "off", "legacy migration adds history setting default");
+  assert.equal(migratedLegacy.state?.settings.forecast, "off", "legacy migration adds forecast setting default");
+  assert.equal(migratedLegacy.state?.settings.cycle, "off", "legacy migration adds cycle setting default");
   assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.binary_mode"]), false, "legacy migration drops obsolete settings flags");
+  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.step_expansion"]), false, "legacy migration drops obsolete analytics flags");
+  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.history"]), false, "legacy migration drops obsolete analytics flags");
+  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.forecast"]), false, "legacy migration drops obsolete analytics flags");
+  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.cycle"]), false, "legacy migration drops obsolete analytics flags");
 
   const unsupported = loadFromRawSave(
     JSON.stringify({

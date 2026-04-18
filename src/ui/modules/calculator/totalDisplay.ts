@@ -9,7 +9,6 @@ import {
 } from "../../../domain/calculatorValue.js";
 import { calculatorValueEquals } from "../../../domain/rollEntries.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
-import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
 import {
   MAX_SEVEN_SEGMENT_SLOTS,
@@ -84,7 +83,7 @@ const appendSevenSegmentFrame = (target: HTMLElement, slotModels: readonly Total
 };
 
 const resolveCycleAmberActive = (state: GameState): boolean => {
-  if (!state.ui.buttonFlags[HISTORY_FLAG]) {
+  if (state.settings.cycle !== "on") {
     return false;
   }
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle"

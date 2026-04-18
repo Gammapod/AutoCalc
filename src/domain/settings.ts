@@ -1,12 +1,9 @@
 import { keyToVisualizerId } from "./buttonRegistry.js";
 import { isKeyUnlocked } from "./keyUnlocks.js";
 import { KEY_ID, resolveKeyId } from "./keyPresentation.js";
-import {
-  BINARY_MODE_FLAG,
-  STEP_EXPANSION_FLAG,
-} from "./state.js";
 import type {
   ActiveVisualizer,
+  AnalyticsSetting,
   BaseSetting,
   CalculatorSettings,
   GameState,
@@ -16,6 +13,13 @@ import type {
   WrapperSetting,
 } from "./types.js";
 
+// Keep settings-flag ids local to avoid runtime init cycles with state.ts.
+const BINARY_MODE_FLAG = "settings.binary_mode";
+const STEP_EXPANSION_FLAG = "settings.step_expansion";
+const HISTORY_FLAG = "settings.history";
+const FORECAST_FLAG = "settings.forecast";
+const CYCLE_FLAG = "settings.cycle";
+
 export type SettingsFamily = keyof CalculatorSettings;
 
 export type SettingOptionByFamily = {
@@ -23,6 +27,9 @@ export type SettingOptionByFamily = {
   wrapper: WrapperSetting;
   base: BaseSetting;
   stepExpansion: StepExpansionSetting;
+  history: AnalyticsSetting;
+  forecast: AnalyticsSetting;
+  cycle: AnalyticsSetting;
 };
 
 export type SettingSelection<F extends SettingsFamily = SettingsFamily> = {
@@ -35,13 +42,35 @@ export const DEFAULT_CALCULATOR_SETTINGS: CalculatorSettings = {
   wrapper: "none",
   base: "decimal",
   stepExpansion: "off",
+  history: "off",
+  forecast: "off",
+  cycle: "off",
 };
 
 export const createDefaultCalculatorSettings = (): CalculatorSettings => ({ ...DEFAULT_CALCULATOR_SETTINGS });
 
-const isSettingsToggleKey = (key: Key): boolean =>
-  key === KEY_ID.toggle_binary_mode
-  || key === KEY_ID.toggle_step_expansion;
+const SETTINGS_TOGGLE_SELECTION_BY_KEY = new Map<Key, SettingSelection>([
+  [KEY_ID.toggle_binary_mode, { family: "base", option: "base2" }],
+  [KEY_ID.toggle_step_expansion, { family: "stepExpansion", option: "on" }],
+  [KEY_ID.toggle_history, { family: "history", option: "on" }],
+  [KEY_ID.toggle_forecast, { family: "forecast", option: "on" }],
+  [KEY_ID.toggle_cycle, { family: "cycle", option: "on" }],
+]);
+
+const SETTINGS_TOGGLE_SELECTION_BY_FLAG = new Map<string, SettingSelection>([
+  [BINARY_MODE_FLAG, { family: "base", option: "base2" }],
+  [STEP_EXPANSION_FLAG, { family: "stepExpansion", option: "on" }],
+  [HISTORY_FLAG, { family: "history", option: "on" }],
+  [FORECAST_FLAG, { family: "forecast", option: "on" }],
+  [CYCLE_FLAG, { family: "cycle", option: "on" }],
+]);
+
+const ANALYTICS_SETTINGS_FAMILY_SET = new Set<SettingsFamily>(["history", "forecast", "cycle", "stepExpansion"]);
+
+export const analyticsSettingsFamilies: readonly SettingsFamily[] = ["history", "forecast", "cycle", "stepExpansion"];
+
+export const isAnalyticsSettingsFamily = (family: SettingsFamily): boolean =>
+  ANALYTICS_SETTINGS_FAMILY_SET.has(family);
 
 export const resolveSettingSelectionForKey = (key: Key): SettingSelection | null => {
   const resolved = resolveKeyId(key);
@@ -49,24 +78,14 @@ export const resolveSettingSelectionForKey = (key: Key): SettingSelection | null
   if (visualizer) {
     return { family: "visualizer", option: visualizer };
   }
-  if (!isSettingsToggleKey(resolved)) {
-    return null;
-  }
-  if (resolved === KEY_ID.toggle_binary_mode) {
-    return { family: "base", option: "base2" };
-  }
-  return { family: "stepExpansion", option: "on" };
+  return SETTINGS_TOGGLE_SELECTION_BY_KEY.get(resolved) ?? null;
 };
 
-export const resolveSettingSelectionForFlag = (flag: string): SettingSelection<"base" | "stepExpansion"> | null => {
+export const resolveSettingSelectionForFlag = (
+  flag: string,
+): SettingSelection<"base" | "stepExpansion" | "history" | "forecast" | "cycle"> | null => {
   const trimmed = flag.trim();
-  if (trimmed === BINARY_MODE_FLAG) {
-    return { family: "base", option: "base2" };
-  }
-  if (trimmed === STEP_EXPANSION_FLAG) {
-    return { family: "stepExpansion", option: "on" };
-  }
-  return null;
+  return (SETTINGS_TOGGLE_SELECTION_BY_FLAG.get(trimmed) as SettingSelection<"base" | "stepExpansion" | "history" | "forecast" | "cycle"> | undefined) ?? null;
 };
 
 const isInstalledSettingOption = <F extends SettingsFamily>(
@@ -143,7 +162,7 @@ export const normalizeSettingsState = (
   state: Pick<GameState, "ui" | "unlocks" | "settings">,
 ): CalculatorSettings => {
   let next = state.settings;
-  const families: SettingsFamily[] = ["visualizer", "base", "stepExpansion"];
+  const families: SettingsFamily[] = ["visualizer", "base", "stepExpansion", "history", "forecast", "cycle"];
   for (const family of families) {
     const current = next[family];
     const effectiveDefault = resolveEffectiveDefaultForFamily(state, family);
@@ -178,6 +197,9 @@ export const normalizeSettingsFlagsFromButtonFlags = (flags: Record<string, bool
   const nextFlags = { ...flags };
   delete nextFlags[STEP_EXPANSION_FLAG];
   delete nextFlags[BINARY_MODE_FLAG];
+  delete nextFlags[HISTORY_FLAG];
+  delete nextFlags[FORECAST_FLAG];
+  delete nextFlags[CYCLE_FLAG];
   return nextFlags;
 };
 
