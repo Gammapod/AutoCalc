@@ -64,13 +64,15 @@ const applyStrokeUxRole = (
   if (className === "v2-number-line-vector--current-error") {
     applyUxRoleAttributes(element, { uxRole: "error", uxState: "active" });
   } else if (
-    className === "v2-number-line-vector--history"
-    || className === "v2-number-line-vector--forecast-step"
-    || className === "v2-number-line-cycle-line"
+    className === "v2-number-line-cycle-line"
     || className === "v2-number-line-cycle-line--chain"
     || className === "v2-number-line-cycle-line--closure"
   ) {
     applyUxRoleAttributes(element, { uxRole: "analysis", uxState: "active" });
+  } else if (className === "v2-number-line-vector--history") {
+    applyUxRoleAttributes(element, { uxRole: "history", uxState: "active" });
+  } else if (className === "v2-number-line-vector--forecast-step") {
+    applyUxRoleAttributes(element, { uxRole: "step", uxState: "active" });
   } else if (className === "v2-number-line-vector--forecast") {
     applyUxRoleAttributes(element, { uxRole: "unlock", uxState: "active" });
   } else if (roleOverride === "imaginary") {
@@ -157,8 +159,10 @@ const appendVectorTip = (
   tip.setAttribute("class", className);
   if (className === "v2-number-line-vector-tip--current-error") {
     applyUxRoleAttributes(tip, { uxRole: "error", uxState: "active" });
-  } else if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
-    applyUxRoleAttributes(tip, { uxRole: "analysis", uxState: "active" });
+  } else if (className === "v2-number-line-vector-tip--history") {
+    applyUxRoleAttributes(tip, { uxRole: "history", uxState: "active" });
+  } else if (className === "v2-number-line-vector-tip--forecast-step") {
+    applyUxRoleAttributes(tip, { uxRole: "step", uxState: "active" });
   } else if (className === "v2-number-line-vector-tip--forecast") {
     applyUxRoleAttributes(tip, { uxRole: "unlock", uxState: "active" });
   } else {
@@ -210,8 +214,10 @@ const appendVectorArrowTip = (
   arrow.setAttribute("class", className);
   if (className === "v2-number-line-vector-tip--current-error") {
     applyUxRoleAttributes(arrow, { uxRole: "error", uxState: "active" });
-  } else if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
-    applyUxRoleAttributes(arrow, { uxRole: "analysis", uxState: "active" });
+  } else if (className === "v2-number-line-vector-tip--history") {
+    applyUxRoleAttributes(arrow, { uxRole: "history", uxState: "active" });
+  } else if (className === "v2-number-line-vector-tip--forecast-step") {
+    applyUxRoleAttributes(arrow, { uxRole: "step", uxState: "active" });
   } else {
     applyUxRoleAttributes(arrow, { uxRole: "unlock", uxState: "active" });
   }

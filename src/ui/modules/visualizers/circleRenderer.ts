@@ -269,7 +269,10 @@ const createSegmentLine = (
   line.setAttribute("x2", to.x.toString());
   line.setAttribute("y2", to.y.toString());
   if (className === "v2-number-line-vector--history" || className === "v2-number-line-vector--forecast-step") {
-    applyUxRoleAttributes(line, { uxRole: "analysis", uxState: "active" });
+    applyUxRoleAttributes(line, {
+      uxRole: className === "v2-number-line-vector--history" ? "history" : "step",
+      uxState: "active",
+    });
   } else {
     applyUxRoleAttributes(line, { uxRole: "unlock", uxState: "active" });
   }
@@ -324,7 +327,10 @@ const createArrowTip = (
   );
   tip.setAttribute("class", className);
   if (className === "v2-number-line-vector-tip--history" || className === "v2-number-line-vector-tip--forecast-step") {
-    applyUxRoleAttributes(tip, { uxRole: "analysis", uxState: "active" });
+    applyUxRoleAttributes(tip, {
+      uxRole: className === "v2-number-line-vector-tip--history" ? "history" : "step",
+      uxState: "active",
+    });
   } else {
     applyUxRoleAttributes(tip, { uxRole: "unlock", uxState: "active" });
   }

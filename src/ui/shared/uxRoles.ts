@@ -3,6 +3,8 @@ export type UxRole =
   | "imaginary"
   | "unlock"
   | "analysis"
+  | "history"
+  | "step"
   | "help"
   | "base_setting"
   | "visualizer_setting"
@@ -16,6 +18,8 @@ export type UxRoleTokenName =
   | "--ux-role-imaginary-color"
   | "--ux-role-unlock-color"
   | "--ux-role-analysis-color"
+  | "--ux-role-history-color"
+  | "--ux-role-step-color"
   | "--ux-role-help-color"
   | "--ux-role-base-setting-color"
   | "--ux-role-visualizer-setting-color"
@@ -27,6 +31,8 @@ export const UX_ROLE_TOKEN_BY_ROLE: Record<UxRole, UxRoleTokenName> = {
   imaginary: "--ux-role-imaginary-color",
   unlock: "--ux-role-unlock-color",
   analysis: "--ux-role-analysis-color",
+  history: "--ux-role-history-color",
+  step: "--ux-role-step-color",
   help: "--ux-role-help-color",
   base_setting: "--ux-role-base-setting-color",
   visualizer_setting: "--ux-role-visualizer-setting-color",
@@ -60,6 +66,8 @@ const UX_ROLE_FALLBACK_HEX: Record<UxRole, `#${string}`> = {
   imaginary: "#be8ee8",
   unlock: "#79c3ff",
   analysis: "#f2cf57",
+  history: "#ff8ccb",
+  step: "#f4f7fb",
   help: "#e9f4ff",
   base_setting: "#c996f0",
   visualizer_setting: "#79c3ff",

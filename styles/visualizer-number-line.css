@@ -88,7 +88,7 @@ body[data-ui-shell="desktop"] .v2-number-line-vector-tip--current-error {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector--history,
 body[data-ui-shell="desktop"] .v2-number-line-vector--history {
-  stroke: var(--ux-role-analysis-color);
+  stroke: var(--ux-role-history-color);
   stroke-width: 0.65;
   stroke-linecap: round;
   stroke-dasharray: 1.5 1.2;
@@ -97,7 +97,7 @@ body[data-ui-shell="desktop"] .v2-number-line-vector--history {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector-tip--history,
 body[data-ui-shell="desktop"] .v2-number-line-vector-tip--history {
-  fill: var(--ux-role-analysis-color);
+  fill: var(--ux-role-history-color);
   opacity: 0.72;
 }
 
@@ -118,7 +118,7 @@ body[data-ui-shell="desktop"] .v2-number-line-vector-tip--forecast {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector--forecast-step,
 body[data-ui-shell="desktop"] .v2-number-line-vector--forecast-step {
-  stroke: var(--ux-role-analysis-color);
+  stroke: var(--ux-role-step-color);
   stroke-width: 0.65;
   stroke-linecap: round;
   stroke-dasharray: 1.5 1.2;
@@ -127,7 +127,7 @@ body[data-ui-shell="desktop"] .v2-number-line-vector--forecast-step {
 
 body[data-ui-shell="mobile"] .v2-number-line-vector-tip--forecast-step,
 body[data-ui-shell="desktop"] .v2-number-line-vector-tip--forecast-step {
-  fill: var(--ux-role-analysis-color);
+  fill: var(--ux-role-step-color);
   opacity: 0.72;
 }
 

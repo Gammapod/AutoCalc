@@ -62,6 +62,8 @@
         --ux-role-imaginary-color: #be8ee8;
         --ux-role-unlock-color: var(--ux-role-info, #79c3ff);
         --ux-role-analysis-color: #f2cf57;
+        --ux-role-history-color: #ff8ccb;
+        --ux-role-step-color: #f4f7fb;
         --ux-role-help-color: #e9f4ff;
         --ux-role-base-setting-color: #c996f0;
         --ux-role-visualizer-setting-color: var(--ux-role-info, #79c3ff);
@@ -3167,7 +3169,7 @@
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-row--forecast,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-row--forecast {
-        color: color-mix(in srgb, var(--ux-role-analysis-color) 75%, #ffffff 25%);
+        color: color-mix(in srgb, var(--ux-role-unlock-color) 75%, #ffffff 25%);
         opacity: 0.82;
       }
 
@@ -3277,6 +3279,14 @@
 
       [data-ux-role="analysis"] {
         color: var(--ux-role-analysis-color);
+      }
+
+      [data-ux-role="history"] {
+        color: var(--ux-role-history-color);
+      }
+
+      [data-ux-role="step"] {
+        color: var(--ux-role-step-color);
       }
 
       [data-ux-role="help"] {

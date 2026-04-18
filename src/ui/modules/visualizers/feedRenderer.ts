@@ -131,7 +131,7 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
           return { uxRole: "analysis", uxState: "active" };
         }
         if (row.rowKind !== "committed") {
-          return { uxRole: "analysis", uxState: "muted" };
+          return { uxRole: "unlock", uxState: "muted" };
         }
         return { uxRole: "imaginary", uxState: "active" };
       })()

@@ -14,6 +14,8 @@ const isUxRole = (value: string): value is UxRole =>
   || value === "imaginary"
   || value === "unlock"
   || value === "analysis"
+  || value === "history"
+  || value === "step"
   || value === "help"
   || value === "base_setting"
   || value === "visualizer_setting"

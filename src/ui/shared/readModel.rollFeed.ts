@@ -203,7 +203,7 @@ const buildForecastRowsForState = (state: GameState, nextIndexBase: number): Fee
       xLabel: `~${nextIndex.toString()}`,
       hasError: false,
       isCycle: false,
-      uxRole: "analysis",
+      uxRole: "unlock",
       uxState: "muted",
     }));
   }
