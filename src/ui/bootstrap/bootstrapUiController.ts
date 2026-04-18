@@ -4,6 +4,9 @@ import type { AppServices } from "../../contracts/appServices.js";
 import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
 import { serializeRollEntriesForDebug } from "../../infra/debug/rollStateSerializer.js";
 import { deriveCatalogPartialProgressPredicateTypes, deriveCatalogProgressCoverage } from "../../domain/unlockHintProgress.js";
+import { resolveKeyCapability } from "../../domain/keyUnlocks.js";
+import { toCoordFromIndex } from "../../domain/keypadLayoutModel.js";
+import { withActiveCalculator } from "../../domain/multiCalculator.js";
 
 type UiShellMode = "mobile" | "desktop";
 
@@ -60,6 +63,13 @@ const toSelectedCalculatorId = (value: string): CalculatorId =>
         : value === "g_prime"
           ? "g_prime"
           : "f";
+
+const toSnapshotKeyStatus = (capability: ReturnType<typeof resolveKeyCapability>): "lock" | "installed_only" | "unlock" =>
+  capability === "portable"
+    ? "unlock"
+    : capability === "installed_only"
+      ? "installed_only"
+      : "lock";
 
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
   try {
@@ -208,10 +218,34 @@ export const createBootstrapUiController = ({
   listen(refs.copyCalculatorSnapshotButton, "click", () => {
     const state = getState();
     const calculatorId = toSelectedCalculatorId(refs.debugCalculatorSelect.value || state.activeCalculatorId || "f");
-    const selectedInstance = state.calculators?.[calculatorId];
-    const selectedProjected = selectedInstance ?? state;
+    const selectedProjected = withActiveCalculator(state, calculatorId);
+    const keyLayoutDebug = selectedProjected.ui.keyLayout.map((cell, index) => {
+      const coord = toCoordFromIndex(index, selectedProjected.ui.keypadColumns, selectedProjected.ui.keypadRows);
+      const rowColId = `R${coord.row}C${coord.col}`;
+      if (cell.kind !== "key") {
+        return {
+          index,
+          rowColId,
+          row: coord.row,
+          col: coord.col,
+          kind: "placeholder" as const,
+          area: cell.area,
+        };
+      }
+      const capability = resolveKeyCapability(selectedProjected, cell.key);
+      return {
+        index,
+        rowColId,
+        row: coord.row,
+        col: coord.col,
+        kind: "key" as const,
+        key: cell.key,
+        status: toSnapshotKeyStatus(capability),
+        capability,
+      };
+    });
     const snapshot = {
-      schema: "debug_calculator_snapshot_v2",
+      schema: "debug_calculator_snapshot_v3",
       capturedAt: new Date().toISOString(),
       calculatorId,
       lambdaControl: selectedProjected.lambdaControl,
@@ -219,6 +253,7 @@ export const createBootstrapUiController = ({
         columns: selectedProjected.ui.keypadColumns,
         rows: selectedProjected.ui.keypadRows,
         keyLayout: selectedProjected.ui.keyLayout,
+        keyLayoutDebug,
       },
     };
     const serialized = JSON.stringify(snapshot, null, 2);

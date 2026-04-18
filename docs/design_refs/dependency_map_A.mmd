@@ -170,19 +170,19 @@ subgraph Complex_Math ["ℚ[𝕚]"]
     %% Expanded form `[ 4 -M⭾R ]` -> `[ 4 ↶ 6 ]`
     %% Expanded form `[ 4 -M⭾R ]` -> `[ -3:00 ]`
 
-    CPX_plusi["z [ M++ ]"]
+    CPX_plusi["z [ M++ ]"] %% IMPLEMENTED
     %% Expanded form `[ z + i ]`
-    CPX_minusi["z [ M–– ]"]
+    CPX_minusi["z [ M–– ]"] %% IMPLEMENTED
     %% Expanded form `[ z – i ]`
-    CPX_conj["z [ M± ]"]
+    CPX_conj["z [ M± ]"] %% IMPLEMENTED
     %% Reflects only the imaginary part
     %% Expanded form `[ M± ]` -> [ M – (2 × M) + R]
-    CPX_horiz["z [ R± ]"]
+    CPX_horiz["z [ R± ]"] %% IMPLEMENTED
     %% Reflects only the real part
     %% Expanded form `[ R± ]` -> [ R – (2 × R) + M]
-    CPX_impart["z [ M→ ]"]
+    CPX_impart["z [ M→ ]"] %% IMPLEMENTED
     %% %% Ixpanded form `[ M→ ]` -> `[ (z + (z R±)) ÷ 2i ]`
-    CPX_repart["z [ MC ]"]
+    CPX_repart["z [ MC ]"] %% IMPLEMENTED
     %% %% Expanded form `[ MC ]` -> `[ (z + (z M±)) ÷ 2 ]`
     CPX_mid["a⦼b"]
     %% %% Expanded form `[ 4⦼3 ]` -> `[ (3 + (4 -M⭾R)) ÷ 2 ]
@@ -216,7 +216,7 @@ subgraph Rotation_Ops ["ℂ"]
     ROT_twentyfourth["[ n ⦨ ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ÷12) ]`
     %% Expanded form `[ 4 ⦨ ]` -> `[ -0:30 ]`
-    ROT_rotate["a [ ↶ b ]"]
+    ROT_rotate["a [ ↶ b ]"] %% IMPLEMENTED
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{2π×(3÷24)-M⭾R} ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ -1:30 ]`
@@ -246,7 +246,7 @@ subgraph Boolean_Ops ["𝕋÷𝔽"]
     %% a, b, n -> numeric values (else false)
     %% p, q -> numeric values (true) or ⊥ (false)
     
-    BOO_notp[["¬ p"]]
+    BOO_notp[["¬ p"]] %% IMPLEMENTED
     %% Expanded form `[ ⊥ if p, else 1 ]`
     BOO_ifelse["p ⩣ q"]
     %% Expanded form `[ p if p, else q ]`
