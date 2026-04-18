@@ -1,6 +1,7 @@
 import { calculatorValueEquals } from "../../../domain/rollEntries.js";
 import { calculatorValueToRational, isRealEquivalentCalculatorValue, scalarValueToCalculatorValue } from "../../../domain/calculatorValue.js";
 import { normalizeRational } from "../../../domain/algebraicScalar.js";
+import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { ExecutionErrorKind, GameState, RationalValue, RollLimitComponentKind, ScalarValue } from "../../../domain/types.js";
 import { applyUxRoleAttributes } from "../../shared/readModel.js";
@@ -310,8 +311,21 @@ export const renderRatiosVisualizerPanel = (root: Element, state: GameState): vo
     return;
   }
 
+  const latestRollEntry = state.calculator.rollEntries.at(-1);
+  const domainValue = latestRollEntry?.y ?? state.calculator.total;
+  const domainIsNaN = domainValue.kind === "nan";
   const table = document.createElement("div");
   table.className = "v2-ratios-table";
+  const domainIndicator = document.createElement("span");
+  domainIndicator.className = "v2-ratios-domain-indicator";
+  domainIndicator.textContent = domainIsNaN ? "\u2205" : getRollYDomain(domainValue);
+  domainIndicator.classList.toggle("v2-ratios-domain-indicator--nan", domainIsNaN);
+  const baseIndicator = document.createElement("span");
+  baseIndicator.className = "v2-ratios-base-indicator";
+  const binaryModeEnabled = state.settings.base === "base2";
+  baseIndicator.textContent = binaryModeEnabled ? "| BIN |" : "";
+  baseIndicator.setAttribute("aria-hidden", binaryModeEnabled ? "false" : "true");
+
   if (showImaginaryRow) {
     renderRatiosRow(table, {
       className: "v2-ratios-row--imaginary",
@@ -330,5 +344,5 @@ export const renderRatiosVisualizerPanel = (root: Element, state: GameState): vo
     rightSlotCount: denominatorSlotCount,
     uxRole: "default",
   });
-  panel.appendChild(table);
+  panel.append(domainIndicator, baseIndicator, table);
 };

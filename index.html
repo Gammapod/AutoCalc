@@ -2720,10 +2720,13 @@
 
       body[data-ui-shell="mobile"] .v2-ratios-panel,
       body[data-ui-shell="desktop"] .v2-ratios-panel {
+        --v2-ratios-bottom-pad: 30px;
+        --v2-ratios-row-gap: 8px;
+        --v2-ratios-row-height: clamp(18px, 2.8vw, 24px);
         display: flex;
         position: absolute;
         inset: 0;
-        padding: 8px 10px 30px;
+        padding: 8px 10px var(--v2-ratios-bottom-pad);
         justify-content: center;
         align-items: flex-end;
         opacity: 0;
@@ -2745,18 +2748,57 @@
       body[data-ui-shell="desktop"] .v2-ratios-table {
         display: grid;
         grid-template-rows: repeat(2, max-content);
-        justify-content: center;
+        justify-content: stretch;
         gap: 8px;
         width: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-domain-indicator,
+      body[data-ui-shell="desktop"] .v2-ratios-domain-indicator {
+        position: absolute;
+        left: 10px;
+        bottom: calc(var(--v2-ratios-bottom-pad) + (2 * var(--v2-ratios-row-height)) + var(--v2-ratios-row-gap));
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(18px, 2.8vw, 24px);
+        line-height: 1;
+        color: var(--ux-role-default-color);
+        text-shadow: 0 0 6px rgba(188, 255, 214, 0.45);
+        width: 20px;
+        text-align: center;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-domain-indicator--nan,
+      body[data-ui-shell="desktop"] .v2-ratios-domain-indicator--nan {
+        color: var(--ux-role-error-color, #ff6f6f);
+        text-shadow: 0 0 6px rgba(255, 111, 111, 0.55);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-base-indicator,
+      body[data-ui-shell="desktop"] .v2-ratios-base-indicator {
+        position: absolute;
+        left: 10px;
+        bottom: calc(var(--v2-ratios-bottom-pad) - 16px);
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(10px, 1.6vw, 12px);
+        letter-spacing: 0.08em;
+        color: #7eb8ff;
+        text-shadow: 0 0 6px rgba(126, 184, 255, 0.48);
+        white-space: nowrap;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-base-indicator[aria-hidden="true"],
+      body[data-ui-shell="desktop"] .v2-ratios-base-indicator[aria-hidden="true"] {
+        visibility: hidden;
       }
 
       body[data-ui-shell="mobile"] .v2-ratios-row,
       body[data-ui-shell="desktop"] .v2-ratios-row {
         display: grid;
-        grid-template-columns: max-content max-content max-content;
+        grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
         align-items: center;
-        justify-content: center;
-        gap: 8px;
+        justify-content: stretch;
+        gap: var(--v2-ratios-row-gap);
+        width: 100%;
       }
 
       body[data-ui-shell="mobile"] .v2-ratios-display,
@@ -2764,6 +2806,17 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        min-width: 0;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row > .v2-ratios-display:first-child,
+      body[data-ui-shell="desktop"] .v2-ratios-row > .v2-ratios-display:first-child {
+        justify-content: flex-end;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row > .v2-ratios-display:last-child,
+      body[data-ui-shell="desktop"] .v2-ratios-row > .v2-ratios-display:last-child {
+        justify-content: flex-start;
       }
 
       body[data-ui-shell="mobile"] .v2-ratios-separator,
@@ -2784,7 +2837,7 @@
       body[data-ui-shell="mobile"] .v2-ratios-panel .seg-digit,
       body[data-ui-shell="desktop"] .v2-ratios-panel .seg-digit {
         width: clamp(11px, 1.7vw, 14px);
-        height: clamp(18px, 2.8vw, 24px);
+        height: var(--v2-ratios-row-height);
       }
 
       body[data-ui-shell="mobile"] .v2-ratios-panel .seg-frame,

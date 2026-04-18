@@ -58,6 +58,12 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle class is off for initial state");
     const table = panel.querySelector<HTMLElement>(".v2-ratios-table");
     assert.ok(table, "ratios panel renders table scaffold");
+    const domainIndicator = panel.querySelector<HTMLElement>(".v2-ratios-domain-indicator");
+    const baseIndicator = panel.querySelector<HTMLElement>(".v2-ratios-base-indicator");
+    assert.ok(domainIndicator, "ratios panel renders domain indicator");
+    assert.ok(baseIndicator, "ratios panel renders base indicator");
+    assert.equal((domainIndicator?.textContent ?? "").length > 0, true, "domain indicator renders a domain glyph");
+    assert.equal(baseIndicator?.getAttribute("aria-hidden"), "true", "binary indicator is hidden in decimal mode");
     assert.equal(panel.querySelectorAll(".v2-ratios-row").length, 1, "ratios panel hides imaginary row while roll history is real-only");
     assert.equal(panel.querySelectorAll(".v2-ratios-separator").length, 1, "ratios panel renders one ':' separator for the visible row");
     const imaginaryRow = panel.querySelector<HTMLElement>(".v2-ratios-row--imaginary");
@@ -123,6 +129,17 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     const wideSlotCounts = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
       .map((display) => display.getAttribute("data-ratios-slot-count"));
     assert.deepEqual(wideSlotCounts, ["11", "10", "11", "10"], "ratios supports slots above 8 up to total-display cap");
+    const withBinaryBase = {
+      ...withWideDigitBudgets,
+      settings: {
+        ...withWideDigitBudgets.settings,
+        base: "base2" as const,
+      },
+    };
+    renderRatiosVisualizerPanel(harness.root, withBinaryBase);
+    const binaryIndicator = panel.querySelector<HTMLElement>(".v2-ratios-base-indicator");
+    assert.equal(binaryIndicator?.getAttribute("aria-hidden"), "false", "binary indicator is visible in binary mode");
+    assert.equal(binaryIndicator?.textContent, "| BIN |", "binary indicator renders framed token");
 
     const realIrrationalState: GameState = {
       ...initialState(),
@@ -345,6 +362,13 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       .map((display) => display.getAttribute("data-ratios-token"));
     assert.deepEqual(nanTokens, ["Error", "Error"], "NaN errors render Error on the visible real row when imaginary row is hidden");
     assert.equal(panel.classList.contains("v2-ratios-panel--error"), true, "NaN Error rendering enables ratios error class");
+    const nanDomainIndicator = panel.querySelector<HTMLElement>(".v2-ratios-domain-indicator");
+    assert.equal(nanDomainIndicator?.textContent, "\u2205", "domain indicator shows null-set symbol when ratios value is NaN");
+    assert.equal(
+      nanDomainIndicator?.classList.contains("v2-ratios-domain-indicator--nan"),
+      true,
+      "domain indicator switches to NaN styling when ratios value is NaN",
+    );
 
     clearRatiosVisualizerPanel(harness.root);
     assert.equal(panel.getAttribute("aria-hidden"), "true", "clear helper hides ratios panel");
