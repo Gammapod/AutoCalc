@@ -36,6 +36,14 @@ const withRoll = (state: GameState, entries: RollEntry[], cycle: GameState["calc
   },
 });
 
+const withImaginaryRollHistory = (state: GameState): GameState => ({
+  ...state,
+  calculator: {
+    ...state.calculator,
+    rollEntries: [{ y: c(0n, 1n) }, ...state.calculator.rollEntries],
+  },
+});
+
 export const runUiModuleRatiosRendererV2Tests = (): void => {
   const harness = installDomHarness();
   try {
@@ -50,18 +58,26 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle class is off for initial state");
     const table = panel.querySelector<HTMLElement>(".v2-ratios-table");
     assert.ok(table, "ratios panel renders table scaffold");
-    assert.equal(panel.querySelectorAll(".v2-ratios-row").length, 2, "ratios panel renders imaginary and real rows");
-    assert.equal(panel.querySelectorAll(".v2-ratios-separator").length, 2, "ratios panel renders one ':' separator per row");
+    assert.equal(panel.querySelectorAll(".v2-ratios-row").length, 1, "ratios panel hides imaginary row while roll history is real-only");
+    assert.equal(panel.querySelectorAll(".v2-ratios-separator").length, 1, "ratios panel renders one ':' separator for the visible row");
     const imaginaryRow = panel.querySelector<HTMLElement>(".v2-ratios-row--imaginary");
-    assert.equal(imaginaryRow?.getAttribute("data-ux-role"), "imaginary", "imaginary row uses imaginary feedback channel role");
+    assert.equal(imaginaryRow, null, "imaginary ratios row is not present when no roll has imaginary content");
     const initialTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
       .map((display) => display.getAttribute("data-ratios-token"));
-    assert.deepEqual(initialTokens, ["0", "1", "0", "1"], "initial ratios display defaults to Im 0:1 and Re 0:1");
+    assert.deepEqual(initialTokens, ["0", "1"], "initial ratios display shows only the real 0:1 row");
     const initialSlotCounts = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
       .map((display) => display.getAttribute("data-ratios-slot-count"));
-    assert.deepEqual(initialSlotCounts, ["3", "1", "3", "1"], "initial ratios slots use delta for numerators and delta_q for denominators");
+    assert.deepEqual(initialSlotCounts, ["3", "1"], "initial ratios slots use delta for numerator and delta_q for denominator");
 
-    const withComplexRationalTotal = {
+    renderRatiosVisualizerPanel(harness.root, withImaginaryRollHistory(initialState()));
+    assert.equal(panel.querySelectorAll(".v2-ratios-row").length, 2, "ratios panel shows imaginary row once any roll has imaginary content");
+    assert.equal(
+      panel.querySelector<HTMLElement>(".v2-ratios-row--imaginary")?.getAttribute("data-ux-role"),
+      "imaginary",
+      "visible imaginary row uses imaginary feedback channel role",
+    );
+
+    const withComplexRationalTotal = withImaginaryRollHistory({
       ...initialState(),
       calculator: {
         ...initialState().calculator,
@@ -78,7 +94,7 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
         ...initialState().lambdaControl,
         delta_q: 4,
       },
-    };
+    });
     renderRatiosVisualizerPanel(harness.root, withComplexRationalTotal);
     const complexTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
       .map((display) => display.getAttribute("data-ratios-token"));
@@ -120,11 +136,11 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       .map((display) => display.getAttribute("data-ratios-token"));
     assert.deepEqual(
       realIrrationalTokens,
-      ["0", "1", "rAdicAL", "rAdicAL"],
-      "real irrational totals render rAdicAL on both real numerator and denominator fields",
+      ["rAdicAL", "rAdicAL"],
+      "real-only roll history keeps the imaginary row hidden even for irrational real totals",
     );
 
-    const complexImaginaryIrrationalState: GameState = {
+    const complexImaginaryIrrationalState: GameState = withImaginaryRollHistory({
       ...initialState(),
       calculator: {
         ...initialState().calculator,
@@ -133,7 +149,7 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
           toExpressionScalarValue(symbolicExpr("sqrt(2)")),
         ),
       },
-    };
+    });
     renderRatiosVisualizerPanel(harness.root, complexImaginaryIrrationalState);
     const complexImaginaryIrrationalTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
       .map((display) => display.getAttribute("data-ratios-token"));
@@ -155,8 +171,8 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       .map((display) => display.getAttribute("data-ratios-token"));
     assert.deepEqual(
       rationalExprTokens,
-      ["0", "1", "2", "1"],
-      "rational-equivalent expressions clear rAdicAL and render numeric ratios",
+      ["2", "1"],
+      "rational-equivalent expressions keep imaginary row hidden with real-only roll history",
     );
 
     const cycle = { i: 1, j: 4, transientLength: 1, periodLength: 3 };
@@ -261,7 +277,7 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     renderRatiosVisualizerPanel(harness.root, overflowState);
     const overflowTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
       .map((display) => display.getAttribute("data-ratios-token"));
-    assert.deepEqual(overflowTokens, ["0", "1", "99", "7"], "overflow displays clamped numerator while preserving raw denominator");
+    assert.deepEqual(overflowTokens, ["99", "7"], "overflow displays clamped numerator while preserving raw denominator");
 
     const precisionOverflowState: GameState = {
       ...initialState(),
@@ -293,7 +309,7 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       .map((display) => display.getAttribute("data-ratios-token"));
     assert.deepEqual(
       precisionOverflowTokens,
-      ["0", "1", "8", "4"],
+      ["8", "4"],
       "precision overflow displays raw numerator while preserving clamped denominator",
     );
 
@@ -312,7 +328,7 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
       .map((display) => display.getAttribute("data-ratios-token"));
     assert.deepEqual(
       overflowFallbackTokens,
-      ["0", "1", "99", "1"],
+      ["99", "1"],
       "missing overflow metadata falls back gracefully to clamped display values",
     );
 
@@ -327,7 +343,7 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     renderRatiosVisualizerPanel(harness.root, nanErrorState);
     const nanTokens = Array.from(panel.querySelectorAll<HTMLElement>(".v2-ratios-display"))
       .map((display) => display.getAttribute("data-ratios-token"));
-    assert.deepEqual(nanTokens, ["Error", "Error", "Error", "Error"], "NaN errors render Error on all four displays");
+    assert.deepEqual(nanTokens, ["Error", "Error"], "NaN errors render Error on the visible real row when imaginary row is hidden");
     assert.equal(panel.classList.contains("v2-ratios-panel--error"), true, "NaN Error rendering enables ratios error class");
 
     clearRatiosVisualizerPanel(harness.root);

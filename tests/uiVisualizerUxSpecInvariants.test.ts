@@ -12,6 +12,13 @@ const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: big
   kind: "rational",
   value: { num, den },
 });
+const c = (reNum: bigint, imNum: bigint): { kind: "complex"; value: { re: ReturnType<typeof r>; im: ReturnType<typeof r> } } => ({
+  kind: "complex",
+  value: {
+    re: r(reNum),
+    im: r(imNum),
+  },
+});
 
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
@@ -103,7 +110,10 @@ export const runUiVisualizerUxSpecInvariantsTests = (): void => {
       calculator: {
         ...initialState().calculator,
         total: toNanCalculatorValue(),
-        rollEntries: [{ y: toNanCalculatorValue(), error: { code: "seed_nan", kind: "nan_input" } }],
+        rollEntries: [
+          { y: c(0n, 1n) },
+          { y: toNanCalculatorValue(), error: { code: "seed_nan", kind: "nan_input" } },
+        ],
       },
     };
     renderRatiosVisualizerPanel(harness.root, nanErrorState);
@@ -132,6 +142,10 @@ export const runUiVisualizerUxSpecInvariantsTests = (): void => {
       lambdaControl: {
         ...initialState().lambdaControl,
         delta_q: 10,
+      },
+      calculator: {
+        ...initialState().calculator,
+        rollEntries: [{ y: c(0n, 1n) }],
       },
     };
     renderRatiosVisualizerPanel(harness.root, withDigitBudgets);

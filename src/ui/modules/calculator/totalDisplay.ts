@@ -129,6 +129,10 @@ const resolveCycleAmberActive = (state: GameState): boolean => {
   return calculatorValueEquals(latestEntry.y, cycleStartEntry.y);
 };
 
+const hasImaginaryRollHistory = (state: GameState): boolean =>
+  state.calculator.rollEntries.some((entry) =>
+    entry.y.kind === "complex" && !isRealEquivalentCalculatorValue(entry.y));
+
 const renderSevenSegmentValue = (
   target: HTMLElement,
   value: CalculatorValue,
@@ -185,6 +189,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   const hasImaginaryTotal =
     state.calculator.total.kind === "complex"
     && !isRealEquivalentCalculatorValue(state.calculator.total);
+  const hasImaginaryHistory = hasImaginaryRollHistory(state);
   const shouldApplyCycleStyling = !hasLatestRollError && hasCycleAmberActive;
   const shouldApplyImaginaryStyling = !hasLatestRollError && !shouldApplyCycleStyling && hasImaginaryTotal;
   const hasAnyKeyPress = Object.values(state.keyPressCounts).some((count) => (count ?? 0) > 0);
@@ -264,37 +269,31 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     return calculatorValueToDisplayString(displayValue);
   })();
   totalEl.setAttribute("aria-label", `Total ${defaultDisplayLabel}`);
-  if (state.calculator.total.kind === "complex") {
-    const realValue = scalarValueToCalculatorValue(state.calculator.total.value.re);
-    const imaginaryValue = scalarValueToCalculatorValue(state.calculator.total.value.im);
-    const showImaginaryRow = !isRealEquivalentCalculatorValue(state.calculator.total);
-    imaginaryDisplay.setAttribute("aria-hidden", showImaginaryRow ? "false" : "true");
-    if (showImaginaryRow) {
-      renderSevenSegmentValue(
-        imaginaryDisplay,
-        imaginaryValue,
-        state.unlocks.maxTotalDigits,
-        false,
-        displayRadix,
-      );
-    }
+  const realValue = state.calculator.total.kind === "complex"
+    ? scalarValueToCalculatorValue(state.calculator.total.value.re)
+    : state.calculator.total;
+  const imaginaryValue = state.calculator.total.kind === "complex"
+    ? scalarValueToCalculatorValue(state.calculator.total.value.im)
+    : state.calculator.total.kind === "nan"
+      ? state.calculator.total
+      : toRationalCalculatorValue({ num: 0n, den: 1n });
+  imaginaryDisplay.setAttribute("aria-hidden", hasImaginaryHistory ? "false" : "true");
+  if (hasImaginaryHistory) {
     renderSevenSegmentValue(
-      primaryDisplay,
-      realValue,
+      imaginaryDisplay,
+      imaginaryValue,
       state.unlocks.maxTotalDigits,
-      state.calculator.pendingNegativeTotal,
-      displayRadix,
-    );
-  } else {
-    imaginaryDisplay.setAttribute("aria-hidden", "true");
-    renderSevenSegmentValue(
-      primaryDisplay,
-      state.calculator.total,
-      state.unlocks.maxTotalDigits,
-      state.calculator.pendingNegativeTotal,
+      false,
       displayRadix,
     );
   }
+  renderSevenSegmentValue(
+    primaryDisplay,
+    realValue,
+    state.unlocks.maxTotalDigits,
+    state.calculator.pendingNegativeTotal,
+    displayRadix,
+  );
   stack.appendChild(primaryDisplay);
   totalEl.appendChild(stack);
 };

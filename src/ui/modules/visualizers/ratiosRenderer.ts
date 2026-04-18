@@ -1,5 +1,5 @@
 import { calculatorValueEquals } from "../../../domain/rollEntries.js";
-import { calculatorValueToRational, scalarValueToCalculatorValue } from "../../../domain/calculatorValue.js";
+import { calculatorValueToRational, isRealEquivalentCalculatorValue, scalarValueToCalculatorValue } from "../../../domain/calculatorValue.js";
 import { normalizeRational } from "../../../domain/algebraicScalar.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { ExecutionErrorKind, GameState, RationalValue, RollLimitComponentKind, ScalarValue } from "../../../domain/types.js";
@@ -66,6 +66,10 @@ const resolveCycleAmberActive = (state: GameState): boolean => {
   }
   return calculatorValueEquals(latestEntry.y, cycleStartEntry.y);
 };
+
+const hasImaginaryRollHistory = (state: GameState): boolean =>
+  state.calculator.rollEntries.some((entry) =>
+    entry.y.kind === "complex" && !isRealEquivalentCalculatorValue(entry.y));
 
 type RatioDisplayValues = { reNum: string; reDen: string; imNum: string; imDen: string };
 type RationalPair = { re: RationalValue; im: RationalValue };
@@ -298,21 +302,26 @@ export const renderRatiosVisualizerPanel = (root: Element, state: GameState): vo
   );
   const numeratorSlotCount = Math.max(3, Math.min(MAX_RATIO_SLOT_COUNT, Math.trunc(state.unlocks.maxTotalDigits)));
   const denominatorSlotCount = Math.max(1, Math.min(MAX_RATIO_SLOT_COUNT, Math.trunc(state.lambdaControl.delta_q)));
+  const showImaginaryRow = hasImaginaryRollHistory(state);
   if (typeof document === "undefined") {
-    panel.textContent = `Im ${values.imNum}:${values.imDen}\nRe ${values.reNum}:${values.reDen}`;
+    panel.textContent = showImaginaryRow
+      ? `Im ${values.imNum}:${values.imDen}\nRe ${values.reNum}:${values.reDen}`
+      : `Re ${values.reNum}:${values.reDen}`;
     return;
   }
 
   const table = document.createElement("div");
   table.className = "v2-ratios-table";
-  renderRatiosRow(table, {
-    className: "v2-ratios-row--imaginary",
-    leftToken: values.imNum,
-    rightToken: values.imDen,
-    leftSlotCount: numeratorSlotCount,
-    rightSlotCount: denominatorSlotCount,
-    uxRole: "imaginary",
-  });
+  if (showImaginaryRow) {
+    renderRatiosRow(table, {
+      className: "v2-ratios-row--imaginary",
+      leftToken: values.imNum,
+      rightToken: values.imDen,
+      leftSlotCount: numeratorSlotCount,
+      rightSlotCount: denominatorSlotCount,
+      uxRole: "imaginary",
+    });
+  }
   renderRatiosRow(table, {
     className: "v2-ratios-row--real",
     leftToken: values.reNum,

@@ -321,11 +321,17 @@ export const runUiIntegrationMobileShellTests = (): void => {
     renderer.render(withComplexImaginary, dispatch, {
             inputBlocked: false,
     });
+    const hiddenImaginaryDisplayWithoutImagHistory = totalPanel?.querySelector<HTMLElement>(".total-imaginary-display");
     assert.equal(totalPanel?.getAttribute("aria-label"), "Total complex", "non-zero imaginary totals keep complex display label");
     assert.equal(
       totalPanel?.classList.contains("total-display--imaginary"),
       true,
       "total panel enters imaginary color mode when total has non-zero imaginary component",
+    );
+    assert.equal(
+      hiddenImaginaryDisplayWithoutImagHistory?.getAttribute("aria-hidden"),
+      "true",
+      "imaginary row stays hidden until roll history includes an imaginary value",
     );
 
     const withErrorTotal = withCalculatorProjection(withTotal, "f", (projected) => ({

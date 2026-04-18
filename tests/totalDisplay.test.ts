@@ -56,6 +56,14 @@ const withRoll = (state: GameState, entries: RollEntry[], cycle: GameState["calc
   },
 });
 
+const withImaginaryRollHistory = (state: GameState): GameState => ({
+  ...state,
+  calculator: {
+    ...state.calculator,
+    rollEntries: [{ y: c(0n, 1n) }],
+  },
+});
+
 export const runTotalDisplayTests = (): void => {
   const baseline = buildTotalSlotModel(r(0n), 2);
   assert.equal(baseline.length, 12, "display always renders 12 fixed-width slots");
@@ -357,7 +365,7 @@ export const runTotalDisplayTests = (): void => {
       "real irrational totals render rAd token in the seven-segment display",
     );
 
-    const complexAnyState: GameState = {
+    const complexAnyState: GameState = withImaginaryRollHistory({
       ...base,
       calculator: {
         ...base.calculator,
@@ -366,7 +374,7 @@ export const runTotalDisplayTests = (): void => {
           toRationalScalarValue({ num: 3n, den: 1n }),
         ),
       },
-    };
+    });
     renderTotalDisplay(totalPanel, complexAnyState);
     const complexRealSegments = getPrimaryActiveDigitSegments(totalPanel);
     const complexImaginarySegments = getImaginaryActiveDigitSegments(totalPanel);
@@ -401,7 +409,7 @@ export const runTotalDisplayTests = (): void => {
     const hiddenImaginaryDisplay = totalPanel.querySelector<HTMLElement>(".total-imaginary-display");
     assert.equal(hiddenImaginaryDisplay?.getAttribute("aria-hidden"), "true", "real-equivalent complex totals hide imaginary row");
 
-    const complexFractionalImaginaryState: GameState = {
+    const complexFractionalImaginaryState: GameState = withImaginaryRollHistory({
       ...base,
       unlocks: {
         ...base.unlocks,
@@ -414,7 +422,7 @@ export const runTotalDisplayTests = (): void => {
           toRationalScalarValue({ num: 1n, den: 2n }),
         ),
       },
-    };
+    });
     renderTotalDisplay(totalPanel, complexFractionalImaginaryState);
     const fractionalImaginarySegments = getImaginaryActiveDigitSegments(totalPanel);
     assert.deepEqual(
@@ -491,7 +499,7 @@ export const runTotalDisplayTests = (): void => {
       "NaN totals render left-prefixed E token when digit budget is 1",
     );
 
-    const complexImaginaryIrrationalState: GameState = {
+    const complexImaginaryIrrationalState: GameState = withImaginaryRollHistory({
       ...base,
       unlocks: {
         ...base.unlocks,
@@ -504,7 +512,7 @@ export const runTotalDisplayTests = (): void => {
           toExpressionScalarValue(symbolicExpr("sqrt(5)")),
         ),
       },
-    };
+    });
     renderTotalDisplay(totalPanel, complexImaginaryIrrationalState);
     const irrationalImaginarySegments = getImaginaryActiveDigitSegments(totalPanel);
     assert.deepEqual(
