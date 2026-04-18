@@ -48,6 +48,7 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 ### Unlock Predicates and Hint Projection
 - `src/content/unlocks.catalog.ts`
 - `src/domain/unlockEngine.ts`
+- `src/domain/unlockGraph.ts`
 - `src/domain/unlockHintProgress.ts`
 - `src/ui/shared/readModel.total.ts`
 - `src/ui/modules/calculator/totalDisplay.ts`
@@ -83,6 +84,21 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - `src/ui/modules/visualizers/circleRenderer.ts`
 - `src/ui/modules/calculator/totalDisplay.ts`
 - Owns: canonical visualizer IDs, roll-derived read models, diagnostics, and plot/vector projection paths.
+
+### Build Outputs and Reports
+- `dist/reports/unlock-graph-report.md`
+- `dist/reports/unlock-graph-report.json`
+- `dist/reports/unlock-graph-report.mmd`
+- `dist/reports/code-health-score.json`
+- Owns: generated unlock-graph outputs and CI health scorecard artifacts.
+
+### Release Workflows and Runbooks
+- `.github/workflows/release-win-portable.yml`
+- `.github/workflows/release-android-apk.yml`
+- `docs/release-windows.md`
+- `docs/release-itch.md`
+- `docs/release-android.md`
+- Owns: tag-driven release automation and platform runbook procedures.
 
 ## Invariant / Contract Docs (Docs Folder)
 - `docs/ux-spec.md`
