@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AutoCalc v1 Slice</title>
     <link rel="stylesheet" href="./node_modules/katex/dist/katex.min.css" />
+    <link rel="stylesheet" href="./styles/key-family.css" />
+    <link rel="stylesheet" href="./styles/key-visual-affordance.css" />
+    <link rel="stylesheet" href="./styles/visualizer-number-line.css" />
     <style>
       :root {
         --bg-top: #cfd4dc;
@@ -23,84 +26,6 @@
         --drawer-lining-top: #d5bf9c;
         --drawer-lining-bottom: #bfa57f;
         --drawer-stroke: #5b3e21;
-        --key-top: #eef2f5;
-        --key-bottom: #d4dae0;
-        --key-stroke: #5d6773;
-        --key-value-modifier-top: #c2c9d2;
-        --key-value-modifier-bottom: #9fa9b6;
-        --key-value-modifier-stroke: #44515f;
-        --key-slot-operator-top: #6a7380;
-        --key-slot-operator-bottom: #4a5360;
-        --key-slot-operator-stroke: #2f3742;
-        --key-utility-top: #d55f5f;
-        --key-utility-bottom: #a84040;
-        --key-utility-stroke: #6e2424;
-        --key-settings-top: #e0b249;
-        --key-settings-bottom: #ba8828;
-        --key-settings-stroke: #7c5610;
-        --settings-stripe-family-visualizer-stripe-on: #79c3ff;
-        --settings-stripe-family-visualizer-text-on: #79c3ff;
-        --settings-stripe-family-visualizer-stripe-off: #436b8c;
-        --settings-stripe-family-visualizer-text-off: #436b8c;
-        --settings-stripe-family-wrap-stripe-on: #63c26b;
-        --settings-stripe-family-wrap-text-on: #63c26b;
-        --settings-stripe-family-wrap-stripe-off: #366b3b;
-        --settings-stripe-family-wrap-text-off: #366b3b;
-        --settings-stripe-family-analysis-stripe-on: #f2cf57;
-        --settings-stripe-family-analysis-text-on: #f2cf57;
-        --settings-stripe-family-analysis-stripe-off: #856a2b;
-        --settings-stripe-family-analysis-text-off: #856a2b;
-        --settings-stripe-family-base-stripe-on: #c996f0;
-        --settings-stripe-family-base-text-on: #c996f0;
-        --settings-stripe-family-base-stripe-off: #6a4a88;
-        --settings-stripe-family-base-text-off: #6a4a88;
-        --settings-subgroup-visualizers-stripe-on: var(--settings-stripe-family-visualizer-stripe-on);
-        --settings-subgroup-visualizers-text-on: var(--settings-stripe-family-visualizer-text-on);
-        --settings-subgroup-visualizers-stripe-off: var(--settings-stripe-family-visualizer-stripe-off);
-        --settings-subgroup-visualizers-text-off: var(--settings-stripe-family-visualizer-text-off);
-        --settings-subgroup-mod-wrap-stripe-on: var(--settings-stripe-family-wrap-stripe-on);
-        --settings-subgroup-mod-wrap-text-on: var(--settings-stripe-family-wrap-text-on);
-        --settings-subgroup-mod-wrap-stripe-off: var(--settings-stripe-family-wrap-stripe-off);
-        --settings-subgroup-mod-wrap-text-off: var(--settings-stripe-family-wrap-text-off);
-        --settings-subgroup-step-expansion-stripe-on: var(--settings-stripe-family-analysis-stripe-on);
-        --settings-subgroup-step-expansion-text-on: var(--settings-stripe-family-analysis-text-on);
-        --settings-subgroup-step-expansion-stripe-off: var(--settings-stripe-family-analysis-stripe-off);
-        --settings-subgroup-step-expansion-text-off: var(--settings-stripe-family-analysis-text-off);
-        --settings-subgroup-base2-stripe-on: var(--settings-stripe-family-base-stripe-on);
-        --settings-subgroup-base2-text-on: var(--settings-stripe-family-base-text-on);
-        --settings-subgroup-base2-stripe-off: var(--settings-stripe-family-base-stripe-off);
-        --settings-subgroup-base2-text-off: var(--settings-stripe-family-base-text-off);
-        --key-global-system-top: #9f7c43;
-        --key-global-system-bottom: #77572d;
-        --key-global-system-stroke: #4f381b;
-        --key-memory-top: #8f66b7;
-        --key-memory-bottom: #6f4897;
-        --key-memory-stroke: #472c63;
-        --key-step-top: #e0a93e;
-        --key-step-bottom: #b87619;
-        --key-step-stroke: #6f420b;
-        --key-visualizers-top: #5d8fdf;
-        --key-visualizers-bottom: #3f67ad;
-        --key-visualizers-stroke: #264272;
-        --key-execution-top: #4f8f67;
-        --key-execution-bottom: #2f6c4a;
-        --key-execution-stroke: #1f4a33;
-        --ux-role-error-color: #ff5c5c;
-        --ux-role-imaginary-color: #be8ee8;
-        --ux-role-unlock-color: var(--ux-role-info, #79c3ff);
-        --ux-role-analysis-color: #f2cf57;
-        --ux-role-help-color: #e9f4ff;
-        --ux-role-base-setting-color: #c996f0;
-        --ux-role-visualizer-setting-color: var(--ux-role-info, #79c3ff);
-        --ux-role-wrap-setting-color: #63c26b;
-        --ux-role-default-color: #b4f1d3;
-        --key-press-depth: 2px;
-        --key-latch-depth: 2px;
-        --key-overpress-depth: 3px;
-        --key-release-depth: 1px;
-        --key-press-in-duration: 0ms;
-        --key-release-duration: 95ms;
-        --key-release-delay: 40ms;
         --placeholder: #798291;
         --roll-row-height: 1.19rem;
         --roll-pad-top: 10px;
@@ -113,10 +38,35 @@
         --v2-visualizer-scale: 1;
         --v2-visualizer-baseline-offset: 12px;
         --v2-visualizer-inactive-offset: calc(var(--v2-visualizer-baseline-offset) + 16px);
-        --v2-visualizer-footer-height: 30px;
+        --v2-visualizer-footer-height: 0px;
+        --v2-visualizer-panel-height: var(--v2-visualizer-effective-height);
         --v2-visualizer-window-height: calc(var(--v2-feed-visible-rows) * var(--roll-row-height) + 16px);
         --v2-visualizer-effective-height: calc(var(--v2-visualizer-window-height) * var(--v2-visualizer-scale));
-        --v2-visualizer-panel-height: var(--v2-visualizer-effective-height);
+        --settings-subgroup-visualizers-stripe-off: var(--settings-stripe-family-visualizer-stripe-off);
+        --settings-subgroup-visualizers-text-off: var(--settings-stripe-family-visualizer-text-off);
+        --settings-subgroup-visualizers-stripe-on: var(--settings-stripe-family-visualizer-stripe-on);
+        --settings-subgroup-visualizers-text-on: var(--settings-stripe-family-visualizer-text-on);
+        --settings-subgroup-mod-wrap-stripe-off: var(--settings-stripe-family-wrap-stripe-off);
+        --settings-subgroup-mod-wrap-text-off: var(--settings-stripe-family-wrap-text-off);
+        --settings-subgroup-mod-wrap-stripe-on: var(--settings-stripe-family-wrap-stripe-on);
+        --settings-subgroup-mod-wrap-text-on: var(--settings-stripe-family-wrap-text-on);
+        --settings-subgroup-step-expansion-stripe-off: var(--settings-stripe-family-analysis-stripe-off);
+        --settings-subgroup-step-expansion-text-off: var(--settings-stripe-family-analysis-text-off);
+        --settings-subgroup-step-expansion-stripe-on: var(--settings-stripe-family-analysis-stripe-on);
+        --settings-subgroup-step-expansion-text-on: var(--settings-stripe-family-analysis-text-on);
+        --settings-subgroup-base2-stripe-off: var(--settings-stripe-family-base-stripe-off);
+        --settings-subgroup-base2-text-off: var(--settings-stripe-family-base-text-off);
+        --settings-subgroup-base2-stripe-on: var(--settings-stripe-family-base-stripe-on);
+        --settings-subgroup-base2-text-on: var(--settings-stripe-family-base-text-on);
+        --ux-role-error-color: #ff5c5c;
+        --ux-role-imaginary-color: #be8ee8;
+        --ux-role-unlock-color: var(--ux-role-info, #79c3ff);
+        --ux-role-analysis-color: #f2cf57;
+        --ux-role-help-color: #e9f4ff;
+        --ux-role-base-setting-color: #c996f0;
+        --ux-role-visualizer-setting-color: var(--ux-role-info, #79c3ff);
+        --ux-role-wrap-setting-color: #63c26b;
+        --ux-role-default-color: #b4f1d3;
         --allocator-surface-top: #8e96a3;
         --allocator-surface-bottom: #6a7281;
         --allocator-surface-stroke: #4e5665;
@@ -202,6 +152,34 @@
         gap: 12px;
         align-items: start;
         padding-bottom: var(--storage-drawer-height, 0px);
+      }
+
+      body[data-app-mode="sandbox"] .app-layout {
+        grid-template-columns: auto;
+      }
+
+      body[data-app-mode="sandbox"] .play-area {
+        justify-items: center;
+      }
+
+      body[data-app-mode="sandbox"] .v2-menu {
+        display: none !important;
+      }
+
+      body[data-app-mode="sandbox"] .v2-middle-drawer-viewport,
+      body[data-app-mode="sandbox"] .v2-bottom-drawer-viewport {
+        --drawer-peek: 0px;
+        --drawer-gap: 0px;
+      }
+
+      body[data-app-mode="sandbox"] .v2-middle-drawer-panel[data-v2-middle-panel="calculator"] {
+        flex-basis: 100%;
+        width: 100%;
+      }
+
+      body[data-app-mode="sandbox"][data-ui-shell="mobile"] .v2-stack-section--calc {
+        height: 100dvh;
+        min-height: 100dvh;
       }
 
       body[data-ui-shell="desktop"] {
@@ -481,7 +459,7 @@
         max-height: 0;
         min-height: 0;
         overflow: hidden;
-        transform: translateY(var(--v2-visualizer-inactive-offset));
+        transform: translateY(16px);
         opacity: 0;
         pointer-events: none;
         transition:
@@ -660,10 +638,6 @@
           transition: none;
         }
 
-        .checklist {
-          transition: none;
-        }
-
         .key--unlock-animate {
           animation: none;
         }
@@ -689,9 +663,11 @@
 
       .display--shared {
         position: relative;
-        height: var(--v2-visualizer-panel-height);
+        display: grid;
+        grid-template-rows: var(--v2-visualizer-panel-height) var(--v2-visualizer-footer-height);
+        row-gap: 2px;
         overflow: hidden;
-        transition: height 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
+        transition: grid-template-rows 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
       }
 
       .v2-visualizer-host {
@@ -710,7 +686,6 @@
         display: none;
       }
 
-      .v2-eigen-allocator-panel {
         display: none;
       }
 
@@ -722,12 +697,154 @@
         display: none;
       }
 
+      .v2-release-notes-panel {
+        display: none;
+      }
+
+      .v2-help-panel {
+        display: none;
+      }
+
+      .v2-state-panel {
+        display: none;
+      }
+
       .display {
         border: 1px solid #515c6a;
         border-radius: 7px;
         padding: 10px 12px;
         background: linear-gradient(180deg, var(--panel-mid), var(--panel-dark));
         box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+      }
+
+      .calc-leds {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin: 0 2px 4px;
+      }
+
+      .calc-led {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.45);
+        box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.45);
+      }
+
+      .calc-led--red {
+        background: radial-gradient(circle at 30% 30%, rgba(255, 164, 164, 0.38), rgba(84, 18, 18, 0.9));
+      }
+
+      .calc-led--green {
+        background: radial-gradient(circle at 30% 30%, rgba(181, 255, 199, 0.4), rgba(17, 69, 34, 0.9));
+      }
+
+      .calc-led--blue {
+        background: radial-gradient(circle at 30% 30%, rgba(182, 218, 255, 0.44), rgba(22, 58, 105, 0.9));
+      }
+
+      .calc-led--orange {
+        background: radial-gradient(circle at 30% 30%, rgba(255, 216, 164, 0.45), rgba(107, 56, 8, 0.9));
+      }
+
+      .calc-led--white {
+        background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.64), rgba(116, 124, 136, 0.94));
+      }
+
+      .calc-led--pulse-red {
+        animation: calc-led-pulse-red 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-green {
+        animation: calc-led-pulse-green 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-blue {
+        animation: calc-led-pulse-blue 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-orange {
+        animation: calc-led-pulse-orange 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-white {
+        animation: calc-led-pulse-white 260ms ease-out 1;
+      }
+
+      @keyframes calc-led-pulse-red {
+        0% {
+          box-shadow: 0 0 0 rgba(255, 86, 86, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(255, 86, 86, 0.88), 0 0 18px rgba(255, 86, 86, 0.64);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(255, 86, 86, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-green {
+        0% {
+          box-shadow: 0 0 0 rgba(108, 255, 157, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(108, 255, 157, 0.88), 0 0 18px rgba(108, 255, 157, 0.64);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(108, 255, 157, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-blue {
+        0% {
+          box-shadow: 0 0 0 rgba(119, 190, 255, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(119, 190, 255, 0.88), 0 0 18px rgba(119, 190, 255, 0.64);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(119, 190, 255, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-orange {
+        0% {
+          box-shadow: 0 0 0 rgba(255, 166, 68, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(255, 166, 68, 0.9), 0 0 18px rgba(255, 166, 68, 0.66);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(255, 166, 68, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-white {
+        0% {
+          box-shadow: 0 0 0 rgba(240, 246, 255, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(240, 246, 255, 0.92), 0 0 18px rgba(240, 246, 255, 0.68);
+          filter: brightness(1.75);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(240, 246, 255, 0);
+          filter: brightness(1);
+        }
       }
 
       .display--slot-reject-blink {
@@ -784,6 +901,54 @@
         column-gap: 8px;
       }
 
+      .total-base-indicator {
+        position: absolute;
+        right: 0;
+        top: -16px;
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(10px, 1.6vw, 12px);
+        letter-spacing: 0.08em;
+        color: #7eb8ff;
+        text-shadow: 0 0 6px rgba(126, 184, 255, 0.48);
+        white-space: nowrap;
+      }
+
+      .total-base-indicator[aria-hidden="true"] {
+        visibility: hidden;
+      }
+
+      .total-hint-strip {
+        position: absolute;
+        right: 0;
+        top: -50px;
+        display: grid;
+        grid-template-columns: 1fr;
+        row-gap: 2px;
+        justify-items: end;
+        pointer-events: none;
+      }
+
+      .total-hint-row {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(9px, 1.2vw, 11px);
+        line-height: 1;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
+
+      .total-hint-label {
+        color: #f6d66b;
+        text-shadow: 0 0 5px rgba(246, 214, 107, 0.4);
+      }
+
+      .total-hint-value {
+        color: #9ec9ff;
+        text-shadow: 0 0 5px rgba(126, 184, 255, 0.42);
+      }
+
       .total-domain-indicator {
         font-family: "Consolas", "Courier New", monospace;
         font-size: clamp(18px, 2.8vw, 24px);
@@ -834,11 +999,71 @@
         position: absolute;
         left: 0;
         right: 0;
-        bottom: 0;
+        bottom: 6px;
         height: var(--total-main-height);
         display: flex;
         justify-content: flex-end;
-        align-items: center;
+        align-items: flex-end;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .total-layout {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .total-slot {
+        width: 100%;
+      }
+
+      .total-slot--center-main {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .total-slot--center-aux {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .total-primary-display > .seg-frame,
+      .total-slot--center-main > .seg-frame {
+        align-self: flex-end;
+      }
+
+      .total-imaginary-display {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+      }
+
+      .total-imaginary-display[aria-hidden="true"] {
+        display: none;
+      }
+
+      .total-imaginary-display .seg-frame {
+        transform: scale(0.74);
+        transform-origin: right bottom;
+      }
+
+      .total-imaginary-display .seg {
+        background: var(--ux-role-imaginary-color);
+      }
+
+      .total-imaginary-display .seg--on {
+        box-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
+      }
+
+      .total-imaginary-display .seg-sign,
+      .total-imaginary-display .seg-fraction {
+        color: var(--ux-role-imaginary-color);
+        text-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
       }
 
       .total-memory-row {
@@ -965,18 +1190,32 @@
         text-shadow: 0 0 6px rgba(246, 214, 107, 0.55);
       }
 
-      .total-display--imaginary .total-primary-display .seg {
+      .total-display--imaginary .total-imaginary-display .seg {
         background: var(--ux-role-imaginary-color);
       }
 
-      .total-display--imaginary .total-primary-display .seg--on {
+      .total-display--imaginary .total-imaginary-display .seg--on {
         box-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
       }
 
-      .total-display--imaginary .total-primary-display .seg-sign,
-      .total-display--imaginary .total-primary-display .seg-fraction {
+      .total-display--imaginary .total-imaginary-display .seg-sign,
+      .total-display--imaginary .total-imaginary-display .seg-fraction {
         color: var(--ux-role-imaginary-color);
         text-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
+      }
+
+      .total-display--cycle .total-primary-display .seg {
+        background: var(--ux-role-analysis-color);
+      }
+
+      .total-display--cycle .total-primary-display .seg--on {
+        box-shadow: 0 0 6px rgba(242, 207, 87, 0.55);
+      }
+
+      .total-display--cycle .total-primary-display .seg-sign,
+      .total-display--cycle .total-primary-display .seg-fraction {
+        color: var(--ux-role-analysis-color);
+        text-shadow: 0 0 6px rgba(242, 207, 87, 0.55);
       }
 
       .total-display--error .total-primary-display .seg {
@@ -1069,7 +1308,41 @@
         display: inline-flex;
         min-width: 0;
         overflow: hidden;
-        flex: 1;
+        flex: 1 1 auto;
+      }
+
+      .calc-switch-row {
+        display: none;
+      }
+
+      .calc-instance-track {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+      }
+
+      .calc-instance {
+        min-width: 0;
+      }
+
+      .calc-instance[data-calc-instance-id="menu"] {
+        order: 1;
+      }
+
+      .calc-instance[data-calc-instance-id="g"] {
+        order: 2;
+      }
+
+      .calc-instance[data-calc-instance-id="f"] {
+        order: 3;
+      }
+
+      .calc-instance[data-calc-instance-id="f_prime"] {
+        order: 4;
+      }
+
+      .calc-instance[data-calc-instance-id="g_prime"] {
+        order: 5;
       }
 
       .slot-display__track {
@@ -1082,12 +1355,17 @@
 
       .slot-display__ellipsis {
         display: none;
-        margin-left: 4px;
+        margin-left: 6px;
+        margin-right: 6px;
         color: #7f8b9a;
       }
 
       [data-slot].slot-display--marquee .slot-display__ellipsis {
         display: inline;
+      }
+
+      .slot-display__seed {
+        flex: 0 0 auto;
       }
 
       .slot-display__delta-wrap,
@@ -1102,6 +1380,10 @@
         border: 0;
         border-radius: 0;
         background: transparent;
+      }
+
+      .slot-display__token--step-target {
+        color: #ffffff;
       }
 
       [data-keys] {
@@ -1125,7 +1407,6 @@
           grid-template-rows 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
       }
 
-      /* Visualizer window scales from fixed-width and viewport scale tokens. */
       body[data-ui-shell="mobile"] [data-display-window],
       body[data-ui-shell="desktop"] [data-display-window] {
         width: min(100%, calc(var(--v2-visualizer-fixed-width) * var(--v2-visualizer-scale)));
@@ -1404,6 +1685,19 @@
         pointer-events: none;
       }
 
+      .key__capability-badge {
+        position: absolute;
+        right: 4px;
+        bottom: 3px;
+        font-size: 0.68rem;
+        line-height: 1;
+        pointer-events: none;
+        user-select: none;
+        text-shadow:
+          0 0 1px rgba(0, 0, 0, 0.55),
+          0 1px 1px rgba(0, 0, 0, 0.45);
+      }
+
       .key:hover:not(:disabled) {
         filter: brightness(1.04);
       }
@@ -1513,70 +1807,6 @@
         animation: key-unlock-pulse 1200ms cubic-bezier(0.22, 0.62, 0.22, 1) 1;
       }
 
-      .key--value-modifier {
-        border-color: var(--key-value-modifier-stroke);
-        background: linear-gradient(180deg, var(--key-value-modifier-top), var(--key-value-modifier-bottom));
-        color: #0f1218;
-      }
-
-      .key--group-slot_operator {
-        border-color: var(--key-slot-operator-stroke);
-        background: linear-gradient(180deg, var(--key-slot-operator-top), var(--key-slot-operator-bottom));
-        color: #ffffff;
-      }
-
-      .key--group-utility {
-        border-color: var(--key-utility-stroke);
-        background: linear-gradient(180deg, var(--key-utility-top), var(--key-utility-bottom));
-        color: #ffffff;
-      }
-
-      .key--group-memory {
-        border-color: var(--key-memory-stroke);
-        background: linear-gradient(180deg, var(--key-memory-top), var(--key-memory-bottom));
-        color: #ffffff;
-      }
-
-      .key--group-settings {
-        border-color: var(--key-settings-stroke);
-        background: linear-gradient(180deg, var(--key-settings-top), var(--key-settings-bottom));
-        color: #ffffff;
-      }
-
-      .key--group-global_system {
-        border-color: var(--key-global-system-stroke);
-        background: linear-gradient(180deg, var(--key-global-system-top), var(--key-global-system-bottom));
-        color: #ffffff;
-      }
-
-      .key--group-step {
-        border-color: var(--key-step-stroke);
-        background: linear-gradient(180deg, var(--key-step-top), var(--key-step-bottom));
-        color: #ffffff;
-      }
-
-      .key--group-visualizers {
-        border-color: var(--key-visualizers-stroke);
-        background: linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
-        color: #ffffff;
-      }
-
-      .key.key--group-visualizers[data-key="?"] {
-        background:
-          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, var(--key-memory-top) 80%, var(--key-memory-bottom) 100%),
-          linear-gradient(180deg, var(--key-visualizers-top), var(--key-visualizers-bottom));
-      }
-
-      .key--group-execution {
-        border-color: #ffffff;
-        background: linear-gradient(180deg, var(--key-execution-top), var(--key-execution-bottom));
-        color: #ffffff;
-      }
-
-      .key--value-bottom .key__label {
-        color: #d11212;
-      }
-
       .key.key--toggle-active:not(:disabled) {
         transform: translateY(var(--key-latch-depth));
         box-shadow:
@@ -1587,52 +1817,6 @@
 
       .key.key--toggle-active:not(:disabled):hover {
         filter: none;
-      }
-
-      .key.key--toggle-active:not(.key--value-modifier):not(.key--group-slot_operator):not(.key--group-utility):not(.key--group-memory):not(.key--group-settings):not(.key--group-global_system):not(.key--group-step):not(.key--group-visualizers):not(.key--group-execution):not(:disabled) {
-        background: linear-gradient(180deg, var(--key-bottom), var(--key-top));
-      }
-
-      .key.key--toggle-active.key--value-modifier:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-value-modifier-bottom), var(--key-value-modifier-top));
-      }
-
-      .key.key--toggle-active.key--group-slot_operator:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-slot-operator-bottom), var(--key-slot-operator-top));
-      }
-
-      .key.key--toggle-active.key--group-utility:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-utility-bottom), var(--key-utility-top));
-      }
-
-      .key.key--toggle-active.key--group-memory:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-memory-bottom), var(--key-memory-top));
-      }
-
-      .key.key--toggle-active.key--group-settings:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-settings-bottom), var(--key-settings-top));
-      }
-
-      .key.key--toggle-active.key--group-global_system:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-global-system-bottom), var(--key-global-system-top));
-      }
-
-      .key.key--toggle-active.key--group-step:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-step-bottom), var(--key-step-top));
-      }
-
-      .key.key--toggle-active.key--group-visualizers:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-visualizers-bottom), var(--key-visualizers-top));
-      }
-
-      .key.key--toggle-active.key--group-visualizers[data-key="?"]:not(:disabled) {
-        background:
-          linear-gradient(180deg, transparent 0%, transparent calc(80% - 1px), #ffffff calc(80% - 1px), #ffffff 80%, var(--key-memory-bottom) 80%, var(--key-memory-top) 100%),
-          linear-gradient(180deg, var(--key-visualizers-bottom), var(--key-visualizers-top));
-      }
-
-      .key.key--toggle-active.key--group-execution:not(:disabled) {
-        background: linear-gradient(180deg, var(--key-execution-bottom), var(--key-execution-top));
       }
 
       .key.key--toggle-animate-on:not(:disabled) {
@@ -1782,121 +1966,6 @@
         opacity: 1;
       }
 
-      .checklist-shell {
-        position: relative;
-        min-height: 100%;
-        border-radius: 12px;
-        border: 1px solid #6b4c2f;
-        padding: 14px 12px 12px;
-        background: linear-gradient(180deg, #8b6b4b, #6b5038);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.22),
-          inset 0 -6px 10px rgba(0, 0, 0, 0.2),
-          0 10px 16px rgba(0, 0, 0, 0.2);
-      }
-
-      .checklist-shell::before {
-        content: "";
-        position: absolute;
-        top: -8px;
-        left: 50%;
-        width: 110px;
-        height: 18px;
-        transform: translateX(-50%);
-        border-radius: 10px;
-        border: 1px solid #5a6068;
-        background: linear-gradient(180deg, #b8bec7, #8f97a3);
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
-      }
-
-      .checklist {
-        min-height: 100%;
-        max-height: min(56vh, 560px);
-        border-radius: 9px;
-        border: 1px solid #b9b9ad;
-        padding: 10px;
-        background:
-          repeating-linear-gradient(180deg, rgba(124, 126, 138, 0.12) 0px, rgba(124, 126, 138, 0.12) 1px, transparent 1px, transparent 24px),
-          repeating-linear-gradient(90deg, rgba(124, 126, 138, 0.09) 0px, rgba(124, 126, 138, 0.09) 1px, transparent 1px, transparent 72px),
-          linear-gradient(180deg, #f5f3ec, #ebe7dc);
-        color: #25292f;
-        font-family: "Consolas", "Menlo", "Courier New", monospace;
-        font-size: 0.72rem;
-        overflow-y: auto;
-        overflow-x: hidden;
-        opacity: 0.68;
-        transition: opacity 180ms ease-out;
-      }
-
-      .checklist[data-checklist-state="open"] {
-        opacity: 1;
-      }
-
-      .checklist[data-checklist-animate="true"] {
-        animation: checklist-open 220ms ease-out;
-      }
-
-      @keyframes checklist-open {
-        from {
-          transform: translateY(4px);
-          opacity: 0.45;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      .unlock-title {
-        margin-bottom: 8px;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-      }
-
-      .unlock-header,
-      .unlock-row {
-        display: grid;
-        grid-template-columns: 1fr minmax(56px, 84px);
-        column-gap: 6px;
-        align-items: center;
-        min-height: 24px;
-        padding: 2px 4px;
-        border-bottom: 1px solid rgba(74, 80, 88, 0.25);
-      }
-
-      .unlock-header {
-        font-weight: 700;
-        background: rgba(186, 190, 198, 0.35);
-        border-top: 1px solid rgba(74, 80, 88, 0.25);
-      }
-
-      .unlock-row {
-        background: rgba(255, 255, 255, 0.28);
-      }
-
-      .unlock-row:nth-of-type(even) {
-        background: rgba(218, 222, 230, 0.35);
-      }
-
-      .unlock-row--completed {
-        opacity: 0.72;
-      }
-
-      .unlock-hint {
-        line-height: 1.25;
-      }
-
-      .unlock-difficulty {
-        color: #c62828;
-        font-weight: 700;
-      }
-
-      .unlock-empty-state {
-        padding: 10px 6px 8px;
-        font-style: italic;
-        opacity: 0.78;
-      }
-
       .debug-shell {
         position: fixed;
         top: 12px;
@@ -1907,6 +1976,33 @@
         border-radius: 10px;
         padding: 10px 12px;
         background: rgba(255, 255, 255, 0.42);
+      }
+
+      .debug-matrix-window {
+        position: fixed;
+        top: 12px;
+        right: min(304px, calc(100vw - 24px));
+        z-index: 51;
+        width: min(420px, calc(100vw - 36px));
+        aspect-ratio: 1 / 1;
+        border: 1px solid rgba(32, 39, 52, 0.35);
+        border-radius: 10px;
+        padding: 10px;
+        background: rgba(245, 250, 255, 0.92);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 8px;
+      }
+
+      .debug-matrix-window[hidden] {
+        display: none !important;
+      }
+
+      .debug-matrix-title {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #1b212b;
       }
 
       .debug-toggle {
@@ -1972,6 +2068,13 @@
         border: 1px solid rgba(45, 53, 63, 0.35);
       }
 
+      .debug-size select {
+        width: 100%;
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: 1px solid rgba(45, 53, 63, 0.35);
+      }
+
       .debug-action {
         display: block;
         text-align: center;
@@ -1988,6 +2091,41 @@
 
       .debug-action:hover {
         filter: brightness(1.03);
+      }
+
+      .debug-matrix-grid {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+      }
+
+      .debug-matrix-cell {
+        min-width: 0;
+      }
+
+      .debug-matrix-cell--label {
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(45, 53, 63, 0.2);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.8);
+        color: #1b212b;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: lowercase;
+      }
+
+      .debug-matrix-cell input {
+        width: 100%;
+        height: 100%;
+        min-height: 30px;
+        border-radius: 6px;
+        border: 1px solid rgba(45, 53, 63, 0.28);
+        padding: 4px 6px;
+        font-size: 0.73rem;
+        background: rgba(255, 255, 255, 0.96);
       }
 
       .debug-report {
@@ -2048,8 +2186,7 @@
         min-width: 0;
       }
 
-      body[data-ui-shell="mobile"] #app > .play-area,
-      body[data-ui-shell="mobile"] #app > .checklist-shell {
+      body[data-ui-shell="mobile"] #app > .play-area {
         display: none;
       }
 
@@ -2144,24 +2281,45 @@
       }
 
       .v2-middle-drawer-panel .device,
-      .v2-middle-drawer-panel .checklist-shell,
       .v2-bottom-drawer-panel .storage,
-      .v2-bottom-drawer-panel .device,
-      .v2-bottom-drawer-panel .checklist-shell {
+      .v2-bottom-drawer-panel .device {
         width: 100%;
         max-width: none;
       }
 
-      .v2-middle-drawer-panel .checklist-shell {
-        margin: 0;
-      }
-
-      .v2-bottom-drawer-panel .checklist-shell {
-        margin: 0;
-      }
-
       body[data-ui-shell="mobile"] .device--calc {
         height: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .calc-switch-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      body[data-ui-shell="mobile"] .calc-switch {
+        flex: 1;
+        border: 1px solid #4f5b6a;
+        border-radius: 8px;
+        background: #202734;
+        color: var(--ux-role-default-color, #b4f1d3);
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+      }
+
+      body[data-ui-shell="mobile"] .calc-instance-track {
+        display: block;
+      }
+
+      body[data-ui-shell="mobile"] .calc-instance {
+        display: none;
+      }
+
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="g"] .calc-instance[data-calc-instance-id="g"],
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="menu"] .calc-instance[data-calc-instance-id="menu"],
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="f"] .calc-instance[data-calc-instance-id="f"],
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="f_prime"] .calc-instance[data-calc-instance-id="f_prime"],
+      body[data-ui-shell="mobile"] [data-calc-device][data-active-calculator-id="g_prime"] .calc-instance[data-calc-instance-id="g_prime"] {
+        display: block;
       }
 
       body[data-ui-shell="mobile"] .device--allocator {
@@ -2220,7 +2378,8 @@
       body[data-ui-shell="desktop"] .v2-visualizer-host {
         display: block;
         position: relative;
-        margin-bottom: 8px;
+        margin-bottom: 0;
+        width: 100%;
         height: var(--v2-visualizer-panel-height);
         opacity: 1;
         transform: translateY(0);
@@ -2239,7 +2398,7 @@
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-transition="exit"],
       body[data-ui-shell="desktop"] .v2-visualizer-host[data-v2-visualizer-transition="exit"] {
-        transform: translateY(var(--v2-visualizer-baseline-offset));
+        transform: translateY(0);
       }
 
       body[data-ui-shell="mobile"] .v2-visualizer-host[data-v2-visualizer-height-lock="true"],
@@ -2290,7 +2449,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="graph"] .calc-grapher {
         max-height: var(--v2-visualizer-panel-height);
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         opacity: 1;
         pointer-events: auto;
       }
@@ -2331,7 +2490,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="feed"] .v2-feed-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2360,7 +2519,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="factorization"] .v2-factorization-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="factorization"] .v2-factorization-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2372,7 +2531,7 @@
         justify-content: flex-end;
         align-items: center;
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-total-baseline-offset, var(--v2-visualizer-baseline-offset)));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2381,6 +2540,7 @@
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="total"] .v2-total-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="total"] .v2-total-panel {
+        --v2-total-baseline-offset: calc(var(--v2-visualizer-baseline-offset) - 5px);
         pointer-events: auto;
       }
 
@@ -2391,13 +2551,6 @@
         visibility: hidden;
       }
 
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel]:not([data-v2-visualizer-panel="total"]) .v2-total-panel .total-memory-row,
-      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel]:not([data-v2-visualizer-panel="total"]) .v2-total-panel .total-memory-row {
-        visibility: visible;
-      }
-
-      body[data-ui-shell="mobile"] .v2-eigen-allocator-panel,
-      body[data-ui-shell="desktop"] .v2-eigen-allocator-panel {
         display: flex;
         position: absolute;
         inset: 0;
@@ -2412,10 +2565,8 @@
           transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
       }
 
-      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="eigen_allocator"] .v2-eigen-allocator-panel,
-      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="eigen_allocator"] .v2-eigen-allocator-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2440,7 +2591,7 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="algebraic"] .v2-algebraic-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="algebraic"] .v2-algebraic-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2463,7 +2614,28 @@
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="title"] .v2-title-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="title"] .v2-title-panel {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(var(--v2-visualizer-baseline-offset));
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-release-notes-panel,
+      body[data-ui-shell="desktop"] .v2-release-notes-panel {
+        display: block;
+        position: absolute;
+        inset: 0;
+        padding: 8px 10px 30px;
+        opacity: 0;
+        transform: translateY(var(--v2-visualizer-inactive-offset));
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="release_notes"] .v2-release-notes-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="release_notes"] .v2-release-notes-panel {
+        opacity: 1;
+        transform: translateY(var(--v2-visualizer-baseline-offset));
         pointer-events: auto;
       }
 
@@ -2490,11 +2662,354 @@
         text-shadow: 0 0 14px rgba(188, 255, 214, 0.4);
       }
 
+      body[data-ui-shell="mobile"] .v2-release-notes-body,
+      body[data-ui-shell="desktop"] .v2-release-notes-body {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        width: 100%;
+        max-width: 100%;
+        padding-top: 18px;
+        color: #d7f7e8;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: 0.74rem;
+        line-height: 1.28;
+      }
+
+      body[data-ui-shell="mobile"] .v2-release-notes-heading,
+      body[data-ui-shell="desktop"] .v2-release-notes-heading {
+        font-size: 0.83rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #e2fff0;
+      }
+
+      body[data-ui-shell="mobile"] .v2-release-notes-summary,
+      body[data-ui-shell="desktop"] .v2-release-notes-summary {
+        color: #c2ead7;
+      }
+
+      body[data-ui-shell="mobile"] .v2-release-notes-list,
+      body[data-ui-shell="desktop"] .v2-release-notes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      body[data-ui-shell="mobile"] .v2-release-notes-item,
+      body[data-ui-shell="desktop"] .v2-release-notes-item {
+        color: #b3e3cf;
+      }
+
+      body[data-ui-shell="mobile"] .v2-help-panel,
+      body[data-ui-shell="desktop"] .v2-help-panel {
+        display: block;
+        position: absolute;
+        inset: 0;
+        padding: 8px 10px 30px;
+        opacity: 0;
+        transform: translateY(var(--v2-visualizer-inactive-offset));
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="help"] .v2-help-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="help"] .v2-help-panel {
+        opacity: 1;
+        transform: translateY(var(--v2-visualizer-baseline-offset));
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-state-panel,
+      body[data-ui-shell="desktop"] .v2-state-panel {
+        display: block;
+        position: absolute;
+        inset: 0;
+        padding: 8px 10px 30px;
+        opacity: 0;
+        transform: translateY(var(--v2-visualizer-inactive-offset));
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="state"] .v2-state-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="state"] .v2-state-panel {
+        opacity: 1;
+        transform: translateY(var(--v2-visualizer-baseline-offset));
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel,
+      body[data-ui-shell="desktop"] .v2-ratios-panel {
+        --v2-ratios-bottom-pad: 30px;
+        --v2-ratios-row-gap: 8px;
+        --v2-ratios-row-height: clamp(18px, 2.8vw, 24px);
+        display: flex;
+        position: absolute;
+        inset: 0;
+        padding: 8px 10px var(--v2-ratios-bottom-pad);
+        justify-content: center;
+        align-items: flex-end;
+        opacity: 0;
+        transform: translateY(var(--v2-visualizer-inactive-offset));
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="ratios"] .v2-ratios-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="ratios"] .v2-ratios-panel {
+        opacity: 1;
+        transform: translateY(var(--v2-visualizer-baseline-offset));
+        pointer-events: auto;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-table,
+      body[data-ui-shell="desktop"] .v2-ratios-table {
+        display: grid;
+        grid-template-rows: repeat(2, max-content);
+        justify-content: stretch;
+        gap: 8px;
+        width: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-layout,
+      body[data-ui-shell="desktop"] .v2-ratios-layout {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot,
+      body[data-ui-shell="desktop"] .v2-ratios-slot {
+        position: absolute;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot--left-hud-top,
+      body[data-ui-shell="desktop"] .v2-ratios-slot--left-hud-top {
+        left: 10px;
+        bottom: calc(var(--v2-ratios-bottom-pad) + (2 * var(--v2-ratios-row-height)) + var(--v2-ratios-row-gap));
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot--left-hud-bottom,
+      body[data-ui-shell="desktop"] .v2-ratios-slot--left-hud-bottom {
+        left: 10px;
+        bottom: calc(var(--v2-ratios-bottom-pad) - 16px);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot--center-main,
+      body[data-ui-shell="desktop"] .v2-ratios-slot--center-main {
+        left: 0;
+        right: 0;
+        bottom: var(--v2-ratios-bottom-pad);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot--center-aux,
+      body[data-ui-shell="desktop"] .v2-ratios-slot--center-aux {
+        left: 0;
+        right: 0;
+        bottom: calc(var(--v2-ratios-bottom-pad) + var(--v2-ratios-row-height) + var(--v2-ratios-row-gap));
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-domain-indicator,
+      body[data-ui-shell="desktop"] .v2-ratios-domain-indicator {
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(18px, 2.8vw, 24px);
+        line-height: 1;
+        color: var(--ux-role-default-color);
+        text-shadow: 0 0 6px rgba(188, 255, 214, 0.45);
+        width: 20px;
+        text-align: center;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-domain-indicator--nan,
+      body[data-ui-shell="desktop"] .v2-ratios-domain-indicator--nan {
+        color: var(--ux-role-error-color, #ff6f6f);
+        text-shadow: 0 0 6px rgba(255, 111, 111, 0.55);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-base-indicator,
+      body[data-ui-shell="desktop"] .v2-ratios-base-indicator {
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: clamp(10px, 1.6vw, 12px);
+        letter-spacing: 0.08em;
+        color: #7eb8ff;
+        text-shadow: 0 0 6px rgba(126, 184, 255, 0.48);
+        white-space: nowrap;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-base-indicator[aria-hidden="true"],
+      body[data-ui-shell="desktop"] .v2-ratios-base-indicator[aria-hidden="true"] {
+        visibility: hidden;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row,
+      body[data-ui-shell="desktop"] .v2-ratios-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+        align-items: center;
+        justify-content: stretch;
+        gap: var(--v2-ratios-row-gap);
+        width: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-centered-separator-row,
+      body[data-ui-shell="desktop"] .v2-centered-separator-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+        align-items: center;
+        width: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-display,
+      body[data-ui-shell="desktop"] .v2-ratios-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+      }
+
+      body[data-ui-shell="mobile"] .v2-centered-separator-row__left,
+      body[data-ui-shell="desktop"] .v2-centered-separator-row__left {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        min-width: 0;
+      }
+
+      body[data-ui-shell="mobile"] .v2-centered-separator-row__right,
+      body[data-ui-shell="desktop"] .v2-centered-separator-row__right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        min-width: 0;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-separator,
+      body[data-ui-shell="desktop"] .v2-ratios-separator {
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: clamp(18px, 2.8vw, 24px);
+        line-height: 1;
+        color: var(--ux-role-default-color);
+        text-shadow: 0 0 6px rgba(188, 255, 214, 0.45);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row--imaginary .v2-ratios-separator,
+      body[data-ui-shell="desktop"] .v2-ratios-row--imaginary .v2-ratios-separator {
+        color: var(--ux-role-imaginary-color);
+        text-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel .seg-digit,
+      body[data-ui-shell="desktop"] .v2-ratios-panel .seg-digit {
+        width: clamp(11px, 1.7vw, 14px);
+        height: var(--v2-ratios-row-height);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel .seg-frame,
+      body[data-ui-shell="desktop"] .v2-ratios-panel .seg-frame {
+        gap: 3px;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row--imaginary .seg,
+      body[data-ui-shell="desktop"] .v2-ratios-row--imaginary .seg {
+        background: var(--ux-role-imaginary-color);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-row--imaginary .seg--on,
+      body[data-ui-shell="desktop"] .v2-ratios-row--imaginary .seg--on {
+        box-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel--cycle .v2-ratios-display .seg,
+      body[data-ui-shell="desktop"] .v2-ratios-panel--cycle .v2-ratios-display .seg {
+        background: var(--ux-role-analysis-color);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel--cycle .v2-ratios-display .seg--on,
+      body[data-ui-shell="desktop"] .v2-ratios-panel--cycle .v2-ratios-display .seg--on {
+        box-shadow: 0 0 6px rgba(242, 207, 87, 0.55);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel--error .v2-ratios-display .seg,
+      body[data-ui-shell="desktop"] .v2-ratios-panel--error .v2-ratios-display .seg {
+        background: var(--ux-role-error-color);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-panel--error .v2-ratios-display .seg--on,
+      body[data-ui-shell="desktop"] .v2-ratios-panel--error .v2-ratios-display .seg--on {
+        box-shadow: 0 0 6px rgba(255, 107, 107, 0.6);
+      }
+
+      body[data-ui-shell="mobile"] .v2-state-table,
+      body[data-ui-shell="desktop"] .v2-state-table {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-state-row,
+      body[data-ui-shell="desktop"] .v2-state-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: baseline;
+        gap: 10px;
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: 0.78rem;
+        line-height: 1.2;
+      }
+
+      body[data-ui-shell="mobile"] .v2-state-key,
+      body[data-ui-shell="desktop"] .v2-state-key {
+        color: #badfcf;
+      }
+
+      body[data-ui-shell="mobile"] .v2-state-value,
+      body[data-ui-shell="desktop"] .v2-state-value {
+        color: #dffced;
+      }
+
+      body[data-ui-shell="mobile"] .v2-help-table,
+      body[data-ui-shell="desktop"] .v2-help-table {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-help-row,
+      body[data-ui-shell="desktop"] .v2-help-row {
+        font-family: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+        font-size: 0.8rem;
+        line-height: 1.2;
+        color: var(--ux-role-help-color);
+      }
+
+      body[data-ui-shell="mobile"] .v2-help-row--section,
+      body[data-ui-shell="desktop"] .v2-help-row--section {
+        margin-top: 4px;
+        font-weight: 700;
+        color: var(--ux-role-help-color);
+      }
+
+      body[data-ui-shell="mobile"] .v2-help-row--placeholder,
+      body[data-ui-shell="desktop"] .v2-help-row--placeholder {
+        color: var(--ux-role-analysis-color);
+      }
+
       body[data-ui-shell="mobile"] .v2-algebraic-equation,
       body[data-ui-shell="desktop"] .v2-algebraic-equation {
         width: 100%;
         max-width: 100%;
-        overflow-x: auto;
+        overflow-x: hidden;
         overflow-y: hidden;
         text-align: center;
         color: var(--ux-role-default-color);
@@ -2558,7 +3073,7 @@
       body[data-ui-shell="mobile"] .v2-eigen-equation,
       body[data-ui-shell="desktop"] .v2-eigen-equation {
         width: 100%;
-        overflow-x: auto;
+        overflow-x: hidden;
         overflow-y: hidden;
         text-align: center;
         color: var(--ux-role-imaginary-color);
@@ -2575,16 +3090,36 @@
         color: var(--ux-role-imaginary-color);
       }
 
+      body[data-ui-shell="mobile"] .v2-total-footer,
+      body[data-ui-shell="desktop"] .v2-total-footer {
+        position: relative;
+        height: var(--v2-visualizer-footer-height);
+        display: flex;
+        align-items: flex-end;
+        pointer-events: none;
+      }
+
+      body[data-ui-shell="mobile"] .v2-total-footer .total-memory-row,
+      body[data-ui-shell="desktop"] .v2-total-footer .total-memory-row {
+        position: static;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        width: 100%;
+        margin: 0;
+        padding: 0 6px 2px;
+      }
+
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="graph"][data-v2-visualizer-to="feed"] .calc-grapher {
         opacity: 0;
-        transform: translateY(-12px);
+        transform: translateY(calc(var(--v2-visualizer-baseline-offset) - 12px));
       }
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-transition="swap"][data-v2-visualizer-from="feed"][data-v2-visualizer-to="graph"] .v2-feed-panel {
         opacity: 0;
-        transform: translateY(var(--v2-visualizer-baseline-offset));
+        transform: translateY(calc(var(--v2-visualizer-baseline-offset) + 12px));
       }
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-table,
@@ -2594,7 +3129,7 @@
 
       body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-table-line,
       body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-table-line {
-        color: var(--ux-role-default-color);
+        color: var(--ux-role-default-color, #b4f1d3);
         display: flex;
         white-space: pre;
       }
@@ -2620,11 +3155,32 @@
         color: var(--ux-role-error-color);
       }
 
+      body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-row--cycle,
+      body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-row--cycle {
+        color: var(--ux-role-analysis-color);
+      }
+
+      body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-row--cycle .v2-feed-z-col,
+      body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-row--cycle .v2-feed-z-col {
+        color: inherit;
+      }
+
+      body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-row--forecast,
+      body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-row--forecast {
+        color: color-mix(in srgb, var(--ux-role-analysis-color) 75%, #ffffff 25%);
+        opacity: 0.82;
+      }
+
+      body[data-ui-shell="mobile"] .v2-feed-panel .v2-feed-row--forecast .v2-feed-z-col,
+      body[data-ui-shell="desktop"] .v2-feed-panel .v2-feed-row--forecast .v2-feed-z-col {
+        color: inherit;
+      }
+
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-table,
       body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-table {
         width: 100%;
         height: 100%;
-        overflow-y: auto;
+        overflow-y: hidden;
       }
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row,
@@ -2640,6 +3196,61 @@
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--error,
       body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-row--error {
         color: var(--ux-role-error-color);
+      }
+
+      body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--section,
+      body[data-ui-shell="desktop"] .v2-factorization-panel .v2-factorization-row--section {
+        font-weight: 700;
+        color: var(--ux-role-help-color);
+        margin-top: 4px;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-feed-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-feed-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-factorization-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-factorization-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-algebraic-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-algebraic-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-title-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-title-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-release-notes-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-release-notes-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-help-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-help-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-state-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-state-panel,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-ratios-panel,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-ratios-panel {
+        overflow: hidden;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-feed-table-line,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-feed-table-line,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-factorization-row,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-factorization-row,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-builder-function,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-builder-function,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-builder-seed,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-builder-seed,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-equation,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-equation,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-eigen-equation,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-eigen-equation,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-help-row,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-help-row,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-state-row,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-state-row {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-equation .katex-display,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-algebraic-equation .katex-display,
+      body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-eigen-equation .katex-display,
+      body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-kind="text_wrap_clamp"] .v2-eigen-equation .katex-display {
+        max-width: 100%;
+        overflow: hidden;
       }
 
       body[data-ui-shell="mobile"] .v2-factorization-panel .v2-factorization-row--placeholder,
@@ -2684,6 +3295,21 @@
         color: var(--ux-role-analysis-color);
       }
 
+      .total-hint-row[data-ux-role="imaginary"] .total-hint-label,
+      .total-hint-row[data-ux-role="imaginary"] .total-hint-value {
+        color: var(--ux-role-imaginary-color);
+      }
+
+      .total-hint-row[data-ux-role="unlock"] .total-hint-label,
+      .total-hint-row[data-ux-role="unlock"] .total-hint-value {
+        color: var(--ux-role-unlock-color);
+      }
+
+      .total-hint-row[data-ux-state="muted"] .total-hint-label,
+      .total-hint-row[data-ux-state="muted"] .total-hint-value {
+        opacity: 0.72;
+      }
+
       body[data-ui-shell="mobile"] [data-v2-visualizer-host] .calc-grapher .grapher-screen,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher .grapher-screen {
         height: 100%;
@@ -2702,8 +3328,6 @@
         body[data-ui-shell="desktop"] [data-v2-visualizer-host] .calc-grapher,
         body[data-ui-shell="mobile"] .v2-total-panel,
         body[data-ui-shell="desktop"] .v2-total-panel,
-        body[data-ui-shell="mobile"] .v2-eigen-allocator-panel,
-        body[data-ui-shell="desktop"] .v2-eigen-allocator-panel,
         body[data-ui-shell="mobile"] .v2-algebraic-panel,
         body[data-ui-shell="desktop"] .v2-algebraic-panel,
         body[data-ui-shell="mobile"] .v2-factorization-panel,
@@ -2843,13 +3467,8 @@
         padding: 8px;
       }
 
-      .v2-menu-panel .device,
-      .v2-menu-panel .checklist-shell {
+      .v2-menu-panel .device {
         width: 100%;
-      }
-
-      .v2-menu-panel .checklist-shell {
-        min-height: 100%;
       }
 
       @media (max-width: 639px) {
@@ -2865,15 +3484,9 @@
           grid-template-columns: 1fr;
         }
 
-        .storage,
-        .checklist-shell {
+        .storage {
           width: 100vw;
           max-width: 100vw;
-          justify-self: stretch;
-        }
-
-        body[data-ui-shell="mobile"] .v2-bottom-drawer-panel .checklist-shell {
-          width: 100%;
           justify-self: stretch;
         }
 
@@ -2889,6 +3502,12 @@
           width: min(220px, calc(100vw - 20px));
           right: 10px;
           top: 10px;
+        }
+
+        .debug-matrix-window {
+          right: 10px;
+          top: 242px;
+          width: min(94vw, 360px);
         }
 
         :root {
@@ -2917,20 +3536,33 @@
       </label>
       <div class="debug-menu" data-debug-menu hidden>
         <div class="debug-size">
-          <label for="debug-width">Width</label>
-          <input id="debug-width" type="number" min="1" max="8" data-debug-keypad-width />
-          <label for="debug-height">Height</label>
-          <input id="debug-height" type="number" min="1" max="8" data-debug-keypad-height />
-          <label for="debug-max-points">maxPoints</label>
-          <input id="debug-max-points" type="number" min="0" step="1" data-debug-max-points />
+          <label for="debug-calculator">Calc</label>
+          <select id="debug-calculator" data-debug-calculator-select>
+            <option value="menu">menu</option>
+            <option value="g">g</option>
+            <option value="f">f</option>
+            <option value="f_prime">f'</option>
+            <option value="g_prime">g'</option>
+          </select>
+          <label for="debug-alpha">alpha</label>
+          <input id="debug-alpha" type="number" step="1" data-debug-control-alpha />
+          <label for="debug-beta">beta</label>
+          <input id="debug-beta" type="number" step="1" data-debug-control-beta />
+          <label for="debug-gamma">gamma</label>
+          <input id="debug-gamma" type="number" step="1" data-debug-control-gamma />
+          <label for="debug-delta">delta</label>
+          <input id="debug-delta" type="number" step="1" data-debug-control-delta />
+          <label for="debug-delta-q">delta_q</label>
+          <input id="debug-delta-q" type="number" step="1" data-debug-control-delta-q />
+          <label for="debug-epsilon">epsilon</label>
+          <input id="debug-epsilon" type="number" step="1" data-debug-control-epsilon />
         </div>
-        <button type="button" class="debug-action" data-debug-apply-keypad-size>Apply Keypad Size</button>
-        <button type="button" class="debug-action" data-debug-apply-max-points>Apply maxPoints</button>
-        <button type="button" class="debug-action" data-debug-upgrade-keypad-row>Upgrade Row</button>
-        <button type="button" class="debug-action" data-debug-upgrade-keypad-column>Upgrade Column</button>
+        <button type="button" class="debug-action" data-debug-apply-control-fields>Apply controls</button>
+        <button type="button" class="debug-action" data-debug-copy-calculator-snapshot>Copy Calculator Snapshot</button>
         <button type="button" class="debug-action" data-debug-clear-save>Clear Save</button>
         <button type="button" class="debug-action" data-debug-unlock-all>Unlock All</button>
         <a class="debug-action" data-debug-toggle-ui-shell href="#">Switch UI Shell</a>
+        <a class="debug-action" data-debug-toggle-app-mode href="#">Switch App Mode</a>
         <pre class="debug-report" data-debug-roll-state>[]</pre>
       </div>
     </section>
@@ -2939,29 +3571,200 @@
         <section class="play-area">
           <div class="device-row">
             <section class="device device--calc" data-calc-device>
-              <section class="roll" data-roll aria-label="Calculator roll"></section>
-              <section class="calc">
-                <div class="slot" aria-hidden="true"></div>
-                <div class="display-stack">
-                  <div class="display display--shared" data-display-window data-graph-visible="false">
-                    <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
-                      <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
-                      <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
-                        <div class="grapher-screen">
-                          <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
-                        </div>
-                      </section>
-                      <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
-                      <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
-                      <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
-                                            <section class="v2-eigen-allocator-panel" data-v2-eigen-allocator-panel aria-label="Eigen Allocator visualizer" aria-hidden="true"></section>
-                      <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
-                    </section>
-                  </div>
-                  <div class="display" data-slot></div>
-                </div>
-                <div data-keys></div>
-              </section>
+              <div class="calc-switch-row" data-calc-switch-row>
+                <button type="button" class="calc-switch" data-calc-switch="menu">menu</button>
+                <button type="button" class="calc-switch" data-calc-switch="g">g</button>
+                <button type="button" class="calc-switch" data-calc-switch="f">f</button>
+                <button type="button" class="calc-switch" data-calc-switch="f_prime">f'</button>
+                <button type="button" class="calc-switch" data-calc-switch="g_prime">g'</button>
+              </div>
+              <div class="calc-instance-track" data-calc-instance-track>
+                <section class="calc-instance" data-calc-instance-id="menu">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                    </div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-release-notes-panel" data-v2-release-notes-panel aria-label="Release Notes visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-state-panel" data-v2-state-panel aria-label="Internal state visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                                                    <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+                <section class="calc-instance" data-calc-instance-id="f">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                    </div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-release-notes-panel" data-v2-release-notes-panel aria-label="Release Notes visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-state-panel" data-v2-state-panel aria-label="Internal state visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                                                    <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+                <section class="calc-instance" data-calc-instance-id="g">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                    </div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-release-notes-panel" data-v2-release-notes-panel aria-label="Release Notes visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-state-panel" data-v2-state-panel aria-label="Internal state visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                                                    <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+                <section class="calc-instance" data-calc-instance-id="f_prime">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                    </div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-release-notes-panel" data-v2-release-notes-panel aria-label="Release Notes visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-state-panel" data-v2-state-panel aria-label="Internal state visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                                                    <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+                <section class="calc-instance" data-calc-instance-id="g_prime">
+                  <section class="roll" data-roll aria-label="Calculator roll"></section>
+                  <section class="calc">
+                    <div class="slot" aria-hidden="true"></div>
+                    <div class="calc-leds" aria-hidden="true">
+                      <span class="calc-led calc-led--red" data-calc-led="rejected"></span>
+                      <span class="calc-led calc-led--blue" data-calc-led="builder_changed"></span>
+                      <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
+                      <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
+                      <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                    </div>
+                    <div class="display-stack">
+                      <div class="display display--shared" data-display-window data-graph-visible="false">
+                        <section class="v2-visualizer-host" data-v2-visualizer-host data-v2-visualizer-panel="total" aria-hidden="false">
+                          <section class="v2-total-panel" data-v2-total-panel aria-label="Total visualizer" aria-live="polite" aria-hidden="false"></section>
+                          <section class="calc-grapher" data-grapher-device aria-label="Grapher" aria-hidden="true">
+                            <div class="grapher-screen">
+                              <canvas class="grapher-canvas" data-grapher-canvas aria-label="Roll graph" role="img"></canvas>
+                            </div>
+                          </section>
+                          <section class="v2-feed-panel" data-v2-feed-panel aria-label="Feed visualizer" aria-hidden="true"></section>
+                          <section class="v2-title-panel" data-v2-title-panel aria-label="Title visualizer" aria-hidden="true"></section>
+                          <section class="v2-release-notes-panel" data-v2-release-notes-panel aria-label="Release Notes visualizer" aria-hidden="true"></section>
+                          <section class="v2-help-panel" data-v2-help-panel aria-label="Help visualizer" aria-hidden="true"></section>
+                          <section class="v2-state-panel" data-v2-state-panel aria-label="Internal state visualizer" aria-hidden="true"></section>
+                          <section class="v2-factorization-panel" data-v2-factorization-panel aria-label="Prime factorization visualizer" aria-hidden="true"></section>
+                                                    <section class="v2-number-line-panel" data-v2-number-line-panel aria-label="Number line visualizer" aria-hidden="true"></section>
+                          <section class="v2-circle-panel" data-v2-circle-panel aria-label="Circle visualizer" aria-hidden="true"></section>
+                          <section class="v2-ratios-panel" data-v2-ratios-panel aria-label="Ratios visualizer" aria-hidden="true"></section>
+                          <section class="v2-algebraic-panel" data-v2-algebraic-panel aria-label="Algebraic visualizer" aria-hidden="true"></section>
+                        </section>
+                      </div>
+                      <div class="display" data-slot></div>
+                    </div>
+                    <div data-keys></div>
+                  </section>
+                </section>
+              </div>
             </section>
           </div>
           <section class="storage" aria-label="Button storage">
@@ -2975,11 +3778,13 @@
             <div data-storage-keys></div>
           </section>
         </section>
-        <aside class="checklist-shell" aria-label="Unlock checklist clipboard">
-          <div class="checklist" data-unlocks></div>
-        </aside>
       </main>
     </div>
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>
+
+
+
+
+
