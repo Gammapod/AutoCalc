@@ -10,6 +10,11 @@ import {
   resolveGraphCycleOverlaySegments,
   type GraphPoint,
 } from "./visualizers/graphModel.js";
+import {
+  calculatorValueToArgandPoint,
+  resolveHistoryForecastValueForState,
+  resolveStepForecastValuesForState,
+} from "./visualizers/numberLineModel.js";
 import { resolveGraphLayout } from "./visualizers/graphLayoutModel.js";
 import { clearGraphOverlay, renderGraphOverlay } from "./visualizers/graphOverlayRenderer.js";
 
@@ -206,6 +211,32 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   }
 
   const points = buildGraphPoints(state.calculator.rollEntries);
+  const historyForecastValue = resolveHistoryForecastValueForState(state);
+  const historyForecastArgand = historyForecastValue ? calculatorValueToArgandPoint(historyForecastValue) : null;
+  const historyForecastPoint: GraphPoint | null = historyForecastArgand
+    ? {
+      x: toStepCount(state.calculator.rollEntries) + 1,
+      y: historyForecastArgand.re,
+      kind: "forecast_history",
+      hasError: false,
+    }
+    : null;
+  const stepForecastValues = resolveStepForecastValuesForState(state);
+  const latestStepForecastValue = stepForecastValues[stepForecastValues.length - 1] ?? null;
+  const stepForecastArgand = latestStepForecastValue ? calculatorValueToArgandPoint(latestStepForecastValue) : null;
+  const stepForecastPoint: GraphPoint | null = stepForecastArgand
+    ? {
+      x: toStepCount(state.calculator.rollEntries) + 1,
+      y: stepForecastArgand.re,
+      kind: "forecast_step",
+      hasError: false,
+    }
+    : null;
+  const chartPoints = [
+    ...points,
+    ...(historyForecastPoint ? [historyForecastPoint] : []),
+    ...(stepForecastPoint ? [stepForecastPoint] : []),
+  ];
   const hasPoints = isGraphRenderable(state.calculator.rollEntries);
   const displayRadix = state.settings.base === "base2" ? 2 : 10;
   const dimensions = resolveCanvasDimensions(canvas);
@@ -231,28 +262,52 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   const options = buildGraphOptions(hasPoints, layout);
   const documentRef = root.ownerDocument ?? null;
   const defaultColor = resolveUxRoleColor("default", { document: documentRef });
+  const unlockColor = resolveUxRoleColor("unlock", { document: documentRef });
+  const stepColor = resolveUxRoleColor("step", { document: documentRef });
   const analysisColor = resolveUxRoleColor("analysis", { document: documentRef });
   const imaginaryColor = resolveUxRoleColor("imaginary", { document: documentRef });
   const errorColor = resolveUxRoleColor("error", { document: documentRef });
   const defaultBorderColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.9 });
+  const unlockBorderColor = resolveUxRoleColor("unlock", { document: documentRef, alpha01: 0.9 });
+  const stepBorderColor = resolveUxRoleColor("step", { document: documentRef, alpha01: 0.9 });
   const analysisBorderColor = resolveUxRoleColor("analysis", { document: documentRef, alpha01: 0.9 });
   const imaginaryBorderColor = resolveUxRoleColor("imaginary", { document: documentRef, alpha01: 0.9 });
   const errorBorderColor = resolveUxRoleColor("error", { document: documentRef, alpha01: 0.9 });
 
-  const pointBackgroundColor = points.map((point) => {
+  const pointBackgroundColor = chartPoints.map((point) => {
+    if (point.kind === "forecast_history") {
+      return unlockColor;
+    }
+    if (point.kind === "forecast_step") {
+      return stepColor;
+    }
     if (point.kind === "imaginary") {
       return imaginaryColor;
     }
     return point.hasError ? errorColor : defaultColor;
   });
-  const pointBorderColor = points.map((point) => {
+  const pointBorderColor = chartPoints.map((point) => {
+    if (point.kind === "forecast_history") {
+      return unlockBorderColor;
+    }
+    if (point.kind === "forecast_step") {
+      return stepBorderColor;
+    }
     if (point.kind === "imaginary") {
       return imaginaryBorderColor;
     }
     return point.hasError ? errorBorderColor : defaultBorderColor;
   });
-  const pointRadius = points.map((point) => (point.kind === "imaginary" ? 2.25 : (hasPoints ? 3 : 0)));
-  const pointHoverRadius = points.map((point) => (point.kind === "imaginary" ? 3.25 : 4));
+  const pointRadius = chartPoints.map((point) => {
+    if (point.kind === "forecast_history") {
+      return 3.1;
+    }
+    if (point.kind === "forecast_step") {
+      return 3.25;
+    }
+    return point.kind === "imaginary" ? 2.25 : (hasPoints ? 3 : 0);
+  });
+  const pointHoverRadius = chartPoints.map((point) => (point.kind === "imaginary" ? 3.25 : 4));
 
   if (!runtime.graphChart) {
     runtime.graphChart = new chartCtor(context, {
@@ -260,7 +315,7 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
       data: {
         datasets: [
           {
-            data: points,
+            data: chartPoints,
             showLine: false,
             pointRadius,
             pointHoverRadius,
@@ -273,7 +328,7 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
       options,
     });
   } else {
-    runtime.graphChart.data.datasets[0].data = points;
+    runtime.graphChart.data.datasets[0].data = chartPoints;
     runtime.graphChart.data.datasets[0].pointRadius = pointRadius;
     runtime.graphChart.data.datasets[0].pointHoverRadius = pointHoverRadius;
     runtime.graphChart.data.datasets[0].pointBackgroundColor = pointBackgroundColor;

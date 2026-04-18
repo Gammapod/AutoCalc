@@ -41,6 +41,32 @@ export const runUiModuleGrapherV2Tests = (): void => {
       ],
     },
   };
+  const withGraphStepForecast: GameState = {
+    ...withGraphVisible,
+    settings: {
+      ...withGraphVisible.settings,
+      stepExpansion: "on",
+    },
+    calculator: {
+      ...withGraphVisible.calculator,
+      total: toRationalCalculatorValue({ num: 5n, den: 1n }),
+      rollEntries: [{ y: toRationalCalculatorValue({ num: 5n, den: 1n }) }],
+      operationSlots: [{ operator: "op_add", operand: 3n }],
+    },
+  };
+  const withGraphHistoryForecast: GameState = {
+    ...withGraphVisible,
+    settings: {
+      ...withGraphVisible.settings,
+      forecast: "on",
+    },
+    calculator: {
+      ...withGraphVisible.calculator,
+      total: toRationalCalculatorValue({ num: 5n, den: 1n }),
+      rollEntries: [{ y: toRationalCalculatorValue({ num: 5n, den: 1n }) }],
+      operationSlots: [{ operator: "op_add", operand: 3n }],
+    },
+  };
   assert.doesNotThrow(
     () => renderGrapherV2Module(rootWithoutCanvas as unknown as Element, withGraphVisible),
     "grapher renderer safely handles graph-visible state without canvas",
@@ -175,6 +201,27 @@ export const runUiModuleGrapherV2Tests = (): void => {
       true,
       "imaginary points use a smaller radius than real points",
     );
+    const stepForecastRoot: RootLike = {
+      querySelector: (selector: string) => (selector === "[data-grapher-canvas]" ? canvas : null),
+    };
+    renderGrapherV2Module(stepForecastRoot as unknown as Element, withGraphStepForecast);
+    const stepConfig = capturedConfigs[capturedConfigs.length - 1] as
+      | { data?: { datasets?: Array<{ data?: Array<{ kind?: string; x?: number; y?: number }> }> } }
+      | undefined;
+    const stepPoints = stepConfig?.data?.datasets?.[0]?.data ?? [];
+    const stepPoint = stepPoints.find((point) => point.kind === "forecast_step");
+    assert.ok(stepPoint, "step expansion adds a forecast-step overlay point to the graph dataset");
+    assert.equal(stepPoint?.x, 2, "forecast-step overlay point is plotted at current x + 1");
+    assert.equal(stepPoint?.y, 8, "forecast-step overlay point y matches the latest step forecast value");
+    renderGrapherV2Module(stepForecastRoot as unknown as Element, withGraphHistoryForecast);
+    const historyForecastConfig = capturedConfigs[capturedConfigs.length - 1] as
+      | { data?: { datasets?: Array<{ data?: Array<{ kind?: string; x?: number; y?: number }> }> } }
+      | undefined;
+    const historyForecastPoints = historyForecastConfig?.data?.datasets?.[0]?.data ?? [];
+    const historyForecastPoint = historyForecastPoints.find((point) => point.kind === "forecast_history");
+    assert.ok(historyForecastPoint, "Fcast adds a forecast-history overlay point to the graph dataset");
+    assert.equal(historyForecastPoint?.x, 2, "forecast-history overlay point is plotted at current x + 1");
+    assert.equal(historyForecastPoint?.y, 8, "forecast-history overlay point y matches next forecast roll result");
     renderGrapherV2Module(rootB as unknown as Element, withGraphVisible);
     clearGrapherV2Module(rootA as unknown as Element);
     assert.equal(destroyed.length, 1, "root-scoped grapher clear destroys only one runtime");

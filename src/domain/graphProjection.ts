@@ -6,7 +6,7 @@ import { algebraicToApproxNumber, algebraicToRational } from "./algebraicScalar.
 export type GraphPoint = {
   x: number;
   y: number;
-  kind?: "seed" | "roll" | "imaginary";
+  kind?: "seed" | "roll" | "imaginary" | "forecast_step" | "forecast_history";
   hasError: boolean;
 };
 
