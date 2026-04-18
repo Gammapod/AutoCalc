@@ -47,6 +47,13 @@ jobs:
       - name: Verify build and tests
         run: npm run ci:verify:release
 
+      - name: Upload web build artifact for downstream jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+          if-no-files-found: error
+
   prepare-butler:
     runs-on: windows-latest
 
@@ -149,15 +156,18 @@ jobs:
           $version = "${{ github.ref_name }}".Substring(1)
           npm version $version --no-git-tag-version --allow-same-version
 
-      - name: Build preflight (verify job is canonical test gate)
-        run: npm run build:web:full
+      - name: Download verified web build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
 
       - name: Build portable executable
         env:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           WIN_CSC_TSA_URL: ${{ secrets.WIN_CSC_TSA_URL }}
-        run: npm run build:desktop
+        run: npm run build:desktop:only
 
       - name: Assert release artifact and version
         shell: pwsh
@@ -246,8 +256,14 @@ jobs:
           $version = "${{ github.ref_name }}".Substring(1)
           npm version $version --no-git-tag-version --allow-same-version
 
+      - name: Download verified web build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+
       - name: Build Itch web zip
-        run: npm run build:web:full && npm run build:itch:zip
+        run: npm run build:itch:zip
 
       - name: Download Windows executable artifact
         uses: actions/download-artifact@v4

@@ -44,8 +44,11 @@ jobs:
       - name: Verify build and tests
         run: npm run ci:verify:release
 
-      - name: Build Android APK
-        run: npm run build:android:apk
+      - name: Build Android APK (no duplicate web rebuild)
+        run: |
+          npm run build:mobile:webassets:only
+          npm run mobile:android:sync:only
+          npm run build:android:apk:only
 
       - name: Assert APK artifact exists
         run: |

@@ -95,7 +95,6 @@ cpSync(resolve(stagingRoot, "mobile_web", "index.html"), resolve(stagingRoot, "i
 cpSync(resolve(stagingRoot, "mobile_web", "styles"), resolve(stagingRoot, "styles"), { recursive: true });
 cpSync(resolve(stagingRoot, "mobile_web", "dist"), resolve(stagingRoot, "dist"), { recursive: true });
 cpSync(resolve(stagingRoot, "mobile_web", "node_modules"), resolve(stagingRoot, "node_modules"), { recursive: true });
-cpSync(resolve(root, "dist", "reports"), resolve(stagingRoot, "dist", "reports"), { recursive: true });
 
 const archive = spawnSync(
   "tar",

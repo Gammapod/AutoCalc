@@ -90,6 +90,8 @@ const allowedValueOrphans = new Set([
   "src/ui/modules/visualizers/plotPolicy.ts",
   "src/ui/shared/uxRoles.ts",
   "src/ui/shell/types.ts",
+  // Shared row-construction helper consumed by visualizer rendering seams; intentional low-level orphan.
+  "src/ui/shared/centeredSeparatorRow.ts",
 ]);
 
 await mkdir(reportsDir, { recursive: true });

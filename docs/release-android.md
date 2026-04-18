@@ -10,6 +10,22 @@ For shared pipeline rules (triggers, tag semantics, approvals, and drift policy)
 2. Distribution channel: workflow artifact (sideload-first)
 3. Workflow: `.github/workflows/release-android-apk.yml`
 
+## Prerequisites (local parity with CI)
+
+1. Node 22
+2. Java 21 (Temurin), matching CI `actions/setup-java@v4` configuration
+
+On Windows (PowerShell), install and set Java 21:
+
+```powershell
+winget install EclipseAdoptium.Temurin.21.JDK
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+java -version
+```
+
+If `java -version` reports Java 8, Android Gradle plugin resolution will fail.
+
 ## Local build
 
 1. Install dependencies:
@@ -22,6 +38,14 @@ npm install
 
 ```bash
 npm run build:android:apk
+```
+
+Equivalent no-rebuild sequence (matches release workflow execution order):
+
+```bash
+npm run build:mobile:webassets:only
+npm run mobile:android:sync:only
+npm run build:android:apk:only
 ```
 
 Expected output:
