@@ -26,9 +26,9 @@ const MIN_PANEL_HEIGHT_PX = 96;
 const REFERENCE_TEXT_LINE_HEIGHT_PX = 21;
 const DEFAULT_TOTAL_PANEL_SIZE: VisualizerCanonicalSize = {
   mode: "text_budget",
-  minLines: 6,
-  targetLines: 7,
-  maxLines: 9,
+  minLines: 7,
+  targetLines: 8,
+  maxLines: 10,
 };
 
 const createHostRuntime = (): VisualizerHostModuleState => ({

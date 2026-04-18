@@ -25,13 +25,24 @@ const c = (reNum: bigint, imNum: bigint): { kind: "complex"; value: { re: Return
 });
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
-const getPrimaryActiveDigitSegments = (panel: HTMLElement): string[][] =>
-  Array.from(panel.querySelectorAll<HTMLElement>(".total-primary-display .seg-digit--active"))
+const getActiveDigitSegments = (panel: HTMLElement, selector: string): string[][] =>
+  Array.from(panel.querySelectorAll<HTMLElement>(`${selector} .seg-digit--active`))
     .map((digit) =>
       Array.from(digit.querySelectorAll<HTMLElement>(".seg--on"))
         .map((segment) => (segment.className.match(/seg-([a-g])/u)?.[1] ?? ""))
         .filter((name) => name.length > 0),
     );
+
+const getPrimaryActiveDigitSegments = (panel: HTMLElement): string[][] =>
+  Array.from(panel.querySelectorAll<HTMLElement>(".total-primary-display > .seg-frame .seg-digit--active"))
+    .map((digit) =>
+      Array.from(digit.querySelectorAll<HTMLElement>(".seg--on"))
+        .map((segment) => (segment.className.match(/seg-([a-g])/u)?.[1] ?? ""))
+        .filter((name) => name.length > 0),
+    );
+
+const getImaginaryActiveDigitSegments = (panel: HTMLElement): string[][] =>
+  getActiveDigitSegments(panel, ".total-imaginary-display");
 
 const withRoll = (state: GameState, entries: RollEntry[], cycle: GameState["calculator"]["rollAnalysis"]["cycle"]): GameState => ({
   ...state,
@@ -352,21 +363,158 @@ export const runTotalDisplayTests = (): void => {
         ...base.calculator,
         total: toExplicitComplexCalculatorValue(
           toExpressionScalarValue(symbolicExpr("sqrt(2)")),
-          toRationalScalarValue({ num: 0n, den: 1n }),
+          toRationalScalarValue({ num: 3n, den: 1n }),
         ),
       },
     };
     renderTotalDisplay(totalPanel, complexAnyState);
-    const complexAnySegments = getPrimaryActiveDigitSegments(totalPanel);
+    const complexRealSegments = getPrimaryActiveDigitSegments(totalPanel);
+    const complexImaginarySegments = getImaginaryActiveDigitSegments(totalPanel);
+    const complexImaginaryDisplay = totalPanel.querySelector<HTMLElement>(".total-imaginary-display");
     assert.deepEqual(
-      complexAnySegments.slice(-4),
+      complexRealSegments.slice(-3),
       [
-        ["a", "d", "e", "f"],
-        ["b", "c"],
         ["e", "g"],
+        ["a", "b", "c", "e", "f", "g"],
+        ["b", "c", "d", "e", "g"],
+      ],
+      "complex irrational real parts render rAd token on the main row",
+    );
+    assert.deepEqual(
+      complexImaginarySegments.at(-1),
+      ["a", "b", "c"],
+      "complex integer imaginary parts render numerically on the imaginary row",
+    );
+    assert.equal(complexImaginaryDisplay?.getAttribute("aria-hidden"), "false", "non-zero imaginary complex totals show imaginary row");
+
+    const complexRealEquivalentState: GameState = {
+      ...base,
+      calculator: {
+        ...base.calculator,
+        total: toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 7n, den: 1n }),
+          toRationalScalarValue({ num: 0n, den: 1n }),
+        ),
+      },
+    };
+    renderTotalDisplay(totalPanel, complexRealEquivalentState);
+    const hiddenImaginaryDisplay = totalPanel.querySelector<HTMLElement>(".total-imaginary-display");
+    assert.equal(hiddenImaginaryDisplay?.getAttribute("aria-hidden"), "true", "real-equivalent complex totals hide imaginary row");
+
+    const complexFractionalImaginaryState: GameState = {
+      ...base,
+      unlocks: {
+        ...base.unlocks,
+        maxTotalDigits: 4,
+      },
+      calculator: {
+        ...base.calculator,
+        total: toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 5n, den: 1n }),
+          toRationalScalarValue({ num: 1n, den: 2n }),
+        ),
+      },
+    };
+    renderTotalDisplay(totalPanel, complexFractionalImaginaryState);
+    const fractionalImaginarySegments = getImaginaryActiveDigitSegments(totalPanel);
+    assert.deepEqual(
+      fractionalImaginarySegments.slice(-4),
+      [
+        ["e", "g"],
+        ["e", "g"],
+        ["a", "b", "c", "e", "f", "g"],
         ["a", "d", "e", "f"],
       ],
-      "all complex totals, including real-equivalent complex values, render the CIRC token",
+      "fractional imaginary components render FrAC token on the imaginary row",
+    );
+
+    const withNaNState: GameState = {
+      ...base,
+      unlocks: {
+        ...base.unlocks,
+        maxTotalDigits: 3,
+      },
+      calculator: {
+        ...base.calculator,
+        total: { kind: "nan" },
+        rollEntries: [{ y: { kind: "nan" }, error: { code: "n/0", kind: "division_by_zero" } }],
+      },
+    };
+    renderTotalDisplay(totalPanel, withNaNState);
+    const nanSegments = getPrimaryActiveDigitSegments(totalPanel);
+    assert.deepEqual(
+      nanSegments.slice(-3),
+      [
+        ["a", "d", "e", "f", "g"],
+        ["e", "g"],
+        ["e", "g"],
+      ],
+      "NaN totals render left-prefixed Err token when digit budget is 3",
+    );
+
+    const withRadicalOneDigitState: GameState = {
+      ...base,
+      unlocks: {
+        ...base.unlocks,
+        maxTotalDigits: 1,
+      },
+      calculator: {
+        ...base.calculator,
+        total: toExpressionCalculatorValue(symbolicExpr("sqrt(3)")),
+      },
+    };
+    renderTotalDisplay(totalPanel, withRadicalOneDigitState);
+    const oneDigitRadicalSegments = getPrimaryActiveDigitSegments(totalPanel);
+    assert.deepEqual(
+      oneDigitRadicalSegments.slice(-1),
+      [["e", "g"]],
+      "irrational totals render left-prefixed r token when digit budget is 1",
+    );
+
+    const withErrorOneDigitState: GameState = {
+      ...base,
+      unlocks: {
+        ...base.unlocks,
+        maxTotalDigits: 1,
+      },
+      calculator: {
+        ...base.calculator,
+        total: { kind: "nan" },
+        rollEntries: [{ y: { kind: "nan" }, error: { code: "seed_nan", kind: "nan_input" } }],
+      },
+    };
+    renderTotalDisplay(totalPanel, withErrorOneDigitState);
+    const oneDigitErrorSegments = getPrimaryActiveDigitSegments(totalPanel);
+    assert.deepEqual(
+      oneDigitErrorSegments.slice(-1),
+      [["a", "d", "e", "f", "g"]],
+      "NaN totals render left-prefixed E token when digit budget is 1",
+    );
+
+    const complexImaginaryIrrationalState: GameState = {
+      ...base,
+      unlocks: {
+        ...base.unlocks,
+        maxTotalDigits: 3,
+      },
+      calculator: {
+        ...base.calculator,
+        total: toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 2n, den: 1n }),
+          toExpressionScalarValue(symbolicExpr("sqrt(5)")),
+        ),
+      },
+    };
+    renderTotalDisplay(totalPanel, complexImaginaryIrrationalState);
+    const irrationalImaginarySegments = getImaginaryActiveDigitSegments(totalPanel);
+    assert.deepEqual(
+      irrationalImaginarySegments.slice(-3),
+      [
+        ["e", "g"],
+        ["a", "b", "c", "e", "f", "g"],
+        ["b", "c", "d", "e", "g"],
+      ],
+      "irrational imaginary components render left-prefixed rAd token",
     );
 
     const rationalExprState: GameState = {

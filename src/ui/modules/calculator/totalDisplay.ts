@@ -4,13 +4,13 @@ import {
   isComplexCalculatorValue,
   isRationalCalculatorValue,
   isRealEquivalentCalculatorValue,
+  scalarValueToCalculatorValue,
   toRationalCalculatorValue,
 } from "../../../domain/calculatorValue.js";
 import { calculatorValueEquals } from "../../../domain/rollEntries.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
-import { toDisplayString } from "../../../infra/math/rationalEngine.js";
 import { applyUxRoleAttributes, buildTotalHintRowsViewModel, resolveTotalHintRowUxAssignment } from "../../shared/readModel.js";
 import {
   buildClearedTotalSlotModel,
@@ -23,17 +23,11 @@ import {
 const SEGMENT_NAMES: readonly SegmentName[] = ["a", "b", "c", "d", "e", "f", "g"];
 const MAX_TOTAL_DISPLAY_SLOTS = 12;
 
-const getNanToken = (unlockedDigits: number): string =>
-  unlockedDigits >= 3 ? "Err" : unlockedDigits === 2 ? "Er" : "E";
+const getNanToken = (): string => "Error";
 
-const getFractionToken = (unlockedDigits: number): string =>
-  unlockedDigits >= 4 ? "FrAC" : unlockedDigits === 3 ? "FrC" : unlockedDigits === 2 ? "Fr" : "F";
+const getFractionToken = (): string => "FrAC";
 
-const getComplexToken = (unlockedDigits: number): string =>
-  unlockedDigits >= 4 ? "CIRC" : unlockedDigits === 3 ? "CIR" : unlockedDigits === 2 ? "CI" : "C";
-
-const getRadicalToken = (unlockedDigits: number): string =>
-  unlockedDigits >= 3 ? "rAd" : unlockedDigits === 2 ? "rA" : "r";
+const getRadicalToken = (): string => "rAdicAL";
 
 const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
   "0": ["a", "b", "c", "d", "e", "f"],
@@ -141,17 +135,12 @@ const renderSevenSegmentValue = (
   unlockedDigits: number,
   pendingNegative: boolean,
   radix: number,
-  options: {
-    fractionAsToken?: boolean;
-  } = {},
 ): void => {
   const displayValue = value;
-  const fractionAsToken = options.fractionAsToken ?? true;
   const isNaNValue = displayValue.kind === "nan";
-  const isComplexValue = isComplexCalculatorValue(displayValue);
   const rationalValue = isRationalCalculatorValue(displayValue)
     ? displayValue.value
-    : !isNaNValue && !isComplexValue
+    : !isNaNValue
       ? calculatorValueToRational(displayValue)
       : null;
   const hasRationalValue = rationalValue !== null;
@@ -160,27 +149,16 @@ const renderSevenSegmentValue = (
     hasIntegerValue && (rationalValue.num < 0n || (rationalValue.num === 0n && pendingNegative));
 
   if (isNaNValue) {
-    appendSevenSegmentFrame(target, buildTokenSlotModel(getNanToken(unlockedDigits), unlockedDigits));
-    return;
-  }
-  if (isComplexValue) {
-    appendSevenSegmentFrame(target, buildTokenSlotModel(getComplexToken(unlockedDigits), unlockedDigits));
+    appendSevenSegmentFrame(target, buildTokenSlotModel(getNanToken(), unlockedDigits));
     return;
   }
   if (!hasRationalValue) {
-    appendSevenSegmentFrame(target, buildTokenSlotModel(getRadicalToken(unlockedDigits), unlockedDigits));
+    appendSevenSegmentFrame(target, buildTokenSlotModel(getRadicalToken(), unlockedDigits));
     return;
   }
 
   if (!hasIntegerValue) {
-    if (fractionAsToken) {
-      appendSevenSegmentFrame(target, buildTokenSlotModel(getFractionToken(unlockedDigits), unlockedDigits));
-      return;
-    }
-    const fraction = document.createElement("div");
-    fraction.className = "seg-fraction";
-    fraction.textContent = toDisplayString(rationalValue);
-    target.appendChild(fraction);
+    appendSevenSegmentFrame(target, buildTokenSlotModel(getFractionToken(), unlockedDigits));
     return;
   }
 
@@ -235,6 +213,8 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
 
   const primaryDisplay = document.createElement("div");
   primaryDisplay.className = "total-primary-display";
+  const imaginaryDisplay = document.createElement("div");
+  imaginaryDisplay.className = "total-imaginary-display";
   const hintRows = buildTotalHintRowsViewModel(state);
   const hintStrip = document.createElement("div");
   hintStrip.className = "total-hint-strip";
@@ -260,8 +240,10 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   baseIndicator.setAttribute("aria-hidden", binaryModeEnabled ? "false" : "true");
   primaryDisplay.appendChild(baseIndicator);
   primaryDisplay.appendChild(domainIndicator);
+  primaryDisplay.appendChild(imaginaryDisplay);
   if (shouldRenderClearedPlaceholder) {
     const slotModels = buildClearedTotalSlotModel(state.unlocks.maxTotalDigits);
+    imaginaryDisplay.setAttribute("aria-hidden", "true");
     appendSevenSegmentFrame(primaryDisplay, slotModels);
     stack.appendChild(primaryDisplay);
     totalEl.appendChild(stack);
@@ -273,7 +255,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     if (shouldDisplayAlgLabel) {
       return "ALG";
     }
-    if (isComplexCalculatorValue(displayValue)) {
+    if (isComplexCalculatorValue(displayValue) && !isRealEquivalentCalculatorValue(displayValue)) {
       return "complex";
     }
     if (binaryModeEnabled && displayValue.kind === "rational" && displayValue.value.den === 1n) {
@@ -282,13 +264,37 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     return calculatorValueToDisplayString(displayValue);
   })();
   totalEl.setAttribute("aria-label", `Total ${defaultDisplayLabel}`);
-  renderSevenSegmentValue(
-    primaryDisplay,
-    state.calculator.total,
-    state.unlocks.maxTotalDigits,
-    state.calculator.pendingNegativeTotal,
-    displayRadix,
-  );
+  if (state.calculator.total.kind === "complex") {
+    const realValue = scalarValueToCalculatorValue(state.calculator.total.value.re);
+    const imaginaryValue = scalarValueToCalculatorValue(state.calculator.total.value.im);
+    const showImaginaryRow = !isRealEquivalentCalculatorValue(state.calculator.total);
+    imaginaryDisplay.setAttribute("aria-hidden", showImaginaryRow ? "false" : "true");
+    if (showImaginaryRow) {
+      renderSevenSegmentValue(
+        imaginaryDisplay,
+        imaginaryValue,
+        state.unlocks.maxTotalDigits,
+        false,
+        displayRadix,
+      );
+    }
+    renderSevenSegmentValue(
+      primaryDisplay,
+      realValue,
+      state.unlocks.maxTotalDigits,
+      state.calculator.pendingNegativeTotal,
+      displayRadix,
+    );
+  } else {
+    imaginaryDisplay.setAttribute("aria-hidden", "true");
+    renderSevenSegmentValue(
+      primaryDisplay,
+      state.calculator.total,
+      state.unlocks.maxTotalDigits,
+      state.calculator.pendingNegativeTotal,
+      displayRadix,
+    );
+  }
   stack.appendChild(primaryDisplay);
   totalEl.appendChild(stack);
 };

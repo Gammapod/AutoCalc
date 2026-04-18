@@ -343,7 +343,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
             inputBlocked: false,
     });
     const domainIndicatorWithError = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
-    const remainderDisplayWithError = totalPanel?.querySelector<HTMLElement>(".total-remainder-display");
+    const imaginaryDisplayWithError = totalPanel?.querySelector<HTMLElement>(".total-imaginary-display");
     assert.equal(
       totalPanel?.classList.contains("total-display--error"),
       true,
@@ -354,19 +354,19 @@ export const runUiIntegrationMobileShellTests = (): void => {
       false,
       "total panel clears imaginary color mode when total no longer has non-zero imaginary component",
     );
-    assert.equal(domainIndicatorWithError?.textContent, "ℙ", "domain indicator renders latest y domain symbol");
+    assert.equal(domainIndicatorWithError?.textContent, "\u2119", "domain indicator renders latest y domain symbol");
     assert.equal(
       domainIndicatorWithError?.classList.contains("total-domain-indicator--nan"),
       false,
       "domain indicator keeps default (green) styling for non-NaN totals",
     );
     assert.equal(
-      remainderDisplayWithError?.getAttribute("aria-hidden"),
+      imaginaryDisplayWithError?.getAttribute("aria-hidden"),
       "true",
-      "remainder display is hidden when latest roll entry has no remainder",
+      "imaginary row stays hidden when the total is purely real",
     );
 
-    const withRemainderTotal = withCalculatorProjection({
+    const withFractionalTotal = withCalculatorProjection({
       ...withErrorTotal,
       unlocks: {
         ...withErrorTotal.unlocks,
@@ -377,68 +377,24 @@ export const runUiIntegrationMobileShellTests = (): void => {
       calculator: {
         ...projected.calculator,
         total: r(1n, 2n),
-        rollEntries: [
-          ...projected.calculator.rollEntries,
-          { y: r(1n, 2n), remainder: { num: 1n, den: 3n } },
-        ],
+        rollEntries: [...projected.calculator.rollEntries, { y: r(1n, 2n) }],
       },
     }));
-    renderer.render(withRemainderTotal, dispatch, {
+    renderer.render(withFractionalTotal, dispatch, {
             inputBlocked: false,
     });
-    const domainIndicatorWithRemainder = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
-    const remainderDisplayWithRemainder = totalPanel?.querySelector<HTMLElement>(".total-remainder-display");
+    const domainIndicatorWithFraction = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
+    const imaginaryDisplayWithFraction = totalPanel?.querySelector<HTMLElement>(".total-imaginary-display");
     assert.equal(
       totalPanel?.classList.contains("total-display--error"),
       false,
       "total panel clears error color mode when latest roll entry is not an error",
     );
-    assert.equal(domainIndicatorWithRemainder?.textContent, "ℚ", "domain indicator updates for fractional y values");
+    assert.equal(domainIndicatorWithFraction?.textContent, "\u211A", "domain indicator updates for fractional y values");
     assert.equal(
-      remainderDisplayWithRemainder?.getAttribute("aria-hidden"),
-      "false",
-      "remainder display is visible when latest roll entry includes remainder",
-    );
-    const remainderDigitsWithFraction = Array.from(
-      remainderDisplayWithRemainder?.querySelectorAll<HTMLElement>(".seg-digit") ?? [],
-    );
-    assert.equal(
-      remainderDisplayWithRemainder?.querySelector<HTMLElement>(".seg-fraction") ?? null,
-      null,
-      "remainder uses seven-segment rendering, not text fallback",
-    );
-    assert.equal(
-      remainderDigitsWithFraction.length,
-      6,
-      "fraction remainder renders r=FrAC across six seven-segment slots",
-    );
-    assert.equal(
-      remainderDisplayWithRemainder?.textContent?.includes("1/3"),
-      false,
-      "fraction remainder shows FrAC token instead of numeric fraction text",
-    );
-
-    const withLongIntegerRemainder = withCalculatorProjection(withRemainderTotal, "f", (projected) => ({
-      ...projected,
-      calculator: {
-        ...projected.calculator,
-        rollEntries: [
-          ...projected.calculator.rollEntries,
-          { y: r(123456789n), remainder: { num: 123456789n, den: 1n } },
-        ],
-      },
-    }));
-    renderer.render(withLongIntegerRemainder, dispatch, {
-            inputBlocked: false,
-    });
-    const remainderDisplayWithLongInteger = totalPanel?.querySelector<HTMLElement>(".total-remainder-display");
-    const remainderDigitsWithLongInteger = Array.from(
-      remainderDisplayWithLongInteger?.querySelectorAll<HTMLElement>(".seg-digit") ?? [],
-    );
-    assert.equal(
-      remainderDigitsWithLongInteger.length,
-      "r=123456789".length,
-      "integer remainder can exceed maxTotalDigits and still renders full seven-segment message",
+      imaginaryDisplayWithFraction?.getAttribute("aria-hidden"),
+      "true",
+      "imaginary row remains hidden for fractional real totals",
     );
     const fractionDigits = Array.from(totalPanel?.querySelectorAll<HTMLElement>(".total-primary-display .seg-digit") ?? []);
     assert.equal(fractionDigits.length, 12, "total display keeps fixed 12-slot frame");
@@ -453,12 +409,39 @@ export const runUiIntegrationMobileShellTests = (): void => {
       "fraction token right-aligns across unlocked slots",
     );
 
-    const withNanTotal = withCalculatorProjection(withRemainderTotal, "f", (projected) => ({
+    const withComplexImaginaryFraction = withCalculatorProjection(withFractionalTotal, "f", (projected) => ({
+      ...projected,
+      calculator: {
+        ...projected.calculator,
+        total: c(5n, 1n),
+        rollEntries: [...projected.calculator.rollEntries, { y: c(5n, 1n) }],
+      },
+    }));
+    renderer.render(withComplexImaginaryFraction, dispatch, {
+            inputBlocked: false,
+    });
+    const imaginaryDisplayWithComplex = totalPanel?.querySelector<HTMLElement>(".total-imaginary-display");
+    assert.equal(
+      imaginaryDisplayWithComplex?.getAttribute("aria-hidden"),
+      "false",
+      "imaginary row is visible for non-zero imaginary totals",
+    );
+    assert.equal(
+      totalPanel?.classList.contains("total-display--imaginary"),
+      true,
+      "imaginary mode class is active when total has a non-zero imaginary component",
+    );
+    assert.equal(
+      Array.from(imaginaryDisplayWithComplex?.querySelectorAll<HTMLElement>(".seg-digit") ?? []).length,
+      12,
+      "imaginary row uses the same 12-slot seven-segment frame",
+    );
+    const withNanTotal = withCalculatorProjection(withFractionalTotal, "f", (projected) => ({
       ...projected,
       calculator: {
         ...projected.calculator,
         total: { kind: "nan" },
-        rollEntries: [...projected.calculator.rollEntries, { y: { kind: "nan" } }],
+        rollEntries: [...projected.calculator.rollEntries, { y: { kind: "nan" }, error: { code: "seed_nan", kind: "nan_input" } }],
       },
     }));
     renderer.render(withNanTotal, dispatch, {
@@ -466,12 +449,17 @@ export const runUiIntegrationMobileShellTests = (): void => {
     });
     const nanDigits = Array.from(totalPanel?.querySelectorAll<HTMLElement>(".total-primary-display .seg-digit") ?? []);
     assert.equal(
-      nanDigits.slice(8, 9).every((digit) => digit.classList.contains("seg-digit--unlocked")),
+      nanDigits.slice(8).every((digit) => digit.classList.contains("seg-digit--active")),
       true,
-      "NaN token preserves right-aligned unlocked padding",
+      "NaN token renders a left-prefixed Error token across unlocked digits",
+    );
+    assert.equal(
+      totalPanel?.classList.contains("total-display--error"),
+      true,
+      "NaN totals use the error-mode visual precedence",
     );
     const domainIndicatorWithNan = totalPanel?.querySelector<HTMLElement>(".total-domain-indicator");
-    assert.equal(domainIndicatorWithNan?.textContent, "∅", "domain indicator shows null-set symbol when total is NaN");
+    assert.equal(domainIndicatorWithNan?.textContent, "\u2205", "domain indicator shows null-set symbol when total is NaN");
     assert.equal(
       domainIndicatorWithNan?.classList.contains("total-domain-indicator--nan"),
       true,
@@ -552,6 +540,7 @@ export const runUiIntegrationMobileShellTests = (): void => {
     harness.teardown();
   }
 };
+
 
 
 

@@ -1003,7 +1003,42 @@
         height: var(--total-main-height);
         display: flex;
         justify-content: flex-end;
-        align-items: center;
+        align-items: flex-end;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .total-primary-display > .seg-frame {
+        align-self: flex-end;
+      }
+
+      .total-imaginary-display {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+      }
+
+      .total-imaginary-display[aria-hidden="true"] {
+        display: none;
+      }
+
+      .total-imaginary-display .seg-frame {
+        transform: scale(0.74);
+        transform-origin: right bottom;
+      }
+
+      .total-imaginary-display .seg {
+        background: var(--ux-role-imaginary-color);
+      }
+
+      .total-imaginary-display .seg--on {
+        box-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
+      }
+
+      .total-imaginary-display .seg-sign,
+      .total-imaginary-display .seg-fraction {
+        color: var(--ux-role-imaginary-color);
+        text-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
       }
 
       .total-memory-row {
@@ -1130,16 +1165,16 @@
         text-shadow: 0 0 6px rgba(246, 214, 107, 0.55);
       }
 
-      .total-display--imaginary .total-primary-display .seg {
+      .total-display--imaginary .total-imaginary-display .seg {
         background: var(--ux-role-imaginary-color);
       }
 
-      .total-display--imaginary .total-primary-display .seg--on {
+      .total-display--imaginary .total-imaginary-display .seg--on {
         box-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
       }
 
-      .total-display--imaginary .total-primary-display .seg-sign,
-      .total-display--imaginary .total-primary-display .seg-fraction {
+      .total-display--imaginary .total-imaginary-display .seg-sign,
+      .total-display--imaginary .total-imaginary-display .seg-fraction {
         color: var(--ux-role-imaginary-color);
         text-shadow: 0 0 6px rgba(190, 142, 232, 0.55);
       }
@@ -2471,7 +2506,7 @@
         justify-content: flex-end;
         align-items: center;
         opacity: 1;
-        transform: translateY(var(--v2-visualizer-baseline-offset));
+        transform: translateY(var(--v2-total-baseline-offset, var(--v2-visualizer-baseline-offset)));
         pointer-events: none;
         transition:
           opacity 220ms ease,
@@ -2480,6 +2515,7 @@
 
       body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-visualizer-panel="total"] .v2-total-panel,
       body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-visualizer-panel="total"] .v2-total-panel {
+        --v2-total-baseline-offset: calc(var(--v2-visualizer-baseline-offset) - 5px);
         pointer-events: auto;
       }
 
@@ -3623,6 +3659,7 @@
     <script type="module" src="./dist/src/app/bootstrap.js"></script>
   </body>
 </html>
+
 
 
 

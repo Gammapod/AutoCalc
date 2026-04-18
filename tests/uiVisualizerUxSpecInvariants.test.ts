@@ -15,6 +15,14 @@ const r = (num: bigint, den: bigint = 1n): { kind: "rational"; value: { num: big
 
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
+const getActiveDigitSegments = (panel: HTMLElement, selector: string): string[][] =>
+  Array.from(panel.querySelectorAll<HTMLElement>(`${selector} > .seg-frame .seg-digit--active`))
+    .map((digit) =>
+      Array.from(digit.querySelectorAll<HTMLElement>(".seg--on"))
+        .map((segment) => (segment.className.match(/seg-([a-g])/u)?.[1] ?? ""))
+        .filter((name) => name.length > 0),
+    );
+
 const withRoll = (state: GameState, entries: RollEntry[], cycle: GameState["calculator"]["rollAnalysis"]["cycle"]): GameState => ({
   ...state,
   calculator: {
@@ -88,6 +96,10 @@ export const runUiVisualizerUxSpecInvariantsTests = (): void => {
     // UX-VIS-08 + UX-VIS-09: ratios Error styling + budget scoping.
     const nanErrorState: GameState = {
       ...initialState(),
+      unlocks: {
+        ...initialState().unlocks,
+        maxTotalDigits: 3,
+      },
       calculator: {
         ...initialState().calculator,
         total: toNanCalculatorValue(),
@@ -99,6 +111,17 @@ export const runUiVisualizerUxSpecInvariantsTests = (): void => {
       .map((display) => display.getAttribute("data-ratios-token"));
     assert.deepEqual(nanTokens, ["Error", "Error", "Error", "Error"], "ratios renders Error token on all four cells for NaN-class errors");
     assert.equal(ratiosPanel.classList.contains("v2-ratios-panel--error"), true, "ratios Error token state enables red error styling class");
+    renderTotalDisplay(totalPanel, nanErrorState);
+    const totalNanSegments = getActiveDigitSegments(totalPanel, ".total-primary-display");
+    assert.deepEqual(
+      totalNanSegments.slice(-3),
+      [
+        ["a", "d", "e", "f", "g"],
+        ["e", "g"],
+        ["e", "g"],
+      ],
+      "total NaN tokens follow ratios-style Error prefix semantics under digit budgets",
+    );
 
     const withDigitBudgets = {
       ...initialState(),
