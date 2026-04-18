@@ -56,6 +56,19 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 Record shipped trains here using this format:
 
+### Train v1.1.1 (2026-04-18)
+- Included Slice IDs:
+- `slice_analytics_settings_split_history_forecast_cycle`
+- `slice_analytics_toggle_non_interrupting_execution_policy`
+- `slice_visualizer_forecast_history_cycle_gating_split`
+- `slice_graph_forecast_step_overlay_points`
+- `slice_graph_fixed_31_value_x_window`
+- Release Note IDs:
+- `release_v1_1_1`
+- Player-facing highlights:
+- Analytics toggles are now split and explicit: `History`, `Fcast`, `Cycle`, and `[ ??? ]` each control distinct visual behavior.
+- Forecast and step projections are now clearly separated across visualizers, with graph-specific forecast and step points at `x = current + 1`.
+
 ### Train v1.0.0 (2026-04-08)
 - Included Slice IDs:
 - `slice_algebraic_rotation_runtime_exactness`

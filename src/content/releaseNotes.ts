@@ -5,6 +5,20 @@ export const releaseNotes: ReleaseNotesCatalog = {
   // 'summary' should contain the main change, and 'bullets' should list smaller changes.
   entries: [
     {
+      id: "release_v1_1_1",
+      releaseVersion: "v1.1.1",
+      channel: "released",
+      title: "Analytics Split and Forecast/Cycle Controls",
+      summary:
+        "Analytics controls are now split into different settings. Also:",
+      bullets: [
+        "Each control has its own color.",
+        "UI drift bug fixed.",
+        "Added explicit locked/unlocked placeholder icon.",
+        "Cleaned up the x-range on the graph visualizer.",
+      ],
+    },
+    {
       id: "release_v1_1_0",
       releaseVersion: "v1.1.0",
       channel: "released",
