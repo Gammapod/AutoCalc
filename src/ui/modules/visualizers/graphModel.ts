@@ -2,7 +2,9 @@ import type { RollCycleMetadata, RollEntry } from "../../../domain/types.js";
 import { buildGraphPoints, isGraphRenderable, type GraphPoint } from "../../../domain/graphProjection.js";
 import { normalizePlotRadix, resolveAsymmetricTierDomain } from "./plotPolicy.js";
 
-const GRAPH_WINDOW_SIZE = 25;
+const GRAPH_WINDOW_VALUE_COUNT = 31;
+const GRAPH_WINDOW_DELTA = GRAPH_WINDOW_VALUE_COUNT - 1;
+const GRAPH_WINDOW_SHIFT_START_INDEX = 26;
 
 export { buildGraphPoints, isGraphRenderable, type GraphPoint };
 
@@ -213,8 +215,9 @@ export const buildGraphYWindow = (
 };
 
 export const buildGraphXWindow = (maxXIndex: number): { min: number; max: number } => {
-  if (maxXIndex < GRAPH_WINDOW_SIZE) {
-    return { min: 0, max: GRAPH_WINDOW_SIZE };
+  if (maxXIndex < GRAPH_WINDOW_SHIFT_START_INDEX) {
+    return { min: 0, max: GRAPH_WINDOW_DELTA };
   }
-  return { min: maxXIndex - (GRAPH_WINDOW_SIZE - 1), max: maxXIndex };
+  const min = maxXIndex - (GRAPH_WINDOW_SHIFT_START_INDEX - 1);
+  return { min, max: min + GRAPH_WINDOW_DELTA };
 };

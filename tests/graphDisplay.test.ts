@@ -144,11 +144,11 @@ export const runGraphDisplayTests = (): void => {
     "zero-imaginary points stay hidden when no non-zero imaginary values are present in the graph",
   );
 
-  assert.deepEqual(buildGraphXWindow(0), { min: 0, max: 25 }, "empty roll uses default 0..25 x window");
-  assert.deepEqual(buildGraphXWindow(10), { min: 0, max: 25 }, "short roll keeps default 0..25 x window");
-  assert.deepEqual(buildGraphXWindow(25), { min: 1, max: 25 }, "window snaps to last 25 indices at threshold");
-  assert.deepEqual(buildGraphXWindow(26), { min: 2, max: 26 }, "window slides to latest 25 indices");
-  assert.deepEqual(buildGraphXWindow(100), { min: 76, max: 100 }, "window tracks only the latest 25 indices");
+  assert.deepEqual(buildGraphXWindow(0), { min: 0, max: 30 }, "empty roll uses default 0..30 x window");
+  assert.deepEqual(buildGraphXWindow(10), { min: 0, max: 30 }, "short roll keeps default 0..30 x window");
+  assert.deepEqual(buildGraphXWindow(25), { min: 0, max: 30 }, "window remains anchored to 0..30 through index 25");
+  assert.deepEqual(buildGraphXWindow(26), { min: 1, max: 31 }, "window starts right shift at index 26");
+  assert.deepEqual(buildGraphXWindow(100), { min: 75, max: 105 }, "window tracks latest 31-value span after shift begins");
 
   assert.deepEqual(buildGraphYWindow([]), { min: 0, max: 9 }, "empty roll uses [0, radix-1] y window");
   assert.deepEqual(
