@@ -126,6 +126,21 @@ export const runUiVisualizerFitContractTests = (): void => {
     "settings subgroup stripes retain bright on-state colors for toggle-active styling",
   );
   assert.equal(
+    css.includes("--key-complex-family-label: var(--ux-role-base-setting-color, #c996f0);"),
+    true,
+    "complex-family keyface accent token aliases to the canonical violet base role token",
+  );
+  assert.equal(
+    css.includes(".key.key--family-complex .key__label"),
+    true,
+    "complex-family keyface accent selector exists",
+  );
+  assert.equal(
+    css.includes("color: var(--key-complex-family-label);"),
+    true,
+    "complex-family keyface accent selector uses the dedicated complex-family label token",
+  );
+  assert.equal(
     css.includes('.key.key--group-slot_operator:not(.key--unary-operator)::after'),
     true,
     "binary operator key family defines a binary-only corner accent selector",

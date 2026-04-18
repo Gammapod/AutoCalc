@@ -239,8 +239,12 @@ const renderStorageButton = (
   if (cell.key === KEY_ID.const_bottom) {
     button.classList.add("key--value-bottom");
   }
-  if (getButtonDefinition(resolveKeyId(cell.key))?.unlockGroup === "unaryOperators") {
+  const buttonDefinition = getButtonDefinition(resolveKeyId(cell.key));
+  if (buttonDefinition?.unlockGroup === "unaryOperators") {
     button.classList.add("key--unary-operator");
+  }
+  if (buttonDefinition?.traits.includes("complex_family")) {
+    button.classList.add("key--family-complex");
   }
   if (newlyUnlockedKeys.has(cell.key)) {
     button.classList.add("key--unlock-animate");

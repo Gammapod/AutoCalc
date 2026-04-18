@@ -117,6 +117,29 @@ export const runUiModuleStorageV2Tests = (): void => {
     const binaryButton = harness.root.querySelector<HTMLButtonElement>(`[data-storage-keys] button[data-key='${k("op_add")}']`);
     assert.equal(binaryButton?.classList.contains("key--group-slot_operator"), true, "storage binary key uses operator group styling");
     assert.equal(binaryButton?.classList.contains("key--unary-operator"), false, "storage binary key does not receive unary-only stripe class");
+    assert.equal(binaryButton?.classList.contains("key--family-complex"), false, "storage non-complex binary key does not receive complex family class");
+
+    const complexBinaryStorageCell = { kind: "key", key: k("op_log_tuple") } as const;
+    const complexBinaryState = {
+      ...state,
+      ui: {
+        ...state.ui,
+        storageLayout: [complexBinaryStorageCell, ...state.ui.storageLayout.slice(1)],
+      },
+      unlocks: {
+        ...state.unlocks,
+        maxSlots: 1,
+        slotOperators: {
+          ...state.unlocks.slotOperators,
+          [k("op_log_tuple")]: true,
+        },
+      },
+    };
+    renderStorageV2Module(harness.root, complexBinaryState, noopDispatch, {
+      inputBlocked: false,
+    });
+    const complexBinaryButton = harness.root.querySelector<HTMLButtonElement>(`[data-storage-keys] button[data-key='${k("op_log_tuple")}']`);
+    assert.equal(complexBinaryButton?.classList.contains("key--family-complex"), true, "storage complex-family binary key receives complex family class");
 
     const visualizerStorageCell = { kind: "key", key: k("viz_feed") } as const;
     const visualizerState = {

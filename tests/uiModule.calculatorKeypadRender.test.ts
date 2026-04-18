@@ -192,6 +192,33 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     const binaryButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("op_add")}']`);
     assert.equal(binaryButton?.classList.contains("key--group-slot_operator"), true, "binary key uses operator group styling");
     assert.equal(binaryButton?.classList.contains("key--unary-operator"), false, "binary key does not receive unary-only stripe class");
+    assert.equal(binaryButton?.classList.contains("key--family-complex"), false, "non-complex binary key does not receive complex family class");
+
+    const complexBinaryState: GameState = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key", key: k("op_log_tuple") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        maxSlots: 1,
+        slotOperators: {
+          ...initialState().unlocks.slotOperators,
+          [k("op_log_tuple")]: true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, complexBinaryState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const complexBinaryButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("op_log_tuple")}']`);
+    assert.equal(complexBinaryButton?.classList.contains("key--family-complex"), true, "complex-family binary key receives complex family class");
     const cssRules = Array.from(harness.document.styleSheets)
       .flatMap((sheet) => {
         try {

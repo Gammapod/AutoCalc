@@ -69,6 +69,7 @@
   --key-execution-top: #4f8f67;
   --key-execution-bottom: #2f6c4a;
   --key-execution-stroke: #1f4a33;
+  --key-complex-family-label: var(--ux-role-base-setting-color, #c996f0);
   --key-press-depth: 2px;
   --key-latch-depth: 2px;
   --key-overpress-depth: 3px;
@@ -125,6 +126,10 @@
   border-color: var(--key-execution-stroke);
   background: linear-gradient(180deg, var(--key-execution-top), var(--key-execution-bottom));
   color: #ffffff;
+}
+
+.key.key--family-complex .key__label {
+  color: var(--key-complex-family-label);
 }
 
 .key.key--value-bottom .key__label {
