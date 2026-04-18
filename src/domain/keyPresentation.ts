@@ -49,6 +49,12 @@ export const KEY_ID = {
   unary_i: "unary_i",
   unary_rotate_15: "unary_rotate_15",
   unary_reciprocal: "unary_reciprocal",
+  unary_plus_i: "unary_plus_i",
+  unary_minus_i: "unary_minus_i",
+  unary_conjugate: "unary_conjugate",
+  unary_real_flip: "unary_real_flip",
+  unary_imaginary_part: "unary_imaginary_part",
+  unary_real_part: "unary_real_part",
   util_clear_all: "util_clear_all",
   util_backspace: "util_backspace",
   util_undo: "util_undo",
@@ -132,7 +138,13 @@ export type UnaryOperatorKeyId =
   | typeof KEY_ID.unary_mirror_digits
   | typeof KEY_ID.unary_i
   | typeof KEY_ID.unary_rotate_15
-  | typeof KEY_ID.unary_reciprocal;
+  | typeof KEY_ID.unary_reciprocal
+  | typeof KEY_ID.unary_plus_i
+  | typeof KEY_ID.unary_minus_i
+  | typeof KEY_ID.unary_conjugate
+  | typeof KEY_ID.unary_real_flip
+  | typeof KEY_ID.unary_imaginary_part
+  | typeof KEY_ID.unary_real_part;
 export type MemoryKeyId = never;
 export type UtilityKeyId =
   | typeof KEY_ID.util_clear_all
@@ -197,18 +209,18 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.const_bottom, { buttonFace: BOTTOM_VALUE_SYMBOL }],
   [KEY_ID.const_roll_number, { buttonFace: ROLL_NUMBER_SYMBOL }],
   [KEY_ID.op_add, { buttonFace: "+", operatorInlineFace: "+", operatorSlotFace: "+", operatorAlgebraicFace: "+" }],
-  [KEY_ID.op_sub, { buttonFace: "-", operatorInlineFace: "-", operatorSlotFace: "-", operatorAlgebraicFace: "-" }],
+  [KEY_ID.op_sub, { buttonFace: "\u2212", operatorInlineFace: "\u2212", operatorSlotFace: "\u2212", operatorAlgebraicFace: "\u2212" }],
   [KEY_ID.op_mul, { buttonFace: "\u00D7", operatorInlineFace: "\u00D7", operatorSlotFace: "\u00D7", operatorAlgebraicFace: "\u00D7" }],
   [KEY_ID.op_pow, { buttonFace: "^", operatorInlineFace: "^", operatorSlotFace: "^", operatorAlgebraicFace: "^" }],
   [KEY_ID.op_div, { buttonFace: "\u00F7", operatorInlineFace: "\u00F7", operatorSlotFace: "\u00F7", operatorAlgebraicFace: "\u00F7" }],
   [KEY_ID.op_euclid_div, { buttonFace: "\u2AFD", operatorInlineFace: "\u2AFD", operatorSlotFace: "\u2AFD", operatorAlgebraicFace: "\u2AFD" }],
-  [KEY_ID.op_euclid_tuple, { buttonFace: "\u2AFD \u254E \u25C7\u2192M", operatorInlineFace: "\u2A38", operatorSlotFace: "\u2A38", operatorAlgebraicFace: "\u2A38" }],
+  [KEY_ID.op_euclid_tuple, { buttonFace: "\u2AFD \u254E \u{1F79A}", operatorInlineFace: "\u2A38", operatorSlotFace: "\u2A38", operatorAlgebraicFace: "\u2A38" }],
   [KEY_ID.op_eulog, { buttonFace: "\u2225", operatorInlineFace: "\u2225", operatorSlotFace: "\u2225", operatorAlgebraicFace: "\u2225" }],
-  [KEY_ID.op_residual, { buttonFace: "\u{1F79B}", operatorInlineFace: "\u{1F79B}", operatorSlotFace: "\u{1F79B}", operatorAlgebraicFace: "\u{1F79B}" }],
-  [KEY_ID.op_log_tuple, { buttonFace: "\u2225 \u254E \u{1F79B}\u2192M", operatorInlineFace: "\u29B7", operatorSlotFace: "\u29B7", operatorAlgebraicFace: "\u29B7" }],
+  [KEY_ID.op_residual, { buttonFace: "\u{1F79C}", operatorInlineFace: "\u{1F79C}", operatorSlotFace: "\u{1F79C}", operatorAlgebraicFace: "\u{1F79C}" }],
+  [KEY_ID.op_log_tuple, { buttonFace: "\u2225 \u254E \u{1F79C}", operatorInlineFace: "\u29B7", operatorSlotFace: "\u29B7", operatorAlgebraicFace: "\u29B7" }],
   [KEY_ID.op_whole_steps, { buttonFace: "\u2669\u2191", operatorInlineFace: "\u2669\u2191", operatorSlotFace: "\u2669\u2191", operatorAlgebraicFace: "\u2669\u2191" }],
   [KEY_ID.op_interval, { buttonFace: "\u22EE", operatorInlineFace: "\u22EE", operatorSlotFace: "\u22EE", operatorAlgebraicFace: "\u22EE" }],
-  [KEY_ID.op_mod, { buttonFace: "\u27E1", operatorInlineFace: "\u27E1", operatorSlotFace: "\u25C7", operatorAlgebraicFace: "\u27E1" }],
+  [KEY_ID.op_mod, { buttonFace: "\u{1F79A}", operatorInlineFace: "\u{1F79A}", operatorSlotFace: "\u{1F79A}", operatorAlgebraicFace: "\u{1F79A}" }],
   [KEY_ID.op_rotate_left, { buttonFace: "\u21BA", operatorInlineFace: "\u21BA", operatorSlotFace: "\u21BA", operatorAlgebraicFace: "\u21BA" }],
   [KEY_ID.op_rotate_15, { buttonFace: "\u21B6", operatorInlineFace: "\u00D7e^(in\u03C0/12)", operatorSlotFace: "\u21B6", operatorAlgebraicFace: "\u00D7e^(in\u03C0/12)" }],
   [KEY_ID.op_gcd, { buttonFace: "\u22C0", operatorInlineFace: "\u22C0", operatorSlotFace: "\u22C0", operatorAlgebraicFace: "\u22C0" }],
@@ -230,6 +242,12 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.unary_i, { buttonFace: "-M\u2B7ER", operatorInlineFace: "\u00D7i", operatorSlotFace: "-M\u2B7ER", operatorAlgebraicFace: "\u00D7i" }],
   [KEY_ID.unary_rotate_15, { buttonFace: "\u21B6 \u299C/6", operatorInlineFace: "\u00D7e^(i\u03C0/12)", operatorSlotFace: "\u299C/6", operatorAlgebraicFace: "\u00D7e^(i\u03C0/12)" }],
   [KEY_ID.unary_reciprocal, { buttonFace: "\u00B9\u2044\u2099", operatorInlineFace: "\u00B9\u2044\u2099", operatorSlotFace: "\u00B9\u2044\u2099", operatorAlgebraicFace: "\u00B9\u2044\u2099" }],
+  [KEY_ID.unary_plus_i, { buttonFace: "M+ +", operatorInlineFace: "M++", operatorSlotFace: "M++", operatorAlgebraicFace: "M++" }],
+  [KEY_ID.unary_minus_i, { buttonFace: "M\u2013 \u2013", operatorInlineFace: "M\u2013\u2013", operatorSlotFace: "M\u2013\u2013", operatorAlgebraicFace: "M\u2013\u2013" }],
+  [KEY_ID.unary_conjugate, { buttonFace: "M\u00B1", operatorInlineFace: "M\u00B1", operatorSlotFace: "M\u00B1", operatorAlgebraicFace: "M\u00B1" }],
+  [KEY_ID.unary_real_flip, { buttonFace: "R\u00B1", operatorInlineFace: "R\u00B1", operatorSlotFace: "R\u00B1", operatorAlgebraicFace: "R\u00B1" }],
+  [KEY_ID.unary_imaginary_part, { buttonFace: "C/M\u2192", operatorInlineFace: "C/M\u2192", operatorSlotFace: "C/M\u2192", operatorAlgebraicFace: "C/M\u2192" }],
+  [KEY_ID.unary_real_part, { buttonFace: "MC", operatorInlineFace: "MC", operatorSlotFace: "MC", operatorAlgebraicFace: "MC" }],
   [KEY_ID.util_clear_all, { buttonFace: "C" }],
   [KEY_ID.util_backspace, { buttonFace: "\u2190" }],
   [KEY_ID.util_undo, { buttonFace: "\u21A9" }],
@@ -363,6 +381,12 @@ const UNARY_OPERATOR_KEY_ID_SET = new Set<UnaryOperatorKeyId>([
   KEY_ID.unary_i,
   KEY_ID.unary_rotate_15,
   KEY_ID.unary_reciprocal,
+  KEY_ID.unary_plus_i,
+  KEY_ID.unary_minus_i,
+  KEY_ID.unary_conjugate,
+  KEY_ID.unary_real_flip,
+  KEY_ID.unary_imaginary_part,
+  KEY_ID.unary_real_part,
 ]);
 const MEMORY_KEY_ID_SET = new Set<MemoryKeyId>();
 

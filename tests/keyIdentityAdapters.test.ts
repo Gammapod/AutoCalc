@@ -13,6 +13,12 @@ export const runKeyIdentityAdaptersTests = (): void => {
   assert.equal(getOperatorSlotFace("op_whole_steps"), "\u2669\u2191", "whole-steps uses \u2669\u2191 in operator slots");
   assert.equal(getOperatorSlotFace("op_interval"), "\u22EE", "interval uses \u22EE in operator slots");
   assert.equal(getOperatorSlotFace("unary_reciprocal"), "\u00B9\u2044\u2099", "reciprocal uses \u00B9\u2044\u2099 in operator slots");
+  assert.equal(getOperatorSlotFace("unary_plus_i"), "M++", "plus-i uses M++ in operator slots");
+  assert.equal(getOperatorSlotFace("unary_minus_i"), "M\u2013\u2013", "minus-i uses M\u2013\u2013 in operator slots");
+  assert.equal(getOperatorSlotFace("unary_conjugate"), "M\u00B1", "conjugate uses M\u00B1 in operator slots");
+  assert.equal(getOperatorSlotFace("unary_real_flip"), "R\u00B1", "real-flip uses R\u00B1 in operator slots");
+  assert.equal(getOperatorSlotFace("unary_imaginary_part"), "C/M\u2192", "imaginary-part uses C/M\u2192 in operator slots");
+  assert.equal(getOperatorSlotFace("unary_real_part"), "MC", "real-part uses MC in operator slots");
 };
 
 

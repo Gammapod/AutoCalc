@@ -127,6 +127,12 @@ export const keyBehaviorCatalog: KeyBehaviorSpec[] = [
     edgeCaseExpectation: "unary_operator_clears_active_roll_then_inserts_pair",
   },
   unary(KEY_ID.unary_reciprocal),
+  unary(KEY_ID.unary_plus_i),
+  unary(KEY_ID.unary_minus_i),
+  unary(KEY_ID.unary_conjugate),
+  unary(KEY_ID.unary_real_flip),
+  unary(KEY_ID.unary_imaginary_part),
+  unary(KEY_ID.unary_real_part),
   {
     key: KEY_ID.util_clear_all,
     lockModel: "unlockable",

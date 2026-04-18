@@ -343,6 +343,133 @@ export const runEngineTests = (): void => {
     "reciprocal maps a+bi to (a-bi)/(a^2+b^2)",
   );
 
+  const plusIOnComplex = executeSlotsValue(
+    toComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 4n }),
+      toRationalScalarValue({ num: 2n, den: 1n }),
+    ),
+    [{ kind: "unary", operator: uop("unary_plus_i") }],
+  );
+  assert.deepEqual(
+    plusIOnComplex,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 5n, den: 4n }),
+        toRationalScalarValue({ num: 3n, den: 1n }),
+      ),
+    },
+    "plus-i increments the imaginary component",
+  );
+
+  const minusIOnComplex = executeSlotsValue(
+    toComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 1n }),
+      toRationalScalarValue({ num: -10n, den: 1n }),
+    ),
+    [{ kind: "unary", operator: uop("unary_minus_i") }],
+  );
+  assert.deepEqual(
+    minusIOnComplex,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 5n, den: 1n }),
+        toRationalScalarValue({ num: -11n, den: 1n }),
+      ),
+    },
+    "minus-i decrements the imaginary component",
+  );
+
+  const plusIOnReal = executeSlotsValue(
+    toRationalCalculatorValue({ num: 8n, den: 1n }),
+    [{ kind: "unary", operator: uop("unary_plus_i") }],
+  );
+  assert.deepEqual(
+    plusIOnReal,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 8n, den: 1n }),
+        toRationalScalarValue({ num: 1n, den: 1n }),
+      ),
+    },
+    "plus-i upgrades real totals to complex totals",
+  );
+
+  const conjugateOnComplex = executeSlotsValue(
+    toComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 4n }),
+      toRationalScalarValue({ num: 2n, den: 1n }),
+    ),
+    [{ kind: "unary", operator: uop("unary_conjugate") }],
+  );
+  assert.deepEqual(
+    conjugateOnComplex,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 5n, den: 4n }),
+        toRationalScalarValue({ num: -2n, den: 1n }),
+      ),
+    },
+    "conjugate flips the imaginary sign",
+  );
+
+  const realFlipOnComplex = executeSlotsValue(
+    toComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 1n }),
+      toRationalScalarValue({ num: -10n, den: 1n }),
+    ),
+    [{ kind: "unary", operator: uop("unary_real_flip") }],
+  );
+  assert.deepEqual(
+    realFlipOnComplex,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: -5n, den: 1n }),
+        toRationalScalarValue({ num: -10n, den: 1n }),
+      ),
+    },
+    "real-flip flips the real sign",
+  );
+
+  const imaginaryPartOnComplex = executeSlotsValue(
+    toComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 4n }),
+      toRationalScalarValue({ num: 2n, den: 1n }),
+    ),
+    [{ kind: "unary", operator: uop("unary_imaginary_part") }],
+  );
+  assert.deepEqual(
+    imaginaryPartOnComplex,
+    {
+      ok: true,
+      total: toComplexCalculatorValue(
+        toRationalScalarValue({ num: 0n, den: 1n }),
+        toRationalScalarValue({ num: 2n, den: 1n }),
+      ),
+    },
+    "imaginary-part returns the pure imaginary projection",
+  );
+
+  const realPartOnComplex = executeSlotsValue(
+    toComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 4n }),
+      toRationalScalarValue({ num: 2n, den: 1n }),
+    ),
+    [{ kind: "unary", operator: uop("unary_real_part") }],
+  );
+  assert.deepEqual(
+    realPartOnComplex,
+    {
+      ok: true,
+      total: toRationalCalculatorValue({ num: 5n, den: 4n }),
+    },
+    "real-part returns the real component as a scalar total",
+  );
+
   const rollNumberAsOperand = executeSlots(
     r(10n),
     [{ operator: op("op_add"), operand: { type: "symbolic", text: "№" } }],

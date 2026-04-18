@@ -161,6 +161,12 @@ const POLICY_ENTRIES: OperatorExecutionPolicy[] = [
   entry(KEY_ID.unary_i, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
   entry(KEY_ID.unary_rotate_15, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
   entry(KEY_ID.unary_reciprocal, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
+  entry(KEY_ID.unary_plus_i, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
+  entry(KEY_ID.unary_minus_i, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
+  entry(KEY_ID.unary_conjugate, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
+  entry(KEY_ID.unary_real_flip, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
+  entry(KEY_ID.unary_imaginary_part, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
+  entry(KEY_ID.unary_real_part, { totalKinds: ALL_NON_NAN, complexMode: "complex_arithmetic" }),
 ];
 
 const OPERATOR_POLICY_MAP = new Map<

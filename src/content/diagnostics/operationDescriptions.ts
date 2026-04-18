@@ -22,6 +22,12 @@ const unaryOps: readonly UnaryOperatorKeyId[] = [
   KEY_ID.unary_i,
   KEY_ID.unary_rotate_15,
   KEY_ID.unary_reciprocal,
+  KEY_ID.unary_plus_i,
+  KEY_ID.unary_minus_i,
+  KEY_ID.unary_conjugate,
+  KEY_ID.unary_real_flip,
+  KEY_ID.unary_imaginary_part,
+  KEY_ID.unary_real_part,
 ];
 
 const binaryOps: readonly BinaryOperatorKeyId[] = [

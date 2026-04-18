@@ -133,6 +133,24 @@ export const resolveStepExpansionText = (
     if (slot.operator === KEY_ID.unary_reciprocal) {
       return "1/n";
     }
+    if (slot.operator === KEY_ID.unary_plus_i) {
+      return "+ i";
+    }
+    if (slot.operator === KEY_ID.unary_minus_i) {
+      return "- i";
+    }
+    if (slot.operator === KEY_ID.unary_conjugate) {
+      return "conj";
+    }
+    if (slot.operator === KEY_ID.unary_real_flip) {
+      return "Re\u00D7-1";
+    }
+    if (slot.operator === KEY_ID.unary_imaginary_part) {
+      return "i\u00D7Im";
+    }
+    if (slot.operator === KEY_ID.unary_real_part) {
+      return "Re";
+    }
     return `${formatUnarySlotOperator(slot.operator)}(${current})`;
   }
   if (slot.operator === KEY_ID.op_add && typeof slot.operand === "bigint") {

@@ -33,6 +33,18 @@ const invertSlot = (slot: Slot): InverseExecutionStage | null => {
     if (slot.operator === KEY_ID.unary_reciprocal) {
       return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_reciprocal } };
     }
+    if (slot.operator === KEY_ID.unary_plus_i) {
+      return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_minus_i } };
+    }
+    if (slot.operator === KEY_ID.unary_minus_i) {
+      return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_plus_i } };
+    }
+    if (slot.operator === KEY_ID.unary_conjugate) {
+      return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_conjugate } };
+    }
+    if (slot.operator === KEY_ID.unary_real_flip) {
+      return { kind: "slot", slot: { kind: "unary", operator: KEY_ID.unary_real_flip } };
+    }
     return null;
   }
 

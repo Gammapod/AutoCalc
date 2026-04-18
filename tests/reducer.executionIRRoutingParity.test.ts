@@ -228,6 +228,124 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
     "roll-inverse treats reciprocal as a self-inverse unary operator",
   );
 
+  const inversePlusI = reducer(
+    reducer(
+      {
+        ...base,
+        unlocks: {
+          ...base.unlocks,
+          unaryOperators: {
+            ...base.unlocks.unaryOperators,
+            [uop("unary_plus_i")]: true,
+            [uop("unary_minus_i")]: true,
+          },
+        },
+        ui: {
+          ...base.ui,
+          buttonFlags: {},
+        },
+        calculator: {
+          ...base.calculator,
+          total: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 5n, den: 4n }),
+            toRationalScalarValue({ num: 3n, den: 1n }),
+          ),
+          operationSlots: [{ kind: "unary", operator: uop("unary_plus_i") }],
+          rollEntries: [],
+          draftingSlot: null,
+        },
+      },
+      { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
+    ),
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    inversePlusI.calculator.total,
+    toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 5n, den: 4n }),
+      toRationalScalarValue({ num: 2n, den: 1n }),
+    ),
+    "roll-inverse maps plus-i to minus-i",
+  );
+
+  const inverseConjugate = reducer(
+    reducer(
+      {
+        ...base,
+        unlocks: {
+          ...base.unlocks,
+          unaryOperators: {
+            ...base.unlocks.unaryOperators,
+            [uop("unary_conjugate")]: true,
+          },
+        },
+        ui: {
+          ...base.ui,
+          buttonFlags: {},
+        },
+        calculator: {
+          ...base.calculator,
+          total: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: 7n, den: 3n }),
+            toRationalScalarValue({ num: -5n, den: 1n }),
+          ),
+          operationSlots: [{ kind: "unary", operator: uop("unary_conjugate") }],
+          rollEntries: [],
+          draftingSlot: null,
+        },
+      },
+      { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
+    ),
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    inverseConjugate.calculator.total,
+    toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: 7n, den: 3n }),
+      toRationalScalarValue({ num: -5n, den: 1n }),
+    ),
+    "roll-inverse keeps conjugate as self-inverse",
+  );
+
+  const inverseRealFlip = reducer(
+    reducer(
+      {
+        ...base,
+        unlocks: {
+          ...base.unlocks,
+          unaryOperators: {
+            ...base.unlocks.unaryOperators,
+            [uop("unary_real_flip")]: true,
+          },
+        },
+        ui: {
+          ...base.ui,
+          buttonFlags: {},
+        },
+        calculator: {
+          ...base.calculator,
+          total: toExplicitComplexCalculatorValue(
+            toRationalScalarValue({ num: -9n, den: 2n }),
+            toRationalScalarValue({ num: 4n, den: 1n }),
+          ),
+          operationSlots: [{ kind: "unary", operator: uop("unary_real_flip") }],
+          rollEntries: [],
+          draftingSlot: null,
+        },
+      },
+      { type: "PRESS_KEY", key: KEY_ID.exec_roll_inverse },
+    ),
+    { type: "PRESS_KEY", key: KEY_ID.exec_equals },
+  );
+  assert.deepEqual(
+    inverseRealFlip.calculator.total,
+    toExplicitComplexCalculatorValue(
+      toRationalScalarValue({ num: -9n, den: 2n }),
+      toRationalScalarValue({ num: 4n, den: 1n }),
+    ),
+    "roll-inverse keeps real-flip as self-inverse",
+  );
+
   const rationalPrecisionOverflow = reducer(
     {
       ...base,

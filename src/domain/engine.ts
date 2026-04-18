@@ -454,6 +454,14 @@ export const executeSlots = (
           return { ok: false, reason: "division_by_zero" };
         }
         nextTotal = invertRational(nextTotal);
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_conjugate) {
+        nextTotal = normalizeRational(nextTotal);
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_real_flip) {
+        nextTotal = { num: -nextTotal.num, den: nextTotal.den };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_imaginary_part) {
+        nextTotal = { num: 0n, den: 1n };
+      } else if (resolveKeyId(slot.operator) === KEY_ID.unary_real_part) {
+        nextTotal = normalizeRational(nextTotal);
       } else {
         return { ok: false, reason: "unsupported_symbolic" };
       }
@@ -1223,6 +1231,51 @@ const executeSlotsValueInternal = (
           return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
         }
         current = fromComplexRuntime(inverse);
+        lastEuclidRemainder = undefined;
+        continue;
+      }
+      if (unaryKey === KEY_ID.unary_plus_i || unaryKey === KEY_ID.unary_minus_i) {
+        const currentComplex = toComplexRuntime(current);
+        const delta = unaryKey === KEY_ID.unary_plus_i
+          ? toRationalScalarValue({ num: 1n, den: 1n })
+          : toRationalScalarValue({ num: -1n, den: 1n });
+        current = fromComplexRuntime({
+          re: currentComplex.re,
+          im: addScalar(currentComplex.im, delta),
+        });
+        lastEuclidRemainder = undefined;
+        continue;
+      }
+      if (unaryKey === KEY_ID.unary_conjugate) {
+        const currentComplex = toComplexRuntime(current);
+        current = fromComplexRuntime({
+          re: currentComplex.re,
+          im: negateScalar(currentComplex.im),
+        });
+        lastEuclidRemainder = undefined;
+        continue;
+      }
+      if (unaryKey === KEY_ID.unary_real_flip) {
+        const currentComplex = toComplexRuntime(current);
+        current = fromComplexRuntime({
+          re: negateScalar(currentComplex.re),
+          im: currentComplex.im,
+        });
+        lastEuclidRemainder = undefined;
+        continue;
+      }
+      if (unaryKey === KEY_ID.unary_imaginary_part) {
+        const currentComplex = toComplexRuntime(current);
+        current = toComplexCalculatorValue(
+          toRationalScalarValue({ num: 0n, den: 1n }),
+          currentComplex.im,
+        );
+        lastEuclidRemainder = undefined;
+        continue;
+      }
+      if (unaryKey === KEY_ID.unary_real_part) {
+        const currentComplex = toComplexRuntime(current);
+        current = scalarValueToCalculatorValue(currentComplex.re);
         lastEuclidRemainder = undefined;
         continue;
       }
