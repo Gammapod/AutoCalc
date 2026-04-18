@@ -1,5 +1,6 @@
 import { calculatorValueEquals } from "../../../domain/rollEntries.js";
 import { calculatorValueToRational, scalarValueToCalculatorValue } from "../../../domain/calculatorValue.js";
+import { normalizeRational } from "../../../domain/algebraicScalar.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { ExecutionErrorKind, GameState, RationalValue, RollLimitComponentKind, ScalarValue } from "../../../domain/types.js";
 import { applyUxRoleAttributes } from "../../shared/readModel.js";
@@ -68,6 +69,10 @@ const resolveCycleAmberActive = (state: GameState): boolean => {
 
 type RatioDisplayValues = { reNum: string; reDen: string; imNum: string; imDen: string };
 type RationalPair = { re: RationalValue; im: RationalValue };
+const normalizeRationalPair = (pair: RationalPair): RationalPair => ({
+  re: normalizeRational(pair.re),
+  im: normalizeRational(pair.im),
+});
 
 const resolveRationalPair = (total: GameState["calculator"]["total"]): RationalPair | null => {
   const rational = calculatorValueToRational(total);
@@ -92,7 +97,7 @@ const toRatioDisplayValues = (pair: RationalPair): RatioDisplayValues => ({
 const resolveCurrentRatioDisplayValues = (state: GameState): RatioDisplayValues => {
   const pair = resolveRationalPair(state.calculator.total);
   if (pair) {
-    return toRatioDisplayValues(pair);
+    return toRatioDisplayValues(normalizeRationalPair(pair));
   }
   return {
     reNum: "0",
