@@ -7,21 +7,113 @@ MENU CALCULATORS
 Menu
 ----------
 
-    | C1:               |
-    |-------------------|
-R6: | viz_title         |
-R5: | viz_release_notes |
-R4: | system_mode_game  |
-R3: | system_new_game   |
-R2: | system_mode_sandbox|
-R1: | system_quit_game  |
+{
+  "schema": "debug_calculator_snapshot_v3",
+  "capturedAt": "2026-04-18T07:30:28.848Z",
+  "calculatorId": "menu",
+  "lambdaControl": {
+    "alpha": 1,
+    "beta": 6,
+    "gamma": 0,
+    "delta": 1,
+    "delta_q": 1,
+    "epsilon": 0
+  },
+  "keypad": {
+    "columns": 1,
+    "rows": 6,
+    "keyLayout": [
+      {
+        "kind": "key",
+        "key": "viz_title"
+      },
+      {
+        "kind": "key",
+        "key": "viz_release_notes"
+      },
+      {
+        "kind": "key",
+        "key": "system_mode_game"
+      },
+      {
+        "kind": "key",
+        "key": "system_new_game"
+      },
+      {
+        "kind": "key",
+        "key": "system_mode_sandbox"
+      },
+      {
+        "kind": "key",
+        "key": "system_quit_game"
+      }
+    ],
+    "keyLayoutDebug": [
+      {
+        "index": 0,
+        "rowColId": "R6C1",
+        "row": 6,
+        "col": 1,
+        "kind": "key",
+        "key": "viz_title",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 1,
+        "rowColId": "R5C1",
+        "row": 5,
+        "col": 1,
+        "kind": "key",
+        "key": "viz_release_notes",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 2,
+        "rowColId": "R4C1",
+        "row": 4,
+        "col": 1,
+        "kind": "key",
+        "key": "system_mode_game",
+        "status": "installed_only",
+        "capability": "installed_only"
+      },
+      {
+        "index": 3,
+        "rowColId": "R3C1",
+        "row": 3,
+        "col": 1,
+        "kind": "key",
+        "key": "system_new_game",
+        "status": "installed_only",
+        "capability": "installed_only"
+      },
+      {
+        "index": 4,
+        "rowColId": "R2C1",
+        "row": 2,
+        "col": 1,
+        "kind": "key",
+        "key": "system_mode_sandbox",
+        "status": "installed_only",
+        "capability": "installed_only"
+      },
+      {
+        "index": 5,
+        "rowColId": "R1C1",
+        "row": 1,
+        "col": 1,
+        "kind": "key",
+        "key": "system_quit_game",
+        "status": "installed_only",
+        "capability": "installed_only"
+      }
+    ]
+  }
+}
 
-in words:
-the Menu calculator always has 1 column, 6 rows, and nothing for the other values.
-
-its loadout contains game control keys (all locked with no unlock conditions)
-
-----------
+<!-- ----------
 Settings
 ----------
 
@@ -33,7 +125,7 @@ R2: | viz_notes         | setting_4         |
 R1: | viz_settn         | Hide Menu         |
 
 in words:
-the Settings Menu calculator has in-game controls, and can be shown/hidden by locking and unlocking the calculator
+the Settings Menu calculator has in-game controls, and can be shown/hidden by locking and unlocking the calculator -->
 
 ==========
 GAMEPLAY CALCULATORS
@@ -77,35 +169,9 @@ SANDBOX CALCULATORS
 f'
 ----------
 
-initial keypad layout:
-
-    | C6:               | C5:               | C4:               | C3:               | C2:               | C1:               |
-    |-------------------|-------------------|-------------------|-------------------|-------------------|-------------------|
-R5: | system_save_quit_main_menu | viz_number_line | (blank) | toggle_step_expansion| util_backspace    | util_clear_all    |
-R4: | digit_7           | digit_8           | digit_9           | unary_floor       | unary_ceil        | exec_roll_inverse |
-R3: | digit_4           | digit_5           | digit_6           | op_pow            | (blank)           | (blank)           |
-R2: | digit_1           | digit_2           | digit_3           | op_mul            | op_euclid_div     | op_mod            |
-R1: | digit_0           | (blank)           | unary_neg         | op_add            | op_sub            | exec_equals       |
-
-in words:
-f' is the "canonical" version of a fully-unlocked f calculator, so to speak.
-
-f' is equipped with purely-arithmetic operators that (usually) produce integers.
-
 
 ==========
 ----------
 g'
 ----------
 
-initial keypad layout:
-
-    | C7:               | C6:               | C5:               | C4:               | C3:               | C2:               | C1:               |
-    |-------------------|-------------------|-------------------|-------------------|-------------------|-------------------|-------------------|
-R2: | digit_1           | unary_not         | (blank)           | (blank)           | op_mul            | toggle_binary_mode| (blank)           |
-R1: | digit_0           | (blank)           | (blank)           | (blank)           | op_add            | toggle_mod_zero_to_delta | exec_equals|
-
-in words:
-g' is the "canonical" version of a fully-unlocked g calculator, so to speak.
-
-g' is equipped with with logic-related operators.

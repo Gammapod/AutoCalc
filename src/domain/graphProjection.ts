@@ -6,7 +6,7 @@ import { algebraicToApproxNumber, algebraicToRational } from "./algebraicScalar.
 export type GraphPoint = {
   x: number;
   y: number;
-  kind?: "seed" | "roll" | "imaginary" | "remainder";
+  kind?: "seed" | "roll" | "imaginary";
   hasError: boolean;
 };
 
@@ -82,14 +82,6 @@ export const buildRawGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
     const x = index + 1;
     const valuePair = calculatorValueToRealImag(entry.y);
     if (!valuePair) {
-      if (entry.remainder) {
-        points.push({
-          x,
-          y: Number(entry.remainder.num) / Number(entry.remainder.den),
-          kind: "remainder",
-          hasError: false,
-        });
-      }
       continue;
     }
     points.push({
@@ -98,14 +90,6 @@ export const buildRawGraphPoints = (rollEntries: RollEntry[]): GraphPoint[] => {
       kind: "roll",
       hasError: Boolean(entry.error),
     });
-    if (entry.remainder) {
-      points.push({
-        x,
-        y: Number(entry.remainder.num) / Number(entry.remainder.den),
-        kind: "remainder",
-        hasError: false,
-      });
-    }
     if (Math.abs(valuePair.im) > 0) {
       points.push({
         x,

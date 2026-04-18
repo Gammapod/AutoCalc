@@ -113,13 +113,6 @@ const appendSevenSegmentFrame = (target: HTMLElement, slotModels: readonly Total
   target.appendChild(frame);
 };
 
-const buildLiteralSegmentSlotModel = (value: string): TotalSlotModel[] =>
-  Array.from(value).map((glyph) => ({
-    state: "active",
-    digit: glyph,
-    activeSegments: TOKEN_SEGMENTS[glyph] ?? [],
-  }));
-
 const resolveCycleAmberActive = (state: GameState): boolean => {
   if (!state.ui.buttonFlags[HISTORY_FLAG]) {
     return false;
@@ -238,19 +231,6 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
   }
   domainIndicator.classList.toggle("total-domain-indicator--nan", totalIsNaN && !shouldRenderClearedPlaceholder);
   domainIndicator.classList.add("total-domain-indicator--inline");
-
-  const remainderDisplay = document.createElement("div");
-  remainderDisplay.className = "total-remainder-display";
-  if (latestRollEntry?.remainder) {
-    remainderDisplay.setAttribute("aria-hidden", "false");
-    const remainderToken = latestRollEntry.remainder.den === 1n
-      ? latestRollEntry.remainder.num.toString()
-      : "FrAC";
-    appendSevenSegmentFrame(remainderDisplay, buildLiteralSegmentSlotModel(`r=${remainderToken}`));
-  } else {
-    remainderDisplay.setAttribute("aria-hidden", "true");
-  }
-  metaRow.appendChild(remainderDisplay);
   stack.appendChild(metaRow);
 
   const primaryDisplay = document.createElement("div");

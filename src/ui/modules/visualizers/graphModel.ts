@@ -205,7 +205,7 @@ export const buildGraphYWindow = (
     return { min: 0, max: safeRadix - 1 };
   }
 
-  const points = buildGraphPoints(rollEntries).filter((point) => point.kind !== "remainder");
+  const points = buildGraphPoints(rollEntries);
   if (points.length < 1) {
     return { min: 0, max: safeRadix - 1 };
   }

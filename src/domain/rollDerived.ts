@@ -22,7 +22,6 @@ export type RollEntryDerived = {
   y: RollEntry["y"];
   yAlgebrite: string;
   domain: RollValueDomain;
-  remainder?: RationalValue;
   error?: RollEntry["error"];
   primeFactorization?: RationalPrimeFactorization;
 };
@@ -223,7 +222,6 @@ export const getDerivedRollEntry = (entry: RollEntry, x: number): RollEntryDeriv
     y: entry.y,
     yAlgebrite: getRollYAlgebriteString(entry.y),
     domain: getRollYDomain(entry.y),
-    ...(entry.remainder ? { remainder: entry.remainder } : {}),
     ...(entry.error ? { error: entry.error } : {}),
     ...(primeFactorization ? { primeFactorization } : {}),
   };

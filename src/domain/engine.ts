@@ -52,7 +52,7 @@ import {
 } from "./executionPlanIR.js";
 
 export type ExecuteSlotsResult =
-  | { ok: true; total: RationalValue; euclidRemainder?: RationalValue }
+  | { ok: true; total: RationalValue }
   | { ok: false; reason: "division_by_zero" | "nan_input" | "unsupported_symbolic" };
 
 const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);
@@ -384,8 +384,6 @@ export const executeSlots = (
 
   const currentRollNumber = options.currentRollNumber ?? 1n;
   let nextTotal = total;
-  let lastEuclidModComponent: RationalValue | undefined;
-  let endsWithEuclidLikeOperator = false;
 
   for (const slot of slots) {
     if (slot.kind === "unary") {
@@ -467,7 +465,6 @@ export const executeSlots = (
       } else {
         return { ok: false, reason: "unsupported_symbolic" };
       }
-      endsWithEuclidLikeOperator = false;
       continue;
     }
 
@@ -482,17 +479,14 @@ export const executeSlots = (
 
     if (resolveKeyId(slot.operator) === KEY_ID.op_add) {
       nextTotal = addInt(nextTotal, runtimeOperand);
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_sub) {
       nextTotal = subInt(nextTotal, runtimeOperand);
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_mul) {
       nextTotal = mulInt(nextTotal, runtimeOperand);
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_pow) {
@@ -501,12 +495,10 @@ export const executeSlots = (
       } catch {
         return { ok: false, reason: "division_by_zero" };
       }
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_whole_steps) {
       nextTotal = multiplyRational(nextTotal, powRationalInt({ num: 9n, den: 8n }, runtimeOperand));
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_interval) {
@@ -514,7 +506,6 @@ export const executeSlots = (
         return { ok: false, reason: "division_by_zero" };
       }
       nextTotal = multiplyRational(nextTotal, { num: runtimeOperand + 1n, den: runtimeOperand });
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_div) {
@@ -522,7 +513,6 @@ export const executeSlots = (
         return { ok: false, reason: "division_by_zero" };
       }
       nextTotal = divInt(nextTotal, runtimeOperand);
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_euclid_div) {
@@ -531,8 +521,6 @@ export const executeSlots = (
         return euclidean;
       }
       nextTotal = euclidean.quotient;
-      lastEuclidModComponent = euclidean.remainder;
-      endsWithEuclidLikeOperator = true;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_euclid_tuple) {
@@ -544,7 +532,6 @@ export const executeSlots = (
         return { ok: false, reason: "nan_input" };
       }
       nextTotal = { num: result.valuation, den: 1n };
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_residual) {
@@ -553,7 +540,6 @@ export const executeSlots = (
         return { ok: false, reason: "nan_input" };
       }
       nextTotal = result.residual;
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_log_tuple) {
@@ -565,8 +551,6 @@ export const executeSlots = (
         return euclidean;
       }
       nextTotal = euclidean.remainder;
-      lastEuclidModComponent = euclidean.remainder;
-      endsWithEuclidLikeOperator = true;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_rotate_left) {
@@ -574,7 +558,6 @@ export const executeSlots = (
         return { ok: false, reason: "nan_input" };
       }
       nextTotal = { num: rotateLeftDigits(nextTotal.num, runtimeOperand), den: 1n };
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_rotate_15) {
@@ -585,7 +568,6 @@ export const executeSlots = (
         return { ok: false, reason: "nan_input" };
       }
       nextTotal = { num: gcdBigInt(nextTotal.num, runtimeOperand), den: 1n };
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_lcm) {
@@ -593,29 +575,23 @@ export const executeSlots = (
         return { ok: false, reason: "nan_input" };
       }
       nextTotal = { num: lcmBigInt(nextTotal.num, runtimeOperand), den: 1n };
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_max) {
       const leftScaled = nextTotal.num;
       const rightScaled = runtimeOperand * nextTotal.den;
       nextTotal = leftScaled >= rightScaled ? nextTotal : { num: runtimeOperand, den: 1n };
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     if (resolveKeyId(slot.operator) === KEY_ID.op_min) {
       const leftScaled = nextTotal.num;
       const rightScaled = runtimeOperand * nextTotal.den;
       nextTotal = leftScaled <= rightScaled ? nextTotal : { num: runtimeOperand, den: 1n };
-      endsWithEuclidLikeOperator = false;
       continue;
     }
     throw new Error(`Unsupported operator: ${slot.operator}`);
   }
 
-  if (endsWithEuclidLikeOperator && lastEuclidModComponent) {
-    return { ok: true, total: nextTotal, euclidRemainder: lastEuclidModComponent };
-  }
   return { ok: true, total: nextTotal };
 };
 
@@ -660,7 +636,7 @@ const applyBinaryExpressionRaw = (
 };
 
 export type ExecuteSlotsValueResult =
-  | { ok: true; total: CalculatorValue; euclidRemainder?: RationalValue }
+  | { ok: true; total: CalculatorValue }
   | {
       ok: false;
       reason: "division_by_zero" | "nan_input" | "unsupported_symbolic";
@@ -1093,7 +1069,6 @@ const executeSlotsValueInternal = (
     return {
       ok: true,
       total: toRationalCalculatorValue(executed.total),
-      ...(executed.euclidRemainder ? { euclidRemainder: executed.euclidRemainder } : {}),
     };
   };
 
@@ -1160,12 +1135,10 @@ const executeSlotsValueInternal = (
   };
 
   let current: CalculatorValue = total;
-  let lastEuclidRemainder: RationalValue | undefined;
   for (const slot of slots) {
     if (current.kind === "nan") {
       if (slot.kind === "unary" && resolveKeyId(slot.operator) === KEY_ID.unary_not) {
         current = toRationalCalculatorValue({ num: 1n, den: 1n });
-        lastEuclidRemainder = undefined;
         continue;
       }
       return { ok: false, reason: "nan_input", operatorId: slot.operator };
@@ -1181,7 +1154,6 @@ const executeSlotsValueInternal = (
       if (unaryKey === KEY_ID.unary_rotate_15) {
         const currentComplex = toComplexRuntime(current);
         current = fromComplexRuntime(rotateComplexBy15Steps(currentComplex, 1n));
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_inc || unaryKey === KEY_ID.unary_dec || unaryKey === KEY_ID.unary_neg) {
@@ -1198,7 +1170,6 @@ const executeSlotsValueInternal = (
             re: addScalar(currentComplex.re, delta),
             im: currentComplex.im,
           });
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_floor || unaryKey === KEY_ID.unary_ceil) {
@@ -1231,12 +1202,10 @@ const executeSlotsValueInternal = (
             den: 1n,
           }),
         });
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_not) {
         current = toNanCalculatorValue();
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_reciprocal) {
@@ -1246,7 +1215,6 @@ const executeSlotsValueInternal = (
           return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
         }
         current = fromComplexRuntime(inverse);
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_plus_i || unaryKey === KEY_ID.unary_minus_i) {
@@ -1258,7 +1226,6 @@ const executeSlotsValueInternal = (
           re: currentComplex.re,
           im: addScalar(currentComplex.im, delta),
         });
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_conjugate) {
@@ -1267,7 +1234,6 @@ const executeSlotsValueInternal = (
           re: currentComplex.re,
           im: negateScalar(currentComplex.im),
         });
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_real_flip) {
@@ -1276,7 +1242,6 @@ const executeSlotsValueInternal = (
           re: negateScalar(currentComplex.re),
           im: currentComplex.im,
         });
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_imaginary_part) {
@@ -1285,13 +1250,11 @@ const executeSlotsValueInternal = (
           toRationalScalarValue({ num: 0n, den: 1n }),
           currentComplex.im,
         );
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_real_part) {
         const currentComplex = toComplexRuntime(current);
         current = scalarValueToCalculatorValue(currentComplex.re);
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (unaryKey === KEY_ID.unary_sigma || unaryKey === KEY_ID.unary_phi || unaryKey === KEY_ID.unary_omega) {
@@ -1306,7 +1269,6 @@ const executeSlotsValueInternal = (
             : unaryKey === KEY_ID.unary_phi
               ? toRationalCalculatorValue({ num: phiBigInt(norm), den: 1n })
               : toRationalCalculatorValue({ num: factorCountWithMultiplicity(norm), den: 1n });
-          lastEuclidRemainder = undefined;
           continue;
         }
       }
@@ -1326,7 +1288,6 @@ const executeSlotsValueInternal = (
             toRationalScalarValue({ num: mapInteger(gaussian.re), den: 1n }),
             toRationalScalarValue({ num: mapInteger(gaussian.im), den: 1n }),
           );
-          lastEuclidRemainder = undefined;
           continue;
         }
       }
@@ -1338,7 +1299,6 @@ const executeSlotsValueInternal = (
         return { ok: false, reason: "nan_input", operatorId: slot.operator };
       }
       current = delegated.total;
-      lastEuclidRemainder = delegated.euclidRemainder;
       continue;
     }
 
@@ -1360,7 +1320,6 @@ const executeSlotsValueInternal = (
         return { ok: false, reason: "nan_input", operatorId: slot.operator };
       }
       current = delegated.total;
-      lastEuclidRemainder = delegated.euclidRemainder;
       continue;
     }
 
@@ -1373,7 +1332,6 @@ const executeSlotsValueInternal = (
         const compare = compareScalars(leftMagnitudeSquared, rightMagnitudeSquared);
         const chooseLeft = operatorKey === KEY_ID.op_max ? compare >= 0 : compare <= 0;
         current = chooseLeft ? current : scalarValueToCalculatorValue(right);
-        lastEuclidRemainder = undefined;
         continue;
       }
 
@@ -1405,7 +1363,6 @@ const executeSlotsValueInternal = (
             addScalar(quotient.re, iTimesRemainder.re),
             addScalar(quotient.im, iTimesRemainder.im),
           );
-          lastEuclidRemainder = undefined;
           continue;
         }
 
@@ -1421,7 +1378,6 @@ const executeSlotsValueInternal = (
           toRationalScalarValue(euclidean.quotient),
           toRationalScalarValue(euclidean.remainder),
         );
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (operatorKey === KEY_ID.op_eulog || operatorKey === KEY_ID.op_residual || operatorKey === KEY_ID.op_log_tuple) {
@@ -1482,7 +1438,6 @@ const executeSlotsValueInternal = (
               toRationalScalarValue(residualIm),
             );
         }
-        lastEuclidRemainder = undefined;
         continue;
       }
 
@@ -1496,7 +1451,6 @@ const executeSlotsValueInternal = (
           return { ok: false, reason: "nan_input", operatorId: slot.operator };
         }
         current = delegated.total;
-        lastEuclidRemainder = delegated.euclidRemainder;
         continue;
       }
 
@@ -1521,17 +1475,14 @@ const executeSlotsValueInternal = (
         current = operatorKey === KEY_ID.op_euclid_div
           ? quotient
           : remainder;
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (operatorKey === KEY_ID.op_gcd) {
         current = toRationalCalculatorValue({ num: gcdBigInt(norm, runtimeOperand), den: 1n });
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (operatorKey === KEY_ID.op_lcm) {
         current = toRationalCalculatorValue({ num: lcmBigInt(norm, runtimeOperand), den: 1n });
-        lastEuclidRemainder = undefined;
         continue;
       }
       if (operatorKey === KEY_ID.op_rotate_left) {
@@ -1539,7 +1490,6 @@ const executeSlotsValueInternal = (
           toRationalScalarValue({ num: rotateLeftDigits(gaussian.re, runtimeOperand), den: 1n }),
           toRationalScalarValue({ num: rotateLeftDigits(gaussian.im, runtimeOperand), den: 1n }),
         );
-        lastEuclidRemainder = undefined;
         continue;
       }
       return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
@@ -1572,7 +1522,6 @@ const executeSlotsValueInternal = (
         re: addScalar(left.re, right.re),
         im: addScalar(left.im, right.im),
       });
-      lastEuclidRemainder = undefined;
       continue;
     }
     if (operatorKey === KEY_ID.op_sub) {
@@ -1580,12 +1529,10 @@ const executeSlotsValueInternal = (
         re: subScalar(left.re, right.re),
         im: subScalar(left.im, right.im),
       });
-      lastEuclidRemainder = undefined;
       continue;
     }
     if (operatorKey === KEY_ID.op_mul) {
       current = fromComplexRuntime(complexMultiply(left, right));
-      lastEuclidRemainder = undefined;
       continue;
     }
     if (operatorKey === KEY_ID.op_div) {
@@ -1594,7 +1541,6 @@ const executeSlotsValueInternal = (
         return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
       }
       current = fromComplexRuntime(complexMultiply(left, inverse));
-      lastEuclidRemainder = undefined;
       continue;
     }
     if (operatorKey === KEY_ID.op_pow) {
@@ -1607,7 +1553,6 @@ const executeSlotsValueInternal = (
         return { ok: false, reason: "division_by_zero", operatorId: slot.operator };
       }
       current = fromComplexRuntime(powered);
-      lastEuclidRemainder = undefined;
       continue;
     }
     if (operatorKey === KEY_ID.op_whole_steps) {
@@ -1620,7 +1565,6 @@ const executeSlotsValueInternal = (
         re: mulScalar(left.re, stepFactor),
         im: mulScalar(left.im, stepFactor),
       });
-      lastEuclidRemainder = undefined;
       continue;
     }
     if (operatorKey === KEY_ID.op_interval) {
@@ -1636,7 +1580,6 @@ const executeSlotsValueInternal = (
         re: mulScalar(left.re, factor),
         im: mulScalar(left.im, factor),
       });
-      lastEuclidRemainder = undefined;
       continue;
     }
     if (operatorKey === KEY_ID.op_rotate_15) {
@@ -1644,7 +1587,6 @@ const executeSlotsValueInternal = (
         return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
       }
       current = fromComplexRuntime(rotateComplexBy15Steps(left, runtimeOperand));
-      lastEuclidRemainder = undefined;
       continue;
     }
     return { ok: false, reason: "unsupported_symbolic", operatorId: slot.operator };
@@ -1653,7 +1595,6 @@ const executeSlotsValueInternal = (
   return {
     ok: true,
     total: current,
-    ...(lastEuclidRemainder ? { euclidRemainder: lastEuclidRemainder } : {}),
   };
 };
 

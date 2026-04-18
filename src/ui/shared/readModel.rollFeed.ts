@@ -1,4 +1,3 @@
-import { toPreferredFractionString } from "../../infra/math/euclideanEngine.js";
 import {
   calculatorValueToDisplayString,
   calculatorValuesEquivalent,
@@ -18,7 +17,6 @@ import type { UxRole, UxRoleAssignment, UxRoleState } from "./uxRoles.js";
 export type RollRow = {
   prefix: string;
   value: string;
-  remainder?: string;
   errorCode?: string;
 };
 
@@ -261,11 +259,9 @@ export const buildRollRows = (
     if (errorCode && errorCode === previousVisibleErrorCode) {
       continue;
     }
-    const remainder = entry.remainder ? toPreferredFractionString(entry.remainder) : undefined;
     rows.push({
       prefix: rows.length === 0 ? "X =" : "  =",
       value: errorCode ? "" : rollLines[index],
-      remainder: errorCode ? undefined : remainder,
       errorCode,
     });
     previousVisibleErrorCode = errorCode;
@@ -278,11 +274,7 @@ export const buildRollViewModel = (
 ): RollViewModel => {
   const rows = buildRollRows(rollEntries);
   const valueColumnChars = rows.reduce((max, row) => {
-    const suffixLength = row.errorCode
-      ? `Err: ${row.errorCode}`.length
-      : row.remainder
-        ? `r= ${row.remainder}`.length
-        : 0;
+    const suffixLength = row.errorCode ? `Err: ${row.errorCode}`.length : 0;
     return Math.max(max, row.value.length, suffixLength);
   }, 0);
   return {

@@ -32,7 +32,6 @@ export const serializeRollEntriesForDebug = (state: GameState): unknown[] =>
   state.calculator.rollEntries.map((entry, index) => ({
     x: index,
     y: serializeCalculatorValueForDebug(entry.y),
-    ...(entry.remainder ? { remainder: serializeRationalForDebug(entry.remainder) } : {}),
     ...(entry.error ? { error: entry.error } : {}),
     d1: entry.d1 ? serializeRationalForDebug(entry.d1) : null,
     d2: entry.d2 ? serializeRationalForDebug(entry.d2) : null,

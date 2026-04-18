@@ -245,7 +245,6 @@ export type RollLimitMetadata = {
 
 export type RollEntry = {
   y: CalculatorValue;
-  remainder?: RationalValue;
   error?: {
     code: ErrorCode;
     kind: ExecutionErrorKind;

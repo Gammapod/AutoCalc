@@ -216,15 +216,10 @@ export const renderCalculatorV2Module = (
     line.appendChild(value);
 
     if (row.errorCode) {
-      const remainder = document.createElement("span");
-      remainder.className = "roll-remainder";
-      remainder.textContent = `Err: ${row.errorCode}`;
-      line.appendChild(remainder);
-    } else if (row.remainder) {
-      const remainder = document.createElement("span");
-      remainder.className = "roll-remainder";
-      remainder.textContent = `r= ${row.remainder}`;
-      line.appendChild(remainder);
+      const suffix = document.createElement("span");
+      suffix.className = "roll-remainder";
+      suffix.textContent = `Err: ${row.errorCode}`;
+      line.appendChild(suffix);
     }
 
     rollEl.appendChild(line);

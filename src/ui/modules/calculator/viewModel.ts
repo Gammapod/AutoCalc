@@ -134,7 +134,7 @@ export const buildRollViewModel = (rollEntries: RollEntry[]): RollViewModel => {
 };
 
 export const getRollLineClassName = (row: RollRow): string =>
-  row.remainder || row.errorCode ? "roll-line roll-line--with-remainder" : "roll-line";
+  row.errorCode ? "roll-line roll-line--with-remainder" : "roll-line";
 
 const toSuperscript = (source: string): string => source
   .split("")

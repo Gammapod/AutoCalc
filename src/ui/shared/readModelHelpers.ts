@@ -14,7 +14,7 @@ export {
 export type GraphPoint = {
   x: number;
   y: number;
-  kind?: "seed" | "roll" | "imaginary" | "remainder";
+  kind?: "seed" | "roll" | "imaginary";
   hasError: boolean;
 };
 

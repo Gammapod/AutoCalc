@@ -244,17 +244,11 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     if (point.kind === "imaginary") {
       return imaginaryColor;
     }
-    if (point.kind === "remainder") {
-      return analysisColor;
-    }
     return point.hasError ? errorColor : defaultColor;
   });
   const pointBorderColor = points.map((point) => {
     if (point.kind === "imaginary") {
       return imaginaryBorderColor;
-    }
-    if (point.kind === "remainder") {
-      return analysisBorderColor;
     }
     return point.hasError ? errorBorderColor : defaultBorderColor;
   });

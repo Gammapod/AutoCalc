@@ -441,7 +441,6 @@ const finalizeDraftingSlot = (state: GameState): GameState => {
 
 type EvaluatedExecution = {
   nextTotal: GameState["calculator"]["total"];
-  euclidRemainder?: RationalValue;
   errorCode?: ErrorCode;
   errorKind?: ExecutionErrorKind;
   inverseAmbiguous?: boolean;
@@ -1223,7 +1222,6 @@ const markOverflowErrorSeen = (state: GameState): GameState => {
 const toRollEntry = (evaluation: EvaluatedExecution): RollEntry => {
   const factorization = getRollYPrimeFactorization(evaluation.nextTotal);
   return createRollEntry(evaluation.nextTotal, {
-    ...(evaluation.euclidRemainder && !evaluation.errorCode ? { remainder: evaluation.euclidRemainder } : {}),
     ...(evaluation.symbolic ? { symbolic: evaluation.symbolic } : {}),
     ...(factorization ? { factorization } : {}),
     ...(evaluation.errorCode && evaluation.errorKind
@@ -1664,7 +1662,6 @@ const evaluateExecutionOutcomeForSlots = (
       );
       return {
         ...limited,
-        ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
       };
     }
     if (execution.total.kind !== "expr") {
@@ -1695,7 +1692,6 @@ const evaluateExecutionOutcomeForSlots = (
       ...overflowChecked,
       nextTotal: overflowChecked.nextTotal,
       symbolic: toSymbolicPayload(expressionKey, symbolicText),
-      ...(execution.euclidRemainder ? { euclidRemainder: execution.euclidRemainder } : {}),
     };
   }
 
@@ -1705,7 +1701,6 @@ const evaluateExecutionOutcomeForSlots = (
   return {
     ...overflowChecked,
     nextTotal: overflowChecked.nextTotal,
-    euclidRemainder: execution.euclidRemainder,
   };
 };
 
@@ -1789,7 +1784,6 @@ const evaluateExecutionPlanRange = (
         ...wrapped,
         nextTotal: wrapped.nextTotal,
         ...(slotEvaluation.symbolic ? { symbolic: slotEvaluation.symbolic } : {}),
-        ...(slotEvaluation.euclidRemainder !== undefined ? { euclidRemainder: slotEvaluation.euclidRemainder } : {}),
       };
     }
 
@@ -1839,7 +1833,6 @@ const evaluateExecutionPlanStageAt = (
     ...wrapped,
     nextTotal: wrapped.nextTotal,
     ...(slotEvaluation.symbolic ? { symbolic: slotEvaluation.symbolic } : {}),
-    ...(slotEvaluation.euclidRemainder !== undefined ? { euclidRemainder: slotEvaluation.euclidRemainder } : {}),
   };
 };
 

@@ -2684,10 +2684,12 @@
 
       body[data-ui-shell="mobile"] .v2-ratios-panel,
       body[data-ui-shell="desktop"] .v2-ratios-panel {
-        display: block;
+        display: flex;
         position: absolute;
         inset: 0;
         padding: 8px 10px 30px;
+        justify-content: center;
+        align-items: flex-end;
         opacity: 0;
         transform: translateY(var(--v2-visualizer-inactive-offset));
         pointer-events: none;

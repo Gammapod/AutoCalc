@@ -184,10 +184,10 @@ export const resolveStepExpansionText = (
     return `\u00D7 e^(i${slot.operand.toString()}\u03C0/12)`;
   }
   if (slot.operator === KEY_ID.op_euclid_div && typeof slot.operand === "bigint") {
-    return `q=\u230An \u00F7 ${slot.operand.toString()}\u230B;r=n\u2013q`;
+    return `q=\u230An \u00F7 ${slot.operand.toString()}\u230B`;
   }
   if (slot.operator === KEY_ID.op_euclid_tuple && typeof slot.operand === "bigint") {
-    return `q=n\u2AFD${slot.operand.toString()};r=n\u25C7${slot.operand.toString()};q+ir`;
+    return `q=n\u2AFD${slot.operand.toString()};complex tuple`;
   }
   if (slot.operator === KEY_ID.op_eulog && typeof slot.operand === "bigint") {
     return `v_${slot.operand.toString()}(n)`;
