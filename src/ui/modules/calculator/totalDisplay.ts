@@ -11,6 +11,15 @@ import { calculatorValueEquals } from "../../../domain/rollEntries.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { CalculatorValue, GameState } from "../../../domain/types.js";
+import {
+  MAX_SEVEN_SEGMENT_SLOTS,
+  SEVEN_SEGMENT_TOKEN_SEGMENTS,
+  buildTokenGlyphSlots,
+  clampSevenSegmentSlotCount,
+  hasImaginaryRollHistory,
+  resolveDisplayToken,
+  resolveScalarDisplayKind,
+} from "../../shared/displayPolicy.sevenSegment.js";
 import { applyUxRoleAttributes, buildTotalHintRowsViewModel, resolveTotalHintRowUxAssignment } from "../../shared/readModel.js";
 import {
   buildClearedTotalSlotModel,
@@ -21,45 +30,12 @@ import {
 } from "./viewModel.js";
 
 const SEGMENT_NAMES: readonly SegmentName[] = ["a", "b", "c", "d", "e", "f", "g"];
-const MAX_TOTAL_DISPLAY_SLOTS = 12;
-
-const getNanToken = (): string => "Error";
-
-const getFractionToken = (): string => "FrAC";
-
-const getRadicalToken = (): string => "rAdicAL";
-
-const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
-  "0": ["a", "b", "c", "d", "e", "f"],
-  "1": ["b", "c"],
-  "2": ["a", "b", "d", "e", "g"],
-  "3": ["a", "b", "c", "d", "g"],
-  "4": ["b", "c", "f", "g"],
-  "5": ["a", "c", "d", "f", "g"],
-  "6": ["a", "c", "d", "e", "f", "g"],
-  "7": ["a", "b", "c"],
-  "8": ["a", "b", "c", "d", "e", "f", "g"],
-  "9": ["a", "b", "c", "d", "f", "g"],
-  "-": ["g"],
-  "=": ["d", "g"],
-  E: ["a", "d", "e", "f", "g"],
-  r: ["e", "g"],
-  F: ["a", "e", "f", "g"],
-  A: ["a", "b", "c", "e", "f", "g"],
-  C: ["a", "d", "e", "f"],
-  I: ["b", "c"],
-  R: ["e", "g"],
-  d: ["b", "c", "d", "e", "g"],
-};
-
-const clampUnlockedDigits = (value: number): number =>
-  Math.max(1, Math.min(MAX_TOTAL_DISPLAY_SLOTS, value));
+const MAX_TOTAL_DISPLAY_SLOTS = MAX_SEVEN_SEGMENT_SLOTS;
 
 const buildTokenSlotModel = (token: string, unlockedDigits: number): TotalSlotModel[] => {
-  const clampedUnlocked = clampUnlockedDigits(unlockedDigits);
+  const clampedUnlocked = clampSevenSegmentSlotCount(unlockedDigits, MAX_TOTAL_DISPLAY_SLOTS);
   const lockedCount = MAX_TOTAL_DISPLAY_SLOTS - clampedUnlocked;
-  const glyphs = Array.from(token).slice(0, clampedUnlocked);
-  const leadingUnlockedCount = clampedUnlocked - glyphs.length;
+  const glyphs = buildTokenGlyphSlots(token, clampedUnlocked, MAX_TOTAL_DISPLAY_SLOTS);
   const slots: TotalSlotModel[] = [];
 
   for (let index = 0; index < MAX_TOTAL_DISPLAY_SLOTS; index += 1) {
@@ -69,16 +45,16 @@ const buildTokenSlotModel = (token: string, unlockedDigits: number): TotalSlotMo
     }
 
     const unlockedIndex = index - lockedCount;
-    if (unlockedIndex < leadingUnlockedCount) {
+    const glyph = glyphs[unlockedIndex] ?? null;
+    if (glyph === null) {
       slots.push({ state: "unlocked", digit: null, activeSegments: [] });
       continue;
     }
 
-    const glyph = glyphs[unlockedIndex - leadingUnlockedCount] ?? "";
     slots.push({
       state: "active",
       digit: glyph,
-      activeSegments: TOKEN_SEGMENTS[glyph] ?? [],
+      activeSegments: SEVEN_SEGMENT_TOKEN_SEGMENTS[glyph] ?? [],
     });
   }
 
@@ -129,10 +105,6 @@ const resolveCycleAmberActive = (state: GameState): boolean => {
   return calculatorValueEquals(latestEntry.y, cycleStartEntry.y);
 };
 
-const hasImaginaryRollHistory = (state: GameState): boolean =>
-  state.calculator.rollEntries.some((entry) =>
-    entry.y.kind === "complex" && !isRealEquivalentCalculatorValue(entry.y));
-
 const renderSevenSegmentValue = (
   target: HTMLElement,
   value: CalculatorValue,
@@ -141,30 +113,24 @@ const renderSevenSegmentValue = (
   radix: number,
 ): void => {
   const displayValue = value;
-  const isNaNValue = displayValue.kind === "nan";
+  const displayKind = resolveScalarDisplayKind(displayValue);
+  const token = resolveDisplayToken(displayKind);
+  if (token) {
+    appendSevenSegmentFrame(target, buildTokenSlotModel(token, unlockedDigits));
+    return;
+  }
+
   const rationalValue = isRationalCalculatorValue(displayValue)
     ? displayValue.value
-    : !isNaNValue
+    : displayKind !== "nan"
       ? calculatorValueToRational(displayValue)
       : null;
-  const hasRationalValue = rationalValue !== null;
-  const hasIntegerValue = hasRationalValue && rationalValue.den === 1n;
+  if (!rationalValue || rationalValue.den !== 1n) {
+    return;
+  }
+  const hasIntegerValue = true;
   const isNegative =
     hasIntegerValue && (rationalValue.num < 0n || (rationalValue.num === 0n && pendingNegative));
-
-  if (isNaNValue) {
-    appendSevenSegmentFrame(target, buildTokenSlotModel(getNanToken(), unlockedDigits));
-    return;
-  }
-  if (!hasRationalValue) {
-    appendSevenSegmentFrame(target, buildTokenSlotModel(getRadicalToken(), unlockedDigits));
-    return;
-  }
-
-  if (!hasIntegerValue) {
-    appendSevenSegmentFrame(target, buildTokenSlotModel(getFractionToken(), unlockedDigits));
-    return;
-  }
 
   const slotModels = buildTotalSlotModel(toRationalCalculatorValue(rationalValue), unlockedDigits, radix);
 
@@ -218,6 +184,16 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
 
   const primaryDisplay = document.createElement("div");
   primaryDisplay.className = "total-primary-display";
+  const layout = document.createElement("div");
+  layout.className = "total-layout";
+  const leftHudTop = document.createElement("div");
+  leftHudTop.className = "total-slot total-slot--left-hud-top";
+  const leftHudBottom = document.createElement("div");
+  leftHudBottom.className = "total-slot total-slot--left-hud-bottom";
+  const centerMain = document.createElement("div");
+  centerMain.className = "total-slot total-slot--center-main";
+  const centerAux = document.createElement("div");
+  centerAux.className = "total-slot total-slot--center-aux";
   const imaginaryDisplay = document.createElement("div");
   imaginaryDisplay.className = "total-imaginary-display";
   const hintRows = buildTotalHintRowsViewModel(state);
@@ -238,18 +214,19 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     row.append(label, value);
     hintStrip.appendChild(row);
   }
-  primaryDisplay.appendChild(hintStrip);
   const baseIndicator = document.createElement("span");
   baseIndicator.className = "total-base-indicator";
   baseIndicator.textContent = binaryModeEnabled ? "| BIN |" : "";
   baseIndicator.setAttribute("aria-hidden", binaryModeEnabled ? "false" : "true");
-  primaryDisplay.appendChild(baseIndicator);
-  primaryDisplay.appendChild(domainIndicator);
-  primaryDisplay.appendChild(imaginaryDisplay);
+  centerAux.append(hintStrip, imaginaryDisplay);
+  leftHudTop.appendChild(domainIndicator);
+  leftHudBottom.appendChild(baseIndicator);
+  layout.append(leftHudTop, leftHudBottom, centerMain, centerAux);
+  primaryDisplay.appendChild(layout);
   if (shouldRenderClearedPlaceholder) {
     const slotModels = buildClearedTotalSlotModel(state.unlocks.maxTotalDigits);
     imaginaryDisplay.setAttribute("aria-hidden", "true");
-    appendSevenSegmentFrame(primaryDisplay, slotModels);
+    appendSevenSegmentFrame(centerMain, slotModels);
     stack.appendChild(primaryDisplay);
     totalEl.appendChild(stack);
     totalEl.setAttribute("aria-label", "Total _");
@@ -288,7 +265,7 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     );
   }
   renderSevenSegmentValue(
-    primaryDisplay,
+    centerMain,
     realValue,
     state.unlocks.maxTotalDigits,
     state.calculator.pendingNegativeTotal,

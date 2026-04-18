@@ -1,9 +1,18 @@
 import { calculatorValueEquals } from "../../../domain/rollEntries.js";
-import { calculatorValueToRational, isRealEquivalentCalculatorValue, scalarValueToCalculatorValue } from "../../../domain/calculatorValue.js";
+import { calculatorValueToRational, scalarValueToCalculatorValue } from "../../../domain/calculatorValue.js";
 import { normalizeRational } from "../../../domain/algebraicScalar.js";
 import { getRollYDomain } from "../../../domain/rollDerived.js";
 import { HISTORY_FLAG } from "../../../domain/state.js";
 import type { ExecutionErrorKind, GameState, RationalValue, RollLimitComponentKind, ScalarValue } from "../../../domain/types.js";
+import {
+  IRRATIONAL_TOKEN,
+  NAN_ERROR_TOKEN,
+  SEVEN_SEGMENT_TOKEN_SEGMENTS,
+  buildTokenGlyphSlots,
+  clampSevenSegmentSlotCount,
+  hasImaginaryRollHistory,
+} from "../../shared/displayPolicy.sevenSegment.js";
+import { createCenteredSeparatorRow } from "../../shared/centeredSeparatorRow.js";
 import { applyUxRoleAttributes } from "../../shared/readModel.js";
 
 type SegmentName = "a" | "b" | "c" | "d" | "e" | "f" | "g";
@@ -14,28 +23,6 @@ type RatioSlotModel = {
 const MAX_RATIO_SLOT_COUNT = 12;
 
 const SEGMENT_NAMES: readonly SegmentName[] = ["a", "b", "c", "d", "e", "f", "g"];
-const TOKEN_SEGMENTS: Record<string, readonly SegmentName[]> = {
-  "0": ["a", "b", "c", "d", "e", "f"],
-  "1": ["b", "c"],
-  "2": ["a", "b", "d", "e", "g"],
-  "3": ["a", "b", "c", "d", "g"],
-  "4": ["b", "c", "f", "g"],
-  "5": ["a", "c", "d", "f", "g"],
-  "6": ["a", "c", "d", "e", "f", "g"],
-  "7": ["a", "b", "c"],
-  "8": ["a", "b", "c", "d", "e", "f", "g"],
-  "9": ["a", "b", "c", "d", "f", "g"],
-  "-": ["g"],
-  E: ["a", "d", "e", "f", "g"],
-  r: ["e", "g"],
-  o: ["c", "d", "e", "g"],
-  d: ["b", "c", "d", "e", "g"],
-  i: ["c"],
-  c: ["d", "e", "g"],
-  L: ["d", "e", "f"],
-};
-const NAN_ERROR_TOKEN = "Error";
-const IRRATIONAL_TOKEN = "rAdicAL";
 const NAN_ERROR_KINDS: ReadonlySet<ExecutionErrorKind> = new Set([
   "division_by_zero",
   "nan_input",
@@ -67,10 +54,6 @@ const resolveCycleAmberActive = (state: GameState): boolean => {
   }
   return calculatorValueEquals(latestEntry.y, cycleStartEntry.y);
 };
-
-const hasImaginaryRollHistory = (state: GameState): boolean =>
-  state.calculator.rollEntries.some((entry) =>
-    entry.y.kind === "complex" && !isRealEquivalentCalculatorValue(entry.y));
 
 type RatioDisplayValues = { reNum: string; reDen: string; imNum: string; imDen: string };
 type RationalPair = { re: RationalValue; im: RationalValue };
@@ -198,17 +181,16 @@ const resolveErrorAwareRatioDisplayValues = (state: GameState): RatioDisplayValu
 };
 
 const buildTokenSlotModel = (token: string, slotCount: number): RatioSlotModel[] => {
-  const clampedSlots = Math.max(1, Math.min(MAX_RATIO_SLOT_COUNT, Math.trunc(slotCount)));
-  const glyphs = Array.from(token).filter((glyph) => glyph in TOKEN_SEGMENTS).slice(-clampedSlots);
-  const leadingUnlockedCount = clampedSlots - glyphs.length;
+  const clampedSlots = clampSevenSegmentSlotCount(slotCount, MAX_RATIO_SLOT_COUNT);
+  const glyphs = buildTokenGlyphSlots(token, clampedSlots, MAX_RATIO_SLOT_COUNT);
   const out: RatioSlotModel[] = [];
   for (let index = 0; index < clampedSlots; index += 1) {
-    if (index < leadingUnlockedCount) {
+    const glyph = glyphs[index] ?? null;
+    if (glyph === null) {
       out.push({ state: "unlocked", activeSegments: [] });
       continue;
     }
-    const glyph = glyphs[index - leadingUnlockedCount] ?? "";
-    out.push({ state: "active", activeSegments: TOKEN_SEGMENTS[glyph] ?? [] });
+    out.push({ state: "active", activeSegments: SEVEN_SEGMENT_TOKEN_SEGMENTS[glyph] ?? [] });
   }
   return out;
 };
@@ -247,13 +229,6 @@ const appendRatioDisplay = (row: HTMLElement, token: string, slotCount: number):
   row.appendChild(display);
 };
 
-const appendSeparator = (row: HTMLElement): void => {
-  const separator = document.createElement("span");
-  separator.className = "v2-ratios-separator";
-  separator.textContent = ":";
-  row.appendChild(separator);
-};
-
 const renderRatiosRow = (
   table: HTMLElement,
   options: {
@@ -265,12 +240,17 @@ const renderRatiosRow = (
     uxRole: "imaginary" | "default";
   },
 ): void => {
-  const row = document.createElement("div");
-  row.className = `v2-ratios-row ${options.className}`;
+  const rowElements = createCenteredSeparatorRow({
+    rowClassName: `v2-ratios-row v2-centered-separator-row ${options.className}`,
+    leftClassName: "v2-centered-separator-row__left",
+    separatorClassName: "v2-ratios-separator v2-centered-separator-row__separator",
+    rightClassName: "v2-centered-separator-row__right",
+    separatorText: ":",
+  });
+  const { row, leftRegion, rightRegion } = rowElements;
   applyUxRoleAttributes(row, { uxRole: options.uxRole, uxState: "active" });
-  appendRatioDisplay(row, options.leftToken, options.leftSlotCount);
-  appendSeparator(row);
-  appendRatioDisplay(row, options.rightToken, options.rightSlotCount);
+  appendRatioDisplay(leftRegion, options.leftToken, options.leftSlotCount);
+  appendRatioDisplay(rightRegion, options.rightToken, options.rightSlotCount);
   table.appendChild(row);
 };
 
@@ -314,6 +294,17 @@ export const renderRatiosVisualizerPanel = (root: Element, state: GameState): vo
   const latestRollEntry = state.calculator.rollEntries.at(-1);
   const domainValue = latestRollEntry?.y ?? state.calculator.total;
   const domainIsNaN = domainValue.kind === "nan";
+  const layout = document.createElement("div");
+  layout.className = "v2-ratios-layout";
+  const leftHudTop = document.createElement("div");
+  leftHudTop.className = "v2-ratios-slot v2-ratios-slot--left-hud-top";
+  const leftHudBottom = document.createElement("div");
+  leftHudBottom.className = "v2-ratios-slot v2-ratios-slot--left-hud-bottom";
+  const centerMain = document.createElement("div");
+  centerMain.className = "v2-ratios-slot v2-ratios-slot--center-main";
+  const centerAux = document.createElement("div");
+  centerAux.className = "v2-ratios-slot v2-ratios-slot--center-aux";
+
   const table = document.createElement("div");
   table.className = "v2-ratios-table";
   const domainIndicator = document.createElement("span");
@@ -344,5 +335,9 @@ export const renderRatiosVisualizerPanel = (root: Element, state: GameState): vo
     rightSlotCount: denominatorSlotCount,
     uxRole: "default",
   });
-  panel.append(domainIndicator, baseIndicator, table);
+  leftHudTop.appendChild(domainIndicator);
+  leftHudBottom.appendChild(baseIndicator);
+  centerMain.appendChild(table);
+  layout.append(leftHudTop, leftHudBottom, centerMain, centerAux);
+  panel.appendChild(layout);
 };

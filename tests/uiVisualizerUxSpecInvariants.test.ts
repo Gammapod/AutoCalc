@@ -23,7 +23,7 @@ const c = (reNum: bigint, imNum: bigint): { kind: "complex"; value: { re: Return
 const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const getActiveDigitSegments = (panel: HTMLElement, selector: string): string[][] =>
-  Array.from(panel.querySelectorAll<HTMLElement>(`${selector} > .seg-frame .seg-digit--active`))
+  Array.from(panel.querySelectorAll<HTMLElement>(`${selector} .seg-frame .seg-digit--active`))
     .map((digit) =>
       Array.from(digit.querySelectorAll<HTMLElement>(".seg--on"))
         .map((segment) => (segment.className.match(/seg-([a-g])/u)?.[1] ?? ""))
@@ -122,7 +122,7 @@ export const runUiVisualizerUxSpecInvariantsTests = (): void => {
     assert.deepEqual(nanTokens, ["Error", "Error", "Error", "Error"], "ratios renders Error token on all four cells for NaN-class errors");
     assert.equal(ratiosPanel.classList.contains("v2-ratios-panel--error"), true, "ratios Error token state enables red error styling class");
     renderTotalDisplay(totalPanel, nanErrorState);
-    const totalNanSegments = getActiveDigitSegments(totalPanel, ".total-primary-display");
+    const totalNanSegments = getActiveDigitSegments(totalPanel, ".total-slot--center-main");
     assert.deepEqual(
       totalNanSegments.slice(-3),
       [

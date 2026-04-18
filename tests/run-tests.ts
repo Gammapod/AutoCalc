@@ -12,6 +12,7 @@ import { runUiVisualizerUxSpecInvariantsTests } from "./uiVisualizerUxSpecInvari
 import { runUiModuleRatiosRendererV2Tests } from "./uiModule.ratiosRenderer.v2.test.js";
 import { runKeyCapabilityProgressionTests } from "./keyCapabilityProgression.test.js";
 import { runOperatorTestingMatrixContractTests } from "./operatorTestingMatrix.contract.test.js";
+import { runDisplayPolicySevenSegmentTests } from "./displayPolicy.sevenSegment.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -27,6 +28,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/visualizer-ux-spec-invariants", runUiVisualizerUxSpecInvariantsTests],
   ["domain/key-capability-progression", runKeyCapabilityProgressionTests],
   ["contracts/operator-testing-matrix", runOperatorTestingMatrixContractTests],
+  ["ui/display-policy-seven-segment", runDisplayPolicySevenSegmentTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

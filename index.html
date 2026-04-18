@@ -1008,7 +1008,32 @@
         gap: 2px;
       }
 
-      .total-primary-display > .seg-frame {
+      .total-layout {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .total-slot {
+        width: 100%;
+      }
+
+      .total-slot--center-main {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .total-slot--center-aux {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .total-primary-display > .seg-frame,
+      .total-slot--center-main > .seg-frame {
         align-self: flex-end;
       }
 
@@ -2753,11 +2778,46 @@
         width: 100%;
       }
 
-      body[data-ui-shell="mobile"] .v2-ratios-domain-indicator,
-      body[data-ui-shell="desktop"] .v2-ratios-domain-indicator {
+      body[data-ui-shell="mobile"] .v2-ratios-layout,
+      body[data-ui-shell="desktop"] .v2-ratios-layout {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot,
+      body[data-ui-shell="desktop"] .v2-ratios-slot {
         position: absolute;
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot--left-hud-top,
+      body[data-ui-shell="desktop"] .v2-ratios-slot--left-hud-top {
         left: 10px;
         bottom: calc(var(--v2-ratios-bottom-pad) + (2 * var(--v2-ratios-row-height)) + var(--v2-ratios-row-gap));
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot--left-hud-bottom,
+      body[data-ui-shell="desktop"] .v2-ratios-slot--left-hud-bottom {
+        left: 10px;
+        bottom: calc(var(--v2-ratios-bottom-pad) - 16px);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot--center-main,
+      body[data-ui-shell="desktop"] .v2-ratios-slot--center-main {
+        left: 0;
+        right: 0;
+        bottom: var(--v2-ratios-bottom-pad);
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-slot--center-aux,
+      body[data-ui-shell="desktop"] .v2-ratios-slot--center-aux {
+        left: 0;
+        right: 0;
+        bottom: calc(var(--v2-ratios-bottom-pad) + var(--v2-ratios-row-height) + var(--v2-ratios-row-gap));
+      }
+
+      body[data-ui-shell="mobile"] .v2-ratios-domain-indicator,
+      body[data-ui-shell="desktop"] .v2-ratios-domain-indicator {
         font-family: "Consolas", "Courier New", monospace;
         font-size: clamp(18px, 2.8vw, 24px);
         line-height: 1;
@@ -2775,9 +2835,6 @@
 
       body[data-ui-shell="mobile"] .v2-ratios-base-indicator,
       body[data-ui-shell="desktop"] .v2-ratios-base-indicator {
-        position: absolute;
-        left: 10px;
-        bottom: calc(var(--v2-ratios-bottom-pad) - 16px);
         font-family: "Consolas", "Courier New", monospace;
         font-size: clamp(10px, 1.6vw, 12px);
         letter-spacing: 0.08em;
@@ -2801,6 +2858,14 @@
         width: 100%;
       }
 
+      body[data-ui-shell="mobile"] .v2-centered-separator-row,
+      body[data-ui-shell="desktop"] .v2-centered-separator-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+        align-items: center;
+        width: 100%;
+      }
+
       body[data-ui-shell="mobile"] .v2-ratios-display,
       body[data-ui-shell="desktop"] .v2-ratios-display {
         display: flex;
@@ -2809,14 +2874,20 @@
         min-width: 0;
       }
 
-      body[data-ui-shell="mobile"] .v2-ratios-row > .v2-ratios-display:first-child,
-      body[data-ui-shell="desktop"] .v2-ratios-row > .v2-ratios-display:first-child {
+      body[data-ui-shell="mobile"] .v2-centered-separator-row__left,
+      body[data-ui-shell="desktop"] .v2-centered-separator-row__left {
+        display: flex;
+        align-items: center;
         justify-content: flex-end;
+        min-width: 0;
       }
 
-      body[data-ui-shell="mobile"] .v2-ratios-row > .v2-ratios-display:last-child,
-      body[data-ui-shell="desktop"] .v2-ratios-row > .v2-ratios-display:last-child {
+      body[data-ui-shell="mobile"] .v2-centered-separator-row__right,
+      body[data-ui-shell="desktop"] .v2-centered-separator-row__right {
+        display: flex;
+        align-items: center;
         justify-content: flex-start;
+        min-width: 0;
       }
 
       body[data-ui-shell="mobile"] .v2-ratios-separator,

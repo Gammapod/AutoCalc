@@ -58,6 +58,11 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     assert.equal(panel.classList.contains("v2-ratios-panel--cycle"), false, "cycle class is off for initial state");
     const table = panel.querySelector<HTMLElement>(".v2-ratios-table");
     assert.ok(table, "ratios panel renders table scaffold");
+    assert.ok(panel.querySelector(".v2-ratios-layout"), "ratios panel renders structured layout root");
+    assert.ok(panel.querySelector(".v2-ratios-slot--left-hud-top"), "ratios panel renders left top HUD slot");
+    assert.ok(panel.querySelector(".v2-ratios-slot--left-hud-bottom"), "ratios panel renders left bottom HUD slot");
+    assert.ok(panel.querySelector(".v2-ratios-slot--center-main"), "ratios panel renders center main slot");
+    assert.ok(panel.querySelector(".v2-ratios-slot--center-aux"), "ratios panel renders center auxiliary slot");
     const domainIndicator = panel.querySelector<HTMLElement>(".v2-ratios-domain-indicator");
     const baseIndicator = panel.querySelector<HTMLElement>(".v2-ratios-base-indicator");
     assert.ok(domainIndicator, "ratios panel renders domain indicator");
@@ -65,6 +70,7 @@ export const runUiModuleRatiosRendererV2Tests = (): void => {
     assert.equal((domainIndicator?.textContent ?? "").length > 0, true, "domain indicator renders a domain glyph");
     assert.equal(baseIndicator?.getAttribute("aria-hidden"), "true", "binary indicator is hidden in decimal mode");
     assert.equal(panel.querySelectorAll(".v2-ratios-row").length, 1, "ratios panel hides imaginary row while roll history is real-only");
+    assert.equal(panel.querySelectorAll(".v2-centered-separator-row").length, 1, "ratios rows use centered-separator primitive contract");
     assert.equal(panel.querySelectorAll(".v2-ratios-separator").length, 1, "ratios panel renders one ':' separator for the visible row");
     const imaginaryRow = panel.querySelector<HTMLElement>(".v2-ratios-row--imaginary");
     assert.equal(imaginaryRow, null, "imaginary ratios row is not present when no roll has imaginary content");
