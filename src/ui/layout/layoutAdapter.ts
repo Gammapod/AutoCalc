@@ -9,6 +9,7 @@ import type {
 const DEFAULT_CALCULATOR_INSTANCE_ID = "primary";
 const DEFAULT_GAP_PX = 10;
 const DEFAULT_VISUALIZER_WIDTH_PX = 460;
+const DEFAULT_VERTICAL_CHROME_PX = 260;
 
 const parsePxValue = (value: string, fallback: number): number => {
   const parsed = Number.parseFloat(value);
@@ -28,6 +29,23 @@ const parseFinitePositive = (value: string | undefined): number | undefined => {
 
 const parseVisualizerWidthMode = (value: string | undefined): "coupled" | "fixed" =>
   value === "fixed" ? "fixed" : "coupled";
+
+const resolveVerticalChromePx = (
+  keysEl: HTMLElement,
+  calcBodyEl: HTMLElement | null,
+): number | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const computedStyle = window.getComputedStyle(calcBodyEl ?? keysEl);
+  const cssVerticalChrome = parseFinitePositive(computedStyle.getPropertyValue("--desktop-calc-vertical-chrome"));
+  if (cssVerticalChrome !== undefined) {
+    return cssVerticalChrome;
+  }
+  const calcRect = calcBodyEl?.getBoundingClientRect();
+  const keysRect = keysEl.getBoundingClientRect();
+  return calcRect && keysRect ? calcRect.height - keysRect.height : null;
+};
 
 const resolveVisualizerWidthConfig = (
   root: Element,
@@ -102,9 +120,7 @@ export const buildSingleInstanceLayoutInput = ({
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 720;
   const computedGap = typeof window !== "undefined" ? window.getComputedStyle(keysEl).getPropertyValue("--gap") : "";
   const gapPx = parsePxValue(computedGap, DEFAULT_GAP_PX);
-  const calcRect = calcBodyEl?.getBoundingClientRect();
-  const keysRect = keysEl.getBoundingClientRect();
-  const measuredVerticalChromePx = calcRect && keysRect ? calcRect.height - keysRect.height : null;
+  const measuredVerticalChromePx = resolveVerticalChromePx(keysEl, calcBodyEl) ?? DEFAULT_VERTICAL_CHROME_PX;
   const visualizerConfig = resolveVisualizerWidthConfig(root);
 
   const calculatorInstances: CalculatorInstanceLayoutConfig[] = [

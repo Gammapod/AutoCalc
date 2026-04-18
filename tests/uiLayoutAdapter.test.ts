@@ -101,6 +101,27 @@ export const runUiLayoutAdapterTests = (): void => {
       460,
       "layout adapter defaults visualizer width token to 460px",
     );
+    assert.equal(
+      defaultInput.measuredVerticalChromePx,
+      260,
+      "layout adapter uses stable desktop vertical chrome token by default",
+    );
+
+    keys.style.setProperty("--desktop-calc-vertical-chrome", "312px");
+    const overriddenChromeInput = buildSingleInstanceLayoutInput({
+      root: harness.root,
+      keysEl: keys,
+      calcBodyEl: calc,
+      columns: 4,
+      rows: 2,
+            inputBlocked: false,
+    });
+    assert.equal(
+      overriddenChromeInput.measuredVerticalChromePx,
+      312,
+      "layout adapter reads vertical chrome override from css custom property",
+    );
+    keys.style.removeProperty("--desktop-calc-vertical-chrome");
 
     harness.root.setAttribute("data-visualizer-width-mode", "fixed");
     harness.root.setAttribute("data-visualizer-width-px", "333");
