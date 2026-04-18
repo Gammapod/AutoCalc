@@ -33,25 +33,58 @@ const buildAsciiNumberLine = (): string => "\u2190\u2500\u2500\u2500\u2500\u253c
 const hasCurrentRollError = (state: GameState): boolean =>
   Boolean(state.calculator.rollEntries[state.calculator.rollEntries.length - 1]?.error);
 
+type NumberLineStrokeClass =
+  | "v2-number-line-axis"
+  | "v2-number-line-grid-mark"
+  | "v2-number-line-center-tick"
+  | "v2-number-line-vector"
+  | "v2-number-line-vector--current-error"
+  | "v2-number-line-vector--history"
+  | "v2-number-line-vector--forecast"
+  | "v2-number-line-vector--forecast-step"
+  | "v2-number-line-cycle-line"
+  | "v2-number-line-cycle-line--chain"
+  | "v2-number-line-cycle-line--closure";
+
+const NUMBER_LINE_CURVE_STRAIGHT_FALLBACK_MIN_LENGTH = 2.0;
+const NUMBER_LINE_CURVE_FACTOR = 0.16;
+const NUMBER_LINE_CURVE_OFFSET_MIN = 0.6;
+const NUMBER_LINE_CURVE_OFFSET_MAX = 2.4;
+
 const buildPolygonPoints = (points: readonly Point[]): string =>
   points.map((point) => `${point.x.toString()},${point.y.toString()}`).join(" ");
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+const applyStrokeUxRole = (
+  element: SVGElement,
+  className: NumberLineStrokeClass,
+  roleOverride?: "imaginary",
+): void => {
+  if (className === "v2-number-line-vector--current-error") {
+    applyUxRoleAttributes(element, { uxRole: "error", uxState: "active" });
+  } else if (
+    className === "v2-number-line-vector--history"
+    || className === "v2-number-line-vector--forecast-step"
+    || className === "v2-number-line-cycle-line"
+    || className === "v2-number-line-cycle-line--chain"
+    || className === "v2-number-line-cycle-line--closure"
+  ) {
+    applyUxRoleAttributes(element, { uxRole: "analysis", uxState: "active" });
+  } else if (className === "v2-number-line-vector--forecast") {
+    applyUxRoleAttributes(element, { uxRole: "unlock", uxState: "active" });
+  } else if (roleOverride === "imaginary") {
+    applyUxRoleAttributes(element, { uxRole: "imaginary", uxState: "active" });
+  } else {
+    applyUxRoleAttributes(element, { uxRole: "default", uxState: "normal" });
+  }
+};
 
 const appendLine = (
   documentRef: Document,
   svg: SVGElement,
   segment: Segment,
-  className:
-    | "v2-number-line-axis"
-    | "v2-number-line-grid-mark"
-    | "v2-number-line-center-tick"
-    | "v2-number-line-vector"
-    | "v2-number-line-vector--current-error"
-    | "v2-number-line-vector--history"
-    | "v2-number-line-vector--forecast"
-    | "v2-number-line-vector--forecast-step"
-    | "v2-number-line-cycle-line"
-    | "v2-number-line-cycle-line--chain"
-    | "v2-number-line-cycle-line--closure",
+  className: NumberLineStrokeClass,
   roleOverride?: "imaginary",
 ): void => {
   const svgNs = "http://www.w3.org/2000/svg";
@@ -64,24 +97,26 @@ const appendLine = (
   if (roleOverride === "imaginary" && className === "v2-number-line-axis") {
     line.classList.add("v2-number-line-axis--imaginary");
   }
-  if (className === "v2-number-line-vector--current-error") {
-    applyUxRoleAttributes(line, { uxRole: "error", uxState: "active" });
-  } else if (
-    className === "v2-number-line-vector--history"
-    || className === "v2-number-line-vector--forecast-step"
-    || className === "v2-number-line-cycle-line"
-    || className === "v2-number-line-cycle-line--chain"
-    || className === "v2-number-line-cycle-line--closure"
-  ) {
-    applyUxRoleAttributes(line, { uxRole: "analysis", uxState: "active" });
-  } else if (className === "v2-number-line-vector--forecast") {
-    applyUxRoleAttributes(line, { uxRole: "unlock", uxState: "active" });
-  } else if (roleOverride === "imaginary") {
-    applyUxRoleAttributes(line, { uxRole: "imaginary", uxState: "active" });
-  } else {
-    applyUxRoleAttributes(line, { uxRole: "default", uxState: "normal" });
-  }
+  applyStrokeUxRole(line, className, roleOverride);
   svg.appendChild(line);
+};
+
+const appendQuadraticCurve = (
+  documentRef: Document,
+  svg: SVGElement,
+  segment: Segment,
+  control: Point,
+  className: NumberLineStrokeClass,
+): void => {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const path = documentRef.createElementNS(svgNs, "path");
+  path.setAttribute(
+    "d",
+    `M ${segment.from.x.toString()} ${segment.from.y.toString()} Q ${control.x.toString()} ${control.y.toString()} ${segment.to.x.toString()} ${segment.to.y.toString()}`,
+  );
+  path.setAttribute("class", className);
+  applyStrokeUxRole(path, className);
+  svg.appendChild(path);
 };
 
 const appendArrow = (
@@ -141,9 +176,10 @@ const appendVectorArrowTip = (
     | "v2-number-line-vector-tip--history"
     | "v2-number-line-vector-tip--forecast"
     | "v2-number-line-vector-tip--forecast-step",
+  directionOverride?: { dx: number; dy: number },
 ): void => {
-  const dx = segment.to.x - segment.from.x;
-  const dy = segment.to.y - segment.from.y;
+  const dx = directionOverride?.dx ?? (segment.to.x - segment.from.x);
+  const dy = directionOverride?.dy ?? (segment.to.y - segment.from.y);
   const length = Math.hypot(dx, dy);
   if (length <= NUMBER_LINE_VECTOR_ARROW_TIP.minSegmentLength) {
     appendVectorTip(documentRef, svg, segment.to, className);
@@ -182,6 +218,37 @@ const appendVectorArrowTip = (
   svg.appendChild(arrow);
 };
 
+const resolveClockwiseCurveControlForSegment = (
+  segment: Segment,
+): { control: Point; tangentAtEnd: { dx: number; dy: number } } | null => {
+  const dx = segment.to.x - segment.from.x;
+  const dy = segment.to.y - segment.from.y;
+  const length = Math.hypot(dx, dy);
+  if (length < NUMBER_LINE_CURVE_STRAIGHT_FALLBACK_MIN_LENGTH) {
+    return null;
+  }
+  const midpoint = {
+    x: (segment.from.x + segment.to.x) / 2,
+    y: (segment.from.y + segment.to.y) / 2,
+  };
+  const ux = dx / length;
+  const uy = dy / length;
+  // Counterclockwise in math coordinates (y up) maps to (dy, -dx) in SVG (y down).
+  const normalCounterclockwiseSvg = { x: uy, y: -ux };
+  const offset = clamp(length * NUMBER_LINE_CURVE_FACTOR, NUMBER_LINE_CURVE_OFFSET_MIN, NUMBER_LINE_CURVE_OFFSET_MAX);
+  const control = {
+    x: midpoint.x + (normalCounterclockwiseSvg.x * offset),
+    y: midpoint.y + (normalCounterclockwiseSvg.y * offset),
+  };
+  return {
+    control,
+    tangentAtEnd: {
+      dx: segment.to.x - control.x,
+      dy: segment.to.y - control.y,
+    },
+  };
+};
+
 const appendScaleLabel = (
   documentRef: Document,
   svg: SVGElement,
@@ -193,6 +260,10 @@ const appendScaleLabel = (
   text.setAttribute("y", label.y.toString());
   text.setAttribute("text-anchor", label.anchor);
   text.setAttribute("class", "v2-number-line-scale-label");
+  const isImaginaryLabel = label.zone === "imag_top" || label.zone === "imag_bottom";
+  if (isImaginaryLabel) {
+    text.classList.add("v2-number-line-scale-label--imaginary");
+  }
   if (
     label.fitPolicy === "constrain_spacing"
     && typeof label.fitMaxWidthUnits === "number"
@@ -201,7 +272,7 @@ const appendScaleLabel = (
     text.setAttribute("textLength", label.fitMaxWidthUnits.toString());
     text.setAttribute("lengthAdjust", "spacing");
   }
-  applyUxRoleAttributes(text, { uxRole: "default", uxState: "normal" });
+  applyUxRoleAttributes(text, isImaginaryLabel ? { uxRole: "imaginary", uxState: "active" } : { uxRole: "default", uxState: "normal" });
   text.textContent = label.text;
   svg.appendChild(text);
 };
@@ -320,7 +391,7 @@ export const resolveNumberLineLabels = (
     labels.push(
       {
         zone: "imag_top",
-        text: formatBoundaryLabel(range, { appendImaginaryUnit: true, zeroPolicy: "zero" }),
+        text: formatBoundaryLabel(range, { zeroPolicy: "zero" }),
         x: geometry.vertical.axis.from.x,
         y: -40.6,
         anchor: "start",
@@ -328,7 +399,7 @@ export const resolveNumberLineLabels = (
       },
       {
         zone: "imag_bottom",
-        text: formatBoundaryLabel(-range, { appendImaginaryUnit: true, zeroPolicy: "zero" }),
+        text: formatBoundaryLabel(-range, { zeroPolicy: "zero" }),
         x: geometry.vertical.axis.to.x,
         y: 66.2,
         anchor: "start",
@@ -411,7 +482,12 @@ const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: 
     const classes = layer.kind === "current" && latestHasError
       ? { line: "v2-number-line-vector--current-error" as const, tip: "v2-number-line-vector-tip--current-error" as const }
       : classByKind[layer.kind];
-    appendLine(documentRef, svg, layer.segment, classes.line);
+    const curvedVector = layer.kind === "current" ? null : resolveClockwiseCurveControlForSegment(layer.segment);
+    if (curvedVector) {
+      appendQuadraticCurve(documentRef, svg, layer.segment, curvedVector.control, classes.line);
+    } else {
+      appendLine(documentRef, svg, layer.segment, classes.line);
+    }
     if (layer.kind === "current") {
       renderedCurrentLayer = true;
     }
@@ -427,6 +503,7 @@ const renderVectorIfAvailable = (documentRef: Document, svg: SVGElement, state: 
           | "v2-number-line-vector-tip--history"
           | "v2-number-line-vector-tip--forecast"
           | "v2-number-line-vector-tip--forecast-step",
+        curvedVector?.tangentAtEnd,
       );
     }
   });

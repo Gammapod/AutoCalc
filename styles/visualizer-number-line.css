@@ -142,6 +142,11 @@ body[data-ui-shell="desktop"] .v2-number-line-scale-label {
   user-select: none;
 }
 
+body[data-ui-shell="mobile"] .v2-number-line-scale-label--imaginary,
+body[data-ui-shell="desktop"] .v2-number-line-scale-label--imaginary {
+  fill: var(--ux-role-imaginary-color);
+}
+
 body[data-ui-shell="mobile"] .v2-number-line-cycle-line,
 body[data-ui-shell="desktop"] .v2-number-line-cycle-line {
   stroke: var(--ux-role-analysis-color);

@@ -9,45 +9,19 @@ Menu
 
 {
   "schema": "debug_calculator_snapshot_v3",
-  "capturedAt": "2026-04-18T07:30:28.848Z",
+  "capturedAt": "2026-04-18T19:13:20.334Z",
   "calculatorId": "menu",
   "lambdaControl": {
-    "alpha": 1,
-    "beta": 6,
-    "gamma": 0,
-    "delta": 1,
-    "delta_q": 1,
+    "alpha": 7,
+    "beta": 7,
+    "gamma": 4,
+    "delta": 12,
+    "delta_q": 12,
     "epsilon": 0
   },
   "keypad": {
     "columns": 1,
     "rows": 6,
-    "keyLayout": [
-      {
-        "kind": "key",
-        "key": "viz_title"
-      },
-      {
-        "kind": "key",
-        "key": "viz_release_notes"
-      },
-      {
-        "kind": "key",
-        "key": "system_mode_game"
-      },
-      {
-        "kind": "key",
-        "key": "system_new_game"
-      },
-      {
-        "kind": "key",
-        "key": "system_mode_sandbox"
-      },
-      {
-        "kind": "key",
-        "key": "system_quit_game"
-      }
-    ],
     "keyLayoutDebug": [
       {
         "index": 0,
@@ -76,8 +50,8 @@ Menu
         "col": 1,
         "kind": "key",
         "key": "system_mode_game",
-        "status": "installed_only",
-        "capability": "installed_only"
+        "status": "unlock",
+        "capability": "portable"
       },
       {
         "index": 3,
@@ -86,8 +60,8 @@ Menu
         "col": 1,
         "kind": "key",
         "key": "system_new_game",
-        "status": "installed_only",
-        "capability": "installed_only"
+        "status": "unlock",
+        "capability": "portable"
       },
       {
         "index": 4,
@@ -96,8 +70,8 @@ Menu
         "col": 1,
         "kind": "key",
         "key": "system_mode_sandbox",
-        "status": "installed_only",
-        "capability": "installed_only"
+        "status": "unlock",
+        "capability": "portable"
       },
       {
         "index": 5,
@@ -106,8 +80,8 @@ Menu
         "col": 1,
         "kind": "key",
         "key": "system_quit_game",
-        "status": "installed_only",
-        "capability": "installed_only"
+        "status": "unlock",
+        "capability": "portable"
       }
     ]
   }

@@ -50,27 +50,33 @@ MAT_plus ==>|Invert| MAT_minus
 subgraph Math ["ℕ,ℤ"]
     %% Visualizer: cartesian plane (numberline when dealing with reals, then plane for complex numbers)
     
-    MAT_inc[["[ n ++ ]"]] %% IMPLEMENTED
+    MAT_inc[["[ n ++ ]"]] 
+    %% IMPLEMENTED
     %% Primitive
     %% Expanded form `[ 4 ++ ]` -> `[ 4 ℕ{..3 4◌⃕5..} ]`
     %% Completes ℕ on its own
 
-    MAT_plus["a [ \+b ]"] %% IMPLEMENTED
+    MAT_plus["a [ \+b ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 + 3 ]` -> `[ 4 ++ ++ ++ ]`  
-    MAT_mul["a [ × b ]"] %% IMPLEMENTED
+    MAT_mul["a [ × b ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 × 3 ]` -> `[ 4 +4 +4 ]`
     %% CPX_impart ==> ROT_modulus
     %% CPX_repart ==> ROT_modulus
     %% ROT_rotate ==>|Iterate| CPX_horiz["n R±"]
-    MAT_pow["a [ ^ b ]"] %% IMPLEMENTED
+    MAT_pow["a [ ^ b ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 ^ 3 ]` -> `[ 4 ×4 ×4 ]`
 
-    MAT_dec["[ n -- ]"] %% IMPLEMENTED
+    MAT_dec["[ n -- ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 –– ]` -> `[ 4 ℤ{..3◌⃔4 5..} ]`
     %% Expanded form `[ 4 –– ]` -> `[ 4 ++⮌ ]`
     %% Completes ℤ with ++
     MAT_minus
-    MAT_minus["a [ − b ]"] %% IMPLEMENTED
+    MAT_minus["a [ − b ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 – 3 ]` -> `[ 4 –– –– –– ]`
     %% Expanded form `[ 4 – 3 ]` -> `[ 4 +⮌ 3 ]`
 
@@ -84,12 +90,15 @@ subgraph Math ["ℕ,ℤ"]
     DIV_cdiv ==>|Quotient| DIV_eudiv
     DIV_cdiv ===|Remainder| DIV_mod
     subgraph Division
-        DIV_cdiv["a⨸b"] %% IMPLEMENTED
+        DIV_cdiv["a⨸b"] 
+        %% IMPLEMENTED
         %% Complex_Tuple – keyface `⫽ ╎ ◇→M`
         %% Expanded form `[ 4 ⨸ 3 ]` -> `[ (4 ⫽ 3) + ((4 ◇ 3) -M⭾R) ]`
-        DIV_eudiv["a ⫽ b"] %% IMPLEMENTED
+        DIV_eudiv["a ⫽ b"] 
+        %% IMPLEMENTED
         %% Expanded form `[ 4 ⫽ 3 ]` -> `Σ[ ¬(4 – (3 × ℕ)) ]`
-        DIV_mod["a◇b"] %% IMPLEMENTED
+        DIV_mod["a◇b"] 
+        %% IMPLEMENTED
         %% Expanded form `[ 4 ◇ 3 ]` -> `[ 4 – (3 × (4 ⫽ 3)) ]`
     end
     
@@ -98,12 +107,15 @@ subgraph Math ["ℕ,ℤ"]
     LOG_clog ==> LOG_eulog
     LOG_clog ==>|Remainder| LOG_resid
     subgraph Logs
-        LOG_clog["a ⦷ b"] %% IMPLEMENTED
+        LOG_clog["a ⦷ b"] 
+        %% IMPLEMENTED
         %% Complex_Tuple – keyface `∥ ╎ 🞛→M`
         %% Expanded form `[ 4 ⦷ 3 ]` -> `[ (4 ∥ 3) + ((4 🞛 3) -M⭾R) ]`
-        LOG_eulog["a [ ∥ b ]"] %% IMPLEMENTED
+        LOG_eulog["a [ ∥ b ]"] 
+        %% IMPLEMENTED
         %% Expanded form `[ 4 ∥ 3 ]` -> `Σ[ ¬(4 ◇ (3 ^ ℕ)) ]`
-        LOG_resid["a [ 🞛 b ]"] %% IMPLEMENTED
+        LOG_resid["a [ 🞛 b ]"] 
+        %% IMPLEMENTED
         %% Expanded form `[ 4 🞛 3 ]` -> `[ 4 ÷ (3 ^ (4 ∥ 3)) ]`🞛
     end
 end
@@ -121,18 +133,22 @@ RAT_recip ==> RAT_div
 MAT_pow -.-x RAT_whole
 subgraph Ratios ["ℚ"]
     %% Visualizer: shows 2 numbers instead of 1, for numerator and denominator (4 numbers when complex)
-    RAT_recip[["[ 1⁄n ]"]] %% IMPLEMENTED
+    RAT_recip[["[ 1⁄n ]"]] 
+    %% IMPLEMENTED
     %% Expanded form `(4÷3) [ 1⁄n ]` -> `[ 3 ÷ 4 ]` 
-    RAT_div["a [ ÷ b ]"] %% IMPLEMENTED
+    RAT_div["a [ ÷ b ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 ÷ 3 ]` -> `[ 4 × 1⁄3 ]`    
     RAT_per["％"]
     %% Expanded form `[ (a÷100) × b ]` <-.- should 100 change based on base setting? 
     %% Music Mode: When toggled, result is normalized to [1÷16, 16) and a sfx tone plays at result ×440 hz 
-    RAT_whole["a ♩↑ b"] %% IMPLEMENTED
+    RAT_whole["a ♩↑ b"] 
+    %% IMPLEMENTED
     %% Expanded form `[ a × ((9 ÷ 8) ^ b) ]`
     RAT_semit["a ♯↑ b"]
     %% Expanded form `[ a × (¹²√(2 ^ b)) ]`
-    RAT_inter["a ⋮ b"] %% IMPLEMENTED
+    RAT_inter["a ⋮ b"] 
+    %% IMPLEMENTED
     %% Expanded form `[ a × (1 + 1⁄b) ]`
 end
 
@@ -165,24 +181,31 @@ CPX_conj ==> CPX_repart
 CPX_impart ==x CPX_norm
 CPX_horiz ==> CPX_impart
 subgraph Complex_Math ["ℚ[𝕚]"]
-    CPX_quarter[["[ z -M⭾R ]"]] %% IMPLEMENTED
+    CPX_quarter[["[ z -M⭾R ]"]] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 -M⭾R ]` -> `[ 4 × √(-1) ]`
     %% Expanded form `[ 4 -M⭾R ]` -> `[ 4 ↶ 6 ]`
     %% Expanded form `[ 4 -M⭾R ]` -> `[ -3:00 ]`
 
-    CPX_plusi["z [ M++ ]"] %% IMPLEMENTED
+    CPX_plusi["z [ M++ ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ z + i ]`
-    CPX_minusi["z [ M–– ]"] %% IMPLEMENTED
+    CPX_minusi["z [ M–– ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ z – i ]`
-    CPX_conj["z [ M± ]"] %% IMPLEMENTED
+    CPX_conj["z [ M± ]"] 
+    %% IMPLEMENTED
     %% Reflects only the imaginary part
     %% Expanded form `[ M± ]` -> [ M – (2 × M) + R]
-    CPX_horiz["z [ R± ]"] %% IMPLEMENTED
+    CPX_horiz["z [ R± ]"] 
+    %% IMPLEMENTED
     %% Reflects only the real part
     %% Expanded form `[ R± ]` -> [ R – (2 × R) + M]
-    CPX_impart["z [ M→ ]"] %% IMPLEMENTED
+    CPX_impart["z [ M→ ]"] 
+    %% IMPLEMENTED
     %% %% Ixpanded form `[ M→ ]` -> `[ (z + (z R±)) ÷ 2i ]`
-    CPX_repart["z [ MC ]"] %% IMPLEMENTED
+    CPX_repart["z [ MC ]"] 
+    %% IMPLEMENTED
     %% %% Expanded form `[ MC ]` -> `[ (z + (z M±)) ÷ 2 ]`
     CPX_mid["a⦼b"]
     %% %% Expanded form `[ 4⦼3 ]` -> `[ (3 + (4 -M⭾R)) ÷ 2 ]
@@ -213,10 +236,12 @@ subgraph Rotation_Ops ["ℂ"]
     
     ROT_theta["z [ ⦾ ]"]
     %% %% Expanded form `[ z ⦾ ]` -> `[ (12 ÷ πi) × ℓ(z ÷ |z|)]`
-    ROT_twentyfourth["[ n ⦨ ]"] %% IMPLEMENTED
+    ROT_twentyfourth["[ n ⦨ ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 ⦨ ]` -> `[ 4 × e^(iπ÷12) ]`
     %% Expanded form `[ 4 ⦨ ]` -> `[ -0:30 ]`
-    ROT_rotate["a [ ↶ b ]"] %% IMPLEMENTED
+    ROT_rotate["a [ ↶ b ]"] 
+    %% IMPLEMENTED
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 × e^{2π×(3÷24)-M⭾R} ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ 4 ⦨ ⦨ ⦨ ]`
     %% Expanded form `[ 4 ↶ 3 ]` -> `[ -1:30 ]`
@@ -246,7 +271,8 @@ subgraph Boolean_Ops ["𝕋÷𝔽"]
     %% a, b, n -> numeric values (else false)
     %% p, q -> numeric values (true) or ⊥ (false)
     
-    BOO_notp[["¬ p"]] %% IMPLEMENTED
+    BOO_notp[["¬ p"]] 
+    %% IMPLEMENTED
     %% Expanded form `[ ⊥ if p, else 1 ]`
     BOO_ifelse["p ⩣ q"]
     %% Expanded form `[ p if p, else q ]`

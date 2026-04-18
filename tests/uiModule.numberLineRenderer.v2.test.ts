@@ -12,6 +12,22 @@ import {
 import { HISTORY_FLAG } from "../src/domain/state.js";
 import { installDomHarness } from "./helpers/domHarness.js";
 
+const parseQuadraticPath = (pathData: string): {
+  start: { x: number; y: number };
+  control: { x: number; y: number };
+  end: { x: number; y: number };
+} | null => {
+  const match = /^M\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+Q\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/u.exec(pathData.trim());
+  if (!match) {
+    return null;
+  }
+  return {
+    start: { x: Number(match[1]), y: Number(match[2]) },
+    control: { x: Number(match[3]), y: Number(match[4]) },
+    end: { x: Number(match[5]), y: Number(match[6]) },
+  };
+};
+
 export const runUiModuleNumberLineRendererV2Tests = (): void => {
   const realSpecs = resolveNumberLineLabels("real", 9);
   assert.equal(realSpecs.length, 2, "real mode label resolver returns left/right labels only");
@@ -31,8 +47,8 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     ["real_left", "real_right", "imag_top", "imag_bottom"],
     "complex-grid emits all label zones in deterministic order",
   );
-  assert.equal(complexSpecs[2]?.text, "99×i", "imag-top label appends imaginary-unit suffix");
-  assert.equal(complexSpecs[3]?.text, "-99×i", "imag-bottom label appends imaginary-unit suffix");
+  assert.equal(complexSpecs[2]?.text, "99", "imag-top label shows imaginary magnitude without suffix");
+  assert.equal(complexSpecs[3]?.text, "-99", "imag-bottom label shows imaginary magnitude without suffix");
   assert.equal(complexSpecs[2]?.fitPolicy, "natural", "imaginary labels preserve natural glyph width");
 
   const midRangeSpecs = resolveNumberLineLabels("real", 99_999);
@@ -96,6 +112,7 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     };
     renderNumberLineVisualizerPanel(harness.root, withRealRoll);
     assert.ok(panel.querySelector(".v2-number-line-vector"), "roll values render vector");
+    assert.equal(panel.querySelector(".v2-number-line-vector")?.tagName.toLowerCase(), "line", "current vector remains straight line primitive");
     assert.ok(panel.querySelector(".v2-number-line-vector-tip"), "roll values render vector tip");
     assert.equal(panel.querySelector(".v2-number-line-vector--forecast"), null, "forecast remains hidden while history toggle is off");
     assert.equal(panel.querySelector(".v2-number-line-vector-tip--forecast"), null, "forecast tip remains hidden while history toggle is off");
@@ -121,6 +138,11 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     };
     renderNumberLineVisualizerPanel(harness.root, withStepExpansionForecast);
     assert.ok(panel.querySelector(".v2-number-line-vector--forecast-step"), "step expansion shows first-step forecast before progress starts");
+    assert.equal(
+      panel.querySelector(".v2-number-line-vector--forecast-step")?.tagName.toLowerCase(),
+      "path",
+      "long step-forecast vectors render as curved path primitives",
+    );
     const withStepExpansionActive = {
       ...withStepExpansionForecast,
       calculator: {
@@ -187,8 +209,10 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.ok(panel.querySelector(".v2-number-line-vector-tip"), "complex roll values render vector tip");
     const complexScaleLabels = panel.querySelectorAll<SVGTextElement>(".v2-number-line-scale-label");
     assert.equal(complexScaleLabels.length, 4, "complex mode renders real and imaginary extreme labels");
-    assert.equal(complexScaleLabels[2]?.textContent, "9×i", "complex top scale label appends imaginary-unit suffix");
-    assert.equal(complexScaleLabels[3]?.textContent, "-9×i", "complex bottom scale label appends imaginary-unit suffix");
+    assert.equal(complexScaleLabels[2]?.textContent, "9", "complex top scale label omits imaginary-unit suffix");
+    assert.equal(complexScaleLabels[3]?.textContent, "-9", "complex bottom scale label omits imaginary-unit suffix");
+    assert.equal(complexScaleLabels[2]?.classList.contains("v2-number-line-scale-label--imaginary"), true, "complex top scale label uses imaginary style class");
+    assert.equal(complexScaleLabels[3]?.classList.contains("v2-number-line-scale-label--imaginary"), true, "complex bottom scale label uses imaginary style class");
     assert.equal(complexScaleLabels[2]?.getAttribute("x"), "50", "complex top scale label left edge aligns to vertical axis arrow x");
     assert.equal(complexScaleLabels[3]?.getAttribute("x"), "50", "complex bottom scale label left edge aligns to vertical axis arrow x");
     assert.equal(complexScaleLabels[2]?.hasAttribute("textLength"), false, "complex top scale label keeps natural glyph width");
@@ -254,14 +278,34 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.ok(panel.querySelector(".v2-number-line-vector--forecast"), "history mode renders full-function forecast vector");
     assert.equal(panel.querySelector(".v2-number-line-vector--forecast-step"), null, "history mode alone does not render step forecast");
     assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line").length, 0, "history mode without cycle metadata does not render cycle constellation");
-    const historyLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector--history");
+    const historyVector = panel.querySelector<SVGPathElement>(".v2-number-line-vector--history");
     const currentLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector");
-    const forecastLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector--forecast");
-    assert.equal(historyLine?.getAttribute("x2"), currentLine?.getAttribute("x2"), "history line ends at current point x");
-    assert.equal(historyLine?.getAttribute("y2"), currentLine?.getAttribute("y2"), "history line ends at current point y");
-    assert.equal(forecastLine?.getAttribute("x1"), currentLine?.getAttribute("x2"), "forecast line starts at current point x");
-    assert.equal(forecastLine?.getAttribute("y1"), currentLine?.getAttribute("y2"), "forecast line starts at current point y");
-    const layeredLines = panel.querySelectorAll<SVGLineElement>(".v2-number-line-vector, .v2-number-line-vector--history");
+    const forecastVector = panel.querySelector<SVGPathElement>(".v2-number-line-vector--forecast");
+    assert.equal(historyVector?.tagName.toLowerCase(), "path", "history vector uses curved path primitive");
+    assert.equal(forecastVector?.tagName.toLowerCase(), "path", "forecast vector uses curved path primitive");
+    const historyPath = parseQuadraticPath(historyVector?.getAttribute("d") ?? "");
+    const forecastPath = parseQuadraticPath(forecastVector?.getAttribute("d") ?? "");
+    assert.ok(historyPath, "history vector path uses quadratic format");
+    assert.ok(forecastPath, "forecast vector path uses quadratic format");
+    assert.equal(historyPath?.end.x, Number(currentLine?.getAttribute("x2") ?? Number.NaN), "history curve ends at current point x");
+    assert.equal(historyPath?.end.y, Number(currentLine?.getAttribute("y2") ?? Number.NaN), "history curve ends at current point y");
+    assert.equal(forecastPath?.start.x, Number(currentLine?.getAttribute("x2") ?? Number.NaN), "forecast curve starts at current point x");
+    assert.equal(forecastPath?.start.y, Number(currentLine?.getAttribute("y2") ?? Number.NaN), "forecast curve starts at current point y");
+    assert.equal(
+      Math.abs((historyPath?.control.y ?? 0) - (((historyPath?.start.y ?? 0) + (historyPath?.end.y ?? 0)) / 2)) > 0,
+      true,
+      "history curve control point deviates from midpoint to create curvature",
+    );
+    const historyMidpoint = {
+      x: ((historyPath?.start.x ?? 0) + (historyPath?.end.x ?? 0)) / 2,
+      y: ((historyPath?.start.y ?? 0) + (historyPath?.end.y ?? 0)) / 2,
+    };
+    assert.equal(
+      (historyPath?.control.x ?? 0) < historyMidpoint.x && (historyPath?.control.y ?? 0) < historyMidpoint.y,
+      true,
+      "history curve bends in the configured opposite direction for the reference history vector",
+    );
+    const layeredLines = panel.querySelectorAll<SVGElement>(".v2-number-line-vector, .v2-number-line-vector--history");
     assert.equal(layeredLines.length >= 2, true, "history mode renders at least two layered vectors");
     assert.equal(
       layeredLines[layeredLines.length - 1]?.classList.contains("v2-number-line-vector--history"),
@@ -282,7 +326,7 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
       },
     };
     renderNumberLineVisualizerPanel(harness.root, withThreeLayerTie);
-    const tieLayers = panel.querySelectorAll<SVGLineElement>(".v2-number-line-vector--history, .v2-number-line-vector, .v2-number-line-vector--forecast");
+    const tieLayers = panel.querySelectorAll<SVGElement>(".v2-number-line-vector--history, .v2-number-line-vector, .v2-number-line-vector--forecast");
     assert.equal(
       tieLayers[tieLayers.length - 1]?.classList.contains("v2-number-line-vector--forecast"),
       true,
@@ -301,11 +345,42 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
       },
     };
     renderNumberLineVisualizerPanel(harness.root, withTieMagnitudes);
-    const tieLayeredLines = panel.querySelectorAll<SVGLineElement>(".v2-number-line-vector, .v2-number-line-vector--history");
+    const tieLayeredLines = panel.querySelectorAll<SVGElement>(".v2-number-line-vector, .v2-number-line-vector--history");
     assert.equal(
       tieLayeredLines[tieLayeredLines.length - 1]?.classList.contains("v2-number-line-vector"),
       true,
       "equal magnitudes render newer current vector on top",
+    );
+
+    const withShortHistorySegment = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        buttonFlags: {
+          ...initialState().ui.buttonFlags,
+          [HISTORY_FLAG]: true,
+        },
+      },
+      calculator: {
+        ...initialState().calculator,
+        total: toRationalCalculatorValue({ num: 2n, den: 10n }),
+        rollEntries: [
+          { y: toRationalCalculatorValue({ num: 1n, den: 10n }) },
+          { y: toRationalCalculatorValue({ num: 2n, den: 10n }) },
+        ],
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, withShortHistorySegment);
+    const shortHistoryVector = panel.querySelector<SVGElement>(".v2-number-line-vector--history");
+    assert.equal(shortHistoryVector?.tagName.toLowerCase(), "line", "short history vectors fall back to straight line primitive");
+    const shortHistoryTip = panel.querySelector<SVGPolygonElement>(".v2-number-line-vector-tip--history");
+    assert.ok(shortHistoryTip, "history arrow tip remains rendered for short-segment fallback");
+    const shortHistoryLine = panel.querySelector<SVGLineElement>(".v2-number-line-vector--history");
+    const shortHistoryTipPoints = (shortHistoryTip?.getAttribute("points") ?? "").trim().split(/\s+/u)[0] ?? "";
+    assert.equal(
+      shortHistoryTipPoints,
+      `${shortHistoryLine?.getAttribute("x2") ?? ""},${shortHistoryLine?.getAttribute("y2") ?? ""}`,
+      "history arrow tip remains anchored at the history segment endpoint",
     );
     const withCycleOverlay = {
       ...initialState(),
