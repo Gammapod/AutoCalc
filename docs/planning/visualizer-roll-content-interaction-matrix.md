@@ -1,3 +1,4 @@
+Truth: 2
 # Visualizer x Roll Content Interaction Matrix
 
 Purpose: define how each visualizer should consume roll-derived content, so visualizer behavior is consistent and testable.

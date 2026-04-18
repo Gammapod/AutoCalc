@@ -1,4 +1,5 @@
-﻿# Unlock Predicate Condition Matrix
+﻿Truth: 2
+# Unlock Predicate Condition Matrix
 
 Purpose: planning scaffold for unlock-hint design and predicate cleanup. This is a predicate-type matrix (not per-unlock row) and intentionally does not list unlock effects/targets.
 

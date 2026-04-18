@@ -138,14 +138,13 @@ This document does not define future/planned UX changes that are not current inv
 2. New visualizer-host feature phases beyond current contracts.
 3. Style exploration themes and non-invariant visual direction.
 
-These belong in Truth 2 release planning (`docs/planning/Planned Releases.md`).
+These belong in Truth 2 release planning (`docs/planning/Planning Board.md`).
 
 ## 5. Legacy Reference Mapping
 
-The following docs remain useful context but are non-authoritative for UX invariants:
+Reference index for UX implementation touchpoints:
 
-- `docs/design_refs/UX Guidelines.md`
-- `docs/contracts/ui-domain-contract.md`
-- UX sections in `docs/design_refs/Implementation Details.md`
+- `docs/code-map.md` (dispatch, visualizer, and unlock-hint source paths)
+- `docs/planning/visualizer-roll-content-interaction-matrix.md` (Truth 2 rollout matrix)
 
 Authoritative source for UX invariants is this file plus `docs/functional-spec.md`.

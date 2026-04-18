@@ -1,3 +1,4 @@
+Truth: 2
 # Routine Maintenance Runbook
 
 Purpose: execute structured cleanup and refactor passes that improve cohesion, remove clutter, and preserve behavior by enforcing layer invariants and contracts.

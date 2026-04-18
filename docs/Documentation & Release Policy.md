@@ -4,7 +4,7 @@ Completed: Compared existing docs against functional spec and archived/discarded
 
 Completed: Consolidated remaining information into invariant-focused categories (`ux-spec`, `calculator-spec`, and related refs).
 
-Completed: Moved release planning content into `docs/planning/Planned Releases.md` and archive records.
+Completed: Moved release planning content into `docs/planning/Planning Board.md` and archive records.
 
 TODO: Review any information not processed by the above rules; flag as potentially deletable.
 
@@ -16,14 +16,14 @@ If any of documents from different truth levels contradict, the lower truth sour
 If documents from within the same truth level contradict, stop what you are doing and flag for review immediately.
 
 Highest truth
-    1 - This documentation polict, functional specification, UX specification, game design tuning docs, etc. Describes invariants, edited with scrutiny.
+    1 - This documentation policy, functional specification, UX specification, game design tuning docs, etc. Describes invariants, edited with scrutiny.
     2 - Archived release details, upcoming work, implementation runbooks. Authoritative, unless contradicted by a source of truth.
     3 - Loose feature notes, todo lists, anything lacking a truth label. If relevant to the current task you may ask for a decision about it; ignore otherwise. Do not delete by default.
     4 - Implementation plans for already-released features. Flag for review; if everything described in the doc matches archived release plans, the doc can be deleted instead of saved. 
 Lowest truth
 
 ## Planning Lanes and Trains
-Active planning lives in `docs/planning/Planned Releases.md` using versionless lanes.
+Active planning lives in `docs/planning/Planning Board.md` using versionless lanes.
 
 ### Lane definitions and required fields
 - `Now`: implementable slices ready for active execution. Every `Now` slice must include:

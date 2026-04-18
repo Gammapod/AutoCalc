@@ -7,7 +7,7 @@ _Last updated: 2026-04-11_
 ## Scope
 
 This file is the canonical spec for runtime math behavior and operator-domain policy.
-Release sequencing for implementation is maintained in `docs/planning/Planned Releases.md`.
+Release sequencing for implementation is maintained in `docs/planning/Planning Board.md`.
 
 ## Core invariants
 

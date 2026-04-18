@@ -12,7 +12,7 @@ This document specifies what AutoCalc MUST do as a game system.
 Precedence order:
 
 1. This functional specification
-2. Contract docs (for example `docs/contracts/ui-domain-contract.md`)
+2. Truth 1 companion specs (`docs/ux-spec.md`, `docs/math-spec.md`)
 3. Milestone/feature docs
 4. Implementation details
 
@@ -195,7 +195,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-CS-07 | Memory/control-matrix/lambda share one semantic visual family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract assertion |
 | FS-CS-08 | Errors use distinct semantic visual family | `ui/total-display`, `ui/roll-display` | integration | partial: behavior tested, family-level visual contract absent |
 | FS-CS-09 | Semantic families are not color-only | `ui-shell/menu-a11y` | integration | gap: no dedicated accessibility contract for semantic family cues |
-| FS-CS-10 | Key visual affordance invariants are UX-owned (`UX-KVA-01`..`UX-KVA-05`) | `docs/ux-spec.md`, `docs/contracts/ui-domain-contract.md` | spec governance | none |
+| FS-CS-10 | Key visual affordance invariants are UX-owned (`UX-KVA-01`..`UX-KVA-05`) | `docs/ux-spec.md` | spec governance | none |
 | FS-CS-11 | Key visual affordance behavior maps to executable UI suites | `ui/visualizer-fit-contract`, `ui-module/calculator-keypad-render`, `ui-module/storage-v2` | contract + integration | partial: coverage is selector/token/assertion driven rather than pixel snapshot baseline |
 | FS-FB-01 | Deterministic seed semantics | `reducer/input`, `contracts/slot-input-target-spec` | unit + contract | partial: target-spec scenarios are selective |
 | FS-FB-02 | Deterministic slot execution order | `reducer/input`, `contracts/slot-input-parity`, `contracts/action-event-current` | unit + contract + parity | none |
@@ -227,8 +227,8 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: preserves single-owner state boundaries and prohibits cross-interface mutation.
 - `FS-BND-02` (MUST): Calculator state consumes capability inputs but MUST NOT define unlock predicates/effects.
   Rationale: progression logic remains globally owned.
-- `FS-BND-03` (MUST): Shell-specific layout/gesture behavior may diverge, but emitted domain action intent and resulting state outcomes remain equivalent. Canonical dispatch-path specifics are defined in `docs/contracts/action-event-reducer-boundary.md`.
-  Rationale: interaction modality may diverge while dispatch-path truth remains centralized in one boundary contract.
+- `FS-BND-03` (MUST): Shell-specific layout/gesture behavior may diverge, but emitted domain action intent and resulting state outcomes remain equivalent. Canonical dispatch-path specifics remain centralized in app dispatch/reducer flow (see `docs/code-map.md`).
+  Rationale: interaction modality may diverge while dispatch-path truth remains centralized in one boundary flow.
 - `FS-BND-04` (SHALL): Contract-layer definitions remain implementation-independent from app/ui/infra/content wiring.
   Rationale: contracts should encode stable semantics, not runtime coupling.
 - `FS-BND-05` (MUST): Additional calculator creation/removal occurs through explicit domain actions/effects, except explicitly configured bootstrap materialization policy.
@@ -240,7 +240,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 |---|---|---|---|---|
 | FS-BND-01 | Global state owns progression/capability state; no direct mutation of calculator-owned runtime/execution state | `contracts/boundary-direct-mutation`, `v2/import-boundary`, `app/bootstrap-boundary` | contract + boundary | none |
 | FS-BND-02 | Calculator does not own unlock predicate/effect definitions | `contracts/content-provider-wiring`, `domain/button-registry-contract` | contract | partial: ownership tested indirectly |
-| FS-BND-03 | Shell divergence allowed; emitted intent and outcomes equivalent (dispatch-path specifics centralized in boundary contract) | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `contracts/action-event-current`, `contracts/ui-action-emission`, `contracts/domain-ui-effects-current`, `contracts/action-event-reducer-boundary` | integration + parity + contract | none |
+| FS-BND-03 | Shell divergence allowed; emitted intent and outcomes equivalent (dispatch-path specifics centralized in one boundary flow) | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `contracts/action-event-current`, `contracts/ui-action-emission`, `contracts/domain-ui-effects-current` | integration + parity + contract | none |
 | FS-BND-04 | Contracts remain implementation-independent | `app/bootstrap-boundary`, `contracts/shim-inventory`, `browser/import-safety` | boundary + contract | partial: semantic independence asserted via import boundaries |
 | FS-BND-05 | Calculator lifecycle changes are explicit action/effect or explicit bootstrap policy | `domain/unlock-engine`, `reducer/lifecycle`, `contracts/multi-calculator-invariants` | unit + contract | partial: lifecycle-event matrix can expand with additional calculators |
 

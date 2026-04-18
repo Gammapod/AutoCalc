@@ -40,7 +40,7 @@ This workflow is two-phase:
 
 ## Invariant/Truth 1 Updates
 - Files changed/validated:
-1. `docs/planning/Planned Releases.md` (new `Now` complex slices)
+1. `docs/planning/Planning Board.md` (new `Now` complex slices)
 2. `docs/planning/handoffs/handoff_complex_numbers_20260329.md` (planning signoff brief)
 - Summary of invariant deltas:
 1. `CalculatorValue` must gain a `complex` variant with component-level scalar support (`rational` or `expr`) for `re` and `im`.
@@ -61,7 +61,7 @@ This workflow is two-phase:
 3. `src/infra/persistence/saveCodecV20.ts`
 - Optional context files:
 1. `src/domain/currentTotalDomain.ts`
-2. `docs/planning/Planned Releases.md`
+2. `docs/planning/Planning Board.md`
 
 ## Explicit Out Of Scope
 - Items the receiving agent must not change:

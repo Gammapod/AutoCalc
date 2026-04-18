@@ -1,3 +1,4 @@
+Truth: 1
 # Code Map: Keys, Operators, Roll, and Visualizers
 
 Purpose: quick navigation for implementing or reviewing key behavior with minimal search churn.
@@ -29,6 +30,7 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 
 ### Key Presentation (Labels / Symbols)
 - `src/domain/keyPresentation.ts`
+- `src/domain/types.ts`
 - Owns: keyface labels, slot/operator display strings used in UI.
 
 ### Operation Semantics (Math)
@@ -36,6 +38,20 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - Typical search:
   - `rg --line-number "op_<name>|unary_<name>|exec_roll_inverse|euclid|eulog|residual|tuple" src/domain`
 - Owns: forward execution behavior, inverse integration, numeric/complex handling.
+
+### Dispatch and Reducer Boundary
+- `src/app/store.ts`
+- `src/domain/reducer.ts`
+- `src/domain/reducer.input.core.ts`
+- Owns: app dispatch entrypoint and canonical reducer/input routing.
+
+### Unlock Predicates and Hint Projection
+- `src/content/unlocks.catalog.ts`
+- `src/domain/unlockEngine.ts`
+- `src/domain/unlockHintProgress.ts`
+- `src/ui/shared/readModel.total.ts`
+- `src/ui/modules/calculator/totalDisplay.ts`
+- Owns: unlock predicate definitions, evaluator wiring, and total-strip hint projection.
 
 ### Calculator Keypad Rendering
 - `src/ui/modules/calculator/keypadRender.ts`
@@ -56,12 +72,24 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - `styles/visualizer-*.css`
 - Owns: specific visualizer output and visual layout.
 
+### Visualizer Roll/Projection Sources
+- `src/ui/modules/visualizers/registry.ts`
+- `src/ui/shared/readModel.rollFeed.ts`
+- `src/ui/shared/readModel.algebraic.ts`
+- `src/ui/shared/readModel.factorization.ts`
+- `src/domain/diagnostics.ts`
+- `src/domain/graphProjection.ts`
+- `src/ui/modules/visualizers/numberLineModel.ts`
+- `src/ui/modules/visualizers/circleRenderer.ts`
+- `src/ui/modules/calculator/totalDisplay.ts`
+- Owns: canonical visualizer IDs, roll-derived read models, diagnostics, and plot/vector projection paths.
+
 ## Invariant / Contract Docs (Docs Folder)
-- `docs/contracts/action-event-reducer-boundary.md`
-- `docs/contracts/ui-domain-contract.md`
 - `docs/ux-spec.md`
 - `docs/math-spec.md`
 - `docs/functional-spec.md`
+- `docs/planning/visualizer-roll-content-interaction-matrix.md`
+- `docs/planning/unlock-predicate-condition-matrix.md`
 
 Use these when behavior seems ambiguous; they are the first stop before inventing new policy.
 
