@@ -313,12 +313,15 @@ export type UnlockState = {
   steps: Record<StepKey, boolean>;
   visualizers: Record<VisualizerKey, boolean>;
   execution: Record<ExecKey, boolean>;
+  installedOnly: Partial<Record<Key, boolean>>;
   uiUnlocks: {
     storageVisible: boolean;
   };
   maxSlots: number;
   maxTotalDigits: number;
 };
+
+export type KeyCapability = "locked" | "installed_only" | "portable";
 
 export type AllocatorState = {
   maxPoints: number;
@@ -631,6 +634,11 @@ export type UnlockDigitEffect = {
   key: ValueExpressionKey;
 };
 
+export type UnlockInstalledOnlyEffect = {
+  type: "unlock_installed_only";
+  key: Key;
+};
+
 export type UnlockSecondSlotEffect = {
   type: "unlock_second_slot";
 };
@@ -666,6 +674,7 @@ export type UnlockEffect =
   | UnlockExecutionEffect
   | UnlockVisualizerEffect
   | UnlockDigitEffect
+  | UnlockInstalledOnlyEffect
   | UnlockSecondSlotEffect
   | UpgradeKeypadColumnEffect
   | UpgradeKeypadRowEffect

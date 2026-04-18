@@ -23,7 +23,8 @@ const isNonOperatorKeyUnlockEffect = (effect: UnlockEffect): boolean =>
   || effect.type === "unlock_execution"
   || effect.type === "unlock_visualizer"
   || effect.type === "unlock_utility"
-  || effect.type === "unlock_memory";
+  || effect.type === "unlock_memory"
+  || effect.type === "unlock_installed_only";
 
 const isLambdaPointUnlockEffect = (effect: UnlockEffect): boolean =>
   effect.type === "increase_allocator_max_points"

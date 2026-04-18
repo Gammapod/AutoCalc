@@ -60,8 +60,52 @@ export const runUiModuleCalculatorKeypadRenderTests = (): void => {
     });
     const oneButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("digit_1")}']`);
     assert.ok(oneButton, "renders configured single key");
+    assert.equal(oneButton?.querySelector(".key__capability-badge"), null, "portable key does not render capability badge");
     oneButton?.click();
     assert.equal(dispatches.length, 2, "single-key click dispatches normally");
+
+    const lockedKeyState: GameState = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key", key: k("digit_2") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, lockedKeyState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const lockedButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("digit_2")}']`);
+    assert.equal(lockedButton?.querySelector(".key__capability-badge")?.textContent, "\u{1F512}", "locked key renders locked padlock badge");
+
+    const installedOnlyState: GameState = {
+      ...initialState(),
+      ui: {
+        ...initialState().ui,
+        keyLayout: [{ kind: "key", key: k("digit_2") }],
+        keypadColumns: 1,
+        keypadRows: 1,
+      },
+      unlocks: {
+        ...initialState().unlocks,
+        installedOnly: {
+          ...initialState().unlocks.installedOnly,
+          [k("digit_2")]: true,
+        },
+      },
+    };
+    keysEl.innerHTML = "";
+    renderKeypadCells(harness.root, keysEl, installedOnlyState, dispatch, {
+      calculatorKeysLocked: false,
+      newlyUnlockedKeys: new Set(),
+      bindUnlockAnimationLock: () => {},
+    });
+    const installedOnlyButton = keysEl.querySelector<HTMLButtonElement>(`button[data-key='${k("digit_2")}']`);
+    assert.equal(installedOnlyButton?.querySelector(".key__capability-badge")?.textContent, "\u{1F513}", "installed-only key renders unlocked padlock badge");
 
     const withAutoEqualsOn: GameState = {
       ...singleKeyState,

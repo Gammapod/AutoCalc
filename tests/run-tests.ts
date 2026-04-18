@@ -10,6 +10,7 @@ import { runBootstrapDebugControlBindingsTests } from "./bootstrapDebugControlBi
 import { runReducerScalarLimitPolicyTests } from "./reducer.scalarLimitPolicy.test.js";
 import { runUiVisualizerUxSpecInvariantsTests } from "./uiVisualizerUxSpecInvariants.test.js";
 import { runUiModuleRatiosRendererV2Tests } from "./uiModule.ratiosRenderer.v2.test.js";
+import { runKeyCapabilityProgressionTests } from "./keyCapabilityProgression.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -23,6 +24,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["reducer/scalar-limit-policy", runReducerScalarLimitPolicyTests],
   ["ui/module-ratios-renderer-v2", runUiModuleRatiosRendererV2Tests],
   ["ui/visualizer-ux-spec-invariants", runUiVisualizerUxSpecInvariantsTests],
+  ["domain/key-capability-progression", runKeyCapabilityProgressionTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

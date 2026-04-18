@@ -87,6 +87,23 @@ const combineValueExpressionUnlocks = (
   ...valueCompose,
 });
 
+export const buildInstalledOnlyFromKeyLayout = (
+  keyLayout: LayoutCell[],
+  options: {
+    exclude?: ReadonlySet<Key>;
+  } = {},
+): Partial<Record<Key, boolean>> => {
+  const installedOnly: Partial<Record<Key, boolean>> = {};
+  const excluded = options.exclude ?? new Set<Key>();
+  for (const cell of keyLayout) {
+    if (cell.kind !== "key" || excluded.has(cell.key)) {
+      continue;
+    }
+    installedOnly[cell.key] = true;
+  }
+  return installedOnly;
+};
+
 export const defaultStorageKeys = (excluded: ReadonlySet<Key> = new Set<Key>()): KeyCell[] => {
   const keys: KeyCell[] = [];
   for (const cell of defaultKeyLayout()) {
@@ -229,6 +246,9 @@ export const initialState = (): GameState => {
     initialColumns,
     initialRows,
   );
+  const installedOnly = buildInstalledOnlyFromKeyLayout(keyLayout, {
+    exclude: new Set<Key>([KEY_ID.digit_1]),
+  });
   const seededKeyIds = new Set<Key>(keyLayout.flatMap((cell) => (cell.kind === "key" ? [cell.key] : [])));
 
   const base: GameState = {
@@ -277,6 +297,7 @@ export const initialState = (): GameState => {
       steps: buildUnlockRecord("steps"),
       visualizers: buildUnlockRecord("visualizers"),
       execution: buildUnlockRecord("execution"),
+      installedOnly,
       uiUnlocks: {
         storageVisible: true,
       },

@@ -152,3 +152,28 @@ export const iterUnlockedButtons = (state: GameState): Key[] =>
   buttonRegistry
     .filter((entry) => isButtonUnlocked(state, entry.key))
     .map((entry) => entry.key);
+
+export const setButtonInstalledOnly = (state: GameState, key: Key, enabled: boolean): GameState => {
+  const keyId = resolveKeyId(key);
+  const definition = getButtonDefinition(keyId);
+  if (!definition) {
+    return state;
+  }
+  const current = Boolean(state.unlocks.installedOnly[keyId]);
+  if (current === enabled) {
+    return state;
+  }
+  const nextInstalledOnly = { ...state.unlocks.installedOnly };
+  if (enabled) {
+    nextInstalledOnly[keyId] = true;
+  } else {
+    delete nextInstalledOnly[keyId];
+  }
+  return {
+    ...state,
+    unlocks: {
+      ...state.unlocks,
+      installedOnly: nextInstalledOnly,
+    },
+  };
+};

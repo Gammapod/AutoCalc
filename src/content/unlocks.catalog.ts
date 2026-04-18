@@ -8,6 +8,28 @@ import type { UnlockDefinition } from "../domain/types.js";
 
 export const unlockCatalog: UnlockDefinition[] = [
   {
+    id: "unlock_digit_1_installed_only_on_total_equals_1",
+    description: "Make 1 press-usable (installed-only) when total equals 1.",
+    predicate: { type: "total_equals", value: 1n },
+    effect: { type: "unlock_installed_only", key: KEY_ID.digit_1 },
+    sufficientKeySets: [[KEY_ID.exec_equals]],
+    once: true,
+    domainNodeId: "NN",
+    targetNodeId: "I1_installed_only_unlock",
+    targetLabel: "1",
+  },
+  {
+    id: "unlock_digit_1_portable_on_total_equals_2",
+    description: "Make 1 portable when total equals 2.",
+    predicate: { type: "total_equals", value: 2n },
+    effect: { type: "unlock_digit", key: KEY_ID.digit_1 },
+    sufficientKeySets: [[KEY_ID.exec_equals]],
+    once: true,
+    domainNodeId: "NN",
+    targetNodeId: "I1_portable_unlock",
+    targetLabel: "1",
+  },
+  {
     id: "unlock_4_on_linear_growth_run_7",
     description: "Unlock 4 after a linear growth run of length 7.",
     predicate: { type: "roll_ends_with_growth_order_run", order: "linear", length: 7 },

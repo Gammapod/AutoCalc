@@ -2,7 +2,7 @@ import { fromKeyLayoutArray, toIndexFromCoord } from "./keypadLayoutModel.js";
 import { applyUpgradeKeypadColumn, applyUpgradeKeypadRow } from "./reducer.layout.js";
 import { clearOperationEntry } from "./reducer.stateBuilders.js";
 import { STORAGE_COLUMNS } from "./state.js";
-import { setButtonUnlocked } from "./buttonStateAccess.js";
+import { setButtonInstalledOnly, setButtonUnlocked } from "./buttonStateAccess.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
 import { materializeCalculator } from "./multiCalculator.js";
@@ -135,6 +135,10 @@ const keyFromUnlockEffect = (
   >,
 ): Key => effect.key;
 
+const isInstalledOnlyKeyEffect = (
+  effect: UnlockEffect,
+): effect is Extract<UnlockEffect, { type: "unlock_installed_only" }> => effect.type === "unlock_installed_only";
+
 const toStorageWithLeadingUnlockedKey = (
   storage: Array<GameState["ui"]["storageLayout"][number]>,
   keyCell: NonNullable<GameState["ui"]["storageLayout"][number]>,
@@ -199,6 +203,9 @@ const removeStorageDuplicatesForKeyIfOnKeypad = (state: GameState, key: Key): Ga
 export const applyEffect = (effect: UnlockEffect, state: GameState): GameState => {
   if (isUnlockKeyEffect(effect)) {
     return setButtonUnlocked(state, keyFromUnlockEffect(effect), true);
+  }
+  if (isInstalledOnlyKeyEffect(effect)) {
+    return setButtonInstalledOnly(state, effect.key, true);
   }
   if (effect.type === "increase_max_total_digits") {
     // Capacity is allocator-projected from lambda control (delta); keep legacy effect as no-op.

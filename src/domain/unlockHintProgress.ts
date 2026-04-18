@@ -57,6 +57,7 @@ export type CatalogProgressCoverage = {
 };
 
 const BINARY_ONLY_PREDICATE_TYPES = new Set<UnlockPredicate["type"]>([
+  "total_equals",
   "roll_cycle_period_at_least",
   "roll_cycle_transient_at_least",
   "roll_cycle_diameter_at_least",
@@ -298,6 +299,8 @@ const getPartialProgress = (state: GameState, predicate: UnlockPredicate): Parti
 };
 
 const REDACTED_HINT_TEMPLATES_BY_UNLOCK_ID: Record<string, HintTemplate> = {
+  unlock_digit_1_installed_only_on_total_equals_1: { templateId: "hint.total.raise", text: "Increase your total steadily to open new options." },
+  unlock_digit_1_portable_on_total_equals_2: { templateId: "hint.total.raise", text: "Increase your total steadily to open new options." },
   unlock_4_on_linear_growth_run_7: { templateId: "hint.roll.pattern_linear", text: "Build a stable growth pattern across recent rolls." },
   unlock_plus_on_linear_growth_run_7: { templateId: "hint.roll.pattern_linear", text: "Build a stable growth pattern across recent rolls." },
   unlock_mul_on_positive_constant_step_run_7: { templateId: "hint.roll.pattern_step", text: "Aim for a repeatable step pattern in recent roll results." },

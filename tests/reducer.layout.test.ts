@@ -36,17 +36,20 @@ export const runReducerLayoutTests = (): void => {
   };
   const incCoord = coordFor(k("unary_inc"));
   const saveQuitCoord = coordFor(k("system_save_quit_main_menu"));
+  const digit1Coord = coordFor(k("digit_1"));
   const equalsCoord = coordFor(k("exec_equals"));
   const incIndex = toIndexFromCoord(incCoord, baseline.ui.keypadColumns, baseline.ui.keypadRows);
   const saveQuitIndex = toIndexFromCoord(saveQuitCoord, baseline.ui.keypadColumns, baseline.ui.keypadRows);
+  const digit1Index = toIndexFromCoord(digit1Coord, baseline.ui.keypadColumns, baseline.ui.keypadRows);
   const equalsIndex = toIndexFromCoord(equalsCoord, baseline.ui.keypadColumns, baseline.ui.keypadRows);
   baselineExpectedLayout[incIndex] = k("unary_inc");
   baselineExpectedLayout[saveQuitIndex] = k("system_save_quit_main_menu");
+  baselineExpectedLayout[digit1Index] = k("digit_1");
   baselineExpectedLayout[equalsIndex] = k("exec_equals");
   assert.deepEqual(
     baselineLayout.map((cell) => (cell.kind === "key" ? cell.key : null)),
     baselineExpectedLayout,
-    "default keypad starts with Save&Quit at R3C2, ++ at R1C2, and = at R1C1",
+    "default keypad starts with 1 at R3C1, Save&Quit at R3C2, ++ at R1C2, and = at R1C1",
   );
   assert.equal(
     baseline.ui.storageLayout.some((cell) => cell?.key === k("digit_1")),

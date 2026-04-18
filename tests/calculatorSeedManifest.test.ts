@@ -25,6 +25,7 @@ export const runCalculatorSeedManifestTests = (): void => {
   const fRows = fBase.ui.keypadRows;
   const fLayout = fBase.ui.keyLayout;
   assert.equal(keyAt(fLayout, fColumns, fRows, 3, 2), k("system_save_quit_main_menu"), "f seed places Save&Quit at R3C2");
+  assert.equal(keyAt(fLayout, fColumns, fRows, 3, 1), k("digit_1"), "f seed places digit_1 at R3C1");
   assert.equal(keyAt(fLayout, fColumns, fRows, 1, 2), k("unary_inc"), "f seed places increment at R1C2");
   assert.equal(keyAt(fLayout, fColumns, fRows, 1, 1), k("exec_equals"), "f seed places equals at R1C1");
 

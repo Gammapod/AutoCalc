@@ -19,6 +19,7 @@ export type CalculatorSeedSpec = {
 
 const fPlacements: readonly SeedPlacement[] = [
   { row: 3, col: 2, key: KEY_ID.system_save_quit_main_menu },
+  { row: 3, col: 1, key: KEY_ID.digit_1 },
   { row: 1, col: 2, key: KEY_ID.unary_inc },
   { row: 1, col: 1, key: KEY_ID.exec_equals },
 ];

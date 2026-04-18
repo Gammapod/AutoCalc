@@ -89,6 +89,7 @@ const keyFromEffect = (effect: UnlockEffect): Key | null => {
     || effect.type === "unlock_memory"
     || effect.type === "unlock_execution"
     || effect.type === "unlock_visualizer"
+    || effect.type === "unlock_installed_only"
   ) {
     return effect.key;
   }

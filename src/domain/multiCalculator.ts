@@ -3,7 +3,7 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 import { createSeededKeyLayout } from "./calculatorSeedManifest.js";
-import { BINARY_MODE_FLAG, createInitialUiDiagnosticsLastAction } from "./state.js";
+import { BINARY_MODE_FLAG, buildInstalledOnlyFromKeyLayout, createInitialUiDiagnosticsLastAction } from "./state.js";
 import { createDefaultCalculatorSettings } from "./settings.js";
 import {
   fromCalculatorSurface as fromSurfaceMapping,
@@ -89,6 +89,17 @@ const createCalculatorUi = (
     },
   };
 };
+
+const withInstalledOnlyFromLayout = (state: GameState, keyLayout: GameState["ui"]["keyLayout"]): GameState => ({
+  ...state,
+  unlocks: {
+    ...state.unlocks,
+    installedOnly: {
+      ...state.unlocks.installedOnly,
+      ...buildInstalledOnlyFromKeyLayout(keyLayout),
+    },
+  },
+});
 
 const createDefaultGCalculator = (): CalculatorInstanceState => {
   const calculatorId: CalculatorId = "g";
@@ -219,12 +230,12 @@ export const materializeCalculatorMenu = (state: GameState): GameState => {
     ...withInstances.calculators,
     menu: createDefaultMenuCalculator(),
   };
-  return {
+  return withInstalledOnlyFromLayout({
     ...withInstances,
     calculators: nextCalculators,
     calculatorOrder: resolveCalculatorOrder(nextCalculators),
     activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
-  };
+  }, nextCalculators.menu.ui.keyLayout);
 };
 
 export const materializeCalculatorG = (state: GameState): GameState => {
@@ -236,12 +247,12 @@ export const materializeCalculatorG = (state: GameState): GameState => {
     ...withInstances.calculators,
     g: createDefaultGCalculator(),
   };
-  return {
+  return withInstalledOnlyFromLayout({
     ...withInstances,
     calculators: nextCalculators,
     calculatorOrder: resolveCalculatorOrder(nextCalculators),
     activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
-  };
+  }, nextCalculators.g.ui.keyLayout);
 };
 
 export const materializeCalculatorFPrime = (state: GameState): GameState => {
@@ -253,12 +264,12 @@ export const materializeCalculatorFPrime = (state: GameState): GameState => {
     ...withInstances.calculators,
     f_prime: createDefaultFPrimeCalculator(),
   };
-  return {
+  return withInstalledOnlyFromLayout({
     ...withInstances,
     calculators: nextCalculators,
     calculatorOrder: resolveCalculatorOrder(nextCalculators),
     activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
-  };
+  }, nextCalculators.f_prime.ui.keyLayout);
 };
 
 export const materializeCalculatorGPrime = (state: GameState): GameState => {
@@ -270,12 +281,12 @@ export const materializeCalculatorGPrime = (state: GameState): GameState => {
     ...withInstances.calculators,
     g_prime: createDefaultGPrimeCalculator(),
   };
-  return {
+  return withInstalledOnlyFromLayout({
     ...withInstances,
     calculators: nextCalculators,
     calculatorOrder: resolveCalculatorOrder(nextCalculators),
     activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
-  };
+  }, nextCalculators.g_prime.ui.keyLayout);
 };
 
 export const materializeCalculator = (state: GameState, calculatorId: CalculatorId): GameState => {

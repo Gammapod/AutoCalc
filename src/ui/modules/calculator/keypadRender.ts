@@ -1,8 +1,8 @@
-import { isKeyUnlocked } from "../../../domain/keyUnlocks.js";
+import { isKeyUnlocked, resolveKeyCapability } from "../../../domain/keyUnlocks.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../../../domain/keypadLayoutModel.js";
 import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
 import { KEY_ID, resolveKeyId } from "../../../domain/keyPresentation.js";
-import type { Action, CalculatorId, GameState, Key, KeyCell } from "../../../domain/types.js";
+import type { Action, CalculatorId, GameState, Key, KeyCapability, KeyCell } from "../../../domain/types.js";
 import { bindDraggableCell, bindDropTargetCell } from "../input/dragDrop.js";
 import { bindQuickTapPressFeedback, shouldSuppressClick } from "../input/pressFeedback.js";
 import { buildKeyButtonAction, formatKeyCellLabel, isToggleFlagActive } from "../calculatorStorageCore.js";
@@ -16,6 +16,17 @@ const appendDebugSlotLabel = (cellElement: HTMLElement, label: string): void => 
   slotLabel.setAttribute("aria-hidden", "true");
   slotLabel.textContent = label;
   cellElement.appendChild(slotLabel);
+};
+
+const appendCapabilityBadge = (button: HTMLButtonElement, capability: KeyCapability): void => {
+  if (capability === "portable") {
+    return;
+  }
+  const badge = document.createElement("span");
+  badge.className = "key__capability-badge";
+  badge.setAttribute("aria-hidden", "true");
+  badge.textContent = capability === "locked" ? "\u{1F512}" : "\u{1F513}";
+  button.appendChild(badge);
 };
 
 const buildKeypadSlotLabels = (
@@ -69,13 +80,15 @@ export const renderKeypadCells = (
       continue;
     }
 
+    const capability = resolveKeyCapability(state, cell.key);
     const unlocked = isKeyUnlocked(state, cell.key);
+    const isPortable = capability === "portable";
     const button = document.createElement("button");
     button.type = "button";
     button.className = "key";
-    if (unlocked) {
+    if (isPortable) {
       button.classList.add("key--draggable");
-    } else {
+    } else if (capability === "locked") {
       button.classList.add("key--locked-capability");
     }
     button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
@@ -95,6 +108,7 @@ export const renderKeypadCells = (
     }
 
     setKeyButtonLabel(button, formatKeyCellLabel(state, cell));
+    appendCapabilityBadge(button, capability);
     const keypadToggleActive = isToggleFlagActive(state, cell);
     button.classList.toggle("key--toggle-active", keypadToggleActive);
     const keypadToggleAnim = readToggleAnimation(root, cell);
@@ -109,7 +123,7 @@ export const renderKeypadCells = (
     button.dataset.keypadCellId = slotId;
     button.dataset.key = cell.key;
     bindQuickTapPressFeedback(root, button);
-    if (unlocked) {
+    if (isPortable) {
       bindDraggableCell(root, button, state, dispatch, { surface: keypadSurface, index }, cell.key);
     }
     appendDebugSlotLabel(button, slotLabel);
