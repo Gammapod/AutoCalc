@@ -5,6 +5,21 @@ export const releaseNotes: ReleaseNotesCatalog = {
   // 'summary' should contain the main change, and 'bullets' should list smaller changes.
   entries: [
     {
+      id: "release_v1_1_0",
+      releaseVersion: "v1.1.0",
+      channel: "released",
+      title: "Complex Family Expansion and Ratio Visualizer",
+      summary:
+        "Complex-number play now has broader operator coverage, a dedicated ratio panel, and stronger visual parity across views.",
+      bullets: [
+        "Added the Ratios visualizer with real/imag numerator-denominator rendering, plus cycle/error and irrational-state handling.",
+        "Expanded complex families with new unary and binary operator entries, including reciprocal, conjugation, real/imag projection, and tuple-style division/log variants.",
+        "Circle and number-line visualizers now include richer overlays (imaginary-axis cues, cycle traces, and clearer error state signaling).",
+        "Unlock progression now supports staged digit unlock behavior for key 1 (installed-only first, then portable).",
+        "Execution and UI behavior are backed by expanded operator-matrix, scalar-limit, and visualizer contract coverage.",
+      ],
+    },
+    {
       id: "release_v1_0_0",
       releaseVersion: "v1.0.0",
       channel: "released",
