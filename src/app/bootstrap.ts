@@ -235,6 +235,9 @@ const syncCurrentMode = (mode: AppMode): void => {
     onUnlockAll: () => {
       store.dispatch({ type: "UNLOCK_ALL" });
     },
+    onToggleFlag: (flag) => {
+      store.dispatch({ type: "TOGGLE_FLAG", flag });
+    },
     onSetControlField: (calculatorId, field, value) => {
       store.dispatch({ type: "SET_CONTROL_FIELD", calculatorId, field, value });
     },

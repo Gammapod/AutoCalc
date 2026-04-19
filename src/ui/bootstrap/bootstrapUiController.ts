@@ -1,4 +1,5 @@
 import type { CalculatorId, ControlField, GameState } from "../../domain/types.js";
+import { DEBUG_UNLOCK_BYPASS_FLAG } from "../../domain/state.js";
 import type { AppMode } from "../../contracts/appMode.js";
 import type { AppServices } from "../../contracts/appServices.js";
 import type { BootstrapUiRefs } from "./bootstrapUiRefs.js";
@@ -20,6 +21,7 @@ type BootstrapUiControllerDeps = {
   getState: () => GameState;
   onResetRun: () => void;
   onUnlockAll: () => void;
+  onToggleFlag: (flag: string) => void;
   onSetControlField: (calculatorId: CalculatorId, field: ControlField, value: number) => void;
   onSetActiveCalculator: (calculatorId: CalculatorId) => void;
   onNavigateToUiShell: (url: string) => void;
@@ -108,6 +110,7 @@ export const createBootstrapUiController = ({
   getState,
   onResetRun,
   onUnlockAll,
+  onToggleFlag,
   onSetControlField,
   onSetActiveCalculator,
   onNavigateToUiShell,
@@ -135,6 +138,14 @@ export const createBootstrapUiController = ({
     document.body.setAttribute("data-debug-menu-open", isOpen ? "true" : "false");
   };
 
+  const syncDebugToggleFromState = (state: GameState): void => {
+    const debugUnlockBypassEnabled = Boolean(state.ui.buttonFlags[DEBUG_UNLOCK_BYPASS_FLAG]);
+    if (refs.debugToggle.checked !== debugUnlockBypassEnabled) {
+      refs.debugToggle.checked = debugUnlockBypassEnabled;
+    }
+    syncDebugMenuVisibility();
+  };
+
   const syncUiShellToggleLink = (): void => {
     const targetMode = getOppositeUiShellMode(uiShellMode);
     refs.toggleUiShellLink.textContent = targetMode === "desktop"
@@ -156,7 +167,7 @@ export const createBootstrapUiController = ({
     const selectedInstance = state.calculators?.[selectedCalculatorId];
     const selectedProjected = selectedInstance ?? state;
 
-    syncDebugMenuVisibility();
+    syncDebugToggleFromState(state);
     syncUiShellToggleLink();
     syncAppModeToggleLink();
 
@@ -183,7 +194,14 @@ export const createBootstrapUiController = ({
     );
   };
 
-  listen(refs.debugToggle, "change", syncDebugMenuVisibility);
+  listen(refs.debugToggle, "change", () => {
+    syncDebugMenuVisibility();
+    const state = getState();
+    const debugUnlockBypassEnabled = Boolean(state.ui.buttonFlags[DEBUG_UNLOCK_BYPASS_FLAG]);
+    if (debugUnlockBypassEnabled !== refs.debugToggle.checked) {
+      onToggleFlag(DEBUG_UNLOCK_BYPASS_FLAG);
+    }
+  });
 
   listen(refs.clearSaveButton, "click", () => {
     onResetRun();

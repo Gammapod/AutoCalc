@@ -10,6 +10,7 @@ import {
   HISTORY_FLAG,
   MOD_ZERO_TO_DELTA_FLAG,
   STEP_EXPANSION_FLAG,
+  DEBUG_UNLOCK_BYPASS_FLAG,
 } from "../../../domain/state.js";
 import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
 import { KEY_ID, resolveKeyId } from "../../../domain/keyPresentation.js";
@@ -17,7 +18,6 @@ import { resolveKeyCapability } from "../../../domain/keyUnlocks.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
 import { formatKeyCellLabel, getToggleAnimationIdForCell, isToggleFlagActive } from "../calculatorStorageCore.js";
 import { readToggleAnimation as readToggleAnimationById } from "../calculator/runtime.js";
-import { isDebugMenuOpen } from "../../shared/debugMode.js";
 import {
   buildStorageRenderOrder,
   buildStorageSortToggleSequence,
@@ -396,7 +396,9 @@ export const renderStorageV2Module = (
     }
   }
 
-  const storageRenderOrder = buildStorageRenderOrder(state, { includeLocked: isDebugMenuOpen() });
+  const storageRenderOrder = buildStorageRenderOrder(state, {
+    includeLocked: Boolean(state.ui.buttonFlags[DEBUG_UNLOCK_BYPASS_FLAG]),
+  });
   storageEl.dataset.storageSlotCount = storageRenderOrder.length.toString();
   ensureStorageGridObserver(root, storageEl);
   const storageColumns = syncStorageGridMetrics(storageEl);

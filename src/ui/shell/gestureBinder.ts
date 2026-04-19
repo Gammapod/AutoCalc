@@ -2,9 +2,9 @@ import { canStartTouchRearrange, shouldCloseMenuFromSwipe } from "../shellGestur
 import { createShellController } from "../shellController.js";
 import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRearrangeTarget } from "../touchRearrangeController.js";
 import type { Action, GameState, Key, LayoutSurface } from "../../domain/types.js";
+import { DEBUG_UNLOCK_BYPASS_FLAG } from "../../domain/state.js";
 import { buildStorageRenderOrder } from "../modules/storage/viewModel.js";
 import { getKeyLayoutForSurface, isAnyKeypadSurface } from "../../domain/calculatorSurface.js";
-import { isDebugMenuOpen } from "../shared/debugMode.js";
 import type { DrawerDragTarget, ShellRefs } from "./types.js";
 import type { ShellRenderRuntimeState } from "./runtimeState.js";
 import { createMenuPointerSession, createViewportPointerSession, updatePointerSessionTrail } from "./pointerSession.js";
@@ -39,7 +39,9 @@ const readKeyAtSurfaceIndex = (state: GameState, surface: LayoutSurface, index: 
     }
     return cell.key;
   }
-  const key = buildStorageRenderOrder(state, { includeLocked: isDebugMenuOpen() })[index];
+  const key = buildStorageRenderOrder(state, {
+    includeLocked: Boolean(state.ui.buttonFlags[DEBUG_UNLOCK_BYPASS_FLAG]),
+  })[index];
   return key ?? null;
 };
 

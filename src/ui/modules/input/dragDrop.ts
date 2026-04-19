@@ -1,7 +1,7 @@
 import type { Action, GameState, Key, LayoutSurface } from "../../../domain/types.js";
+import { DEBUG_UNLOCK_BYPASS_FLAG } from "../../../domain/state.js";
 import { classifyDropAction as classifyDomainDropAction } from "../../../domain/layoutDragDrop.js";
 import { getInputModuleState, type DragTarget, type DropAction } from "./runtime.js";
-import { isDebugMenuOpen } from "../../shared/debugMode.js";
 
 const DRAG_START_THRESHOLD_PX = 6;
 const DRAG_CLICK_SUPPRESS_MS = 220;
@@ -11,6 +11,9 @@ export const buildLayoutDropDispatchAction = (
   sourceKey: Key,
   target: { surface: LayoutSurface; index: number } | null,
   action: DropAction,
+  options: {
+    allowLockedInstall?: boolean;
+  } = {},
 ): Action => {
   if (action === "uninstall") {
     return {
@@ -36,7 +39,7 @@ export const buildLayoutDropDispatchAction = (
       key: sourceKey,
       toSurface: target.surface,
       toIndex: target.index,
-      ...(isDebugMenuOpen() ? { allowLocked: true } : {}),
+      ...(options.allowLockedInstall ? { allowLocked: true } : {}),
     };
   }
   if (!target) {
@@ -70,8 +73,9 @@ export const classifyDropAction = (
   source: DragTarget & { key?: Key },
   destination: DragTarget | null,
 ): DropAction | null => {
+  const debugUnlockBypass = Boolean(state.ui.buttonFlags[DEBUG_UNLOCK_BYPASS_FLAG]);
   return classifyDomainDropAction(state, source, destination, source.key ?? null, {
-    debugUnlockBypass: isDebugMenuOpen(),
+    debugUnlockBypass,
   });
 };
 
@@ -183,7 +187,15 @@ const onDragUp = (root: Element): void => {
   }
   const dragSession = state.dragSession;
   if (dragSession.active && dragSession.target && dragSession.targetAction) {
-    dragSession.dispatch(buildLayoutDropDispatchAction(dragSession.source, dragSession.key, dragSession.target, dragSession.targetAction));
+    dragSession.dispatch(buildLayoutDropDispatchAction(
+      dragSession.source,
+      dragSession.key,
+      dragSession.target,
+      dragSession.targetAction,
+      {
+        allowLockedInstall: Boolean(dragSession.state.ui.buttonFlags[DEBUG_UNLOCK_BYPASS_FLAG]),
+      },
+    ));
   } else if (
     dragSession.active
     && !dragSession.target

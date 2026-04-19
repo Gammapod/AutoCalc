@@ -36,6 +36,7 @@ export const BINARY_MODE_FLAG = "settings.binary_mode";
 export const HISTORY_FLAG = "settings.history";
 export const FORECAST_FLAG = "settings.forecast";
 export const CYCLE_FLAG = "settings.cycle";
+export const DEBUG_UNLOCK_BYPASS_FLAG = "debug.unlock_bypass";
 export const KEYPAD_DIM_MIN = 1;
 export const KEYPAD_DIM_MAX = 12;
 export const KEYPAD_DEFAULT_COLUMNS = Math.max(
