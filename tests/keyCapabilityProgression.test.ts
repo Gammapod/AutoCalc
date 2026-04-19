@@ -7,6 +7,7 @@ import { applyUnlocks } from "../src/domain/unlocks.js";
 import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { buildStorageRenderOrder } from "../src/ui/modules/storage/viewModel.js";
 import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
+import { classifyDropAction } from "../src/domain/layoutDragDrop.js";
 import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
 import { reducer } from "../src/domain/reducer.js";
 import { k } from "./support/keyCompat.js";
@@ -37,6 +38,11 @@ export const runKeyCapabilityProgressionTests = (): void => {
   );
   assert.equal(resolveKeyCapability(installedOnlyUnlocked, k("digit_1")), "installed_only", "digit_1 becomes installed_only when total == 1");
   assert.equal(buildStorageRenderOrder(installedOnlyUnlocked).includes(k("digit_1")), false, "installed_only keys are excluded from storage");
+  assert.equal(
+    buildStorageRenderOrder(installedOnlyUnlocked, { includeLocked: true }).includes(k("digit_1")),
+    true,
+    "debug storage mode can include installed_only keys",
+  );
 
   const emptyStorageIndex = installedOnlyUnlocked.ui.storageLayout.findIndex((cell) => cell === null);
   assert.ok(emptyStorageIndex >= 0, "fixture has an empty storage slot");
@@ -52,18 +58,26 @@ export const runKeyCapabilityProgressionTests = (): void => {
     { surface: "keypad", index: saveQuitIndex },
   );
   assert.deepEqual(installedOnlySwap, { allowed: true, action: "swap" }, "installed_only key can swap within its calculator");
+  const installedOnlySwapWithDebugBypass = classifyDropAction(
+    installedOnlyUnlocked,
+    { surface: "keypad", index: digit1Index },
+    { surface: "keypad", index: saveQuitIndex },
+    k("digit_1"),
+    { debugUnlockBypass: true },
+  );
+  assert.equal(installedOnlySwapWithDebugBypass, "swap", "debug drag bypass allows rearranging installed_only keypad keys");
 
   const portableUnlocked = applyUnlocks(
     {
       ...installedOnlyUnlocked,
       calculator: {
         ...installedOnlyUnlocked.calculator,
-        total: r(2n),
+        total: r(9n),
       },
     },
     unlockCatalog,
   );
-  assert.equal(resolveKeyCapability(portableUnlocked, k("digit_1")), "portable", "digit_1 becomes portable when total == 2");
+  assert.equal(resolveKeyCapability(portableUnlocked, k("digit_1")), "portable", "digit_1 becomes portable when total == 9");
   assert.equal(buildStorageRenderOrder(portableUnlocked).includes(k("digit_1")), true, "portable keys appear in storage");
   const portableToStorage = evaluateLayoutDrop(
     portableUnlocked,

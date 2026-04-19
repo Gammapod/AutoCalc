@@ -457,11 +457,15 @@ export const applyInstallKeyFromStorage = (
   key: KeyCell["key"],
   toSurface: LayoutSurface,
   toIndex: number,
+  options: {
+    allowLocked?: boolean;
+  } = {},
 ): GameState => {
   if (!isKeypadSurface(toSurface) || !hasValidSurfaceIndex(state, toSurface, toIndex)) {
     return state;
   }
-  if (!isKeyUnlocked(state, key)) {
+  const allowLocked = options.allowLocked ?? false;
+  if (!allowLocked && !isKeyUnlocked(state, key)) {
     return state;
   }
   const destinationUi = getSurfaceUi(state, toSurface);

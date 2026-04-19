@@ -4,6 +4,7 @@ import { createTouchRearrangeController, type TouchRearrangeSource, type TouchRe
 import type { Action, GameState, Key, LayoutSurface } from "../../domain/types.js";
 import { buildStorageRenderOrder } from "../modules/storage/viewModel.js";
 import { getKeyLayoutForSurface, isAnyKeypadSurface } from "../../domain/calculatorSurface.js";
+import { isDebugMenuOpen } from "../shared/debugMode.js";
 import type { DrawerDragTarget, ShellRefs } from "./types.js";
 import type { ShellRenderRuntimeState } from "./runtimeState.js";
 import { createMenuPointerSession, createViewportPointerSession, updatePointerSessionTrail } from "./pointerSession.js";
@@ -38,7 +39,7 @@ const readKeyAtSurfaceIndex = (state: GameState, surface: LayoutSurface, index: 
     }
     return cell.key;
   }
-  const key = buildStorageRenderOrder(state)[index];
+  const key = buildStorageRenderOrder(state, { includeLocked: isDebugMenuOpen() })[index];
   return key ?? null;
 };
 

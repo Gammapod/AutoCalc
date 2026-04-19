@@ -7,6 +7,13 @@ export type GraphOverlayColors = {
   labelColor: string;
   cycleColor: string;
   cycleImaginaryColor: string;
+  targetLineColor: string;
+  targetLineHighlightColor: string;
+};
+
+export type GraphTargetYLineOverlay = {
+  y: number;
+  opacity01: number;
 };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -98,6 +105,7 @@ export const renderGraphOverlay = (
   colors: GraphOverlayColors,
   cycleSegments: readonly GraphCycleOverlaySegment[] = [],
   imaginaryCycleSegments: readonly GraphCycleOverlaySegment[] = [],
+  targetYLine: GraphTargetYLineOverlay | null = null,
 ): void => {
   const screen = root.querySelector<HTMLElement>("[data-grapher-device] .grapher-screen");
   if (!screen || !screen.ownerDocument) {
@@ -188,6 +196,38 @@ export const renderGraphOverlay = (
       "middle",
     ),
   );
+
+  if (targetYLine && Number.isFinite(targetYLine.y)) {
+    const clampedOpacity = Math.max(0, Math.min(1, targetYLine.opacity01));
+    const targetLineY = yToPx(layout, targetYLine.y);
+    const targetLineBorder = line(
+      doc,
+      layout.plot.left - overhang,
+      targetLineY,
+      layout.plot.right + overhang,
+      targetLineY,
+      colors.targetLineHighlightColor,
+      2.4,
+    );
+    targetLineBorder.setAttribute("class", "v2-grapher-target-y-line-border");
+    targetLineBorder.setAttribute("stroke-opacity", Math.min(1, clampedOpacity * 0.95).toFixed(3));
+    targetLineBorder.setAttribute("stroke-linecap", "round");
+    overlay.appendChild(targetLineBorder);
+
+    const targetLineCore = line(
+      doc,
+      layout.plot.left - overhang,
+      targetLineY,
+      layout.plot.right + overhang,
+      targetLineY,
+      colors.targetLineColor,
+      1.3,
+    );
+    targetLineCore.setAttribute("class", "v2-grapher-target-y-line");
+    targetLineCore.setAttribute("stroke-opacity", clampedOpacity.toFixed(3));
+    targetLineCore.setAttribute("stroke-linecap", "round");
+    overlay.appendChild(targetLineCore);
+  }
 
   const appendCycleSegments = (
     segments: readonly GraphCycleOverlaySegment[],

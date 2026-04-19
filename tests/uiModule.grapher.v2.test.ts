@@ -285,6 +285,79 @@ export const runUiModuleGrapherV2Tests = (): void => {
       },
     };
 
+    const withTargetYLineVisible: GameState = {
+      ...withGraphVisible,
+      settings: {
+        ...withGraphVisible.settings,
+        forecast: "on",
+      },
+      calculator: {
+        ...withGraphVisible.calculator,
+        total: toRationalCalculatorValue({ num: 0n, den: 1n }),
+        rollEntries: [{ y: toRationalCalculatorValue({ num: 0n, den: 1n }) }],
+      },
+      completedUnlockIds: [],
+    };
+    renderGrapherV2Module(harness.root, withTargetYLineVisible);
+    const visibleTargetLine = harness.root.querySelector<SVGLineElement>(".v2-grapher-target-y-line");
+    const visibleTargetLineBorder = harness.root.querySelector<SVGLineElement>(".v2-grapher-target-y-line-border");
+    assert.ok(visibleTargetLine, "graph target y-line hint renders when forecast is on and unresolved target is near");
+    assert.ok(visibleTargetLineBorder, "graph target y-line hint renders a white border line");
+    const visibleOpacity = Number(visibleTargetLine?.getAttribute("stroke-opacity") ?? "0");
+    assert.equal(visibleOpacity > 0, true, "graph target y-line hint renders with non-zero opacity when in-range");
+
+    const withTargetYLineForecastOff: GameState = {
+      ...withTargetYLineVisible,
+      settings: {
+        ...withTargetYLineVisible.settings,
+        forecast: "off",
+      },
+    };
+    renderGrapherV2Module(harness.root, withTargetYLineForecastOff);
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-target-y-line").length,
+      0,
+      "graph target y-line hint is hidden when forecast is off",
+    );
+
+    const withTargetYLineFar: GameState = {
+      ...withTargetYLineVisible,
+      calculator: {
+        ...withTargetYLineVisible.calculator,
+        total: toRationalCalculatorValue({ num: 10n, den: 1n }),
+      },
+    };
+    renderGrapherV2Module(harness.root, withTargetYLineFar);
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-target-y-line").length,
+      0,
+      "graph target y-line hint is hidden when outside nearness radius",
+    );
+
+    const withTargetYLineNearer: GameState = {
+      ...withTargetYLineVisible,
+      calculator: {
+        ...withTargetYLineVisible.calculator,
+        total: toRationalCalculatorValue({ num: 0n, den: 1n }),
+      },
+    };
+    renderGrapherV2Module(harness.root, withTargetYLineNearer);
+    const nearOpacity = Number(harness.root.querySelector<SVGLineElement>(".v2-grapher-target-y-line")?.getAttribute("stroke-opacity") ?? "0");
+    const withTargetYLineFarther: GameState = {
+      ...withTargetYLineVisible,
+      calculator: {
+        ...withTargetYLineVisible.calculator,
+        total: toRationalCalculatorValue({ num: -1n, den: 1n }),
+      },
+    };
+    renderGrapherV2Module(harness.root, withTargetYLineFarther);
+    const fartherOpacity = Number(harness.root.querySelector<SVGLineElement>(".v2-grapher-target-y-line")?.getAttribute("stroke-opacity") ?? "0");
+    assert.equal(
+      nearOpacity > fartherOpacity,
+      true,
+      "graph target y-line hint opacity increases as current total gets closer to target",
+    );
+
     renderGrapherV2Module(harness.root, withCycleOverlay);
     const cycleLines = harness.root.querySelectorAll<SVGLineElement>(".v2-grapher-cycle-line");
     const chainLines = harness.root.querySelectorAll<SVGLineElement>(".v2-grapher-cycle-line--chain");
@@ -292,6 +365,26 @@ export const runUiModuleGrapherV2Tests = (): void => {
     assert.equal(cycleLines.length >= 1, true, "cycle overlay renders amber line segments when history and cycle are active");
     assert.equal(chainLines.length >= 1, true, "cycle overlay renders chain segments");
     assert.equal(closureLines.length, 1, "cycle overlay renders one closure line for equal-value span endpoints");
+
+    const withCycleAndTargetHint: GameState = {
+      ...withCycleOverlay,
+      settings: {
+        ...withCycleOverlay.settings,
+        forecast: "on",
+      },
+      completedUnlockIds: [],
+    };
+    renderGrapherV2Module(harness.root, withCycleAndTargetHint);
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-cycle-line").length >= 1,
+      true,
+      "cycle overlay remains present when graph target y-line hint is active",
+    );
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-target-y-line").length >= 1,
+      true,
+      "graph target y-line hint coexists with cycle overlay",
+    );
 
     const withComplexCycleOverlay: GameState = {
       ...withCycleOverlay,

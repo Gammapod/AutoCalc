@@ -40,6 +40,8 @@ export const runStorageDisplayTests = (): void => {
   const position = (key: string): number => order.indexOf(key as never);
   assert.ok(position(k("digit_1")) >= 0 && position(k("digit_3")) >= 0, "unlocked keys are present in render order");
   assert.equal(position(k("op_add")), -1, "locked keys are not rendered in palette order");
+  const debugOrder = buildStorageRenderOrder(orderedState, { includeLocked: true });
+  assert.ok(debugOrder.indexOf(k("op_add") as never) >= 0, "debug palette can include locked keys");
 
   const sortedByExecution: GameState = {
     ...orderedState,

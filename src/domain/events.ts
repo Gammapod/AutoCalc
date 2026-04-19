@@ -36,6 +36,7 @@ export type DomainEvent =
       toSurface: LayoutSurface;
       toIndex: number;
       calculatorId?: CalculatorId;
+      allowLocked?: boolean;
     }
   | {
       type: "LayoutKeyUninstalled";
@@ -101,6 +102,7 @@ export const eventFromAction = (action: Action): DomainEvent => {
       toSurface: action.toSurface,
       toIndex: action.toIndex,
       ...(action.calculatorId ? { calculatorId: action.calculatorId } : {}),
+      ...(action.allowLocked ? { allowLocked: true } : {}),
     };
   }
   if (action.type === "UNINSTALL_LAYOUT_KEY") {
@@ -189,6 +191,7 @@ export const actionFromEvent = (event: DomainEvent): Action => {
       toSurface: event.toSurface,
       toIndex: event.toIndex,
       ...(event.calculatorId ? { calculatorId: event.calculatorId } : {}),
+      ...(event.allowLocked ? { allowLocked: true } : {}),
     };
   }
   if (event.type === "LayoutKeyUninstalled") {

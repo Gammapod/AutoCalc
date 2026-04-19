@@ -1,6 +1,7 @@
 import type { Action, GameState, Key, LayoutSurface } from "../../../domain/types.js";
 import { classifyDropAction as classifyDomainDropAction } from "../../../domain/layoutDragDrop.js";
 import { getInputModuleState, type DragTarget, type DropAction } from "./runtime.js";
+import { isDebugMenuOpen } from "../../shared/debugMode.js";
 
 const DRAG_START_THRESHOLD_PX = 6;
 const DRAG_CLICK_SUPPRESS_MS = 220;
@@ -35,6 +36,7 @@ export const buildLayoutDropDispatchAction = (
       key: sourceKey,
       toSurface: target.surface,
       toIndex: target.index,
+      ...(isDebugMenuOpen() ? { allowLocked: true } : {}),
     };
   }
   if (!target) {
@@ -68,7 +70,9 @@ export const classifyDropAction = (
   source: DragTarget & { key?: Key },
   destination: DragTarget | null,
 ): DropAction | null => {
-  return classifyDomainDropAction(state, source, destination, source.key ?? null);
+  return classifyDomainDropAction(state, source, destination, source.key ?? null, {
+    debugUnlockBypass: isDebugMenuOpen(),
+  });
 };
 
 const parseDragTarget = (value: unknown): DragTarget | null => {

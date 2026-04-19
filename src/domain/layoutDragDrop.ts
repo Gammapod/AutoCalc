@@ -29,15 +29,6 @@ const readKeyAtSource = (
   return cell.key;
 };
 
-const isValidKeypadDestination = (state: GameState, destination: DragTarget): boolean => {
-  const keyLayout = getKeyLayoutForSurface(state, destination.surface);
-  const destinationCell = keyLayout?.[destination.index];
-  if (!destinationCell) {
-    return false;
-  }
-  return destinationCell.kind !== "key" || isKeyUnlocked(state, destinationCell.key);
-};
-
 const hasInstalledKeyOnSurface = (state: GameState, surface: LayoutSurface, key: Key): boolean => {
   const keyLayout = getKeyLayoutForSurface(state, surface);
   if (!keyLayout) {
@@ -56,9 +47,14 @@ export const classifyDropAction = (
   source: DragTarget,
   destination: DragTarget | null,
   sourceKey: Key | null = null,
+  options: {
+    debugUnlockBypass?: boolean;
+  } = {},
 ): LayoutDragDropAction | null => {
+  const debugUnlockBypass = options.debugUnlockBypass ?? false;
+  const isKeyTreatableAsUnlocked = (key: Key): boolean => debugUnlockBypass || isKeyUnlocked(state, key);
   const key = readKeyAtSource(state, source, sourceKey);
-  if (!key || !isKeyUnlocked(state, key)) {
+  if (!key || !isKeyTreatableAsUnlocked(key)) {
     return null;
   }
 
@@ -81,7 +77,9 @@ export const classifyDropAction = (
     return null;
   }
 
-  if (!isValidKeypadDestination(state, destination)) {
+  const destinationLayout = getKeyLayoutForSurface(state, destination.surface);
+  const destinationCell = destinationLayout?.[destination.index];
+  if (!destinationCell || (destinationCell.kind === "key" && !isKeyTreatableAsUnlocked(destinationCell.key))) {
     return null;
   }
 

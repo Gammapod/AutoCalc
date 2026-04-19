@@ -17,6 +17,7 @@ import {
 } from "./visualizers/numberLineModel.js";
 import { resolveGraphLayout } from "./visualizers/graphLayoutModel.js";
 import { clearGraphOverlay, renderGraphOverlay } from "./visualizers/graphOverlayRenderer.js";
+import { resolveGraphTargetYLineHint } from "./visualizers/graphHintProjection.js";
 
 type GraphDataset = {
   data: GraphPoint[];
@@ -258,6 +259,10 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     cycle,
     xWindow: layout.xDomain,
   });
+  const targetYLineHint =
+    state.settings.forecast === "on"
+      ? resolveGraphTargetYLineHint(state)
+      : null;
 
   const options = buildGraphOptions(hasPoints, layout);
   const documentRef = root.ownerDocument ?? null;
@@ -341,11 +346,17 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
   const axisColor = resolveUxRoleColor("default", { document: documentRef, alpha01: 0.75 });
   const cycleColor = resolveUxRoleColor("analysis", { document: documentRef });
   const cycleImaginaryColor = resolveUxRoleColor("imaginary", { document: documentRef });
+  const targetLineColor = resolveUxRoleColor("unlock_hint", { document: documentRef });
   renderGraphOverlay(root, layout, {
     gridColor,
     axisColor,
     labelColor: defaultColor,
     cycleColor,
     cycleImaginaryColor,
-  }, cycleOverlaySegments, imaginaryCycleOverlaySegments);
+    targetLineColor,
+    targetLineHighlightColor: "#ffffff",
+  }, cycleOverlaySegments, imaginaryCycleOverlaySegments, targetYLineHint ? {
+    y: targetYLineHint.targetY,
+    opacity01: targetYLineHint.opacity01,
+  } : null);
 };

@@ -61,6 +61,7 @@
         --ux-role-error-color: #ff5c5c;
         --ux-role-imaginary-color: #be8ee8;
         --ux-role-unlock-color: var(--ux-role-info, #79c3ff);
+        --ux-role-unlock-hint-color: #ffd22e;
         --ux-role-analysis-color: #f2cf57;
         --ux-role-history-color: #ff8ccb;
         --ux-role-step-color: #f4f7fb;
@@ -3275,6 +3276,10 @@
 
       [data-ux-role="unlock"] {
         color: var(--ux-role-unlock-color);
+      }
+
+      [data-ux-role="unlock_hint"] {
+        color: var(--ux-role-unlock-hint-color);
       }
 
       [data-ux-role="analysis"] {

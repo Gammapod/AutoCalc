@@ -173,6 +173,7 @@ const handleLayoutMutationAction = (state: GameState, action: Action): GameState
       action.key,
       action.toSurface,
       action.toIndex,
+      { allowLocked: action.allowLocked },
     );
     if (installed !== state) {
       if (destinationBefore?.kind === "key") {

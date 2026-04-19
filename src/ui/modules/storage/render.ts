@@ -13,9 +13,11 @@ import {
 } from "../../../domain/state.js";
 import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
 import { KEY_ID, resolveKeyId } from "../../../domain/keyPresentation.js";
+import { resolveKeyCapability } from "../../../domain/keyUnlocks.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
 import { formatKeyCellLabel, getToggleAnimationIdForCell, isToggleFlagActive } from "../calculatorStorageCore.js";
 import { readToggleAnimation as readToggleAnimationById } from "../calculator/runtime.js";
+import { isDebugMenuOpen } from "../../shared/debugMode.js";
 import {
   buildStorageRenderOrder,
   buildStorageSortToggleSequence,
@@ -247,6 +249,10 @@ const renderStorageButton = (
   const button = document.createElement("button");
   button.type = "button";
   button.className = "key key--storage key--storage-unlocked key--draggable";
+  const capability = resolveKeyCapability(state, cell.key);
+  if (capability === "locked") {
+    button.classList.add("key--locked-capability");
+  }
   button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
   if (cell.key === KEY_ID.const_bottom) {
     button.classList.add("key--value-bottom");
@@ -390,7 +396,7 @@ export const renderStorageV2Module = (
     }
   }
 
-  const storageRenderOrder = buildStorageRenderOrder(state);
+  const storageRenderOrder = buildStorageRenderOrder(state, { includeLocked: isDebugMenuOpen() });
   storageEl.dataset.storageSlotCount = storageRenderOrder.length.toString();
   ensureStorageGridObserver(root, storageEl);
   const storageColumns = syncStorageGridMetrics(storageEl);

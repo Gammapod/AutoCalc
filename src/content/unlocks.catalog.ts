@@ -20,8 +20,8 @@ export const unlockCatalog: UnlockDefinition[] = [
   },
   {
     id: "unlock_digit_1_portable_on_total_equals_2",
-    description: "Make 1 portable when total equals 2.",
-    predicate: { type: "total_equals", value: 2n },
+    description: "Make 1 portable when total equals 9.",
+    predicate: { type: "total_equals", value: 9n },
     effect: { type: "unlock_digit", key: KEY_ID.digit_1 },
     sufficientKeySets: [[KEY_ID.exec_equals]],
     once: true,

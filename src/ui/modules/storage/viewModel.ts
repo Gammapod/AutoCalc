@@ -74,15 +74,21 @@ const isKeyInFilterGroup = (keyGroup: KeyVisualGroup, filterGroup: StorageFilter
   return keyGroup === filterGroup;
 };
 
-export const buildStorageRenderOrder = (state: GameState): Key[] => {
+export const buildStorageRenderOrder = (
+  state: GameState,
+  options: {
+    includeLocked?: boolean;
+  } = {},
+): Key[] => {
   const filteredUnlocked: Key[] = [];
   const activeSortGroup = getActiveStorageSortGroup(state);
+  const includeLocked = options.includeLocked ?? false;
 
   for (const entry of buttonRegistry) {
     if (REMOVED_STORAGE_KEYS.has(entry.key)) {
       continue;
     }
-    if (!isKeyUnlocked(state, entry.key)) {
+    if (!includeLocked && !isKeyUnlocked(state, entry.key)) {
       continue;
     }
     const keyGroup = getKeyVisualGroup(entry.key);

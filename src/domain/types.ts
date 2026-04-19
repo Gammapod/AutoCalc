@@ -810,6 +810,7 @@ export type InstallKeyFromStorageAction = {
   toSurface: LayoutSurface;
   toIndex: number;
   calculatorId?: CalculatorId;
+  allowLocked?: boolean;
 };
 
 export type UninstallLayoutKeyAction = {
