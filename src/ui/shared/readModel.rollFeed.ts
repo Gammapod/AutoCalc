@@ -11,6 +11,10 @@ import type {
   RollEntry,
 } from "../../domain/types.js";
 import { resolveHistoryForecastValueForState } from "../modules/visualizers/numberLineModel.js";
+import {
+  resolveFeedCycleDiameterHint,
+  resolveFeedCycleLengthHint,
+} from "../modules/visualizers/feedHintProjection.js";
 import type { UxRole, UxRoleAssignment, UxRoleState } from "./uxRoles.js";
 
 export type RollRow = {
@@ -39,6 +43,10 @@ export type FeedTableRow = {
   uxState: UxRoleState;
   uxRoleOverride?: UxRole;
   overrideReason?: string;
+  hintCycleLengthMarker?: "span" | "start" | "end";
+  hintCycleLengthOpacity01?: number;
+  hintCycleDiameterMarker?: "min" | "max" | "minmax";
+  hintCycleDiameterOpacity01?: number;
 };
 
 export type FeedTableViewModel = {
@@ -210,12 +218,51 @@ const buildForecastRowsForState = (state: GameState, nextIndexBase: number): Fee
   return rows;
 };
 
+const applyFeedHintsForState = (state: GameState, rows: FeedTableRow[]): FeedTableRow[] => {
+  const cycleLengthHint = resolveFeedCycleLengthHint(state);
+  const cycleDiameterHint = resolveFeedCycleDiameterHint(state);
+  if (!cycleLengthHint && !cycleDiameterHint) {
+    return rows;
+  }
+  return rows.map((row) => {
+    if (row.rowKind !== "committed" || row.x == null || row.hasError) {
+      return row;
+    }
+
+    const next: FeedTableRow = { ...row };
+    if (cycleLengthHint && row.x >= cycleLengthHint.startX && row.x <= cycleLengthHint.endX) {
+      next.hintCycleLengthMarker = row.x === cycleLengthHint.startX
+        ? "start"
+        : row.x === cycleLengthHint.endX
+          ? "end"
+          : "span";
+      next.hintCycleLengthOpacity01 = cycleLengthHint.opacity01;
+    }
+    if (cycleDiameterHint) {
+      const isMin = row.x === cycleDiameterHint.minX;
+      const isMax = row.x === cycleDiameterHint.maxX;
+      if (isMin && isMax) {
+        next.hintCycleDiameterMarker = "minmax";
+        next.hintCycleDiameterOpacity01 = cycleDiameterHint.opacity01;
+      } else if (isMin) {
+        next.hintCycleDiameterMarker = "min";
+        next.hintCycleDiameterOpacity01 = cycleDiameterHint.opacity01;
+      } else if (isMax) {
+        next.hintCycleDiameterMarker = "max";
+        next.hintCycleDiameterOpacity01 = cycleDiameterHint.opacity01;
+      }
+    }
+    return next;
+  });
+};
+
 export const buildFeedTableViewModelForState = (
   state: GameState,
 ): FeedTableViewModel => {
   const committedRows = buildFeedTableRows(state.calculator.rollEntries);
   const committedRowsWithCycleStyling = resolveCommittedRowsWithCycleStyling(state, committedRows);
-  const visibleCommittedRows = committedRowsWithCycleStyling.slice(-FEED_MAX_VISIBLE_ROWS);
+  const committedRowsWithHints = applyFeedHintsForState(state, committedRowsWithCycleStyling);
+  const visibleCommittedRows = committedRowsWithHints.slice(-FEED_MAX_VISIBLE_ROWS);
   const forecastRows = buildForecastRowsForState(state, committedRowsWithCycleStyling.length);
   const rows = [...visibleCommittedRows, ...forecastRows];
   const showZColumn = rows.some((row) => row.hasImaginary);

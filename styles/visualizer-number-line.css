@@ -169,6 +169,14 @@ body[data-ui-shell="desktop"] .v2-number-line-error-center-marker {
   opacity: 0.95;
 }
 
+body[data-ui-shell="mobile"] .v2-number-line-goal-plot,
+body[data-ui-shell="desktop"] .v2-number-line-goal-plot {
+  fill: var(--ux-role-unlock-hint-color);
+  stroke: #ffffff;
+  stroke-width: 0.35;
+  filter: drop-shadow(0 0 1px rgba(255, 210, 46, 0.65));
+}
+
 body[data-ui-shell="mobile"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-number-line-panel,
 body[data-ui-shell="desktop"] [data-v2-visualizer-host][data-v2-fit-overflow="forbid_scroll"] .v2-number-line-panel {
   overflow: hidden;

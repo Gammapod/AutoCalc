@@ -14,6 +14,7 @@ import { runKeyCapabilityProgressionTests } from "./keyCapabilityProgression.tes
 import { runOperatorTestingMatrixContractTests } from "./operatorTestingMatrix.contract.test.js";
 import { runDisplayPolicySevenSegmentTests } from "./displayPolicy.sevenSegment.test.js";
 import { runUiGraphHintProjectionTests } from "./uiGraphHintProjection.test.js";
+import { runUiFeedHintProjectionTests } from "./uiFeedHintProjection.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -31,6 +32,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/operator-testing-matrix", runOperatorTestingMatrixContractTests],
   ["ui/display-policy-seven-segment", runDisplayPolicySevenSegmentTests],
   ["ui/graph-hint-projection", runUiGraphHintProjectionTests],
+  ["ui/feed-hint-projection", runUiFeedHintProjectionTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

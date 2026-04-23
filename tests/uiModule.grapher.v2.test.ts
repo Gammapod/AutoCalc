@@ -358,6 +358,44 @@ export const runUiModuleGrapherV2Tests = (): void => {
       "graph target y-line hint opacity increases as current total gets closer to target",
     );
 
+    const withTrendBandNear: GameState = {
+      ...withGraphVisible,
+      calculator: {
+        ...withGraphVisible.calculator,
+        rollEntries: [
+          { y: toRationalCalculatorValue({ num: 1n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 4n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 5n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 6n, den: 1n }) },
+        ],
+      },
+    };
+    const withTrendBandFar: GameState = {
+      ...withTrendBandNear,
+      calculator: {
+        ...withTrendBandNear.calculator,
+        rollEntries: [
+          { y: toRationalCalculatorValue({ num: 1n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 2n, den: 1n }) },
+          { y: toRationalCalculatorValue({ num: 3n, den: 1n }) },
+        ],
+      },
+    };
+    renderGrapherV2Module(harness.root, withTrendBandNear);
+    const trendBandNear = harness.root.querySelector<SVGPolylineElement>(".v2-grapher-trend-band");
+    assert.ok(trendBandNear, "graph trend-band hint renders for unresolved trend predicates with suffix progress");
+    const trendOpacityNear = Number(trendBandNear?.getAttribute("stroke-opacity") ?? "0");
+    renderGrapherV2Module(harness.root, withTrendBandFar);
+    const trendBandFar = harness.root.querySelector<SVGPolylineElement>(".v2-grapher-trend-band");
+    const trendOpacityFar = Number(trendBandFar?.getAttribute("stroke-opacity") ?? "0");
+    assert.equal(
+      trendOpacityNear > trendOpacityFar,
+      true,
+      "graph trend-band opacity increases as suffix progress approaches required length",
+    );
+
     renderGrapherV2Module(harness.root, withCycleOverlay);
     const cycleLines = harness.root.querySelectorAll<SVGLineElement>(".v2-grapher-cycle-line");
     const chainLines = harness.root.querySelectorAll<SVGLineElement>(".v2-grapher-cycle-line--chain");
@@ -384,6 +422,39 @@ export const runUiModuleGrapherV2Tests = (): void => {
       harness.root.querySelectorAll(".v2-grapher-target-y-line").length >= 1,
       true,
       "graph target y-line hint coexists with cycle overlay",
+    );
+
+    const withCycleTargetAndTrend: GameState = {
+      ...withTrendBandNear,
+      settings: {
+        ...withTrendBandNear.settings,
+        forecast: "on",
+      },
+      calculator: {
+        ...withTrendBandNear.calculator,
+        total: toRationalCalculatorValue({ num: 0n, den: 1n }),
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 1, j: 3, transientLength: 1, periodLength: 2 },
+        },
+      },
+      completedUnlockIds: [],
+    };
+    renderGrapherV2Module(harness.root, withCycleTargetAndTrend);
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-cycle-line").length >= 1,
+      true,
+      "graph cycle overlay remains when trend-band and target-line hints are present",
+    );
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-target-y-line").length >= 1,
+      true,
+      "graph target y-line remains when trend-band hint is present",
+    );
+    assert.equal(
+      harness.root.querySelectorAll(".v2-grapher-trend-band").length >= 1,
+      true,
+      "graph trend-band coexists with cycle and target-line overlays",
     );
 
     const withComplexCycleOverlay: GameState = {

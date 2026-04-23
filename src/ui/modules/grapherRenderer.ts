@@ -17,7 +17,7 @@ import {
 } from "./visualizers/numberLineModel.js";
 import { resolveGraphLayout } from "./visualizers/graphLayoutModel.js";
 import { clearGraphOverlay, renderGraphOverlay } from "./visualizers/graphOverlayRenderer.js";
-import { resolveGraphTargetYLineHint } from "./visualizers/graphHintProjection.js";
+import { resolveGraphTargetYLineHint, resolveGraphTrendBandHint } from "./visualizers/graphHintProjection.js";
 
 type GraphDataset = {
   data: GraphPoint[];
@@ -263,6 +263,7 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     state.settings.forecast === "on"
       ? resolveGraphTargetYLineHint(state)
       : null;
+  const trendBandHint = resolveGraphTrendBandHint(state);
 
   const options = buildGraphOptions(hasPoints, layout);
   const documentRef = root.ownerDocument ?? null;
@@ -355,7 +356,10 @@ export const renderGrapherV2Module = (root: Element, state: GameState): void => 
     cycleImaginaryColor,
     targetLineColor,
     targetLineHighlightColor: "#ffffff",
-  }, cycleOverlaySegments, imaginaryCycleOverlaySegments, targetYLineHint ? {
+  }, cycleOverlaySegments, imaginaryCycleOverlaySegments, trendBandHint ? {
+    points: trendBandHint.points,
+    opacity01: trendBandHint.opacity01,
+  } : null, targetYLineHint ? {
     y: targetYLineHint.targetY,
     opacity01: targetYLineHint.opacity01,
   } : null);

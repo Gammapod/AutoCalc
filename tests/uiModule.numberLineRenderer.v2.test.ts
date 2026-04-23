@@ -120,6 +120,41 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.equal(panel.querySelector(".v2-number-line-vector-tip--forecast-step"), null, "step-forecast tip remains hidden while [ ??? ] is off");
     assert.equal(panel.querySelector(".v2-number-line-vector--history"), null, "history vector remains hidden while history toggle is off");
     assert.equal(panel.querySelector(".v2-number-line-vector--current-error"), null, "non-error roll keeps current vector in default styling");
+    const goalPlotNearState = {
+      ...withRealRoll,
+      calculator: {
+        ...withRealRoll.calculator,
+        total: toRationalCalculatorValue({ num: 8n, den: 1n }),
+      },
+      completedUnlockIds: [],
+    };
+    const goalPlotFarState = {
+      ...goalPlotNearState,
+      calculator: {
+        ...goalPlotNearState.calculator,
+        total: toRationalCalculatorValue({ num: 3n, den: 1n }),
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, goalPlotNearState);
+    const goalPlotNear = panel.querySelector<SVGPathElement>(".v2-number-line-goal-plot");
+    assert.ok(goalPlotNear, "number-line goal-plot hint renders a star marker for in-range unresolved total_equals target");
+    const goalPlotNearOpacity = Number(goalPlotNear?.getAttribute("opacity") ?? "0");
+    renderNumberLineVisualizerPanel(harness.root, goalPlotFarState);
+    assert.equal(panel.querySelectorAll(".v2-number-line-goal-plot").length, 0, "number-line goal-plot hint hides outside nearness window");
+    const goalPlotMidState = {
+      ...goalPlotNearState,
+      calculator: {
+        ...goalPlotNearState.calculator,
+        total: toRationalCalculatorValue({ num: 7n, den: 1n }),
+      },
+    };
+    renderNumberLineVisualizerPanel(harness.root, goalPlotMidState);
+    const goalPlotMidOpacity = Number(panel.querySelector<SVGPathElement>(".v2-number-line-goal-plot")?.getAttribute("opacity") ?? "0");
+    assert.equal(
+      goalPlotNearOpacity > goalPlotMidOpacity,
+      true,
+      "number-line goal-plot opacity increases as current total approaches target",
+    );
 
     const withStepExpansionForecast = {
       ...withRealRoll,
@@ -219,6 +254,29 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     assert.equal(complexScaleLabels[3]?.hasAttribute("textLength"), false, "complex bottom scale label keeps natural glyph width");
     assert.equal(complexScaleLabels[2]?.getAttribute("y"), "-40.6", "complex top scale label is positioned beyond top vertical axis end");
     assert.equal(complexScaleLabels[3]?.getAttribute("y"), "66.2", "complex bottom scale label is positioned beyond bottom vertical axis end");
+    const withComplexGridGoalPlot = {
+      ...withImaginaryTotal,
+      calculator: {
+        ...withImaginaryTotal.calculator,
+        total: toRationalCalculatorValue({ num: 8n, den: 1n }),
+        rollEntries: [
+          ...withImaginaryTotal.calculator.rollEntries,
+          {
+            y: toExplicitComplexCalculatorValue(
+              toRationalScalarValue({ num: 8n, den: 1n }),
+              toRationalScalarValue({ num: 1n, den: 1n }),
+            ),
+          },
+        ],
+      },
+      completedUnlockIds: [],
+    };
+    renderNumberLineVisualizerPanel(harness.root, withComplexGridGoalPlot);
+    assert.equal(
+      panel.querySelectorAll(".v2-number-line-goal-plot").length >= 1,
+      true,
+      "number-line goal-plot hint remains available in complex-grid mode on the real axis",
+    );
 
     const withMidRange = {
       ...initialState(),

@@ -20,6 +20,7 @@ import {
   resolveScalarDisplayKind,
 } from "../../shared/displayPolicy.sevenSegment.js";
 import { applyUxRoleAttributes, buildTotalHintRowsViewModel, resolveTotalHintRowUxAssignment } from "../../shared/readModel.js";
+import { resolveTotalThresholdMarkerHint } from "./totalHintProjection.js";
 import {
   buildClearedTotalSlotModel,
   buildTotalSlotModel,
@@ -212,6 +213,17 @@ export const renderTotalDisplay = (totalEl: Element, state: GameState): void => 
     value.textContent = hintRow.value;
     row.append(label, value);
     hintStrip.appendChild(row);
+  }
+  const thresholdHint = resolveTotalThresholdMarkerHint(state);
+  if (thresholdHint) {
+    const thresholdMarkerRow = document.createElement("div");
+    thresholdMarkerRow.className = "total-threshold-marker-hint";
+    applyUxRoleAttributes(thresholdMarkerRow, { uxRole: "unlock_hint", uxState: "active" });
+    thresholdMarkerRow.style.opacity = thresholdHint.opacity01.toFixed(3);
+    thresholdMarkerRow.textContent = thresholdHint.direction === "at_least"
+      ? `THR \u2265 ${thresholdHint.threshold.toString()}`
+      : `THR \u2264 ${thresholdHint.threshold.toString()}`;
+    hintStrip.appendChild(thresholdMarkerRow);
   }
   const baseIndicator = document.createElement("span");
   baseIndicator.className = "total-base-indicator";

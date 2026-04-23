@@ -247,6 +247,24 @@ export const runUiIntegrationMobileShellTests = (): void => {
       true,
       "feed forecast rows render absolute projection index prefixes",
     );
+    const withFeedCycleHintNearMiss = withCalculatorProjection(withFeedCycleAndForecast, "f", (projected) => ({
+      ...projected,
+      calculator: {
+        ...projected.calculator,
+        rollAnalysis: {
+          stopReason: "cycle",
+          cycle: { i: 1, j: 4, transientLength: 1, periodLength: 2 },
+        },
+      },
+    }));
+    renderer.render(withFeedCycleHintNearMiss, dispatch, {
+            inputBlocked: false,
+    });
+    assert.equal(
+      feedPanel?.querySelectorAll(".v2-feed-row--hint-cycle-length").length >= 1,
+      true,
+      "feed cycle-length hint marks active cycle span rows when unresolved period predicate is close",
+    );
     renderer.render(withGraph, dispatch, {
             inputBlocked: false,
     });
@@ -274,6 +292,22 @@ export const runUiIntegrationMobileShellTests = (): void => {
       hintRows.every((row) => (row.textContent ?? "").includes("/")),
       true,
       "closest-progress hint rows show numeric progress fractions",
+    );
+    const withThresholdHint = withCalculatorProjection(withTotal, "f", (projected) => ({
+      ...projected,
+      calculator: {
+        ...projected.calculator,
+        total: r(8n),
+      },
+    }));
+    renderer.render(withThresholdHint, dispatch, {
+            inputBlocked: false,
+    });
+    const thresholdHintRow = totalPanel?.querySelector<HTMLElement>(".total-threshold-marker-hint");
+    assert.equal(
+      Boolean(thresholdHintRow && (Number(thresholdHintRow.style.opacity || "0") > 0)),
+      true,
+      "total threshold-marker hint renders with non-zero opacity when total is near unresolved threshold unlock",
     );
 
     const withBinaryBadge = withCalculatorProjection(withTotal, "f", (projected) => ({

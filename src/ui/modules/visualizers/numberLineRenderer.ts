@@ -3,6 +3,7 @@ import { applyUxRoleAttributes } from "../../shared/readModel.js";
 import {
   NUMBER_LINE_GEOMETRY,
   NUMBER_LINE_VECTOR_ARROW_TIP,
+  resolveVectorEndpoint,
   resolveNumberLineMode,
   resolveNumberLineCycleOverlaySegmentsForState,
   resolvePlotRangeForState,
@@ -12,6 +13,7 @@ import {
   type Point,
   type Segment,
 } from "./numberLineModel.js";
+import { resolveNumberLineGoalPlotHint } from "./numberLineHintProjection.js";
 import { formatBoundaryLabel, NUMBER_LINE_REAL_LABEL_FIT } from "./plotPolicy.js";
 
 type AxisKey = "x" | "y";
@@ -281,6 +283,45 @@ const appendScaleLabel = (
   applyUxRoleAttributes(text, isImaginaryLabel ? { uxRole: "imaginary", uxState: "active" } : { uxRole: "default", uxState: "normal" });
   text.textContent = label.text;
   svg.appendChild(text);
+};
+
+const appendGoalPlotStar = (
+  documentRef: Document,
+  svg: SVGElement,
+  center: Point,
+  opacity01: number,
+): void => {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const star = documentRef.createElementNS(svgNs, "path");
+  const outer = 1.45;
+  const inner = 0.64;
+  const points: Point[] = [];
+  for (let index = 0; index < 10; index += 1) {
+    const angle = (-Math.PI / 2) + ((Math.PI * 2 * index) / 10);
+    const radius = index % 2 === 0 ? outer : inner;
+    points.push({
+      x: center.x + (Math.cos(angle) * radius),
+      y: center.y + (Math.sin(angle) * radius),
+    });
+  }
+  const [first, ...rest] = points;
+  if (!first) {
+    return;
+  }
+  const path = [`M ${first.x.toFixed(3)} ${first.y.toFixed(3)}`];
+  for (const point of rest) {
+    path.push(`L ${point.x.toFixed(3)} ${point.y.toFixed(3)}`);
+  }
+  path.push("Z");
+  star.setAttribute("d", path.join(" "));
+  star.setAttribute("class", "v2-number-line-goal-plot");
+  star.setAttribute("fill", "var(--ux-role-unlock-hint-color)");
+  star.setAttribute("stroke", "#ffffff");
+  star.setAttribute("stroke-width", "0.35");
+  star.setAttribute("stroke-linejoin", "round");
+  star.setAttribute("opacity", Math.max(0, Math.min(1, opacity01)).toFixed(3));
+  applyUxRoleAttributes(star, { uxRole: "unlock_hint", uxState: "active" });
+  svg.appendChild(star);
 };
 
 const appendSubdivisionLines = (
@@ -560,6 +601,11 @@ export const renderNumberLineVisualizerPanel = (root: Element, state: GameState)
   }
   renderBaseHorizontalAxis(document, svg, NUMBER_LINE_GEOMETRY);
   renderScaleLabels(document, svg, mode, range);
+  const goalPlotHint = resolveNumberLineGoalPlotHint(state);
+  if (goalPlotHint && Math.abs(goalPlotHint.target) <= range) {
+    const endpoint = resolveVectorEndpoint(NUMBER_LINE_GEOMETRY, { re: goalPlotHint.target, im: 0 }, range);
+    appendGoalPlotStar(document, svg, endpoint, goalPlotHint.opacity01);
+  }
   renderCycleOverlayIfAvailable(document, svg, state);
   renderVectorIfAvailable(document, svg, state);
 

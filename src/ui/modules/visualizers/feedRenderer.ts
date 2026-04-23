@@ -111,16 +111,26 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
       if (!row) {
         return "v2-feed-table-line";
       }
+      const classes = ["v2-feed-table-line"];
       if (row.hasError) {
-        return "v2-feed-table-line v2-feed-row--error";
+        classes.push("v2-feed-row--error");
+        return classes.join(" ");
       }
       if (row.rowKind === "committed" && row.isCycle) {
-        return "v2-feed-table-line v2-feed-row--cycle";
+        classes.push("v2-feed-row--cycle");
       }
       if (row.rowKind !== "committed") {
-        return "v2-feed-table-line v2-feed-row--forecast";
+        classes.push("v2-feed-row--forecast");
       }
-      return "v2-feed-table-line";
+      if (row.hintCycleLengthMarker) {
+        classes.push("v2-feed-row--hint-cycle-length");
+        classes.push(`v2-feed-row--hint-cycle-length-${row.hintCycleLengthMarker}`);
+      }
+      if (row.hintCycleDiameterMarker) {
+        classes.push("v2-feed-row--hint-cycle-diameter");
+        classes.push(`v2-feed-row--hint-cycle-diameter-${row.hintCycleDiameterMarker}`);
+      }
+      return classes.join(" ");
     })();
     const rowZUxAssignment: UxRoleAssignment = row
       ? (() => {
@@ -144,6 +154,15 @@ export const renderFeedVisualizerPanel = (root: Element, state: GameState): void
       row ? resolveFeedRowUxAssignment(row) : { uxRole: "default", uxState: "muted" },
       rowZUxAssignment,
     );
+    const renderedRow = table.lastElementChild as HTMLElement | null;
+    if (renderedRow && row) {
+      if (typeof row.hintCycleLengthOpacity01 === "number") {
+        renderedRow.style.setProperty("--feed-hint-cycle-length-opacity", row.hintCycleLengthOpacity01.toFixed(3));
+      }
+      if (typeof row.hintCycleDiameterOpacity01 === "number") {
+        renderedRow.style.setProperty("--feed-hint-cycle-diameter-opacity", row.hintCycleDiameterOpacity01.toFixed(3));
+      }
+    }
   }
 
   feedPanel.appendChild(table);

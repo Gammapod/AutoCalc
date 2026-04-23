@@ -20,7 +20,6 @@
 %% – Multiple pathways to the same key might be possible, not sure yet
 flowchart LR
 
-%% subgraph conditions
     %% total_at_least(["High num"])
     %% total_at_most(["Low num"])
     %% rational_smaller_than(["Small num"])
@@ -35,7 +34,6 @@ flowchart LR
     %% roll_cycle_diameter_at_least(["Wide Cycle"])
     %% roll_cycle_period_at_least(["Long Cycle"])
     %% roll_ends_with_quadrant_hop_sequence(["I,II,IV,III"])
-%% end
 
 subgraph Key
     Primitive_1
@@ -245,7 +243,6 @@ subgraph Complex_Math ["ℚ[𝕚]"]
     %% %% Expanded form `[ 4⦼3 ]` -> `[ (3 + (4 -M⭾R)) ÷ 2 ]
     CPX_norm["z [ 🞜 ]"]
     %% Expanded form `[ 4 🞜 ]` -> `[ R² + M² ]`
-    %% https://en.wikipedia.org/wiki/Modular_arithmetic#Integers_modulo_m
 end
 
             
@@ -306,9 +303,6 @@ subgraph Boolean_Ops ["𝕋÷𝔽"]
     %% For logic operators, NaN is treated as False (represented as ⊥ in expansions), and any value (including 0) is treated as true
     %% a, b, n -> numeric values (else false)
     %% p, q -> numeric values (true) or ⊥ (false)
-
-    BOO_ifthen["q ⇒ p"]
-    %% Expanded form `q [ ⇒ p ]` -> `[ ⊥ if p, else 1 ]`
     
     BOO_notp[["¬ p"]] 
     %% IMPLEMENTED
@@ -331,18 +325,6 @@ subgraph Boolean_Ops ["𝕋÷𝔽"]
     BOO_notgt["a ≤ b"]
     %% Expanded form `[ (a ≡ b) ⩣ ]`
     %% Expanded form `[ (a < b) ∨ (a ≡ b) ]`
-end
-
-BOO_divis -.-x Fun
-BOO_ifelse -.-x Fun
-subgraph Fun
-    FUN_rev["n [ Rev ]"]
-    %% Expanded form `[ ((n | 2) × (n ÷ 2)) ⩣ (¬(n | 2) × (n + 1)) ]`
-    FUN_collatz["n [ Ctz ]"]
-    %% Expanded form `[ ((n | 2) × (n ÷ 2)) ⩣ (¬(n | 2) × ((n × 3) + 1)) ]`
-    FUN_amusical["n [ Cwy ]"]
-    %% Expanded form `[ ((n | 2) × ((n × 3⁄2) + 1)) ⩣ (((n-1) | 4) × ((n × 3⁄4) + 1) ⩣ (((n+1) | 4) × ((n × 3⁄4) - 1)]`
-%% Kaprekar
 end
 
     %% RAT_div -.-o|Divide| BOO_sign

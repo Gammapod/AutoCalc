@@ -16,6 +16,11 @@ export type GraphTargetYLineOverlay = {
   opacity01: number;
 };
 
+export type GraphTrendBandOverlay = {
+  points: Array<{ x: number; y: number }>;
+  opacity01: number;
+};
+
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const ensureOverlay = (screen: HTMLElement): SVGSVGElement => {
@@ -48,6 +53,21 @@ const line = (
   node.setAttribute("y1", y1.toFixed(2));
   node.setAttribute("x2", x2.toFixed(2));
   node.setAttribute("y2", y2.toFixed(2));
+  node.setAttribute("stroke", color);
+  node.setAttribute("stroke-width", width.toString());
+  node.setAttribute("vector-effect", "non-scaling-stroke");
+  return node;
+};
+
+const polyline = (
+  documentRef: Document,
+  points: Array<{ x: number; y: number }>,
+  color: string,
+  width: number,
+): SVGPolylineElement => {
+  const node = documentRef.createElementNS(SVG_NS, "polyline");
+  node.setAttribute("points", points.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" "));
+  node.setAttribute("fill", "none");
   node.setAttribute("stroke", color);
   node.setAttribute("stroke-width", width.toString());
   node.setAttribute("vector-effect", "non-scaling-stroke");
@@ -105,6 +125,7 @@ export const renderGraphOverlay = (
   colors: GraphOverlayColors,
   cycleSegments: readonly GraphCycleOverlaySegment[] = [],
   imaginaryCycleSegments: readonly GraphCycleOverlaySegment[] = [],
+  trendBand: GraphTrendBandOverlay | null = null,
   targetYLine: GraphTargetYLineOverlay | null = null,
 ): void => {
   const screen = root.querySelector<HTMLElement>("[data-grapher-device] .grapher-screen");
@@ -196,6 +217,27 @@ export const renderGraphOverlay = (
       "middle",
     ),
   );
+
+  if (trendBand && trendBand.points.length >= 2) {
+    const clampedOpacity = Math.max(0, Math.min(1, trendBand.opacity01));
+    const points = trendBand.points.map((point) => ({
+      x: xToPx(layout, point.x),
+      y: yToPx(layout, point.y),
+    }));
+    const trendBorder = polyline(doc, points, colors.targetLineHighlightColor, 4.8);
+    trendBorder.setAttribute("class", "v2-grapher-trend-band-border");
+    trendBorder.setAttribute("stroke-opacity", Math.min(1, clampedOpacity * 0.85).toFixed(3));
+    trendBorder.setAttribute("stroke-linecap", "round");
+    trendBorder.setAttribute("stroke-linejoin", "round");
+    overlay.appendChild(trendBorder);
+
+    const trendCore = polyline(doc, points, colors.targetLineColor, 2.6);
+    trendCore.setAttribute("class", "v2-grapher-trend-band");
+    trendCore.setAttribute("stroke-opacity", clampedOpacity.toFixed(3));
+    trendCore.setAttribute("stroke-linecap", "round");
+    trendCore.setAttribute("stroke-linejoin", "round");
+    overlay.appendChild(trendCore);
+  }
 
   if (targetYLine && Number.isFinite(targetYLine.y)) {
     const clampedOpacity = Math.max(0, Math.min(1, targetYLine.opacity01));
