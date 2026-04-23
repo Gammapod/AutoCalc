@@ -18,6 +18,37 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 ## Next
 
+### Slice `slice_visualizer_hint_domain_chip_post_success_signal`
+- User Story: As a player, I want domain-family feedback to appear only after I satisfy its unlock condition so the UI celebrates success without pre-solving progression.
+- Exit Criteria:
+- `total.domain_chip` does not render any pre-success indicator while unresolved.
+- A post-success-only signal is defined and implemented for `roll_contains_domain_type` completion (timing, duration, and visual channel).
+- Post-success behavior does not alter unlock state, key loadout, or predicate evaluation semantics.
+- Regression coverage verifies no pre-success leak and validates post-success display trigger.
+
+### Slice `slice_visualizer_hint_surface_rollout_remaining_v1`
+- User Story: As a player, I want each play-facing visualizer to provide consistent near-miss hint surfaces so progression cues are readable across contexts.
+- Exit Criteria:
+- Remaining unimplemented matrix hint surfaces are either implemented or explicitly deferred with rationale:
+- `number_line.sequence_window`
+- `number_line.quadrant_highlights`
+- `circle.angle_measure`
+- `circle.polygon_inscription`
+- `circle.quadrant_highlights`
+- `ratios.denominator_threshold_marker`
+- `ratios.constant_denominator`
+- Each implemented hint follows unresolved-only near-miss policy unless explicitly documented otherwise.
+- Visual coexistence contracts are maintained (cycle/history/forecast overlays remain additive and non-destructive).
+- Matrix status column is updated to reflect final disposition per hint type.
+
+### Slice `slice_visualizer_hint_predicate_plumbing_phase2`
+- User Story: As a systems engineer, I want proposed hint predicates promoted into canonical runtime plumbing so future hint surfaces are driven by evaluable contracts instead of placeholders.
+- Exit Criteria:
+- Proposed predicates required by remaining hint surfaces are added to canonical predicate types and evaluator plumbing with deterministic behavior and tests.
+- Predicate capability documentation is updated to match new runtime support.
+- Unlock catalog usage is validated for new predicate types (including unresolved/satisfied/completed handling paths).
+- No persistence schema break is introduced; backward compatibility is preserved.
+
 ## Later
 
 ### Slice `slice_content_completion_pass`
