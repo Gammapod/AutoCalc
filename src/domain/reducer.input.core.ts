@@ -970,8 +970,8 @@ const floorLog2Rational = (value: RationalValue): number => {
 };
 
 const wrapBinaryOctaveExponent = (exponent: number): number => {
-  const minExponent = -4;
-  const period = 8;
+  const minExponent = -3;
+  const period = 6;
   const offset = exponent - minExponent;
   const wrappedOffset = ((offset % period) + period) % period;
   return minExponent + wrappedOffset;

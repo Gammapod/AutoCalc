@@ -98,8 +98,6 @@ export const NUMBER_LINE_GEOMETRY: NumberLineGeometry = {
   },
 };
 
-const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
-
 const toScalarNumber = (value: ScalarValue): number | null => {
   if (value.kind === "rational") {
     if (value.value.den === 0n) {
@@ -230,31 +228,9 @@ const sortVectorLayers = (layers: readonly NumberLineVectorLayer[]): NumberLineV
 
 export const resolvePlotRangeForState = (state: GameState): number => {
   const radix = resolveRadix(state);
-  const plottedValues: CalculatorValue[] = [];
-  const latestRoll = state.calculator.rollEntries[state.calculator.rollEntries.length - 1];
-  if (latestRoll?.y) {
-    plottedValues.push(latestRoll.y);
-  }
-  if (state.settings.history === "on") {
-    const previousRoll = state.calculator.rollEntries[state.calculator.rollEntries.length - 2];
-    if (previousRoll?.y) {
-      plottedValues.push(previousRoll.y);
-    }
-  }
-  const historyForecastValue = resolveHistoryForecastValueForState(state);
-  if (historyForecastValue) {
-    plottedValues.push(historyForecastValue);
-  }
-  plottedValues.push(...resolveStepForecastValuesForState(state));
-
-  let maxAbsComponent = 0;
-  for (const value of plottedValues) {
-    const argand = calculatorValueToArgandPoint(value);
-    if (!argand) {
-      continue;
-    }
-    maxAbsComponent = Math.max(maxAbsComponent, Math.abs(argand.re), Math.abs(argand.im));
-  }
+  const latestRoll = state.calculator.rollEntries[state.calculator.rollEntries.length - 1]?.y ?? state.calculator.total;
+  const argand = calculatorValueToArgandPoint(latestRoll);
+  let maxAbsComponent = argand ? Math.max(Math.abs(argand.re), Math.abs(argand.im)) : 0;
   if (!Number.isFinite(maxAbsComponent) || maxAbsComponent < 0) {
     maxAbsComponent = 0;
   }
@@ -268,8 +244,8 @@ export const resolveVectorEndpoint = (
 ): Point => {
   const halfWidth = (geometry.plotBounds.maxX - geometry.plotBounds.minX) / 2;
   const halfHeight = (geometry.plotBounds.maxY - geometry.plotBounds.minY) / 2;
-  const normalizedRe = clamp(argand.re / range, -1, 1);
-  const normalizedIm = clamp(argand.im / range, -1, 1);
+  const normalizedRe = argand.re / range;
+  const normalizedIm = argand.im / range;
   return {
     x: geometry.origin.x + (normalizedRe * halfWidth),
     y: geometry.origin.y - (normalizedIm * halfHeight),

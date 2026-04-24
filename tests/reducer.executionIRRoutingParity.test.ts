@@ -215,8 +215,8 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
   assert.deepEqual(
     complexOctaveWrapped.calculator.total,
     toExplicitComplexCalculatorValue(
-      toRationalScalarValue({ num: 3n, den: 16n }),
-      toRationalScalarValue({ num: 1n, den: 4n }),
+      toRationalScalarValue({ num: 3n, den: 4n }),
+      toRationalScalarValue({ num: 1n, den: 1n }),
     ),
     "octave wrap projects complex magnitude into principal octave while preserving direction",
   );

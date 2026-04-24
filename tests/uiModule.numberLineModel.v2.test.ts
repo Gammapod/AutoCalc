@@ -69,7 +69,7 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
       ],
     },
   };
-  assert.equal(resolvePlotRangeForState(withHistoryRange), 999, "history-enabled range includes previous plotted value magnitudes");
+  assert.equal(resolvePlotRangeForState(withHistoryRange), 9, "range follows the currently plotted roll even when history is enabled");
 
   const withForecastRange = {
     ...decimalBaseline,
@@ -92,7 +92,7 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
       },
     },
   };
-  assert.equal(resolvePlotRangeForState(withForecastRangeHistoryOn), 99, "forecast-plotted next value expands dynamic range tiers when history is on");
+  assert.equal(resolvePlotRangeForState(withForecastRangeHistoryOn), 9, "history-forecast projections do not expand dynamic range tiers");
 
   const withStepForecastOn = {
     ...decimalBaseline,
@@ -126,7 +126,7 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
     },
   };
   assert.equal(resolveStepForecastValuesForState(withStepForecastActive).length, 2, "step-expansion forecast shows executed chain plus current highlighted-step forecast");
-  assert.equal(resolvePlotRangeForState(withStepForecastActive), 9, "active step-expansion forecast contributes to dynamic range");
+  assert.equal(resolvePlotRangeForState(withStepForecastActive), 9, "active step-expansion forecast does not contribute to dynamic range");
 
   assert.deepEqual(
     calculatorValueToArgandPoint(toRationalCalculatorValue({ num: 5n, den: 1n })),
@@ -148,9 +148,9 @@ export const runUiModuleNumberLineModelV2Tests = (): void => {
   assert.equal(endpointAtRange.x, NUMBER_LINE_GEOMETRY.plotBounds.maxX, "max real range maps to rightmost plot bound");
   assert.equal(endpointAtRange.y, NUMBER_LINE_GEOMETRY.plotBounds.minY, "max imaginary range maps to top plot bound");
 
-  const clampedEndpoint = resolveVectorEndpoint(NUMBER_LINE_GEOMETRY, { re: 999, im: -999 }, 99);
-  assert.equal(clampedEndpoint.x, NUMBER_LINE_GEOMETRY.plotBounds.maxX, "out-of-range real values clamp to plot bounds");
-  assert.equal(clampedEndpoint.y, NUMBER_LINE_GEOMETRY.plotBounds.maxY, "out-of-range imaginary values clamp to plot bounds");
+  const unclampedEndpoint = resolveVectorEndpoint(NUMBER_LINE_GEOMETRY, { re: 999, im: -999 }, 99);
+  assert.equal(unclampedEndpoint.x > NUMBER_LINE_GEOMETRY.plotBounds.maxX, true, "out-of-range real values project beyond plot bounds");
+  assert.equal(unclampedEndpoint.y > NUMBER_LINE_GEOMETRY.plotBounds.maxY, true, "out-of-range imaginary values project beyond plot bounds");
 
   const noRollVector = resolveVectorSegmentForState(initialState());
   assert.equal(noRollVector, null, "vector segment is omitted when no roll exists");
