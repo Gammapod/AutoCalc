@@ -56,6 +56,8 @@ const toFeedbackComparableState = (state: GameState): unknown => {
       menu: toFeedbackComparableCalculator(state.calculators.menu),
       f_prime: toFeedbackComparableCalculator(state.calculators.f_prime),
       g_prime: toFeedbackComparableCalculator(state.calculators.g_prime),
+      h_prime: toFeedbackComparableCalculator(state.calculators.h_prime),
+      i_prime: toFeedbackComparableCalculator(state.calculators.i_prime),
     }
     : state.calculators;
   if (state.calculators) {

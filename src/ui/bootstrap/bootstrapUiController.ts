@@ -64,6 +64,10 @@ const toSelectedCalculatorId = (value: string): CalculatorId =>
         ? "f_prime"
         : value === "g_prime"
           ? "g_prime"
+          : value === "h_prime"
+            ? "h_prime"
+            : value === "i_prime"
+              ? "i_prime"
           : "f";
 
 const toSnapshotKeyStatus = (capability: ReturnType<typeof resolveKeyCapability>): "lock" | "installed_only" | "unlock" =>

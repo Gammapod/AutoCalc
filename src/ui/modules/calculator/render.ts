@@ -116,6 +116,10 @@ export const renderCalculatorV2Module = (
           ? "f_prime"
           : root instanceof HTMLElement && root.dataset.calcInstanceId === "g_prime"
             ? "g_prime"
+            : root instanceof HTMLElement && root.dataset.calcInstanceId === "h_prime"
+              ? "h_prime"
+              : root instanceof HTMLElement && root.dataset.calcInstanceId === "i_prime"
+                ? "i_prime"
         : "f";
   triggerExecutionGateRejectBlink(root, options.executionGateRejectCount ?? 0);
   triggerCalculatorInputOutcomeLed(root, "rejected", options.rejectedInputCount ?? 0);

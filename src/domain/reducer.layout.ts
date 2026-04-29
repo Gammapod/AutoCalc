@@ -201,7 +201,7 @@ const resolveCanonicalKeyCell = (state: GameState, key: KeyCell["key"]): KeyCell
     }
   }
   const surfaces: LayoutSurface[] = isMultiCalculatorSession(state)
-    ? ["keypad_f", "keypad_g", "keypad_menu", "keypad_f_prime", "keypad_g_prime"]
+    ? ["keypad_f", "keypad_g", "keypad_menu", "keypad_f_prime", "keypad_g_prime", "keypad_h_prime", "keypad_i_prime"]
     : ["keypad"];
   for (const surface of surfaces) {
     const length = getSurfaceLength(state, surface);
@@ -251,6 +251,8 @@ const hasOnlyExpectedKeyChanges = (
         || entry.surface === "keypad_menu"
         || entry.surface === "keypad_f_prime"
         || entry.surface === "keypad_g_prime"
+        || entry.surface === "keypad_h_prime"
+        || entry.surface === "keypad_i_prime"
       ) {
         allow.add(`keypad:${entry.index}`);
       }
@@ -266,6 +268,10 @@ const hasOnlyExpectedKeyChanges = (
             ? "keypad_f_prime"
             : previous.activeCalculatorId === "g_prime"
               ? "keypad_g_prime"
+              : previous.activeCalculatorId === "h_prime"
+                ? "keypad_h_prime"
+                : previous.activeCalculatorId === "i_prime"
+                  ? "keypad_i_prime"
               : "keypad_f";
     for (const entry of allowedChanges) {
       if (entry.surface === "keypad") {
@@ -274,7 +280,7 @@ const hasOnlyExpectedKeyChanges = (
     }
   }
   const surfaces: LayoutSurface[] = hasMultiKeypads
-    ? ["keypad_f", "keypad_g", "keypad_menu", "keypad_f_prime", "keypad_g_prime", "storage"]
+    ? ["keypad_f", "keypad_g", "keypad_menu", "keypad_f_prime", "keypad_g_prime", "keypad_h_prime", "keypad_i_prime", "storage"]
     : ["keypad", "storage"];
 
   for (const surface of surfaces) {

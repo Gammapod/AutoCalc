@@ -19,6 +19,9 @@ import { runUiFeedHintProjectionTests } from "./uiFeedHintProjection.test.js";
 import { runContractsSlotInputTargetSpecTests } from "./contracts.slotInputTargetSpec.test.js";
 import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
 import { runUiUxRoleSystemTests } from "./uiUxRoleSystem.test.js";
+import { runCalculatorSeedManifestTests } from "./calculatorSeedManifest.test.js";
+import { runSandboxPresetTests } from "./sandboxPreset.test.js";
+import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -41,6 +44,9 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/slot-input-target-spec", runContractsSlotInputTargetSpecTests],
   ["domain/unlock-hint-progress", runUnlockHintProgressTests],
   ["ui/ux-role-system", runUiUxRoleSystemTests],
+  ["calculator-seed-manifest", runCalculatorSeedManifestTests],
+  ["sandbox-preset", runSandboxPresetTests],
+  ["ui/module-calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

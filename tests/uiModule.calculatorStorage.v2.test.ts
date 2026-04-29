@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { resolveCalculatorKeysLocked } from "../src/ui/modules/calculatorStorageCore.js";
 import { initialState } from "../src/domain/state.js";
 import { materializeCalculator } from "../src/domain/multiCalculator.js";
+import { createSandboxState } from "../src/domain/sandboxPreset.js";
 import type { Action } from "../src/domain/types.js";
 import {
   renderCalculatorStorageV2Module,
@@ -100,6 +101,32 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
     const fSwitchButton = harness.root.querySelector<HTMLButtonElement>("[data-calc-switch='f']");
     assert.equal(gSwitchButton?.getAttribute("aria-pressed"), "true", "active switch button reflects switched active calculator");
     assert.equal(fSwitchButton?.getAttribute("aria-pressed"), "false", "inactive switch button is not pressed");
+
+    const activeHPrimeState = {
+      ...createSandboxState(),
+      activeCalculatorId: "h_prime" as const,
+    };
+    renderCalls.length = 0;
+    renderCalculatorStorageV2Module(harness.root, activeHPrimeState, noopDispatch, {
+      inputBlocked: false,
+      uiEffects: [],
+    });
+    assert.deepEqual(renderCalls.map((call) => call.target), ["h_prime"], "sandbox path renders active h_prime instance");
+    assert.equal(
+      harness.root.querySelector<HTMLButtonElement>("[data-calc-switch='h_prime']")?.hidden,
+      false,
+      "h_prime switch is visible when included in calculator order",
+    );
+    assert.equal(
+      harness.root.querySelector<HTMLButtonElement>("[data-calc-switch='i_prime']")?.hidden,
+      false,
+      "i_prime switch is visible when included in calculator order",
+    );
+    assert.equal(
+      harness.root.querySelector<HTMLButtonElement>("[data-calc-switch='h_prime']")?.getAttribute("aria-pressed"),
+      "true",
+      "h_prime switch reflects active sandbox calculator",
+    );
 
     harness.document.body.setAttribute("data-ui-shell", "desktop");
     renderCalls.length = 0;

@@ -31,6 +31,8 @@ export const buildLayoutDropDispatchAction = (
         && target.surface !== "keypad_menu")
         && target.surface !== "keypad_f_prime"
         && target.surface !== "keypad_g_prime"
+        && target.surface !== "keypad_h_prime"
+        && target.surface !== "keypad_i_prime"
     ) {
       throw new Error("Install action requires keypad destination target.");
     }
@@ -91,6 +93,8 @@ const parseDragTarget = (value: unknown): DragTarget | null => {
       && target.surface !== "keypad_menu"
       && target.surface !== "keypad_f_prime"
       && target.surface !== "keypad_g_prime"
+      && target.surface !== "keypad_h_prime"
+      && target.surface !== "keypad_i_prime"
       && target.surface !== "storage")
     || typeof target.index !== "number"
   ) {
@@ -204,7 +208,9 @@ const onDragUp = (root: Element): void => {
       || dragSession.source.surface === "keypad_g"
       || dragSession.source.surface === "keypad_menu"
       || dragSession.source.surface === "keypad_f_prime"
-      || dragSession.source.surface === "keypad_g_prime")
+      || dragSession.source.surface === "keypad_g_prime"
+      || dragSession.source.surface === "keypad_h_prime"
+      || dragSession.source.surface === "keypad_i_prime")
   ) {
     dragSession.dispatch(buildLayoutDropDispatchAction(dragSession.source, dragSession.key, null, "uninstall"));
   }

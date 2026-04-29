@@ -9,8 +9,8 @@ export type ModeBootContext = {
 
 export type ModeManifest = {
   mode: AppMode;
-  bootCalculatorOrder: readonly ("menu" | "f" | "g" | "f_prime" | "g_prime")[];
-  activeCalculatorId: "menu" | "f" | "g" | "f_prime" | "g_prime";
+  bootCalculatorOrder: readonly ("menu" | "f" | "g" | "f_prime" | "g_prime" | "h_prime" | "i_prime")[];
+  activeCalculatorId: "menu" | "f" | "g" | "f_prime" | "g_prime" | "h_prime" | "i_prime";
   initialLockPolicy: "default_unlocks" | "all_keys_locked";
   storageContentVisible: boolean;
   modeButtonFlags: Readonly<Record<string, boolean>>;
@@ -33,8 +33,8 @@ export const modeManifestById = {
   },
   sandbox: {
     mode: "sandbox",
-    bootCalculatorOrder: ["f"],
-    activeCalculatorId: "f",
+    bootCalculatorOrder: ["f_prime", "g_prime", "h_prime", "i_prime"],
+    activeCalculatorId: "f_prime",
     initialLockPolicy: "default_unlocks",
     storageContentVisible: true,
     modeButtonFlags: {

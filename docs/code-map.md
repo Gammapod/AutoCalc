@@ -28,6 +28,16 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - Owns: key id, category, unlock group, traits, behavior kind, runtime-facing metadata.
 - Use this first for any new key trait (example: `complex_family`).
 
+### Calculator Instances and Seed Layouts
+- `src/domain/controlProfilesCatalog.ts`
+- `src/domain/calculatorSeedManifest.ts`
+- `src/domain/multiCalculator.ts`
+- `src/domain/sandboxPreset.ts`
+- `src/domain/calculatorSurface.ts`
+- Owns: calculator ids, per-calculator control starts, seeded keypad placements, materialization, sandbox calculator order, and keypad surface mapping.
+- Seeded keypad dimensions derive from each calculator control profile's alpha/beta starts; `calculatorSeedManifest` owns placements only.
+- Sandbox mode currently materializes `f_prime`, `g_prime`, `h_prime`, and `i_prime` with shared storage.
+
 ### Key Runtime Catalog Exports
 - `src/content/keyCatalog.ts`
 - `src/content/keyRuntimeCatalog.ts`
@@ -158,6 +168,11 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 ### Key Rendering / Class Assignment
 - `tests/uiModule.calculatorKeypadRender.test.ts`
 - `tests/uiModule.storage.v2.test.ts`
+
+### Calculator Seeds / Sandbox Preset
+- `tests/calculatorSeedManifest.test.ts`
+- `tests/sandboxPreset.test.ts`
+- Use these when changing calculator ids, control-profile starts, seeded keypad placements, sandbox calculator order, or seed dimension policy.
 
 ### Persistence / Save Compatibility
 - `tests/persistence.test.ts`

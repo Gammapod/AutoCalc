@@ -48,6 +48,8 @@ const getCellOccupancy = (
     || target.surface === "keypad_menu"
     || target.surface === "keypad_f_prime"
     || target.surface === "keypad_g_prime"
+    || target.surface === "keypad_h_prime"
+    || target.surface === "keypad_i_prime"
   ) {
     const keyLayout = getKeyLayoutForSurface(state, target.surface);
     const cell = keyLayout?.[target.index];
@@ -157,6 +159,8 @@ const isStorageDropGeometryValid = (
         || destination.surface === "keypad_menu"
         || destination.surface === "keypad_f_prime"
         || destination.surface === "keypad_g_prime"
+        || destination.surface === "keypad_h_prime"
+        || destination.surface === "keypad_i_prime"
       )
     ) {
       const destinationKeypadLayout = getKeyLayoutForSurface(state, destination.surface);
@@ -170,6 +174,8 @@ const isStorageDropGeometryValid = (
         || source.surface === "keypad_menu"
         || source.surface === "keypad_f_prime"
         || source.surface === "keypad_g_prime"
+        || source.surface === "keypad_h_prime"
+        || source.surface === "keypad_i_prime"
       )
       && destination.surface === "storage"
     ) {

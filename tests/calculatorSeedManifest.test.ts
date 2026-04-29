@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
 import { calculatorSeedManifest, createSeededKeyLayout } from "../src/domain/calculatorSeedManifest.js";
+import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import { initialState } from "../src/domain/state.js";
+import type { CalculatorId } from "../src/domain/types.js";
 import { k } from "./support/keyCompat.js";
 
 const keyAt = (layout: ReturnType<typeof createSeededKeyLayout>["keyLayout"], columns: number, rows: number, row: number, col: number): string | null => {
@@ -14,6 +16,12 @@ export const runCalculatorSeedManifestTests = (): void => {
   const menuA = createSeededKeyLayout("menu");
   const menuB = createSeededKeyLayout("menu");
   assert.deepEqual(menuA, menuB, "menu seeded layout is deterministic");
+
+  for (const calculatorId of Object.keys(calculatorSeedManifest) as CalculatorId[]) {
+    const seed = createSeededKeyLayout(calculatorId);
+    assert.equal(seed.columns, controlProfiles[calculatorId].starts.alpha, `${calculatorId} seed columns derive from alpha`);
+    assert.equal(seed.rows, controlProfiles[calculatorId].starts.beta, `${calculatorId} seed rows derive from beta`);
+  }
 
   const g = createSeededKeyLayout("g");
   assert.equal(keyAt(g.keyLayout, g.columns, g.rows, 2, 2), k("toggle_binary_mode"), "g seed places binary toggle at R2C2");
@@ -39,10 +47,25 @@ export const runCalculatorSeedManifestTests = (): void => {
   const gPrime = createSeededKeyLayout("g_prime");
   assert.equal(gPrime.columns, 7, "g' seed uses 7 columns");
   assert.equal(gPrime.rows, 2, "g' seed uses 2 rows");
-  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 2, 2), k("toggle_binary_mode"), "g' seed places binary toggle at R2C2");
-  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 1, 2), k("toggle_mod_zero_to_delta"), "g' seed places mod-range toggle at R1C2");
-  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 1, 6), null, "g' seed leaves blank slots as placeholders");
+  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 2, 7), k("toggle_binary_octave_cycle"), "g' seed places octave-cycle at R2C7");
+  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 2, 3), k("op_interval"), "g' seed places interval at R2C3");
+  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 1, 7), k("viz_ratios"), "g' seed places ratios visualizer at R1C7");
+  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 1, 1), k("exec_step_through"), "g' seed places step-through at R1C1");
+
+  const hPrime = createSeededKeyLayout("h_prime");
+  assert.equal(hPrime.columns, 4, "h' seed uses 4 columns");
+  assert.equal(hPrime.rows, 5, "h' seed uses 5 rows");
+  assert.equal(keyAt(hPrime.keyLayout, hPrime.columns, hPrime.rows, 5, 4), k("toggle_history"), "h' seed places history at R5C4");
+  assert.equal(keyAt(hPrime.keyLayout, hPrime.columns, hPrime.rows, 4, 3), k("op_rotate_15"), "h' seed places rotate operator at R4C3");
+  assert.equal(keyAt(hPrime.keyLayout, hPrime.columns, hPrime.rows, 1, 1), k("exec_equals"), "h' seed places equals at R1C1");
+
+  const iPrime = createSeededKeyLayout("i_prime");
+  assert.equal(iPrime.columns, 4, "i' seed uses 4 columns");
+  assert.equal(iPrime.rows, 7, "i' seed uses 7 rows");
+  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 7, 1), k("toggle_mod_zero_to_delta"), "i' seed places mod range at R7C1");
+  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 4), k("op_euclid_tuple"), "i' seed places euclid tuple at R5C4");
+  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 1, 1), k("exec_equals"), "i' seed places equals at R1C1");
 
   const ids = Object.keys(calculatorSeedManifest).sort((a, b) => a.localeCompare(b));
-  assert.deepEqual(ids, ["f", "f_prime", "g", "g_prime", "menu"], "seed manifest covers all calculator ids");
+  assert.deepEqual(ids, ["f", "f_prime", "g", "g_prime", "h_prime", "i_prime", "menu"], "seed manifest covers all calculator ids");
 };

@@ -58,6 +58,10 @@ export const renderKeypadCells = (
       ? "keypad_f_prime"
     : options.calculatorId === "g_prime"
       ? "keypad_g_prime"
+    : options.calculatorId === "h_prime"
+      ? "keypad_h_prime"
+    : options.calculatorId === "i_prime"
+      ? "keypad_i_prime"
     : options.calculatorId === "f"
       ? "keypad_f"
       : "keypad";

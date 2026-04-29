@@ -44,7 +44,7 @@ export type CalculatorSettings = {
   cycle: AnalyticsSetting;
 };
 export type MemoryVariable = "\u03B1" | "\u03B2" | "\u03B3";
-export type CalculatorId = "g" | "f" | "menu" | "f_prime" | "g_prime";
+export type CalculatorId = "g" | "f" | "menu" | "f_prime" | "g_prime" | "h_prime" | "i_prime";
 export type ExecKey = ExecKeyId;
 export type Key = KeyId;
 export type CanonicalKeyId = KeyId;
@@ -793,6 +793,8 @@ export type LayoutSurface =
   | "keypad_menu"
   | "keypad_f_prime"
   | "keypad_g_prime"
+  | "keypad_h_prime"
+  | "keypad_i_prime"
   | "storage";
 
 export type MoveLayoutCellAction = {

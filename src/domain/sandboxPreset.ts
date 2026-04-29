@@ -23,25 +23,40 @@ const applySandboxKeyPolicy = (state: GameState): GameState =>
 export const createSandboxState = (): GameState => {
   const unlocked = applyUnlockAllPreset(initialState());
   const withFPrime = materializeCalculator(unlocked, "f_prime");
-  const withPrimes = materializeCalculator(withFPrime, "g_prime");
+  const withGPrime = materializeCalculator(withFPrime, "g_prime");
+  const withHPrime = materializeCalculator(withGPrime, "h_prime");
+  const withPrimes = materializeCalculator(withHPrime, "i_prime");
 
   const fPrime = withPrimes.calculators?.f_prime;
   const gPrime = withPrimes.calculators?.g_prime;
-  if (!fPrime || !gPrime) {
+  const hPrime = withPrimes.calculators?.h_prime;
+  const iPrime = withPrimes.calculators?.i_prime;
+  if (!fPrime || !gPrime || !hPrime || !iPrime) {
     throw new Error("Sandbox preset failed to materialize prime calculators.");
   }
 
   const projectedToFPrime = projectCalculatorToLegacy(withPrimes, "f_prime");
   const sandboxUnlocked = applySandboxKeyPolicy(projectedToFPrime);
   const sharedStorageLayout = [...sandboxUnlocked.ui.storageLayout];
+  const sandboxButtonFlags = {
+    ...sandboxUnlocked.ui.buttonFlags,
+    "mode.main_menu": false,
+    "mode.sandbox": true,
+    "mode.storage_content_visible": true,
+  };
 
   return {
     ...sandboxUnlocked,
+    ui: {
+      ...sandboxUnlocked.ui,
+      buttonFlags: { ...sandboxButtonFlags },
+    },
     calculators: {
       f_prime: {
         ...fPrime,
         ui: {
           ...fPrime.ui,
+          buttonFlags: { ...sandboxButtonFlags },
           storageLayout: [...sharedStorageLayout],
         },
       },
@@ -49,15 +64,34 @@ export const createSandboxState = (): GameState => {
         ...gPrime,
         ui: {
           ...gPrime.ui,
+          buttonFlags: { ...sandboxButtonFlags },
+          storageLayout: [...sharedStorageLayout],
+        },
+      },
+      h_prime: {
+        ...hPrime,
+        ui: {
+          ...hPrime.ui,
+          buttonFlags: { ...sandboxButtonFlags },
+          storageLayout: [...sharedStorageLayout],
+        },
+      },
+      i_prime: {
+        ...iPrime,
+        ui: {
+          ...iPrime.ui,
+          buttonFlags: { ...sandboxButtonFlags },
           storageLayout: [...sharedStorageLayout],
         },
       },
     },
-    calculatorOrder: ["f_prime", "g_prime"],
+    calculatorOrder: ["f_prime", "g_prime", "h_prime", "i_prime"],
     activeCalculatorId: "f_prime",
     perCalculatorCompletedUnlockIds: {
       f_prime: [],
       g_prime: [],
+      h_prime: [],
+      i_prime: [],
     },
     unlocks: {
       ...sandboxUnlocked.unlocks,

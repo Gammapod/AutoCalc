@@ -5,7 +5,9 @@ export type CalculatorKeypadSurface =
   | "keypad_g"
   | "keypad_menu"
   | "keypad_f_prime"
-  | "keypad_g_prime";
+  | "keypad_g_prime"
+  | "keypad_h_prime"
+  | "keypad_i_prime";
 
 export const isSpecificCalculatorKeypadSurface = (
   surface: LayoutSurface,
@@ -14,7 +16,9 @@ export const isSpecificCalculatorKeypadSurface = (
   || surface === "keypad_g"
   || surface === "keypad_menu"
   || surface === "keypad_f_prime"
-  || surface === "keypad_g_prime";
+  || surface === "keypad_g_prime"
+  || surface === "keypad_h_prime"
+  || surface === "keypad_i_prime";
 
 export const isAnyKeypadSurface = (
   surface: LayoutSurface,
@@ -30,6 +34,10 @@ export const toCalculatorSurface = (calculatorId: CalculatorId): CalculatorKeypa
         ? "keypad_f_prime"
         : calculatorId === "g_prime"
           ? "keypad_g_prime"
+          : calculatorId === "h_prime"
+            ? "keypad_h_prime"
+            : calculatorId === "i_prime"
+              ? "keypad_i_prime"
           : "keypad_f";
 
 export const fromCalculatorSurface = (surface: CalculatorKeypadSurface): CalculatorId =>
@@ -41,6 +49,10 @@ export const fromCalculatorSurface = (surface: CalculatorKeypadSurface): Calcula
         ? "f_prime"
         : surface === "keypad_g_prime"
           ? "g_prime"
+          : surface === "keypad_h_prime"
+            ? "h_prime"
+            : surface === "keypad_i_prime"
+              ? "i_prime"
           : "f";
 
 export const resolveSurfaceCalculatorId = (state: GameState, surface: LayoutSurface): CalculatorId | null => {
@@ -93,6 +105,12 @@ const resolveActiveCalculatorIdFromState = (state: GameState): CalculatorId => {
   }
   if (state.calculators?.g_prime) {
     return "g_prime";
+  }
+  if (state.calculators?.h_prime) {
+    return "h_prime";
+  }
+  if (state.calculators?.i_prime) {
+    return "i_prime";
   }
   return "f";
 };

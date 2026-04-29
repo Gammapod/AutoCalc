@@ -3,7 +3,7 @@ import { fromKeyLayoutArray } from "./keypadLayoutModel.js";
 import type { CalculatorId, CalculatorInstanceState, GameState } from "./types.js";
 import { controlProfiles } from "./controlProfilesCatalog.js";
 import { createSeededKeyLayout } from "./calculatorSeedManifest.js";
-import { BINARY_MODE_FLAG, buildInstalledOnlyFromKeyLayout, createInitialUiDiagnosticsLastAction } from "./state.js";
+import { buildInstalledOnlyFromKeyLayout, createInitialUiDiagnosticsLastAction } from "./state.js";
 import { createDefaultCalculatorSettings } from "./settings.js";
 import {
   fromCalculatorSurface as fromSurfaceMapping,
@@ -11,7 +11,7 @@ import {
   type CalculatorKeypadSurface,
 } from "./calculatorSurface.js";
 
-export const CALCULATOR_ORDER: readonly CalculatorId[] = ["menu", "f", "g", "f_prime", "g_prime"];
+export const CALCULATOR_ORDER: readonly CalculatorId[] = ["menu", "f", "g", "f_prime", "g_prime", "h_prime", "i_prime"];
 export const MAIN_CALCULATOR_ID: CalculatorId = "f";
 
 const cloneUi = (ui: GameState["ui"]): GameState["ui"] => ({
@@ -151,18 +151,45 @@ const createDefaultFPrimeCalculator = (): CalculatorInstanceState => {
 
 const createDefaultGPrimeCalculator = (): CalculatorInstanceState => {
   const calculatorId: CalculatorId = "g_prime";
-  const ui = createCalculatorUi(calculatorId, {
-    buttonFlags: {
-      [BINARY_MODE_FLAG]: true,
-    },
-  });
+  const ui = createCalculatorUi(calculatorId, {});
   return {
     id: calculatorId,
     symbol: calculatorId,
     calculator: createInitialCalculatorState(),
     settings: {
       ...createDefaultCalculatorSettings(),
-      base: "base2",
+      visualizer: ui.activeVisualizer,
+    },
+    lambdaControl: buildDefaultControl(calculatorId),
+    ui,
+  };
+};
+
+const createDefaultHPrimeCalculator = (): CalculatorInstanceState => {
+  const calculatorId: CalculatorId = "h_prime";
+  const ui = createCalculatorUi(calculatorId, {});
+  return {
+    id: calculatorId,
+    symbol: calculatorId,
+    calculator: createInitialCalculatorState(),
+    settings: {
+      ...createDefaultCalculatorSettings(),
+      visualizer: ui.activeVisualizer,
+    },
+    lambdaControl: buildDefaultControl(calculatorId),
+    ui,
+  };
+};
+
+const createDefaultIPrimeCalculator = (): CalculatorInstanceState => {
+  const calculatorId: CalculatorId = "i_prime";
+  const ui = createCalculatorUi(calculatorId, {});
+  return {
+    id: calculatorId,
+    symbol: calculatorId,
+    calculator: createInitialCalculatorState(),
+    settings: {
+      ...createDefaultCalculatorSettings(),
       visualizer: ui.activeVisualizer,
     },
     lambdaControl: buildDefaultControl(calculatorId),
@@ -289,6 +316,40 @@ export const materializeCalculatorGPrime = (state: GameState): GameState => {
   }, nextCalculators.g_prime.ui.keyLayout);
 };
 
+export const materializeCalculatorHPrime = (state: GameState): GameState => {
+  const withInstances = ensureCalculatorInstances(materializeCalculator(state, "f"));
+  if (withInstances.calculators?.h_prime) {
+    return withInstances;
+  }
+  const nextCalculators = {
+    ...withInstances.calculators,
+    h_prime: createDefaultHPrimeCalculator(),
+  };
+  return withInstalledOnlyFromLayout({
+    ...withInstances,
+    calculators: nextCalculators,
+    calculatorOrder: resolveCalculatorOrder(nextCalculators),
+    activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
+  }, nextCalculators.h_prime.ui.keyLayout);
+};
+
+export const materializeCalculatorIPrime = (state: GameState): GameState => {
+  const withInstances = ensureCalculatorInstances(materializeCalculator(state, "f"));
+  if (withInstances.calculators?.i_prime) {
+    return withInstances;
+  }
+  const nextCalculators = {
+    ...withInstances.calculators,
+    i_prime: createDefaultIPrimeCalculator(),
+  };
+  return withInstalledOnlyFromLayout({
+    ...withInstances,
+    calculators: nextCalculators,
+    calculatorOrder: resolveCalculatorOrder(nextCalculators),
+    activeCalculatorId: withInstances.activeCalculatorId ?? MAIN_CALCULATOR_ID,
+  }, nextCalculators.i_prime.ui.keyLayout);
+};
+
 export const materializeCalculator = (state: GameState, calculatorId: CalculatorId): GameState => {
   if (calculatorId === "f") {
     return ensureCalculatorInstances(state);
@@ -301,6 +362,12 @@ export const materializeCalculator = (state: GameState, calculatorId: Calculator
   }
   if (calculatorId === "g_prime") {
     return materializeCalculatorGPrime(state);
+  }
+  if (calculatorId === "h_prime") {
+    return materializeCalculatorHPrime(state);
+  }
+  if (calculatorId === "i_prime") {
+    return materializeCalculatorIPrime(state);
   }
   return materializeCalculatorMenu(state);
 };
@@ -370,7 +437,7 @@ export const commitLegacyProjection = (previous: GameState, projected: GameState
 
 export const resolveFormulaSymbol = (state: GameState): "f" | "g" => {
   const active = resolveActiveCalculatorId(state);
-  return active === "g" || active === "g_prime" ? "g" : "f";
+  return active === "g" || active === "g_prime" || active === "i_prime" ? "g" : "f";
 };
 
 export const withActiveCalculator = (state: GameState, calculatorId: CalculatorId): GameState =>
