@@ -136,19 +136,24 @@ export const runUiVisualizerFitContractTests = (): void => {
     "settings subgroup stripes retain bright on-state colors for toggle-active styling",
   );
   assert.equal(
-    css.includes("--key-complex-family-label: var(--ux-role-base-setting-color, #c996f0);"),
+    css.includes("--key-complex-family-accent: var(--ux-role-base-setting-color, #c996f0);"),
     true,
-    "complex-family keyface accent token aliases to the canonical violet base role token",
+    "complex-family dot accent token aliases to the canonical violet base role token",
   );
   assert.equal(
     css.includes(".key.key--family-complex .key__label"),
-    true,
-    "complex-family keyface accent selector exists",
+    false,
+    "complex-family keys do not override keyface label color",
   );
   assert.equal(
-    css.includes("color: var(--key-complex-family-label);"),
+    css.includes(".key.key--family-complex::before"),
     true,
-    "complex-family keyface accent selector uses the dedicated complex-family label token",
+    "complex-family dot accent selector exists",
+  );
+  assert.equal(
+    /key--family-complex::before[\s\S]*border-radius:\s*50%;[\s\S]*background:\s*var\(--key-complex-family-accent\);/.test(css),
+    true,
+    "complex-family dot accent uses the dedicated violet accent token",
   );
   assert.equal(
     css.includes('.key.key--group-slot_operator:not(.key--unary-operator)::after'),

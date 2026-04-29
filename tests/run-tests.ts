@@ -8,6 +8,7 @@ import { runContractsDomainUiEffectsCurrentTests } from "./contracts.domainUiEff
 import { runNoLegacySymbolsGuardTests } from "./noLegacySymbols.guard.test.js";
 import { runBootstrapDebugControlBindingsTests } from "./bootstrapDebugControlBindings.test.js";
 import { runReducerScalarLimitPolicyTests } from "./reducer.scalarLimitPolicy.test.js";
+import { runReducerRollAnalysisTests } from "./reducer.rollAnalysis.test.js";
 import { runUiVisualizerUxSpecInvariantsTests } from "./uiVisualizerUxSpecInvariants.test.js";
 import { runUiModuleRatiosRendererV2Tests } from "./uiModule.ratiosRenderer.v2.test.js";
 import { runKeyCapabilityProgressionTests } from "./keyCapabilityProgression.test.js";
@@ -29,6 +30,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/no-legacy-symbols-guard", runNoLegacySymbolsGuardTests],
   ["ui/bootstrap-debug-control-bindings", runBootstrapDebugControlBindingsTests],
   ["reducer/scalar-limit-policy", runReducerScalarLimitPolicyTests],
+  ["reducer/roll-analysis", runReducerRollAnalysisTests],
   ["ui/module-ratios-renderer-v2", runUiModuleRatiosRendererV2Tests],
   ["ui/visualizer-ux-spec-invariants", runUiVisualizerUxSpecInvariantsTests],
   ["domain/key-capability-progression", runKeyCapabilityProgressionTests],

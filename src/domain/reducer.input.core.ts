@@ -1309,6 +1309,14 @@ const withCycleRollAnalysis = (base: GameState, cycleMatchIndex: number, nextInd
   },
 });
 
+const operationSlotsUseRollNumber = (operationSlots: GameState["calculator"]["operationSlots"]): boolean =>
+  operationSlots.some((slot) =>
+    slot.kind !== "unary"
+    && typeof slot.operand === "object"
+    && slot.operand.type === "symbolic"
+    && slot.operand.text === ROLL_NUMBER_SYMBOL
+  );
+
 type RollDiagnosticContext = {
   rollEntries: RollEntry[];
   nextIndex: number;
@@ -1421,7 +1429,7 @@ const withIncrementalRollDiagnosticsApplied = (
   const cycleMatchIndex = context.rollEntries
     .slice(0, context.nextIndex)
     .findIndex((entry) => calculatorValueEquals(entry.y, context.current.y));
-  if (cycleMatchIndex >= 0) {
+  if (cycleMatchIndex >= 0 && !operationSlotsUseRollNumber(operationSlots)) {
     return withCycleRollAnalysis(base, cycleMatchIndex, context.nextIndex);
   }
 
@@ -1522,7 +1530,7 @@ const withRollDiagnosticsApplied = (
     const cycleMatchAnalysisIndex = projection
       .slice(0, analysisIndex)
       .findIndex((candidate) => calculatorValueEquals(candidate.entry.y, current.y));
-    if (cycleMatchAnalysisIndex >= 0) {
+    if (cycleMatchAnalysisIndex >= 0 && !operationSlotsUseRollNumber(operationSlots)) {
       const cycleStart = projection[cycleMatchAnalysisIndex];
       if (!cycleStart) {
         return {

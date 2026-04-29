@@ -176,6 +176,7 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 ### Reducer Pipeline / Action Boundary
 - `tests/contracts.actionEvent.current.test.ts`
 - `tests/contracts.domainUiEffects.current.test.ts`
+- `tests/reducer.rollAnalysis.test.ts`
 - `tests/reducer.scalarLimitPolicy.test.ts`
 - `tests/reducer.executionIRRoutingParity.test.ts`
 - Use these when changing reducer-facing action contracts, effect boundaries, scalar-limit behavior, or input execution routing.
@@ -208,6 +209,7 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 2. Run targeted tests only (preferred):
 - Key/catalog work: `node ./dist/tests/run-tests.js --grep="^(domain/key-catalog-normalization|contracts/catalog-canonical-guard)$"`
 - Persistence/projection/refactor boundaries: `node ./dist/tests/run-tests.js --grep="^(persistence|v2/persistence-parity|contracts/slot-input-target-spec|domain/unlock-hint-progress|ui/graph-hint-projection|ui/feed-hint-projection)$"`
+- Reducer roll-analysis behavior: `node ./dist/tests/run-tests.js --grep="^reducer/roll-analysis$"`
 
 3. If a target test file is not included by `tests/run-tests.ts`, run focused ad-hoc compile+invoke:
 - Compile selected tests to a temp out dir.

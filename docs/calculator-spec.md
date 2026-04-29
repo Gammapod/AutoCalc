@@ -146,7 +146,7 @@ f'
 {
   "schema": "debug_calculator_snapshot_v3",
   "capturedAt": "2026-04-24T18:33:18.909Z",
-  "calculatorId": "f",
+  "calculatorId": "f_prime",
   "lambdaControl": {
     "alpha": 6,
     "beta": 5,
@@ -613,6 +613,531 @@ g'
         "col": 1,
         "kind": "key",
         "key": "exec_step_through",
+        "status": "unlock",
+        "capability": "portable"
+      }
+    ]
+  }
+}
+
+==========
+----------
+h'
+----------{
+  "schema": "debug_calculator_snapshot_v3",
+  "capturedAt": "2026-04-29T20:00:17.587Z",
+  "calculatorId": "h_prime",
+  "lambdaControl": {
+    "alpha": 4,
+    "beta": 5,
+    "gamma": 6,
+    "delta": 12,
+    "delta_q": 12,
+    "epsilon": 1
+  },
+  "keypad": {
+    "columns": 4,
+    "rows": 5,
+    "keyLayoutDebug": [
+      {
+        "index": 0,
+        "rowColId": "R5C4",
+        "row": 5,
+        "col": 4,
+        "kind": "key",
+        "key": "toggle_history",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 1,
+        "rowColId": "R5C3",
+        "row": 5,
+        "col": 3,
+        "kind": "key",
+        "key": "toggle_forecast",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 2,
+        "rowColId": "R5C2",
+        "row": 5,
+        "col": 2,
+        "kind": "key",
+        "key": "util_backspace",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 3,
+        "rowColId": "R5C1",
+        "row": 5,
+        "col": 1,
+        "kind": "key",
+        "key": "util_clear_all",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 4,
+        "rowColId": "R4C4",
+        "row": 4,
+        "col": 4,
+        "kind": "placeholder",
+        "area": "empty"
+      },
+      {
+        "index": 5,
+        "rowColId": "R4C3",
+        "row": 4,
+        "col": 3,
+        "kind": "key",
+        "key": "op_rotate_15",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 6,
+        "rowColId": "R4C2",
+        "row": 4,
+        "col": 2,
+        "kind": "key",
+        "key": "unary_rotate_15",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 7,
+        "rowColId": "R4C1",
+        "row": 4,
+        "col": 1,
+        "kind": "key",
+        "key": "unary_neg",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 8,
+        "rowColId": "R3C4",
+        "row": 3,
+        "col": 4,
+        "kind": "key",
+        "key": "unary_imaginary_part",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 9,
+        "rowColId": "R3C3",
+        "row": 3,
+        "col": 3,
+        "kind": "key",
+        "key": "unary_minus_i",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 10,
+        "rowColId": "R3C2",
+        "row": 3,
+        "col": 2,
+        "kind": "key",
+        "key": "unary_plus_i",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 11,
+        "rowColId": "R3C1",
+        "row": 3,
+        "col": 1,
+        "kind": "key",
+        "key": "unary_conjugate",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 12,
+        "rowColId": "R2C4",
+        "row": 2,
+        "col": 4,
+        "kind": "key",
+        "key": "unary_real_part",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 13,
+        "rowColId": "R2C3",
+        "row": 2,
+        "col": 3,
+        "kind": "key",
+        "key": "unary_dec",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 14,
+        "rowColId": "R2C2",
+        "row": 2,
+        "col": 2,
+        "kind": "key",
+        "key": "unary_inc",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 15,
+        "rowColId": "R2C1",
+        "row": 2,
+        "col": 1,
+        "kind": "key",
+        "key": "unary_real_flip",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 16,
+        "rowColId": "R1C4",
+        "row": 1,
+        "col": 4,
+        "kind": "key",
+        "key": "viz_graph",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 17,
+        "rowColId": "R1C3",
+        "row": 1,
+        "col": 3,
+        "kind": "key",
+        "key": "viz_number_line",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 18,
+        "rowColId": "R1C2",
+        "row": 1,
+        "col": 2,
+        "kind": "key",
+        "key": "viz_circle",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 19,
+        "rowColId": "R1C1",
+        "row": 1,
+        "col": 1,
+        "kind": "key",
+        "key": "exec_equals",
+        "status": "unlock",
+        "capability": "portable"
+      }
+    ]
+  }
+}
+
+----------
+==========
+i'
+==========
+{
+  "schema": "debug_calculator_snapshot_v3",
+  "capturedAt": "2026-04-29T23:14:07.471Z",
+  "calculatorId": "i_prime",
+  "lambdaControl": {
+    "alpha": 4,
+    "beta": 7,
+    "gamma": 6,
+    "delta": 1,
+    "delta_q": 1,
+    "epsilon": 0
+  },
+  "keypad": {
+    "columns": 4,
+    "rows": 7,
+    "keyLayoutDebug": [
+      {
+        "index": 0,
+        "rowColId": "R7C4",
+        "row": 7,
+        "col": 4,
+        "kind": "key",
+        "key": "toggle_history",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 1,
+        "rowColId": "R7C3",
+        "row": 7,
+        "col": 3,
+        "kind": "key",
+        "key": "toggle_step_expansion",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 2,
+        "rowColId": "R7C2",
+        "row": 7,
+        "col": 2,
+        "kind": "key",
+        "key": "toggle_cycle",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 3,
+        "rowColId": "R7C1",
+        "row": 7,
+        "col": 1,
+        "kind": "key",
+        "key": "toggle_mod_zero_to_delta",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 4,
+        "rowColId": "R6C4",
+        "row": 6,
+        "col": 4,
+        "kind": "key",
+        "key": "viz_feed",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 5,
+        "rowColId": "R6C3",
+        "row": 6,
+        "col": 3,
+        "kind": "key",
+        "key": "viz_number_line",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 6,
+        "rowColId": "R6C2",
+        "row": 6,
+        "col": 2,
+        "kind": "key",
+        "key": "util_backspace",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 7,
+        "rowColId": "R6C1",
+        "row": 6,
+        "col": 1,
+        "kind": "key",
+        "key": "util_clear_all",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 8,
+        "rowColId": "R5C4",
+        "row": 5,
+        "col": 4,
+        "kind": "key",
+        "key": "op_euclid_tuple",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 9,
+        "rowColId": "R5C3",
+        "row": 5,
+        "col": 3,
+        "kind": "key",
+        "key": "op_euclid_div",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 10,
+        "rowColId": "R5C2",
+        "row": 5,
+        "col": 2,
+        "kind": "key",
+        "key": "op_mod",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 11,
+        "rowColId": "R5C1",
+        "row": 5,
+        "col": 1,
+        "kind": "key",
+        "key": "unary_reciprocal",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 12,
+        "rowColId": "R4C4",
+        "row": 4,
+        "col": 4,
+        "kind": "key",
+        "key": "op_rotate_15",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 13,
+        "rowColId": "R4C3",
+        "row": 4,
+        "col": 3,
+        "kind": "key",
+        "key": "unary_i",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 14,
+        "rowColId": "R4C2",
+        "row": 4,
+        "col": 2,
+        "kind": "key",
+        "key": "unary_neg",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 15,
+        "rowColId": "R4C1",
+        "row": 4,
+        "col": 1,
+        "kind": "key",
+        "key": "op_mul",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 16,
+        "rowColId": "R3C4",
+        "row": 3,
+        "col": 4,
+        "kind": "key",
+        "key": "digit_1",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 17,
+        "rowColId": "R3C3",
+        "row": 3,
+        "col": 3,
+        "kind": "key",
+        "key": "digit_2",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 18,
+        "rowColId": "R3C2",
+        "row": 3,
+        "col": 2,
+        "kind": "key",
+        "key": "digit_3",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 19,
+        "rowColId": "R3C1",
+        "row": 3,
+        "col": 1,
+        "kind": "key",
+        "key": "op_add",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 20,
+        "rowColId": "R2C4",
+        "row": 2,
+        "col": 4,
+        "kind": "key",
+        "key": "digit_4",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 21,
+        "rowColId": "R2C3",
+        "row": 2,
+        "col": 3,
+        "kind": "key",
+        "key": "digit_5",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 22,
+        "rowColId": "R2C2",
+        "row": 2,
+        "col": 2,
+        "kind": "key",
+        "key": "digit_6",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 23,
+        "rowColId": "R2C1",
+        "row": 2,
+        "col": 1,
+        "kind": "key",
+        "key": "op_sub",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 24,
+        "rowColId": "R1C4",
+        "row": 1,
+        "col": 4,
+        "kind": "key",
+        "key": "digit_7",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 25,
+        "rowColId": "R1C3",
+        "row": 1,
+        "col": 3,
+        "kind": "key",
+        "key": "digit_8",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 26,
+        "rowColId": "R1C2",
+        "row": 1,
+        "col": 2,
+        "kind": "key",
+        "key": "digit_9",
+        "status": "unlock",
+        "capability": "portable"
+      },
+      {
+        "index": 27,
+        "rowColId": "R1C1",
+        "row": 1,
+        "col": 1,
+        "kind": "key",
+        "key": "exec_equals",
         "status": "unlock",
         "capability": "portable"
       }

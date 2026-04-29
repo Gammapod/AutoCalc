@@ -1,3 +1,15 @@
+.key.key--family-complex::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--key-complex-family-accent);
+  pointer-events: none;
+}
+
 .key.key--group-slot_operator:not(.key--unary-operator)::after {
   content: "";
   position: absolute;
