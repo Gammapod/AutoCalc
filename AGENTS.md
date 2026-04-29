@@ -11,3 +11,9 @@ Before touching any files (including edits, deletes, or code generation), every 
 3. Use those documents to identify canonical paths, contracts, and workflows relevant to the requested task.
 
 If either file is missing or unclear, stop and report that before proceeding with file changes.
+
+## Discovery Map Maintenance
+
+When a change adds, removes, renames, or meaningfully reassigns ownership for a system touchpoint, update `docs/code-map.md` in the same working change. This especially applies to bootstrap/runtime wiring, persistence schema policy, reducer pipeline phases, read-model/projection boundaries, visualizer registration, and test contract entrypoints.
+
+Do not leave references to deleted compatibility scaffolding, legacy-only tests, or retired migration paths in the code map.
