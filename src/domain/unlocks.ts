@@ -5,7 +5,7 @@ import { STORAGE_COLUMNS } from "./state.js";
 import { setButtonInstalledOnly, setButtonUnlocked } from "./buttonStateAccess.js";
 import type { GameState, Key, UnlockDefinition, UnlockEffect, UnlockPredicate } from "./types.js";
 import { evaluateUnlockPredicate } from "./unlockEngine.js";
-import { materializeCalculator } from "./multiCalculator.js";
+import { commitLegacyProjection, materializeCalculator, resolveActiveCalculatorId } from "./multiCalculator.js";
 import { normalizeRuntimeStateInvariants } from "./runtimeStateInvariants.js";
 
 export const evaluatePredicate = (predicate: UnlockPredicate, state: GameState): boolean =>
@@ -238,7 +238,12 @@ export const applyEffect = (effect: UnlockEffect, state: GameState): GameState =
 
 export const applyUnlocks = (state: GameState, catalog: UnlockDefinition[]): GameState => {
   if (state.ui.buttonFlags["mode.sandbox"]) {
-    return normalizeRuntimeStateInvariants(state);
+    const activeCalculatorId = resolveActiveCalculatorId(state);
+    const hasActiveInstance = Boolean(state.calculators?.[activeCalculatorId]);
+    const withCommittedProjection = hasActiveInstance
+      ? commitLegacyProjection(state, state, activeCalculatorId)
+      : state;
+    return normalizeRuntimeStateInvariants(withCommittedProjection);
   }
   let nextState = state;
   const newlyUnlockedKeys = new Set<Key>();

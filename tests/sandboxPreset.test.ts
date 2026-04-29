@@ -77,4 +77,17 @@ export const runSandboxPresetTests = (): void => {
   const afterFPrimeDigit = reducer(afterSwitchToGPrime, { type: "PRESS_KEY", key: KEY_ID.digit_2, calculatorId: "f_prime" });
   assert.equal(keyAt(afterFPrimeDigit, "f_prime", 2, 5), KEY_ID.digit_2, "f_prime keeps digit_2 after targeted input");
   assert.equal(keyAt(afterFPrimeDigit, "f_prime", 1, 1), KEY_ID.exec_equals, "f_prime keeps equals after targeted input");
+
+  const afterFPrimeAlphaUpdate = reducer(sandbox, { type: "SET_CONTROL_FIELD", calculatorId: "f_prime", field: "alpha", value: 8 });
+  assert.equal(afterFPrimeAlphaUpdate.calculators?.f_prime?.ui.keypadColumns, 8, "f_prime alpha update resizes keypad columns in sandbox");
+  assert.equal(afterFPrimeAlphaUpdate.ui.keypadColumns, 8, "active sandbox projection reflects updated f_prime keypad columns");
+
+  const afterFPrimeBetaUpdate = reducer(afterFPrimeAlphaUpdate, {
+    type: "SET_CONTROL_FIELD",
+    calculatorId: "f_prime",
+    field: "beta",
+    value: 3,
+  });
+  assert.equal(afterFPrimeBetaUpdate.calculators?.f_prime?.ui.keypadRows, 3, "f_prime beta update resizes keypad rows in sandbox");
+  assert.equal(afterFPrimeBetaUpdate.ui.keypadRows, 3, "active sandbox projection reflects updated f_prime keypad rows");
 };
