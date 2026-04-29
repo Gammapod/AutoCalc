@@ -12,6 +12,17 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 
 ## Core Systems
 
+### Bootstrap and Runtime Composition
+- `src/app/bootstrap.ts`
+- `src/app/bootstrap/bootState.ts`
+- `src/app/bootstrap/uiControllerWiring.ts`
+- `src/app/bootstrap/subscriptionCoordinator.ts`
+- `src/app/modeTransitionCoordinator.ts`
+- `src/app/persistenceSaveScheduler.ts`
+- `src/ui/shared/appVersion.ts`
+- Owns: app startup, boot-state construction, runtime version resolution, UI controller wiring, subscriptions, mode transitions, persistence scheduling, initial render, and cleanup.
+- Keep `src/app/bootstrap.ts` as the composition root; move small boot-state, version, subscription, or UI-wiring details into the helper modules above.
+
 ### Canonical Key Metadata
 - `src/contracts/keyCatalog.ts`
 - Owns: key id, category, unlock group, traits, behavior kind, runtime-facing metadata.
@@ -42,8 +53,24 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 ### Dispatch and Reducer Boundary
 - `src/app/store.ts`
 - `src/domain/reducer.ts`
+- `src/domain/reducer.pipeline.ts`
+- `src/domain/reducer.pipeline.action.ts`
+- `src/domain/reducer.pipeline.scope.ts`
+- `src/domain/reducer.pipeline.diagnostics.ts`
+- `src/domain/reducer.input.ts`
 - `src/domain/reducer.input.core.ts`
-- Owns: app dispatch entrypoint and canonical reducer/input routing.
+- Owns: app dispatch entrypoint, canonical reducer phase sequencing, action-policy resolution, projection scope, diagnostics, and input routing.
+- Treat the `reducer.pipeline.*` files as phase-clarity helpers for the canonical reducer, not as an alternate reducer implementation.
+
+### Persistence
+- `src/infra/persistence/localStorageRepo.ts`
+- `src/infra/persistence/saveEnvelope.ts`
+- `src/infra/persistence/saveCodecV20.ts`
+- `src/infra/persistence/runtimeLoadNormalizer.ts`
+- `src/infra/persistence/migrations/registry.ts`
+- `src/domain/state.ts`
+- Owns: save-envelope parsing, current codec serialization, localStorage read/write behavior, load error policy, runtime normalization, and default state shape.
+- Current policy: only `SAVE_SCHEMA_VERSION` loads successfully; older schemas return `UnsupportedSchemaVersion`. `src/infra/persistence/migrations/registry.ts` is a generic helper only and is not wired into the current load path.
 
 ### Unlock Predicates and Hint Projection
 - `src/content/unlocks.catalog.ts`
@@ -51,16 +78,23 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - `src/domain/unlockGraph.ts`
 - `src/domain/unlockHintProgress.ts`
 - `src/ui/shared/readModel.total.ts`
+- `src/ui/shared/viewModelProjection.ts`
 - `src/ui/modules/calculator/totalDisplay.ts`
-- Owns: unlock predicate definitions, evaluator wiring, and total-strip hint projection.
+- `src/ui/modules/visualizers/hintProjectionShared.ts`
+- `src/ui/modules/visualizers/feedHintProjection.ts`
+- `src/ui/modules/visualizers/graphHintProjection.ts`
+- Owns: unlock predicate definitions, evaluator wiring, domain progress rows, total-strip hint projection, and visualizer hint projection.
+- Domain files own predicate truth and progress. UI/read-model files own wording, categories, ARIA copy, UX roles, and formatted progress text.
 
 ### Calculator Keypad Rendering
 - `src/ui/modules/calculator/keypadRender.ts`
+- `src/ui/shared/keyButtonClasses.ts`
 - Owns: per-key class assignment (group classes, unary class, trait-based classes).
 
 ### Storage Rendering
 - `src/ui/modules/storage/render.ts`
-- Owns: storage key button class parity with keypad.
+- `src/ui/shared/keyButtonClasses.ts`
+- Owns: storage key button class parity with keypad via shared class assignment.
 
 ### Key Styling
 - `styles/key-family.css`
@@ -75,11 +109,15 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 
 ### Visualizer Roll/Projection Sources
 - `src/ui/modules/visualizers/registry.ts`
+- `src/ui/shared/viewModelProjection.ts`
 - `src/ui/shared/readModel.rollFeed.ts`
 - `src/ui/shared/readModel.algebraic.ts`
 - `src/ui/shared/readModel.factorization.ts`
 - `src/domain/diagnostics.ts`
 - `src/domain/graphProjection.ts`
+- `src/ui/modules/visualizers/hintProjectionShared.ts`
+- `src/ui/modules/visualizers/feedHintProjection.ts`
+- `src/ui/modules/visualizers/graphHintProjection.ts`
 - `src/ui/modules/visualizers/numberLineModel.ts`
 - `src/ui/modules/visualizers/circleRenderer.ts`
 - `src/ui/modules/calculator/totalDisplay.ts`
@@ -105,7 +143,7 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - `docs/math-spec.md`
 - `docs/functional-spec.md`
 - `docs/planning/visualizer-roll-content-interaction-matrix.md`
-- `docs/planning/unlock-predicate-condition-matrix.md`
+- `docs/planning/operator-testing-matrix.md`
 
 Use these when behavior seems ambiguous; they are the first stop before inventing new policy.
 
@@ -121,6 +159,40 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 - `tests/uiModule.calculatorKeypadRender.test.ts`
 - `tests/uiModule.storage.v2.test.ts`
 
+### Persistence / Save Compatibility
+- `tests/persistence.test.ts`
+- `tests/v2PersistenceParity.test.ts`
+- Use these when changing save codecs, schema-version policy, localStorage errors, or runtime load normalization.
+
+### Bootstrap / Runtime Wiring
+- `tests/bootstrapBoundary.test.ts`
+- `tests/bootstrapDebugControlBindings.test.ts`
+- `tests/bootstrapImportOrder.test.ts`
+- `tests/bootstrapModeTransitionRuntimeContract.test.ts`
+- `tests/bootstrapPersistenceScheduling.test.ts`
+- `tests/modeTransitionCoordinator.test.ts`
+- `tests/persistenceSaveScheduler.test.ts`
+
+### Reducer Pipeline / Action Boundary
+- `tests/contracts.actionEvent.current.test.ts`
+- `tests/contracts.domainUiEffects.current.test.ts`
+- `tests/reducer.scalarLimitPolicy.test.ts`
+- `tests/reducer.executionIRRoutingParity.test.ts`
+- Use these when changing reducer-facing action contracts, effect boundaries, scalar-limit behavior, or input execution routing.
+
+### Unlock Hint / Visualizer Projection
+- `tests/unlockHintProgress.test.ts`
+- `tests/uiGraphHintProjection.test.ts`
+- `tests/uiFeedHintProjection.test.ts`
+- `tests/uiUxRoleSystem.test.ts`
+- Use these when changing domain hint progress rows, total-display hint rows, hint categories, UX roles, or visualizer hint projections.
+
+### Slot Input Target Spec
+- `tests/contracts.slotInputTargetSpec.test.ts`
+- `tests/helpers/slotInput.contractFixtures.ts`
+- `tests/helpers/slotInput.contractRunner.ts`
+- The slot-input contract fixtures describe current target behavior. Avoid reintroducing legacy-only parity scenarios unless the current product behavior requires them.
+
 ### CSS / UX Contracts
 - `tests/uiVisualizerFitContract.test.ts`
 - `tests/uiVisualizerUxSpecInvariants.test.ts`
@@ -134,9 +206,10 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 - `npm run build:web:full`
 
 2. Run targeted tests only (preferred):
-- `node ./dist/tests/run-tests.js --grep="^(domain/key-catalog-normalization|contracts/catalog-canonical-guard)$"`
+- Key/catalog work: `node ./dist/tests/run-tests.js --grep="^(domain/key-catalog-normalization|contracts/catalog-canonical-guard)$"`
+- Persistence/projection/refactor boundaries: `node ./dist/tests/run-tests.js --grep="^(persistence|v2/persistence-parity|contracts/slot-input-target-spec|domain/unlock-hint-progress|ui/graph-hint-projection|ui/feed-hint-projection)$"`
 
-3. If a target test file is not included by `run-tests.ts`, run focused ad-hoc compile+invoke:
+3. If a target test file is not included by `tests/run-tests.ts`, run focused ad-hoc compile+invoke:
 - Compile selected tests to a temp out dir.
 - Execute only those test modules with Node.
 
@@ -144,9 +217,15 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 - Find all trait usage points:
   - `rg --line-number "KeyTrait|traits\.includes\(|complex_family" src tests`
 - Find key render class assignment:
-  - `rg --line-number "classList\.add\(\"key--" src/ui/modules`
+  - `rg --line-number "applySharedKeyButtonClasses|classList\.add\(\"key--|key--family|key--group" src/ui tests`
 - Find key symbol/label definitions:
   - `rg --line-number "KEY_ID|keyface|slot|operator" src/domain`
+- Find reducer-pipeline phases:
+  - `rg --line-number "reduceThroughReducerPipeline|resolve.*Action|ProjectionScope|diagnostic" src/domain tests`
+- Find persistence schema/load policy:
+  - `rg --line-number "SAVE_SCHEMA_VERSION|UnsupportedSchemaVersion|loadFromRawSave|loadFromLocalStorage" src tests`
+- Find unlock-hint and visualizer projection boundaries:
+  - `rg --line-number "projectEligibleUnlockHintProgressRows|buildTotalHintRowsViewModel|HintProjection|ViewModelProjection" src tests`
 
 ## Per-Key Implementation Checklist
 - [ ] Add/adjust key entry in `keyCatalog`.
