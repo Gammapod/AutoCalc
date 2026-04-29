@@ -15,6 +15,9 @@ import { runOperatorTestingMatrixContractTests } from "./operatorTestingMatrix.c
 import { runDisplayPolicySevenSegmentTests } from "./displayPolicy.sevenSegment.test.js";
 import { runUiGraphHintProjectionTests } from "./uiGraphHintProjection.test.js";
 import { runUiFeedHintProjectionTests } from "./uiFeedHintProjection.test.js";
+import { runContractsSlotInputTargetSpecTests } from "./contracts.slotInputTargetSpec.test.js";
+import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
+import { runUiUxRoleSystemTests } from "./uiUxRoleSystem.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -33,6 +36,9 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/display-policy-seven-segment", runDisplayPolicySevenSegmentTests],
   ["ui/graph-hint-projection", runUiGraphHintProjectionTests],
   ["ui/feed-hint-projection", runUiFeedHintProjectionTests],
+  ["contracts/slot-input-target-spec", runContractsSlotInputTargetSpecTests],
+  ["domain/unlock-hint-progress", runUnlockHintProgressTests],
+  ["ui/ux-role-system", runUiUxRoleSystemTests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

@@ -5,6 +5,7 @@ import { applyEqualsFromStepProgress } from "../src/domain/reducer.input.core.js
 import {
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
+  initialState,
 } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import {
@@ -17,7 +18,6 @@ import {
 import { executeSlotsValue } from "../src/domain/engine.js";
 import { resolveRollInversePlan } from "../src/domain/rollInverseExecution.js";
 import type { GameState, Slot } from "../src/domain/types.js";
-import { legacyInitialState } from "./support/legacyState.js";
 import { executionUnlockPatch, op, uop } from "./support/keyCompat.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
@@ -88,26 +88,26 @@ export const runOperatorTestingMatrixContractTests = (): void => {
   assertInversePlanAmbiguous("INV-PLAN-OP-INTERVAL-GUARD-01B", { operator: op("op_interval"), operand: -1n });
 
   const base: GameState = withStepProgressReset({
-    ...legacyInitialState(),
+    ...initialState(),
     unlocks: {
-      ...legacyInitialState().unlocks,
+      ...initialState().unlocks,
       maxSlots: 2,
       maxTotalDigits: 2,
       utilities: {
-        ...legacyInitialState().unlocks.utilities,
+        ...initialState().unlocks.utilities,
         [KEY_ID.util_clear_all]: true,
       },
       execution: {
-        ...legacyInitialState().unlocks.execution,
+        ...initialState().unlocks.execution,
         ...executionUnlockPatch([["exec_equals", true], ["exec_step_through", true], ["exec_roll_inverse", true]]),
       },
       slotOperators: {
-        ...legacyInitialState().unlocks.slotOperators,
+        ...initialState().unlocks.slotOperators,
         [op("op_add")]: true,
       },
     },
     ui: {
-      ...legacyInitialState().ui,
+      ...initialState().ui,
       keyLayout: [
         { kind: "key", key: KEY_ID.exec_roll_inverse },
         { kind: "key", key: KEY_ID.exec_step_through },
@@ -121,7 +121,7 @@ export const runOperatorTestingMatrixContractTests = (): void => {
       },
     },
     calculator: {
-      ...legacyInitialState().calculator,
+      ...initialState().calculator,
       total: r(99n),
       operationSlots: [{ operator: op("op_add"), operand: 1n }],
       rollEntries: [],

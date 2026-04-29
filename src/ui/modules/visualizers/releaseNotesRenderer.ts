@@ -1,18 +1,7 @@
 import { getAppServices } from "../../../contracts/appServices.js";
 import type { ReleaseNoteEntry } from "../../../contracts/releaseNotes.js";
 import type { GameState } from "../../../domain/types.js";
-import { APP_VERSION } from "../../../generated/appVersion.js";
-
-const resolveAppVersion = (): string => {
-  if (typeof document === "undefined") {
-    return `v${APP_VERSION}`;
-  }
-  const versionToken = document.body.dataset.appVersion?.trim();
-  if (!versionToken) {
-    return `v${APP_VERSION}`;
-  }
-  return versionToken.startsWith("v") ? versionToken : `v${versionToken}`;
-};
+import { resolveAppVersionFromDocument } from "../../shared/appVersion.js";
 
 const normalizeVersion = (version: string): string =>
   version
@@ -52,7 +41,7 @@ type ResolvedReleaseNote = {
 
 const resolveCurrentReleaseNote = (): ResolvedReleaseNote => {
   const notes = getAppServices().contentProvider.releaseNotes.entries;
-  const appVersion = resolveAppVersion();
+  const appVersion = resolveAppVersionFromDocument();
   const currentVersion = normalizeVersion(appVersion);
   const currentParts = parseVersionParts(appVersion);
 
@@ -101,7 +90,7 @@ export const renderReleaseNotesVisualizerPanel = (root: Element, _state: GameSta
   panel.innerHTML = "";
   panel.setAttribute("aria-hidden", "false");
 
-  const appVersion = resolveAppVersion();
+  const appVersion = resolveAppVersionFromDocument();
   const resolved = resolveCurrentReleaseNote();
   const note = resolved.note;
 

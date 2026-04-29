@@ -1,12 +1,11 @@
 import "../support/keyCompat.runtime.js";
-import { toNanCalculatorValue, toRationalCalculatorValue } from "../../src/domain/calculatorValue.js";
+import { toRationalCalculatorValue } from "../../src/domain/calculatorValue.js";
 import { resolveKeyId, type KeyId } from "../../src/domain/keyPresentation.js";
 import { initialState } from "../../src/domain/state.js";
-import { legacyInitialState } from "../support/legacyState.js";
-import type { ErrorCode, ExecutionErrorKind, GameState, KeyInput, RollEntry } from "../../src/domain/types.js";
+import type { ErrorCode, ExecutionErrorKind, GameState, KeyInput } from "../../src/domain/types.js";
 import { keyCounts, op } from "../support/keyCompat.js";
 
-export type SlotInputScenarioTag = "legacy_contract" | "target_spec";
+export type SlotInputScenarioTag = "target_spec";
 
 export type SlotInputStateProjection = {
   total?: GameState["calculator"]["total"];
@@ -28,7 +27,6 @@ export type SlotInputScenario = {
 };
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
-const re = (...values: RollEntry["y"][]): RollEntry[] => values.map((y) => ({ y }));
 
 const ensureKeyOnKeypad = (state: GameState, key: KeyInput): GameState => {
   const keyId = resolveKeyId(key);
@@ -183,35 +181,15 @@ const withUnlockedKeys = (state: GameState, keys: readonly KeyInput[]): GameStat
   return next;
 };
 
-const base = legacyInitialState();
+const base = initialState();
 
 export const slotInputScenarios: readonly SlotInputScenario[] = [
   {
-    id: "legacy.start_drafting_and_digit",
-    description: "Operator starts drafting; digit fills drafting operand.",
-    tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(base, ["op_add", "digit_1"]),
-    keySequence: ["op_add", "digit_1"],
-    expectedProjection: {
-      operationSlots: [],
-      draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
-      roll: [r(0n)],
-      keyPressCounts: keyCounts([["op_add", 1], ["digit_1", 1]]),
-    },
-  },
-  {
-    id: "legacy.equals_clears_empty_drafting_slot",
+    id: "target.equals_clears_empty_drafting_slot",
     description: "Executing with half-filled slot drops drafting slot and executes committed slots only.",
-    tags: ["legacy_contract", "target_spec"],
+    tags: ["target_spec"],
     initialState: withUnlockedKeys(base, ["op_add", "exec_equals"]),
     keySequence: ["op_add", "exec_equals"],
-    expectedProjection: {
-      operationSlots: [],
-      draftingSlot: null,
-      total: r(0n),
-      roll: [r(0n)],
-      keyPressCounts: keyCounts([["op_add", 1], ["exec_equals", 1]]),
-    },
     targetProjection: {
       draftingSlot: null,
     },
@@ -318,163 +296,6 @@ export const slotInputScenarios: readonly SlotInputScenario[] = [
       draftingSlot: null,
       roll: [],
       keyPressCounts: keyCounts([["digit_1", 1], ["digit_2", 1]]),
-    },
-  },
-  {
-    id: "legacy.c_resets_calculator",
-    description: "C clears roll/slots/drafting and resets total.",
-    tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(
-      {
-        ...base,
-        calculator: {
-          ...base.calculator,
-          total: r(7n),
-          rollEntries: re(r(5n), r(7n)),
-          operationSlots: [{ operator: op("op_sub"), operand: 2n }],
-          draftingSlot: { operator: op("op_add"), operandInput: "1", isNegative: false },
-        },
-      },
-      ["util_clear_all"],
-    ),
-    keySequence: ["util_clear_all"],
-    expectedProjection: {
-      total: r(0n),
-      roll: [],
-      operationSlots: [],
-      draftingSlot: null,
-      keyPressCounts: keyCounts([["util_clear_all", 1]]),
-    },
-  },
-  {
-    id: "legacy.left_to_right_execution",
-    description: "Committed slots execute left-to-right with starting total recorded when roll is empty.",
-    tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(
-      {
-        ...base,
-        unlocks: {
-          ...base.unlocks,
-          maxTotalDigits: 3,
-        },
-        calculator: {
-          ...base.calculator,
-          total: r(10n),
-          operationSlots: [
-            { operator: op("op_sub"), operand: 2n },
-            { operator: op("op_mul"), operand: 3n },
-          ],
-        },
-      },
-      ["exec_equals"],
-    ),
-    keySequence: ["exec_equals"],
-    expectedProjection: {
-      total: r(24n),
-      operationSlots: [
-        { operator: op("op_sub"), operand: 2n },
-        { operator: op("op_mul"), operand: 3n },
-      ],
-      roll: [r(24n)],
-      keyPressCounts: keyCounts([["exec_equals", 1]]),
-    },
-  },
-  {
-    id: "legacy.division_by_zero_execution_error",
-    description: "Division by zero writes NaN total and roll error.",
-    tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(
-      {
-        ...base,
-        calculator: {
-          ...base.calculator,
-          total: r(10n),
-          operationSlots: [{ operator: op("op_div"), operand: 0n }],
-        },
-      },
-      ["exec_equals"],
-    ),
-    keySequence: ["exec_equals"],
-    expectedProjection: {
-      total: toNanCalculatorValue(),
-      roll: [toNanCalculatorValue()],
-      rollErrors: [{ rollIndex: 0, code: "op_div", kind: "division_by_zero" }],
-      keyPressCounts: keyCounts([["exec_equals", 1]]),
-    },
-  },
-  {
-    id: "legacy.overflow_clamp_execution_error",
-    description: "Overflow clamps to boundary and records overflow error.",
-    tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(
-      {
-        ...base,
-        unlocks: {
-          ...base.unlocks,
-          maxTotalDigits: 2,
-        },
-        calculator: {
-          ...base.calculator,
-          total: r(99n),
-          operationSlots: [{ operator: op("op_add"), operand: 1n }],
-        },
-      },
-      ["exec_equals"],
-    ),
-    keySequence: ["exec_equals"],
-    expectedProjection: {
-      total: r(99n),
-      rollErrors: [{ rollIndex: 0, code: "overflow", kind: "overflow" }],
-      keyPressCounts: keyCounts([["exec_equals", 1]]),
-    },
-  },
-  {
-    id: "legacy.roll_digit_noop_with_active_roll",
-    description: "Digit press with active roll is a no-op.",
-    tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(
-      {
-        ...base,
-        calculator: {
-          ...base.calculator,
-          total: r(5n),
-          rollEntries: re(r(5n), r(6n)),
-        },
-      },
-      ["digit_1"],
-    ),
-    keySequence: ["digit_1"],
-    expectedProjection: {
-      total: r(5n),
-      roll: [r(6n)],
-      operationSlots: [],
-      draftingSlot: null,
-      keyPressCounts: keyCounts([]),
-    },
-  },
-  {
-    id: "legacy.roll_operator_preprocess_clears_entry",
-    description: "Operator press with active roll clears entry then starts drafting.",
-    tags: ["legacy_contract"],
-    initialState: withUnlockedKeys(
-      {
-        ...base,
-        calculator: {
-          ...base.calculator,
-          total: r(5n),
-          rollEntries: re(r(5n), r(6n)),
-          operationSlots: [{ operator: op("op_add"), operand: 2n }],
-        },
-      },
-      ["op_sub"],
-    ),
-    keySequence: ["op_sub"],
-    expectedProjection: {
-      total: r(5n),
-      roll: [r(5n)],
-      operationSlots: [],
-      draftingSlot: { operator: op("op_sub"), operandInput: "", isNegative: false },
-      keyPressCounts: keyCounts([["op_sub", 1]]),
     },
   },
   {

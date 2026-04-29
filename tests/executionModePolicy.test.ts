@@ -1,15 +1,14 @@
 import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { classifyExecutionPolicyAction } from "../src/domain/executionModePolicy.js";
-import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, EXECUTION_PAUSE_EQUALS_FLAG, EXECUTION_PAUSE_FLAG, initialState } from "../src/domain/state.js";
 import { reducer } from "../src/domain/reducer.js";
 import type { GameState } from "../src/domain/types.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
-import { legacyInitialState } from "./support/legacyState.js";
 import { k, op } from "./support/keyCompat.js";
 
 const buildExecutionPolicySeed = (): GameState => {
-  const base = legacyInitialState();
+  const base = initialState();
   return {
     ...base,
     unlocks: {

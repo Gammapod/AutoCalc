@@ -8,19 +8,6 @@ import type { GameState, UnlockDefinition, UnlockPredicate } from "./types.js";
 export type UnlockHintProgressMode = "partial" | "binary";
 export type UnlockHintBinaryState = "observed" | "not_observed";
 
-type HintTemplate = {
-  templateId: string;
-  text: string;
-};
-
-type HintTokenValue = number | string;
-
-export type UnlockHintPayload = {
-  templateId: string;
-  text: string;
-  tokens: Record<string, HintTokenValue>;
-};
-
 export type UnlockHintPartialProgress = {
   mode: "partial";
   progress01: number;
@@ -40,7 +27,6 @@ export type UnlockHintProgressRow = {
   predicateType: UnlockPredicate["type"];
   progressMode: UnlockHintProgressMode;
   eligibleForHint: boolean;
-  hint: UnlockHintPayload;
   progress: UnlockHintProgress;
 };
 
@@ -53,7 +39,6 @@ type PartialAdapterResult = {
 export type CatalogProgressCoverage = {
   usedPredicateTypes: UnlockPredicate["type"][];
   missingPredicateTypes: UnlockPredicate["type"][];
-  missingHintUnlockIds: string[];
 };
 
 const BINARY_ONLY_PREDICATE_TYPES = new Set<UnlockPredicate["type"]>([
@@ -298,64 +283,18 @@ const getPartialProgress = (state: GameState, predicate: UnlockPredicate): Parti
   throw new Error(`Missing partial-progress adapter for predicate type: ${predicate.type}`);
 };
 
-const REDACTED_HINT_TEMPLATES_BY_UNLOCK_ID: Record<string, HintTemplate> = {
-  unlock_digit_1_installed_only_on_total_equals_1: { templateId: "hint.total.raise", text: "Increase your total steadily to open new options." },
-  unlock_digit_1_portable_on_total_equals_2: { templateId: "hint.total.raise", text: "Increase your total steadily to open new options." },
-  unlock_4_on_linear_growth_run_7: { templateId: "hint.roll.pattern_linear", text: "Build a stable growth pattern across recent rolls." },
-  unlock_plus_on_linear_growth_run_7: { templateId: "hint.roll.pattern_linear", text: "Build a stable growth pattern across recent rolls." },
-  unlock_mul_on_positive_constant_step_run_7: { templateId: "hint.roll.pattern_step", text: "Aim for a repeatable step pattern in recent roll results." },
-  unlock_pow_on_exponential_growth_run_7: { templateId: "hint.roll.pattern_exponential", text: "Push into a stronger growth pattern over consecutive rolls." },
-  unlock_dec_on_total_at_least_10: { templateId: "hint.roll.pattern_reverse", text: "Try producing a controlled downward movement in recent results." },
-  unlock_inc_on_total_at_least_10: { templateId: "hint.total.raise", text: "Increase your total steadily to open new options." },
-  unlock_step_expansion_on_total_at_least_10: { templateId: "hint.total.raise", text: "Increase your total steadily to open new options." },
-  unlock_minus_on_negative_total: { templateId: "hint.roll.pattern_negative", text: "Find a sequence that trends downward in a consistent way." },
-  unlock_neg_on_opposite_pair_cycle: { templateId: "hint.cycle.observe", text: "Keep experimenting with loops and symmetry in roll behavior." },
-  unlock_c_on_first_error: { templateId: "hint.error.observe", text: "Observe a run outcome that triggers an error state." },
-  unlock_div_on_negative_step_run_to_zero: { templateId: "hint.roll.pattern_targeted", text: "Steer a consistent downward pattern toward a specific landing point." },
-  unlock_euclid_div_on_first_rational_result: { templateId: "hint.domain.rational", text: "Create a non-integer result in the roll history." },
-  unlock_calculator_g_on_tail_powers_of_two_run_7: { templateId: "hint.roll.pattern_power2", text: "Build a tail sequence that stays in one numeric family." },
-  award_lambda_to_f_on_transient_length_gt_10: { templateId: "hint.cycle.observe", text: "Explore longer runs and observe evolving cycle behavior." },
-  award_lambda_to_f_on_cycle_diameter_gt_10: { templateId: "hint.cycle.observe", text: "Explore wider cycle behavior by varying your run structure." },
-  award_lambda_to_f_on_cycle_length_gt_5: { templateId: "hint.cycle.observe", text: "Experiment until recurring behavior lasts longer." },
-  award_lambda_to_f_on_linear_growth_run_3_slope_gt_1: { templateId: "hint.roll.pattern_step", text: "Aim for a repeatable step pattern in recent roll results." },
-  award_lambda_to_f_on_exponential_growth_run_3: { templateId: "hint.roll.pattern_exponential", text: "Push into a stronger growth pattern over consecutive rolls." },
-  award_lambda_to_g_on_binary_add_result_1: { templateId: "hint.binary.observe", text: "Try binary-mode actions and watch for key milestone outcomes." },
-  award_lambda_to_g_on_binary_mul_result_0: { templateId: "hint.binary.observe", text: "Try binary-mode actions and watch for key milestone outcomes." },
-  unlock_viz_feed_on_roll_length_gt_20: { templateId: "hint.roll.extend", text: "Keep the run going to reach deeper progression surfaces." },
-  unlock_exec_play_pause_on_roll_length_gt_40: { templateId: "hint.roll.extend", text: "Keep the run going to reach deeper progression surfaces." },
-  unlock_backspace_on_c_clears_function_two_slots: { templateId: "hint.utility.observe", text: "Use utility interactions while building richer function setups." },
-  unlock_undo_on_first_nan_result: { templateId: "hint.error.observe", text: "Observe a run outcome that triggers an error state." },
-  unlock_roll_inverse_on_undo_while_feed_visible: { templateId: "hint.total.raise", text: "Increase your total steadily to open new options." },
-  unlock_mod_on_first_cycle_length_gt_2: { templateId: "hint.cycle.observe", text: "Experiment until recurring behavior lasts longer." },
-  unlock_toggle_mod_zero_to_delta_on_binary_overflow: { templateId: "hint.binary.observe", text: "Try binary-mode actions and watch for key milestone outcomes." },
-  unlock_toggle_binary_octave_cycle_on_binary_overflow: { templateId: "hint.binary.observe", text: "Try binary-mode actions and watch for key milestone outcomes." },
-};
-
-const getHintTemplate = (unlockId: string): HintTemplate => {
-  const template = REDACTED_HINT_TEMPLATES_BY_UNLOCK_ID[unlockId];
-  if (!template) {
-    throw new Error(`Missing redacted hint template mapping for unlock id: ${unlockId}`);
-  }
-  return template;
-};
-
 export const deriveCatalogProgressCoverage = (
   catalog: UnlockDefinition[] = getAppServices().contentProvider.unlockCatalog,
 ): CatalogProgressCoverage => {
   const usedPredicateTypesSet = new Set<UnlockPredicate["type"]>();
-  const missingHintUnlockIds: string[] = [];
   for (const unlock of catalog) {
     usedPredicateTypesSet.add(unlock.predicate.type);
-    if (!REDACTED_HINT_TEMPLATES_BY_UNLOCK_ID[unlock.id]) {
-      missingHintUnlockIds.push(unlock.id);
-    }
   }
   const usedPredicateTypes = [...usedPredicateTypesSet];
   const missingPredicateTypes = usedPredicateTypes.filter((type) => resolvePredicateProgressMode(type) == null);
   return {
     usedPredicateTypes,
     missingPredicateTypes,
-    missingHintUnlockIds,
   };
 };
 
@@ -378,35 +317,6 @@ export const assertCatalogPredicateProgressCoverage = (
   if (coverage.missingPredicateTypes.length > 0) {
     throw new Error(`Missing progress-mode classification for predicate types: ${coverage.missingPredicateTypes.join(", ")}`);
   }
-  if (coverage.missingHintUnlockIds.length > 0) {
-    throw new Error(`Missing redacted hint mapping for unlock ids: ${coverage.missingHintUnlockIds.join(", ")}`);
-  }
-};
-
-const toHintPayload = (
-  unlockId: string,
-  progressMode: UnlockHintProgressMode,
-  progress: UnlockHintProgress,
-): UnlockHintPayload => {
-  const template = getHintTemplate(unlockId);
-  if (progressMode === "binary") {
-    const binaryProgress = progress as UnlockHintBinaryProgress;
-    return {
-      templateId: template.templateId,
-      text: template.text,
-      tokens: { state: binaryProgress.state },
-    };
-  }
-  const partialProgress = progress as UnlockHintPartialProgress;
-  return {
-    templateId: template.templateId,
-    text: template.text,
-    tokens: {
-      progress01: partialProgress.progress01,
-      current: partialProgress.current,
-      target: partialProgress.target,
-    },
-  };
 };
 
 const toUnlockHintProgress = (state: GameState, unlock: UnlockDefinition): UnlockHintProgressRow => {
@@ -436,7 +346,6 @@ const toUnlockHintProgress = (state: GameState, unlock: UnlockDefinition): Unloc
     predicateType: unlock.predicate.type,
     progressMode,
     eligibleForHint: !completed && !observed,
-    hint: toHintPayload(unlock.id, progressMode, progress),
     progress,
   };
 };

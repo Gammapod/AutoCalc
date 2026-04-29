@@ -186,7 +186,6 @@ export const createBootstrapUiController = ({
         unlockHintProgress: {
           partialProgressPredicateTypes,
           missingPredicateTypes: hintCoverage.missingPredicateTypes,
-          missingHintUnlockIds: hintCoverage.missingHintUnlockIds,
         },
       },
       null,

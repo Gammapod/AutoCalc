@@ -5,6 +5,7 @@ import {
   BINARY_OCTAVE_CYCLE_FLAG,
   DELTA_RANGE_CLAMP_FLAG,
   EXECUTION_PAUSE_EQUALS_FLAG,
+  initialState,
   MOD_ZERO_TO_DELTA_FLAG,
 } from "../src/domain/state.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
@@ -17,7 +18,6 @@ import {
 import { symbolicExpr } from "../src/domain/expression.js";
 import { materializeCalculatorG } from "../src/domain/multiCalculator.js";
 import type { Action, GameState } from "../src/domain/types.js";
-import { legacyInitialState } from "./support/legacyState.js";
 import { executionUnlockPatch, op, uop } from "./support/keyCompat.js";
 import { createSeededMaintenanceRng } from "./helpers/seededMaintenance.js";
 
@@ -39,26 +39,26 @@ const withStepProgressReset = (state: GameState): GameState => ({
 
 export const runReducerExecutionIRRoutingParityTests = (): void => {
   const base: GameState = withStepProgressReset({
-    ...legacyInitialState(),
+    ...initialState(),
     unlocks: {
-      ...legacyInitialState().unlocks,
+      ...initialState().unlocks,
       maxSlots: 2,
       maxTotalDigits: 2,
       utilities: {
-        ...legacyInitialState().unlocks.utilities,
+        ...initialState().unlocks.utilities,
         [KEY_ID.util_clear_all]: true,
       },
       execution: {
-        ...legacyInitialState().unlocks.execution,
+        ...initialState().unlocks.execution,
         ...executionUnlockPatch([["exec_equals", true], ["exec_step_through", true], ["exec_roll_inverse", true]]),
       },
       slotOperators: {
-        ...legacyInitialState().unlocks.slotOperators,
+        ...initialState().unlocks.slotOperators,
         [op("op_add")]: true,
       },
     },
     ui: {
-      ...legacyInitialState().ui,
+      ...initialState().ui,
       keyLayout: [
         { kind: "key", key: KEY_ID.exec_step_through },
         { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
@@ -71,7 +71,7 @@ export const runReducerExecutionIRRoutingParityTests = (): void => {
       },
     },
     calculator: {
-      ...legacyInitialState().calculator,
+      ...initialState().calculator,
       total: r(99n),
       operationSlots: [{ operator: op("op_add"), operand: 1n }],
       rollEntries: [],

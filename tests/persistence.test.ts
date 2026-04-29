@@ -130,7 +130,7 @@ export const runPersistenceTests = (): void => {
   assert.equal(Boolean(loaded?.calculators?.g), false, "g calculator remains absent when not initialized");
   assert.deepEqual(loaded?.calculators?.f?.calculator.total, r(12n), "f calculator state round-trips");
 
-  const migratedLegacy = loadFromRawSave(
+  const previousSchema = loadFromRawSave(
     serializeEnvelope({
       schemaVersion: SAVE_SCHEMA_VERSION - 1,
       savedAt: Date.now(),
@@ -152,20 +152,12 @@ export const runPersistenceTests = (): void => {
       },
     }),
   );
-  assert.ok(migratedLegacy.state, "legacy schema migrates forward");
-  assert.equal(migratedLegacy.reason, null, "legacy schema migration resolves without error");
-  assert.equal(migratedLegacy.state?.settings.visualizer, "total", "legacy migration resets visualizer setting to default");
-  assert.equal(migratedLegacy.state?.settings.wrapper, "none", "legacy migration resets wrapper setting to default");
-  assert.equal(migratedLegacy.state?.settings.base, "decimal", "legacy migration resets base setting to default");
-  assert.equal(migratedLegacy.state?.settings.stepExpansion, "off", "legacy migration resets step expansion setting to default");
-  assert.equal(migratedLegacy.state?.settings.history, "off", "legacy migration adds history setting default");
-  assert.equal(migratedLegacy.state?.settings.forecast, "off", "legacy migration adds forecast setting default");
-  assert.equal(migratedLegacy.state?.settings.cycle, "off", "legacy migration adds cycle setting default");
-  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.binary_mode"]), false, "legacy migration drops obsolete settings flags");
-  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.step_expansion"]), false, "legacy migration drops obsolete analytics flags");
-  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.history"]), false, "legacy migration drops obsolete analytics flags");
-  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.forecast"]), false, "legacy migration drops obsolete analytics flags");
-  assert.equal(Boolean(migratedLegacy.state?.ui.buttonFlags["settings.cycle"]), false, "legacy migration drops obsolete analytics flags");
+  assert.equal(previousSchema.state, null, "previous schema does not hydrate");
+  assert.equal(
+    previousSchema.reason,
+    LoadFailureReason.UnsupportedSchemaVersion,
+    "previous schema returns unsupported-schema failure reason",
+  );
 
   const unsupported = loadFromRawSave(
     JSON.stringify({
@@ -177,15 +169,19 @@ export const runPersistenceTests = (): void => {
   assert.equal(unsupported.state, null, "unsupported old schema does not load");
   assert.equal(unsupported.reason, LoadFailureReason.UnsupportedSchemaVersion, "unsupported schema failure reason is reported");
 
-  const malformedLegacy = loadFromRawSave(
+  const malformedPreviousSchema = loadFromRawSave(
     JSON.stringify({
       schemaVersion: SAVE_SCHEMA_VERSION - 1,
       savedAt: Date.now(),
       state: null,
     }),
   );
-  assert.equal(malformedLegacy.state, null, "malformed legacy payload does not hydrate");
-  assert.equal(malformedLegacy.reason, LoadFailureReason.MigrationFailed, "legacy migration failure reason is reported");
+  assert.equal(malformedPreviousSchema.state, null, "malformed previous-schema payload does not hydrate");
+  assert.equal(
+    malformedPreviousSchema.reason,
+    LoadFailureReason.UnsupportedSchemaVersion,
+    "malformed previous-schema payload is rejected before deserialization",
+  );
 
   const badJson = loadFromRawSave("{");
   assert.equal(badJson.state, null, "invalid JSON fails safely");
@@ -205,7 +201,7 @@ export const runPersistenceTests = (): void => {
   assert.equal(
     missingDiagnostics.state?.calculator.rollEntries[0]?.limitMetadata,
     undefined,
-    "legacy payloads without roll-entry limit metadata remain valid",
+    "current payloads without roll-entry limit metadata remain valid",
   );
   assert.deepEqual(
     missingDiagnostics.state?.ui.diagnostics.lastAction,

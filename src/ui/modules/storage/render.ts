@@ -12,8 +12,6 @@ import {
   STEP_EXPANSION_FLAG,
   DEBUG_UNLOCK_BYPASS_FLAG,
 } from "../../../domain/state.js";
-import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
-import { KEY_ID, resolveKeyId } from "../../../domain/keyPresentation.js";
 import { resolveKeyCapability } from "../../../domain/keyUnlocks.js";
 import { getKeyVisualGroup } from "../calculator/dom.js";
 import { formatKeyCellLabel, getToggleAnimationIdForCell, isToggleFlagActive } from "../calculatorStorageCore.js";
@@ -27,6 +25,7 @@ import {
 } from "./viewModel.js";
 import { bindDraggableCell } from "../input/dragDrop.js";
 import { getStorageModuleState } from "./runtime.js";
+import { applySharedKeyButtonClasses } from "../../shared/keyButtonClasses.js";
 
 const STORAGE_MIN_VISUAL_COLUMNS = 1;
 const STORAGE_MAX_VISUAL_COLUMNS = 10;
@@ -253,20 +252,12 @@ const renderStorageButton = (
   if (capability === "locked") {
     button.classList.add("key--locked-capability");
   }
-  button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-  if (cell.key === KEY_ID.const_bottom) {
-    button.classList.add("key--value-bottom");
-  }
-  const buttonDefinition = getButtonDefinition(resolveKeyId(cell.key));
-  if (buttonDefinition?.unlockGroup === "unaryOperators") {
-    button.classList.add("key--unary-operator");
-  }
-  if (buttonDefinition?.traits.includes("complex_family")) {
-    button.classList.add("key--family-complex");
-  }
-  if (newlyUnlockedKeys.has(cell.key)) {
-    button.classList.add("key--unlock-animate");
-  }
+  applySharedKeyButtonClasses(button, {
+    key: cell.key,
+    visualGroup: getKeyVisualGroup(cell.key),
+    isUnlocked: true,
+    newlyUnlockedKeys,
+  });
   setKeyButtonLabel(button, formatKeyCellLabel(state, cell));
   const storageToggleActive = isToggleFlagActive(state, cell);
   button.classList.toggle("key--toggle-active", storageToggleActive);

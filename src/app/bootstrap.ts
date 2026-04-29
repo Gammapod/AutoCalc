@@ -1,5 +1,4 @@
 import { createStore } from "./store.js";
-import { initialState } from "../domain/state.js";
 import { createLocalStorageRepo } from "../infra/persistence/localStorageRepo.js";
 import { createShellRenderer } from "../ui/renderAdapter.js";
 import { resolveUiShellMode } from "./uiShellMode.js";
@@ -8,26 +7,22 @@ import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
 import { subscribeCueTelemetry } from "./workflows/cueTelemetry.js";
 import { createUnlockRevealCoordinator, createUnlockTracker } from "./unlockCueCoordinator.js";
 import { resolveBootstrapUiRefs } from "../ui/bootstrap/bootstrapUiRefs.js";
-import { createBootstrapUiController } from "../ui/bootstrap/bootstrapUiController.js";
-import { createResetRunHandler, createStoreSubscriptionCoordinator } from "./bootstrap/subscriptionCoordinator.js";
+import { createStoreSubscriptionCoordinator } from "./bootstrap/subscriptionCoordinator.js";
 import { createAutoStepScheduler } from "./autoStepScheduler.js";
 import type { Action, GameState, UiEffect } from "../domain/types.js";
 import { resolveAppMode } from "./appMode.js";
 import { resolveAppShellTarget } from "./appShellTarget.js";
 import { signalQuitApplication } from "./quitSignal.js";
-import { createSandboxState } from "../domain/sandboxPreset.js";
-import { createMainMenuState } from "../domain/mainMenuPreset.js";
-import { normalizeLoadedStateForRuntime } from "../infra/persistence/runtimeLoadNormalizer.js";
 import { setAppServices } from "../contracts/appServices.js";
 import { defaultContentProvider } from "../content/defaultContentProvider.js";
 import type { AppMode } from "../contracts/appMode.js";
-import { resolveModeManifest } from "../domain/modeManifest.js";
-import { APP_VERSION } from "../generated/appVersion.js";
-import { normalizeRuntimeStateInvariants } from "../domain/runtimeStateInvariants.js";
 import { awaitMotionSettled } from "../ui/layout/motionLifecycleBridge.js";
 import { buildPreDispatchBlockedInputFeedback } from "../domain/inputFeedback.js";
 import { createPersistenceSaveScheduler } from "./persistenceSaveScheduler.js";
 import { createModeTransitionCoordinator } from "./modeTransitionCoordinator.js";
+import { buildBootStateForMode } from "./bootstrap/bootState.js";
+import { createModeUiController } from "./bootstrap/uiControllerWiring.js";
+import { resolveAppVersionToken } from "../ui/shared/appVersion.js";
 
 declare global {
   type KatexRenderOptions = {
@@ -71,39 +66,9 @@ const appShellTarget = resolveAppShellTarget(window.location, {
   ...processEnv,
   ...importMetaEnv,
 });
-const createFreshGameState = (): GameState => {
-  const fresh = initialState();
-  return {
-    ...fresh,
-    calculator: {
-      ...fresh.calculator,
-      singleDigitInitialTotalEntry: true,
-    },
-  };
-};
-const buildBootStateForMode = (mode: AppMode): GameState => {
-  const loaded = mode === "game" ? storageRepo.load() : null;
-  const runtimeLoaded = mode === "game" ? normalizeLoadedStateForRuntime(loaded) : null;
-  const modeManifest = resolveModeManifest(mode);
-  const bootStateBase = runtimeLoaded ?? modeManifest.createBootState({
-    createFreshGameState,
-    createSandboxState,
-    createMainMenuState,
-  });
-  const bootStateUnnormalized: GameState = {
-    ...bootStateBase,
-    ui: {
-      ...bootStateBase.ui,
-      buttonFlags: {
-        ...bootStateBase.ui.buttonFlags,
-        ...modeManifest.modeButtonFlags,
-      },
-    },
-  };
-  return normalizeRuntimeStateInvariants(bootStateUnnormalized);
-};
+const buildBootState = (mode: AppMode): GameState => buildBootStateForMode(mode, storageRepo);
 
-const bootState = buildBootStateForMode(initialAppMode);
+const bootState = buildBootState(initialAppMode);
 const store = createStore(bootState, services);
 const interactionRuntime = createInteractionRuntime();
 
@@ -127,22 +92,13 @@ const uiShellMode = resolveUiShellMode(window.location, {
   ...importMetaEnv,
 });
 
-const resolveAppVersionToken = (): string => {
-  const importMetaVersion = importMetaEnv?.APP_VERSION;
-  if (typeof importMetaVersion === "string" && importMetaVersion.trim()) {
-    return importMetaVersion.trim();
-  }
-  const processVersion = processEnv?.npm_package_version;
-  if (typeof processVersion === "string" && processVersion.trim()) {
-    return processVersion.trim();
-  }
-  return APP_VERSION;
-};
-
 const shellRenderer = createShellRenderer(root, { mode: uiShellMode, services });
 document.body.setAttribute("data-ui-shell", uiShellMode);
 document.body.setAttribute("data-app-mode", currentAppMode);
-document.body.dataset.appVersion = resolveAppVersionToken();
+document.body.dataset.appVersion = resolveAppVersionToken({
+  ...processEnv,
+  ...importMetaEnv,
+});
 
 const renderApp = (state: GameState, uiEffects: UiEffect[] = []): void => {
   shellRenderer.render(state, dispatchWithRuntimeGate, {
@@ -151,7 +107,7 @@ const renderApp = (state: GameState, uiEffects: UiEffect[] = []): void => {
   });
 };
 
-let uiController: ReturnType<typeof createBootstrapUiController> | null = null;
+let uiController: ReturnType<typeof createModeUiController> | null = null;
 
 const redraw = (): void => {
   const state = store.getState();
@@ -219,37 +175,15 @@ const syncCurrentMode = (mode: AppMode): void => {
   currentAppMode = mode;
   document.body.setAttribute("data-app-mode", currentAppMode);
   uiController?.dispose();
-  uiController = createBootstrapUiController({
+  uiController = createModeUiController({
     services,
     refs: uiRefs,
     uiShellMode,
     appMode: currentAppMode,
     location: window.location,
     document,
-    getState: () => store.getState(),
-    onResetRun: currentAppMode === "sandbox"
-      ? () => {
-        store.dispatch({ type: "HYDRATE_SAVE", state: createSandboxState() });
-      }
-      : createResetRunHandler(store, storageRepo),
-    onUnlockAll: () => {
-      store.dispatch({ type: "UNLOCK_ALL" });
-    },
-    onToggleFlag: (flag) => {
-      store.dispatch({ type: "TOGGLE_FLAG", flag });
-    },
-    onSetControlField: (calculatorId, field, value) => {
-      store.dispatch({ type: "SET_CONTROL_FIELD", calculatorId, field, value });
-    },
-    onSetActiveCalculator: (calculatorId) => {
-      store.dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId });
-    },
-    onNavigateToUiShell: (url) => {
-      window.location.assign(url);
-    },
-    onNavigateToAppMode: (url) => {
-      window.location.assign(url);
-    },
+    store,
+    storageRepo,
   });
 };
 
@@ -257,7 +191,7 @@ const modeTransitionCoordinator = createModeTransitionCoordinator({
   store,
   storageRepo,
   saveScheduler,
-  buildBootStateForMode,
+  buildBootStateForMode: buildBootState,
   setCurrentMode: syncCurrentMode,
 });
 

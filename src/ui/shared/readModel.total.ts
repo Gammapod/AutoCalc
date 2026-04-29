@@ -2,6 +2,7 @@ import { getAppServices } from "../../contracts/appServices.js";
 import { projectEligibleUnlockHintProgressRows, type UnlockHintProgressRow } from "../../domain/unlockHintProgress.js";
 import type { GameState, UnlockEffect } from "../../domain/types.js";
 import type { UxRole, UxRoleAssignment, UxRoleState } from "./uxRoles.js";
+import type { StateViewModelProjection } from "./viewModelProjection.js";
 
 type ClosestHintCategory = "operator" | "non_operator" | "lambda_point" | "calculator";
 
@@ -63,7 +64,7 @@ export const resolveTotalHintRowUxAssignment = (row: TotalHintRowViewModel): UxR
   ...(row.overrideReason ? { overrideReason: row.overrideReason } : {}),
 });
 
-export const buildTotalHintRowsViewModel = (state: GameState): TotalHintRowViewModel[] => {
+export const buildTotalHintRowsViewModel: StateViewModelProjection<TotalHintRowViewModel[]> = (state) => {
   const eligibleRows = projectEligibleUnlockHintProgressRows(state);
   const catalog = getAppServices().contentProvider.unlockCatalog;
   const unlockById = new Map(catalog.map((unlock) => [unlock.id, unlock]));

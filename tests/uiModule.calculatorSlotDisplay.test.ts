@@ -2,14 +2,16 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { buildOperationSlotDisplayModel } from "../src/ui/modules/calculator/viewModel.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
-import { DELTA_RANGE_CLAMP_FLAG } from "../src/domain/state.js";
+import { DELTA_RANGE_CLAMP_FLAG, initialState } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
-import { legacyInitialState } from "./support/legacyState.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 
 export const runUiModuleCalculatorSlotDisplayTests = (): void => {
-  const base = legacyInitialState();
+  const base: GameState = {
+    ...initialState(),
+    calculators: undefined,
+  };
 
   const withWrapTailTarget: GameState = {
     ...base,
@@ -120,6 +122,7 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
     },
     settings: {
       ...base.settings,
+      forecast: "on",
       stepExpansion: "on",
     },
     calculator: {
@@ -142,4 +145,3 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
     "step expansion toggle computes next-operation highlight even when step-through key is absent",
   );
 };
-

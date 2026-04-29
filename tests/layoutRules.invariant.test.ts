@@ -2,12 +2,12 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
 import { initialState } from "../src/domain/state.js";
-import { legacyInitialState } from "./support/legacyState.js";
 import { buildStepBodyHighlightRegions } from "../src/ui/stepHighlight.js";
 import type { GameState } from "../src/domain/types.js";
 
 const withTwoByTwoKeypad = (state: GameState): GameState => ({
   ...state,
+  calculators: undefined,
   unlocks: {
     ...state.unlocks,
     valueExpression: {
@@ -38,7 +38,7 @@ const withTwoByTwoKeypad = (state: GameState): GameState => ({
 });
 
 export const runLayoutRulesInvariantTests = (): void => {
-  const base = withTwoByTwoKeypad(legacyInitialState());
+  const base = withTwoByTwoKeypad(initialState());
 
   const moveToBottomRow = evaluateLayoutDrop(
     base,

@@ -5,13 +5,12 @@ import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
 import { fromKeyLayoutArray } from "../src/domain/keypadLayoutModel.js";
 import { applyMoveLayoutCell, applySwapLayoutCells } from "../src/domain/reducer.layout.js";
 import { initialState } from "../src/domain/state.js";
-import { legacyInitialState } from "./support/legacyState.js";
 import type { GameState, LayoutSurface } from "../src/domain/types.js";
 
 type DragTarget = { surface: LayoutSurface; index: number };
 
 const createScenarioState = (): GameState => {
-  const base = legacyInitialState();
+  const base = initialState();
   const keypadColumns = 3;
   const keypadRows = 2;
   const keyLayout: GameState["ui"]["keyLayout"] = [
@@ -24,6 +23,7 @@ const createScenarioState = (): GameState => {
   ];
   return {
     ...base,
+    calculators: undefined,
     unlocks: {
       ...base.unlocks,
       valueExpression: {

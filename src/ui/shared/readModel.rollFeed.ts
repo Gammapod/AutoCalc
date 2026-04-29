@@ -16,6 +16,7 @@ import {
   resolveFeedCycleLengthHint,
 } from "../modules/visualizers/feedHintProjection.js";
 import type { UxRole, UxRoleAssignment, UxRoleState } from "./uxRoles.js";
+import type { StateViewModelProjection } from "./viewModelProjection.js";
 
 export type RollRow = {
   prefix: string;
@@ -256,9 +257,7 @@ const applyFeedHintsForState = (state: GameState, rows: FeedTableRow[]): FeedTab
   });
 };
 
-export const buildFeedTableViewModelForState = (
-  state: GameState,
-): FeedTableViewModel => {
+export const buildFeedTableViewModelForState: StateViewModelProjection<FeedTableViewModel> = (state) => {
   const committedRows = buildFeedTableRows(state.calculator.rollEntries);
   const committedRowsWithCycleStyling = resolveCommittedRowsWithCycleStyling(state, committedRows);
   const committedRowsWithHints = applyFeedHintsForState(state, committedRowsWithCycleStyling);

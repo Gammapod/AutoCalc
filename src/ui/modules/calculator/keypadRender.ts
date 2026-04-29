@@ -1,12 +1,11 @@
 import { isKeyUnlocked, resolveKeyCapability } from "../../../domain/keyUnlocks.js";
 import { getSlotIdAtIndex, toCoordFromIndex } from "../../../domain/keypadLayoutModel.js";
-import { getButtonDefinition } from "../../../domain/buttonRegistry.js";
-import { KEY_ID, resolveKeyId } from "../../../domain/keyPresentation.js";
 import type { Action, CalculatorId, GameState, Key, KeyCapability, KeyCell } from "../../../domain/types.js";
 import { bindDraggableCell, bindDropTargetCell } from "../input/dragDrop.js";
 import { bindQuickTapPressFeedback, shouldSuppressClick } from "../input/pressFeedback.js";
 import { buildKeyButtonAction, formatKeyCellLabel, isToggleFlagActive } from "../calculatorStorageCore.js";
 import { getKeyVisualGroup } from "./dom.js";
+import { applySharedKeyButtonClasses } from "../../shared/keyButtonClasses.js";
 import { setKeyButtonLabel } from "./keyLabelFit.js";
 import { readToggleAnimation, queueToggleAnimation } from "./unlockTracking.js";
 
@@ -91,19 +90,13 @@ export const renderKeypadCells = (
     } else if (capability === "locked") {
       button.classList.add("key--locked-capability");
     }
-    button.classList.add(`key--group-${getKeyVisualGroup(cell.key)}`);
-    if (cell.key === KEY_ID.const_bottom) {
-      button.classList.add("key--value-bottom");
-    }
-    const buttonDefinition = getButtonDefinition(resolveKeyId(cell.key));
-    if (buttonDefinition?.unlockGroup === "unaryOperators") {
-      button.classList.add("key--unary-operator");
-    }
-    if (buttonDefinition?.traits.includes("complex_family")) {
-      button.classList.add("key--family-complex");
-    }
+    applySharedKeyButtonClasses(button, {
+      key: cell.key,
+      visualGroup: getKeyVisualGroup(cell.key),
+      isUnlocked: unlocked,
+      newlyUnlockedKeys: options.newlyUnlockedKeys,
+    });
     if (unlocked && options.newlyUnlockedKeys.has(cell.key)) {
-      button.classList.add("key--unlock-animate");
       options.bindUnlockAnimationLock(button);
     }
 

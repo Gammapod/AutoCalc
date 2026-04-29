@@ -10,8 +10,8 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 ### Slice `slice_cleanup_persistence_and_runtime_boundaries`
 - User Story: As an engineer, I want save migration and runtime wiring boundaries to be explicit and deterministic so cleanup work does not introduce silent regressions.
 - Exit Criteria:
-- Persistence load uses one authoritative migration flow (`current` or `current-1` only) with explicit failure reasons for unsupported and malformed payloads.
-- Legacy schema migration resets deprecated settings and removes obsolete UI flags.
+- Persistence load accepts the current save schema only, with explicit failure reasons for unsupported and malformed payloads.
+- Older save schemas are rejected instead of migrated.
 - Domain command dispatch emits UI feedback through one consolidated pipeline path.
 - Visualizer host panel visibility and transition state updates avoid duplicate/stale DOM mutations.
 - Legacy allocator/memory/eigen test assumptions are non-authoritative for current runtime and are rebaselined or retired from active CI scope.
@@ -47,7 +47,7 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Proposed predicates required by remaining hint surfaces are added to canonical predicate types and evaluator plumbing with deterministic behavior and tests.
 - Predicate capability documentation is updated to match new runtime support.
 - Unlock catalog usage is validated for new predicate types (including unresolved/satisfied/completed handling paths).
-- No persistence schema break is introduced; backward compatibility is preserved.
+- No unplanned persistence schema break is introduced; any compatibility cutoff is documented in release notes.
 
 ## Later
 

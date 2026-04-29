@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { legacyInitialState } from "./support/legacyState.js";
+import { initialState } from "../src/domain/state.js";
 import {
   buildFactorizationPanelViewModel,
   buildFeedTableViewModel,
@@ -29,7 +29,7 @@ export const runUiUxRoleSystemTests = (): void => {
     "override assignments require an explicit reason",
   );
 
-  const base = legacyInitialState();
+  const base = initialState();
   const helpVm = buildHelpPanelViewModel(base);
   assert.equal(helpVm.rows.length > 0, true, "help view-model provides rows");
   helpVm.rows.forEach((row) => {
@@ -50,7 +50,21 @@ export const runUiUxRoleSystemTests = (): void => {
   });
 
   const totalHintRows = buildTotalHintRowsViewModel(base);
-  assert.equal(totalHintRows.length >= 4, true, "total hint view-model exposes role-tagged categories");
+  assert.deepEqual(
+    totalHintRows.map((row) => [row.category, row.label]),
+    [
+      ["operator", "OP"],
+      ["non_operator", "KEY"],
+      ["calculator", "CALC"],
+      ["lambda_point", "IMAG"],
+    ],
+    "total hint view-model owns stable UI categories and labels",
+  );
+  assert.equal(
+    totalHintRows.every((row) => row.value === "n/a" || /^\d+\/\d+ [a-z_]+$/u.test(row.value)),
+    true,
+    "total hint view-model formats progress strings for display",
+  );
   const lambdaRow = totalHintRows.find((row) => row.category === "lambda_point");
   assert.equal(lambdaRow?.uxRole, "imaginary", "lambda-point hint category maps to imaginary role");
 };

@@ -24,12 +24,11 @@ export const runUnlockHintProgressTests = (): void => {
 
   assert.doesNotThrow(
     () => assertCatalogPredicateProgressCoverage(unlockCatalog),
-    "current catalog has full progress classification and redacted hint mapping coverage",
+    "current catalog has full progress classification coverage",
   );
 
   const coverage = deriveCatalogProgressCoverage(unlockCatalog);
   assert.equal(coverage.missingPredicateTypes.length, 0, "current catalog has no unclassified predicate types");
-  assert.equal(coverage.missingHintUnlockIds.length, 0, "current catalog has no missing redacted hint ids");
   const partialTypes = deriveCatalogPartialProgressPredicateTypes(unlockCatalog);
   assert.equal(partialTypes.length > 0, true, "catalog includes partial-progress predicate types");
   assert.equal(
@@ -65,16 +64,10 @@ export const runUnlockHintProgressTests = (): void => {
       assert.equal(row.progressMode, "binary", `${row.unlockId}: cycle family is binary-only by exemption`);
       assert.equal(row.progress.mode, "binary", `${row.unlockId}: cycle family never emits partial metrics`);
     }
-
-    assert.notEqual(
-      row.hint.text,
-      unlock!.description,
-      `${row.unlockId}: redacted hint payload does not leak full unlock catalog description`,
-    );
     assert.equal(
-      row.hint.text.includes(row.predicateType),
+      "hint" in row,
       false,
-      `${row.unlockId}: redacted hint payload does not leak raw predicate type`,
+      `${row.unlockId}: domain progress row does not carry UI hint copy`,
     );
   }
 
@@ -90,7 +83,7 @@ export const runUnlockHintProgressTests = (): void => {
     {
       ...(unlockCatalog[0]!),
       id: "regression_unclassified_predicate",
-      predicate: { type: "total_equals", value: 999n },
+      predicate: { type: "keys_unlocked_all", keys: [] },
     },
   ];
   assert.throws(

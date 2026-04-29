@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { initialState } from "../src/domain/state.js";
-import { legacyInitialState } from "./support/legacyState.js";
 import { classifyDropAction, shouldStartDragFromDelta } from "../src/ui/modules/input/dragDrop.js";
 import {
   beginInputAnimationLock,
@@ -20,7 +19,7 @@ export const runUiModuleInputV2Tests = (): void => {
   assert.equal(shouldStartDragFromDelta(2, 2, 6), false, "input drag threshold rejects small moves");
   assert.equal(shouldStartDragFromDelta(6, 0, 6), true, "input drag threshold accepts threshold crossing");
 
-  const state = legacyInitialState();
+  const state = initialState();
   const withStorageKey = {
     ...state,
     unlocks: {

@@ -4,6 +4,7 @@ export type { AlgebraicMainLineSource, AlgebraicViewModel } from "./readModel.al
 export type { LocalGrowthOrder, OrbitHeuristicState, FactorizationPanelViewModel } from "./readModel.factorization.js";
 export type { HelpPanelViewModel, HelpRowViewModel } from "./readModel.help.js";
 export type { TotalHintRowViewModel } from "./readModel.total.js";
+export type { StateViewModelProjection, ViewModelProjection } from "./viewModelProjection.js";
 export type { UxRole, UxRoleAssignment, UxRoleState, UxRoleTokenName } from "./uxRoles.js";
 
 export {

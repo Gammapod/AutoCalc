@@ -16,6 +16,7 @@ export const releaseNotes: ReleaseNotesCatalog = {
         "UI drift bug fixed.",
         "Added explicit locked/unlocked placeholder icon.",
         "Cleaned up the x-range on the graph visualizer.",
+        "Save loading now accepts only the current schema version.",
       ],
     },
     {

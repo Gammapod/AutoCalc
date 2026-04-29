@@ -3,27 +3,26 @@ import assert from "node:assert/strict";
 import { toNanCalculatorValue } from "../src/domain/calculatorValue.js";
 import { reducer } from "../src/domain/reducer.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
-import { EXECUTION_PAUSE_EQUALS_FLAG } from "../src/domain/state.js";
+import { EXECUTION_PAUSE_EQUALS_FLAG, initialState } from "../src/domain/state.js";
 import type { GameState } from "../src/domain/types.js";
 import { execution, executionUnlockPatch, op } from "./support/keyCompat.js";
-import { legacyInitialState } from "./support/legacyState.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
 const r = (num: bigint, den: bigint = 1n) => ({ kind: "rational" as const, value: rv(num, den) });
 
 export const runEqualsToggleAutoStepTests = (): void => {
   const base: GameState = {
-    ...legacyInitialState(),
+    ...initialState(),
     unlocks: {
-      ...legacyInitialState().unlocks,
+      ...initialState().unlocks,
       maxSlots: 2,
       execution: {
-        ...legacyInitialState().unlocks.execution,
+        ...initialState().unlocks.execution,
         ...executionUnlockPatch([["exec_equals", true]]),
       },
     },
     ui: {
-      ...legacyInitialState().ui,
+      ...initialState().ui,
       keyLayout: [
         { kind: "key", key: KEY_ID.exec_equals, behavior: { type: "toggle_flag", flag: EXECUTION_PAUSE_EQUALS_FLAG } },
       ],
@@ -32,7 +31,7 @@ export const runEqualsToggleAutoStepTests = (): void => {
       buttonFlags: {},
     },
     calculator: {
-      ...legacyInitialState().calculator,
+      ...initialState().calculator,
       total: r(2n),
       operationSlots: [{ operator: op("op_add"), operand: 3n }],
       draftingSlot: null,
@@ -47,11 +46,11 @@ export const runEqualsToggleAutoStepTests = (): void => {
   assert.equal(Boolean(afterAutoTick.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]), false, "= toggle auto-clears after terminal roll commit");
   assert.equal(afterAutoTick.calculator.rollEntries.length > 0, true, "AUTO_STEP_TICK committed a roll update");
 
-  const fromLegacyPress = reducer(base, { type: "PRESS_KEY", key: execution("exec_equals") });
+  const fromEqualsPress = reducer(base, { type: "PRESS_KEY", key: execution("exec_equals") });
   assert.equal(
-    Boolean(fromLegacyPress.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]),
+    Boolean(fromEqualsPress.ui.buttonFlags[EXECUTION_PAUSE_EQUALS_FLAG]),
     true,
-    "legacy PRESS_KEY '=' is normalized into equals-toggle activation",
+    "PRESS_KEY '=' is normalized into equals-toggle activation",
   );
 
   const multiStageSource: GameState = {

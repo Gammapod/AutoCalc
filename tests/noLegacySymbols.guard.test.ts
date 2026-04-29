@@ -14,7 +14,6 @@ const ACTIVE_CODE = [
   "src/domain/events.ts",
   "src/domain/commands.ts",
   "src/infra/persistence/localStorageRepo.ts",
-  "src/infra/persistence/migrations.core.ts",
 ] as const;
 
 const RETIRED_SYMBOL_PATTERNS: readonly RegExp[] = [
@@ -24,7 +23,6 @@ const RETIRED_SYMBOL_PATTERNS: readonly RegExp[] = [
   /\bsessionControlProfiles\b/,
   /\bselectedControlField\b/,
   /\ballocator(Return|Allocate)PressCount\b/,
-  /\bexecutePlanIRLegacyPath\b/,
 ];
 
 const assertNoRetiredSymbols = (path: string): void => {

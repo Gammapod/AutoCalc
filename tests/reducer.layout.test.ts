@@ -7,7 +7,6 @@ import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvar
 import { applyInstallKeyFromStorage } from "../src/domain/reducer.layout.js";
 import { initialState } from "../src/domain/state.js";
 import { calculatorSeedManifest } from "../src/domain/calculatorSeedManifest.js";
-import { legacyInitialState } from "./support/legacyState.js";
 import type { GameState } from "../src/domain/types.js";
 
 const rv = (num: bigint, den: bigint = 1n): { num: bigint; den: bigint } => ({ num, den });
@@ -23,7 +22,7 @@ export const runReducerLayoutTests = (): void => {
     storage: state.ui.storageLayout.map((cell) => (cell ? cell.key : null)),
   });
 
-  const baseline = normalizeRuntimeStateInvariants(legacyInitialState());
+  const baseline = normalizeRuntimeStateInvariants(initialState());
   const baselineLayout = baseline.ui.keyLayout;
   const baselineExpectedLayout = Array.from({ length: baselineLayout.length }, () => null as string | null);
   const fSeed = calculatorSeedManifest.f.placements;
@@ -181,7 +180,7 @@ export const runReducerLayoutTests = (): void => {
     calculator: {
       ...baselineWithSpace.calculator,
       total: r(7n),
-      rollEntries: [{ y: r(7n), remainder: rv(1n) }],
+      rollEntries: [{ y: r(7n) }],
       operationSlots: [{ operator: op("op_add"), operand: 3n }],
       draftingSlot: { operator: op("op_sub"), operandInput: "digit_2", isNegative: false },
     },
