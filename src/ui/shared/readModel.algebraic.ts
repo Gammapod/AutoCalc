@@ -150,9 +150,8 @@ export const buildFunctionRecurrenceDisplay = (
   state: GameState,
 ): { line: string; hasIncompleteDraft: boolean; containsEuclidLiteral: boolean; expressionText: string } => {
   const symbol = resolveFormulaSymbol(state);
-  const useXStyle = symbol === "g";
-  const currentToken = useXStyle ? `${symbol}_{x-1}` : `${symbol}_n`;
-  const nextToken = useXStyle ? `${symbol}_{x}` : `${symbol}_{n+1}`;
+  const currentToken = `${symbol}_{x-1}`;
+  const nextToken = `${symbol}_{x}`;
   let displayAccumulator = currentToken;
   let expressionAccumulator = currentToken;
   let hasIncompleteDraft = false;

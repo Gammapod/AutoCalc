@@ -298,21 +298,23 @@ const formatFactorization = (factorization: RationalPrimeFactorization | undefin
 };
 
 const buildSeedFactorizationLabel = (state: GameState): string => {
+  const symbol = resolveCalcSymbol(state);
   const seedValue = state.calculator.rollEntries.length > 0
     ? state.calculator.rollEntries[0]?.y
     : state.calculator.total;
   if (!seedValue || seedValue.kind === "nan") {
-    return `f\u2080 = ${FACTORIZATION_EMPTY}`;
+    return `${symbol}\u2080 = ${FACTORIZATION_EMPTY}`;
   }
   if (seedValue.kind === "rational" && seedValue.value.num === 0n) {
-    return `f\u2080 = ${FACTORIZATION_EMPTY}`;
+    return `${symbol}\u2080 = ${FACTORIZATION_EMPTY}`;
   }
-  return `f\u2080 = ${formatFactorization(getRollYPrimeFactorization(seedValue))}`;
+  return `${symbol}\u2080 = ${formatFactorization(getRollYPrimeFactorization(seedValue))}`;
 };
 
 const buildCurrentFactorizationLabel = (state: GameState): string => {
+  const symbol = resolveCalcSymbol(state);
   const latest = state.calculator.rollEntries.at(-1);
-  return `f\u2099 = ${formatFactorization(latest?.factorization)}`;
+  return `${symbol}\u2099 = ${formatFactorization(latest?.factorization)}`;
 };
 
 const buildDomainText = (state: GameState): string => {
@@ -628,16 +630,17 @@ export const buildRollDiagnosticsSnapshot = (
   const cycle = state.calculator.rollAnalysis.stopReason === "cycle" ? state.calculator.rollAnalysis.cycle : null;
   const cycleDetected = Boolean(cycle);
   const heuristicState = cycleDetected ? "none" : resolveOrbitHeuristicState(state);
+  const calcSymbol = resolveCalcSymbol(state);
   const growthLabel = cycleDetected
-    ? `O(f_\u03BC) = ${growthOrder}`
+    ? `O(${calcSymbol}_\u03BC) = ${growthOrder}`
     : heuristicState === "chaos_like" && growthOrder !== "exponential"
-      ? "O(f) = chaos?"
+      ? `O(${calcSymbol}) = chaos?`
       : heuristicState === "cycle_likely"
-        ? "O(f) = cycle-likely"
-        : `O(f) = ${growthOrder}`;
+        ? `O(${calcSymbol}) = cycle-likely`
+        : `O(${calcSymbol}) = ${growthOrder}`;
 
-  const transientLabel = cycleDetected && cycle ? `f^\u03BC = ${cycle.i.toString()}` : null;
-  const cycleLabel = cycleDetected && cycle ? `f^\u27E1 = ${(cycle.j - cycle.i).toString()}` : null;
+  const transientLabel = cycleDetected && cycle ? `${calcSymbol}^\u03BC = ${cycle.i.toString()}` : null;
+  const cycleLabel = cycleDetected && cycle ? `${calcSymbol}^\u27E1 = ${(cycle.j - cycle.i).toString()}` : null;
   const domainSymbol = getCurrentTotalDomainSymbol(state);
   const domain = {
     text: buildDomainText(state),

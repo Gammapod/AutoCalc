@@ -348,17 +348,11 @@ export type ControlFieldBounds = {
   max: number | null;
 };
 
-export type ControlEquation = {
-  coefficients: Record<ControlField, number>;
-  constant: number;
-};
-
 export type ControlProfile = {
   id: CalculatorId;
   starts: Record<ControlField, number>;
   settable: Record<ControlField, boolean>;
   bounds: Record<ControlField, ControlFieldBounds>;
-  equations: Record<ControlField, ControlEquation>;
   rounding: "floor";
   gammaMinAfterOne?: boolean;
 };

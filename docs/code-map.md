@@ -36,6 +36,8 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - `src/domain/calculatorSurface.ts`
 - Owns: calculator ids, per-calculator control starts, seeded keypad placements, materialization, sandbox calculator order, and keypad surface mapping.
 - Seeded keypad dimensions derive from each calculator control profile's alpha/beta starts; `calculatorSeedManifest` owns placements only.
+- Control profiles are direct starts/static metadata; there is no derived equation matrix in the current runtime contract.
+- `src/domain/multiCalculator.ts` also owns active calculator projection and calculator formula-symbol routing.
 - Sandbox mode currently materializes `f_prime`, `g_prime`, `h_prime`, and `i_prime` with shared storage.
 
 ### Key Runtime Catalog Exports
@@ -172,6 +174,8 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 ### Calculator Seeds / Sandbox Preset
 - `tests/calculatorSeedManifest.test.ts`
 - `tests/sandboxPreset.test.ts`
+- `tests/uiModule.calculatorSlotDisplay.test.ts`
+- `tests/uiModule.algebraicRenderer.v2.test.ts`
 - Use these when changing calculator ids, control-profile starts, seeded keypad placements, sandbox calculator order, or seed dimension policy.
 
 ### Persistence / Save Compatibility

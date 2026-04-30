@@ -435,9 +435,21 @@ export const commitLegacyProjection = (previous: GameState, projected: GameState
   };
 };
 
-export const resolveFormulaSymbol = (state: GameState): "f" | "g" => {
+export const resolveFormulaSymbol = (state: GameState): string => {
   const active = resolveActiveCalculatorId(state);
-  return active === "g" || active === "g_prime" || active === "i_prime" ? "g" : "f";
+  if (active === "f_prime") {
+    return "f'";
+  }
+  if (active === "g_prime") {
+    return "g'";
+  }
+  if (active === "h_prime") {
+    return "h'";
+  }
+  if (active === "i_prime") {
+    return "i'";
+  }
+  return active === "g" ? "g" : "f";
 };
 
 export const withActiveCalculator = (state: GameState, calculatorId: CalculatorId): GameState =>

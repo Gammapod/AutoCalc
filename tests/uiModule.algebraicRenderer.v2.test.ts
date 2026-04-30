@@ -4,7 +4,10 @@ import { installDomHarness } from "./helpers/domHarness.js";
 import { initialState } from "../src/domain/state.js";
 import { renderAlgebraicVisualizerPanel } from "../src/ui/modules/visualizers/algebraicRenderer.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { projectCalculatorToLegacy } from "../src/domain/multiCalculator.js";
+import { createSandboxState } from "../src/domain/sandboxPreset.js";
 import type { GameState } from "../src/domain/types.js";
+import { op } from "./support/keyCompat.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 
@@ -26,9 +29,14 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
     assert.match(panel.textContent ?? "", /(?:\u{1D453}\u2080\(\u{1D465}\)|f_0)\s*=\s*_/u, "seedless state shows f0 seed placeholder");
     assert.match(
       panel.textContent ?? "",
-      /(?:\u{1D453}\u2099\u208A\u2081\(\u{1D465}\)|f_\{n\+1\})\s*=\s*(?:\u{1D453}\u2099\(\u{1D465}\)|f_n)/u,
-      "empty builder shows identity recurrence in plain or math-rendered form",
+      /f_\{x\}\s*=\s*f_\{x-1\}/u,
+      "empty builder shows uniform x recurrence",
     );
+
+    renderAlgebraicVisualizerPanel(harness.root, projectCalculatorToLegacy(createSandboxState(), "h_prime"));
+    const hPrimeText = panel.textContent ?? "";
+    assert.match(hPrimeText, /h'_0\s*=\s*_/u, "prime calculator seed line uses calculator symbol");
+    assert.match(hPrimeText, /h'_\{x\}\s*=\s*h'_\{x-1\}/u, "prime calculator recurrence uses uniform x recurrence");
 
     const stateWithCommittedBuilder: GameState = {
       ...initialState(),
@@ -46,7 +54,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
     assert.match(committedText, /(?:\u{1D453}\u2080\(\u{1D465}\)|f_0)\s*=\s*5/u, "pre-roll seed line uses current seed value");
     assert.match(
       committedText,
-      /\((?:\u{1D453}\u2099\(\u{1D465}\)|f_n)\s*\+\s*1\)\s*(?:\u00D7|\\*)\s*3/u,
+      /\(f_\{x-1\}\s*\+\s*1\)\s*(?:\u00D7|\\*)\s*3/u,
       "recurrence builds from committed slots",
     );
 
@@ -60,7 +68,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
     renderAlgebraicVisualizerPanel(harness.root, stateWithPartialDraft);
     assert.match(
       panel.textContent ?? "",
-      /\((?:\u{1D453}\u2099\(\u{1D465}\)|f_n)\s*\+\s*_\)/u,
+      /\(f_\{x-1\}\s*\+\s*_\)/u,
       "drafting operator-only recurrence includes underscore placeholder",
     );
 
@@ -76,13 +84,13 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
         rollEntries: [
           {
             y: r(0n),
-            symbolic: { exprText: "((f_n+pi)-pi)", truncated: false, renderText: "f_n" },
+            symbolic: { exprText: "((f_{x-1}op_addpi)op_subpi)", truncated: false, renderText: "f_{x-1}" },
           },
         ],
       },
     };
     renderAlgebraicVisualizerPanel(harness.root, stateWithRelevantSimplifiedRoll);
-    assert.match(panel.textContent ?? "", /f_n(?:\(x\))?/i, "post-roll main area uses simplified text for relevant symbolic payload");
+    assert.match(panel.textContent ?? "", /f_\{x-1\}/i, "post-roll main area uses simplified text for relevant symbolic payload");
 
     const stateWithBuilderChangedAfterRoll: GameState = {
       ...stateWithRelevantSimplifiedRoll,
@@ -94,7 +102,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
     renderAlgebraicVisualizerPanel(harness.root, stateWithBuilderChangedAfterRoll);
     assert.match(
       panel.textContent ?? "",
-      /(?:\u{1D453}\u2099\(\u{1D465}\)|f_n)\s*\+\s*1/u,
+      /f_\{x-1\}\s*\+\s*1/u,
       "when builder changes, main line falls back to live builder recurrence",
     );
 
@@ -107,7 +115,7 @@ export const runUiModuleAlgebraicRendererV2Tests = (): void => {
         rollEntries: [
           {
             y: r(2n),
-            symbolic: { exprText: "(f_n(x)#5)", truncated: false, renderText: "digit_2" },
+            symbolic: { exprText: "(f_{x-1}op_euclid_div5)", truncated: false, renderText: "digit_2" },
           },
         ],
       },

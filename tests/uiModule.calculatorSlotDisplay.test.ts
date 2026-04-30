@@ -2,8 +2,11 @@ import "./support/keyCompat.runtime.js";
 import assert from "node:assert/strict";
 import { buildOperationSlotDisplayModel } from "../src/ui/modules/calculator/viewModel.js";
 import { toRationalCalculatorValue } from "../src/domain/calculatorValue.js";
+import { materializeCalculator, projectCalculatorToLegacy } from "../src/domain/multiCalculator.js";
+import { createSandboxState } from "../src/domain/sandboxPreset.js";
 import { DELTA_RANGE_CLAMP_FLAG, initialState } from "../src/domain/state.js";
-import type { GameState } from "../src/domain/types.js";
+import type { CalculatorId, GameState } from "../src/domain/types.js";
+import { k, op } from "./support/keyCompat.js";
 
 const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, den });
 
@@ -12,6 +15,23 @@ export const runUiModuleCalculatorSlotDisplayTests = (): void => {
     ...initialState(),
     calculators: undefined,
   };
+
+  const standard = initialState();
+  const withG = projectCalculatorToLegacy(materializeCalculator(standard, "g"), "g");
+  const sandbox = createSandboxState();
+  const expectedLabels: Array<[CalculatorId, GameState, string, string]> = [
+    ["f", standard, "f\u2093 = f\u2093\u208B\u2081", "| f\u2080 = _"],
+    ["g", withG, "g\u2093 = g\u2093\u208B\u2081", "| g\u2080 = _"],
+    ["f_prime", projectCalculatorToLegacy(sandbox, "f_prime"), "f'\u2093 = f'\u2093\u208B\u2081", "| f'\u2080 = _"],
+    ["g_prime", projectCalculatorToLegacy(sandbox, "g_prime"), "g'\u2093 = g'\u2093\u208B\u2081", "| g'\u2080 = _"],
+    ["h_prime", projectCalculatorToLegacy(sandbox, "h_prime"), "h'\u2093 = h'\u2093\u208B\u2081", "| h'\u2080 = _"],
+    ["i_prime", projectCalculatorToLegacy(sandbox, "i_prime"), "i'\u2093 = i'\u2093\u208B\u2081", "| i'\u2080 = _"],
+  ];
+  for (const [calculatorId, state, functionPrefix, fixedSeedLabel] of expectedLabels) {
+    const display = buildOperationSlotDisplayModel(state);
+    assert.equal(display.functionPrefix, functionPrefix, `${calculatorId} function builder prefix matches calculator name`);
+    assert.equal(display.fixedSeedLabel, fixedSeedLabel, `${calculatorId} seed label matches calculator name`);
+  }
 
   const withWrapTailTarget: GameState = {
     ...base,

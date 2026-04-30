@@ -103,6 +103,7 @@ import {
 import { resolveRollInversePlan, type InverseExecutionStage } from "./rollInverseExecution.js";
 import { clearExecutionModeFlags } from "./executionModePolicy.js";
 import { getAppServices } from "../contracts/appServices.js";
+import { resolveFormulaSymbol } from "./multiCalculator.js";
 
 export const getUnlockCatalog = () => getAppServices().contentProvider.unlockCatalog;
 
@@ -929,8 +930,8 @@ const toRecordedComplexResult = (value: GameState["calculator"]["total"]): GameS
   );
 };
 
-const buildBuilderExpressionSignature = (slots: GameState["calculator"]["operationSlots"]): string => {
-  let signature = "f_n(x)";
+const buildBuilderExpressionSignature = (slots: GameState["calculator"]["operationSlots"], symbol: string): string => {
+  let signature = `${symbol}_{x-1}`;
   for (const slot of slots) {
     if (slot.kind === "unary") {
       signature = `(${signature}${slot.operator})`;
@@ -1681,7 +1682,7 @@ const evaluateExecutionOutcomeForSlots = (
     }
     const symbolicExpression = buildSymbolicExpression(seedTotal, operationSlots);
     const expressionForEvaluation = symbolicExpression.ok ? symbolicExpression.expression : execution.total.value;
-    const expressionKey = buildBuilderExpressionSignature(operationSlots);
+    const expressionKey = buildBuilderExpressionSignature(operationSlots, resolveFormulaSymbol(state));
     const symbolicEvaluation = evaluateSymbolicExpression(expressionForEvaluation);
     const symbolicText = symbolicEvaluation.ok
       ? symbolicEvaluation.value.simplifiedText

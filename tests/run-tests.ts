@@ -22,6 +22,8 @@ import { runUiUxRoleSystemTests } from "./uiUxRoleSystem.test.js";
 import { runCalculatorSeedManifestTests } from "./calculatorSeedManifest.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
 import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
+import { runUiModuleCalculatorSlotDisplayTests } from "./uiModule.calculatorSlotDisplay.test.js";
+import { runUiModuleAlgebraicRendererV2Tests } from "./uiModule.algebraicRenderer.v2.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -47,6 +49,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["calculator-seed-manifest", runCalculatorSeedManifestTests],
   ["sandbox-preset", runSandboxPresetTests],
   ["ui/module-calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
+  ["ui/module-calculator-slot-display", runUiModuleCalculatorSlotDisplayTests],
+  ["ui/module-algebraic-renderer-v2", runUiModuleAlgebraicRendererV2Tests],
 ];
 
 const grepArg = process.argv.find((arg) => arg.startsWith("--grep="));

@@ -270,7 +270,7 @@ const toWrapTailToken = (
 
 const toFunctionBuilderDisplayParts = (
   base: string,
-  symbol: "f" | "g",
+  symbol: string,
 ): {
     functionPrefix: string;
     seedToken: FunctionBarSeedToken;
@@ -278,9 +278,8 @@ const toFunctionBuilderDisplayParts = (
     displayFunctionBase: string;
     fixedSeedLabel: string;
   } => {
-  const sym = symbol === "g" ? "g" : "f";
-  const seedPrefix = `${sym}\u2080`;
-  const functionPrefix = symbol === "g" ? `${sym}\u2093 = ${sym}\u2093\u208B\u2081` : `${sym}\u2093 = ${sym}\u2080`;
+  const seedPrefix = `${symbol}\u2080`;
+  const functionPrefix = `${symbol}\u2093 = ${symbol}\u2093\u208B\u2081`;
   const parsed = parseSeedAndSlotTokensFromBase(base);
   const seedToken: FunctionBarSeedToken = {
     kind: "seed",
@@ -303,7 +302,7 @@ const toFunctionBuilderDisplayParts = (
 
 const withDisplayParts = (
   base: string,
-  symbol: "f" | "g",
+  symbol: string,
   executableSlotCount: number,
   wrapTail: FunctionBarWrapTailToken | null,
   stepTargetTokenIndex: number | null,
