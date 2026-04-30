@@ -202,8 +202,8 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
       alpha: 4,
       beta: 7,
       gamma: 6,
-      delta: 1,
-      delta_q: 1,
+      delta: 8,
+      delta_q: 8,
       epsilon: 0,
     },
     settable: {
@@ -217,9 +217,9 @@ export const controlProfiles: Record<CalculatorId, ControlProfile> = {
     bounds: {
       alpha: { min: 4, max: 4 },
       beta: { min: 7, max: 7 },
-      gamma: { min: 6, max: 6 },
-      delta: { min: 1, max: 1 },
-      delta_q: { min: 1, max: 1 },
+      gamma: { min: 3, max: 6 },
+      delta: { min: 1, max: 8 },
+      delta_q: { min: 1, max: 8 },
       epsilon: { min: 0, max: 0 },
     },
     equations: {
