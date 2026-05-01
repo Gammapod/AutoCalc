@@ -1,4 +1,4 @@
-Truth 1: Invariants
+Truth: 1 - Invariants
 
 Completed: Compared existing docs against functional spec and archived/discarded contradictions.
 
@@ -12,6 +12,7 @@ TODO: Ensure the following rules are enforced going forward.
 
 # Documentation Policy
 Documents follow an epistemelogical hierarchy.
+Truth-labeled documents must use the header format `Truth: {#} - {Description}`.
 If any of documents from different truth levels contradict, the lower truth source is discarded - the two are not harmonized.
 If documents from within the same truth level contradict, stop what you are doing and flag for review immediately.
 

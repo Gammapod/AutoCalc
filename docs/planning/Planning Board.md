@@ -1,4 +1,4 @@
-﻿Truth 2: Releases
+Truth: 2 - Releases
 
 # Planning Board
 
@@ -109,7 +109,7 @@ Record shipped trains here using this format:
 - Release Note IDs:
 - `release_v1_0_0`
 - Player-facing highlights:
-- 15-degree rotation (`↶ ⦜/6`) now executes with exact algebraic scalar runtime behavior.
+- 15-degree rotation (`? ?/6`) now executes with exact algebraic scalar runtime behavior.
 - Circle, graph, and number-line visualizer projections now handle algebraic results consistently.
 
 ### Train v0.10.2 (2026-04-04)

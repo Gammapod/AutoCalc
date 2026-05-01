@@ -1,4 +1,4 @@
-Truth 1: Invariants
+Truth: 1 - Invariants
 
 # Math Spec
 

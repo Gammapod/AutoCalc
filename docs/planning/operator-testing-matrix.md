@@ -1,4 +1,4 @@
-Truth 4: Operator Test Matrix
+Truth: 4 - Operator Test Matrix
 
 # Operator Testing Matrix
 

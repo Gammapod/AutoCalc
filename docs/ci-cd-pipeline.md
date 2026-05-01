@@ -1,4 +1,4 @@
-Truth 2: Runbook
+Truth: 2 - Runbook
 # CI/CD Pipeline Contract
 
 This is the canonical source of truth for AutoCalc GitHub Actions release pipeline behavior.

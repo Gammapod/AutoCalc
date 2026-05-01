@@ -1,4 +1,4 @@
-Truth 2: Runbook
+Truth: 2 - Runbook
 # Android APK Release Runbook
 
 This runbook covers Android APK build and artifact release for AutoCalc.

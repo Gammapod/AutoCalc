@@ -1,4 +1,4 @@
-Truth 2: Runbook
+Truth: 2 - Runbook
 # Itch Release Runbook
 
 This runbook covers automatic Itch uploads for web-playable and downloadable artifacts.

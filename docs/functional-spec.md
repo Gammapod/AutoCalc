@@ -1,7 +1,7 @@
-Truth 1: Invariants
+Truth: 1 - Invariants
 # AutoCalc Functional Specification
 
-Last updated: 2026-03-28
+Last updated: 2026-05-01
 Status: Draft v2 (design-truth restructure)
 Purpose: Define player-facing functional truth, independent of implementation structure.
 
@@ -113,7 +113,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 - `FS-MC-01` (MUST): A session supports one or more calculator instances, represented by coherent `calculatorOrder` + `calculators` state.
   Rationale: more calculators means a wider possibility space for puzzles while keeping selection/lifecycle truth explicit.
-- `FS-MC-02` (MUST): Each calculator instance owns isolated execution-local state (total, drafting, slots, roll/history, control matrix variables, and step progress).
+- `FS-MC-02` (MUST): Each calculator instance owns isolated execution-local state (total, drafting, slots, roll/history, control/lambda variables, and step progress).
   Rationale: multi-calculator play requires local execution truth per instance.
 - `FS-MC-03` (MUST): Progression-owned unlock state remains global and shared across calculators unless explicitly defined otherwise.
   Rationale: progression ownership and auditability remain singular under global state.
@@ -125,15 +125,15 @@ The Calculator State Interface governs calculator runtime models for one or more
   Rationale: multi-calculator rollout must preserve baseline play and existing progress compatibility.
 - `FS-MC-09` (MUST): Multi-calculator semantics are enabled when `calculatorOrder` contains more than one calculator id; behavior MUST NOT depend on specific calculator id pairs.
   Rationale: id-agnostic routing prevents regressions when new calculators are introduced.
-- `FS-MC-10` (MUST): Calculator identity is the composition of (a) its control profile/matrix relationship, (b) deterministic initialization policy (default settings/loadout at materialization), and (c) action-driven runtime evolution. Control matrix/profile resemblance alone MUST NOT be treated as identity equivalence.
-  Rationale: prevents false equivalence assumptions that collapse distinct calculators based only on control matrix similarity.
+- `FS-MC-10` (MUST): Calculator identity is the composition of (a) its direct-start control profile/static control metadata, (b) deterministic initialization policy (default settings/loadout at materialization), and (c) action-driven runtime evolution. Control-profile resemblance alone MUST NOT be treated as identity equivalence.
+  Rationale: prevents false equivalence assumptions that collapse distinct calculators based only on control-profile similarity.
 
 #### 3.2.1 Core Calculator Surfaces
 
-- `FS-CS-01` (MUST): Calculator state owns keypad, roll/history, display/visualizer projection, and control matrix state.
+- `FS-CS-01` (MUST): Calculator state owns keypad, roll/history, display/visualizer projection, and control/lambda state.
   Rationale: these are calculator-local runtime semantics.
-- `FS-CS-02` (MUST): Control matrix relationships are calculator-local, and each calculator's settable/derived variable policy constrains reachable states and the reachable capability envelope (keypad dimensions, slot count, range, and evaluation cadence semantics).
-  Rationale: control behavior must remain calculator-cohesive with explicit local-state and envelope boundaries.
+- `FS-CS-02` (MUST): Control profiles are calculator-local direct starts/static metadata. Runtime effective control fields are sanitized direct control values; no derived equation matrix participates in the current runtime contract. These fields constrain reachable states and the reachable capability envelope (keypad dimensions, slot count, range, and evaluation cadence semantics).
+  Rationale: control behavior must remain calculator-cohesive with explicit local-state and envelope boundaries while avoiding implicit derived-control policy.
 - `FS-CS-03` (MUST): Visualizers are projections of canonical calculator state and cannot become alternate sources of truth.
   Rationale: read-model/UI cannot override domain truth.
 - `FS-CS-04` (MUST): Roll/history represents executed outcomes, not transient drafting intent.
@@ -145,7 +145,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 - `FS-CS-06` (MUST): Modulo, cycle analysis, and congruence concepts share one semantic visual family across visualizers and function displays.
   Rationale: players should recognize modular arithmetic concepts as one conceptual channel.
-- `FS-CS-07` (MUST): Memory, control matrix, and lambda-related concepts share one semantic visual family across visualizers and function displays.
+- `FS-CS-07` (MUST): Memory, control, and lambda-related concepts share one semantic visual family across visualizers and function displays.
   Rationale: control/resource concepts should read as one coherent operational channel.
 - `FS-CS-08` (MUST): Error concepts use a distinct semantic visual family that cannot be confused with normal operation families.
   Rationale: failure state readability must be immediate and unambiguous.
@@ -186,13 +186,13 @@ The Calculator State Interface governs calculator runtime models for one or more
 
 | Invariant ID | Clause summary | Primary suites | Coverage type | Gap |
 |---|---|---|---|---|
-| FS-CS-01 | Calculator owns keypad/roll/display/control matrix runtime semantics | `ui/runtime-registry`, `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: interface ownership is inferred |
-| FS-CS-02 | Control matrix relationships are calculator-local; per-calculator settable/derived variable policy constrains reachable states and capability envelope (keypad dimensions, slot count, range, evaluation cadence semantics) | `contracts/control-matrix-locality`, `domain/sandbox-preset`, `app/analysis-report` | contract + unit | none |
+| FS-CS-01 | Calculator owns keypad/roll/display/control/lambda runtime semantics | `ui/runtime-registry`, `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: interface ownership is inferred |
+| FS-CS-02 | Direct-start control profiles are calculator-local; sanitized direct control fields constrain reachable states and capability envelope (keypad dimensions, slot count, range, evaluation cadence semantics) | `calculator-seed-manifest`, `sandbox-preset`, `controlProjection` | contract + unit | none |
 | FS-CS-03 | Visualizers are projections, not truth source | `contracts/ui-action-emission`, `ui-module/visualizer-host-v2`, `ui/visualizer-fit-contract` | contract + integration | partial: includes CSS-coupled assertions |
 | FS-CS-04 | Roll is executed outcomes, not drafting state | `reducer/input`, `ui/roll-display`, `contracts/slot-input-parity` | unit + integration + contract | none |
 | FS-CS-05 | Canonical error/remainder outcomes include terminal-NaN persistence semantics, required NaN metadata population, and non-NaN overflow clamping semantics | `reducer/input`, `ui/total-display`, `ui/roll-display`, `persistence` | unit + integration | partial: dedicated NaN-metadata population matrix is pending |
 | FS-CS-06 | Modulo/cycle/congruence share one semantic visual family | `ui/graph-display`, `ui-module/grapher-v2` | integration | gap: no explicit semantic-family contract assertion |
-| FS-CS-07 | Memory/control-matrix/lambda share one semantic visual family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract assertion |
+| FS-CS-07 | Memory/control/lambda share one semantic visual family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract assertion |
 | FS-CS-08 | Errors use distinct semantic visual family | `ui/total-display`, `ui/roll-display` | integration | partial: behavior tested, family-level visual contract absent |
 | FS-CS-09 | Semantic families are not color-only | `ui-shell/menu-a11y` | integration | gap: no dedicated accessibility contract for semantic family cues |
 | FS-CS-10 | Key visual affordance invariants are UX-owned (`UX-KVA-01`..`UX-KVA-05`) | `docs/ux-spec.md` | spec governance | none |
@@ -219,7 +219,7 @@ The Calculator State Interface governs calculator runtime models for one or more
 | FS-MC-07 | Persistence preserves all instances and active selection | `persistence`, `v2/persistence-parity` | unit + contract | gap: multi-instance migration fixtures not defined |
 | FS-MC-08 | One-calculator mode preserves baseline semantics | `contracts/action-event-current`, `contracts/domain-ui-effects-current`, `contracts/multi-calculator-invariants` | parity + contract | partial: baseline-compat fixture pair exists for core sequences; broader long-trace coverage expansion pending |
 | FS-MC-09 | Multi-calculator enablement and routing are driven by `calculatorOrder` cardinality/coherence, not specific id pairs | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `domain/execution-mode-policy` | contract + unit | partial: property-style coverage for larger calculator sets pending |
-| FS-MC-10 | Calculator identity composes control profile/matrix relationship + deterministic initialization loadout + action-driven runtime evolution; control-matrix similarity alone is non-equivalence | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `contracts/action-event-current` | contract + unit + parity | partial: dedicated non-equivalence fixture matrix (same control profile, different initialization/evolution) pending |
+| FS-MC-10 | Calculator identity composes direct-start control profile/static metadata + deterministic initialization loadout + action-driven runtime evolution; control-profile similarity alone is non-equivalence | `contracts/multi-calculator-invariants`, `reducer/lifecycle`, `contracts/action-event-current` | contract + unit + parity | partial: dedicated non-equivalence fixture matrix (same control profile, different initialization/evolution) pending |
 
 ## 4. Cross-Interface Boundary Clauses
 
@@ -251,7 +251,7 @@ These are stable documentation interfaces for test/contract alignment, not code 
 1. `Global State Interface`
    Defines save/session semantics, storage policy, and progression-owned unlock runtime state.
 2. `Calculator State Interface`
-   Defines per-calculator keypad, roll, visualizer projection, and control matrix runtime semantics.
+   Defines per-calculator keypad, roll, visualizer projection, and control/lambda runtime semantics.
 3. `Progression Capability Contract`
    Defines how unlock predicates/effects map to capability gating consumed by calculator behavior.
 4. `Function Builder Contract`

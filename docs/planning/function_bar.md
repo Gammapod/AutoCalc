@@ -1,4 +1,4 @@
-Truth: 4 (temporary, delete after implementing)
+Truth: 4 - Temporary, delete after implementing
 
 # Empty function:
 Currently shows like:

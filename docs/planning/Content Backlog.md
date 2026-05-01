@@ -1,4 +1,4 @@
-Truth 4: Content Backlog
+Truth: 4 - Content Backlog
 
 Purpose: track implementable, self-contained features that do not require Planned Release framing.
 

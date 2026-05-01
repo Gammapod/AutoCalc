@@ -1,4 +1,4 @@
-Truth 1: Game Tuning
+Truth: 1 - Game Tuning
 
 ==========
 MENU CALCULATORS
@@ -12,11 +12,11 @@ Menu
   "capturedAt": "2026-04-18T19:13:20.334Z",
   "calculatorId": "menu",
   "lambdaControl": {
-    "alpha": 7,
-    "beta": 7,
-    "gamma": 4,
-    "delta": 12,
-    "delta_q": 12,
+    "alpha": 1,
+    "beta": 6,
+    "gamma": 0,
+    "delta": 0,
+    "delta_q": 0,
     "epsilon": 0
   },
   "keypad": {

@@ -1,7 +1,7 @@
-Truth 1: Invariants
+Truth: 1 - Invariants
 # AutoCalc UX Specification
 
-Last updated: 2026-04-16
+Last updated: 2026-05-01
 Status: Canonical Truth 1 UX invariants.
 Purpose: Define UX/runtime interaction invariants that are compatible with `docs/functional-spec.md`.
 
@@ -56,13 +56,13 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 ### 2.3 Semantic visual families
 
 - `UX-SVF-01` (MUST): Modulo, cycle analysis, and congruence concepts share one semantic family across visualizers and function displays.
-- `UX-SVF-02` (MUST): Memory, control-matrix, and lambda concepts share one semantic family across visualizers and function displays.
+- `UX-SVF-02` (MUST): Memory, control, and lambda concepts share one semantic family across visualizers and function displays.
 - `UX-SVF-03` (MUST): Error concepts use a distinct semantic family that cannot be confused with non-error families.
 - `UX-SVF-04` (SHALL): Semantic families are not expressed by color alone; at least one additional cue is required (label, icon, pattern, or motion/state treatment).
 
 ### 2.4 Keypad and storage interaction constraints
 
-- `UX-KS-01` (MUST): Keypad dimensions are runtime-driven and constrained to `1..8` for both columns and rows.
+- `UX-KS-01` (MUST): Keypad dimensions are runtime-driven and constrained to `1..12` for both columns and rows.
 - `UX-KS-02` (MUST): Keypad and storage are separate surfaces with distinct layouts.
 - `UX-KS-03` (MUST): Storage visibility remains unlock-gated.
 - `UX-KS-04` (MUST): Move/swap interactions across keypad/storage follow domain validity constraints and do not alter key meaning.
@@ -113,7 +113,7 @@ If this document conflicts with `docs/functional-spec.md`, the functional spec w
 | UX-SVF-02 | Memory/control/lambda family | `ui/cue-telemetry`, `ui/cue-lifecycle`, `app/analysis-report` | integration + unit | gap: no explicit semantic-family contract |
 | UX-SVF-03 | Distinct error family | `ui/total-display`, `ui/roll-display` | integration | partial: family-level checks indirect |
 | UX-SVF-04 | Not color-only semantic cues | `ui-shell/menu-a11y` | integration | gap: dedicated family-cue accessibility suite missing |
-| UX-KS-01 | Runtime keypad range constraints | `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: explicit bounds matrix limited |
+| UX-KS-01 | Runtime keypad range constraints | `ui/layout-engine`, `ui/layout-adapter` | integration + unit | partial: explicit bounds coverage limited |
 | UX-KS-02 | Keypad/storage separation | `ui-module/storage-v2`, `ui/storage-display` | integration | none |
 | UX-KS-03 | Storage unlock gating | `ui-module/storage-v2`, `ui/storage-display` | integration | partial: explicit contract ID absent |
 | UX-KS-04 | Move/swap validity and meaning stability | `ui/drag-drop-behavior`, `contracts/ui-action-emission`, `domain/key-identity-adapters` | integration + contract + unit | partial: direct end-to-end meaning assertion limited |

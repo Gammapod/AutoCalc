@@ -1,4 +1,4 @@
-Truth 2: Releases
+Truth: 2 - Releases
 
 # Release v0.10.2: Runtime Mode Transition Canonicalization (Shipped 2026-04-04)
 

@@ -1,4 +1,4 @@
-Truth 2: Releases
+Truth: 2 - Releases
 
 # Fresh-Context Spawn Prompt (Copy/Paste)
 
