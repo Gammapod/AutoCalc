@@ -18,8 +18,8 @@ import { applyAllocatorRuntimeProjection } from "./allocatorProjection.js";
 import { sanitizeLambdaControl } from "./lambdaControl.js";
 import {
   commitLegacyProjection,
+  isCalculatorId,
   isMultiCalculatorSession,
-  materializeCalculator,
   projectCalculatorToLegacy,
   resolveActiveCalculatorId,
   setActiveCalculator,
@@ -403,9 +403,9 @@ export const reduceWithProjectionScope = (state: GameState, action: Action, opti
   if (!targetCalculatorId) {
     return reduceLegacy(state, action, options);
   }
+  if (!isCalculatorId(targetCalculatorId) || !state.calculators?.[targetCalculatorId]) {
+    return state;
+  }
 
-  const withTargetMaterialized = state.calculators?.[targetCalculatorId]
-    ? state
-    : materializeCalculator(state, targetCalculatorId);
-  return reduceWithinTargetCalculatorProjection(withTargetMaterialized, targetCalculatorId, action, options);
+  return reduceWithinTargetCalculatorProjection(state, targetCalculatorId, action, options);
 };

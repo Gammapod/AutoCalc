@@ -79,6 +79,37 @@ Notes:
 npm run dev:serve
 ```
 
+### Headless Runtime
+
+```bash
+npm run build:web:full
+npm run headless:run -- --unlock-all --press=digit_1,op_add
+npm --silent run headless:run -- --interactive --mode=game
+```
+
+The headless runner executes real runtime actions in Node and prints read-model/UI-effect snapshots for agent-driven smoke tests.
+Interactive mode reads one JSON command per stdin line and writes one JSON response per stdout line. Use `cmd` as the command field, for example:
+
+```jsonl
+{"cmd":"help"}
+{"cmd":"listKeys"}
+{"cmd":"listKeys","all":true,"filter":"digit"}
+{"cmd":"unlockAll"}
+{"cmd":"listKeys","filter":"op_add"}
+{"cmd":"layout","surface":"storage","filter":"op_add"}
+{"cmd":"layout","surface":"keypad","includeEmpty":true}
+{"cmd":"drop","source":{"surface":"storage","index":14},"destination":{"surface":"keypad","index":2}}
+{"cmd":"press","key":"digit_1"}
+{"cmd":"press","key":"exec_equals"}
+{"cmd":"run","maxTicks":100,"stopWhenIdle":true}
+{"cmd":"tick"}
+{"cmd":"snapshot","includeState":true}
+{"cmd":"exit"}
+```
+
+`press` follows installed keypad button semantics; a locked installed key reports `reasonCode:"locked"`, while an unlocked key that is only in storage reports `reasonCode:"not_installed"`. `listKeys` returns currently usable keys by default; pass `all:true` to include locked catalog keys with capability, location, drop-ready `positions`, `installedOnKeypad`, and `pressable` metadata. Use `layout` to inspect compact indexed keypad/storage cells before issuing `drop`; pass `includeEmpty:true` to find open keypad destinations. `unlockAll` returns an "all keys unlocked" result and current unlocked snapshot by default while suppressing verbose diffs; pass `verbose:true` to include full unlock diffs. Use `drop` to mirror frontend drag/drop key movement, `run` for deterministic execution ticks, and `action` to dispatch a raw runtime action. Undo pops roll rows but intentionally preserves the current function draft; use backspace or `C` to clear builder input.
+Use `npm --silent` or call `node ./dist/src/app/headlessCli.js --interactive` directly when a caller needs JSON-only stdout.
+
 ### Test and CI Checks
 
 ```bash

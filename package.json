@@ -38,6 +38,7 @@
     "ci:verify:ux-semantics": "npm run build:web:full && node ./dist/tests/run-tests.js --grep=\"^(ui/ux-role-system|ui/ux-role-parity-mobile|ui/grapher-role-color|ui/visualizer-fit-contract|ui/semantic-hex-strict-guard)$\"",
     "ci:verify:ui-complexity": "node ./scripts/check-ui-complexity.mjs",
     "dev:serve": "node ./scripts/dev-server.mjs",
+    "headless:run": "node ./dist/src/app/headlessCli.js",
     "release:win:portable": "npm run ci:verify:release && npm run build:release && npm run build:desktop:only",
     "test": "npm run ci:verify"
   },

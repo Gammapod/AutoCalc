@@ -913,6 +913,8 @@ export type UiEffect =
       trigger?: "user_action" | "system_action";
       reasonCode?:
         | "no_effect"
+        | "locked"
+        | "not_installed"
         | "execution_gate_reject"
         | "layout_invalid_or_noop"
         | "pre_dispatch_block"

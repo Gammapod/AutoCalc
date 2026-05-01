@@ -93,8 +93,8 @@ const isInstalledSettingOption = <F extends SettingsFamily>(
   family: F,
   option: SettingOptionByFamily[F],
 ): boolean => {
-  for (const cell of state.ui.keyLayout) {
-    if (cell.kind !== "key") {
+  for (const cell of [...state.ui.keyLayout, ...state.ui.storageLayout]) {
+    if (!cell || cell.kind !== "key") {
       continue;
     }
     const selection = resolveSettingSelectionForKey(cell.key);

@@ -14,6 +14,9 @@ import {
 export const CALCULATOR_ORDER: readonly CalculatorId[] = ["menu", "f", "g", "f_prime", "g_prime", "h_prime", "i_prime"];
 export const MAIN_CALCULATOR_ID: CalculatorId = "f";
 
+export const isCalculatorId = (value: string): value is CalculatorId =>
+  (CALCULATOR_ORDER as readonly string[]).includes(value);
+
 const cloneUi = (ui: GameState["ui"]): GameState["ui"] => ({
   ...ui,
   keyLayout: ui.keyLayout.map((cell) => ({ ...cell })),
@@ -369,7 +372,10 @@ export const materializeCalculator = (state: GameState, calculatorId: Calculator
   if (calculatorId === "i_prime") {
     return materializeCalculatorIPrime(state);
   }
-  return materializeCalculatorMenu(state);
+  if (calculatorId === "menu") {
+    return materializeCalculatorMenu(state);
+  }
+  return state;
 };
 
 export const resolveActiveCalculatorId = (state: GameState): CalculatorId => {
@@ -387,6 +393,9 @@ export const resolveActiveCalculatorId = (state: GameState): CalculatorId => {
 
 export const projectCalculatorToLegacy = (state: GameState, calculatorId: CalculatorId): GameState => {
   const withInstances = ensureCalculatorInstances(state);
+  if (!isCalculatorId(calculatorId)) {
+    return withInstances;
+  }
   const instance = withInstances.calculators?.[calculatorId];
   if (!instance) {
     return withInstances;
@@ -413,6 +422,9 @@ export const projectCalculatorToLegacy = (state: GameState, calculatorId: Calcul
 
 export const commitLegacyProjection = (previous: GameState, projected: GameState, calculatorId: CalculatorId): GameState => {
   const base = ensureCalculatorInstances(previous);
+  if (!isCalculatorId(calculatorId)) {
+    return base;
+  }
   const nextInstance: CalculatorInstanceState = {
     id: calculatorId,
     symbol: calculatorId,

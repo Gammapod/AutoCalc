@@ -14,14 +14,19 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 
 ### Bootstrap and Runtime Composition
 - `src/app/bootstrap.ts`
+- `src/app/headlessRuntime.ts`
+- `src/app/headlessSession.ts`
+- `src/app/headlessCli.ts`
 - `src/app/bootstrap/bootState.ts`
 - `src/app/bootstrap/uiControllerWiring.ts`
 - `src/app/bootstrap/subscriptionCoordinator.ts`
 - `src/app/modeTransitionCoordinator.ts`
 - `src/app/persistenceSaveScheduler.ts`
 - `src/ui/shared/appVersion.ts`
-- Owns: app startup, boot-state construction, runtime version resolution, UI controller wiring, subscriptions, mode transitions, persistence scheduling, initial render, and cleanup.
+- Owns: app startup, headless command runtime, boot-state construction, runtime version resolution, UI controller wiring, subscriptions, mode transitions, persistence scheduling, initial render, and cleanup.
 - Keep `src/app/bootstrap.ts` as the composition root; move small boot-state, version, subscription, or UI-wiring details into the helper modules above.
+- Use `src/app/headlessRuntime.ts` for Node-driven runtime tests that need real boot-state, reducer dispatch, persistence policy, mode transitions, UI effects, and read-model snapshots without DOM rendering.
+- Use `src/app/headlessSession.ts` for the interactive JSONL protocol, command parsing, compact snapshots, layout/key discovery responses, and per-command diff reporting.
 
 ### Canonical Key Metadata
 - `src/contracts/keyCatalog.ts`
@@ -184,6 +189,7 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 - Use these when changing save codecs, schema-version policy, localStorage errors, or runtime load normalization.
 
 ### Bootstrap / Runtime Wiring
+- `tests/headlessRuntime.test.ts`
 - `tests/bootstrapBoundary.test.ts`
 - `tests/bootstrapDebugControlBindings.test.ts`
 - `tests/bootstrapImportOrder.test.ts`
@@ -191,6 +197,7 @@ Use these when behavior seems ambiguous; they are the first stop before inventin
 - `tests/bootstrapPersistenceScheduling.test.ts`
 - `tests/modeTransitionCoordinator.test.ts`
 - `tests/persistenceSaveScheduler.test.ts`
+- Use `tests/headlessRuntime.test.ts` when changing the command-facing headless runtime or CLI-relevant dispatch/read-model surface.
 
 ### Reducer Pipeline / Action Boundary
 - `tests/contracts.actionEvent.current.test.ts`
