@@ -58,7 +58,7 @@ export const runSandboxPresetTests = (): void => {
   );
   assert.deepEqual(
     sandbox.calculators?.i_prime?.lambdaControl,
-    { alpha: 4, beta: 7, gamma: 6, delta: 1, delta_q: 1, epsilon: 0 },
+    { alpha: 4, beta: 7, gamma: 6, delta: 8, delta_q: 8, epsilon: 0 },
     "i_prime lambda starts match spec",
   );
 
@@ -77,7 +77,10 @@ export const runSandboxPresetTests = (): void => {
   assert.equal(keyAt(sandbox, "h_prime", 1, 1), KEY_ID.exec_equals, "h_prime R1C1 is equals");
 
   assert.equal(keyAt(sandbox, "i_prime", 7, 1), KEY_ID.toggle_mod_zero_to_delta, "i_prime R7C1 is mod-zero toggle");
-  assert.equal(keyAt(sandbox, "i_prime", 5, 4), KEY_ID.op_euclid_tuple, "i_prime R5C4 is euclid tuple");
+  assert.equal(keyAt(sandbox, "i_prime", 5, 4), KEY_ID.unary_collatz, "i_prime R5C4 is Collatz");
+  assert.equal(keyAt(sandbox, "i_prime", 5, 3), KEY_ID.op_mod, "i_prime R5C3 is mod");
+  assert.equal(keyAt(sandbox, "i_prime", 5, 2), KEY_ID.op_euclid_tuple, "i_prime R5C2 is euclid tuple");
+  assert.equal(keyAt(sandbox, "i_prime", 5, 1), KEY_ID.op_euclid_div, "i_prime R5C1 is euclid div");
   assert.equal(keyAt(sandbox, "i_prime", 1, 1), KEY_ID.exec_equals, "i_prime R1C1 is equals");
 
   assert.ok(Object.values(sandbox.unlocks.valueExpression).every(Boolean), "sandbox unlocks all value keys");

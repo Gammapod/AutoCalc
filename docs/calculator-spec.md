@@ -847,14 +847,14 @@ i'
 ==========
 {
   "schema": "debug_calculator_snapshot_v3",
-  "capturedAt": "2026-04-29T23:14:07.471Z",
+  "capturedAt": "2026-05-02T20:14:46.029Z",
   "calculatorId": "i_prime",
   "lambdaControl": {
     "alpha": 4,
     "beta": 7,
     "gamma": 6,
-    "delta": 1,
-    "delta_q": 1,
+    "delta": 8,
+    "delta_q": 8,
     "epsilon": 0
   },
   "keypad": {
@@ -947,7 +947,7 @@ i'
         "row": 5,
         "col": 4,
         "kind": "key",
-        "key": "op_euclid_tuple",
+        "key": "unary_collatz",
         "status": "unlock",
         "capability": "portable"
       },
@@ -957,7 +957,7 @@ i'
         "row": 5,
         "col": 3,
         "kind": "key",
-        "key": "op_euclid_div",
+        "key": "op_mod",
         "status": "unlock",
         "capability": "portable"
       },
@@ -967,7 +967,7 @@ i'
         "row": 5,
         "col": 2,
         "kind": "key",
-        "key": "op_mod",
+        "key": "op_euclid_tuple",
         "status": "unlock",
         "capability": "portable"
       },
@@ -977,7 +977,7 @@ i'
         "row": 5,
         "col": 1,
         "kind": "key",
-        "key": "unary_reciprocal",
+        "key": "op_euclid_div",
         "status": "unlock",
         "capability": "portable"
       },

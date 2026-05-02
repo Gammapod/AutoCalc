@@ -69,8 +69,8 @@ The Global State Interface governs session continuity, progression capability st
   Rationale: static key identity and dynamic capability state are distinct concerns.
 - `FS-UP-06` (SHALL): Locked capabilities remain inert for gameplay mutation.
   Rationale: locked actions must not create hidden state change paths.
-- `FS-UP-07` (MUST): A key installed on a calculator keypad is press-usable even while locked, and locked installed keys are immobile. For locked installed toggle behavior: (a) settings-toggle keys are forced ON and cannot be toggled OFF until unlocked; (b) play/pause is excluded from forced-ON lock behavior; (c) if one or more locked visualizer keys are installed, exactly one locked visualizer is forced-active, chosen by keypad scan order.
-  Rationale: installed locked keys are explicit progression affordances, with deterministic locked-toggle and visualizer-selection behavior and no locked-key relocation.
+- `FS-UP-07` (MUST): Key capability has three progression states: `locked` keys may appear as installed affordances but are not pressable and not movable; `installed_only` keys are pressable when installed but are not portable/movable; `portable` keys are pressable when installed and may be installed, uninstalled, or moved according to layout rules.
+  Rationale: visible locked keys can signal progression targets without creating hidden mutation paths, while installed-only and portable states separate pressability from relocation capability.
 - `FS-UP-08` (SHALL): Execution-gated rejected inputs should not contribute to progression evidence (including key-press-count-based unlock progress), unless explicitly defined by a specific unlock rule.
   Rationale: rejected execution-gated input is normally non-progress behavior while permitting explicit progression-rule exceptions.
 - `FS-UP-09` (MUST): Unlock graph report is built from unlock-authored sufficiency metadata. Each unlock definition declares one or more sufficient key sets, and the first set is canonical for graphing/reporting.
@@ -98,7 +98,7 @@ The Global State Interface governs session continuity, progression capability st
 | FS-UP-04 | Cross-shell unlock outcome equivalence | `ui-integration/mobile-shell`, `ui-integration/desktop-shell`, `contracts/action-event-current` | integration + parity | partial: no unlock-focused cross-shell parity fixture |
 | FS-UP-05 | Key catalog/type is separate from runtime unlock flags | `domain/button-registry-contract`, `domain/key-action-handlers-contract`, `domain/key-catalog-normalization` | contract + unit | none |
 | FS-UP-06 | Locked capabilities are inert | `reducer/input`, `domain/key-unlocks` | unit | none |
-| FS-UP-07 | Installed locked keys are usable but immobile; settings toggles forced ON; play/pause excluded; one locked visualizer forced-active by keypad scan order | `domain/key-unlocks`, `domain/layout-rules-invariants`, `ui-module/calculator-keypad-render` | unit + contract + integration | partial: settings-toggle forced-ON, play/pause exclusion, and locked-visualizer keypad-order selection lack dedicated contract assertions |
+| FS-UP-07 | Three key capability states: locked is visible/inert, installed-only is pressable but immobile, portable is pressable when installed and movable/installable | `domain/key-unlocks`, `domain/layout-rules-invariants`, `ui-module/calculator-keypad-render` | unit + contract + integration | partial: dedicated end-to-end coverage for all three state transitions remains incomplete |
 | FS-UP-08 | Execution-gated rejected inputs should not normally advance progression evidence, except explicit rule-defined cases | `contracts/domain-ui-effects-current`, `domain/unlock-engine` | contract + unit | partial: explicit exception-bearing unlock rules may intentionally diverge |
 | FS-UP-09 | Unlock graph uses unlock-authored sufficient key sets; first set is canonical | `domain/unlock-graph`, `scripts/generate-unlock-graph-report` | unit + workflow | partial: no catalog-wide required-field contract suite yet |
 | FS-UP-10 | Graph includes key and unlock-target nodes with directed canonical dependency edges | `domain/unlock-graph` | unit | partial: additional fixture coverage for mixed target kinds desirable |
@@ -292,7 +292,7 @@ None currently.
 1. `FS-UP-01` and `FS-BND-02` ownership rules are inferred through contract wiring/boundary tests, not directly behavior-specified.
 2. `FS-FB-06` terminal finalization uniqueness has unit checks but no long-trace stress contract.
 3. `FS-GS-03` and `FS-GS-04` storage semantics are covered behaviorally, but dedicated palette/install contract suites are rolling out.
-4. `FS-UP-07` locked-installed-key toggle semantics (settings-toggle forced ON, play/pause exclusion, single locked visualizer forced-active by keypad scan order) are partially covered but do not yet have a dedicated contract suite.
+4. `FS-UP-07` three-state capability semantics are partially covered but do not yet have a dedicated end-to-end transition suite for locked, installed-only, and portable states.
 5. `FS-FB-09`, `FS-FB-10`, and `FS-UP-08` are currently only partially covered; explicit auto-step completion stress, NaN-propagation matrix for execution/inverse paths, and exception-bearing progression fixtures are pending.
 6. `FS-UP-09`, `FS-UP-10`, `FS-UP-11`, and `FS-UP-12` are intentionally partial at introduction time; dedicated key-only schema, partition-matrix, canonical tie-break, and unresolved-classification fixtures/contracts are pending.
 

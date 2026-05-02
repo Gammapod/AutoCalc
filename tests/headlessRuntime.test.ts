@@ -191,6 +191,8 @@ const runHeadlessJsonlSessionTests = (): void => {
       true,
       "locked keypad key press reports locked reason",
     );
+    assert.equal(lockedPressResponse.ok && lockedPressResponse.accepted, false, "locked keypad key press is not accepted");
+    assert.equal(lockedPressResponse.ok && lockedPressResponse.reasonCode, "locked", "locked keypad key press reports top-level reason");
 
     const notInstalledPressResponse = session.handleLine('{"cmd":"press","key":"toggle_history"}');
     assertOkResponseShape(notInstalledPressResponse);
@@ -201,6 +203,8 @@ const runHeadlessJsonlSessionTests = (): void => {
       true,
       "unlocked storage-only key press reports not-installed reason",
     );
+    assert.equal(notInstalledPressResponse.ok && notInstalledPressResponse.accepted, false, "storage-only press is not accepted");
+    assert.equal(notInstalledPressResponse.ok && notInstalledPressResponse.reasonCode, "not_installed", "storage-only press reports top-level reason");
 
     const invalidKeyResponse = session.handleLine('{"cmd":"press","key":"digit_11"}');
     assert.equal(invalidKeyResponse.ok, false, "invalid key returns JSON error");
@@ -218,16 +222,16 @@ const runHeadlessJsonlSessionTests = (): void => {
     assertOkResponseShape(unlockResponse);
     assert.deepEqual(
       unlockResponse.ok && unlockResponse.result,
-      { message: "all keys unlocked", unlockedCount: 23 },
+      { message: "all keys unlocked", unlockedCount: 23, layoutChanged: true },
       "unlockAll returns compact debug result by default",
     );
     assert.equal(
       unlockResponse.ok
-        && unlockResponse.snapshot.completedUnlockIds.length > 0
-        && unlockResponse.snapshot.readModel.unlockRows.length > 0
+        && unlockResponse.snapshot.completedUnlockIds.length === 0
+        && unlockResponse.snapshot.readModel.unlockRows.length === 0
         && unlockResponse.changes.length === 0,
       true,
-      "compact unlockAll response shows current unlocked state while suppressing bulky diffs",
+      "compact unlockAll response redacts unlock details while suppressing bulky diffs",
     );
 
     const layoutResponse = session.handleLine('{"cmd":"layout","surface":"storage","filter":"op_add"}');
@@ -286,6 +290,8 @@ const runHeadlessJsonlSessionTests = (): void => {
     assert.equal(
       installGraphResponse.ok
         && (installGraphResponse.result as { action?: unknown }).action === "install"
+        && installGraphResponse.accepted === true
+        && installGraphResponse.reasonCode === undefined
         && installGraphResponse.feedback.uiEffects.some((effect) =>
           effect.type === "input_feedback" && effect.outcome === "accepted"),
       true,
@@ -317,6 +323,8 @@ const runHeadlessJsonlSessionTests = (): void => {
       true,
       "invalid drop returns layout_invalid_or_noop feedback",
     );
+    assert.equal(invalidDropResponse.ok && invalidDropResponse.accepted, false, "invalid drop is not accepted");
+    assert.equal(invalidDropResponse.ok && invalidDropResponse.reasonCode, "layout_invalid_or_noop", "invalid drop reports top-level reason");
 
     const pressResponse = session.handleLine('{"cmd":"press","key":"digit_1"}');
     assertOkResponseShape(pressResponse);
@@ -324,10 +332,13 @@ const runHeadlessJsonlSessionTests = (): void => {
       pressResponse.ok && pressResponse.changes.some((change) => change.path === "readModel.totalDisplay"),
       "press response reports compact snapshot changes",
     );
+    assert.equal(pressResponse.ok && pressResponse.accepted, true, "accepted press reports top-level acceptance");
+    assert.equal(pressResponse.ok && pressResponse.reasonCode, undefined, "accepted press omits top-level reason");
 
     const installAddResponse = session.handleLine('{"cmd":"drop","source":{"surface":"storage","index":14},"destination":{"surface":"keypad","index":3}}');
     assertOkResponseShape(installAddResponse);
     assert.equal(installAddResponse.ok && (installAddResponse.result as { action?: unknown }).action, "install", "drop can install operator keys");
+    assert.equal(installAddResponse.ok && installAddResponse.accepted, true, "accepted operator install reports top-level acceptance");
 
     const installDigitTwoResponse = session.handleLine('{"cmd":"drop","source":{"surface":"storage","index":2},"destination":{"surface":"keypad","index":4}}');
     assertOkResponseShape(installDigitTwoResponse);

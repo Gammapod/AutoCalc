@@ -48,6 +48,11 @@ type HeadlessFeedback = {
   quitRequested: boolean;
 };
 
+type HeadlessActionOutcome = {
+  accepted: boolean;
+  reasonCode?: Extract<Extract<UiEffect, { type: "input_feedback" }>["reasonCode"], string>;
+};
+
 type HeadlessOkResponse = {
   ok: true;
   sequence: number;
@@ -55,6 +60,8 @@ type HeadlessOkResponse = {
   feedback: HeadlessFeedback;
   snapshot: HeadlessCompactSnapshot;
   changes: HeadlessSnapshotChange[];
+  accepted?: boolean;
+  reasonCode?: HeadlessActionOutcome["reasonCode"];
   result?: unknown;
 };
 
@@ -115,6 +122,7 @@ const HELP_RESULT = {
     "Use cmd as the command field. command is accepted as a compatibility alias when cmd is absent.",
     "listKeys usable means unlocked; pressable means headless press will dispatch because the key is installed on the keypad.",
     "Use layout or listKeys positions to find storage/keypad indexes before issuing drop.",
+    "For press and drop, ok means the JSON command was handled; accepted reports whether the user action changed domain state.",
     "Undo removes roll rows but preserves the current function draft; use backspace or C to clear builder input.",
   ],
 };
@@ -539,6 +547,20 @@ const buildRejectedFeedback = (
   quitRequested: false,
 });
 
+const resolveInputFeedbackOutcome = (feedback: HeadlessFeedback): HeadlessActionOutcome => {
+  const inputFeedback = feedback.uiEffects.find((effect): effect is Extract<UiEffect, { type: "input_feedback" }> =>
+    effect.type === "input_feedback" && effect.trigger === "user_action");
+  if (!inputFeedback) {
+    return { accepted: false };
+  }
+  return inputFeedback.outcome === "accepted"
+    ? { accepted: true }
+    : {
+        accepted: false,
+        ...(inputFeedback.reasonCode ? { reasonCode: inputFeedback.reasonCode } : {}),
+      };
+};
+
 const runComparableSignature = (snapshot: HeadlessCompactSnapshot): string =>
   JSON.stringify(toJsonCompatible({
     readModel: snapshot.readModel,
@@ -589,7 +611,7 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
     feedback: HeadlessFeedback,
     includeState: boolean,
     result?: unknown,
-    options: { redactUnlockDetails?: boolean; suppressChanges?: boolean } = {},
+    options: { redactUnlockDetails?: boolean; suppressChanges?: boolean; actionOutcome?: HeadlessActionOutcome } = {},
   ): HeadlessOkResponse => {
     const nextSnapshot = compactSnapshot(runtime.snapshot({ includeState }), includeState, {
       redactUnlockDetails: options.redactUnlockDetails,
@@ -602,6 +624,8 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
       feedback,
       snapshot: nextSnapshot,
       changes: options.suppressChanges ? [] : diffHeadlessSnapshots(previousSnapshot, comparableSnapshot),
+      ...(options.actionOutcome ? { accepted: options.actionOutcome.accepted } : {}),
+      ...(options.actionOutcome?.reasonCode ? { reasonCode: options.actionOutcome.reasonCode } : {}),
       ...(result !== undefined ? { result } : {}),
     };
     previousSnapshot = comparableSnapshot;
@@ -631,10 +655,13 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
         throw new Error(`invalid_key:Unknown key: ${command.key}`);
       }
       const result = runtime.press(command.key as KeyInput, command.calculatorId);
-      return buildResponse(command, {
+      const feedback = {
         uiEffects: result.uiEffects,
         quitRequested: result.quitRequested,
-      }, false);
+      };
+      return buildResponse(command, feedback, false, undefined, {
+        actionOutcome: resolveInputFeedbackOutcome(feedback),
+      });
     }
     if (command.cmd === "action") {
       const result = runtime.dispatch(command.action);
@@ -652,7 +679,9 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
       }, false, {
         message: "all keys unlocked",
         unlockedCount,
+        layoutChanged: true,
       }, {
+        redactUnlockDetails: command.verbose !== true,
         suppressChanges: command.verbose !== true,
       });
     }
@@ -667,21 +696,27 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
         { debugUnlockBypass: Boolean(state.ui.buttonFlags[DEBUG_UNLOCK_BYPASS_FLAG]) },
       );
       if (!sourceKey || !action) {
-        return buildResponse(command, buildRejectedFeedback(state, "layout_invalid_or_noop"), false, {
+        const feedback = buildRejectedFeedback(state, "layout_invalid_or_noop");
+        return buildResponse(command, feedback, false, {
           action: null,
           dispatchedAction: null,
+        }, {
+          actionOutcome: resolveInputFeedbackOutcome(feedback),
         });
       }
       const dispatchedAction = buildLayoutDropDispatchAction(command.source, sourceKey, command.destination, action, {
         allowLockedInstall: Boolean(state.ui.buttonFlags[DEBUG_UNLOCK_BYPASS_FLAG]),
       });
       const result = runtime.dispatch(dispatchedAction);
-      return buildResponse(command, {
+      const feedback = {
         uiEffects: result.uiEffects,
         quitRequested: result.quitRequested,
-      }, false, {
+      };
+      return buildResponse(command, feedback, false, {
         action,
         dispatchedAction,
+      }, {
+        actionOutcome: resolveInputFeedbackOutcome(feedback),
       });
     }
     if (command.cmd === "run") {

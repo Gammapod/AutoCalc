@@ -16,18 +16,18 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Relevant headless documentation uses the same lock-state terms.
 - No runtime behavior changes are introduced by this slice.
 - Owner: TBD
-- Status: Planned
+- Status: Completed
 
 ### Slice `slice_unlock_digit_1_total_9_id_alignment`
 - Estimated Complexity: Low
 - User Story: As a player or tester reading unlock output, I want unlock identifiers to match their actual conditions so raw headless output is not misleading.
 - Exit Criteria:
-- `unlock_digit_1_portable_on_total_equals_2` is renamed to match the total-9 predicate, or the predicate/description is intentionally changed so all three agree.
+- `unlock_digit_1_portable_on_total_equals_9` is used for the total-9 predicate, description, tests, and reports.
 - Tests, generated unlock reports, and documentation references are updated to the final identifier.
 - Save/completed-unlock compatibility impact is reviewed and handled or explicitly documented as not needed.
 - Headless completed-unlock output no longer exposes the stale total-2 identifier.
 - Owner: TBD
-- Status: Planned
+- Status: Completed
 
 ### Slice `slice_headless_unlock_all_terse_default`
 - Estimated Complexity: Low
@@ -38,7 +38,7 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - `unlockAll` with `verbose:true` still exposes detailed state useful for debugging.
 - README/headless help documents the terse default and verbose option.
 - Owner: TBD
-- Status: Planned
+- Status: Completed
 
 ### Slice `slice_headless_user_action_acceptance_field`
 - Estimated Complexity: Low
@@ -49,7 +49,7 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 - Invalid/no-op drops return `ok:true`, `accepted:false`, and a specific reason code.
 - Headless tests cover accepted and rejected examples.
 - Owner: TBD
-- Status: Planned
+- Status: Completed
 
 ### Slice `slice_headless_single_digit_limit_feedback`
 - Estimated Complexity: Low-Medium

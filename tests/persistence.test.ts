@@ -209,6 +209,29 @@ export const runPersistenceTests = (): void => {
     "missing diagnostics metadata falls back to neutral trace defaults",
   );
 
+  const staleUnlockIdPayload = loadFromRawSave(serializeEnvelope({
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    savedAt: Date.now(),
+    state: {
+      ...base,
+      completedUnlockIds: ["unlock_digit_1_portable_on_total_equals_2"],
+      perCalculatorCompletedUnlockIds: {
+        f: ["unlock_digit_1_portable_on_total_equals_2"],
+      },
+    },
+  }));
+  assert.ok(staleUnlockIdPayload.state, "current-schema payload with stale unlock id still loads");
+  assert.deepEqual(
+    staleUnlockIdPayload.state?.completedUnlockIds,
+    ["unlock_digit_1_portable_on_total_equals_9"],
+    "root completed unlock ids normalize stale digit-1 portable id",
+  );
+  assert.deepEqual(
+    staleUnlockIdPayload.state?.perCalculatorCompletedUnlockIds?.f,
+    ["unlock_digit_1_portable_on_total_equals_9"],
+    "per-calculator completed unlock ids normalize stale digit-1 portable id",
+  );
+
   const nanRoundTrip = {
     ...base,
     calculator: {

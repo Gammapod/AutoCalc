@@ -19,7 +19,7 @@ export const unlockCatalog: UnlockDefinition[] = [
     targetLabel: "1",
   },
   {
-    id: "unlock_digit_1_portable_on_total_equals_2",
+    id: "unlock_digit_1_portable_on_total_equals_9",
     description: "Make 1 portable when total equals 9.",
     predicate: { type: "total_equals", value: 9n },
     effect: { type: "unlock_digit", key: KEY_ID.digit_1 },

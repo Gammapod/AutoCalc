@@ -63,7 +63,10 @@ export const runCalculatorSeedManifestTests = (): void => {
   assert.equal(iPrime.columns, 4, "i' seed uses 4 columns");
   assert.equal(iPrime.rows, 7, "i' seed uses 7 rows");
   assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 7, 1), k("toggle_mod_zero_to_delta"), "i' seed places mod range at R7C1");
-  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 4), k("op_euclid_tuple"), "i' seed places euclid tuple at R5C4");
+  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 4), k("unary_collatz"), "i' seed places Collatz at R5C4");
+  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 3), k("op_mod"), "i' seed places mod at R5C3");
+  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 2), k("op_euclid_tuple"), "i' seed places euclid tuple at R5C2");
+  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 1), k("op_euclid_div"), "i' seed places euclid div at R5C1");
   assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 1, 1), k("exec_equals"), "i' seed places equals at R1C1");
 
   const ids = Object.keys(calculatorSeedManifest).sort((a, b) => a.localeCompare(b));
