@@ -22,6 +22,7 @@ import { runUnlockHintProgressTests } from "./unlockHintProgress.test.js";
 import { runUiUxRoleSystemTests } from "./uiUxRoleSystem.test.js";
 import { runCalculatorSeedManifestTests } from "./calculatorSeedManifest.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
+import { runModeTransitionCoordinatorTests } from "./modeTransitionCoordinator.test.js";
 import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
 import { runUiModuleCalculatorRejectBlinkTests } from "./uiModule.calculatorRejectBlink.test.js";
 import { runUiModuleCalculatorSlotDisplayTests } from "./uiModule.calculatorSlotDisplay.test.js";
@@ -51,7 +52,8 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["domain/unlock-hint-progress", runUnlockHintProgressTests],
   ["ui/ux-role-system", runUiUxRoleSystemTests],
   ["calculator-seed-manifest", runCalculatorSeedManifestTests],
-  ["sandbox-preset", runSandboxPresetTests],
+  ["domain/sandbox-preset", runSandboxPresetTests],
+  ["mode-transition-coordinator", runModeTransitionCoordinatorTests],
   ["ui/module-calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
   ["ui/module-calculator-reject-blink", runUiModuleCalculatorRejectBlinkTests],
   ["ui/module-calculator-slot-display", runUiModuleCalculatorSlotDisplayTests],

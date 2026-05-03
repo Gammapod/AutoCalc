@@ -27,6 +27,7 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - Keep `src/app/bootstrap.ts` as the composition root; move small boot-state, version, subscription, or UI-wiring details into the helper modules above.
 - Use `src/app/headlessRuntime.ts` for Node-driven runtime tests that need real boot-state, reducer dispatch, persistence policy, mode transitions, UI effects, and read-model snapshots without DOM rendering.
 - Use `src/app/headlessSession.ts` for the interactive JSONL protocol, command parsing, compact snapshots, layout/key discovery responses, and per-command diff reporting.
+- Unlock feedback is routed through `unlock_completed` UI effects produced by progression dispatches; `src/app/bootstrap/subscriptionCoordinator.ts` consumes those effects to trigger storage reveal cues, while setup/hydration/debug state replacement does not emit player-facing unlock feedback.
 
 ### Canonical Key Metadata
 - `src/contracts/keyCatalog.ts`

@@ -5,7 +5,7 @@ import { resolveUiShellMode } from "./uiShellMode.js";
 import { createInteractionRuntime } from "./interactionRuntime.js";
 import { createCueLifecycleCoordinator } from "./workflows/cueLifecycle.js";
 import { subscribeCueTelemetry } from "./workflows/cueTelemetry.js";
-import { createUnlockRevealCoordinator, createUnlockTracker } from "./unlockCueCoordinator.js";
+import { createUnlockRevealCoordinator } from "./unlockCueCoordinator.js";
 import { resolveBootstrapUiRefs } from "../ui/bootstrap/bootstrapUiRefs.js";
 import { createStoreSubscriptionCoordinator } from "./bootstrap/subscriptionCoordinator.js";
 import { createAutoStepScheduler } from "./autoStepScheduler.js";
@@ -145,7 +145,6 @@ const unlockRevealCoordinator = createUnlockRevealCoordinator({
   },
 });
 
-const unlockTracker = createUnlockTracker(store.getState());
 const autoStepScheduler = createAutoStepScheduler(store);
 
 const unsubscribeCueTelemetry =
@@ -156,7 +155,6 @@ const unsubscribeCueTelemetry =
     : () => {};
 
 const unsubscribe = createStoreSubscriptionCoordinator(store, {
-  unlockTracker,
   unlockRevealCoordinator,
   renderAndPersistState,
   syncAutoStepScheduler: (state) => {
@@ -169,7 +167,6 @@ const unsubscribe = createStoreSubscriptionCoordinator(store, {
   onRequestModeTransition: (mode, savePolicy) => {
     modeTransitionCoordinator.requestModeTransition(mode, savePolicy);
   },
-  initialState: store.getState(),
 });
 const syncCurrentMode = (mode: AppMode): void => {
   currentAppMode = mode;

@@ -244,13 +244,20 @@ const resolveDispatchUiEffects = (
       ...(typeof toneFrequencyHz === "number" ? { toneFrequencyHz } : {}),
     });
   }
-  uiEffects.push(...resolveUnlockCompletedEffects(previousState, nextState, services));
+  if (shouldEmitUnlockCompletedEffects(action)) {
+    uiEffects.push(...resolveUnlockCompletedEffects(previousState, nextState, services));
+  }
   if (action.type !== "AUTO_STEP_TICK") {
     const inputFeedback = resolveDomainDispatchInputFeedback(previousState, nextState, action, uiEffects);
     uiEffects.push(withDigitReplacementFeedback(previousTarget, nextTarget, action, inputFeedback));
   }
   return uiEffects;
 };
+
+const shouldEmitUnlockCompletedEffects = (action: Action): boolean =>
+  action.type !== "HYDRATE_SAVE"
+  && action.type !== "RESET_RUN"
+  && action.type !== "UNLOCK_ALL";
 
 const resolveUnlockCompletedEffects = (
   previous: GameState,

@@ -1,28 +1,32 @@
 import type { Action, GameState, Store, TransitionSavePolicy, UiEffect } from "../../domain/types.js";
 import type { AppMode } from "../../contracts/appMode.js";
 
-type UnlockTracker = {
-  hasNewUnlock: (state: GameState) => boolean;
-};
-
 type UnlockRevealCoordinator = {
   runUnlockRevealCue: (state: GameState, uiEffects?: UiEffect[]) => Promise<void>;
 };
 
+type UnlockCompletedEffect = Extract<UiEffect, { type: "unlock_completed" }>;
+
+export const shouldRunStorageRevealForUnlock = (effect: UnlockCompletedEffect): boolean =>
+  effect.effectType === "unlock_digit"
+  || effect.effectType === "unlock_slot_operator"
+  || effect.effectType === "unlock_execution"
+  || effect.effectType === "unlock_visualizer"
+  || effect.effectType === "unlock_utility"
+  || effect.effectType === "unlock_memory"
+  || effect.effectType === "move_key_to_coord";
+
 export const createStoreSubscriptionCoordinator = (
   store: Store,
   options: {
-    unlockTracker: UnlockTracker;
     unlockRevealCoordinator: UnlockRevealCoordinator;
     renderAndPersistState: (state: GameState, uiEffects: UiEffect[]) => void;
     syncAutoStepScheduler?: (state: GameState) => void;
     consumeUiEffects?: () => UiEffect[];
     onQuitApplication?: () => void;
     onRequestModeTransition?: (mode: AppMode, savePolicy: TransitionSavePolicy) => void;
-    initialState: GameState;
   },
 ): (() => void) => {
-  let previousStateForCues = options.initialState;
   return store.subscribe(() => {
     const latestBeforeSync = store.getState();
     options.syncAutoStepScheduler?.(latestBeforeSync);
@@ -31,8 +35,6 @@ export const createStoreSubscriptionCoordinator = (
       // syncAutoStepScheduler dispatched an action; nested subscription pass will process the newest state.
       return;
     }
-    const previous = previousStateForCues;
-    previousStateForCues = latest;
     const uiEffects = options.consumeUiEffects?.() ?? [];
     const quitEffect = uiEffects.find((effect): effect is Extract<UiEffect, { type: "quit_application" }> =>
       effect.type === "quit_application");
@@ -47,8 +49,8 @@ export const createStoreSubscriptionCoordinator = (
       return;
     }
 
-    const hasNewUnlock = options.unlockTracker.hasNewUnlock(latest);
-    if (hasNewUnlock) {
+    const unlockEffects = uiEffects.filter((effect): effect is UnlockCompletedEffect => effect.type === "unlock_completed");
+    if (unlockEffects.some(shouldRunStorageRevealForUnlock)) {
       void (async () => {
         await options.unlockRevealCoordinator.runUnlockRevealCue(latest, uiEffects);
       })();

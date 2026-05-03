@@ -39,6 +39,11 @@ const runHeadlessRuntimeDispatchTests = (): void => {
 
     const unlockResult = runtime.dispatch({ type: "UNLOCK_ALL" });
     assert.ok(unlockResult.state.completedUnlockIds.length > 0, "headless dispatch runs through real reducer unlock handling");
+    assert.equal(
+      unlockResult.uiEffects.some((effect) => effect.type === "unlock_completed"),
+      false,
+      "debug unlock-all does not emit player-facing unlock completion effects",
+    );
 
     runtime.press(KEY_ID.digit_1);
     runtime.dispatch({ type: "INSTALL_KEY_FROM_STORAGE", key: KEY_ID.op_add, toSurface: "keypad", toIndex: 2 });
@@ -55,6 +60,22 @@ const runHeadlessRuntimeDispatchTests = (): void => {
     assert.equal(undoResult.readModel.slotView, "slots:0+draft", "undo preserves current function draft after popping roll");
   } finally {
     runtime.dispose();
+  }
+
+  const lifecycleRuntime = createHeadlessRuntime({ mode: "game", persistGameState: false });
+  try {
+    const hydrateSandboxResult = lifecycleRuntime.dispatch({ type: "HYDRATE_SAVE", state: createSandboxState() });
+    assert.ok(
+      hydrateSandboxResult.state.completedUnlockIds.length > 0,
+      "sandbox hydration still installs completed catalog unlock ids",
+    );
+    assert.equal(
+      hydrateSandboxResult.uiEffects.some((effect) => effect.type === "unlock_completed"),
+      false,
+      "hydrating sandbox state does not emit player-facing unlock completion effects",
+    );
+  } finally {
+    lifecycleRuntime.dispose();
   }
 };
 
