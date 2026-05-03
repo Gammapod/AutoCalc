@@ -1,14 +1,19 @@
 import { createInterface } from "node:readline";
 import { createHeadlessRuntime, type HeadlessSnapshot } from "./headlessRuntime.js";
 import { DEBUG_UNLOCK_BYPASS_FLAG } from "../domain/state.js";
-import { keyPresentationCatalog, isKeyId } from "../domain/keyPresentation.js";
-import { isKeyInstalledOnActiveKeypad, resolveKeyCapability } from "../domain/keyUnlocks.js";
+import { keyCatalog, type KeyBehaviorKind } from "../contracts/keyCatalog.js";
+import { getAppServices } from "../contracts/appServices.js";
+import { calculatorValueToDisplayString } from "../domain/calculatorValue.js";
+import { getButtonFace, keyPresentationCatalog, isConstantKeyId, isKeyId } from "../domain/keyPresentation.js";
+import { isKeyInstalledOnActiveKeypad, isKeyPortable, resolveKeyCapability } from "../domain/keyUnlocks.js";
 import { isCalculatorId, projectCalculatorToLegacy, resolveActiveCalculatorId } from "../domain/multiCalculator.js";
-import { getKeyLayoutForSurface } from "../domain/calculatorSurface.js";
+import { getKeyLayoutForSurface, isAnyKeypadSurface, toCalculatorSurface } from "../domain/calculatorSurface.js";
 import { classifyDropAction } from "../domain/layoutDragDrop.js";
+import { createSandboxState } from "../domain/sandboxPreset.js";
+import { projectEligibleUnlockHintProgressRows } from "../domain/unlockHintProgress.js";
 import { buildLayoutDropDispatchAction } from "../ui/modules/input/dragDrop.js";
 import type { AppMode } from "../contracts/appMode.js";
-import type { Action, CalculatorId, GameState, Key, KeyCapability, KeyInput, LayoutSurface, UiEffect } from "../domain/types.js";
+import type { Action, CalculatorId, GameState, Key, KeyCapability, KeyInput, LayoutSurface, UiEffect, UnlockEffect } from "../domain/types.js";
 
 type JsonRecord = Record<string, unknown>;
 type HeadlessLayoutTarget = { surface: LayoutSurface; index: number };
@@ -21,8 +26,12 @@ export type HeadlessInteractiveCommand =
   | { cmd: "action"; action: Action }
   | { cmd: "unlockAll"; verbose?: boolean }
   | { cmd: "drop"; source: HeadlessLayoutTarget; destination: HeadlessLayoutTarget | null }
+  | { cmd: "install"; key: string; destination: HeadlessLayoutTarget; calculatorId?: CalculatorId }
+  | { cmd: "listCalculators" }
+  | { cmd: "setActiveCalculator"; calculatorId: CalculatorId }
+  | { cmd: "hints" }
   | { cmd: "run"; maxTicks?: number; stopWhenIdle?: boolean }
-  | { cmd: "snapshot"; includeState?: boolean }
+  | { cmd: "snapshot"; includeState?: boolean; calculatorId?: CalculatorId }
   | { cmd: "tick"; calculatorId?: CalculatorId }
   | { cmd: "exit" };
 
@@ -34,6 +43,12 @@ export type HeadlessCompactSnapshot = {
   completedUnlockIds: string[];
   executionActive: boolean;
   executionFlags: string[];
+  settings: GameState["settings"];
+  inputLimits: {
+    seedDigitCount: 1;
+    operandDigitCount: 1;
+  };
+  projectedCalculatorId?: CalculatorId;
   state?: HeadlessSnapshot["state"];
 };
 
@@ -89,7 +104,7 @@ export type HeadlessJsonlSessionOptions = {
   mode?: AppMode;
 };
 
-const SUPPORTED_COMMANDS = ["help", "listKeys", "layout", "press", "action", "unlockAll", "drop", "run", "snapshot", "tick", "exit"] as const;
+const SUPPORTED_COMMANDS = ["help", "listKeys", "layout", "press", "action", "unlockAll", "drop", "install", "listCalculators", "setActiveCalculator", "hints", "run", "snapshot", "tick", "exit"] as const;
 
 const HELP_RESULT = {
   commands: [
@@ -100,8 +115,12 @@ const HELP_RESULT = {
     { cmd: "action", description: "Dispatch a raw runtime action." },
     { cmd: "unlockAll", description: "Unlock all runtime capabilities. verbose:true keeps full unlock diffs." },
     { cmd: "drop", description: "Mirror frontend drag/drop with source and destination layout targets." },
+    { cmd: "install", description: "Install a portable unlocked key by id onto a keypad destination without requiring a storage source cell." },
+    { cmd: "listCalculators", description: "List calculators with active flag, dimensions, total, roll count, and visualizer." },
+    { cmd: "setActiveCalculator", description: "Switch the active calculator by id." },
+    { cmd: "hints", description: "Return compact eligible progression hints using canonical unlock progress data." },
     { cmd: "run", description: "Synchronously dispatch AUTO_STEP_TICK until inactive, idle, or maxTicks." },
-    { cmd: "snapshot", description: "Return the current compact snapshot. Optional includeState includes full state." },
+    { cmd: "snapshot", description: "Return the current compact snapshot. Optional includeState includes full state; optional calculatorId projects another calculator." },
     { cmd: "tick", description: "Dispatch one AUTO_STEP_TICK for execution toggles such as =." },
     { cmd: "exit", description: "End the interactive session." },
   ],
@@ -114,6 +133,10 @@ const HELP_RESULT = {
     { cmd: "press", key: "digit_1" },
     { cmd: "press", key: "op_add", calculatorId: "f" },
     { cmd: "drop", source: { surface: "storage", index: 14 }, destination: { surface: "keypad", index: 2 } },
+    { cmd: "install", key: "op_div", destination: { surface: "keypad", index: 2 } },
+    { cmd: "listCalculators" },
+    { cmd: "setActiveCalculator", calculatorId: "g_prime" },
+    { cmd: "hints" },
     { cmd: "run", maxTicks: 100, stopWhenIdle: true },
     { cmd: "tick" },
     { cmd: "snapshot", includeState: true },
@@ -122,6 +145,8 @@ const HELP_RESULT = {
     "Use cmd as the command field. command is accepted as a compatibility alias when cmd is absent.",
     "listKeys usable means unlocked; pressable means headless press will dispatch because the key is installed on the keypad.",
     "Use layout or listKeys positions to find storage/keypad indexes before issuing drop.",
+    "listKeys maturity is conservative: keys initially installed on sandbox calculators are fully_implemented; storage-only keys are experimental; unavailable constants cannot be installed.",
+    "Compact snapshots expose normalized settings and one-digit seed/operand input limits.",
     "For press and drop, ok means the JSON command was handled; accepted reports whether the user action changed domain state.",
     "Undo removes roll rows but preserves the current function draft; use backspace or C to clear builder input.",
   ],
@@ -259,6 +284,33 @@ export const parseHeadlessInteractiveCommand = (line: string): HeadlessInteracti
       : parseLayoutTarget(parsed.destination, "drop destination");
     return { cmd: "drop", source, destination };
   }
+  if (cmd === "install") {
+    if (typeof parsed.key !== "string") {
+      throw new Error("invalid_command:install requires string field key.");
+    }
+    const destination = parseLayoutTarget(parsed.destination, "install destination");
+    if (parsed.calculatorId !== undefined && typeof parsed.calculatorId !== "string") {
+      throw new Error("invalid_command:install calculatorId must be a string.");
+    }
+    return {
+      cmd: "install",
+      key: parsed.key,
+      destination,
+      ...(parsed.calculatorId ? { calculatorId: parsed.calculatorId as CalculatorId } : {}),
+    };
+  }
+  if (cmd === "listCalculators") {
+    return { cmd: "listCalculators" };
+  }
+  if (cmd === "setActiveCalculator") {
+    if (typeof parsed.calculatorId !== "string") {
+      throw new Error("invalid_command:setActiveCalculator requires string field calculatorId.");
+    }
+    return { cmd: "setActiveCalculator", calculatorId: parsed.calculatorId as CalculatorId };
+  }
+  if (cmd === "hints") {
+    return { cmd: "hints" };
+  }
   if (cmd === "run") {
     if (parsed.maxTicks !== undefined && (!Number.isInteger(parsed.maxTicks) || (parsed.maxTicks as number) < 0)) {
       throw new Error("invalid_command:run maxTicks must be a non-negative integer.");
@@ -276,7 +328,14 @@ export const parseHeadlessInteractiveCommand = (line: string): HeadlessInteracti
     if (parsed.includeState !== undefined && typeof parsed.includeState !== "boolean") {
       throw new Error("invalid_command:snapshot includeState must be a boolean.");
     }
-    return { cmd: "snapshot", ...(parsed.includeState ? { includeState: true } : {}) };
+    if (parsed.calculatorId !== undefined && typeof parsed.calculatorId !== "string") {
+      throw new Error("invalid_command:snapshot calculatorId must be a string.");
+    }
+    return {
+      cmd: "snapshot",
+      ...(parsed.includeState ? { includeState: true } : {}),
+      ...(parsed.calculatorId ? { calculatorId: parsed.calculatorId as CalculatorId } : {}),
+    };
   }
   if (cmd === "tick") {
     if (parsed.calculatorId !== undefined && typeof parsed.calculatorId !== "string") {
@@ -305,11 +364,17 @@ const compactSnapshot = (
   return {
     mode: snapshot.mode,
     ...(snapshot.activeCalculatorId ? { activeCalculatorId: snapshot.activeCalculatorId } : {}),
+    ...(snapshot.projectedCalculatorId ? { projectedCalculatorId: snapshot.projectedCalculatorId } : {}),
     readModel,
     diagnostics: snapshot.diagnostics,
     completedUnlockIds: options.redactUnlockDetails ? [] : snapshot.completedUnlockIds,
     executionActive: snapshot.executionActive,
     executionFlags: snapshot.executionFlags,
+    settings: snapshot.settings,
+    inputLimits: {
+      seedDigitCount: 1,
+      operandDigitCount: 1,
+    },
     ...(includeState && snapshot.state ? { state: snapshot.state } : {}),
   };
 };
@@ -345,6 +410,71 @@ export const diffHeadlessSnapshots = (
 };
 
 type HeadlessKeyLocation = "keypad" | "storage" | "keypad_and_storage" | "none";
+type HeadlessKeyMaturity = "fully_implemented" | "experimental" | "deferred" | "unavailable";
+type HeadlessKeyArity = 0 | 1 | 2 | null;
+
+const keyCatalogById = new Map(keyCatalog.map((entry) => [entry.key, entry]));
+
+let sandboxMaturityByKeyCache: { installed: Set<Key>; storage: Set<Key> } | null = null;
+
+const getSandboxMaturityByKey = (): { installed: Set<Key>; storage: Set<Key> } => {
+  if (sandboxMaturityByKeyCache) {
+    return sandboxMaturityByKeyCache;
+  }
+  const sandbox = createSandboxState();
+  const installed = new Set<Key>();
+  for (const calculator of Object.values(sandbox.calculators ?? {})) {
+    for (const cell of calculator?.ui.keyLayout ?? []) {
+      if (cell.kind === "key") {
+        installed.add(cell.key);
+      }
+    }
+  }
+  const storage = new Set<Key>();
+  for (const cell of sandbox.ui.storageLayout) {
+    if (cell?.kind === "key" && resolveKeyCapability(sandbox, cell.key) !== "locked") {
+      storage.add(cell.key);
+    }
+  }
+  sandboxMaturityByKeyCache = { installed, storage };
+  return sandboxMaturityByKeyCache;
+};
+
+const resolveKeyMaturity = (key: Key): HeadlessKeyMaturity => {
+  const sandboxMaturityByKey = getSandboxMaturityByKey();
+  if (sandboxMaturityByKey.installed.has(key)) {
+    return "fully_implemented";
+  }
+  if (sandboxMaturityByKey.storage.has(key)) {
+    return "experimental";
+  }
+  if (isConstantKeyId(key)) {
+    return "unavailable";
+  }
+  return "deferred";
+};
+
+const resolveKeyArity = (behaviorKind: KeyBehaviorKind | undefined): HeadlessKeyArity => {
+  if (behaviorKind === "operator") {
+    return 2;
+  }
+  if (behaviorKind === "unary_operator") {
+    return 1;
+  }
+  if (behaviorKind) {
+    return 0;
+  }
+  return null;
+};
+
+const isKeyInstallable = (
+  capability: KeyCapability,
+  installedOnKeypad: boolean,
+  maturity: HeadlessKeyMaturity,
+): boolean =>
+  capability === "portable"
+  && !installedOnKeypad
+  && maturity !== "unavailable";
 
 const resolveListState = (state: GameState, calculatorId?: CalculatorId): GameState => {
   const targetCalculatorId = calculatorId ?? resolveActiveCalculatorId(state);
@@ -417,21 +547,30 @@ const listKeys = (
     })
     .map((entry) => {
       const key = entry.keyId as Key;
+      const metadata = keyCatalogById.get(key);
       const capability: KeyCapability = resolveKeyCapability(listState, key);
       const location = resolveKeyLocation(listState, key);
       const positions = resolveKeyPositions(listState, key);
       const installedOnKeypad = isKeyInstalledOnActiveKeypad(listState, key);
       const usable = capability !== "locked";
       const pressBlockReason = resolvePressBlockReason(capability, installedOnKeypad);
+      const maturity = resolveKeyMaturity(key);
       return {
         key: entry.keyId,
         label: entry.buttonFace,
+        category: metadata?.category ?? "unknown",
+        arity: resolveKeyArity(metadata?.behaviorKind),
+        inputFamily: metadata?.inputFamily ?? "unknown",
+        behaviorKind: metadata?.behaviorKind ?? "noop",
+        traits: metadata?.traits ?? [],
+        maturity,
         usable,
         capability,
         location,
         positions,
         installedOnKeypad,
         pressable: usable && installedOnKeypad,
+        installable: isKeyInstallable(capability, installedOnKeypad, maturity),
         ...(pressBlockReason ? { pressBlockReason } : {}),
       };
     })
@@ -535,10 +674,11 @@ const readSurfaceKey = (state: GameState, target: HeadlessLayoutTarget): Key | n
 const buildRejectedFeedback = (
   state: GameState,
   reasonCode: Extract<Extract<UiEffect, { type: "input_feedback" }>["reasonCode"], string>,
+  calculatorId: CalculatorId = resolveActiveCalculatorId(state),
 ): HeadlessFeedback => ({
   uiEffects: [{
     type: "input_feedback",
-    calculatorId: resolveActiveCalculatorId(state),
+    calculatorId,
     outcome: "rejected",
     source: "domain_dispatch",
     trigger: "user_action",
@@ -559,6 +699,146 @@ const resolveInputFeedbackOutcome = (feedback: HeadlessFeedback): HeadlessAction
         accepted: false,
         ...(inputFeedback.reasonCode ? { reasonCode: inputFeedback.reasonCode } : {}),
       };
+};
+
+const filterUnlockCompletedEffects = (feedback: HeadlessFeedback): HeadlessFeedback => ({
+  ...feedback,
+  uiEffects: feedback.uiEffects.filter((effect) => effect.type !== "unlock_completed"),
+});
+
+const resolveRequestedCalculatorId = (state: GameState, calculatorId?: CalculatorId): CalculatorId => {
+  const targetCalculatorId = calculatorId ?? resolveActiveCalculatorId(state);
+  if (!isCalculatorId(targetCalculatorId) || !state.calculators?.[targetCalculatorId]) {
+    throw new Error(`invalid_calculator:Unknown calculatorId: ${targetCalculatorId}`);
+  }
+  return targetCalculatorId;
+};
+
+const hasValidDestinationIndex = (state: GameState, destination: HeadlessLayoutTarget): boolean => {
+  if (destination.surface === "storage") {
+    return destination.index < state.ui.storageLayout.length;
+  }
+  const layout = getKeyLayoutForSurface(state, destination.surface);
+  return Boolean(layout && destination.index < layout.length);
+};
+
+const resolveInstallDestinationSurface = (
+  calculatorId: CalculatorId | undefined,
+  destination: HeadlessLayoutTarget,
+): LayoutSurface => {
+  if (calculatorId && destination.surface === "keypad") {
+    return toCalculatorSurface(calculatorId);
+  }
+  return destination.surface;
+};
+
+const buildInstallActionOrFeedback = (
+  state: GameState,
+  key: Key,
+  command: Extract<HeadlessInteractiveCommand, { cmd: "install" }>,
+): { action: Action; feedback?: never } | { action?: never; feedback: HeadlessFeedback } => {
+  const targetCalculatorId = resolveRequestedCalculatorId(state, command.calculatorId);
+  const destinationSurface = resolveInstallDestinationSurface(command.calculatorId, command.destination);
+  const scopedDestination = { ...command.destination, surface: destinationSurface };
+  const listState = projectCalculatorToLegacy(state, targetCalculatorId);
+  const maturity = resolveKeyMaturity(key);
+  if (maturity === "unavailable") {
+    return { feedback: buildRejectedFeedback(state, "key_unavailable", targetCalculatorId) };
+  }
+  if (!isAnyKeypadSurface(destinationSurface) || !hasValidDestinationIndex(state, scopedDestination)) {
+    return { feedback: buildRejectedFeedback(state, "destination_invalid", targetCalculatorId) };
+  }
+  if (isKeyInstalledOnActiveKeypad(listState, key)) {
+    return { feedback: buildRejectedFeedback(state, "duplicate_installed", targetCalculatorId) };
+  }
+  if (!isKeyPortable(listState, key)) {
+    return { feedback: buildRejectedFeedback(state, "not_portable", targetCalculatorId) };
+  }
+  return {
+    action: {
+      type: "INSTALL_KEY_FROM_STORAGE",
+      key,
+      toSurface: destinationSurface,
+      toIndex: command.destination.index,
+      ...(command.calculatorId ? { calculatorId: targetCalculatorId } : {}),
+    },
+  };
+};
+
+const summarizeUnlockEffect = (effect: UnlockEffect): { effectType: UnlockEffect["type"]; targetLabel: string; key?: Key; calculatorId?: CalculatorId } => {
+  if (
+    effect.type === "unlock_digit"
+    || effect.type === "unlock_slot_operator"
+    || effect.type === "unlock_execution"
+    || effect.type === "unlock_visualizer"
+    || effect.type === "unlock_utility"
+    || effect.type === "unlock_memory"
+    || effect.type === "unlock_installed_only"
+    || effect.type === "move_key_to_coord"
+  ) {
+    return {
+      effectType: effect.type,
+      targetLabel: getButtonFace(effect.key),
+      key: effect.key,
+    };
+  }
+  if (effect.type === "unlock_calculator" || effect.type === "increase_allocator_max_points_for_calculator") {
+    return {
+      effectType: effect.type,
+      targetLabel: effect.calculatorId,
+      calculatorId: effect.calculatorId,
+    };
+  }
+  return {
+    effectType: effect.type,
+    targetLabel: effect.type,
+  };
+};
+
+const listHints = (state: GameState) => {
+  const catalog = getAppServices().contentProvider.unlockCatalog;
+  const unlockById = new Map(catalog.map((unlock) => [unlock.id, unlock]));
+  return projectEligibleUnlockHintProgressRows(state, catalog).map((row) => {
+    const unlock = unlockById.get(row.unlockId);
+    const effect = unlock ? summarizeUnlockEffect(unlock.effect) : null;
+    return {
+      unlockId: row.unlockId,
+      predicateType: row.predicateType,
+      progressMode: row.progressMode,
+      progress: row.progress,
+      ...(unlock
+        ? {
+            description: unlock.description,
+            targetLabel: unlock.targetLabel ?? effect?.targetLabel ?? unlock.targetNodeId,
+            effectType: effect?.effectType,
+            ...(effect?.key ? { key: effect.key } : {}),
+            ...(effect?.calculatorId ? { calculatorId: effect.calculatorId } : {}),
+          }
+        : {}),
+    };
+  });
+};
+
+const listCalculators = (state: GameState) => {
+  const activeCalculatorId = resolveActiveCalculatorId(state);
+  const order = state.calculatorOrder ?? [];
+  return order
+    .filter((calculatorId) => Boolean(state.calculators?.[calculatorId]))
+    .map((calculatorId) => {
+      const calculator = state.calculators![calculatorId]!;
+      return {
+        id: calculator.id,
+        symbol: calculator.symbol,
+        active: calculatorId === activeCalculatorId,
+        dimensions: {
+          columns: calculator.ui.keypadColumns,
+          rows: calculator.ui.keypadRows,
+        },
+        total: calculatorValueToDisplayString(calculator.calculator.total),
+        rollCount: calculator.calculator.rollEntries.length,
+        visualizer: calculator.settings.visualizer,
+      };
+    });
 };
 
 const runComparableSignature = (snapshot: HeadlessCompactSnapshot): string =>
@@ -611,9 +891,14 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
     feedback: HeadlessFeedback,
     includeState: boolean,
     result?: unknown,
-    options: { redactUnlockDetails?: boolean; suppressChanges?: boolean; actionOutcome?: HeadlessActionOutcome } = {},
+    options: {
+      redactUnlockDetails?: boolean;
+      suppressChanges?: boolean;
+      actionOutcome?: HeadlessActionOutcome;
+      calculatorId?: CalculatorId;
+    } = {},
   ): HeadlessOkResponse => {
-    const nextSnapshot = compactSnapshot(runtime.snapshot({ includeState }), includeState, {
+    const nextSnapshot = compactSnapshot(runtime.snapshot({ includeState, calculatorId: options.calculatorId }), includeState, {
       redactUnlockDetails: options.redactUnlockDetails,
     });
     const comparableSnapshot = compactSnapshot(runtime.snapshot(), false);
@@ -673,10 +958,11 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
     if (command.cmd === "unlockAll") {
       const result = runtime.dispatch({ type: "UNLOCK_ALL" });
       const unlockedCount = result.state.completedUnlockIds.length;
-      return buildResponse(command, {
+      const feedback = {
         uiEffects: result.uiEffects,
         quitRequested: result.quitRequested,
-      }, false, {
+      };
+      return buildResponse(command, command.verbose === true ? feedback : filterUnlockCompletedEffects(feedback), false, {
         message: "all keys unlocked",
         unlockedCount,
         layoutChanged: true,
@@ -719,6 +1005,49 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
         actionOutcome: resolveInputFeedbackOutcome(feedback),
       });
     }
+    if (command.cmd === "install") {
+      if (!isKeyId(command.key)) {
+        throw new Error(`invalid_key:Unknown key: ${command.key}`);
+      }
+      const state = runtime.getState();
+      const validation = buildInstallActionOrFeedback(state, command.key as Key, command);
+      if (validation.feedback) {
+        return buildResponse(command, validation.feedback, false, {
+          dispatchedAction: null,
+        }, {
+          actionOutcome: resolveInputFeedbackOutcome(validation.feedback),
+        });
+      }
+      const result = runtime.dispatch(validation.action);
+      const feedback = {
+        uiEffects: result.uiEffects,
+        quitRequested: result.quitRequested,
+      };
+      return buildResponse(command, feedback, false, {
+        dispatchedAction: validation.action,
+      }, {
+        actionOutcome: resolveInputFeedbackOutcome(feedback),
+      });
+    }
+    if (command.cmd === "listCalculators") {
+      return buildResponse(command, { uiEffects: [], quitRequested: false }, false, {
+        calculators: listCalculators(runtime.getState()),
+      });
+    }
+    if (command.cmd === "setActiveCalculator") {
+      const state = runtime.getState();
+      resolveRequestedCalculatorId(state, command.calculatorId);
+      const result = runtime.dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId: command.calculatorId });
+      return buildResponse(command, {
+        uiEffects: result.uiEffects,
+        quitRequested: result.quitRequested,
+      }, false);
+    }
+    if (command.cmd === "hints") {
+      return buildResponse(command, { uiEffects: [], quitRequested: false }, false, {
+        hints: listHints(runtime.getState()),
+      });
+    }
     if (command.cmd === "run") {
       const maxTicks = command.maxTicks ?? 100;
       const stopWhenIdle = command.stopWhenIdle ?? true;
@@ -756,7 +1085,9 @@ export const createHeadlessJsonlSession = (options: HeadlessJsonlSessionOptions 
       });
     }
     if (command.cmd === "snapshot") {
-      return buildResponse(command, { uiEffects: [], quitRequested: false }, Boolean(command.includeState));
+      return buildResponse(command, { uiEffects: [], quitRequested: false }, Boolean(command.includeState), undefined, {
+        calculatorId: command.calculatorId,
+      });
     }
     if (command.cmd === "tick") {
       if (command.calculatorId && !isCalculatorId(command.calculatorId)) {

@@ -105,6 +105,7 @@ export const renderCalculatorV2Module = (
     rollUpdatedCount?: number;
     substepExecutedCount?: number;
     substepExecutedToneFrequenciesHz?: number[];
+    unlockCompletedCount?: number;
   },
 ): void => {
   const calculatorId: CalculatorId =
@@ -126,6 +127,7 @@ export const renderCalculatorV2Module = (
   triggerCalculatorInputOutcomeLed(root, "builder_changed", options.builderChangedCount ?? 0);
   triggerCalculatorInputOutcomeLed(root, "settings_changed", options.settingsChangedCount ?? 0);
   triggerCalculatorInputOutcomeLed(root, "roll_updated", options.rollUpdatedCount ?? 0);
+  triggerCalculatorInputOutcomeLed(root, "unlock_completed", options.unlockCompletedCount ?? 0);
   triggerCalculatorInputOutcomeLed(
     root,
     "substep_executed",

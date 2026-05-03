@@ -8,6 +8,7 @@ import { isCalculatorId, projectCalculatorToLegacy, resolveActiveCalculatorId } 
 import { buildKeyButtonAction } from "../domain/keyActionPolicy.js";
 import { isKeyInstalledOnActiveKeypad, resolveKeyCapability } from "../domain/keyUnlocks.js";
 import { isExecutionModeActive, listExecutionToggleFlags } from "../domain/executionModePolicy.js";
+import { resolveWrapStageMode } from "../domain/executionPlan.js";
 import { setAppServices } from "../contracts/appServices.js";
 import type { AppMode } from "../contracts/appMode.js";
 import type { AppServices } from "../contracts/appServices.js";
@@ -37,6 +38,7 @@ export type HeadlessDispatchResult = {
 
 export type HeadlessSnapshotOptions = {
   includeState?: boolean;
+  calculatorId?: CalculatorId;
 };
 
 export type HeadlessSnapshot = {
@@ -44,10 +46,12 @@ export type HeadlessSnapshot = {
   readModel: DomainReadModel;
   uiEffects: UiEffect[];
   diagnostics: GameState["ui"]["diagnostics"];
+  settings: GameState["settings"];
   completedUnlockIds: string[];
   executionActive: boolean;
   executionFlags: string[];
   activeCalculatorId?: CalculatorId;
+  projectedCalculatorId?: CalculatorId;
   quitRequested: boolean;
   state?: GameState;
 };
@@ -213,7 +217,16 @@ export const createHeadlessRuntime = (options: HeadlessRuntimeOptions = {}) => {
 
   const snapshot = (snapshotOptions: HeadlessSnapshotOptions = {}): HeadlessSnapshot => {
     const state = store.getState();
-    const activeState = projectActiveState(state);
+    const projectedCalculatorId = snapshotOptions.calculatorId ?? resolveActiveCalculatorId(state);
+    if (snapshotOptions.calculatorId && !isCalculatorId(snapshotOptions.calculatorId)) {
+      throw new Error(`invalid_calculator:Unknown calculatorId: ${snapshotOptions.calculatorId}`);
+    }
+    if (snapshotOptions.calculatorId && !state.calculators?.[snapshotOptions.calculatorId]) {
+      throw new Error(`invalid_calculator:Unknown calculatorId: ${snapshotOptions.calculatorId}`);
+    }
+    const activeState = snapshotOptions.calculatorId
+      ? projectCalculatorToLegacy(state, snapshotOptions.calculatorId)
+      : projectActiveState(state);
     const uiEffects = consumeEffects(store);
     const executionFlags = [...listExecutionToggleFlags(activeState)]
       .filter((flag) => Boolean(activeState.ui.buttonFlags[flag]))
@@ -223,10 +236,17 @@ export const createHeadlessRuntime = (options: HeadlessRuntimeOptions = {}) => {
       readModel: buildReadModel(activeState),
       uiEffects,
       diagnostics: activeState.ui.diagnostics,
+      settings: {
+        ...activeState.settings,
+        wrapper: resolveWrapStageMode(activeState) ?? "none",
+      },
       completedUnlockIds: state.completedUnlockIds,
       executionActive: isExecutionModeActive(activeState),
       executionFlags,
       ...(state.activeCalculatorId ? { activeCalculatorId: state.activeCalculatorId } : {}),
+      ...(snapshotOptions.calculatorId && snapshotOptions.calculatorId !== state.activeCalculatorId
+        ? { projectedCalculatorId }
+        : {}),
       quitRequested,
       ...(snapshotOptions.includeState ? { state } : {}),
     };

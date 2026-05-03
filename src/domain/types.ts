@@ -915,10 +915,29 @@ export type UiEffect =
         | "no_effect"
         | "locked"
         | "not_installed"
+        | "key_unavailable"
+        | "not_portable"
+        | "destination_invalid"
+        | "duplicate_installed"
         | "execution_gate_reject"
         | "layout_invalid_or_noop"
         | "pre_dispatch_block"
         | "transition_intent_accept";
+      replacement?: {
+        target: "seed" | "operand";
+        previous: string;
+        next: string;
+        limit: number;
+      };
+    }
+  | {
+      type: "unlock_completed";
+      unlockId: string;
+      description: string;
+      effectType: UnlockEffect["type"];
+      targetLabel: string;
+      key?: Key;
+      calculatorId?: CalculatorId;
     }
   | {
       type: "request_mode_transition";

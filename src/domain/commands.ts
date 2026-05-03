@@ -1,13 +1,14 @@
-import type { Action, GameState, ScalarValue } from "./types.js";
+import type { Action, CalculatorId, GameState, Key, ScalarValue, UnlockDefinition, UnlockEffect } from "./types.js";
 import { eventFromAction, type DomainEvent } from "./events.js";
 import { applyEvent } from "./transition.js";
-import type { AppServices } from "../contracts/appServices.js";
+import { getAppServices, type AppServices } from "../contracts/appServices.js";
 import { resolveExecutionPolicyForAction } from "./reducer.js";
 import type { UiEffect } from "./types.js";
 import { resolveSystemKeyIntent, mapSystemKeyIntentToUiEffect } from "./systemKeyIntentRegistry.js";
 import { isKeyUsableForInput } from "./keyUnlocks.js";
 import { resolveDomainDispatchInputFeedback, resolveFeedbackTargetCalculatorId } from "./inputFeedback.js";
-import { KEY_ID, isBinaryOperatorKeyId, isConstantKeyId, isDigitKeyId, isUnaryOperatorId } from "./keyPresentation.js";
+import { calculatorValueToDisplayString } from "./calculatorValue.js";
+import { KEY_ID, getButtonFace, isBinaryOperatorKeyId, isConstantKeyId, isDigitKeyId, isUnaryOperatorId } from "./keyPresentation.js";
 import { projectCalculatorToLegacy } from "./multiCalculator.js";
 import { EXECUTION_PAUSE_EQUALS_FLAG } from "./state.js";
 import { resolveWrapStageMode } from "./executionPlan.js";
@@ -198,6 +199,7 @@ const resolveDispatchUiEffects = (
   previousState: GameState,
   nextState: GameState,
   action: Action,
+  services: AppServices | undefined,
 ): UiEffect[] => {
   const uiEffects: UiEffect[] = [];
   const policy = resolveExecutionPolicyForAction(previousState, action);
@@ -242,10 +244,107 @@ const resolveDispatchUiEffects = (
       ...(typeof toneFrequencyHz === "number" ? { toneFrequencyHz } : {}),
     });
   }
+  uiEffects.push(...resolveUnlockCompletedEffects(previousState, nextState, services));
   if (action.type !== "AUTO_STEP_TICK") {
-    uiEffects.push(resolveDomainDispatchInputFeedback(previousState, nextState, action, uiEffects));
+    const inputFeedback = resolveDomainDispatchInputFeedback(previousState, nextState, action, uiEffects);
+    uiEffects.push(withDigitReplacementFeedback(previousTarget, nextTarget, action, inputFeedback));
   }
   return uiEffects;
+};
+
+const resolveUnlockCompletedEffects = (
+  previous: GameState,
+  next: GameState,
+  services: AppServices | undefined,
+): UiEffect[] => {
+  const previousCompleted = new Set(previous.completedUnlockIds);
+  const completedIds = next.completedUnlockIds.filter((id) => !previousCompleted.has(id));
+  if (completedIds.length === 0) {
+    return [];
+  }
+  const catalog = services?.contentProvider.unlockCatalog ?? getAppServices().contentProvider.unlockCatalog;
+  const unlockById = new Map(catalog.map((unlock) => [unlock.id, unlock]));
+  return completedIds.flatMap((unlockId) => {
+    const unlock = unlockById.get(unlockId);
+    return unlock ? [toUnlockCompletedEffect(unlock)] : [];
+  });
+};
+
+const toUnlockCompletedEffect = (unlock: UnlockDefinition): Extract<UiEffect, { type: "unlock_completed" }> => {
+  const affected = resolveUnlockEffectAffectedTarget(unlock.effect);
+  return {
+    type: "unlock_completed",
+    unlockId: unlock.id,
+    description: unlock.description,
+    effectType: unlock.effect.type,
+    targetLabel: unlock.targetLabel ?? affected.targetLabel,
+    ...(affected.key ? { key: affected.key } : {}),
+    ...(affected.calculatorId ? { calculatorId: affected.calculatorId } : {}),
+  };
+};
+
+const resolveUnlockEffectAffectedTarget = (
+  effect: UnlockEffect,
+): { targetLabel: string; key?: Key; calculatorId?: CalculatorId } => {
+  if (
+    effect.type === "unlock_digit"
+    || effect.type === "unlock_slot_operator"
+    || effect.type === "unlock_execution"
+    || effect.type === "unlock_visualizer"
+    || effect.type === "unlock_utility"
+    || effect.type === "unlock_memory"
+    || effect.type === "unlock_installed_only"
+    || effect.type === "move_key_to_coord"
+  ) {
+    return { targetLabel: getButtonFace(effect.key), key: effect.key };
+  }
+  if (effect.type === "unlock_calculator" || effect.type === "increase_allocator_max_points_for_calculator") {
+    return { targetLabel: effect.calculatorId, calculatorId: effect.calculatorId };
+  }
+  return { targetLabel: effect.type };
+};
+
+const withDigitReplacementFeedback = (
+  previous: GameState,
+  next: GameState,
+  action: Action,
+  inputFeedback: Extract<UiEffect, { type: "input_feedback" }>,
+): Extract<UiEffect, { type: "input_feedback" }> => {
+  if (inputFeedback.outcome !== "accepted" || action.type !== "PRESS_KEY" || !isDigitKeyId(action.key)) {
+    return inputFeedback;
+  }
+  const replacement = resolveDigitReplacement(previous, next);
+  return replacement ? { ...inputFeedback, replacement } : inputFeedback;
+};
+
+const resolveDigitReplacement = (
+  previous: GameState,
+  next: GameState,
+): Extract<UiEffect, { type: "input_feedback" }>["replacement"] | undefined => {
+  if (previous.calculator.draftingSlot && next.calculator.draftingSlot) {
+    const before = previous.calculator.draftingSlot.operandInput;
+    const after = next.calculator.draftingSlot.operandInput;
+    if (before.length >= 1 && after !== before) {
+      return { target: "operand", previous: before, next: after, limit: 1 };
+    }
+    return undefined;
+  }
+  if (
+    isSeedEntryContext(previous)
+    && hasSeedValueChanged(previous, next)
+  ) {
+    const previousDisplay = calculatorValueToDisplayString(previous.calculator.total);
+    if (previous.calculator.singleDigitInitialTotalEntry && previousDisplay === "0") {
+      return undefined;
+    }
+    return {
+      target: "seed",
+      previous: previousDisplay,
+      next: calculatorValueToDisplayString(next.calculator.total),
+      limit: 1,
+    };
+  }
+  return undefined;
 };
 
 export const executeCommand = (
@@ -258,7 +357,7 @@ export const executeCommand = (
   const event = eventFromAction(command.action);
   const nextState = applyEvent(state, event, { services: options.services });
   if (currentState && command.type === "DispatchAction") {
-    uiEffects.push(...resolveDispatchUiEffects(currentState, nextState, command.action));
+    uiEffects.push(...resolveDispatchUiEffects(currentState, nextState, command.action, options.services));
   }
   return { state: nextState, events: [event], uiEffects };
 };

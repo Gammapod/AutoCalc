@@ -7,6 +7,7 @@ import { runContractsActionEventCurrentTests } from "./contracts.actionEvent.cur
 import { runContractsDomainUiEffectsCurrentTests } from "./contracts.domainUiEffects.current.test.js";
 import { runNoLegacySymbolsGuardTests } from "./noLegacySymbols.guard.test.js";
 import { runBootstrapDebugControlBindingsTests } from "./bootstrapDebugControlBindings.test.js";
+import { runBootstrapSubscriptionCoordinatorTests } from "./bootstrapSubscriptionCoordinator.test.js";
 import { runReducerScalarLimitPolicyTests } from "./reducer.scalarLimitPolicy.test.js";
 import { runReducerRollAnalysisTests } from "./reducer.rollAnalysis.test.js";
 import { runUiVisualizerUxSpecInvariantsTests } from "./uiVisualizerUxSpecInvariants.test.js";
@@ -22,6 +23,7 @@ import { runUiUxRoleSystemTests } from "./uiUxRoleSystem.test.js";
 import { runCalculatorSeedManifestTests } from "./calculatorSeedManifest.test.js";
 import { runSandboxPresetTests } from "./sandboxPreset.test.js";
 import { runUiModuleCalculatorStorageV2Tests } from "./uiModule.calculatorStorage.v2.test.js";
+import { runUiModuleCalculatorRejectBlinkTests } from "./uiModule.calculatorRejectBlink.test.js";
 import { runUiModuleCalculatorSlotDisplayTests } from "./uiModule.calculatorSlotDisplay.test.js";
 import { runUiModuleAlgebraicRendererV2Tests } from "./uiModule.algebraicRenderer.v2.test.js";
 import { runHeadlessRuntimeTests } from "./headlessRuntime.test.js";
@@ -35,6 +37,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["contracts/domain-ui-effects-current", runContractsDomainUiEffectsCurrentTests],
   ["contracts/no-legacy-symbols-guard", runNoLegacySymbolsGuardTests],
   ["ui/bootstrap-debug-control-bindings", runBootstrapDebugControlBindingsTests],
+  ["app/bootstrap-subscription-coordinator", runBootstrapSubscriptionCoordinatorTests],
   ["reducer/scalar-limit-policy", runReducerScalarLimitPolicyTests],
   ["reducer/roll-analysis", runReducerRollAnalysisTests],
   ["ui/module-ratios-renderer-v2", runUiModuleRatiosRendererV2Tests],
@@ -50,6 +53,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["calculator-seed-manifest", runCalculatorSeedManifestTests],
   ["sandbox-preset", runSandboxPresetTests],
   ["ui/module-calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
+  ["ui/module-calculator-reject-blink", runUiModuleCalculatorRejectBlinkTests],
   ["ui/module-calculator-slot-display", runUiModuleCalculatorSlotDisplayTests],
   ["ui/module-algebraic-renderer-v2", runUiModuleAlgebraicRendererV2Tests],
   ["app/headless-runtime", runHeadlessRuntimeTests],

@@ -755,6 +755,10 @@
         background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.64), rgba(116, 124, 136, 0.94));
       }
 
+      .calc-led--purple {
+        background: radial-gradient(circle at 30% 30%, rgba(224, 179, 255, 0.48), rgba(91, 29, 126, 0.92));
+      }
+
       .calc-led--pulse-red {
         animation: calc-led-pulse-red 260ms ease-out 1;
       }
@@ -773,6 +777,10 @@
 
       .calc-led--pulse-white {
         animation: calc-led-pulse-white 260ms ease-out 1;
+      }
+
+      .calc-led--pulse-purple {
+        animation: calc-led-pulse-purple 320ms ease-out 1;
       }
 
       @keyframes calc-led-pulse-red {
@@ -846,6 +854,21 @@
         }
         100% {
           box-shadow: 0 0 0 rgba(240, 246, 255, 0);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes calc-led-pulse-purple {
+        0% {
+          box-shadow: 0 0 0 rgba(190, 112, 255, 0);
+          filter: brightness(1);
+        }
+        35% {
+          box-shadow: 0 0 10px rgba(190, 112, 255, 0.92), 0 0 20px rgba(190, 112, 255, 0.72);
+          filter: brightness(1.85);
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(190, 112, 255, 0);
           filter: brightness(1);
         }
       }
@@ -3675,6 +3698,7 @@
                       <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
                       <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
                       <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                      <span class="calc-led calc-led--purple" data-calc-led="unlock_completed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3712,6 +3736,7 @@
                       <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
                       <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
                       <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                      <span class="calc-led calc-led--purple" data-calc-led="unlock_completed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3749,6 +3774,7 @@
                       <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
                       <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
                       <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                      <span class="calc-led calc-led--purple" data-calc-led="unlock_completed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3786,6 +3812,7 @@
                       <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
                       <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
                       <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                      <span class="calc-led calc-led--purple" data-calc-led="unlock_completed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3823,6 +3850,7 @@
                       <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
                       <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
                       <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                      <span class="calc-led calc-led--purple" data-calc-led="unlock_completed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3860,6 +3888,7 @@
                       <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
                       <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
                       <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                      <span class="calc-led calc-led--purple" data-calc-led="unlock_completed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">
@@ -3897,6 +3926,7 @@
                       <span class="calc-led calc-led--orange" data-calc-led="settings_changed"></span>
                       <span class="calc-led calc-led--green" data-calc-led="roll_updated"></span>
                       <span class="calc-led calc-led--white" data-calc-led="substep_executed"></span>
+                      <span class="calc-led calc-led--purple" data-calc-led="unlock_completed"></span>
                     </div>
                     <div class="display-stack">
                       <div class="display display--shared" data-display-window data-graph-visible="false">

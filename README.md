@@ -94,20 +94,28 @@ Interactive mode reads one JSON command per stdin line and writes one JSON respo
 {"cmd":"help"}
 {"cmd":"listKeys"}
 {"cmd":"listKeys","all":true,"filter":"digit"}
+{"cmd":"hints"}
 {"cmd":"unlockAll"}
 {"cmd":"listKeys","filter":"op_add"}
+{"cmd":"listCalculators"}
+{"cmd":"setActiveCalculator","calculatorId":"g_prime"}
 {"cmd":"layout","surface":"storage","filter":"op_add"}
 {"cmd":"layout","surface":"keypad","includeEmpty":true}
+{"cmd":"install","key":"op_div","destination":{"surface":"keypad","index":2}}
 {"cmd":"drop","source":{"surface":"storage","index":14},"destination":{"surface":"keypad","index":2}}
 {"cmd":"press","key":"digit_1"}
 {"cmd":"press","key":"exec_equals"}
 {"cmd":"run","maxTicks":100,"stopWhenIdle":true}
 {"cmd":"tick"}
-{"cmd":"snapshot","includeState":true}
+{"cmd":"snapshot","includeState":true,"calculatorId":"f_prime"}
 {"cmd":"exit"}
 ```
 
-`press` follows installed keypad button semantics; a locked installed key reports `accepted:false` and `reasonCode:"locked"`, while an unlocked key that is only in storage reports `accepted:false` and `reasonCode:"not_installed"`. `listKeys` returns currently usable keys by default; pass `all:true` to include locked catalog keys with capability, location, drop-ready `positions`, `installedOnKeypad`, and `pressable` metadata. Use `layout` to inspect compact indexed keypad/storage cells before issuing `drop`; pass `includeEmpty:true` to find open keypad destinations. `drop` reports whether the user action was accepted; invalid/no-op drops return `ok:true`, `accepted:false`, and `reasonCode:"layout_invalid_or_noop"`. `unlockAll` returns a terse "all keys unlocked" result by default while suppressing verbose diffs and unlock snapshots; pass `verbose:true` to include full unlock details. Use `drop` to mirror frontend drag/drop key movement, `run` for deterministic execution ticks, and `action` to dispatch a raw runtime action. Undo pops roll rows but intentionally preserves the current function draft; use backspace or `C` to clear builder input.
+`press` follows installed keypad button semantics; a locked installed key reports `accepted:false` and `reasonCode:"locked"`, while an unlocked key that is only in storage reports `accepted:false` and `reasonCode:"not_installed"`. `listKeys` returns currently usable keys by default; pass `all:true` to include locked catalog keys with capability, catalog metadata, conservative `maturity`, `installable`, location, drop-ready `positions`, `installedOnKeypad`, and `pressable` metadata. Maturity is intentionally conservative: keys installed on at least one initial sandbox calculator are `fully_implemented`, initial sandbox storage-only keys are `experimental`, non-storage/non-installed keys are `deferred`, and unavailable constants are `unavailable`.
+
+Use `hints` to inspect eligible progression rows from canonical unlock hint/progress projection plus human-facing unlock description and effect metadata. Use `listCalculators` and `setActiveCalculator` for sandbox multi-calculator discovery; `snapshot` accepts `calculatorId` to project a non-active calculator without switching and includes `projectedCalculatorId` when scoped. Compact snapshots expose public `settings` (`visualizer`, `wrapper`, `base`, `stepExpansion`, `history`, `forecast`, `cycle`) and `inputLimits:{seedDigitCount:1,operandDigitCount:1}`. Single-digit seed and operand replacement feedback is reported on accepted digit presses with `replacement` metadata.
+
+Use `layout` to inspect compact indexed keypad/storage cells before issuing `drop`; pass `includeEmpty:true` to find open keypad destinations. `drop` reports whether the user action was accepted; invalid/no-op drops return `ok:true`, `accepted:false`, and `reasonCode:"layout_invalid_or_noop"`. `install` directly installs a portable unlocked key onto a keypad destination without requiring a storage source and can reject with `key_unavailable`, `not_portable`, `destination_invalid`, or `duplicate_installed`. `unlockAll` returns a terse "all keys unlocked" result by default while suppressing verbose diffs and unlock snapshots; pass `verbose:true` to include full unlock details. Use `drop` to mirror frontend drag/drop key movement, `run` for deterministic execution ticks, and `action` to dispatch a raw runtime action. Undo pops roll rows but intentionally preserves the current function draft; use backspace or `C` to clear builder input.
 Use `npm --silent` or call `node ./dist/src/app/headlessCli.js --interactive` directly when a caller needs JSON-only stdout.
 
 ### Test and CI Checks

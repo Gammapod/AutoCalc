@@ -6,7 +6,7 @@ type UnlockTracker = {
 };
 
 type UnlockRevealCoordinator = {
-  runUnlockRevealCue: (state: GameState) => Promise<void>;
+  runUnlockRevealCue: (state: GameState, uiEffects?: UiEffect[]) => Promise<void>;
 };
 
 export const createStoreSubscriptionCoordinator = (
@@ -50,7 +50,7 @@ export const createStoreSubscriptionCoordinator = (
     const hasNewUnlock = options.unlockTracker.hasNewUnlock(latest);
     if (hasNewUnlock) {
       void (async () => {
-        await options.unlockRevealCoordinator.runUnlockRevealCue(latest);
+        await options.unlockRevealCoordinator.runUnlockRevealCue(latest, uiEffects);
       })();
       return;
     }

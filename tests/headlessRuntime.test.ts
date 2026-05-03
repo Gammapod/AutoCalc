@@ -8,6 +8,7 @@ import {
 import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { reducer } from "../src/domain/reducer.js";
 import { createSandboxState } from "../src/domain/sandboxPreset.js";
+import type { UiEffect } from "../src/domain/types.js";
 
 export const runHeadlessRuntimeTests = (): void => {
   runHeadlessRuntimeDispatchTests();
@@ -74,9 +75,9 @@ const runHeadlessJsonlParserTests = (): void => {
     "parser rejects conflicting cmd and command fields",
   );
   assert.deepEqual(
-    parseHeadlessInteractiveCommand('{"cmd":"snapshot","includeState":true}'),
-    { cmd: "snapshot", includeState: true },
-    "parser accepts snapshot includeState command",
+    parseHeadlessInteractiveCommand('{"cmd":"snapshot","includeState":true,"calculatorId":"f_prime"}'),
+    { cmd: "snapshot", includeState: true, calculatorId: "f_prime" },
+    "parser accepts scoped snapshot includeState command",
   );
   assert.deepEqual(
     parseHeadlessInteractiveCommand('{"cmd":"layout","surface":"storage","filter":"op_add","includeEmpty":true}'),
@@ -92,6 +93,26 @@ const runHeadlessJsonlParserTests = (): void => {
     parseHeadlessInteractiveCommand('{"cmd":"drop","source":{"surface":"storage","index":14},"destination":{"surface":"keypad","index":2}}'),
     { cmd: "drop", source: { surface: "storage", index: 14 }, destination: { surface: "keypad", index: 2 } },
     "parser accepts drop command",
+  );
+  assert.deepEqual(
+    parseHeadlessInteractiveCommand('{"cmd":"install","key":"op_div","destination":{"surface":"keypad","index":2},"calculatorId":"f_prime"}'),
+    { cmd: "install", key: "op_div", destination: { surface: "keypad", index: 2 }, calculatorId: "f_prime" },
+    "parser accepts direct install command",
+  );
+  assert.deepEqual(
+    parseHeadlessInteractiveCommand('{"cmd":"listCalculators"}'),
+    { cmd: "listCalculators" },
+    "parser accepts calculator discovery command",
+  );
+  assert.deepEqual(
+    parseHeadlessInteractiveCommand('{"cmd":"setActiveCalculator","calculatorId":"g_prime"}'),
+    { cmd: "setActiveCalculator", calculatorId: "g_prime" },
+    "parser accepts active calculator switch command",
+  );
+  assert.deepEqual(
+    parseHeadlessInteractiveCommand('{"cmd":"hints"}'),
+    { cmd: "hints" },
+    "parser accepts hints command",
   );
   assert.deepEqual(
     parseHeadlessInteractiveCommand('{"cmd":"run","maxTicks":25,"stopWhenIdle":false}'),
@@ -129,6 +150,14 @@ const runHeadlessJsonlSessionTests = (): void => {
     assert.equal(ready.event, "session_ready", "session emits ready event");
     assert.ok(ready.supportedCommands.includes("press"), "ready event lists supported commands");
     assert.ok(ready.supportedCommands.includes("layout"), "ready event lists layout command");
+    assert.ok(ready.supportedCommands.includes("hints"), "ready event lists hints command");
+    assert.ok(ready.supportedCommands.includes("install"), "ready event lists direct install command");
+    assert.deepEqual(
+      ready.snapshot.inputLimits,
+      { seedDigitCount: 1, operandDigitCount: 1 },
+      "ready snapshot exposes single-digit input limits",
+    );
+    assert.equal(ready.snapshot.settings.visualizer, "total", "ready snapshot exposes public settings");
 
     const listResponse = session.handleLine('{"cmd":"listKeys","filter":"digit"}');
     assertOkResponseShape(listResponse);
@@ -143,19 +172,33 @@ const runHeadlessJsonlSessionTests = (): void => {
     const allKeysResponse = session.handleLine('{"cmd":"listKeys","filter":"digit_1","all":true}');
     assertOkResponseShape(allKeysResponse);
     const allDigitOne = allKeysResponse.ok
-      ? (allKeysResponse.result as { keys: Array<{ key: string; usable: boolean; capability: string; location: string; positions: Array<{ surface: string; index: number }>; installedOnKeypad: boolean; pressable: boolean; pressBlockReason?: string }> }).keys[0]
+      ? (allKeysResponse.result as { keys: Array<{ key: string; label: string; category: string; arity: number | null; inputFamily: string; behaviorKind: string; traits: string[]; maturity: string; usable: boolean; capability: string; location: string; positions: Array<{ surface: string; index: number }>; installedOnKeypad: boolean; pressable: boolean; installable: boolean; pressBlockReason?: string }> }).keys[0]
       : null;
+    assert.equal(allDigitOne?.key, KEY_ID.digit_1, "listKeys all:true includes locked digit_1");
+    assert.equal(allDigitOne?.category, "value_expression", "listKeys reports catalog category");
+    assert.equal(allDigitOne?.arity, 0, "listKeys reports digit arity");
+    assert.equal(allDigitOne?.inputFamily, "atom_digit", "listKeys reports input family");
+    assert.equal(allDigitOne?.behaviorKind, "digit", "listKeys reports behavior kind");
+    assert.equal(allDigitOne?.maturity, "fully_implemented", "sandbox-installed keys report fully implemented maturity");
     assert.deepEqual(
-      allDigitOne,
       {
-        key: KEY_ID.digit_1,
-        label: "1",
+        usable: allDigitOne?.usable,
+        capability: allDigitOne?.capability,
+        location: allDigitOne?.location,
+        positions: allDigitOne?.positions,
+        installedOnKeypad: allDigitOne?.installedOnKeypad,
+        pressable: allDigitOne?.pressable,
+        installable: allDigitOne?.installable,
+        pressBlockReason: allDigitOne?.pressBlockReason,
+      },
+      {
         usable: false,
         capability: "locked",
         location: "keypad",
         positions: [{ surface: "keypad", index: 1 }],
         installedOnKeypad: true,
         pressable: false,
+        installable: false,
         pressBlockReason: "locked",
       },
       "listKeys all:true includes locked keys with capability, location, and pressability metadata",
@@ -164,23 +207,69 @@ const runHeadlessJsonlSessionTests = (): void => {
     const historyKeysResponse = session.handleLine('{"cmd":"listKeys","filter":"toggle_history","all":true}');
     assertOkResponseShape(historyKeysResponse);
     const historyKey = historyKeysResponse.ok
-      ? (historyKeysResponse.result as { keys: Array<{ key: string; usable: boolean; capability: string; location: string; positions: Array<{ surface: string; index: number }>; installedOnKeypad: boolean; pressable: boolean; pressBlockReason?: string }> }).keys[0]
+      ? (historyKeysResponse.result as { keys: Array<{ key: string; label: string; maturity: string; installable: boolean; usable: boolean; capability: string; location: string; positions: Array<{ surface: string; index: number }>; installedOnKeypad: boolean; pressable: boolean; pressBlockReason?: string }> }).keys[0]
       : null;
     assert.deepEqual(
-      historyKey,
+      {
+        key: historyKey?.key,
+        label: historyKey?.label,
+        maturity: historyKey?.maturity,
+        usable: historyKey?.usable,
+        capability: historyKey?.capability,
+        location: historyKey?.location,
+        positions: historyKey?.positions,
+        installedOnKeypad: historyKey?.installedOnKeypad,
+        pressable: historyKey?.pressable,
+        installable: historyKey?.installable,
+        pressBlockReason: historyKey?.pressBlockReason,
+      },
       {
         key: KEY_ID.toggle_history,
         label: "History",
+        maturity: "fully_implemented",
         usable: true,
         capability: "portable",
         location: "storage",
         positions: [{ surface: "storage", index: 8 }],
         installedOnKeypad: false,
         pressable: false,
+        installable: true,
         pressBlockReason: "not_installed",
       },
-      "listKeys differentiates unlocked storage-only keys from pressable keypad keys",
+      "listKeys differentiates unlocked storage keys from pressable keypad keys",
     );
+
+    const experimentalKeyResponse = session.handleLine('{"cmd":"listKeys","filter":"unary_sigma","all":true}');
+    assertOkResponseShape(experimentalKeyResponse);
+    const experimentalKey = experimentalKeyResponse.ok
+      ? (experimentalKeyResponse.result as { keys: Array<{ key: string; maturity: string; arity: number | null }> }).keys[0]
+      : null;
+    assert.equal(experimentalKey?.key, KEY_ID.unary_sigma, "listKeys includes representative sandbox storage-only key");
+    assert.equal(experimentalKey?.arity, 1, "listKeys derives unary operator arity");
+    assert.equal(experimentalKey?.maturity, "experimental", "sandbox storage-only keys report experimental maturity");
+
+    const deferredKeyResponse = session.handleLine('{"cmd":"listKeys","filter":"system_new_game","all":true}');
+    assertOkResponseShape(deferredKeyResponse);
+    const deferredKey = deferredKeyResponse.ok
+      ? (deferredKeyResponse.result as { keys: Array<{ key: string; arity: number | null; maturity: string; installable: boolean }> }).keys[0]
+      : null;
+    assert.equal(deferredKey?.key, KEY_ID.system_new_game, "listKeys includes representative deferred key");
+    assert.equal(deferredKey?.arity, 0, "listKeys derives command key arity");
+    assert.equal(deferredKey?.maturity, "deferred", "non-sandbox-installed/non-storage keys report deferred maturity");
+    assert.equal(deferredKey?.installable, false, "locked deferred key is not installable before unlock");
+
+    const unavailableKeyResponse = session.handleLine('{"cmd":"listKeys","filter":"const_pi","all":true}');
+    assertOkResponseShape(unavailableKeyResponse);
+    const unavailableKey = unavailableKeyResponse.ok
+      ? (unavailableKeyResponse.result as { keys: Array<{ key: string; maturity: string; installable: boolean }> }).keys[0]
+      : null;
+    assert.equal(unavailableKey?.maturity, "unavailable", "unavailable constants are surfaced as unavailable");
+    assert.equal(unavailableKey?.installable, false, "unavailable constants are not installable");
+
+    const lockedInstallResponse = session.handleLine('{"cmd":"install","key":"op_div","destination":{"surface":"keypad","index":2}}');
+    assertOkResponseShape(lockedInstallResponse);
+    assert.equal(lockedInstallResponse.ok && lockedInstallResponse.accepted, false, "direct install rejects locked portable-family keys");
+    assert.equal(lockedInstallResponse.ok && lockedInstallResponse.reasonCode, "not_portable", "locked direct install reports not_portable");
 
     const lockedPressResponse = session.handleLine('{"cmd":"press","key":"digit_1"}');
     assertOkResponseShape(lockedPressResponse);
@@ -306,6 +395,12 @@ const runHeadlessJsonlSessionTests = (): void => {
       true,
       "headless press uses UI key semantics for visualizer keys",
     );
+    assert.equal(visualizerResponse.ok && visualizerResponse.snapshot.state, undefined, "compact visualizer press omits full state");
+    assert.equal(
+      visualizerResponse.ok && visualizerResponse.snapshot.settings.visualizer,
+      "feed",
+      "visualizer key press updates compact snapshot settings",
+    );
     const visualizerSnapshotResponse = session.handleLine('{"cmd":"snapshot","includeState":true}');
     assertOkResponseShape(visualizerSnapshotResponse);
     assert.equal(
@@ -399,6 +494,194 @@ const runHeadlessJsonlSessionTests = (): void => {
     assert.doesNotThrow(() => JSON.parse(serialized), "interactive responses serialize as JSON");
   } finally {
     session.dispose();
+  }
+
+  const sandboxSession = createHeadlessJsonlSession({ mode: "sandbox" });
+  try {
+    const ready = sandboxSession.ready();
+    assert.equal(ready.snapshot.activeCalculatorId, "f_prime", "sandbox starts on f_prime");
+
+    const calculatorsResponse = sandboxSession.handleLine('{"cmd":"listCalculators"}');
+    assertOkResponseShape(calculatorsResponse);
+    const calculators = calculatorsResponse.ok
+      ? (calculatorsResponse.result as { calculators: Array<{ id: string; symbol: string; active: boolean; dimensions: { columns: number; rows: number }; total: string; rollCount: number; visualizer: string }> }).calculators
+      : [];
+    assert.equal(calculators.length, 4, "listCalculators includes sandbox calculators");
+    assert.deepEqual(
+      calculators.find((calculator) => calculator.id === "f_prime"),
+      {
+        id: "f_prime",
+        symbol: "f_prime",
+        active: true,
+        dimensions: { columns: 6, rows: 5 },
+        total: "0",
+        rollCount: 0,
+        visualizer: "total",
+      },
+      "listCalculators reports active calculator metadata",
+    );
+
+    const installResponse = sandboxSession.handleLine('{"cmd":"install","key":"op_div","destination":{"surface":"keypad","index":0},"calculatorId":"f_prime"}');
+    assertOkResponseShape(installResponse);
+    assert.equal(installResponse.ok && installResponse.accepted, true, "direct install succeeds for portable key");
+    assert.equal(
+      installResponse.ok
+        && installResponse.feedback.uiEffects.some((effect) =>
+          effect.type === "input_feedback" && effect.outcome === "accepted"),
+      true,
+      "direct install emits accepted feedback",
+    );
+
+    const duplicateInstallResponse = sandboxSession.handleLine('{"cmd":"install","key":"op_add","destination":{"surface":"keypad","index":0},"calculatorId":"f_prime"}');
+    assertOkResponseShape(duplicateInstallResponse);
+    assert.equal(duplicateInstallResponse.ok && duplicateInstallResponse.accepted, false, "direct install rejects duplicate keypad key");
+    assert.equal(duplicateInstallResponse.ok && duplicateInstallResponse.reasonCode, "duplicate_installed", "duplicate install reports reason");
+
+    const unavailableInstallResponse = sandboxSession.handleLine('{"cmd":"install","key":"const_pi","destination":{"surface":"keypad","index":0},"calculatorId":"f_prime"}');
+    assertOkResponseShape(unavailableInstallResponse);
+    assert.equal(unavailableInstallResponse.ok && unavailableInstallResponse.reasonCode, "key_unavailable", "direct install rejects unavailable constants");
+
+    const invalidDestinationInstallResponse = sandboxSession.handleLine('{"cmd":"install","key":"op_div","destination":{"surface":"storage","index":0},"calculatorId":"f_prime"}');
+    assertOkResponseShape(invalidDestinationInstallResponse);
+    assert.equal(invalidDestinationInstallResponse.ok && invalidDestinationInstallResponse.reasonCode, "destination_invalid", "direct install rejects non-keypad destinations");
+
+    const scopedSnapshotBeforeSwitch = sandboxSession.handleLine('{"cmd":"snapshot","calculatorId":"i_prime"}');
+    assertOkResponseShape(scopedSnapshotBeforeSwitch);
+    assert.equal(scopedSnapshotBeforeSwitch.ok && scopedSnapshotBeforeSwitch.snapshot.projectedCalculatorId, "i_prime", "scoped snapshot marks projected calculator");
+    assert.equal(scopedSnapshotBeforeSwitch.ok && scopedSnapshotBeforeSwitch.snapshot.activeCalculatorId, "f_prime", "scoped snapshot does not switch active calculator");
+
+    const switchResponse = sandboxSession.handleLine('{"cmd":"setActiveCalculator","calculatorId":"g_prime"}');
+    assertOkResponseShape(switchResponse);
+    assert.equal(switchResponse.ok && switchResponse.snapshot.activeCalculatorId, "g_prime", "setActiveCalculator switches active calculator");
+
+    const scopedSnapshotAfterSwitch = sandboxSession.handleLine('{"cmd":"snapshot","calculatorId":"i_prime"}');
+    assertOkResponseShape(scopedSnapshotAfterSwitch);
+    assert.equal(scopedSnapshotAfterSwitch.ok && scopedSnapshotAfterSwitch.snapshot.activeCalculatorId, "g_prime", "scoped snapshot preserves active calculator after switch");
+    assert.equal(scopedSnapshotAfterSwitch.ok && scopedSnapshotAfterSwitch.snapshot.projectedCalculatorId, "i_prime", "scoped snapshot can inspect a non-active calculator");
+
+    const historyToggleResponse = sandboxSession.handleLine('{"cmd":"press","key":"toggle_binary_octave_cycle"}');
+    assertOkResponseShape(historyToggleResponse);
+    assert.equal(historyToggleResponse.ok && historyToggleResponse.snapshot.state, undefined, "compact toggle press omits full state");
+    assert.equal(
+      historyToggleResponse.ok && historyToggleResponse.snapshot.settings.wrapper,
+      "binary_octave_cycle",
+      "toggle key press updates compact snapshot settings",
+    );
+
+    const seedFirstDigit = sandboxSession.handleLine('{"cmd":"press","key":"digit_1"}');
+    assertOkResponseShape(seedFirstDigit);
+    const seedReplacementResponse = sandboxSession.handleLine('{"cmd":"press","key":"digit_2"}');
+    assertOkResponseShape(seedReplacementResponse);
+    assert.deepEqual(
+      seedReplacementResponse.ok
+        && seedReplacementResponse.feedback.uiEffects.find((effect): effect is Extract<UiEffect, { type: "input_feedback" }> =>
+          effect.type === "input_feedback")?.replacement,
+      { target: "seed", previous: "1", next: "2", limit: 1 },
+      "seed digit replacement feedback includes replacement metadata",
+    );
+
+    sandboxSession.handleLine('{"cmd":"press","key":"op_mul"}');
+    sandboxSession.handleLine('{"cmd":"press","key":"digit_4"}');
+    const operandReplacementResponse = sandboxSession.handleLine('{"cmd":"press","key":"digit_8"}');
+    assertOkResponseShape(operandReplacementResponse);
+    assert.deepEqual(
+      operandReplacementResponse.ok
+        && operandReplacementResponse.feedback.uiEffects.find((effect): effect is Extract<UiEffect, { type: "input_feedback" }> =>
+          effect.type === "input_feedback")?.replacement,
+      { target: "operand", previous: "4", next: "8", limit: 1 },
+      "operand digit replacement feedback includes replacement metadata",
+    );
+  } finally {
+    sandboxSession.dispose();
+  }
+
+  const hintSession = createHeadlessJsonlSession({ mode: "game" });
+  try {
+    hintSession.ready();
+    const unlockCompletedIdsFor = (response: ReturnType<typeof hintSession.handleLine>): string[] =>
+      response.ok
+        ? response.feedback.uiEffects
+            .filter((effect): effect is Extract<UiEffect, { type: "unlock_completed" }> => effect.type === "unlock_completed")
+            .map((effect) => effect.unlockId)
+        : [];
+    const freshHintsResponse = hintSession.handleLine('{"cmd":"hints"}');
+    assertOkResponseShape(freshHintsResponse);
+    const freshHints = freshHintsResponse.ok
+      ? (freshHintsResponse.result as { hints: Array<{ unlockId: string; description: string; effectType: string; targetLabel: string; progress: unknown }> }).hints
+      : [];
+    assert.ok(freshHints.length > 0, "hints returns fresh-game eligible rows");
+    assert.ok(
+      freshHints.every((hint) => typeof hint.description === "string" && typeof hint.effectType === "string" && typeof hint.targetLabel === "string"),
+      "hints joins catalog description and effect metadata",
+    );
+
+    hintSession.handleLine('{"cmd":"press","key":"unary_inc"}');
+    hintSession.handleLine('{"cmd":"press","key":"exec_equals"}');
+    const unlockRunResponse = hintSession.handleLine('{"cmd":"run","maxTicks":5}');
+    assertOkResponseShape(unlockRunResponse);
+    const unlockCompletedEffects = unlockRunResponse.ok
+      ? unlockRunResponse.feedback.uiEffects.filter((effect) => effect.type === "unlock_completed")
+      : [];
+    assert.deepEqual(
+      unlockCompletedIdsFor(unlockRunResponse),
+      ["unlock_digit_1_installed_only_on_total_equals_1"],
+      "installed-only digit_1 unlock emits unlock-completed effect",
+    );
+    assert.equal(
+      unlockCompletedEffects.every((effect) =>
+        effect.type === "unlock_completed"
+        && typeof effect.unlockId === "string"
+        && typeof effect.description === "string"
+        && typeof effect.targetLabel === "string"
+        && typeof effect.effectType === "string"),
+      true,
+      "unlock completion effects include human-readable summary data",
+    );
+    const secondRunResponse = hintSession.handleLine('{"cmd":"run","maxTicks":5}');
+    assertOkResponseShape(secondRunResponse);
+    assert.equal(
+      secondRunResponse.ok && secondRunResponse.feedback.uiEffects.some((effect) => effect.type === "unlock_completed"),
+      false,
+      "already-completed unlocks do not re-emit completion effects",
+    );
+    let portableUnlockResponse = secondRunResponse;
+    for (let index = 0; index < 8; index += 1) {
+      hintSession.handleLine('{"cmd":"press","key":"exec_equals"}');
+      portableUnlockResponse = hintSession.handleLine('{"cmd":"run","maxTicks":5}');
+      assertOkResponseShape(portableUnlockResponse);
+    }
+    assert.equal(
+      portableUnlockResponse.ok && portableUnlockResponse.snapshot.readModel.totalDisplay,
+      "9",
+      "staged digit_1 regression reaches total 9",
+    );
+    assert.deepEqual(
+      unlockCompletedIdsFor(portableUnlockResponse),
+      ["unlock_digit_1_portable_on_total_equals_9"],
+      "portable digit_1 upgrade emits a distinct unlock-completed effect",
+    );
+    hintSession.handleLine('{"cmd":"press","key":"exec_equals"}');
+    const postPortableRepeatResponse = hintSession.handleLine('{"cmd":"run","maxTicks":5}');
+    assertOkResponseShape(postPortableRepeatResponse);
+    assert.deepEqual(
+      unlockCompletedIdsFor(postPortableRepeatResponse).filter((unlockId) =>
+        unlockId === "unlock_digit_1_installed_only_on_total_equals_1"
+        || unlockId === "unlock_digit_1_portable_on_total_equals_9"),
+      [],
+      "already-completed staged digit_1 unlock ids do not re-emit",
+    );
+    const laterHintsResponse = hintSession.handleLine('{"cmd":"hints"}');
+    assertOkResponseShape(laterHintsResponse);
+    const laterHints = laterHintsResponse.ok
+      ? (laterHintsResponse.result as { hints: Array<{ unlockId: string }> }).hints
+      : [];
+    assert.notDeepEqual(
+      laterHints.map((hint) => hint.unlockId),
+      freshHints.map((hint) => hint.unlockId),
+      "hints change after progression",
+    );
+  } finally {
+    hintSession.dispose();
   }
 };
 

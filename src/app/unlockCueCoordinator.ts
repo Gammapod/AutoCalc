@@ -88,7 +88,7 @@ export const createUnlockRevealCoordinator = ({
   renderAndPersistState,
   focusStoragePanel,
 }: UnlockRevealCoordinatorDeps) => {
-  const runUnlockRevealCue = async (stateAtUnlock: GameState): Promise<void> => {
+  const runUnlockRevealCue = async (stateAtUnlock: GameState, uiEffects: UiEffect[] = []): Promise<void> => {
     await cueCoordinator.run(
       {
         kind: "unlock_reveal",
@@ -100,7 +100,7 @@ export const createUnlockRevealCoordinator = ({
         setInputBlocked,
         redraw,
         applyStateMutation: () => {
-          renderAndPersistState(stateAtUnlock, []);
+          renderAndPersistState(stateAtUnlock, uiEffects);
         },
         setShellFocusView: () => {
           focusStoragePanel();

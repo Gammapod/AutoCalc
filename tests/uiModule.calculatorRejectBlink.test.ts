@@ -14,13 +14,15 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
     const displayWindow = harness.root.querySelector<HTMLElement>("[data-display-window]");
     const rejectLed = harness.root.querySelector<HTMLElement>("[data-calc-led='rejected']");
     const rollLed = harness.root.querySelector<HTMLElement>("[data-calc-led='roll_updated']");
+    const unlockLed = harness.root.querySelector<HTMLElement>("[data-calc-led='unlock_completed']");
     assert.ok(displayWindow, "expected display window mount");
     assert.ok(rejectLed, "expected reject led mount");
     assert.ok(rollLed, "expected roll led mount");
+    assert.ok(unlockLed, "expected unlock led mount");
     if (!displayWindow) {
       return;
     }
-    if (!rejectLed || !rollLed) {
+    if (!rejectLed || !rollLed || !unlockLed) {
       return;
     }
 
@@ -39,6 +41,11 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       rollLed.classList.contains("calc-led--pulse-green"),
       false,
       "baseline render has no roll-update led pulse",
+    );
+    assert.equal(
+      unlockLed.classList.contains("calc-led--pulse-purple"),
+      false,
+      "baseline render has no unlock led pulse",
     );
 
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
@@ -60,6 +67,7 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
     displayWindow.classList.remove("display--slot-reject-blink");
     rejectLed.classList.remove("calc-led--pulse-red");
     rollLed.classList.remove("calc-led--pulse-green");
+    unlockLed.classList.remove("calc-led--pulse-purple");
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
       inputBlocked: false,
       executionGateRejectCount: 0,
@@ -79,6 +87,11 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       false,
       "zero roll-update count does not pulse green led",
     );
+    assert.equal(
+      unlockLed.classList.contains("calc-led--pulse-purple"),
+      false,
+      "zero unlock count does not pulse purple led",
+    );
 
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
       inputBlocked: false,
@@ -88,6 +101,16 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       rollLed.classList.contains("calc-led--pulse-green"),
       true,
       "roll-update count applies green led pulse class",
+    );
+
+    renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {
+      inputBlocked: false,
+      unlockCompletedCount: 1,
+    });
+    assert.equal(
+      unlockLed.classList.contains("calc-led--pulse-purple"),
+      true,
+      "unlock-completed count applies purple led pulse class",
     );
 
     renderCalculatorV2Module(harness.root, initialState(), noopDispatch, {

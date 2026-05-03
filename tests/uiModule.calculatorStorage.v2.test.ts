@@ -44,6 +44,7 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
       settingsChangedCount: number;
       rollUpdatedCount: number;
       substepExecutedCount: number;
+      unlockCompletedCount: number;
     }> = [];
     setCalculatorRendererForTests((root, _state, _dispatch, options) => {
       const target =
@@ -57,6 +58,7 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
         settingsChangedCount: options.settingsChangedCount ?? 0,
         rollUpdatedCount: options.rollUpdatedCount ?? 0,
         substepExecutedCount: options.substepExecutedCount ?? 0,
+        unlockCompletedCount: options.unlockCompletedCount ?? 0,
       });
       if (root instanceof HTMLElement) {
         return;
@@ -214,6 +216,14 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
         { type: "roll_updated", calculatorId: "g" },
         { type: "substep_executed", calculatorId: "g" },
         { type: "substep_executed", calculatorId: "g" },
+        {
+          type: "unlock_completed",
+          unlockId: "unlock_digit_1_portable_on_total_equals_9",
+          description: "Make 1 portable when total equals 9.",
+          effectType: "unlock_digit",
+          targetLabel: "1",
+          key: "digit_1",
+        },
       ],
     });
     const gExpandedCall = renderCalls.find((call) => call.target === "g" || call.target === "app");
@@ -222,6 +232,7 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
     assert.equal(gExpandedCall?.settingsChangedCount, 1, "settings-changed effects map to orange count");
     assert.equal(gExpandedCall?.rollUpdatedCount, 1, "roll-updated effects map to green count");
     assert.equal(gExpandedCall?.substepExecutedCount, 2, "substep-executed effects preserve multiplicity");
+    assert.equal(gExpandedCall?.unlockCompletedCount, 1, "portable digit_1 unlock-completed effect maps to purple count on active calculator");
   } finally {
     resetCalculatorRendererForTests();
     harness.teardown();

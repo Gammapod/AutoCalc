@@ -45,7 +45,8 @@ type CalculatorFeedbackLed =
   | "builder_changed"
   | "settings_changed"
   | "roll_updated"
-  | "substep_executed";
+  | "substep_executed"
+  | "unlock_completed";
 
 type QueuedInputOutcomeTone = {
   outcome: CalculatorFeedbackLed;
@@ -130,6 +131,14 @@ const INPUT_OUTCOME_TONES: Record<CalculatorFeedbackLed, InputOutcomeToneSpec> =
     frequencyEndHz: 440,
     durationMs: 115,
     peakGain: 0.036,
+    buzzPulseHz: null,
+  },
+  unlock_completed: {
+    oscillatorType: "sine",
+    frequencyStartHz: 660,
+    frequencyEndHz: 990,
+    durationMs: 155,
+    peakGain: 0.05,
     buzzPulseHz: null,
   },
 };
@@ -474,6 +483,7 @@ export const triggerCalculatorInputOutcomeLed = (
     settings_changed: "calc-led--pulse-orange",
     roll_updated: "calc-led--pulse-green",
     substep_executed: "calc-led--pulse-white",
+    unlock_completed: "calc-led--pulse-purple",
   }[outcome];
   target.classList.remove(pulseClass);
   // Force reflow so repeated outcomes retrigger the LED pulse.
