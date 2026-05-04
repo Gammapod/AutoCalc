@@ -6,12 +6,15 @@ import {
   resolveStepForecastValuesForState,
 } from "./numberLineModel.js";
 import { expressionToDisplayString } from "../../../domain/expression.js";
-import { addAlgebraic, algebraicToDisplayString, algebraicToRational, mulAlgebraic, rationalToAlgebraic } from "../../../domain/algebraicScalar.js";
+import { algebraicToDisplayString } from "../../../domain/algebraicScalar.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const VIEWBOX_SIZE = 100;
-const CENTER = 50;
-const RADIUS = 45;
+const CENTER_X = 50;
+const CENTER_Y = 46;
+const RADIUS = 41;
+const LABEL_Y = CENTER_Y + RADIUS + 2;
+const LABEL_LINE_DY = 5;
 
 const createSvg = (documentRef: Document): SVGSVGElement => {
   const svg = documentRef.createElementNS(SVG_NS, "svg");
@@ -25,8 +28,8 @@ const createSvg = (documentRef: Document): SVGSVGElement => {
 const createCircleGrid = (documentRef: Document): SVGCircleElement => {
   const circle = documentRef.createElementNS(SVG_NS, "circle");
   circle.setAttribute("class", "v2-circle-grid");
-  circle.setAttribute("cx", CENTER.toString());
-  circle.setAttribute("cy", CENTER.toString());
+  circle.setAttribute("cx", CENTER_X.toString());
+  circle.setAttribute("cy", CENTER_Y.toString());
   circle.setAttribute("r", RADIUS.toString());
   applyUxRoleAttributes(circle, { uxRole: "default", uxState: "normal" });
   return circle;
@@ -35,10 +38,10 @@ const createCircleGrid = (documentRef: Document): SVGCircleElement => {
 const createThetaZeroLine = (documentRef: Document): SVGLineElement => {
   const line = documentRef.createElementNS(SVG_NS, "line");
   line.setAttribute("class", "v2-circle-theta-zero");
-  line.setAttribute("x1", (CENTER - RADIUS).toString());
-  line.setAttribute("y1", CENTER.toString());
-  line.setAttribute("x2", (CENTER + RADIUS).toString());
-  line.setAttribute("y2", CENTER.toString());
+  line.setAttribute("x1", (CENTER_X - RADIUS).toString());
+  line.setAttribute("y1", CENTER_Y.toString());
+  line.setAttribute("x2", (CENTER_X + RADIUS).toString());
+  line.setAttribute("y2", CENTER_Y.toString());
   applyUxRoleAttributes(line, { uxRole: "default", uxState: "normal" });
   return line;
 };
@@ -46,10 +49,10 @@ const createThetaZeroLine = (documentRef: Document): SVGLineElement => {
 const createImaginaryAxisLine = (documentRef: Document): SVGLineElement => {
   const line = documentRef.createElementNS(SVG_NS, "line");
   line.setAttribute("class", "v2-circle-imag-axis");
-  line.setAttribute("x1", CENTER.toString());
-  line.setAttribute("y1", (CENTER - RADIUS).toString());
-  line.setAttribute("x2", CENTER.toString());
-  line.setAttribute("y2", (CENTER + RADIUS).toString());
+  line.setAttribute("x1", CENTER_X.toString());
+  line.setAttribute("y1", (CENTER_Y - RADIUS).toString());
+  line.setAttribute("x2", CENTER_X.toString());
+  line.setAttribute("y2", (CENTER_Y + RADIUS).toString());
   applyUxRoleAttributes(line, { uxRole: "imaginary", uxState: "active" });
   return line;
 };
@@ -63,7 +66,7 @@ const createProjectionToHorizontalDiameter = (
   line.setAttribute("x1", endpoint.x.toString());
   line.setAttribute("y1", endpoint.y.toString());
   line.setAttribute("x2", endpoint.x.toString());
-  line.setAttribute("y2", CENTER.toString());
+  line.setAttribute("y2", CENTER_Y.toString());
   applyUxRoleAttributes(line, { uxRole: "imaginary", uxState: "active" });
   return line;
 };
@@ -76,7 +79,7 @@ const createProjectionToVerticalDiameter = (
   line.setAttribute("class", "v2-circle-projection-real");
   line.setAttribute("x1", endpoint.x.toString());
   line.setAttribute("y1", endpoint.y.toString());
-  line.setAttribute("x2", CENTER.toString());
+  line.setAttribute("x2", CENTER_X.toString());
   line.setAttribute("y2", endpoint.y.toString());
   applyUxRoleAttributes(line, { uxRole: "default", uxState: "normal" });
   return line;
@@ -85,8 +88,8 @@ const createProjectionToVerticalDiameter = (
 const createCenterDot = (documentRef: Document): SVGCircleElement => {
   const dot = documentRef.createElementNS(SVG_NS, "circle");
   dot.setAttribute("class", "v2-circle-center-dot");
-  dot.setAttribute("cx", CENTER.toString());
-  dot.setAttribute("cy", CENTER.toString());
+  dot.setAttribute("cx", CENTER_X.toString());
+  dot.setAttribute("cy", CENTER_Y.toString());
   dot.setAttribute("r", "1.2");
   applyUxRoleAttributes(dot, { uxRole: "default", uxState: "normal" });
   return dot;
@@ -117,18 +120,6 @@ const normalizeRational = (value: { num: bigint; den: bigint }): { num: bigint; 
   return { num: num / d, den: den / d };
 };
 
-const addRational = (left: { num: bigint; den: bigint }, right: { num: bigint; den: bigint }): { num: bigint; den: bigint } =>
-  normalizeRational({
-    num: (left.num * right.den) + (right.num * left.den),
-    den: left.den * right.den,
-  });
-
-const squareRational = (value: { num: bigint; den: bigint }): { num: bigint; den: bigint } =>
-  normalizeRational({
-    num: value.num * value.num,
-    den: value.den * value.den,
-  });
-
 const absRational = (value: { num: bigint; den: bigint }): { num: bigint; den: bigint } =>
   normalizeRational({
     num: value.num < 0n ? -value.num : value.num,
@@ -140,52 +131,6 @@ const rationalToDisplay = (value: { num: bigint; den: bigint }): string => {
   return normalized.den === 1n
     ? normalized.num.toString()
     : `${normalized.num.toString()}/${normalized.den.toString()}`;
-};
-
-const integerSqrt = (value: bigint): bigint => {
-  if (value < 0n) {
-    throw new Error("Square root undefined for negative bigint.");
-  }
-  if (value < 2n) {
-    return value;
-  }
-  let x0 = value;
-  let x1 = (x0 + 1n) / 2n;
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x1 + (value / x1)) / 2n;
-  }
-  return x0;
-};
-
-const sqrtIfPerfectSquare = (value: bigint): bigint | null => {
-  if (value < 0n) {
-    return null;
-  }
-  const root = integerSqrt(value);
-  return root * root === value ? root : null;
-};
-
-const formatExactRadicalFromRational = (value: { num: bigint; den: bigint }): string => {
-  const normalized = normalizeRational(value);
-  if (normalized.num === 0n) {
-    return "0";
-  }
-  const numerator = normalized.num < 0n ? -normalized.num : normalized.num;
-  const denominator = normalized.den;
-  const sqrtNum = sqrtIfPerfectSquare(numerator);
-  const sqrtDen = sqrtIfPerfectSquare(denominator);
-  if (sqrtNum !== null && sqrtDen !== null) {
-    return sqrtDen === 1n
-      ? sqrtNum.toString()
-      : `${sqrtNum.toString()}/${sqrtDen.toString()}`;
-  }
-  if (sqrtDen !== null) {
-    return sqrtDen === 1n
-      ? `\u221A${numerator.toString()}`
-      : `\u221A${numerator.toString()}/${sqrtDen.toString()}`;
-  }
-  return `\u221A(${rationalToDisplay({ num: numerator, den: denominator })})`;
 };
 
 const scalarToDisplay = (
@@ -203,53 +148,25 @@ const scalarToDisplay = (
 type CircleLabelPart = {
   text: string;
   role?: "imaginary";
+  lineBreakBefore?: boolean;
 };
 
-const scalarToAlgebraic = (
-  value:
-    | { kind: "rational"; value: { num: bigint; den: bigint } }
-    | { kind: "alg"; value: { one?: { num: bigint; den: bigint }; sqrt2?: { num: bigint; den: bigint }; sqrt3?: { num: bigint; den: bigint }; sqrt6?: { num: bigint; den: bigint } } }
-    | { kind: "expr"; value: unknown },
-): { one?: { num: bigint; den: bigint }; sqrt2?: { num: bigint; den: bigint }; sqrt3?: { num: bigint; den: bigint }; sqrt6?: { num: bigint; den: bigint } } | null => {
-  if (value.kind === "rational") {
-    return rationalToAlgebraic(value.value);
-  }
-  if (value.kind === "alg") {
-    return value.value;
-  }
-  return null;
-};
-
-const resolveMagnitudeDisplayParts = (state: GameState): CircleLabelPart[] => {
+const resolveMagnitudeLabelParts = (state: GameState): CircleLabelPart[] => {
   const total = state.calculator.total;
   if (total.kind === "nan") {
-    return [{ text: "NaN" }];
+    return [{ text: "|r| = NaN" }];
   }
   if (total.kind === "rational") {
-    return [{ text: rationalToDisplay(absRational(total.value)) }];
+    return [{ text: `|r| = ${rationalToDisplay(absRational(total.value))}` }];
   }
   if (total.kind === "expr") {
-    return [{ text: `|${expressionToDisplayString(total.value)}|` }];
+    return [{ text: `|r| = |${expressionToDisplayString(total.value)}|` }];
   }
   const re = total.value.re;
   const im = total.value.im;
-  if (re.kind === "rational" && im.kind === "rational") {
-    const sumSquares = addRational(squareRational(re.value), squareRational(im.value));
-    return [{ text: formatExactRadicalFromRational(sumSquares) }];
-  }
-  const reAlg = scalarToAlgebraic(re);
-  const imAlg = scalarToAlgebraic(im);
-  if (reAlg && imAlg) {
-    const normSquared = addAlgebraic(mulAlgebraic(reAlg, reAlg), mulAlgebraic(imAlg, imAlg));
-    const rationalNorm = algebraicToRational(normSquared);
-    if (rationalNorm) {
-      return [{ text: formatExactRadicalFromRational(rationalNorm) }];
-    }
-  }
   return [
-    { text: `\u221A((${scalarToDisplay(re)})\u00B2` },
-    { text: ` + (${scalarToDisplay(im)})\u00B2`, role: "imaginary" },
-    { text: ")" },
+    { text: `r\u00B2 = (${scalarToDisplay(re)})\u00B2` },
+    { text: ` + (${scalarToDisplay(im)})\u00B2`, role: "imaginary", lineBreakBefore: true },
   ];
 };
 
@@ -257,6 +174,10 @@ const appendCircleLabelParts = (label: SVGTextElement, parts: readonly CircleLab
   for (const part of parts) {
     const tspan = label.ownerDocument.createElementNS(SVG_NS, "tspan");
     tspan.textContent = part.text;
+    if (part.lineBreakBefore) {
+      tspan.setAttribute("x", CENTER_X.toString());
+      tspan.setAttribute("dy", LABEL_LINE_DY.toString());
+    }
     if (part.role === "imaginary") {
       tspan.setAttribute("data-ux-role", "imaginary");
       tspan.setAttribute("data-ux-state", "active");
@@ -268,12 +189,12 @@ const appendCircleLabelParts = (label: SVGTextElement, parts: readonly CircleLab
 const createMagnitudeLabel = (documentRef: Document, state: GameState): SVGTextElement => {
   const label = documentRef.createElementNS(SVG_NS, "text");
   label.setAttribute("class", "v2-circle-radius-label");
-  label.setAttribute("x", CENTER.toString());
-  label.setAttribute("y", (CENTER + RADIUS + 1).toString());
+  label.setAttribute("x", CENTER_X.toString());
+  label.setAttribute("y", LABEL_Y.toString());
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "hanging");
   applyUxRoleAttributes(label, { uxRole: "default", uxState: "normal" });
-  appendCircleLabelParts(label, [{ text: "|r| = " }, ...resolveMagnitudeDisplayParts(state)]);
+  appendCircleLabelParts(label, resolveMagnitudeLabelParts(state));
   return label;
 };
 
@@ -374,8 +295,8 @@ const resolveUnitDirection = (value: GameState["calculator"]["total"]): { x: num
 };
 
 const toPerimeterPoint = (direction: { x: number; y: number }): { x: number; y: number } => ({
-  x: CENTER + (direction.x * RADIUS),
-  y: CENTER - (direction.y * RADIUS),
+  x: CENTER_X + (direction.x * RADIUS),
+  y: CENTER_Y - (direction.y * RADIUS),
 });
 
 const resolveVectorDirection = (state: GameState): { x: number; y: number } | null =>

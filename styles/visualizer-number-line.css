@@ -264,7 +264,7 @@ body[data-ui-shell="mobile"] .v2-circle-radius-label,
 body[data-ui-shell="desktop"] .v2-circle-radius-label {
   fill: var(--ux-role-default-color);
   font-family: "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", "Courier New", monospace;
-  font-size: 3px;
+  font-size: 4px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
   letter-spacing: 0.015em;

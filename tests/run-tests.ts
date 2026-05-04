@@ -30,6 +30,7 @@ import { runUiModuleAlgebraicRendererV2Tests } from "./uiModule.algebraicRendere
 import { runHeadlessRuntimeTests } from "./headlessRuntime.test.js";
 import { runCalculatorValueDisplayTests } from "./calculatorValueDisplay.test.js";
 import { runUiModuleCircleRendererV2Tests } from "./uiModule.circleRenderer.v2.test.js";
+import { runRollStateSerializerTests } from "./rollStateSerializer.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -62,6 +63,7 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["ui/module-calculator-slot-display", runUiModuleCalculatorSlotDisplayTests],
   ["ui/module-algebraic-renderer-v2", runUiModuleAlgebraicRendererV2Tests],
   ["ui/module-circle-renderer-v2", runUiModuleCircleRendererV2Tests],
+  ["infra/roll-state-serializer", runRollStateSerializerTests],
   ["app/headless-runtime", runHeadlessRuntimeTests],
 ];
 

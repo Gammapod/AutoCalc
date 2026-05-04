@@ -30,15 +30,15 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     assert.equal(panel.querySelectorAll(".v2-circle-projection-imag").length, 1, "circle panel renders one imaginary projection line");
     assert.equal(panel.querySelectorAll(".v2-circle-projection-real").length, 1, "circle panel renders one real projection line");
     const thetaZeroLine = panel.querySelector<SVGLineElement>(".v2-circle-theta-zero");
-    assert.equal(thetaZeroLine?.getAttribute("x1"), "5", "theta=0 guide starts at left perimeter");
-    assert.equal(thetaZeroLine?.getAttribute("x2"), "95", "theta=0 guide ends at right perimeter");
-    assert.equal(thetaZeroLine?.getAttribute("y1"), "50", "theta=0 guide stays on center y");
-    assert.equal(thetaZeroLine?.getAttribute("y2"), "50", "theta=0 guide stays on center y");
+    assert.equal(thetaZeroLine?.getAttribute("x1"), "9", "theta=0 guide starts at left perimeter");
+    assert.equal(thetaZeroLine?.getAttribute("x2"), "91", "theta=0 guide ends at right perimeter");
+    assert.equal(thetaZeroLine?.getAttribute("y1"), "46", "theta=0 guide stays on center y");
+    assert.equal(thetaZeroLine?.getAttribute("y2"), "46", "theta=0 guide stays on center y");
     const imaginaryAxisLine = panel.querySelector<SVGLineElement>(".v2-circle-imag-axis");
     assert.equal(imaginaryAxisLine?.getAttribute("x1"), "50", "imaginary-axis guide stays on center x");
     assert.equal(imaginaryAxisLine?.getAttribute("x2"), "50", "imaginary-axis guide stays on center x");
     assert.equal(imaginaryAxisLine?.getAttribute("y1"), "5", "imaginary-axis guide starts at top perimeter");
-    assert.equal(imaginaryAxisLine?.getAttribute("y2"), "95", "imaginary-axis guide ends at bottom perimeter");
+    assert.equal(imaginaryAxisLine?.getAttribute("y2"), "87", "imaginary-axis guide ends at bottom perimeter");
     assert.equal(panel.querySelectorAll(".v2-circle-center-dot").length, 1, "circle panel renders a center dot");
     const initialLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
     assert.equal(initialLabel?.textContent, "|r| = 0", "circle panel renders exact zero magnitude label");
@@ -60,7 +60,9 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     assert.equal(imaginaryProjectionAtPureImag?.getAttribute("x1"), "50", "pure imaginary total projects from top-center x");
     assert.equal(imaginaryProjectionAtPureImag?.getAttribute("y1"), "5", "pure imaginary total projects from top perimeter y");
     const imagLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
-    assert.equal(imagLabel?.textContent, "|r| = 2", "pure imaginary rational magnitude is exact");
+    const imagLabelImaginaryPart = imagLabel?.querySelector<SVGTSpanElement>("tspan[data-ux-role='imaginary']");
+    assert.equal(imagLabel?.textContent, "r\u00B2 = (0)\u00B2 + (2)\u00B2", "pure imaginary rational complex shows radius-squared decomposition");
+    assert.equal(imagLabelImaginaryPart?.textContent, " + (2)\u00B2", "pure imaginary complex marks the full imaginary square term");
 
     const withHalfComplex = {
       ...initialState(),
@@ -74,7 +76,7 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     };
     renderCircleVisualizerPanel(harness.root, withHalfComplex);
     const radicalLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
-    assert.equal(radicalLabel?.textContent, "|r| = \u221A(1/2)", "complex rational magnitude renders exact radical form");
+    assert.equal(radicalLabel?.textContent, "r\u00B2 = (1/2)\u00B2 + (1/2)\u00B2", "complex rational magnitude shows radius-squared decomposition");
 
     const withAlgebraicUnitRotation = {
       ...initialState(),
@@ -90,11 +92,15 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     const algebraicLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
     const algebraicImagProjection = panel.querySelector<SVGLineElement>(".v2-circle-projection-imag");
     const algebraicRealProjection = panel.querySelector<SVGLineElement>(".v2-circle-projection-real");
-    assert.equal(algebraicLabel?.textContent, "|r| = 1", "unit-magnitude algebraic complex values simplify to exact unit radius label");
+    assert.equal(
+      algebraicLabel?.textContent,
+      "r\u00B2 = (1\u20444\u00D7\u221A2 + 1\u20444\u00D7\u221A6)\u00B2 + (-1\u20444\u00D7\u221A2 + 1\u20444\u00D7\u221A6)\u00B2",
+      "unit-magnitude algebraic complex values show radius-squared decomposition",
+    );
     assert.equal(Number(algebraicImagProjection?.getAttribute("x1")) > 50, true, "15-degree algebraic projections originate on positive real side");
     assert.equal(Number(algebraicImagProjection?.getAttribute("y1")) < 50, true, "15-degree algebraic projections originate on positive imaginary side");
     assert.equal(algebraicImagProjection?.getAttribute("x2"), algebraicImagProjection?.getAttribute("x1"), "imaginary projection keeps constant x");
-    assert.equal(algebraicImagProjection?.getAttribute("y2"), "50", "imaginary projection terminates on horizontal diameter");
+    assert.equal(algebraicImagProjection?.getAttribute("y2"), "46", "imaginary projection terminates on horizontal diameter");
     assert.equal(algebraicRealProjection?.getAttribute("x1"), algebraicImagProjection?.getAttribute("x1"), "real projection starts at the same tip x");
     assert.equal(algebraicRealProjection?.getAttribute("y1"), algebraicImagProjection?.getAttribute("y1"), "real projection starts at the same tip y");
     assert.equal(algebraicRealProjection?.getAttribute("x2"), "50", "real projection terminates on vertical diameter");
@@ -113,10 +119,12 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     renderCircleVisualizerPanel(harness.root, withSymbolicComplexMagnitude);
     const symbolicMagnitudeLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
     const symbolicImaginaryPart = symbolicMagnitudeLabel?.querySelector<SVGTSpanElement>("tspan[data-ux-role='imaginary']");
-    assert.equal(symbolicMagnitudeLabel?.textContent, "|r| = \u221A((a)\u00B2 + (b)\u00B2)", "symbolic complex magnitude uses superscript square fallback");
+    assert.equal(symbolicMagnitudeLabel?.textContent, "r\u00B2 = (a)\u00B2 + (b)\u00B2", "symbolic complex magnitude uses radius-squared decomposition");
     assert.equal(symbolicMagnitudeLabel?.getAttribute("x"), "50", "circle magnitude label is centered under the circle");
-    assert.equal(symbolicMagnitudeLabel?.getAttribute("y"), "96", "circle magnitude label sits below the circle perimeter");
+    assert.equal(symbolicMagnitudeLabel?.getAttribute("y"), "89", "circle magnitude label sits below the circle perimeter");
     assert.equal(symbolicImaginaryPart?.textContent, " + (b)\u00B2", "circle magnitude fallback marks the operator, imaginary scalar, parentheses, and square with the imaginary UX role");
+    assert.equal(symbolicImaginaryPart?.getAttribute("x"), "50", "imaginary radius term starts a centered second line");
+    assert.equal(symbolicImaginaryPart?.getAttribute("dy"), "5", "imaginary radius term is split onto the second line");
 
     const withAlgebraicFallbackMagnitude = {
       ...initialState(),
@@ -133,8 +141,8 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     const algebraicFallbackImaginaryPart = algebraicFallbackLabel?.querySelector<SVGTSpanElement>("tspan[data-ux-role='imaginary']");
     assert.equal(
       algebraicFallbackLabel?.textContent,
-      "|r| = \u221A((1\u20442\u00D7\u221A3)\u00B2 + (1\u20442 + 2\u00D7\u221A3)\u00B2)",
-      "algebraic complex magnitude fallback uses superscript squares and algebraic scalar formatting",
+      "r\u00B2 = (1\u20442\u00D7\u221A3)\u00B2 + (1\u20442 + 2\u00D7\u221A3)\u00B2",
+      "algebraic complex magnitude uses radius-squared decomposition and algebraic scalar formatting",
     );
     assert.equal(
       algebraicFallbackImaginaryPart?.textContent,

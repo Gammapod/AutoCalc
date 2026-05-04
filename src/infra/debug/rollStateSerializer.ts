@@ -1,30 +1,52 @@
-import type { GameState } from "../../domain/types.js";
+import type { AlgebraicBasis, AlgebraicValue, GameState, ScalarValue } from "../../domain/types.js";
+
+const ALGEBRAIC_BASIS_ORDER: readonly AlgebraicBasis[] = ["one", "sqrt2", "sqrt3", "sqrt6"];
+
+const stringifyForDebug = (value: unknown): string =>
+  JSON.stringify(value, (_key, entry) => (typeof entry === "bigint" ? entry.toString() : entry));
 
 const serializeRationalForDebug = (value: { num: bigint; den: bigint }): { num: string; den: string } => ({
   num: value.num.toString(),
   den: value.den.toString(),
 });
 
+const serializeAlgebraicForDebug = (value: AlgebraicValue): Partial<Record<AlgebraicBasis, { num: string; den: string }>> => {
+  const serialized: Partial<Record<AlgebraicBasis, { num: string; den: string }>> = {};
+  for (const basis of ALGEBRAIC_BASIS_ORDER) {
+    const coefficient = value[basis];
+    if (coefficient) {
+      serialized[basis] = serializeRationalForDebug(coefficient);
+    }
+  }
+  return serialized;
+};
+
+const serializeScalarForDebug = (value: ScalarValue):
+  | { kind: "rational"; value: { num: string; den: string } }
+  | { kind: "alg"; value: Partial<Record<AlgebraicBasis, { num: string; den: string }>> }
+  | { kind: "expr"; value: string } =>
+  value.kind === "rational"
+    ? { kind: "rational", value: serializeRationalForDebug(value.value) }
+    : value.kind === "alg"
+      ? { kind: "alg", value: serializeAlgebraicForDebug(value.value) }
+      : { kind: "expr", value: stringifyForDebug(value.value) };
+
 const serializeCalculatorValueForDebug = (value: GameState["calculator"]["total"]):
   | { kind: "nan" }
   | { kind: "rational"; value: { num: string; den: string } }
   | { kind: "expr"; value: string }
-  | { kind: "complex"; value: { re: { kind: "rational" | "expr"; value: unknown }; im: { kind: "rational" | "expr"; value: unknown } } } =>
+  | { kind: "complex"; value: { re: ReturnType<typeof serializeScalarForDebug>; im: ReturnType<typeof serializeScalarForDebug> } } =>
   value.kind === "nan"
     ? { kind: "nan" }
     : value.kind === "rational"
       ? { kind: "rational", value: serializeRationalForDebug(value.value) }
       : value.kind === "expr"
-        ? { kind: "expr", value: JSON.stringify(value.value) }
+        ? { kind: "expr", value: stringifyForDebug(value.value) }
         : {
             kind: "complex",
             value: {
-              re: value.value.re.kind === "rational"
-                ? { kind: "rational", value: serializeRationalForDebug(value.value.re.value) }
-                : { kind: "expr", value: JSON.stringify(value.value.re.value) },
-              im: value.value.im.kind === "rational"
-                ? { kind: "rational", value: serializeRationalForDebug(value.value.im.value) }
-                : { kind: "expr", value: JSON.stringify(value.value.im.value) },
+              re: serializeScalarForDebug(value.value.re),
+              im: serializeScalarForDebug(value.value.im),
             },
           };
 
