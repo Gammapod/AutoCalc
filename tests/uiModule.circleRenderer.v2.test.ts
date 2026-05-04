@@ -61,8 +61,8 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     assert.equal(imaginaryProjectionAtPureImag?.getAttribute("y1"), "5", "pure imaginary total projects from top perimeter y");
     const imagLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
     const imagLabelImaginaryPart = imagLabel?.querySelector<SVGTSpanElement>("tspan[data-ux-role='imaginary']");
-    assert.equal(imagLabel?.textContent, "r\u00B2 = (0)\u00B2 + (2)\u00B2", "pure imaginary rational complex shows radius-squared decomposition");
-    assert.equal(imagLabelImaginaryPart?.textContent, " + (2)\u00B2", "pure imaginary complex marks the full imaginary square term");
+    assert.equal(imagLabel?.textContent, "r\u00B2 = 4", "pure imaginary rational complex shows canonical radius-squared scalar");
+    assert.equal(imagLabelImaginaryPart, null, "canonical radius-squared scalar does not mark an imaginary coordinate term");
 
     const withHalfComplex = {
       ...initialState(),
@@ -76,7 +76,7 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     };
     renderCircleVisualizerPanel(harness.root, withHalfComplex);
     const radicalLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
-    assert.equal(radicalLabel?.textContent, "r\u00B2 = (1/2)\u00B2 + (1/2)\u00B2", "complex rational magnitude shows radius-squared decomposition");
+    assert.equal(radicalLabel?.textContent, "r\u00B2 = 1\u20442", "complex rational magnitude shows canonical radius-squared scalar");
 
     const withAlgebraicUnitRotation = {
       ...initialState(),
@@ -92,11 +92,7 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     const algebraicLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
     const algebraicImagProjection = panel.querySelector<SVGLineElement>(".v2-circle-projection-imag");
     const algebraicRealProjection = panel.querySelector<SVGLineElement>(".v2-circle-projection-real");
-    assert.equal(
-      algebraicLabel?.textContent,
-      "r\u00B2 = (1\u20444\u00D7\u221A2 + 1\u20444\u00D7\u221A6)\u00B2 + (-1\u20444\u00D7\u221A2 + 1\u20444\u00D7\u221A6)\u00B2",
-      "unit-magnitude algebraic complex values show radius-squared decomposition",
-    );
+    assert.equal(algebraicLabel?.textContent, "r\u00B2 = 1", "unit-magnitude algebraic complex values show canonical radius-squared scalar");
     assert.equal(Number(algebraicImagProjection?.getAttribute("x1")) > 50, true, "15-degree algebraic projections originate on positive real side");
     assert.equal(Number(algebraicImagProjection?.getAttribute("y1")) < 50, true, "15-degree algebraic projections originate on positive imaginary side");
     assert.equal(algebraicImagProjection?.getAttribute("x2"), algebraicImagProjection?.getAttribute("x1"), "imaginary projection keeps constant x");
@@ -105,6 +101,20 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     assert.equal(algebraicRealProjection?.getAttribute("y1"), algebraicImagProjection?.getAttribute("y1"), "real projection starts at the same tip y");
     assert.equal(algebraicRealProjection?.getAttribute("x2"), "50", "real projection terminates on vertical diameter");
     assert.equal(algebraicRealProjection?.getAttribute("y2"), algebraicImagProjection?.getAttribute("y1"), "real projection keeps constant y");
+
+    const withAlgebraicQuarterTurn = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toExplicitComplexCalculatorValue(
+          { kind: "alg", value: ALG_CONSTANTS.rotate15Sin },
+          { kind: "alg", value: ALG_CONSTANTS.rotate15Cos },
+        ),
+      },
+    };
+    renderCircleVisualizerPanel(harness.root, withAlgebraicQuarterTurn);
+    const rotatedAlgebraicLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
+    assert.equal(rotatedAlgebraicLabel?.textContent, "r\u00B2 = 1", "equivalent unit-radius algebraic rotations share the same canonical radius label");
 
     const withSymbolicComplexMagnitude = {
       ...initialState(),
@@ -141,13 +151,13 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     const algebraicFallbackImaginaryPart = algebraicFallbackLabel?.querySelector<SVGTSpanElement>("tspan[data-ux-role='imaginary']");
     assert.equal(
       algebraicFallbackLabel?.textContent,
-      "r\u00B2 = (1\u20442\u00D7\u221A3)\u00B2 + (1\u20442 + 2\u00D7\u221A3)\u00B2",
-      "algebraic complex magnitude uses radius-squared decomposition and algebraic scalar formatting",
+      "r\u00B2 = 13 + 2\u00D7\u221A3",
+      "algebraic complex magnitude uses a canonical algebraic radius-squared scalar",
     );
     assert.equal(
-      algebraicFallbackImaginaryPart?.textContent,
-      " + (1\u20442 + 2\u00D7\u221A3)\u00B2",
-      "algebraic fallback colors the addition and full imaginary square term",
+      algebraicFallbackImaginaryPart,
+      null,
+      "canonical algebraic radius-squared scalar does not mark an imaginary coordinate term",
     );
 
     const withHistoryAnalysis = {

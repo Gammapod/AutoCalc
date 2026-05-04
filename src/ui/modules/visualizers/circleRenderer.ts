@@ -6,7 +6,7 @@ import {
   resolveStepForecastValuesForState,
 } from "./numberLineModel.js";
 import { expressionToDisplayString } from "../../../domain/expression.js";
-import { algebraicToDisplayString } from "../../../domain/algebraicScalar.js";
+import { addAlgebraic, algebraicToDisplayString, mulAlgebraic, rationalToAlgebraic } from "../../../domain/algebraicScalar.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const VIEWBOX_SIZE = 100;
@@ -151,6 +151,21 @@ type CircleLabelPart = {
   lineBreakBefore?: boolean;
 };
 
+const scalarToAlgebraic = (
+  value:
+    | { kind: "rational"; value: { num: bigint; den: bigint } }
+    | { kind: "alg"; value: { one?: { num: bigint; den: bigint }; sqrt2?: { num: bigint; den: bigint }; sqrt3?: { num: bigint; den: bigint }; sqrt6?: { num: bigint; den: bigint } } }
+    | { kind: "expr"; value: unknown },
+): { one?: { num: bigint; den: bigint }; sqrt2?: { num: bigint; den: bigint }; sqrt3?: { num: bigint; den: bigint }; sqrt6?: { num: bigint; den: bigint } } | null => {
+  if (value.kind === "rational") {
+    return rationalToAlgebraic(value.value);
+  }
+  if (value.kind === "alg") {
+    return value.value;
+  }
+  return null;
+};
+
 const resolveMagnitudeLabelParts = (state: GameState): CircleLabelPart[] => {
   const total = state.calculator.total;
   if (total.kind === "nan") {
@@ -164,6 +179,12 @@ const resolveMagnitudeLabelParts = (state: GameState): CircleLabelPart[] => {
   }
   const re = total.value.re;
   const im = total.value.im;
+  const reAlg = scalarToAlgebraic(re);
+  const imAlg = scalarToAlgebraic(im);
+  if (reAlg && imAlg) {
+    const normSquared = addAlgebraic(mulAlgebraic(reAlg, reAlg), mulAlgebraic(imAlg, imAlg));
+    return [{ text: `r\u00B2 = ${algebraicToDisplayString(normSquared)}` }];
+  }
   return [
     { text: `r\u00B2 = (${scalarToDisplay(re)})\u00B2` },
     { text: ` + (${scalarToDisplay(im)})\u00B2`, role: "imaginary", lineBreakBefore: true },
