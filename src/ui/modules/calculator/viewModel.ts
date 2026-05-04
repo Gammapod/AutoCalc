@@ -1,7 +1,8 @@
-import { isRationalCalculatorValue } from "../../../domain/calculatorValue.js";
+import { calculatorValueToDisplayParts, isRationalCalculatorValue, type CalculatorDisplayPart } from "../../../domain/calculatorValue.js";
 import { getExecutionStageCount, resolveWrapStageMode } from "../../../domain/executionPlan.js";
 import type { WrapStageMode } from "../../../domain/executionPlanIR.js";
 import { resolveFormulaSymbol } from "../../../domain/multiCalculator.js";
+import { getSeedRow } from "../../../domain/rollEntries.js";
 import type { CalculatorValue, CalculatorState, GameState, RollEntry } from "../../../domain/types.js";
 import {
   buildOperationSlotDisplay as buildOperationSlotDisplayShared,
@@ -188,6 +189,7 @@ export type OperationSlotDisplayModel = {
   base: string;
   displayFunctionBase: string;
   fixedSeedLabel: string;
+  fixedSeedParts: CalculatorDisplayPart[];
   functionPrefix: string;
   seedToken: FunctionBarSeedToken;
   slotTokens: FunctionBarSlotToken[];
@@ -200,11 +202,13 @@ export type OperationSlotDisplayModel = {
 export type FunctionBarSeedToken = {
   kind: "seed";
   text: string;
+  parts: CalculatorDisplayPart[];
 };
 
 export type FunctionBarSlotToken = {
   kind: "slot";
   text: string;
+  parts: CalculatorDisplayPart[];
 };
 
 export type FunctionBarWrapTailToken = {
@@ -271,12 +275,15 @@ const toWrapTailToken = (
 const toFunctionBuilderDisplayParts = (
   base: string,
   symbol: string,
+  seedParts: CalculatorDisplayPart[],
+  slotTokenParts: readonly CalculatorDisplayPart[][],
 ): {
     functionPrefix: string;
     seedToken: FunctionBarSeedToken;
     slotTokens: FunctionBarSlotToken[];
     displayFunctionBase: string;
     fixedSeedLabel: string;
+    fixedSeedParts: CalculatorDisplayPart[];
   } => {
   const seedPrefix = `${symbol}\u2080`;
   const functionPrefix = `${symbol}\u2093 = ${symbol}\u2093\u208B\u2081`;
@@ -284,10 +291,12 @@ const toFunctionBuilderDisplayParts = (
   const seedToken: FunctionBarSeedToken = {
     kind: "seed",
     text: parsed.seedTokenText,
+    parts: seedParts.length > 0 ? seedParts : [{ text: parsed.seedTokenText }],
   };
-  const slotTokens = parsed.slotTokenTexts.map<FunctionBarSlotToken>((text) => ({
+  const slotTokens = parsed.slotTokenTexts.map<FunctionBarSlotToken>((text, index) => ({
     kind: "slot",
     text,
+    parts: slotTokenParts[index] && slotTokenParts[index]!.length > 0 ? slotTokenParts[index]! : [{ text }],
   }));
   const slotTokenText = slotTokens.map((token) => token.text).join(" ");
   const displayFunctionBase = slotTokenText ? `${functionPrefix} ${slotTokenText}` : functionPrefix;
@@ -297,17 +306,20 @@ const toFunctionBuilderDisplayParts = (
     slotTokens,
     displayFunctionBase,
     fixedSeedLabel: `| ${seedPrefix} = ${seedToken.text || "_"}`,
+    fixedSeedParts: [{ text: `| ${seedPrefix} = ` }, ...seedToken.parts],
   };
 };
 
 const withDisplayParts = (
   base: string,
   symbol: string,
+  seedParts: CalculatorDisplayPart[],
+  slotTokenParts: readonly CalculatorDisplayPart[][],
   executableSlotCount: number,
   wrapTail: FunctionBarWrapTailToken | null,
   stepTargetTokenIndex: number | null,
 ): OperationSlotDisplayModel => {
-  const parts = toFunctionBuilderDisplayParts(base, symbol);
+  const parts = toFunctionBuilderDisplayParts(base, symbol, seedParts, slotTokenParts);
   return {
     base,
     functionPrefix: parts.functionPrefix,
@@ -317,13 +329,48 @@ const withDisplayParts = (
     wrapTail,
     displayFunctionBase: parts.displayFunctionBase,
     fixedSeedLabel: parts.fixedSeedLabel,
+    fixedSeedParts: parts.fixedSeedParts,
     deltaWrapSuffix: wrapTail ? ` ${wrapTail.fullText}` : null,
     stepTargetTokenIndex,
   };
 };
 
+const resolveSeedDisplayPartsForState = (state: GameState): CalculatorDisplayPart[] => {
+  if (state.calculator.rollEntries.length > 0) {
+    return calculatorValueToDisplayParts(getSeedRow(state.calculator.rollEntries)?.y ?? state.calculator.total);
+  }
+  if (isClearedCalculatorState(state.calculator)) {
+    return [{ text: "_" }];
+  }
+  return calculatorValueToDisplayParts(state.calculator.total);
+};
+
+const wrapSlotExecutionResultParts = (value: CalculatorValue): CalculatorDisplayPart[] => [
+  { text: "[ -> " },
+  ...calculatorValueToDisplayParts(value),
+  { text: " ]" },
+];
+
+const resolveSlotTokenDisplayPartsForState = (
+  state: GameState,
+  parsedSlotTokenCount: number,
+): CalculatorDisplayPart[][] => {
+  const parts = Array.from({ length: parsedSlotTokenCount }, () => [] as CalculatorDisplayPart[]);
+  if (!state.calculator.stepProgress.active) {
+    return parts;
+  }
+  for (let index = 0; index < state.calculator.stepProgress.executedSlotResults.length && index < parsedSlotTokenCount; index += 1) {
+    const result = state.calculator.stepProgress.executedSlotResults[index];
+    if (result) {
+      parts[index] = wrapSlotExecutionResultParts(result);
+    }
+  }
+  return parts;
+};
+
 export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotDisplayModel => {
   const base = buildOperationSlotDisplayShared(state);
+  const parsed = parseSeedAndSlotTokensFromBase(base);
   const symbol = resolveFormulaSymbol(state);
   const operationSlotCount = state.calculator.operationSlots.length;
   const executionStageCount = getExecutionStageCount(state.calculator.operationSlots, state);
@@ -352,7 +399,8 @@ export const buildOperationSlotDisplayModel = (state: GameState): OperationSlotD
         : null;
   const wrapMode = resolveWrapStageMode(state);
   const wrapTail = wrapMode ? toWrapTailToken(state, wrapMode) : null;
-  return withDisplayParts(base, symbol, operationSlotCount, wrapTail, stepTargetTokenIndex);
+  const slotTokenParts = resolveSlotTokenDisplayPartsForState(state, parsed.slotTokenTexts.length);
+  return withDisplayParts(base, symbol, resolveSeedDisplayPartsForState(state), slotTokenParts, operationSlotCount, wrapTail, stepTargetTokenIndex);
 };
 
 export const buildOperationSlotDisplay = (state: GameState): string => {

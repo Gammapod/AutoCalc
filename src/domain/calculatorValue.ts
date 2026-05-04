@@ -9,10 +9,12 @@ import {
 import {
   algebraicEquals,
   algebraicToDisplayString,
+  algebraicToApproxNumber,
   algebraicToRational,
   isAlgebraicZero,
   normalizeAlgebraicValue,
   normalizeRational,
+  negateAlgebraic,
   rationalToAlgebraic,
 } from "./algebraicScalar.js";
 
@@ -125,6 +127,11 @@ export const isComplexCalculatorValue = (
   value: CalculatorValue,
 ): value is Extract<CalculatorValue, { kind: "complex" }> => value.kind === "complex";
 
+export type CalculatorDisplayPart = {
+  text: string;
+  role?: "imaginary";
+};
+
 const scalarToDisplayString = (value: ScalarValue): string =>
   value.kind === "rational"
     ? (value.value.den === 1n ? value.value.num.toString() : `${value.value.num.toString()}/${value.value.den.toString()}`)
@@ -132,14 +139,66 @@ const scalarToDisplayString = (value: ScalarValue): string =>
       ? algebraicToDisplayString(value.value)
       : expressionToDisplayString(value.value);
 
+const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);
+
+const scalarValueIsNegative = (value: ScalarValue): boolean => {
+  if (value.kind === "rational") {
+    return normalizeRational(value.value).num < 0n;
+  }
+  if (value.kind === "alg") {
+    return algebraicToApproxNumber(value.value) < 0;
+  }
+  return expressionToDisplayString(value.value).trim().startsWith("-");
+};
+
+const scalarValueToAbsDisplayString = (value: ScalarValue): string => {
+  if (value.kind === "rational") {
+    const normalized = normalizeRational(value.value);
+    const magnitude = { num: absBigInt(normalized.num), den: normalized.den };
+    return magnitude.den === 1n ? magnitude.num.toString() : `${magnitude.num.toString()}/${magnitude.den.toString()}`;
+  }
+  if (value.kind === "alg") {
+    return algebraicToDisplayString(scalarValueIsNegative(value) ? negateAlgebraic(value.value) : value.value);
+  }
+  const text = expressionToDisplayString(value.value).trim();
+  return text.startsWith("-") ? text.slice(1).trim() : text;
+};
+
+const complexCalculatorValueToDisplayParts = (
+  value: Extract<CalculatorValue, { kind: "complex" }>,
+): CalculatorDisplayPart[] => {
+  const { re, im } = value.value;
+  if (isScalarValueZero(im)) {
+    return [{ text: scalarToDisplayString(re) }];
+  }
+  const hasReal = !isScalarValueZero(re);
+  const imaginaryNegative = scalarValueIsNegative(im);
+  const imaginaryText = `i\u00D7(${scalarValueToAbsDisplayString(im)})`;
+  if (!hasReal) {
+    return [{ text: imaginaryNegative ? `-${imaginaryText}` : imaginaryText, role: "imaginary" }];
+  }
+  return [
+    { text: `(${scalarToDisplayString(re)})` },
+    { text: imaginaryNegative ? " - " : " + " },
+    { text: imaginaryText, role: "imaginary" },
+  ];
+};
+
+export const calculatorValueToDisplayParts = (value: CalculatorValue): CalculatorDisplayPart[] => {
+  if (value.kind === "nan") {
+    return [{ text: "NaN" }];
+  }
+  if (value.kind === "rational") {
+    return [{ text: value.value.den === 1n ? value.value.num.toString() : `${value.value.num.toString()}/${value.value.den.toString()}` }];
+  }
+  if (value.kind === "expr") {
+    return [{ text: expressionToDisplayString(value.value) }];
+  }
+  return complexCalculatorValueToDisplayParts(value);
+};
+
 export const calculatorValueToDisplayString = (value: CalculatorValue): string =>
-  value.kind === "nan"
-    ? "NaN"
-    : value.kind === "rational"
-      ? (value.value.den === 1n ? value.value.num.toString() : `${value.value.num.toString()}/${value.value.den.toString()}`)
-      : value.kind === "expr"
-        ? expressionToDisplayString(value.value)
-        : `${scalarToDisplayString(value.value.re)} + ${scalarToDisplayString(value.value.im)}i`;
+  calculatorValueToDisplayParts(value).map((part) => part.text).join("");
 
 export const isCalculatorValueInteger = (value: CalculatorValue): boolean =>
   value.kind === "rational" ? value.value.den === 1n : value.kind === "expr" ? isExpressionInteger(value.value) : false;
@@ -295,8 +354,6 @@ export const computeOverflowBoundary = (maxDigits: number, radix: number = 10): 
   const safeRadix = Math.max(2, Math.trunc(radix));
   return (BigInt(safeRadix) ** BigInt(safeDigits)) - 1n;
 };
-
-const absBigInt = (value: bigint): bigint => (value < 0n ? -value : value);
 
 export const exceedsMagnitudeBoundary = (value: RationalValue, boundary: bigint): boolean =>
   absBigInt(value.num) > boundary * absBigInt(value.den);

@@ -372,7 +372,7 @@ export const algebraicToDisplayString = (value: AlgebraicValue): string => {
     const magnitude = normalizeRational({ num: absBigInt(normalizedCoeff.num), den: normalizedCoeff.den });
     const coeffText = token === "1"
       ? formatRational(magnitude)
-      : (magnitude.num === 1n && magnitude.den === 1n ? token : `${formatRational(magnitude)}${token}`);
+      : (magnitude.num === 1n && magnitude.den === 1n ? token : `${formatRational(magnitude)}\u00D7${token}`);
     if (parts.length === 0) {
       parts.push(sign === "-" ? `-${coeffText}` : coeffText);
       return;
@@ -380,9 +380,9 @@ export const algebraicToDisplayString = (value: AlgebraicValue): string => {
     parts.push(`${sign} ${coeffText}`);
   };
   pushTerm(normalized.one, "1");
-  pushTerm(normalized.sqrt2, "sqrt(2)");
-  pushTerm(normalized.sqrt3, "sqrt(3)");
-  pushTerm(normalized.sqrt6, "sqrt(6)");
+  pushTerm(normalized.sqrt2, "\u221A2");
+  pushTerm(normalized.sqrt3, "\u221A3");
+  pushTerm(normalized.sqrt6, "\u221A6");
   return parts.length === 0 ? "0" : parts.join(" ");
 };
 

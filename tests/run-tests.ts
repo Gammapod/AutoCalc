@@ -28,6 +28,8 @@ import { runUiModuleCalculatorRejectBlinkTests } from "./uiModule.calculatorReje
 import { runUiModuleCalculatorSlotDisplayTests } from "./uiModule.calculatorSlotDisplay.test.js";
 import { runUiModuleAlgebraicRendererV2Tests } from "./uiModule.algebraicRenderer.v2.test.js";
 import { runHeadlessRuntimeTests } from "./headlessRuntime.test.js";
+import { runCalculatorValueDisplayTests } from "./calculatorValueDisplay.test.js";
+import { runUiModuleCircleRendererV2Tests } from "./uiModule.circleRenderer.v2.test.js";
 
 const tests: Array<[string, () => void | Promise<void>]> = [
   ["persistence", runPersistenceTests],
@@ -54,10 +56,12 @@ const tests: Array<[string, () => void | Promise<void>]> = [
   ["calculator-seed-manifest", runCalculatorSeedManifestTests],
   ["domain/sandbox-preset", runSandboxPresetTests],
   ["mode-transition-coordinator", runModeTransitionCoordinatorTests],
+  ["domain/calculator-value-display", runCalculatorValueDisplayTests],
   ["ui/module-calculator-storage-v2", runUiModuleCalculatorStorageV2Tests],
   ["ui/module-calculator-reject-blink", runUiModuleCalculatorRejectBlinkTests],
   ["ui/module-calculator-slot-display", runUiModuleCalculatorSlotDisplayTests],
   ["ui/module-algebraic-renderer-v2", runUiModuleAlgebraicRendererV2Tests],
+  ["ui/module-circle-renderer-v2", runUiModuleCircleRendererV2Tests],
   ["app/headless-runtime", runHeadlessRuntimeTests],
 ];
 

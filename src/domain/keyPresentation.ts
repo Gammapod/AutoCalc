@@ -244,7 +244,7 @@ const keySeedById = new Map<KeyId, KeyPresentationSeed>([
   [KEY_ID.unary_ceil, { buttonFace: "\u2308n\u2309", operatorInlineFace: "\u2308n\u2309", operatorSlotFace: "\u2308n\u2309", operatorAlgebraicFace: "\u2308n\u2309" }],
   [KEY_ID.unary_mirror_digits, { buttonFace: "\u21CBd", operatorInlineFace: "\u21CBd", operatorSlotFace: "\u21CB", operatorAlgebraicFace: "\u21CBd" }],
   [KEY_ID.unary_i, { buttonFace: "\u00D7 \u{1D456}", operatorInlineFace: "\u00D7 i", operatorSlotFace: "\u00D7 i", operatorAlgebraicFace: "\u00D7 i" }],
-  [KEY_ID.unary_rotate_15, { buttonFace: "\u21B6 \u299C/6", operatorInlineFace: "\u00D7e^(i\u03C0/12)", operatorSlotFace: "\u299C/6", operatorAlgebraicFace: "\u00D7e^(i\u03C0/12)" }],
+  [KEY_ID.unary_rotate_15, { buttonFace: "\u21B6 \u21B6", operatorInlineFace: "\u00D7e^(i\u03C0/12)", operatorSlotFace: "\u21B6 \u21B6", operatorAlgebraicFace: "\u00D7e^(i\u03C0/12)" }],
   [KEY_ID.unary_reciprocal, { buttonFace: "\u00B9\u2044\u2099", operatorInlineFace: "\u00B9\u2044\u2099", operatorSlotFace: "\u00B9\u2044\u2099", operatorAlgebraicFace: "\u00B9\u2044\u2099" }],
   [KEY_ID.unary_plus_i, { buttonFace: "+ \u{1D456}", operatorInlineFace: "+ i", operatorSlotFace: "+ i", operatorAlgebraicFace: "+ i" }],
   [KEY_ID.unary_minus_i, { buttonFace: "\u2212 \u{1D456}", operatorInlineFace: "\u2212 i", operatorSlotFace: "\u2212 i", operatorAlgebraicFace: "\u2212 i" }],

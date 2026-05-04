@@ -118,6 +118,7 @@ const appendQuadraticCurve = (
     "d",
     `M ${segment.from.x.toString()} ${segment.from.y.toString()} Q ${control.x.toString()} ${control.y.toString()} ${segment.to.x.toString()} ${segment.to.y.toString()}`,
   );
+  path.setAttribute("fill", "none");
   path.setAttribute("class", className);
   applyStrokeUxRole(path, className);
   svg.appendChild(path);

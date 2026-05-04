@@ -200,6 +200,11 @@ const scalarToDisplay = (
       ? algebraicToDisplayString(value.value)
     : expressionToDisplayString(value.value as Parameters<typeof expressionToDisplayString>[0]);
 
+type CircleLabelPart = {
+  text: string;
+  role?: "imaginary";
+};
+
 const scalarToAlgebraic = (
   value:
     | { kind: "rational"; value: { num: bigint; den: bigint } }
@@ -215,22 +220,22 @@ const scalarToAlgebraic = (
   return null;
 };
 
-const resolveMagnitudeDisplay = (state: GameState): string => {
+const resolveMagnitudeDisplayParts = (state: GameState): CircleLabelPart[] => {
   const total = state.calculator.total;
   if (total.kind === "nan") {
-    return "NaN";
+    return [{ text: "NaN" }];
   }
   if (total.kind === "rational") {
-    return rationalToDisplay(absRational(total.value));
+    return [{ text: rationalToDisplay(absRational(total.value)) }];
   }
   if (total.kind === "expr") {
-    return `|${expressionToDisplayString(total.value)}|`;
+    return [{ text: `|${expressionToDisplayString(total.value)}|` }];
   }
   const re = total.value.re;
   const im = total.value.im;
   if (re.kind === "rational" && im.kind === "rational") {
     const sumSquares = addRational(squareRational(re.value), squareRational(im.value));
-    return formatExactRadicalFromRational(sumSquares);
+    return [{ text: formatExactRadicalFromRational(sumSquares) }];
   }
   const reAlg = scalarToAlgebraic(re);
   const imAlg = scalarToAlgebraic(im);
@@ -238,10 +243,26 @@ const resolveMagnitudeDisplay = (state: GameState): string => {
     const normSquared = addAlgebraic(mulAlgebraic(reAlg, reAlg), mulAlgebraic(imAlg, imAlg));
     const rationalNorm = algebraicToRational(normSquared);
     if (rationalNorm) {
-      return formatExactRadicalFromRational(rationalNorm);
+      return [{ text: formatExactRadicalFromRational(rationalNorm) }];
     }
   }
-  return `sqrt((${scalarToDisplay(re)})^2 + (${scalarToDisplay(im)})^2)`;
+  return [
+    { text: `\u221A((${scalarToDisplay(re)})^2 + (` },
+    { text: scalarToDisplay(im), role: "imaginary" },
+    { text: ")^2)" },
+  ];
+};
+
+const appendCircleLabelParts = (label: SVGTextElement, parts: readonly CircleLabelPart[]): void => {
+  for (const part of parts) {
+    const tspan = label.ownerDocument.createElementNS(SVG_NS, "tspan");
+    tspan.textContent = part.text;
+    if (part.role === "imaginary") {
+      tspan.setAttribute("data-ux-role", "imaginary");
+      tspan.setAttribute("data-ux-state", "active");
+    }
+    label.appendChild(tspan);
+  }
 };
 
 const createMagnitudeLabel = (documentRef: Document, state: GameState): SVGTextElement => {
@@ -252,7 +273,7 @@ const createMagnitudeLabel = (documentRef: Document, state: GameState): SVGTextE
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "hanging");
   applyUxRoleAttributes(label, { uxRole: "default", uxState: "normal" });
-  label.textContent = `|r| = ${resolveMagnitudeDisplay(state)}`;
+  appendCircleLabelParts(label, [{ text: "|r| = " }, ...resolveMagnitudeDisplayParts(state)]);
   return label;
 };
 

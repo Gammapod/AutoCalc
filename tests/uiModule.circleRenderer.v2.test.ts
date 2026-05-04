@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import {
   toExplicitComplexCalculatorValue,
+  toExpressionScalarValue,
   toRationalCalculatorValue,
   toRationalScalarValue,
 } from "../src/domain/calculatorValue.js";
 import { ALG_CONSTANTS } from "../src/domain/algebraicScalar.js";
+import { symbolicExpr } from "../src/domain/expression.js";
 import { HISTORY_FLAG } from "../src/domain/state.js";
 import { renderCircleVisualizerPanel } from "../src/ui/modules/visualizers/circleRenderer.js";
 import { installDomHarness } from "./helpers/domHarness.js";
@@ -97,6 +99,22 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     assert.equal(algebraicRealProjection?.getAttribute("x2"), "50", "real projection terminates on vertical diameter");
     assert.equal(algebraicRealProjection?.getAttribute("y2"), algebraicImagProjection?.getAttribute("y1"), "real projection keeps constant y");
 
+    const withSymbolicComplexMagnitude = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toExplicitComplexCalculatorValue(
+          toExpressionScalarValue(symbolicExpr("a")),
+          toExpressionScalarValue(symbolicExpr("b")),
+        ),
+      },
+    };
+    renderCircleVisualizerPanel(harness.root, withSymbolicComplexMagnitude);
+    const symbolicMagnitudeLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
+    const symbolicImaginaryPart = symbolicMagnitudeLabel?.querySelector<SVGTSpanElement>("tspan[data-ux-role='imaginary']");
+    assert.equal(symbolicMagnitudeLabel?.textContent, "|r| = \u221A((a)^2 + (b)^2)", "symbolic complex magnitude uses radical glyph fallback");
+    assert.equal(symbolicImaginaryPart?.textContent, "b", "circle magnitude fallback marks the imaginary scalar with the imaginary UX role");
+
     const withHistoryAnalysis = {
       ...initialState(),
       calculator: {
@@ -114,6 +132,11 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
           ...initialState().ui.buttonFlags,
           [HISTORY_FLAG]: true,
         },
+      },
+      settings: {
+        ...initialState().settings,
+        forecast: "on" as const,
+        history: "on" as const,
       },
     };
     renderCircleVisualizerPanel(harness.root, withHistoryAnalysis);
@@ -145,6 +168,10 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
 
     const withCycleOverlay = {
       ...withHistoryAnalysis,
+      settings: {
+        ...withHistoryAnalysis.settings,
+        cycle: "on" as const,
+      },
       calculator: {
         ...withHistoryAnalysis.calculator,
         rollEntries: [
@@ -191,7 +218,7 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line--closure").length, 1, "circle cycle overlay renders closure for matching span endpoints");
     assert.equal(panel.querySelectorAll(".v2-number-line-vector--history").length, 1, "cycle overlay remains additive to history vector");
 
-    const cycleWithHistoryOff = {
+    const cycleWithCycleOff = {
       ...withCycleOverlay,
       ui: {
         ...withCycleOverlay.ui,
@@ -200,9 +227,13 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
           [HISTORY_FLAG]: false,
         },
       },
+      settings: {
+        ...withCycleOverlay.settings,
+        cycle: "off" as const,
+      },
     };
-    renderCircleVisualizerPanel(harness.root, cycleWithHistoryOff);
-    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line").length, 0, "history-off disables circle cycle overlay");
+    renderCircleVisualizerPanel(harness.root, cycleWithCycleOff);
+    assert.equal(panel.querySelectorAll(".v2-number-line-cycle-line").length, 0, "cycle-off disables circle cycle overlay");
   } finally {
     harness.teardown();
   }

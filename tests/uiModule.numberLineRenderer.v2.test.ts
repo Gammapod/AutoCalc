@@ -178,6 +178,11 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
       "path",
       "long step-forecast vectors render as curved path primitives",
     );
+    assert.equal(
+      panel.querySelector(".v2-number-line-vector--forecast-step")?.getAttribute("fill"),
+      "none",
+      "curved step-forecast paths do not render the implicit SVG fill chord",
+    );
     const withStepExpansionActive = {
       ...withStepExpansionForecast,
       calculator: {
@@ -341,6 +346,8 @@ export const runUiModuleNumberLineRendererV2Tests = (): void => {
     const forecastVector = panel.querySelector<SVGPathElement>(".v2-number-line-vector--forecast");
     assert.equal(historyVector?.tagName.toLowerCase(), "path", "history vector uses curved path primitive");
     assert.equal(forecastVector?.tagName.toLowerCase(), "path", "forecast vector uses curved path primitive");
+    assert.equal(historyVector?.getAttribute("fill"), "none", "history curve does not render the implicit SVG fill chord");
+    assert.equal(forecastVector?.getAttribute("fill"), "none", "forecast curve does not render the implicit SVG fill chord");
     const historyPath = parseQuadraticPath(historyVector?.getAttribute("d") ?? "");
     const forecastPath = parseQuadraticPath(forecastVector?.getAttribute("d") ?? "");
     assert.ok(historyPath, "history vector path uses quadratic format");

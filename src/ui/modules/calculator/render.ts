@@ -15,6 +15,7 @@ import {
   getRollLineClassName,
   type FunctionBarWrapTailToken,
 } from "./viewModel.js";
+import type { CalculatorDisplayPart } from "../../../domain/calculatorValue.js";
 import {
   bindOrUpdateSlotMarquee,
   clearToggleAnimations,
@@ -49,7 +50,7 @@ const isFeedRollVisible = (state: GameState): boolean => state.settings.visualiz
 const appendSlotTrackTokens = (
   parent: HTMLElement,
   functionPrefix: string,
-  slotTokens: readonly { text: string }[],
+  slotTokens: readonly { text: string; parts: readonly CalculatorDisplayPart[] }[],
   executableSlotCount: number,
   stepTargetTokenIndex: number | null,
 ): number => {
@@ -65,10 +66,22 @@ const appendSlotTrackTokens = (
     if (tokenIndex < executableSlotCount && tokenIndex === stepTargetTokenIndex) {
       token.classList.add("slot-display__token--step-target");
     }
-    token.textContent = slotTokens[tokenIndex]!.text;
+    appendDisplayParts(token, slotTokens[tokenIndex]!.parts);
     parent.appendChild(token);
   }
   return slotTokens.length;
+};
+
+const appendDisplayParts = (parent: HTMLElement | SVGElement, parts: readonly CalculatorDisplayPart[]): void => {
+  for (const part of parts) {
+    const span = document.createElement("span");
+    span.textContent = part.text;
+    if (part.role === "imaginary") {
+      span.dataset.uxRole = "imaginary";
+      span.dataset.uxState = "active";
+    }
+    parent.appendChild(span);
+  }
 };
 
 const applyWrapTailCompaction = (
@@ -188,7 +201,7 @@ export const renderCalculatorV2Module = (
   ellipsis.textContent = "\u2026";
   const fixedSeed = document.createElement("span");
   fixedSeed.className = "slot-display__seed";
-  fixedSeed.textContent = slotDisplay.fixedSeedLabel;
+  appendDisplayParts(fixedSeed, slotDisplay.fixedSeedParts);
   viewport.appendChild(track);
   slotEl.appendChild(viewport);
   if (wrapElForCompaction && wrapTailForCompaction) {

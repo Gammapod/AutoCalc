@@ -5,6 +5,10 @@ import { renderCalculatorV2Module } from "../src/ui/modules/calculator/render.js
 import { disposeCalculatorV2Module } from "../src/ui/modules/calculator/runtime.js";
 import type { Action } from "../src/domain/types.js";
 import { installDomHarness } from "./helpers/domHarness.js";
+import {
+  toExplicitComplexCalculatorValue,
+  toRationalScalarValue,
+} from "../src/domain/calculatorValue.js";
 
 const noopDispatch = (_action: Action): Action => _action;
 
@@ -122,6 +126,19 @@ export const runUiModuleCalculatorRejectBlinkTests = (): void => {
       true,
       "subsequent nonce increase retriggers reject blink",
     );
+
+    renderCalculatorV2Module(harness.root, {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toExplicitComplexCalculatorValue(
+          toRationalScalarValue({ num: 5n, den: 1n }),
+          toRationalScalarValue({ num: -3n, den: 1n }),
+        ),
+      },
+    }, noopDispatch, { inputBlocked: false });
+    const imaginarySeedPart = harness.root.querySelector<HTMLElement>("[data-slot] .slot-display__seed [data-ux-role='imaginary']");
+    assert.equal(imaginarySeedPart?.textContent, "i\u00D7(3)", "function builder seed wraps the imaginary segment with the imaginary UX role");
   } finally {
     disposeCalculatorV2Module(harness.root);
     harness.teardown();
