@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { initialState } from "../src/domain/state.js";
 import {
+  toAlgebraicScalarValue,
   toExplicitComplexCalculatorValue,
   toExpressionScalarValue,
   toRationalCalculatorValue,
@@ -112,8 +113,34 @@ export const runUiModuleCircleRendererV2Tests = (): void => {
     renderCircleVisualizerPanel(harness.root, withSymbolicComplexMagnitude);
     const symbolicMagnitudeLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
     const symbolicImaginaryPart = symbolicMagnitudeLabel?.querySelector<SVGTSpanElement>("tspan[data-ux-role='imaginary']");
-    assert.equal(symbolicMagnitudeLabel?.textContent, "|r| = \u221A((a)^2 + (b)^2)", "symbolic complex magnitude uses radical glyph fallback");
-    assert.equal(symbolicImaginaryPart?.textContent, "b", "circle magnitude fallback marks the imaginary scalar with the imaginary UX role");
+    assert.equal(symbolicMagnitudeLabel?.textContent, "|r| = \u221A((a)\u00B2 + (b)\u00B2)", "symbolic complex magnitude uses superscript square fallback");
+    assert.equal(symbolicMagnitudeLabel?.getAttribute("x"), "50", "circle magnitude label is centered under the circle");
+    assert.equal(symbolicMagnitudeLabel?.getAttribute("y"), "96", "circle magnitude label sits below the circle perimeter");
+    assert.equal(symbolicImaginaryPart?.textContent, " + (b)\u00B2", "circle magnitude fallback marks the operator, imaginary scalar, parentheses, and square with the imaginary UX role");
+
+    const withAlgebraicFallbackMagnitude = {
+      ...initialState(),
+      calculator: {
+        ...initialState().calculator,
+        total: toExplicitComplexCalculatorValue(
+          toAlgebraicScalarValue({ sqrt3: { num: 1n, den: 2n } }),
+          toAlgebraicScalarValue({ one: { num: 1n, den: 2n }, sqrt3: { num: 2n, den: 1n } }),
+        ),
+      },
+    };
+    renderCircleVisualizerPanel(harness.root, withAlgebraicFallbackMagnitude);
+    const algebraicFallbackLabel = panel.querySelector<SVGTextElement>(".v2-circle-radius-label");
+    const algebraicFallbackImaginaryPart = algebraicFallbackLabel?.querySelector<SVGTSpanElement>("tspan[data-ux-role='imaginary']");
+    assert.equal(
+      algebraicFallbackLabel?.textContent,
+      "|r| = \u221A((1\u20442\u00D7\u221A3)\u00B2 + (1\u20442 + 2\u00D7\u221A3)\u00B2)",
+      "algebraic complex magnitude fallback uses superscript squares and algebraic scalar formatting",
+    );
+    assert.equal(
+      algebraicFallbackImaginaryPart?.textContent,
+      " + (1\u20442 + 2\u00D7\u221A3)\u00B2",
+      "algebraic fallback colors the addition and full imaginary square term",
+    );
 
     const withHistoryAnalysis = {
       ...initialState(),

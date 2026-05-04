@@ -247,9 +247,9 @@ const resolveMagnitudeDisplayParts = (state: GameState): CircleLabelPart[] => {
     }
   }
   return [
-    { text: `\u221A((${scalarToDisplay(re)})^2 + (` },
-    { text: scalarToDisplay(im), role: "imaginary" },
-    { text: ")^2)" },
+    { text: `\u221A((${scalarToDisplay(re)})\u00B2` },
+    { text: ` + (${scalarToDisplay(im)})\u00B2`, role: "imaginary" },
+    { text: ")" },
   ];
 };
 
@@ -268,8 +268,8 @@ const appendCircleLabelParts = (label: SVGTextElement, parts: readonly CircleLab
 const createMagnitudeLabel = (documentRef: Document, state: GameState): SVGTextElement => {
   const label = documentRef.createElementNS(SVG_NS, "text");
   label.setAttribute("class", "v2-circle-radius-label");
-  label.setAttribute("x", (CENTER + (RADIUS * 0.62)).toString());
-  label.setAttribute("y", (CENTER + 2.6).toString());
+  label.setAttribute("x", CENTER.toString());
+  label.setAttribute("y", (CENTER + RADIUS + 1).toString());
   label.setAttribute("text-anchor", "middle");
   label.setAttribute("dominant-baseline", "hanging");
   applyUxRoleAttributes(label, { uxRole: "default", uxState: "normal" });

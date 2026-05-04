@@ -355,7 +355,7 @@ export const ceilAlgebraic = (value: AlgebraicValue): bigint | null => {
 };
 
 const formatRational = (value: RationalValue): string =>
-  value.den === 1n ? value.num.toString() : `${value.num.toString()}/${value.den.toString()}`;
+  value.den === 1n ? value.num.toString() : `${value.num.toString()}\u2044${value.den.toString()}`;
 
 export const algebraicToDisplayString = (value: AlgebraicValue): string => {
   const normalized = normalizeAlgebraicValue(value);
