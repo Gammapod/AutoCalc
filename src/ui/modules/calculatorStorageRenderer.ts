@@ -8,6 +8,88 @@ type CalculatorRenderer = typeof renderCalculatorV2Module;
 
 let calculatorRenderer: CalculatorRenderer = renderCalculatorV2Module;
 
+type DesktopCalculatorRenderCacheEntry = {
+  signature: string;
+};
+
+const desktopCalculatorRenderCache = new WeakMap<Element, DesktopCalculatorRenderCacheEntry>();
+const objectIdentityTokens = new WeakMap<object, number>();
+let nextObjectIdentityToken = 1;
+
+const getObjectIdentityToken = (value: object | null | undefined): string => {
+  if (!value) {
+    return "none";
+  }
+  const existing = objectIdentityTokens.get(value);
+  if (existing !== undefined) {
+    return existing.toString();
+  }
+  const token = nextObjectIdentityToken;
+  nextObjectIdentityToken += 1;
+  objectIdentityTokens.set(value, token);
+  return token.toString();
+};
+
+const appendRecordSignature = (
+  parts: string[],
+  prefix: string,
+  record: Record<string, boolean | number | undefined>,
+): void => {
+  for (const key of Object.keys(record).sort()) {
+    parts.push(`${prefix}:${key}=${String(record[key])}`);
+  }
+};
+
+const buildUnlockRenderSignature = (unlocks: GameState["unlocks"]): string => {
+  const parts: string[] = [
+    `maxSlots=${unlocks.maxSlots.toString()}`,
+    `maxTotalDigits=${unlocks.maxTotalDigits.toString()}`,
+    `storageVisible=${String(unlocks.uiUnlocks.storageVisible)}`,
+  ];
+  appendRecordSignature(parts, "valueAtoms", unlocks.valueAtoms);
+  appendRecordSignature(parts, "valueCompose", unlocks.valueCompose);
+  appendRecordSignature(parts, "valueExpression", unlocks.valueExpression);
+  appendRecordSignature(parts, "slotOperators", unlocks.slotOperators);
+  appendRecordSignature(parts, "unaryOperators", unlocks.unaryOperators);
+  appendRecordSignature(parts, "utilities", unlocks.utilities);
+  appendRecordSignature(parts, "memory", unlocks.memory);
+  appendRecordSignature(parts, "steps", unlocks.steps);
+  appendRecordSignature(parts, "visualizers", unlocks.visualizers);
+  appendRecordSignature(parts, "execution", unlocks.execution);
+  appendRecordSignature(parts, "installedOnly", unlocks.installedOnly);
+  return parts.join(";");
+};
+
+const buildUiRenderSignature = (ui: GameState["ui"] | undefined): string => {
+  if (!ui) {
+    return "none";
+  }
+  const parts: string[] = [
+    `keyLayout=${getObjectIdentityToken(ui.keyLayout)}`,
+    `columns=${ui.keypadColumns.toString()}`,
+    `rows=${ui.keypadRows.toString()}`,
+    `activeVisualizer=${ui.activeVisualizer}`,
+  ];
+  appendRecordSignature(parts, "flags", ui.buttonFlags);
+  return parts.join(";");
+};
+
+const buildDesktopCalculatorRenderSignature = (
+  state: GameState,
+  calculatorId: CalculatorId,
+  inputBlocked: boolean,
+): string => {
+  const instance = state.calculators?.[calculatorId];
+  return [
+    getObjectIdentityToken(instance?.calculator),
+    getObjectIdentityToken(instance?.settings),
+    getObjectIdentityToken(instance?.lambdaControl),
+    buildUiRenderSignature(instance?.ui),
+    buildUnlockRenderSignature(state.unlocks),
+    inputBlocked ? "blocked" : "open",
+  ].join("|");
+};
+
 export const setCalculatorRendererForTests = (renderer: CalculatorRenderer): void => {
   calculatorRenderer = renderer;
 };
@@ -118,8 +200,21 @@ export const renderCalculatorStorageV2Module = (
         instanceEl.onclick = () => {
           dispatch({ type: "SET_ACTIVE_CALCULATOR", calculatorId: id });
         };
-        const projected = projectCalculatorToLegacy(state, id);
         const feedbackPulse = feedbackPulseFor(id);
+        const hasFeedbackPulse =
+          executionRejectCountFor(id) > 0
+          || feedbackPulse.rejectedInputCount > 0
+          || feedbackPulse.builderChangedCount > 0
+          || feedbackPulse.settingsChangedCount > 0
+          || feedbackPulse.rollUpdatedCount > 0
+          || feedbackPulse.substepExecutedCount > 0
+          || feedbackPulse.unlockCompletedCount > 0;
+        const signature = buildDesktopCalculatorRenderSignature(state, id, options.inputBlocked);
+        const previous = desktopCalculatorRenderCache.get(instanceEl);
+        if (!isActive && !hasFeedbackPulse && previous?.signature === signature) {
+          return;
+        }
+        const projected = projectCalculatorToLegacy(state, id);
         calculatorRenderer(instanceEl, projected, dispatch, {
           inputBlocked: options.inputBlocked,
           executionGateRejectCount: executionRejectCountFor(id),
@@ -131,6 +226,7 @@ export const renderCalculatorStorageV2Module = (
           substepExecutedToneFrequenciesHz: feedbackPulse.substepExecutedToneFrequenciesHz,
           unlockCompletedCount: feedbackPulse.unlockCompletedCount,
         });
+        desktopCalculatorRenderCache.set(instanceEl, { signature });
         activeInstanceRendered = true;
         return;
       }
@@ -179,6 +275,9 @@ export const renderCalculatorStorageV2Module = (
     }
     allInstances.forEach((instanceEl) => {
       instanceEl.hidden = instanceEl !== activeInstance;
+      if (instanceEl !== activeInstance) {
+        return;
+      }
       const feedbackPulse = feedbackPulseFor(activeCalculatorId);
       calculatorRenderer(instanceEl, state, dispatch, {
         inputBlocked: options.inputBlocked,

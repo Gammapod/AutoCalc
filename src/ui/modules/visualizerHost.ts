@@ -31,6 +31,94 @@ const DEFAULT_TOTAL_PANEL_SIZE: VisualizerCanonicalSize = {
   maxLines: 10,
 };
 
+const calculatorVisualizerRenderCache = new WeakMap<Element, string>();
+const totalVisualizerHostRenderCache = new WeakMap<Element, string>();
+const objectIdentityTokens = new WeakMap<object, number>();
+let nextObjectIdentityToken = 1;
+
+const getObjectIdentityToken = (value: object | null | undefined): string => {
+  if (!value) {
+    return "none";
+  }
+  const existing = objectIdentityTokens.get(value);
+  if (existing !== undefined) {
+    return existing.toString();
+  }
+  const token = nextObjectIdentityToken;
+  nextObjectIdentityToken += 1;
+  objectIdentityTokens.set(value, token);
+  return token.toString();
+};
+
+const appendRecordSignature = (
+  parts: string[],
+  prefix: string,
+  record: Record<string, boolean | number | undefined>,
+): void => {
+  for (const key of Object.keys(record).sort()) {
+    parts.push(`${prefix}:${key}=${String(record[key])}`);
+  }
+};
+
+const buildUnlockRenderSignature = (state: GameState): string => {
+  const { unlocks } = state;
+  const parts: string[] = [
+    `maxSlots=${unlocks.maxSlots.toString()}`,
+    `maxTotalDigits=${unlocks.maxTotalDigits.toString()}`,
+    `storageVisible=${String(unlocks.uiUnlocks.storageVisible)}`,
+  ];
+  appendRecordSignature(parts, "valueAtoms", unlocks.valueAtoms);
+  appendRecordSignature(parts, "valueCompose", unlocks.valueCompose);
+  appendRecordSignature(parts, "valueExpression", unlocks.valueExpression);
+  appendRecordSignature(parts, "slotOperators", unlocks.slotOperators);
+  appendRecordSignature(parts, "unaryOperators", unlocks.unaryOperators);
+  appendRecordSignature(parts, "utilities", unlocks.utilities);
+  appendRecordSignature(parts, "memory", unlocks.memory);
+  appendRecordSignature(parts, "steps", unlocks.steps);
+  appendRecordSignature(parts, "visualizers", unlocks.visualizers);
+  appendRecordSignature(parts, "execution", unlocks.execution);
+  appendRecordSignature(parts, "installedOnly", unlocks.installedOnly);
+  return parts.join(";");
+};
+
+const buildUiRenderSignature = (ui: GameState["ui"] | undefined): string => {
+  if (!ui) {
+    return "none";
+  }
+  const parts: string[] = [
+    `keyLayout=${getObjectIdentityToken(ui.keyLayout)}`,
+    `columns=${ui.keypadColumns.toString()}`,
+    `rows=${ui.keypadRows.toString()}`,
+    `activeVisualizer=${ui.activeVisualizer}`,
+  ];
+  appendRecordSignature(parts, "flags", ui.buttonFlags);
+  return parts.join(";");
+};
+
+const buildCalculatorVisualizerRenderSignature = (
+  state: GameState,
+  calculatorId: CalculatorId,
+): string => {
+  const instance = state.calculators?.[calculatorId];
+  const perCalculatorUnlocks = state.perCalculatorCompletedUnlockIds?.[calculatorId] ?? [];
+  return [
+    getObjectIdentityToken(instance?.calculator),
+    getObjectIdentityToken(instance?.settings),
+    getObjectIdentityToken(instance?.lambdaControl),
+    buildUiRenderSignature(instance?.ui),
+    buildUnlockRenderSignature(state),
+    state.completedUnlockIds.join(","),
+    perCalculatorUnlocks.join(","),
+  ].join("|");
+};
+
+const buildTotalVisualizerHostRenderSignature = (state: GameState): string => [
+  state.settings.visualizer,
+  state.ui.activeVisualizer,
+  state.ui.keypadColumns.toString(),
+  state.ui.keypadRows.toString(),
+].join("|");
+
 const createHostRuntime = (): VisualizerHostModuleState => ({
   previousActivePanel: "total",
   graphDormant: true,
@@ -499,15 +587,30 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
         && state.calculators
         && Object.prototype.hasOwnProperty.call(state.calculators, instanceId)
       ) {
-        renderVisualizerHost(instanceEl, projectCalculatorToLegacy(state, instanceId as CalculatorId));
+        const calculatorId = instanceId as CalculatorId;
+        const signature = buildCalculatorVisualizerRenderSignature(state, calculatorId);
+        const isActive = instanceEl.dataset.calcActive === "true";
+        if (!isActive && calculatorVisualizerRenderCache.get(instanceEl) === signature) {
+          return;
+        }
+        renderVisualizerHost(instanceEl, projectCalculatorToLegacy(state, calculatorId));
+        calculatorVisualizerRenderCache.set(instanceEl, signature);
         return;
       }
-      renderVisualizerHost(instanceEl, state);
     });
     return;
   }
 
   const runtime = getHostRuntime(root);
+  const activePanel = resolveActiveVisualizerPanel(state);
+  const totalHostSignature = buildTotalVisualizerHostRenderSignature(state);
+  if (
+    activePanel === "total"
+    && runtime.previousActivePanel === "total"
+    && totalVisualizerHostRenderCache.get(root) === totalHostSignature
+  ) {
+    return;
+  }
   applyHostWidthToken(root, state);
   applyHostScale(root);
   const host = root.querySelector<HTMLElement>("[data-v2-visualizer-host]");
@@ -523,7 +626,6 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   const numberLinePanel = root.querySelector<HTMLElement>("[data-v2-number-line-panel]");
   const circlePanel = root.querySelector<HTMLElement>("[data-v2-circle-panel]");
   const algebraicPanel = root.querySelector<HTMLElement>("[data-v2-algebraic-panel]");
-  const activePanel = resolveActiveVisualizerPanel(state);
   const setPanelVisible = (panelEl: HTMLElement | null, visible: boolean): void => {
     if (panelEl) {
       panelEl.setAttribute("aria-hidden", visible ? "false" : "true");
@@ -592,6 +694,11 @@ export const renderVisualizerHost = (root: Element, state: GameState): void => {
   runDevFitDiagnostics(root, activePanel);
 
   runtime.previousActivePanel = activePanel;
+  if (activePanel === "total") {
+    totalVisualizerHostRenderCache.set(root, totalHostSignature);
+  } else {
+    totalVisualizerHostRenderCache.delete(root);
+  }
 };
 
 const clearRuntime = (runtime: VisualizerHostModuleState): void => {

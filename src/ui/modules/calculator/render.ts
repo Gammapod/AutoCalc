@@ -44,8 +44,78 @@ const CALC_GROW_MAX_DURATION_MS = 980;
 const UNLOCK_ANIMATION_NAME = "key-unlock-pulse";
 const KEYPAD_SLOT_ENTER_ANIMATION_NAME = "keypad-slot-enter";
 const STEP_BODY_HIGHLIGHT_CLASS = "keypad-step-body-highlight";
+const keypadRenderSignatureCache = new WeakMap<Element, string>();
 
 const isFeedRollVisible = (state: GameState): boolean => state.settings.visualizer === "feed";
+
+const appendRecordSignature = (
+  parts: string[],
+  prefix: string,
+  record: Record<string, boolean | number | undefined>,
+): void => {
+  for (const key of Object.keys(record).sort()) {
+    parts.push(`${prefix}:${key}=${String(record[key])}`);
+  }
+};
+
+const buildUnlockRenderSignature = (state: GameState): string => {
+  const { unlocks } = state;
+  const parts: string[] = [
+    `maxSlots=${unlocks.maxSlots.toString()}`,
+    `maxTotalDigits=${unlocks.maxTotalDigits.toString()}`,
+    `storageVisible=${String(unlocks.uiUnlocks.storageVisible)}`,
+  ];
+  appendRecordSignature(parts, "valueAtoms", unlocks.valueAtoms);
+  appendRecordSignature(parts, "valueCompose", unlocks.valueCompose);
+  appendRecordSignature(parts, "valueExpression", unlocks.valueExpression);
+  appendRecordSignature(parts, "slotOperators", unlocks.slotOperators);
+  appendRecordSignature(parts, "unaryOperators", unlocks.unaryOperators);
+  appendRecordSignature(parts, "utilities", unlocks.utilities);
+  appendRecordSignature(parts, "memory", unlocks.memory);
+  appendRecordSignature(parts, "steps", unlocks.steps);
+  appendRecordSignature(parts, "visualizers", unlocks.visualizers);
+  appendRecordSignature(parts, "execution", unlocks.execution);
+  appendRecordSignature(parts, "installedOnly", unlocks.installedOnly);
+  return parts.join(";");
+};
+
+const buildKeyLayoutRenderSignature = (state: GameState): string =>
+  state.ui.keyLayout
+    .map((cell) => cell.kind === "key" ? `key:${cell.key}` : "placeholder")
+    .join(",");
+
+const buildOperationSlotsRenderSignature = (state: GameState): string =>
+  state.calculator.operationSlots
+    .map((slot) => {
+      if (slot.kind === "unary") {
+        return `unary:${slot.operator}`;
+      }
+      const operand = typeof slot.operand === "bigint" ? slot.operand.toString() : JSON.stringify(slot.operand);
+      return `binary:${slot.operator}:${operand}`;
+    })
+    .join(",");
+
+const buildKeypadRenderSignature = (
+  state: GameState,
+  inputBlocked: boolean,
+  calculatorKeysLocked: boolean,
+): string => {
+  const parts: string[] = [
+    `keyLayout=${buildKeyLayoutRenderSignature(state)}`,
+    `columns=${state.ui.keypadColumns.toString()}`,
+    `rows=${state.ui.keypadRows.toString()}`,
+    `inputBlocked=${String(inputBlocked)}`,
+    `calculatorKeysLocked=${String(calculatorKeysLocked)}`,
+    `visualizer=${state.settings.visualizer}`,
+    `activeVisualizer=${state.ui.activeVisualizer}`,
+    `stepActive=${String(state.calculator.stepProgress.active)}`,
+    `stepNext=${state.calculator.stepProgress.nextSlotIndex.toString()}`,
+    `operationSlots=${buildOperationSlotsRenderSignature(state)}`,
+    buildUnlockRenderSignature(state),
+  ];
+  appendRecordSignature(parts, "flags", state.ui.buttonFlags);
+  return parts.join("|");
+};
 
 const appendSlotTrackTokens = (
   parent: HTMLElement,
@@ -244,6 +314,11 @@ export const renderCalculatorV2Module = (
     rollEl.appendChild(line);
   }
 
+  const keypadRenderSignature = buildKeypadRenderSignature(state, inputBlocked, calculatorKeysLocked);
+  if (newlyUnlockedKeys.size === 0 && keypadRenderSignatureCache.get(root) === keypadRenderSignature) {
+    return;
+  }
+
   const desktopShell = isDesktopShellContext(root);
   const runtime = getCalculatorLayoutRuntimeState(root);
   const calcBodyEl = keysEl.closest<HTMLElement>(".calc");
@@ -356,6 +431,7 @@ export const renderCalculatorV2Module = (
     });
   }
   runtime.previousSnapshot = currentSnapshot;
+  keypadRenderSignatureCache.set(root, keypadRenderSignature);
 
   clearToggleAnimations(root);
 };

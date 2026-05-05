@@ -139,7 +139,7 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
     assert.deepEqual(
       renderCalls.map((call) => call.target).sort(),
       ["f", "g", "menu"].sort(),
-      "desktop instance-track path renders each available calculator instance",
+      "desktop instance-track initial pass renders each available calculator instance",
     );
     assert.equal(
       harness.root.querySelector<HTMLElement>("[data-calc-instance-id='f']")?.hidden,
@@ -150,6 +150,16 @@ export const runUiModuleCalculatorStorageV2Tests = (): void => {
       harness.root.querySelector<HTMLElement>("[data-calc-instance-id='g']")?.hidden,
       false,
       "desktop instance-track keeps g visible",
+    );
+    renderCalls.length = 0;
+    renderCalculatorStorageV2Module(harness.root, activeGState, noopDispatch, {
+      inputBlocked: false,
+      uiEffects: [],
+    });
+    assert.deepEqual(
+      renderCalls.map((call) => call.target),
+      ["g"],
+      "desktop instance-track reuses unchanged inactive calculator renders",
     );
     assert.equal(
       harness.root.querySelector<HTMLElement>("[data-calc-instance-id='menu']")?.hidden,
