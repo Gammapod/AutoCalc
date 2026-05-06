@@ -5,6 +5,20 @@ export const releaseNotes: ReleaseNotesCatalog = {
   // 'summary' should contain the main change, and 'bullets' should list smaller changes.
   entries: [
     {
+      id: "release_v1_2_0",
+      releaseVersion: "v1.2.0",
+      channel: "released",
+      title: "Headless Runtime and Hint Surfaces",
+      summary:
+        "Scenario testing, unlock feedback, and progression hints are now much easier to inspect.",
+      bullets: [
+        "Added an interactive headless mode for faster testing.",
+        "Tightened UX channels, added a new unlock channel.",
+        "Visualizers show hints for potential unlocks (still not comprehensive).",
+        "Sandbox mode is a step more complete.",
+      ],
+    },
+    {
       id: "release_v1_1_1",
       releaseVersion: "v1.1.1",
       channel: "released",

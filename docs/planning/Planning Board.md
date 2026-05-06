@@ -157,6 +157,18 @@ Active work is versionless. Semver is assigned only when a shipped train is cut.
 
 Record shipped trains here using this format:
 
+### Train v1.2.0 (2026-05-05)
+- Included Slice IDs:
+- `slice_headless_lock_state_spec_alignment`
+- `slice_unlock_digit_1_total_9_id_alignment`
+- `slice_headless_unlock_all_terse_default`
+- `slice_headless_user_action_acceptance_field`
+- Release Note IDs:
+- `release_v1_2_0`
+- Player-facing highlights:
+- Headless mode now supports scripted sessions for key presses, layout operations, calculator selection, snapshots, and unlock setup.
+- Unlock feedback and near-unlock hint surfaces are clearer across frontend visualizers and command-line summaries.
+
 ### Train v1.1.1 (2026-04-18)
 - Included Slice IDs:
 - `slice_analytics_settings_split_history_forecast_cycle`
