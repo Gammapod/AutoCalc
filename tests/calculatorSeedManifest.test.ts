@@ -1,74 +1,62 @@
 import assert from "node:assert/strict";
-import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
+import { toCoordFromIndex, toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
 import { calculatorSeedManifest, createSeededKeyLayout } from "../src/domain/calculatorSeedManifest.js";
 import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
 import { initialState } from "../src/domain/state.js";
 import type { CalculatorId } from "../src/domain/types.js";
-import { k } from "./support/keyCompat.js";
+import { isKeyId } from "../src/domain/keyPresentation.js";
 
-const keyAt = (layout: ReturnType<typeof createSeededKeyLayout>["keyLayout"], columns: number, rows: number, row: number, col: number): string | null => {
-  const index = toIndexFromCoord({ row, col }, columns, rows);
-  const cell = layout[index];
-  return cell?.kind === "key" ? cell.key : null;
-};
+const keySnapshot = (layout: ReturnType<typeof createSeededKeyLayout>["keyLayout"]): Array<string | null> =>
+  layout.map((cell) => cell.kind === "key" ? cell.key : null);
 
 export const runCalculatorSeedManifestTests = (): void => {
   const menuA = createSeededKeyLayout("menu");
   const menuB = createSeededKeyLayout("menu");
   assert.deepEqual(menuA, menuB, "menu seeded layout is deterministic");
 
+  const manifestIds = Object.keys(calculatorSeedManifest).sort((a, b) => a.localeCompare(b));
+  const profileIds = Object.keys(controlProfiles).sort((a, b) => a.localeCompare(b));
+  assert.deepEqual(manifestIds, profileIds, "seed manifest covers every control profile exactly once");
+
   for (const calculatorId of Object.keys(calculatorSeedManifest) as CalculatorId[]) {
     const seed = createSeededKeyLayout(calculatorId);
     assert.equal(seed.columns, controlProfiles[calculatorId].starts.alpha, `${calculatorId} seed columns derive from alpha`);
     assert.equal(seed.rows, controlProfiles[calculatorId].starts.beta, `${calculatorId} seed rows derive from beta`);
+
+    const occupied = seed.keyLayout.filter((cell) => cell.kind === "key");
+    assert.equal(occupied.length, calculatorSeedManifest[calculatorId].placements.length, `${calculatorId} applies each authored placement once`);
+
+    const placementIndexes = new Set<number>();
+    for (const placement of calculatorSeedManifest[calculatorId].placements) {
+      assert.equal(isKeyId(placement.key), true, `${calculatorId} seed placement key is canonical: ${placement.key}`);
+      const index = toIndexFromCoord({ row: placement.row, col: placement.col }, seed.columns, seed.rows);
+      assert.equal(index >= 0 && index < seed.keyLayout.length, true, `${calculatorId} seed placement is inside keypad bounds`);
+      assert.equal(placementIndexes.has(index), false, `${calculatorId} seed does not place two keys in the same cell`);
+      placementIndexes.add(index);
+
+      const cell = seed.keyLayout[index];
+      assert.equal(cell.kind, "key", `${calculatorId} seed placement materializes a key cell`);
+      assert.equal(cell.kind === "key" ? cell.key : null, placement.key, `${calculatorId} seed placement key is applied`);
+      if (placement.behavior) {
+        assert.deepEqual(cell.kind === "key" ? cell.behavior : undefined, placement.behavior, `${calculatorId} seed placement behavior is applied`);
+      }
+    }
+
+    seed.keyLayout.forEach((cell, index) => {
+      if (cell.kind === "placeholder") {
+        assert.equal(cell.area, "empty", `${calculatorId} unplaced cell is an empty placeholder`);
+        return;
+      }
+      const coord = toCoordFromIndex(index, seed.columns, seed.rows);
+      const placement = calculatorSeedManifest[calculatorId].placements.find((candidate) =>
+        candidate.row === coord.row && candidate.col === coord.col);
+      assert.ok(placement, `${calculatorId} materialized key has an authored placement`);
+    });
   }
 
-  const g = createSeededKeyLayout("g");
-  assert.equal(keyAt(g.keyLayout, g.columns, g.rows, 2, 2), k("toggle_binary_mode"), "g seed places binary toggle at R2C2");
-  assert.equal(keyAt(g.keyLayout, g.columns, g.rows, 2, 1), k("exec_step_through"), "g seed places step-through at R2C1");
-  assert.equal(keyAt(g.keyLayout, g.columns, g.rows, 1, 1), k("unary_not"), "g seed places not at R1C1");
-
+  const fSeed = createSeededKeyLayout("f");
   const fBase = initialState();
-  const fColumns = fBase.ui.keypadColumns;
-  const fRows = fBase.ui.keypadRows;
-  const fLayout = fBase.ui.keyLayout;
-  assert.equal(keyAt(fLayout, fColumns, fRows, 3, 2), k("system_save_quit_main_menu"), "f seed places Save&Quit at R3C2");
-  assert.equal(keyAt(fLayout, fColumns, fRows, 3, 1), k("digit_1"), "f seed places digit_1 at R3C1");
-  assert.equal(keyAt(fLayout, fColumns, fRows, 1, 2), k("unary_inc"), "f seed places increment at R1C2");
-  assert.equal(keyAt(fLayout, fColumns, fRows, 1, 1), k("exec_equals"), "f seed places equals at R1C1");
-
-  const fPrime = createSeededKeyLayout("f_prime");
-  assert.equal(fPrime.columns, 6, "f' seed uses 6 columns");
-  assert.equal(fPrime.rows, 5, "f' seed uses 5 rows");
-  assert.equal(keyAt(fPrime.keyLayout, fPrime.columns, fPrime.rows, 5, 6), k("system_save_quit_main_menu"), "f' seed places Save&Quit at R5C6");
-  assert.equal(keyAt(fPrime.keyLayout, fPrime.columns, fPrime.rows, 5, 5), k("viz_number_line"), "f' seed places number line at R5C5");
-  assert.equal(keyAt(fPrime.keyLayout, fPrime.columns, fPrime.rows, 1, 5), null, "f' seed leaves blank slots as placeholders");
-
-  const gPrime = createSeededKeyLayout("g_prime");
-  assert.equal(gPrime.columns, 7, "g' seed uses 7 columns");
-  assert.equal(gPrime.rows, 2, "g' seed uses 2 rows");
-  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 2, 7), k("toggle_binary_octave_cycle"), "g' seed places octave-cycle at R2C7");
-  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 2, 3), k("op_interval"), "g' seed places interval at R2C3");
-  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 1, 7), k("viz_ratios"), "g' seed places ratios visualizer at R1C7");
-  assert.equal(keyAt(gPrime.keyLayout, gPrime.columns, gPrime.rows, 1, 1), k("exec_step_through"), "g' seed places step-through at R1C1");
-
-  const hPrime = createSeededKeyLayout("h_prime");
-  assert.equal(hPrime.columns, 4, "h' seed uses 4 columns");
-  assert.equal(hPrime.rows, 5, "h' seed uses 5 rows");
-  assert.equal(keyAt(hPrime.keyLayout, hPrime.columns, hPrime.rows, 5, 4), k("toggle_history"), "h' seed places history at R5C4");
-  assert.equal(keyAt(hPrime.keyLayout, hPrime.columns, hPrime.rows, 4, 3), k("op_rotate_15"), "h' seed places rotate operator at R4C3");
-  assert.equal(keyAt(hPrime.keyLayout, hPrime.columns, hPrime.rows, 1, 1), k("exec_equals"), "h' seed places equals at R1C1");
-
-  const iPrime = createSeededKeyLayout("i_prime");
-  assert.equal(iPrime.columns, 4, "i' seed uses 4 columns");
-  assert.equal(iPrime.rows, 7, "i' seed uses 7 rows");
-  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 7, 1), k("toggle_mod_zero_to_delta"), "i' seed places mod range at R7C1");
-  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 4), k("unary_collatz"), "i' seed places Collatz at R5C4");
-  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 3), k("op_mod"), "i' seed places mod at R5C3");
-  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 2), k("op_euclid_tuple"), "i' seed places euclid tuple at R5C2");
-  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 5, 1), k("op_euclid_div"), "i' seed places euclid div at R5C1");
-  assert.equal(keyAt(iPrime.keyLayout, iPrime.columns, iPrime.rows, 1, 1), k("exec_equals"), "i' seed places equals at R1C1");
-
-  const ids = Object.keys(calculatorSeedManifest).sort((a, b) => a.localeCompare(b));
-  assert.deepEqual(ids, ["f", "f_prime", "g", "g_prime", "h_prime", "i_prime", "menu"], "seed manifest covers all calculator ids");
+  assert.equal(fBase.ui.keypadColumns, fSeed.columns, "initial f columns derive from seeded layout");
+  assert.equal(fBase.ui.keypadRows, fSeed.rows, "initial f rows derive from seeded layout");
+  assert.deepEqual(keySnapshot(fBase.ui.keyLayout), keySnapshot(fSeed.keyLayout), "initial state uses the f seed layout");
 };

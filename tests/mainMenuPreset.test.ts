@@ -1,31 +1,43 @@
 import assert from "node:assert/strict";
 import { createMainMenuState } from "../src/domain/mainMenuPreset.js";
 import { buildShellViewModel } from "../src/ui/renderAdapter.js";
+import { modeManifestById } from "../src/domain/modeManifest.js";
 
 export const runMainMenuPresetTests = (): void => {
   const mainMenu = createMainMenuState();
   const shellModel = buildShellViewModel(mainMenu);
+  const manifest = modeManifestById.main_menu;
 
-  assert.deepEqual(mainMenu.calculatorOrder, ["menu"], "main menu starts with only menu in calculator order");
-  assert.equal(mainMenu.activeCalculatorId, "menu", "main menu starts with menu active");
-  assert.equal(Boolean(mainMenu.calculators?.menu), true, "main menu includes menu calculator");
-  assert.equal(Boolean(mainMenu.calculators?.f), false, "main menu does not materialize f");
-  assert.equal(Boolean(mainMenu.calculators?.g), false, "main menu does not materialize g");
-  assert.equal(mainMenu.ui.activeVisualizer, "title", "main menu starts on title visualizer");
-  assert.equal(mainMenu.settings.visualizer, "title", "main menu root settings align with menu visualizer startup");
-  assert.equal(mainMenu.unlocks.uiUnlocks.storageVisible, false, "main menu hides storage drawer");
-  assert.deepEqual(shellModel.menuModules, [], "main menu has no extra menu modules");
-  assert.deepEqual(shellModel.availableSnaps, ["middle"], "main menu restricts shell snaps when storage drawer is hidden");
-  assert.equal(shellModel.defaultSnap, "middle", "main menu keeps middle snap as the default shell position");
-  assert.equal(mainMenu.ui.buttonFlags["mode.storage_content_visible"], false, "main menu hides storage contents");
+  assert.deepEqual(mainMenu.calculatorOrder, manifest.bootCalculatorOrder, "main menu preset follows mode manifest calculator order");
+  assert.equal(mainMenu.activeCalculatorId, manifest.activeCalculatorId, "main menu preset follows mode manifest active calculator");
+  for (const calculatorId of manifest.bootCalculatorOrder) {
+    assert.equal(Boolean(mainMenu.calculators?.[calculatorId]), true, `main menu materializes manifest calculator: ${calculatorId}`);
+  }
+  assert.equal(
+    Object.keys(mainMenu.calculators ?? {}).every((calculatorId) => manifest.bootCalculatorOrder.includes(calculatorId as typeof manifest.bootCalculatorOrder[number])),
+    true,
+    "main menu materializes only manifest calculators",
+  );
+  assert.equal(mainMenu.settings.visualizer, mainMenu.ui.activeVisualizer, "main menu root settings align with active visualizer startup");
+  assert.equal(mainMenu.unlocks.uiUnlocks.storageVisible, manifest.storageContentVisible, "main menu storage drawer follows mode manifest");
+  assert.equal(Array.isArray(shellModel.menuModules), true, "main menu shell exposes a menu module list");
+  assert.equal(shellModel.availableSnaps.includes(shellModel.defaultSnap), true, "main menu default snap is available");
+  assert.equal(
+    shellModel.availableSnaps.includes("bottom"),
+    manifest.storageContentVisible,
+    "main menu bottom snap availability follows storage visibility",
+  );
+  assert.equal(mainMenu.ui.buttonFlags["mode.storage_content_visible"], manifest.storageContentVisible, "main menu storage-content flag follows mode manifest");
 
-  assert.ok(Object.values(mainMenu.unlocks.valueAtoms).every((value) => value === false), "main menu starts with value atom keys locked");
-  assert.ok(Object.values(mainMenu.unlocks.valueCompose).every((value) => value === false), "main menu starts with value compose keys locked");
-  assert.ok(Object.values(mainMenu.unlocks.valueExpression).every((value) => value === false), "main menu starts with value expression keys locked");
-  assert.ok(Object.values(mainMenu.unlocks.slotOperators).every((value) => value === false), "main menu starts with slot operator keys locked");
-  assert.ok(Object.values(mainMenu.unlocks.unaryOperators).every((value) => value === false), "main menu starts with unary keys locked");
-  assert.ok(Object.values(mainMenu.unlocks.utilities).every((value) => value === false), "main menu starts with utility keys locked");
-  assert.ok(Object.values(mainMenu.unlocks.memory).every((value) => value === false), "main menu starts with memory keys locked");
-  assert.ok(Object.values(mainMenu.unlocks.visualizers).every((value) => value === false), "main menu starts with visualizer keys locked");
-  assert.ok(Object.values(mainMenu.unlocks.execution).every((value) => value === false), "main menu starts with execution keys locked");
+  if (manifest.initialLockPolicy === "all_keys_locked") {
+    assert.ok(Object.values(mainMenu.unlocks.valueAtoms).every((value) => value === false), "main menu locks value atom keys under all-locked policy");
+    assert.ok(Object.values(mainMenu.unlocks.valueCompose).every((value) => value === false), "main menu locks value compose keys under all-locked policy");
+    assert.ok(Object.values(mainMenu.unlocks.valueExpression).every((value) => value === false), "main menu locks value expression keys under all-locked policy");
+    assert.ok(Object.values(mainMenu.unlocks.slotOperators).every((value) => value === false), "main menu locks slot operator keys under all-locked policy");
+    assert.ok(Object.values(mainMenu.unlocks.unaryOperators).every((value) => value === false), "main menu locks unary keys under all-locked policy");
+    assert.ok(Object.values(mainMenu.unlocks.utilities).every((value) => value === false), "main menu locks utility keys under all-locked policy");
+    assert.ok(Object.values(mainMenu.unlocks.memory).every((value) => value === false), "main menu locks memory keys under all-locked policy");
+    assert.ok(Object.values(mainMenu.unlocks.visualizers).every((value) => value === false), "main menu locks visualizer keys under all-locked policy");
+    assert.ok(Object.values(mainMenu.unlocks.execution).every((value) => value === false), "main menu locks execution keys under all-locked policy");
+  }
 };

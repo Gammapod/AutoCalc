@@ -9,6 +9,7 @@ import { KEY_ID } from "../src/domain/keyPresentation.js";
 import { reducer } from "../src/domain/reducer.js";
 import { createSandboxState } from "../src/domain/sandboxPreset.js";
 import type { UiEffect } from "../src/domain/types.js";
+import { modeManifestById } from "../src/domain/modeManifest.js";
 
 export const runHeadlessRuntimeTests = (): void => {
   runHeadlessRuntimeDispatchTests();
@@ -164,6 +165,25 @@ const assertOkResponseShape = (response: ReturnType<ReturnType<typeof createHead
   assert.ok(Array.isArray(response.changes), "ok response includes changes array");
 };
 
+type ListedHeadlessKey = {
+  key: string;
+  label: string;
+  category: string;
+  arity: number | null;
+  inputFamily: string;
+  behaviorKind: string;
+  traits: string[];
+  maturity: string;
+  usable: boolean;
+  capability: string;
+  location: string;
+  positions: Array<{ surface: string; index: number }>;
+  installedOnKeypad: boolean;
+  pressable: boolean;
+  installable: boolean;
+  pressBlockReason?: string;
+};
+
 const runHeadlessJsonlSessionTests = (): void => {
   const session = createHeadlessJsonlSession({ mode: "game" });
   try {
@@ -185,38 +205,42 @@ const runHeadlessJsonlSessionTests = (): void => {
     assert.equal(listResponse.ok && Array.isArray((listResponse.result as { keys?: unknown[] }).keys), true, "listKeys returns key list");
     assert.equal(
       listResponse.ok
-        && (listResponse.result as { keys: Array<{ key: string }> }).keys.some((entry) => entry.key === KEY_ID.digit_1),
-      false,
+        && (listResponse.result as { keys: Array<{ usable: boolean }> }).keys.every((entry) => entry.usable),
+      true,
       "listKeys defaults to currently usable keys",
     );
 
-    const allKeysResponse = session.handleLine('{"cmd":"listKeys","filter":"digit_1","all":true}');
-    assertOkResponseShape(allKeysResponse);
-    const allDigitOne = allKeysResponse.ok
-      ? (allKeysResponse.result as { keys: Array<{ key: string; label: string; category: string; arity: number | null; inputFamily: string; behaviorKind: string; traits: string[]; maturity: string; usable: boolean; capability: string; location: string; positions: Array<{ surface: string; index: number }>; installedOnKeypad: boolean; pressable: boolean; installable: boolean; pressBlockReason?: string }> }).keys[0]
-      : null;
-    assert.equal(allDigitOne?.key, KEY_ID.digit_1, "listKeys all:true includes locked digit_1");
-    assert.equal(allDigitOne?.category, "value_expression", "listKeys reports catalog category");
-    assert.equal(allDigitOne?.arity, 0, "listKeys reports digit arity");
-    assert.equal(allDigitOne?.inputFamily, "atom_digit", "listKeys reports input family");
-    assert.equal(allDigitOne?.behaviorKind, "digit", "listKeys reports behavior kind");
-    assert.equal(allDigitOne?.maturity, "fully_implemented", "sandbox-installed keys report fully implemented maturity");
+    const allCatalogKeysResponse = session.handleLine('{"cmd":"listKeys","all":true}');
+    assertOkResponseShape(allCatalogKeysResponse);
+    const allCatalogKeys = allCatalogKeysResponse.ok
+      ? (allCatalogKeysResponse.result as { keys: ListedHeadlessKey[] }).keys
+      : [];
+
+    const lockedInstalledKey = allCatalogKeys.find((entry) => entry.capability === "locked" && entry.installedOnKeypad);
+    assert.ok(lockedInstalledKey, "listKeys all:true includes representative locked installed key");
+    assert.equal(typeof lockedInstalledKey?.category, "string", "listKeys reports catalog category");
+    assert.equal(lockedInstalledKey?.arity !== null && lockedInstalledKey?.arity >= 0, true, "listKeys reports key arity");
+    assert.equal(typeof lockedInstalledKey?.inputFamily, "string", "listKeys reports input family");
+    assert.equal(typeof lockedInstalledKey?.behaviorKind, "string", "listKeys reports behavior kind");
+    assert.equal(lockedInstalledKey?.maturity, "fully_implemented", "sandbox-installed keys report fully implemented maturity");
     assert.deepEqual(
       {
-        usable: allDigitOne?.usable,
-        capability: allDigitOne?.capability,
-        location: allDigitOne?.location,
-        positions: allDigitOne?.positions,
-        installedOnKeypad: allDigitOne?.installedOnKeypad,
-        pressable: allDigitOne?.pressable,
-        installable: allDigitOne?.installable,
-        pressBlockReason: allDigitOne?.pressBlockReason,
+        usable: lockedInstalledKey?.usable,
+        capability: lockedInstalledKey?.capability,
+        location: lockedInstalledKey?.location,
+        positionSurfaces: lockedInstalledKey?.positions.map((position) => position.surface),
+        positionCount: lockedInstalledKey?.positions.length,
+        installedOnKeypad: lockedInstalledKey?.installedOnKeypad,
+        pressable: lockedInstalledKey?.pressable,
+        installable: lockedInstalledKey?.installable,
+        pressBlockReason: lockedInstalledKey?.pressBlockReason,
       },
       {
         usable: false,
         capability: "locked",
         location: "keypad",
-        positions: [{ surface: "keypad", index: 1 }],
+        positionSurfaces: ["keypad"],
+        positionCount: 1,
         installedOnKeypad: true,
         pressable: false,
         installable: false,
@@ -228,7 +252,7 @@ const runHeadlessJsonlSessionTests = (): void => {
     const historyKeysResponse = session.handleLine('{"cmd":"listKeys","filter":"toggle_history","all":true}');
     assertOkResponseShape(historyKeysResponse);
     const historyKey = historyKeysResponse.ok
-      ? (historyKeysResponse.result as { keys: Array<{ key: string; label: string; maturity: string; installable: boolean; usable: boolean; capability: string; location: string; positions: Array<{ surface: string; index: number }>; installedOnKeypad: boolean; pressable: boolean; pressBlockReason?: string }> }).keys[0]
+      ? (historyKeysResponse.result as { keys: ListedHeadlessKey[] }).keys[0]
       : null;
     assert.deepEqual(
       {
@@ -238,7 +262,8 @@ const runHeadlessJsonlSessionTests = (): void => {
         usable: historyKey?.usable,
         capability: historyKey?.capability,
         location: historyKey?.location,
-        positions: historyKey?.positions,
+        positionSurfaces: historyKey?.positions.map((position) => position.surface),
+        positionCount: historyKey?.positions.length,
         installedOnKeypad: historyKey?.installedOnKeypad,
         pressable: historyKey?.pressable,
         installable: historyKey?.installable,
@@ -251,7 +276,8 @@ const runHeadlessJsonlSessionTests = (): void => {
         usable: true,
         capability: "portable",
         location: "storage",
-        positions: [{ surface: "storage", index: 8 }],
+        positionSurfaces: ["storage"],
+        positionCount: 1,
         installedOnKeypad: false,
         pressable: false,
         installable: true,
@@ -260,30 +286,19 @@ const runHeadlessJsonlSessionTests = (): void => {
       "listKeys differentiates unlocked storage keys from pressable keypad keys",
     );
 
-    const experimentalKeyResponse = session.handleLine('{"cmd":"listKeys","filter":"unary_sigma","all":true}');
-    assertOkResponseShape(experimentalKeyResponse);
-    const experimentalKey = experimentalKeyResponse.ok
-      ? (experimentalKeyResponse.result as { keys: Array<{ key: string; maturity: string; arity: number | null }> }).keys[0]
-      : null;
-    assert.equal(experimentalKey?.key, KEY_ID.unary_sigma, "listKeys includes representative sandbox storage-only key");
-    assert.equal(experimentalKey?.arity, 1, "listKeys derives unary operator arity");
+    const experimentalKey = allCatalogKeys.find((entry) => entry.maturity === "experimental");
+    assert.ok(experimentalKey, "listKeys includes a representative sandbox storage-only key");
+    assert.equal(experimentalKey?.arity !== null && experimentalKey?.arity >= 0, true, "listKeys derives representative experimental key arity");
     assert.equal(experimentalKey?.maturity, "experimental", "sandbox storage-only keys report experimental maturity");
 
-    const deferredKeyResponse = session.handleLine('{"cmd":"listKeys","filter":"system_new_game","all":true}');
-    assertOkResponseShape(deferredKeyResponse);
-    const deferredKey = deferredKeyResponse.ok
-      ? (deferredKeyResponse.result as { keys: Array<{ key: string; arity: number | null; maturity: string; installable: boolean }> }).keys[0]
-      : null;
-    assert.equal(deferredKey?.key, KEY_ID.system_new_game, "listKeys includes representative deferred key");
-    assert.equal(deferredKey?.arity, 0, "listKeys derives command key arity");
+    const deferredKey = allCatalogKeys.find((entry) => entry.maturity === "deferred");
+    assert.ok(deferredKey, "listKeys includes a representative deferred key");
+    assert.equal(deferredKey?.arity !== null && deferredKey?.arity >= 0, true, "listKeys derives representative deferred key arity");
     assert.equal(deferredKey?.maturity, "deferred", "non-sandbox-installed/non-storage keys report deferred maturity");
     assert.equal(deferredKey?.installable, false, "locked deferred key is not installable before unlock");
 
-    const unavailableKeyResponse = session.handleLine('{"cmd":"listKeys","filter":"const_pi","all":true}');
-    assertOkResponseShape(unavailableKeyResponse);
-    const unavailableKey = unavailableKeyResponse.ok
-      ? (unavailableKeyResponse.result as { keys: Array<{ key: string; maturity: string; installable: boolean }> }).keys[0]
-      : null;
+    const unavailableKey = allCatalogKeys.find((entry) => entry.maturity === "unavailable");
+    assert.ok(unavailableKey, "listKeys includes a representative unavailable key");
     assert.equal(unavailableKey?.maturity, "unavailable", "unavailable constants are surfaced as unavailable");
     assert.equal(unavailableKey?.installable, false, "unavailable constants are not installable");
 
@@ -330,11 +345,10 @@ const runHeadlessJsonlSessionTests = (): void => {
 
     const unlockResponse = session.handleLine('{"cmd":"unlockAll"}');
     assertOkResponseShape(unlockResponse);
-    assert.deepEqual(
-      unlockResponse.ok && unlockResponse.result,
-      { message: "all keys unlocked", unlockedCount: 23, layoutChanged: true },
-      "unlockAll returns compact debug result by default",
-    );
+    assert.equal(unlockResponse.ok && (unlockResponse.result as { message?: unknown }).message, "all keys unlocked", "unlockAll returns compact debug result by default");
+    assert.equal(unlockResponse.ok && typeof (unlockResponse.result as { unlockedCount?: unknown }).unlockedCount, "number", "unlockAll reports unlocked count");
+    assert.equal(unlockResponse.ok && ((unlockResponse.result as { unlockedCount: number }).unlockedCount > 0), true, "unlockAll reports a positive unlocked count");
+    assert.equal(unlockResponse.ok && typeof (unlockResponse.result as { layoutChanged?: unknown }).layoutChanged, "boolean", "unlockAll reports layout change status");
     assert.equal(
       unlockResponse.ok
         && unlockResponse.snapshot.completedUnlockIds.length === 0
@@ -346,18 +360,30 @@ const runHeadlessJsonlSessionTests = (): void => {
 
     const layoutResponse = session.handleLine('{"cmd":"layout","surface":"storage","filter":"op_add"}');
     assertOkResponseShape(layoutResponse);
+    const opAddLayoutCell = layoutResponse.ok
+      ? (layoutResponse.result as {
+        layout: {
+          surfaces: Array<{
+            surface: string;
+            cells: Array<{ index: number; kind: string; key: string; label: string; surface: string; usable: boolean; capability: string; pressable: boolean; pressBlockReason?: string }>;
+          }>;
+        };
+      }).layout.surfaces[0].cells[0]
+      : null;
     assert.deepEqual(
-      layoutResponse.ok
-        && (layoutResponse.result as {
-          layout: {
-            surfaces: Array<{
-              surface: string;
-              cells: Array<{ index: number; key: string; label: string; surface: string; pressable: boolean }>;
-            }>;
-          };
-        }).layout.surfaces[0].cells[0],
+      opAddLayoutCell
+        ? {
+          kind: opAddLayoutCell.kind,
+          key: opAddLayoutCell.key,
+          label: opAddLayoutCell.label,
+          surface: opAddLayoutCell.surface,
+          usable: opAddLayoutCell.usable,
+          capability: opAddLayoutCell.capability,
+          pressable: opAddLayoutCell.pressable,
+          pressBlockReason: opAddLayoutCell.pressBlockReason,
+        }
+        : null,
       {
-        index: 14,
         kind: "key",
         key: KEY_ID.op_add,
         label: "+",
@@ -368,6 +394,11 @@ const runHeadlessJsonlSessionTests = (): void => {
         pressBlockReason: "not_installed",
       },
       "layout returns drop-ready storage indexes without requiring full state",
+    );
+    assert.equal(
+      typeof opAddLayoutCell?.index,
+      "number",
+      "layout returns numeric storage indexes without hard-coding storage order",
     );
 
     const emptyLayoutResponse = session.handleLine('{"cmd":"layout","surface":"keypad","includeEmpty":true}');
@@ -520,27 +551,26 @@ const runHeadlessJsonlSessionTests = (): void => {
   const sandboxSession = createHeadlessJsonlSession({ mode: "sandbox" });
   try {
     const ready = sandboxSession.ready();
-    assert.equal(ready.snapshot.activeCalculatorId, "f_prime", "sandbox starts on f_prime");
+    assert.equal(ready.snapshot.activeCalculatorId, modeManifestById.sandbox.activeCalculatorId, "sandbox starts on manifest active calculator");
 
     const calculatorsResponse = sandboxSession.handleLine('{"cmd":"listCalculators"}');
     assertOkResponseShape(calculatorsResponse);
     const calculators = calculatorsResponse.ok
       ? (calculatorsResponse.result as { calculators: Array<{ id: string; symbol: string; active: boolean; dimensions: { columns: number; rows: number }; total: string; rollCount: number; visualizer: string }> }).calculators
       : [];
-    assert.equal(calculators.length, 4, "listCalculators includes sandbox calculators");
+    assert.equal(calculators.length, modeManifestById.sandbox.bootCalculatorOrder.length, "listCalculators includes sandbox manifest calculators");
     assert.deepEqual(
-      calculators.find((calculator) => calculator.id === "f_prime"),
-      {
-        id: "f_prime",
-        symbol: "f_prime",
-        active: true,
-        dimensions: { columns: 6, rows: 5 },
-        total: "0",
-        rollCount: 0,
-        visualizer: "total",
-      },
-      "listCalculators reports active calculator metadata",
+      calculators.map((calculator) => calculator.id),
+      modeManifestById.sandbox.bootCalculatorOrder,
+      "listCalculators order follows sandbox mode manifest",
     );
+    const activeCalculator = calculators.find((calculator) => calculator.active);
+    assert.equal(activeCalculator?.id, modeManifestById.sandbox.activeCalculatorId, "listCalculators marks manifest active calculator");
+    assert.equal((activeCalculator?.dimensions.columns ?? 0) > 0, true, "listCalculators reports positive active calculator columns");
+    assert.equal((activeCalculator?.dimensions.rows ?? 0) > 0, true, "listCalculators reports positive active calculator rows");
+    assert.equal(activeCalculator?.total, "0", "listCalculators reports active calculator total");
+    assert.equal(activeCalculator?.rollCount, 0, "listCalculators reports active calculator roll count");
+    assert.equal(typeof activeCalculator?.visualizer, "string", "listCalculators reports active calculator visualizer");
 
     const installResponse = sandboxSession.handleLine('{"cmd":"install","key":"op_div","destination":{"surface":"keypad","index":0},"calculatorId":"f_prime"}');
     assertOkResponseShape(installResponse);

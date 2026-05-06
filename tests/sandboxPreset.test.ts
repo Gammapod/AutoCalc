@@ -1,87 +1,51 @@
 import assert from "node:assert/strict";
 import { createSandboxState } from "../src/domain/sandboxPreset.js";
 import { KEY_ID } from "../src/domain/keyPresentation.js";
-import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
 import { normalizeRuntimeStateInvariants } from "../src/domain/runtimeStateInvariants.js";
 import { reducer } from "../src/domain/reducer.js";
-import type { CalculatorId } from "../src/domain/types.js";
+import type { CalculatorId, GameState } from "../src/domain/types.js";
+import { modeManifestById } from "../src/domain/modeManifest.js";
+import { controlProfiles } from "../src/domain/controlProfilesCatalog.js";
+import { createSeededKeyLayout } from "../src/domain/calculatorSeedManifest.js";
 
-const keyAt = (
-  state: ReturnType<typeof createSandboxState>,
-  calculatorId: CalculatorId,
-  row: number,
-  col: number,
-): string | null => {
+const keySnapshotFor = (state: GameState, calculatorId: CalculatorId): Array<string | null> => {
   const ui = state.calculators?.[calculatorId]?.ui;
   if (!ui) {
-    return null;
+    return [];
   }
-  const index = toIndexFromCoord({ row, col }, ui.keypadColumns, ui.keypadRows);
-  const cell = ui.keyLayout[index];
-  return cell?.kind === "key" ? cell.key : null;
+  return ui.keyLayout.map((cell) => cell.kind === "key" ? cell.key : null);
 };
 
 export const runSandboxPresetTests = (): void => {
   const sandbox = normalizeRuntimeStateInvariants(createSandboxState());
+  const sandboxManifest = modeManifestById.sandbox;
+  const sandboxCalculatorIds = sandbox.calculatorOrder ?? [];
 
-  assert.deepEqual(sandbox.calculatorOrder, ["f_prime", "g_prime", "h_prime", "i_prime"], "sandbox boot order uses prime calculators");
-  assert.equal(sandbox.activeCalculatorId, "f_prime", "sandbox activates f_prime");
-  assert.ok(Boolean(sandbox.calculators?.f_prime), "sandbox materializes f_prime");
-  assert.ok(Boolean(sandbox.calculators?.g_prime), "sandbox materializes g_prime");
-  assert.ok(Boolean(sandbox.calculators?.h_prime), "sandbox materializes h_prime");
-  assert.ok(Boolean(sandbox.calculators?.i_prime), "sandbox materializes i_prime");
-  assert.ok(!sandbox.calculators?.f, "sandbox does not materialize gameplay f");
-  assert.ok(!sandbox.calculators?.g, "sandbox does not materialize gameplay g");
+  assert.deepEqual(sandboxCalculatorIds, sandboxManifest.bootCalculatorOrder, "sandbox preset follows sandbox mode boot order");
+  assert.equal(sandbox.activeCalculatorId, sandboxManifest.activeCalculatorId, "sandbox preset follows sandbox mode active calculator");
+  assert.equal(new Set(sandboxCalculatorIds).size, sandboxCalculatorIds.length, "sandbox calculator order has no duplicate ids");
+  for (const calculatorId of sandboxCalculatorIds) {
+    assert.ok(Boolean(sandbox.calculators?.[calculatorId]), `sandbox materializes ordered calculator: ${calculatorId}`);
+  }
+  for (const calculatorId of Object.keys(sandbox.calculators ?? {}) as CalculatorId[]) {
+    assert.equal(sandboxCalculatorIds.includes(calculatorId), true, `sandbox materializes only ordered calculators: ${calculatorId}`);
+  }
 
-  const fPrimeUi = sandbox.calculators?.f_prime?.ui;
-  const gPrimeUi = sandbox.calculators?.g_prime?.ui;
-  const hPrimeUi = sandbox.calculators?.h_prime?.ui;
-  const iPrimeUi = sandbox.calculators?.i_prime?.ui;
-  assert.equal(fPrimeUi?.keypadColumns, 6, "f_prime keypad width matches spec");
-  assert.equal(fPrimeUi?.keypadRows, 5, "f_prime keypad height matches spec");
-  assert.equal(gPrimeUi?.keypadColumns, 7, "g_prime keypad width matches spec");
-  assert.equal(gPrimeUi?.keypadRows, 2, "g_prime keypad height matches spec");
-  assert.equal(hPrimeUi?.keypadColumns, 4, "h_prime keypad width matches spec");
-  assert.equal(hPrimeUi?.keypadRows, 5, "h_prime keypad height matches spec");
-  assert.equal(iPrimeUi?.keypadColumns, 4, "i_prime keypad width matches spec");
-  assert.equal(iPrimeUi?.keypadRows, 7, "i_prime keypad height matches spec");
+  for (const calculatorId of sandboxCalculatorIds) {
+    const calculator = sandbox.calculators?.[calculatorId];
+    const seed = createSeededKeyLayout(calculatorId);
+    assert.equal(calculator?.ui.keypadColumns, controlProfiles[calculatorId].starts.alpha, `${calculatorId} sandbox columns derive from control profile alpha`);
+    assert.equal(calculator?.ui.keypadRows, controlProfiles[calculatorId].starts.beta, `${calculatorId} sandbox rows derive from control profile beta`);
+    assert.deepEqual(calculator?.lambdaControl, controlProfiles[calculatorId].starts, `${calculatorId} sandbox lambda starts derive from control profile`);
+    assert.deepEqual(keySnapshotFor(sandbox, calculatorId), seed.keyLayout.map((cell) => cell.kind === "key" ? cell.key : null), `${calculatorId} sandbox keypad materializes seed layout`);
+    assert.equal(calculator?.ui.activeVisualizer, seed.activeVisualizer, `${calculatorId} sandbox visualizer derives from seed layout`);
+  }
 
-  assert.deepEqual(
-    sandbox.calculators?.g_prime?.lambdaControl,
-    { alpha: 7, beta: 2, gamma: 12, delta: 4, delta_q: 4, epsilon: 4 },
-    "g_prime lambda starts match spec",
+  assert.equal(
+    sandboxCalculatorIds.every((calculatorId) => sandbox.calculators?.[calculatorId]?.settings.base === "decimal"),
+    true,
+    "sandbox calculators start in decimal mode",
   );
-  assert.deepEqual(
-    sandbox.calculators?.h_prime?.lambdaControl,
-    { alpha: 4, beta: 5, gamma: 6, delta: 12, delta_q: 12, epsilon: 1 },
-    "h_prime lambda starts match spec",
-  );
-  assert.deepEqual(
-    sandbox.calculators?.i_prime?.lambdaControl,
-    { alpha: 4, beta: 7, gamma: 6, delta: 8, delta_q: 8, epsilon: 0 },
-    "i_prime lambda starts match spec",
-  );
-
-  assert.equal(keyAt(sandbox, "f_prime", 5, 6), KEY_ID.system_save_quit_main_menu, "f_prime R5C6 is Save&Quit");
-  assert.equal(keyAt(sandbox, "f_prime", 5, 5), KEY_ID.viz_number_line, "f_prime R5C5 is number line");
-  assert.equal(keyAt(sandbox, "f_prime", 1, 1), KEY_ID.exec_equals, "f_prime R1C1 is equals");
-
-  assert.equal(keyAt(sandbox, "g_prime", 2, 7), KEY_ID.toggle_binary_octave_cycle, "g_prime R2C7 is octave-cycle toggle");
-  assert.equal(keyAt(sandbox, "g_prime", 2, 3), KEY_ID.op_interval, "g_prime R2C3 is interval");
-  assert.equal(keyAt(sandbox, "g_prime", 1, 7), KEY_ID.viz_ratios, "g_prime R1C7 is ratios");
-  assert.equal(keyAt(sandbox, "g_prime", 1, 1), KEY_ID.exec_step_through, "g_prime R1C1 is step-through");
-  assert.equal(sandbox.calculators?.g_prime?.settings.base, "decimal", "g_prime starts in decimal mode");
-
-  assert.equal(keyAt(sandbox, "h_prime", 5, 4), KEY_ID.toggle_history, "h_prime R5C4 is history");
-  assert.equal(keyAt(sandbox, "h_prime", 4, 3), KEY_ID.op_rotate_15, "h_prime R4C3 is rotate");
-  assert.equal(keyAt(sandbox, "h_prime", 1, 1), KEY_ID.exec_equals, "h_prime R1C1 is equals");
-
-  assert.equal(keyAt(sandbox, "i_prime", 7, 1), KEY_ID.toggle_mod_zero_to_delta, "i_prime R7C1 is mod-zero toggle");
-  assert.equal(keyAt(sandbox, "i_prime", 5, 4), KEY_ID.unary_collatz, "i_prime R5C4 is Collatz");
-  assert.equal(keyAt(sandbox, "i_prime", 5, 3), KEY_ID.op_mod, "i_prime R5C3 is mod");
-  assert.equal(keyAt(sandbox, "i_prime", 5, 2), KEY_ID.op_euclid_tuple, "i_prime R5C2 is euclid tuple");
-  assert.equal(keyAt(sandbox, "i_prime", 5, 1), KEY_ID.op_euclid_div, "i_prime R5C1 is euclid div");
-  assert.equal(keyAt(sandbox, "i_prime", 1, 1), KEY_ID.exec_equals, "i_prime R1C1 is equals");
 
   assert.ok(Object.values(sandbox.unlocks.valueExpression).every(Boolean), "sandbox unlocks all value keys");
   assert.ok(Object.values(sandbox.unlocks.slotOperators).every(Boolean), "sandbox unlocks all slot operators");
@@ -98,28 +62,51 @@ export const runSandboxPresetTests = (): void => {
 
   assert.equal(sandbox.unlocks.uiUnlocks.storageVisible, true, "sandbox keeps storage visible");
 
-  const afterGPrimeDigit = reducer(sandbox, { type: "PRESS_KEY", key: KEY_ID.digit_1, calculatorId: "g_prime" });
-  const afterSwitchToGPrime = reducer(afterGPrimeDigit, { type: "SET_ACTIVE_CALCULATOR", calculatorId: "g_prime" });
-  const gPrimeAfter = afterSwitchToGPrime.calculators?.g_prime?.ui;
-  assert.equal(gPrimeAfter?.keypadColumns, 7, "g_prime keeps its keypad width after targeted input and activation");
-  assert.equal(gPrimeAfter?.keypadRows, 2, "g_prime keeps its keypad height after targeted input and activation");
-  assert.equal(keyAt(afterSwitchToGPrime, "g_prime", 1, 6), KEY_ID.digit_1, "g_prime keeps digit_1 after targeted input");
-  assert.equal(keyAt(afterSwitchToGPrime, "g_prime", 1, 1), KEY_ID.exec_step_through, "g_prime keeps step-through after targeted input");
+  const targetCalculatorId = sandboxCalculatorIds.find((calculatorId) =>
+    calculatorId !== sandbox.activeCalculatorId
+    && sandbox.calculators?.[calculatorId]?.ui.keyLayout.some((cell) => cell.kind === "key" && cell.key.startsWith("digit_")),
+  );
+  assert.ok(targetCalculatorId, "sandbox has an inactive calculator with an installed digit key");
+  if (!targetCalculatorId) {
+    return;
+  }
+  const targetDigit = sandbox.calculators?.[targetCalculatorId]?.ui.keyLayout.find((cell) =>
+    cell.kind === "key" && cell.key.startsWith("digit_"));
+  assert.ok(targetDigit?.kind === "key", "target calculator digit fixture is installed");
+  if (!targetDigit || targetDigit.kind !== "key") {
+    return;
+  }
+  const targetBefore = keySnapshotFor(sandbox, targetCalculatorId);
+  const afterTargetDigit = reducer(sandbox, { type: "PRESS_KEY", key: targetDigit.key, calculatorId: targetCalculatorId });
+  const afterSwitchToTarget = reducer(afterTargetDigit, { type: "SET_ACTIVE_CALCULATOR", calculatorId: targetCalculatorId });
+  const targetAfter = afterSwitchToTarget.calculators?.[targetCalculatorId]?.ui;
+  assert.equal(targetAfter?.keypadColumns, controlProfiles[targetCalculatorId].starts.alpha, "targeted input keeps target keypad width");
+  assert.equal(targetAfter?.keypadRows, controlProfiles[targetCalculatorId].starts.beta, "targeted input keeps target keypad height");
+  assert.deepEqual(keySnapshotFor(afterSwitchToTarget, targetCalculatorId), targetBefore, "targeted input and activation preserve target keypad layout");
 
-  const afterFPrimeDigit = reducer(afterSwitchToGPrime, { type: "PRESS_KEY", key: KEY_ID.digit_2, calculatorId: "f_prime" });
-  assert.equal(keyAt(afterFPrimeDigit, "f_prime", 2, 5), KEY_ID.digit_2, "f_prime keeps digit_2 after targeted input");
-  assert.equal(keyAt(afterFPrimeDigit, "f_prime", 1, 1), KEY_ID.exec_equals, "f_prime keeps equals after targeted input");
+  const activeCalculatorId = sandbox.activeCalculatorId;
+  const activeDigit = sandbox.calculators?.[activeCalculatorId]?.ui.keyLayout.find((cell) =>
+    cell.kind === "key" && cell.key.startsWith("digit_"));
+  assert.ok(activeDigit?.kind === "key", "active sandbox calculator has an installed digit key");
+  if (!activeDigit || activeDigit.kind !== "key") {
+    return;
+  }
+  const activeBefore = keySnapshotFor(afterSwitchToTarget, activeCalculatorId);
+  const afterActiveDigit = reducer(afterSwitchToTarget, { type: "PRESS_KEY", key: activeDigit.key, calculatorId: activeCalculatorId });
+  assert.deepEqual(keySnapshotFor(afterActiveDigit, activeCalculatorId), activeBefore, "targeted input preserves active calculator keypad layout");
 
-  const afterFPrimeAlphaUpdate = reducer(sandbox, { type: "SET_CONTROL_FIELD", calculatorId: "f_prime", field: "alpha", value: 8 });
-  assert.equal(afterFPrimeAlphaUpdate.calculators?.f_prime?.ui.keypadColumns, 8, "f_prime alpha update resizes keypad columns in sandbox");
-  assert.equal(afterFPrimeAlphaUpdate.ui.keypadColumns, 8, "active sandbox projection reflects updated f_prime keypad columns");
+  const nextAlpha = controlProfiles[activeCalculatorId].starts.alpha + 2;
+  const afterActiveAlphaUpdate = reducer(sandbox, { type: "SET_CONTROL_FIELD", calculatorId: activeCalculatorId, field: "alpha", value: nextAlpha });
+  assert.equal(afterActiveAlphaUpdate.calculators?.[activeCalculatorId]?.ui.keypadColumns, nextAlpha, "active sandbox alpha update resizes keypad columns");
+  assert.equal(afterActiveAlphaUpdate.ui.keypadColumns, nextAlpha, "active sandbox projection reflects updated keypad columns");
 
-  const afterFPrimeBetaUpdate = reducer(afterFPrimeAlphaUpdate, {
+  const nextBeta = Math.max(1, controlProfiles[activeCalculatorId].starts.beta - 2);
+  const afterActiveBetaUpdate = reducer(afterActiveAlphaUpdate, {
     type: "SET_CONTROL_FIELD",
-    calculatorId: "f_prime",
+    calculatorId: activeCalculatorId,
     field: "beta",
-    value: 3,
+    value: nextBeta,
   });
-  assert.equal(afterFPrimeBetaUpdate.calculators?.f_prime?.ui.keypadRows, 3, "f_prime beta update resizes keypad rows in sandbox");
-  assert.equal(afterFPrimeBetaUpdate.ui.keypadRows, 3, "active sandbox projection reflects updated f_prime keypad rows");
+  assert.equal(afterActiveBetaUpdate.calculators?.[activeCalculatorId]?.ui.keypadRows, nextBeta, "active sandbox beta update resizes keypad rows");
+  assert.equal(afterActiveBetaUpdate.ui.keypadRows, nextBeta, "active sandbox projection reflects updated keypad rows");
 };

@@ -160,6 +160,7 @@ Purpose: quick navigation for implementing or reviewing key behavior with minima
 - `docs/ux-spec.md`
 - `docs/math-spec.md`
 - `docs/functional-spec.md`
+- `docs/testing-policy.md`
 - `docs/planning/visualizer-roll-content-interaction-matrix.md`
 - `docs/planning/operator-testing-matrix.md`
 

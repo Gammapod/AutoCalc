@@ -8,7 +8,6 @@ import { unlockCatalog } from "../src/content/unlocks.catalog.js";
 import { buildStorageRenderOrder } from "../src/ui/modules/storage/viewModel.js";
 import { evaluateLayoutDrop } from "../src/domain/layoutRules.js";
 import { classifyDropAction } from "../src/domain/layoutDragDrop.js";
-import { toIndexFromCoord } from "../src/domain/keypadLayoutModel.js";
 import { reducer } from "../src/domain/reducer.js";
 import { k } from "./support/keyCompat.js";
 
@@ -16,9 +15,10 @@ const r = (num: bigint, den: bigint = 1n) => toRationalCalculatorValue({ num, de
 
 export const runKeyCapabilityProgressionTests = (): void => {
   const base = initialState();
-  const digit1Index = toIndexFromCoord({ row: 3, col: 1 }, base.ui.keypadColumns, base.ui.keypadRows);
-  const saveQuitIndex = toIndexFromCoord({ row: 3, col: 2 }, base.ui.keypadColumns, base.ui.keypadRows);
-  assert.equal(base.ui.keyLayout[digit1Index]?.kind === "key" ? base.ui.keyLayout[digit1Index].key : null, k("digit_1"), "digit_1 starts installed at f R3C1");
+  const digit1Index = base.ui.keyLayout.findIndex((cell) => cell.kind === "key" && cell.key === k("digit_1"));
+  const saveQuitIndex = base.ui.keyLayout.findIndex((cell) => cell.kind === "key" && cell.key === k("system_save_quit_main_menu"));
+  assert.ok(digit1Index >= 0, "digit_1 starts installed on the default keypad");
+  assert.ok(saveQuitIndex >= 0, "Save&Quit starts installed on the default keypad");
   assert.equal(resolveKeyCapability(base, k("digit_1")), "locked", "digit_1 starts fully locked");
   assert.equal(resolveKeyCapability(base, k("exec_equals")), "portable", "portable keys remain portable");
 
